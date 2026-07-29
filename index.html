@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SA Recruiters</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="var(--bg)">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0e1214;
+    --surface: #161b1d;
+    --surface-2: #202829;
+    --border: #384245;
+    --text: #f5f8f8;
+    --muted: #a9b6b6;
+    --muted-2: #7c8989;
+    --teal: #35b8b8;
+    --accent-bright: #5fe0c4;
+    --danger: #ef6459;
+    --danger-border: #6b1f1f;
+    --tag-bg: #1c3d38;
+    --icon-btn-text: #f5f8f8;
+  }
+  html[data-theme="light"] {
+    --bg: #f4f7f7;
+    --surface: #ffffff;
+    --surface-2: #eaf0f0;
+    --border: #cfd8d8;
+    --text: #0f1517;
+    --muted: #4c5a5a;
+    --muted-2: #74807f;
+    --teal: #157a7a;
+    --accent-bright: #0e8f79;
+    --danger: #c53a34;
+    --danger-border: #f0c6c3;
+    --tag-bg: #e1f3ee;
+    --icon-btn-text: #0f1517;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); transition: background 0.2s, color 0.2s; }
+</style>
+<style>
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .header { padding: 2.2rem 1.25rem 1rem; }
+  .header h1 { font-size: 21px; font-weight: 600; margin: 0; }
+  .header p { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+  .searchbar { margin: 0 1.25rem 1rem; }
+  .icon-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .support-section {
+    margin: 2rem 1.25rem calc(6rem + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.1rem 1.1rem;
+  }
+  .jobs-section {
+    margin: 1.5rem 1.25rem 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.1rem 1.1rem;
+  }
+  .jobs-section .sup-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .jobs-section h3 { font-size: 15px; font-weight: 600; margin: 0; }
+  .jobs-section .sup-sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  .job-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 8px;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+  }
+  .job-card:last-child { margin-bottom: 0; }
+  .job-card .jposition { font-weight: 600; font-size: 14px; }
+  .job-card .jcompany { font-size: 12px; color: var(--accent-bright); margin-top: 2px; }
+  .job-card .jmeta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .jobs-empty { font-size: 13px; color: var(--muted); padding: 0.5rem 0; }
+  .verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(45,168,168,0.18);
+    color: var(--teal, var(--teal));
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .admin-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .admin-toggle-row span { font-size: 13px; }
+  .switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--border); border-radius: 22px; transition: 0.2s;
+  }
+  .slider::before {
+    content: ''; position: absolute; height: 16px; width: 16px;
+    left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s;
+  }
+  input:checked + .slider { background: var(--teal); }
+  input:checked + .slider::before { transform: translateX(18px); }
+  .support-section .sup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .support-section h3 { font-size: 15px; font-weight: 600; margin: 0; }
+  .support-section .sup-sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  .sup-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--surface-2);
+    gap: 10px;
+  }
+  .sup-row:last-of-type { border-bottom: none; }
+  .sup-row .sup-label { font-size: 11px; color: var(--muted); }
+  .sup-row .sup-value { font-size: 14px; word-break: break-word; }
+  .copy-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--accent-bright);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .searchbar input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .list { padding: 0 1.25rem; display: flex; flex-direction: column; gap: 10px; }
+  .empty { margin: 2rem 1.25rem; text-align: center; color: var(--muted); font-size: 14px; }
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+  }
+  .thumb { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
+  .thumb-fallback {
+    width: 52px; height: 52px; border-radius: 10px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0; color: var(--muted-2);
+  }
+  .aname { font-weight: 600; font-size: 15px; }
+  .asub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .card .arrow { margin-left: auto; color: var(--muted-2); font-size: 18px; }
+  .fab {
+    position: fixed;
+    right: 1.25rem;
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: var(--bg);
+    font-size: 26px;
+    border: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 10;
+  }
+  .overlay.open { display: flex; }
+  .sheet {
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 440px;
+    padding: 1.25rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+    max-height: 86vh;
+    overflow-y: auto;
+  }
+  .sheet h2 { font-size: 17px; font-weight: 600; margin: 0 0 14px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .photo-picker { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .photo-preview { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; background: var(--surface-2); }
+  .photo-picker label {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 10px;
+  }
+  .photo-picker input[type="file"] { display: none; }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 0.5rem; }
+  .sheet-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 500; border: none; }
+  .btn-save { background: var(--teal); color: var(--bg); }
+  .btn-cancel { background: transparent; color: var(--muted); border: 1px solid var(--border) !important; }
+  .btn-delete { background: transparent; color: var(--danger); border: 1px solid var(--danger-border) !important; }
+  .detail-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--surface-2); font-size: 14px; }
+  .detail-row:last-of-type { border-bottom: none; }
+  .detail-row .dlabel { color: var(--muted); flex-shrink: 0; }
+  .detail-row .dval { text-align: right; word-break: break-word; }
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--accent-bright);
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header" style="display:flex; align-items:center; justify-content:space-between;">
+  <div>
+    <h1>SA Recruiters</h1>
+    <p>Recruiting agency directory</p>
+    <p id="agency-counter" style="font-size:12px; color:var(--accent-bright); margin-top:4px;"></p>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle light/dark theme">🌙</button>
+    <button class="icon-btn" id="admin-btn" onclick="openAdminSheet()" aria-label="Admin login">🔒</button>
+  </div>
+</div>
+
+<div class="jobs-section">
+  <div class="sup-header">
+    <h3>Job Announcements</h3>
+    <button class="icon-btn" id="job-add-btn" onclick="openJobForm()" style="display:none; width:32px; height:32px; font-size:16px;">+</button>
+  </div>
+  <p class="sup-sub">Current openings from our partner agencies</p>
+  <div id="jobs-list"></div>
+  <div class="jobs-empty" id="jobs-empty" style="display:none;">No job posts right now — check back soon.</div>
+</div>
+
+<div class="overlay" id="job-form-overlay">
+  <div class="sheet">
+    <h2 id="job-form-title">Post a job</h2>
+    <div class="field"><label>Company</label><input id="j-company" placeholder="e.g. Prime Placements"></div>
+    <div class="field"><label>Position</label><input id="j-position" placeholder="e.g. Junior Bookkeeper"></div>
+    <div class="field"><label>Closing date</label><input id="j-closing" placeholder="e.g. 31 August 2026"></div>
+    <div class="field"><label>Contact details</label><input id="j-contact" placeholder="e.g. jobs@agency.co.za / 011 000 0000"></div>
+    <div class="field"><label>Area</label><input id="j-area" placeholder="e.g. Bedfordview, Johannesburg"></div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="closeSheet('job-form-overlay')">Cancel</button>
+      <button class="btn-save" onclick="saveJob()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="job-detail-overlay">
+  <div class="sheet">
+    <h2 id="jd-position"></h2>
+    <div class="detail-row"><span class="dlabel">Company</span><span class="dval" id="jd-company"></span></div>
+    <div class="detail-row"><span class="dlabel">Closing</span><span class="dval" id="jd-closing"></span></div>
+    <div class="detail-row"><span class="dlabel">Contact</span><span class="dval" id="jd-contact"></span></div>
+    <div class="detail-row"><span class="dlabel">Area</span><span class="dval" id="jd-area"></span></div>
+    <div class="sheet-actions" style="margin-top:1rem;">
+      <button class="btn-cancel" onclick="closeSheet('job-detail-overlay')">Close</button>
+      <button class="btn-save" id="job-edit-btn" onclick="editJobFromDetail()" style="display:none;">Edit</button>
+    </div>
+    <div class="sheet-actions" id="job-delete-row" style="display:none;">
+      <button class="btn-delete" onclick="deleteJob()">Delete job</button>
+    </div>
+  </div>
+</div>
+
+<div class="searchbar">
+  <input type="text" id="search" placeholder="Search by name or location" oninput="filterAndRenderCached()">
+</div>
+
+<div class="list" id="agency-list"></div>
+<div class="empty" id="empty-msg" style="display:none;">No agencies yet. Tap + to add the first one.</div>
+
+<div class="support-section">
+  <div class="sup-header">
+    <h3>Support &amp; Donations</h3>
+  </div>
+  <p class="sup-sub">This app is running free. If it helped you secure a job or work, kindly help keep this directory running to help others.</p>
+  <div class="sup-row">
+    <div><div class="sup-label">Bank</div><div class="sup-value" id="sup-bank">Capitec Bank</div></div>
+  </div>
+  <div class="sup-row">
+    <div><div class="sup-label">Account number</div><div class="sup-value" id="sup-account">2573389037</div></div>
+  </div>
+  <div class="sup-row">
+    <div><div class="sup-label">Account holder</div><div class="sup-value" id="sup-holder">SA Recruiters</div></div>
+  </div>
+  <div class="sup-row">
+    <div><div class="sup-label">Support email</div><div class="sup-value" id="sup-email">Kamogeloralph@gmail.com</div></div>
+  </div>
+  <div class="sup-row">
+    <div><div class="sup-label">Contact</div><div class="sup-value" id="sup-contact">0711227954</div></div>
+  </div>
+  <button class="copy-btn" id="copy-all-btn" onclick="copyAllSupport()" style="width:100%; margin-top:10px; padding:10px;">Copy all details</button>
+</div>
+
+<button class="fab" onclick="openForm()" aria-label="Add agency">+</button>
+
+
+<div class="overlay" id="form-overlay">
+  <div class="sheet">
+    <h2 id="form-title">Add agency</h2>
+    <div class="photo-picker">
+      <img class="photo-preview" id="photo-preview" src="" style="display:none;">
+      <div class="thumb-fallback" id="photo-fallback">🏢</div>
+      <label>Add photo<input type="file" accept="image/*" id="photo-input" onchange="handlePhoto(event)"></label>
+    </div>
+    <div class="field"><label>Agency name</label><input id="f-name" placeholder="e.g. Prime Placements"></div>
+    <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+      <label>Leave this empty</label><input id="f-honeypot" tabindex="-1" autocomplete="off">
+    </div>
+    <div class="field"><label>Website</label><input id="f-website" placeholder="e.g. www.example.co.za"></div>
+    <div class="field"><label>Contact person / number</label><input id="f-contact" placeholder="e.g. Jane Dlamini, 082 000 0000"></div>
+    <div class="field"><label>Email address</label><input id="f-email" type="email" placeholder="e.g. info@agency.co.za"></div>
+    <div class="field"><label>Location</label><input id="f-location" placeholder="e.g. Sandton, Johannesburg"></div>
+    <div class="field">
+      <label>CV preference</label>
+      <select id="f-cvpref">
+        <option value="Email">Email</option>
+        <option value="Hand delivered">Hand delivered</option>
+        <option value="Either">Either</option>
+      </select>
+    </div>
+    <div class="admin-toggle-row" id="verified-toggle-row" style="display:none;">
+      <span>Mark as Verified</span>
+      <label class="switch">
+        <input type="checkbox" id="f-verified">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="closeForm()">Cancel</button>
+      <button class="btn-save" onclick="saveAgency()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="detail-overlay">
+  <div class="sheet">
+    <h2 id="detail-name"></h2>
+    <span id="detail-verified-badge" class="verified-badge" style="display:none; margin-left:0; margin-bottom:10px;">✓ Verified</span>
+    <img class="photo-preview" id="detail-photo" style="width:100%; height:150px; border-radius:12px; margin-bottom:12px; display:none;">
+    <div class="detail-row"><span class="dlabel">Website</span><span class="dval" id="detail-website"></span></div>
+    <div class="detail-row"><span class="dlabel">Contact</span><span class="dval" id="detail-contact"></span></div>
+    <div class="detail-row"><span class="dlabel">Email</span><span class="dval" id="detail-email"></span></div>
+    <div class="detail-row"><span class="dlabel">Location</span><span class="dval" id="detail-location"></span></div>
+    <div class="detail-row"><span class="dlabel">CVs</span><span class="dval"><span class="tag" id="detail-cvpref"></span></span></div>
+    <div class="sheet-actions" style="margin-top:1rem;">
+      <button class="btn-cancel" onclick="closeDetail()">Close</button>
+      <button class="btn-save" id="detail-edit-btn" onclick="editFromDetail()" style="display:none;">Edit</button>
+    </div>
+    <div class="sheet-actions" id="detail-delete-row" style="display:none;">
+      <button class="btn-delete" onclick="deleteAgency()">Delete agency</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="admin-overlay">
+  <div class="sheet">
+    <h2 id="admin-title">Admin login</h2>
+    <div id="admin-login-fields">
+      <div class="field"><label>Email</label><input id="admin-email" type="email"></div>
+      <div class="field"><label>Password</label><input id="admin-password" type="password"></div>
+      <div class="limit-hint" id="admin-error" style="color:var(--danger);"></div>
+      <div class="sheet-actions">
+        <button class="btn-cancel" onclick="closeSheet('admin-overlay')">Cancel</button>
+        <button class="btn-save" onclick="adminLogin()">Log in</button>
+      </div>
+    </div>
+    <div id="admin-logged-in" style="display:none;">
+      <p style="font-size:14px; color:var(--muted); margin-bottom:1rem;">You're logged in as admin.</p>
+      <div class="detail-row"><span class="dlabel">Unique visitors</span><span class="dval" id="stat-visitors">—</span></div>
+      <div class="detail-row"><span class="dlabel">App installs</span><span class="dval" id="stat-installs">—</span></div>
+      <div class="detail-row"><span class="dlabel">Agencies listed</span><span class="dval" id="stat-agencies">—</span></div>
+      <div class="sheet-actions" style="margin-top:1rem;">
+        <button class="btn-cancel" style="flex:1;" onclick="closeSheet('admin-overlay')">Close</button>
+        <button class="btn-delete" style="flex:1;" onclick="adminLogout()">Log out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Fill in your own Supabase project details here =====
+var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
+// ============================================================
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var editingId = null;
+var detailId = null;
+var pendingPhoto = null;
+var agenciesCache = [];
+var isAdmin = false;
+
+// ===== Theme (light/dark) =====
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  var btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') || 'dark';
+  var next = current === 'light' ? 'dark' : 'light';
+  localStorage.setItem('sar_theme', next);
+  applyTheme(next);
+}
+
+(function initTheme() {
+  var saved = localStorage.getItem('sar_theme');
+  if (saved) {
+    applyTheme(saved);
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    applyTheme('light');
+  } else {
+    applyTheme('dark');
+  }
+})();
+
+async function getAgencies() {
+  var { data, error } = await supabaseClient.from('agencies').select('*').order('created_at', { ascending: false });
+  if (error) { console.error(error); alert('Could not load agencies. Check your Supabase setup.'); return []; }
+  return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, cvpref: a.cvpref, photo: a.photo, verified: a.verified }; });
+}
+async function upsertAgency(a) {
+  var { error } = await supabaseClient.from('agencies').upsert(a);
+  if (error) { console.error(error); alert('Could not save. Check your Supabase setup.'); }
+}
+async function removeAgency(id) {
+  var { error } = await supabaseClient.from('agencies').delete().eq('id', id);
+  if (error) { console.error(error); alert('Could not delete. Check your Supabase setup.'); }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+async function renderList() {
+  agenciesCache = await getAgencies();
+  updateAgencyCounter();
+  filterAndRenderCached();
+}
+
+function updateAgencyCounter() {
+  var el = document.getElementById('agency-counter');
+  if (!el) return;
+  var n = agenciesCache.length;
+  el.textContent = n + (n === 1 ? ' agency listed' : ' agencies listed');
+}
+
+function filterAndRenderCached() {
+  var list = agenciesCache;
+  var q = document.getElementById('search').value.trim().toLowerCase();
+  if (q) {
+    list = list.filter(function(a) {
+      return (a.name + ' ' + a.location).toLowerCase().indexOf(q) !== -1;
+    });
+  }
+  list.sort(function(a,b) {
+    if (!!b.verified !== !!a.verified) return (b.verified ? 1 : 0) - (a.verified ? 1 : 0);
+    return (a.name || '').localeCompare(b.name || '');
+  });
+  var container = document.getElementById('agency-list');
+  container.innerHTML = '';
+  document.getElementById('empty-msg').style.display = list.length ? 'none' : 'block';
+  list.forEach(function(a) {
+    var card = document.createElement('button');
+    card.className = 'card';
+    card.onclick = function() { openDetail(a.id); };
+    var thumbHtml = a.photo
+      ? '<img class="thumb" src="' + a.photo + '">'
+      : '<div class="thumb-fallback">🏢</div>';
+    var badgeHtml = a.verified ? '<span class="verified-badge">✓ Verified</span>' : '';
+    card.innerHTML = thumbHtml +
+      '<div><div class="aname">' + escapeHtml(a.name || 'Unnamed agency') + badgeHtml + '</div>' +
+      '<div class="asub">' + escapeHtml(a.location || 'No location') + '</div></div>' +
+      '<div class="arrow">→</div>';
+    container.appendChild(card);
+  });
+}
+
+function openForm(id) {
+  editingId = id || null;
+  pendingPhoto = null;
+  var a = id ? agenciesCache.find(function(x){ return x.id === id; }) : null;
+  document.getElementById('form-title').textContent = id ? 'Edit agency' : 'Add agency';
+  document.getElementById('f-name').value = a ? a.name : '';
+  document.getElementById('f-website').value = a ? a.website : '';
+  document.getElementById('f-contact').value = a ? a.contact : '';
+  document.getElementById('f-email').value = a ? a.email : '';
+  document.getElementById('f-location').value = a ? a.location : '';
+  document.getElementById('f-cvpref').value = a ? a.cvpref : 'Email';
+  document.getElementById('f-verified').checked = a ? !!a.verified : false;
+  document.getElementById('verified-toggle-row').style.display = isAdmin ? 'flex' : 'none';
+  var preview = document.getElementById('photo-preview');
+  var fallback = document.getElementById('photo-fallback');
+  if (a && a.photo) {
+    preview.src = a.photo; preview.style.display = 'block'; fallback.style.display = 'none';
+    pendingPhoto = a.photo;
+  } else {
+    preview.style.display = 'none'; fallback.style.display = 'flex';
+  }
+  document.getElementById('form-overlay').classList.add('open');
+}
+
+function closeForm() {
+  document.getElementById('form-overlay').classList.remove('open');
+}
+
+function handlePhoto(evt) {
+  var file = evt.target.files[0];
+  if (!file) return;
+  var img = new Image();
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxDim = 480;
+      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      pendingPhoto = canvas.toDataURL('image/jpeg', 0.75);
+      document.getElementById('photo-preview').src = pendingPhoto;
+      document.getElementById('photo-preview').style.display = 'block';
+      document.getElementById('photo-fallback').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveAgency() {
+  var honeypot = document.getElementById('f-honeypot').value.trim();
+  if (honeypot) {
+    // silently drop likely-bot submissions
+    closeForm();
+    return;
+  }
+
+  var lastAdd = parseInt(localStorage.getItem('sar_last_add') || '0', 10);
+  var now = Date.now();
+  if (!editingId && now - lastAdd < 20000) {
+    alert('Please wait a moment before adding another agency.');
+    return;
+  }
+
+  var name = document.getElementById('f-name').value.trim();
+  var website = document.getElementById('f-website').value.trim();
+  var contact = document.getElementById('f-contact').value.trim();
+  var email = document.getElementById('f-email').value.trim();
+  var location = document.getElementById('f-location').value.trim();
+  var cvpref = document.getElementById('f-cvpref').value;
+
+  if (!name || name.length < 2 || !/[a-zA-Z]/.test(name)) {
+    alert('Please enter a valid agency name.');
+    return;
+  }
+
+  var id = editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
+  var payload = { id: id, name: name, website: website, contact: contact, email: email, location: location, cvpref: cvpref, photo: pendingPhoto };
+  if (isAdmin) {
+    payload.verified = document.getElementById('f-verified').checked;
+  }
+  if (!editingId) {
+    payload.submitted_by = getDeviceId();
+    localStorage.setItem('sar_last_add', String(now));
+  }
+  await upsertAgency(payload);
+  closeForm();
+  renderList();
+}
+
+function openDetail(id) {
+  detailId = id;
+  var a = agenciesCache.find(function(x){ return x.id === id; });
+  if (!a) return;
+  document.getElementById('detail-name').textContent = a.name || 'Unnamed agency';
+  document.getElementById('detail-verified-badge').style.display = a.verified ? 'inline-flex' : 'none';
+  document.getElementById('detail-website').textContent = a.website || '—';
+  document.getElementById('detail-contact').textContent = a.contact || '—';
+  document.getElementById('detail-email').textContent = a.email || '—';
+  document.getElementById('detail-location').textContent = a.location || '—';
+  document.getElementById('detail-cvpref').textContent = a.cvpref || 'Email';
+  var photoEl = document.getElementById('detail-photo');
+  if (a.photo) { photoEl.src = a.photo; photoEl.style.display = 'block'; }
+  else { photoEl.style.display = 'none'; }
+  document.getElementById('detail-edit-btn').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('detail-delete-row').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-overlay').classList.remove('open');
+  detailId = null;
+}
+
+function editFromDetail() {
+  var id = detailId;
+  closeDetail();
+  openForm(id);
+}
+
+async function deleteAgency() {
+  if (!detailId) return;
+  if (!confirm('Delete this agency record? This cannot be undone.')) return;
+  await removeAgency(detailId);
+  closeDetail();
+  renderList();
+}
+
+renderList();
+
+// ===== Job Announcements =====
+var jobsCache = [];
+var editingJobId = null;
+var detailJobId = null;
+
+async function getJobs() {
+  var { data, error } = await supabaseClient.from('job_posts').select('*').order('created_at', { ascending: false });
+  if (error) { console.error(error); return []; }
+  return data;
+}
+
+async function renderJobs() {
+  jobsCache = await getJobs();
+  var container = document.getElementById('jobs-list');
+  var emptyEl = document.getElementById('jobs-empty');
+  container.innerHTML = '';
+  emptyEl.style.display = jobsCache.length ? 'none' : 'block';
+  jobsCache.forEach(function(j) {
+    var card = document.createElement('button');
+    card.className = 'job-card';
+    card.onclick = function() { openJobDetail(j.id); };
+    card.innerHTML =
+      '<div class="jposition">' + escapeHtml(j.position || 'Position') + '</div>' +
+      '<div class="jcompany">' + escapeHtml(j.company || '') + '</div>' +
+      '<div class="jmeta">' + escapeHtml(j.area || '') + (j.closing ? ' · Closes ' + escapeHtml(j.closing) : '') + '</div>';
+    container.appendChild(card);
+  });
+}
+renderJobs();
+
+function todaysJobPostCount() {
+  var startOfDay = new Date();
+  startOfDay.setHours(0,0,0,0);
+  return jobsCache.filter(function(j) {
+    return new Date(j.created_at) >= startOfDay;
+  }).length;
+}
+
+function openJobForm(id) {
+  if (!id && todaysJobPostCount() >= 5) {
+    alert('You\'ve reached the limit of 5 job posts for today. Try again tomorrow.');
+    return;
+  }
+  editingJobId = id || null;
+  var j = id ? jobsCache.find(function(x){ return x.id === id; }) : null;
+  document.getElementById('job-form-title').textContent = id ? 'Edit job' : 'Post a job';
+  document.getElementById('j-company').value = j ? j.company : '';
+  document.getElementById('j-position').value = j ? j.position : '';
+  document.getElementById('j-closing').value = j ? j.closing : '';
+  document.getElementById('j-contact').value = j ? j.contact : '';
+  document.getElementById('j-area').value = j ? j.area : '';
+  document.getElementById('job-form-overlay').classList.add('open');
+}
+
+async function saveJob() {
+  var company = document.getElementById('j-company').value.trim();
+  var position = document.getElementById('j-position').value.trim();
+  var closing = document.getElementById('j-closing').value.trim();
+  var contact = document.getElementById('j-contact').value.trim();
+  var area = document.getElementById('j-area').value.trim();
+  if (!position || !company) {
+    alert('Add at least the company and position.');
+    return;
+  }
+  var id = editingJobId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
+  var { error } = await supabaseClient.from('job_posts').upsert({ id: id, company: company, position: position, closing: closing, contact: contact, area: area });
+  if (error) {
+    alert('Could not save. Make sure you are logged in as admin.');
+    return;
+  }
+  closeSheet('job-form-overlay');
+  renderJobs();
+}
+
+function openJobDetail(id) {
+  detailJobId = id;
+  var j = jobsCache.find(function(x){ return x.id === id; });
+  if (!j) return;
+  document.getElementById('jd-position').textContent = j.position || 'Position';
+  document.getElementById('jd-company').textContent = j.company || '—';
+  document.getElementById('jd-closing').textContent = j.closing || '—';
+  document.getElementById('jd-contact').textContent = j.contact || '—';
+  document.getElementById('jd-area').textContent = j.area || '—';
+  document.getElementById('job-edit-btn').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('job-delete-row').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('job-detail-overlay').classList.add('open');
+}
+
+function editJobFromDetail() {
+  var id = detailJobId;
+  closeSheet('job-detail-overlay');
+  openJobForm(id);
+}
+
+async function deleteJob() {
+  if (!detailJobId) return;
+  if (!confirm('Delete this job post?')) return;
+  var { error } = await supabaseClient.from('job_posts').delete().eq('id', detailJobId);
+  if (error) { alert('Could not delete.'); return; }
+  closeSheet('job-detail-overlay');
+  renderJobs();
+}
+
+function closeSheet(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function openAdminSheet() {
+  document.getElementById('admin-error').textContent = '';
+  document.getElementById('admin-login-fields').style.display = isAdmin ? 'none' : 'block';
+  document.getElementById('admin-logged-in').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('admin-overlay').classList.add('open');
+  if (isAdmin) loadAdminStats();
+}
+
+async function loadAdminStats() {
+  document.getElementById('stat-agencies').textContent = agenciesCache.length;
+  var { count: visitorCount } = await supabaseClient.from('app_visitors').select('*', { count: 'exact', head: true });
+  var { count: installCount } = await supabaseClient.from('app_visitors').select('*', { count: 'exact', head: true }).eq('installed', true);
+  document.getElementById('stat-visitors').textContent = (visitorCount === null ? '—' : visitorCount);
+  document.getElementById('stat-installs').textContent = (installCount === null ? '—' : installCount);
+}
+
+function updateAdminUI() {
+  document.getElementById('admin-btn').textContent = isAdmin ? '🔓' : '🔒';
+  document.getElementById('job-add-btn').style.display = isAdmin ? 'flex' : 'none';
+}
+
+async function adminLogin() {
+  var email = document.getElementById('admin-email').value.trim();
+  var password = document.getElementById('admin-password').value;
+  var errorEl = document.getElementById('admin-error');
+  errorEl.textContent = '';
+  var { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
+  if (error) {
+    errorEl.textContent = 'Incorrect email or password.';
+    return;
+  }
+  isAdmin = true;
+  updateAdminUI();
+  closeSheet('admin-overlay');
+}
+
+async function adminLogout() {
+  await supabaseClient.auth.signOut();
+  isAdmin = false;
+  updateAdminUI();
+  closeSheet('admin-overlay');
+}
+
+(async function checkSession() {
+  var { data } = await supabaseClient.auth.getSession();
+  if (data && data.session) {
+    isAdmin = true;
+    updateAdminUI();
+  }
+})();
+
+// ===== Support & donations (static, no backend) =====
+function copyAllSupport() {
+  var lines = [
+    'Bank: ' + document.getElementById('sup-bank').textContent,
+    'Account number: ' + document.getElementById('sup-account').textContent,
+    'Account holder: ' + document.getElementById('sup-holder').textContent,
+    'Support email: ' + document.getElementById('sup-email').textContent,
+    'Contact: ' + document.getElementById('sup-contact').textContent
+  ];
+  var text = lines.join('\n');
+  var btn = document.getElementById('copy-all-btn');
+  function done() {
+    var original = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = original; }, 1400);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(function() { fallbackCopyAll(text, done); });
+  } else {
+    fallbackCopyAll(text, done);
+  }
+}
+
+function fallbackCopyAll(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+  done();
+}
+
+// ===== Visitor & install tracking (anonymous, device-level) =====
+function getDeviceId() {
+  var id = localStorage.getItem('sar_device_id');
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : 'd-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+    localStorage.setItem('sar_device_id', id);
+  }
+  return id;
+}
+
+(function logVisit() {
+  var deviceId = getDeviceId();
+  supabaseClient.from('app_visitors')
+    .upsert({ device_id: deviceId, last_seen: new Date().toISOString() }, { onConflict: 'device_id' })
+    .then(function() {});
+})();
+
+window.addEventListener('appinstalled', function() {
+  var deviceId = getDeviceId();
+  supabaseClient.from('app_visitors').update({ installed: true }).eq('device_id', deviceId).then(function() {});
+});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+</script>
+
+</body>
+</html>
