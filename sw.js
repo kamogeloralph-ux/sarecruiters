@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sa-recruiters-v3';
+const CACHE_NAME = 'sa-recruiters-v2';
 const ASSETS = ['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function(event) {
@@ -22,17 +22,11 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-  if (event.request.method !== 'GET') {
-    return; // let POST/PATCH/DELETE (Supabase writes) pass through untouched
-  }
-  var isOwnAsset = event.request.url.indexOf(self.location.origin) === 0;
   event.respondWith(
     fetch(event.request)
       .then(function(response) {
-        if (isOwnAsset && response.ok) {
-          var copy = response.clone();
-          caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
-        }
+        var copy = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
         return response;
       })
       .catch(function() {
