@@ -2,429 +2,427 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SA Recruiters</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#090d0f">
+<meta name="theme-color" content="#000000">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
-  * { box-sizing: border-box; }
-  :root {
-    --bg: #090d0f;
-    --surface: #131a1c;
-    --surface-2: #0e1416;
-    --border: rgba(255,255,255,0.08);
-    --gloss: rgba(255,255,255,0.05);
-    --teal: #2fe0b8;
-    --teal-dim: #1c8f77;
-    --gold: #f6b93b;
-    --blue: #5c8bef;
-    --text: #eef4f3;
-    --text-dim: #93a3a1;
-    --danger: #ef5b52;
-  }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    min-height: 100vh;
-    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
-  }
-  h1, h2, .aname, .btn-save, .btn-cancel, .btn-delete, .fab {
-    font-family: 'Sora', 'Inter', -apple-system, sans-serif;
-  }
-  .header {
-    position: relative;
-    overflow: hidden;
-    padding: 2.4rem 1.25rem 1.15rem;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .header::before, .header::after {
-    content: "";
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(38px);
-    opacity: 0.55;
-    pointer-events: none;
-    z-index: 0;
-  }
-  .header::before {
-    width: 160px; height: 160px;
-    background: radial-gradient(circle, var(--teal) 0%, transparent 70%);
-    top: -70px; left: -40px;
-  }
-  .header::after {
-    width: 140px; height: 140px;
-    background: radial-gradient(circle, var(--gold) 0%, transparent 70%);
-    top: -60px; right: 30px;
-    opacity: 0.35;
-  }
-  .header > * { position: relative; z-index: 1; }
-  .header h1 {
-    font-size: 22px; font-weight: 800; margin: 0;
-    letter-spacing: -0.01em;
-  }
-  .header p { font-size: 12px; color: var(--text-dim); margin: 5px 0 0; font-weight: 500; }
-  .searchbar { margin: 0 1.25rem 1.1rem; position: relative; z-index: 1; }
-  .icon-btn {
-    background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03)), var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.25);
-    color: var(--text);
-    width: 40px; height: 40px;
-    border-radius: 999px;
-    font-size: 16px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-  }
-  .searchbar input {
-    width: 100%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015)), var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
-    color: var(--text);
-    border-radius: 999px;
-    padding: 12px 18px;
-    font-size: 14px;
-    font-family: 'Inter', sans-serif;
-  }
-  .searchbar input:focus {
-    outline: none;
-    border-color: var(--teal-dim);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 3px rgba(47,224,184,0.15);
-  }
-  .list { padding: 0 1.25rem; display: flex; flex-direction: column; gap: 10px; }
-  .empty { margin: 2rem 1.25rem; text-align: center; color: var(--text-dim); font-size: 14px; }
-  .card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.0)), var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 3px 10px rgba(0,0,0,0.22);
-    border-radius: 18px;
-    padding: 0.9rem 1.05rem;
-    width: 100%;
-    text-align: left;
-    font: inherit;
-    color: inherit;
-  }
-  .thumb { width: 52px; height: 52px; border-radius: 13px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
-  .thumb-fallback {
-    width: 52px; height: 52px; border-radius: 13px;
-    background: linear-gradient(160deg, rgba(47,224,184,0.16), rgba(246,185,59,0.08)), var(--surface-2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0; color: var(--text-dim);
-  }
-  .aname { font-weight: 700; font-size: 15px; letter-spacing: -0.005em; }
-  .asub { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-weight: 500; }
-  .card .arrow { margin-left: auto; color: var(--text-dim); font-size: 18px; }
-  .fab {
-    position: fixed;
-    right: 1.25rem;
-    bottom: calc(1.5rem + env(safe-area-inset-bottom));
-    width: 58px; height: 58px;
-    border-radius: 50%;
-    background: linear-gradient(155deg, #45f2c7, var(--teal) 55%, var(--teal-dim));
-    color: #06201a;
-    font-size: 26px;
-    font-weight: 700;
-    border: none;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 6px 20px rgba(47,224,184,0.35), 0 2px 6px rgba(0,0,0,0.3);
-  }
-  .overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(4,7,8,0.7);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    align-items: flex-end;
-    justify-content: center;
-    z-index: 10;
-  }
-  .overlay.open { display: flex; }
-  .sheet {
-    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.0) 120px), var(--surface);
-    border: 1px solid var(--border);
-    border-bottom: none;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
-    border-radius: 24px 24px 0 0;
-    width: 100%;
-    max-width: 440px;
-    padding: 1.35rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
-    max-height: 86vh;
-    overflow-y: auto;
-  }
-  .sheet h2 { font-size: 18px; font-weight: 700; margin: 0 0 14px; letter-spacing: -0.01em; }
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 5px; font-weight: 500; }
-  .field input, .field select {
-    width: 100%;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 12px;
-    padding: 11px 13px;
-    font-size: 14px;
-    font-family: 'Inter', sans-serif;
-  }
-  .photo-picker { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-  .photo-preview { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; background: var(--surface-2); }
-  .photo-picker label {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 13px;
-    padding: 9px 15px;
-    border-radius: 999px;
-    font-weight: 500;
-  }
-  .photo-picker input[type="file"] { display: none; }
-  .sheet-actions { display: flex; gap: 10px; margin-top: 0.5rem; }
-  .sheet-actions button {
-    flex: 1; padding: 13px; border-radius: 999px; font-size: 14px; font-weight: 700; border: none;
-    font-family: 'Sora', sans-serif;
-  }
-  .btn-save {
-    background: linear-gradient(155deg, #45f2c7, var(--teal) 60%, var(--teal-dim));
-    color: #06201a;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 14px rgba(47,224,184,0.3);
-  }
-  .btn-cancel { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border) !important; }
-  .btn-delete { background: rgba(239,91,82,0.08); color: var(--danger); border: 1px solid rgba(239,91,82,0.3) !important; }
-  .detail-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; }
-  .detail-row:last-of-type { border-bottom: none; }
-  .detail-row .dlabel { color: var(--text-dim); flex-shrink: 0; font-weight: 500; }
-  .detail-row .dval { text-align: right; word-break: break-word; }
-  .tag {
-    display: inline-block;
-    background: linear-gradient(155deg, rgba(47,224,184,0.22), rgba(47,224,184,0.08));
-    border: 1px solid rgba(47,224,184,0.25);
-    color: #6ff2d2;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 11px;
-    border-radius: 999px;
-    margin-top: 2px;
-  }
+:root{
+  --bg:#000000;
+  --card:#111111;
+  --card-2:#181818;
+  --text:#FFFFFF;
+  --text-2:#9E9E9E;
+  --accent-green:#00B04F;
+  --accent-red:#E30613;
+  --radius:28px;
+  --radius-sm:16px;
+  --radius-pill:999px;
+  --shadow-sm:0 4px 16px rgba(0,0,0,.3);
+  --shadow-lg:0 20px 50px -20px rgba(0,0,0,.85);
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;color:inherit}
+input,select,textarea{font-family:inherit}
+a{color:inherit;text-decoration:none}
+
+.app{max-width:520px;margin:0 auto;padding:20px 16px 118px;position:relative;min-height:100vh}
+@media (min-width:900px){ body{background:#050505} .app{box-shadow:var(--shadow-lg)} }
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.logo-wrap{display:flex;align-items:center;gap:12px}
+.logo-svg{width:40px;height:40px;border-radius:13px;box-shadow:var(--shadow-sm);flex-shrink:0}
+.logo-text{font-size:18px;font-weight:700;letter-spacing:-0.02em}
+.icon-btn{width:42px;height:42px;border-radius:15px;background:var(--card);border:none;color:var(--text);display:grid;place-items:center;position:relative;transition:transform .15s var(--ease),background .15s;font-size:17px}
+.icon-btn:active{transform:scale(.92);background:var(--card-2)}
+
+.greeting{margin:6px 0 4px}
+.greeting .eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin-bottom:6px}
+.greeting h2{font-size:24px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+
+.search{margin:20px 0 0}
+.search-inner{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:20px;height:56px;padding:0 18px;border:1px solid rgba(255,255,255,.06)}
+.search-inner svg{width:18px;height:18px;color:var(--text-2);flex-shrink:0}
+.search input{width:100%;height:100%;border:none;background:none;color:var(--text);font-size:15px;outline:none}
+.search input::placeholder{color:var(--text-2)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0 0}
+.stat-card{background:var(--card);border-radius:20px;padding:18px 12px;text-align:center;border:1px solid rgba(255,255,255,.06)}
+.stat-value{font-size:22px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.stat-label{font-size:11px;color:var(--text-2);margin-top:4px}
+
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:30px 0 14px}
+.section-title{font-size:18px;font-weight:700;letter-spacing:-0.02em}
+
+.avatar{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;letter-spacing:-0.02em;background:linear-gradient(135deg,var(--accent-green),var(--accent-red));overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.agency-name-row{display:flex;align-items:center;gap:6px;min-width:0}
+.agency-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,var(--accent-green),var(--accent-red));color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:var(--radius-pill);flex-shrink:0}
+.badge svg{width:8px;height:8px}
+
+.pill{padding:11px 18px;border-radius:var(--radius-pill);background:var(--card);border:1px solid rgba(255,255,255,.07);font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;transition:transform .12s var(--ease)}
+.pill:active{transform:scale(.94)}
+
+.vacancy-card{background:var(--card);border-radius:var(--radius);padding:18px;border:1px solid rgba(255,255,255,.06);margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.vacancy-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.vacancy-title{font-size:15.5px;font-weight:700;letter-spacing:-0.01em;line-height:1.3}
+.vacancy-org{font-size:12px;color:var(--text-2);margin-top:4px}
+.save-btn{width:36px;height:36px;border-radius:14px;background:var(--card-2);border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.save-btn svg{width:16px;height:16px}
+.save-btn.saved{background:linear-gradient(135deg,var(--accent-green),var(--accent-red))}
+.save-btn:active{transform:scale(.88)}
+.vacancy-meta{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+.meta-chip{font-size:11px;font-weight:600;color:var(--text-2);background:var(--card-2);border-radius:8px;padding:6px 10px}
+.vacancy-notes{font-size:12.5px;color:var(--text-2);line-height:1.5;margin-bottom:10px}
+.vacancy-foot{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+.closing{font-size:11.5px;color:var(--text-2)}
+.btn-primary{background:#fff;color:#000;border:none;height:40px;padding:0 18px;border-radius:14px;font-weight:700;font-size:13px}
+.btn-primary:active{transform:scale(.94)}
+.btn-ghost-danger{background:rgba(227,6,19,.1);color:#ff5b5b;border:none;height:32px;padding:0 14px;border-radius:10px;font-weight:600;font-size:11.5px}
+
+.hub-card{background:var(--card);border-radius:var(--radius);border:1px solid rgba(255,255,255,.06);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.hub-summary{display:flex;align-items:center;gap:14px;padding:16px 18px;width:100%;background:none;border:none;text-align:left}
+.hub-summary-body{flex:1;min-width:0}
+.hub-summary-desc{font-size:12px;color:var(--text-2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chevron{width:18px;height:18px;color:var(--text-2);transition:transform .3s var(--ease);flex-shrink:0}
+.hub-card.open .chevron{transform:rotate(180deg)}
+.hub-panel{max-height:0;opacity:0;overflow:hidden;transition:max-height .45s var(--ease),opacity .3s ease}
+.hub-card.open .hub-panel{max-height:2000px;opacity:1}
+.hub-panel-inner{padding:0 18px 20px}
+.hub-tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto}
+.hub-tabs::-webkit-scrollbar{display:none}
+.hub-tab{font-size:12px;font-weight:600;padding:8px 14px;border-radius:12px;background:var(--card-2);color:var(--text-2);border:none;white-space:nowrap}
+.hub-tab.active{background:linear-gradient(135deg,var(--accent-green),var(--accent-red));color:#fff}
+.hub-list{display:flex;flex-direction:column;gap:10px}
+.hub-row{display:flex;align-items:center;gap:12px;background:var(--card-2);border-radius:var(--radius-sm);padding:12px 14px}
+.hub-row-avatar{width:36px;height:36px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:1px solid rgba(255,255,255,.07)}
+.hub-row-title{font-size:13.5px;font-weight:600}
+.hub-row-sub{font-size:11.5px;color:var(--text-2);margin-top:1px}
+.hub-row-del{margin-left:auto;background:none;border:none;color:var(--text-2);font-size:16px;padding:4px 8px}
+.hub-contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hub-contact-item{background:var(--card-2);border-radius:var(--radius-sm);padding:14px}
+.hub-contact-item.wide{grid-column:1/-1}
+.hub-contact-label{font-size:10.5px;color:var(--text-2);margin-bottom:4px}
+.hub-contact-value{font-size:13px;font-weight:600;word-break:break-word}
+.hub-admin-row{display:flex;gap:8px;margin-top:14px}
+.hub-add-btn{flex:1;background:var(--card-2);border:1px dashed rgba(255,255,255,.15);border-radius:14px;padding:12px;font-size:12.5px;font-weight:600;color:var(--text-2)}
+.hub-add-btn:active{transform:scale(.97)}
+
+.screen{display:none}
+.screen.active{display:block}
+.empty-state{text-align:center;padding:60px 20px 30px;color:var(--text-2)}
+.empty-state h3{color:var(--text);font-size:16px;margin:0 0 6px}
+.empty-state p{font-size:13px;line-height:1.6}
+
+.profile-card{margin:20px 0;background:var(--card);border-radius:var(--radius);border:1px solid rgba(255,255,255,.06);padding:26px 22px;text-align:center}
+.profile-avatar{width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,var(--accent-green),var(--accent-red));color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.profile-name{font-size:17px;font-weight:700}
+.profile-sub{font-size:12.5px;color:var(--text-2);margin-top:3px}
+.profile-menu{margin:16px 0 20px;display:flex;flex-direction:column;gap:10px}
+.profile-menu-item{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-sm);padding:15px 16px;font-size:14px;font-weight:600;width:100%;text-align:left}
+.profile-menu-item .mi-icon{font-size:18px;width:22px;text-align:center}
+.profile-menu-item .mi-sub{font-size:11.5px;color:var(--text-2);font-weight:400;margin-top:2px}
+
+.fab{position:fixed;bottom:104px;right:calc(50% - 260px + 20px);width:56px;height:56px;border-radius:28px;background:#fff;color:#000;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px -6px rgba(255,255,255,.2),0 8px 20px rgba(0,0,0,.6);z-index:40;font-size:26px;font-weight:700}
+.fab:active{transform:scale(.9)}
+@media (max-width:559px){ .fab{right:20px} }
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:80px;max-width:520px;margin:0 auto;background:rgba(12,12,12,.88);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom);z-index:50}
+.navbtn{background:none;border:none;color:var(--text-2);display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 14px;border-radius:12px}
+.navbtn svg{width:22px;height:22px}
+.navbtn.active{color:var(--text)}
+.navbtn.active svg{stroke:url(#navgrad)}
+.navbtn-label{font-size:10px;font-weight:600}
+
+.sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:60}
+.sheet-scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--card);border-radius:28px 28px 0 0;padding:10px 22px calc(26px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .4s var(--ease);z-index:61;border:1px solid rgba(255,255,255,.07);border-bottom:none;max-height:88vh;overflow-y:auto}
+.sheet-scrim.open .sheet{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:8px auto 18px}
+.sheet h3{font-size:18px;font-weight:700;margin-bottom:18px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--text-2);margin-bottom:6px;font-weight:600}
+.field input,.field select,.field textarea{width:100%;background:var(--card-2);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:13px 15px;color:var(--text);font-size:14px}
+.field textarea{resize:vertical;min-height:70px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--card-2);border-radius:14px;padding:13px 15px;margin-bottom:12px}
+.toggle-row span{font-size:13.5px;font-weight:600}
+.switch{position:relative;width:44px;height:26px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .track{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:999px;transition:background .2s}
+.switch .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
+.switch input:checked+.track{background:linear-gradient(135deg,var(--accent-green),var(--accent-red))}
+.switch input:checked+.track .knob{transform:translateX(18px)}
+.switch input:checked~.knob{transform:translateX(18px)}
+.sheet-submit{width:100%;background:#fff;color:#000;border:none;padding:16px;border-radius:16px;font-size:14.5px;font-weight:700;margin-top:6px}
+.sheet-submit:active{transform:scale(.98)}
+.sheet-cancel{width:100%;background:none;color:var(--text-2);border:none;padding:14px;font-size:13.5px;font-weight:600;margin-top:4px}
+.photo-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.photo-row .avatar{cursor:pointer}
+.photo-row label{background:var(--card-2);border:1px solid rgba(255,255,255,.08);color:var(--text);font-size:13px;padding:10px 16px;border-radius:999px;font-weight:600}
+.photo-row input[type=file]{display:none}
+
+.toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%) translateY(20px);background:#fff;color:#000;font-size:13px;font-weight:700;padding:13px 22px;border-radius:14px;z-index:70;opacity:0;transition:opacity .3s ease,transform .3s var(--ease);pointer-events:none;white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.ripple-el{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:ripple-anim .55s ease-out forwards;pointer-events:none}
+@keyframes ripple-anim{to{transform:scale(2.6);opacity:0}}
+[data-ripple]{position:relative;overflow:hidden}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
 <body>
 
-<div class="header" style="display:flex; align-items:center; justify-content:space-between;">
-  <div>
-    <h1>SA Recruiters</h1>
-    <p>Recruiting agency directory</p>
+<svg width="0" height="0" style="position:absolute">
+  <defs><linearGradient id="navgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00B04F"/><stop offset="1" stop-color="#E30613"/></linearGradient></defs>
+</svg>
+
+<div class="app">
+
+  <!-- ============ HOME ============ -->
+  <div class="screen active" id="screen-home">
+    <header>
+      <div class="logo-wrap">
+        <svg class="logo-svg" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00B04F"/><stop offset="1" stop-color="#E30613"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#g1)"/><text x="256" y="320" font-size="220" font-weight="800" fill="#fff" text-anchor="middle" font-family="Inter,sans-serif">S</text></svg>
+        <div class="logo-text">SA Recruiters</div>
+      </div>
+      <button class="icon-btn" data-ripple id="admin-btn" onclick="openAdminSheet()" aria-label="Admin login">🔒</button>
+    </header>
+
+    <div class="greeting">
+      <p class="eyebrow">Directory</p>
+      <h2>Find trusted recruitment agencies across SA</h2>
+    </div>
+
+    <div class="search">
+      <div class="search-inner">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <label for="home-search" class="sr-only">Search agencies or location</label>
+        <input id="home-search" type="search" placeholder="Search agencies or location..." oninput="filterAndRenderCached()">
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card"><div class="stat-value" id="stat-agencies">0</div><div class="stat-label">Agencies</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-branches">0</div><div class="stat-label">Branches</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-vacancies">0</div><div class="stat-label">Vacancies</div></div>
+    </div>
+
+    <div class="section-head">
+      <div class="section-title">All agencies</div>
+    </div>
+
+    <div id="hub-list"></div>
+    <div class="empty" id="empty-msg" style="display:none;">
+      <div class="empty-state"><h3>No agencies yet</h3><p>Tap + to add the first one.</p></div>
+    </div>
   </div>
-  <div style="display:flex; gap:8px;">
-    <button class="icon-btn" id="menu-btn" onclick="openMenuSheet()" aria-label="More">⋮</button>
-    <button class="icon-btn" id="admin-btn" onclick="openAdminSheet()" aria-label="Admin login">🔒</button>
+
+  <!-- ============ SEARCH ============ -->
+  <div class="screen" id="screen-search">
+    <header>
+      <div class="logo-text">Search</div>
+    </header>
+    <div class="search">
+      <div class="search-inner">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="search-input" type="search" placeholder="Search agencies, vacancies, locations..." oninput="handleSearchScreen(this.value)">
+      </div>
+    </div>
+    <div id="search-results" style="margin-top:20px"></div>
   </div>
+
+  <!-- ============ SAVED ============ -->
+  <div class="screen" id="screen-saved">
+    <header>
+      <div class="logo-text">Saved vacancies</div>
+    </header>
+    <div id="saved-list"></div>
+  </div>
+
+  <!-- ============ PROFILE ============ -->
+  <div class="screen" id="screen-profile">
+    <header>
+      <div class="logo-text">Profile</div>
+    </header>
+    <div class="profile-card">
+      <div class="profile-avatar">SA</div>
+      <div class="profile-name" id="profile-status-name">SA Recruiters</div>
+      <div class="profile-sub" id="profile-status-sub">Not logged in</div>
+    </div>
+    <div class="profile-menu">
+      <button class="profile-menu-item" data-ripple onclick="openAdminSheet()"><span class="mi-icon">🔒</span><span id="admin-menu-label">Admin login</span></button>
+      <button class="profile-menu-item" data-ripple onclick="openSupportSheet()"><span class="mi-icon">❤️</span>Support this directory</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon">📚</span>Learning Hub</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon">📝</span>How to Prepare Your CV</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon">✨</span>CV Revamp Service</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon">🎤</span>Interview Tips</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon">⚖️</span>Know Your Rights</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon">❓</span>FAQ</button>
+    </div>
+  </div>
+
 </div>
 
-<div class="searchbar">
-  <input type="text" id="search" placeholder="Search by name or location" oninput="filterAndRenderCached()">
-</div>
+<button class="fab" data-ripple onclick="openForm()" aria-label="Add agency">+</button>
 
-<div class="list" id="agency-list"></div>
-<div class="empty" id="empty-msg" style="display:none;">No agencies yet. Tap + to add the first one.</div>
+<nav class="bottom-nav">
+  <button class="navbtn active" data-tab="home" data-ripple aria-label="Home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+    <span class="navbtn-label">Home</span>
+  </button>
+  <button class="navbtn" data-tab="search" data-ripple aria-label="Search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <span class="navbtn-label">Search</span>
+  </button>
+  <button class="navbtn" data-tab="saved" data-ripple aria-label="Saved">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12v17l-6-4-6 4V4z"/></svg>
+    <span class="navbtn-label">Saved</span>
+  </button>
+  <button class="navbtn" data-tab="profile" data-ripple aria-label="Profile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+    <span class="navbtn-label">Profile</span>
+  </button>
+</nav>
 
-<div style="text-align:center; padding:1.5rem 1.25rem 6rem;">
-  <button onclick="openSupportSheet()" style="background:none; border:none; color:#93a3a3; font-size:13px; text-decoration:underline; padding:0;">❤️ Support this directory</button>
-</div>
-
-<button class="fab" onclick="openForm()" aria-label="Add agency">+</button>
-
-<div class="overlay" id="form-overlay">
+<!-- ============ ADD/EDIT AGENCY SHEET ============ -->
+<div class="sheet-scrim" id="form-overlay">
   <div class="sheet">
-    <h2 id="form-title">Add agency</h2>
-    <div class="photo-picker">
-      <img class="photo-preview" id="photo-preview" src="" style="display:none;">
-      <div class="thumb-fallback" id="photo-fallback">🏢</div>
-      <label>Add photo<input type="file" accept="image/*" id="photo-input" onchange="handlePhoto(event)"></label>
+    <div class="sheet-handle"></div>
+    <h3 id="form-title">Add agency</h3>
+    <div class="photo-row">
+      <div class="avatar" style="width:56px;height:56px;">
+        <img id="photo-preview" style="display:none;">
+        <span id="photo-fallback">🏢</span>
+      </div>
+      <label>Add photo<input type="file" accept="image/*" onchange="handlePhoto(event)"></label>
     </div>
     <div class="field"><label>Agency name</label><input id="f-name" placeholder="e.g. Prime Placements"></div>
     <div class="field"><label>Website</label><input id="f-website" placeholder="e.g. www.example.co.za"></div>
     <div class="field"><label>Contact person / number</label><input id="f-contact" placeholder="e.g. Jane Dlamini, 082 000 0000"></div>
-    <div class="field"><label>Email address</label><input id="f-email" type="email" placeholder="e.g. info@agency.co.za"></div>
+    <div class="field"><label>Email address</label><input id="f-email" placeholder="e.g. info@agency.co.za"></div>
     <div class="field"><label>Location</label><input id="f-location" placeholder="e.g. Sandton, Johannesburg"></div>
+    <div class="field"><label>Companies (comma separated)</label><input id="f-companies" placeholder="e.g. Standard Bank, Shoprite"></div>
     <div class="field">
       <label>CV preference</label>
-      <select id="f-cvpref">
-        <option value="Email">Email</option>
-        <option value="Hand delivered">Hand delivered</option>
-        <option value="Either">Either</option>
-      </select>
+      <select id="f-cvpref"><option>Email</option><option>Website</option><option>WhatsApp</option><option>Walk-in</option></select>
     </div>
-    <div class="field">
-      <label>Companies (comma separated)</label>
-      <input id="f-companies" placeholder="e.g. Standard Bank, Shoprite, Sasol">
+    <div class="toggle-row" id="verified-toggle-row" style="display:none;">
+      <span>Mark as Verified</span>
+      <label class="switch"><input type="checkbox" id="f-verified"><span class="track"><span class="knob"></span></span></label>
     </div>
-    <div class="sheet-actions">
-      <button class="btn-cancel" onclick="closeForm()">Cancel</button>
-      <button class="btn-save" onclick="saveAgency()">Save</button>
-    </div>
+    <button class="sheet-submit" data-ripple onclick="saveAgency()">Save</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('form-overlay')">Cancel</button>
   </div>
 </div>
 
-<div class="overlay" id="detail-overlay">
+<!-- ============ BRANCH SHEET ============ -->
+<div class="sheet-scrim" id="branch-overlay">
   <div class="sheet">
-    <h2 id="detail-name"></h2>
-    <img class="photo-preview" id="detail-photo" style="width:100%; height:150px; border-radius:12px; margin-bottom:12px; display:none;">
-    <div class="detail-row"><span class="dlabel">Website</span><span class="dval" id="detail-website"></span></div>
-    <div class="detail-row"><span class="dlabel">Contact</span><span class="dval" id="detail-contact"></span></div>
-    <div class="detail-row"><span class="dlabel">Email</span><span class="dval" id="detail-email"></span></div>
-    <div class="detail-row"><span class="dlabel">Location</span><span class="dval" id="detail-location"></span></div>
-    <div class="detail-row"><span class="dlabel">CVs</span><span class="dval"><span class="tag" id="detail-cvpref"></span></span></div>
-    <div id="detail-companies-wrap" style="margin-top:10px; display:none;">
-      <div class="dlabel" style="font-size:12px; margin-bottom:6px;">Companies recruiting for</div>
-      <div id="detail-companies" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
-    </div>
-    <div class="sheet-actions" style="margin-top:1rem;">
-      <button class="btn-cancel" onclick="closeDetail()">Close</button>
-      <button class="btn-save" id="detail-edit-btn" onclick="editFromDetail()" style="display:none;">Edit</button>
-    </div>
-    <div class="sheet-actions" id="detail-delete-row" style="display:none;">
-      <button class="btn-delete" onclick="deleteAgency()">Delete agency</button>
-    </div>
+    <div class="sheet-handle"></div>
+    <h3>Add branch</h3>
+    <div class="field"><label>Branch name</label><input id="b-name" placeholder="e.g. Durban Branch"></div>
+    <div class="field"><label>Location</label><input id="b-location" placeholder="e.g. Umhlanga, Durban"></div>
+    <button class="sheet-submit" data-ripple onclick="saveBranch()">Save branch</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('branch-overlay')">Cancel</button>
   </div>
 </div>
 
-<div class="overlay" id="admin-overlay">
+<!-- ============ VACANCY SHEET ============ -->
+<div class="sheet-scrim" id="vacancy-overlay">
   <div class="sheet">
-    <h2 id="admin-title">Admin login</h2>
+    <div class="sheet-handle"></div>
+    <h3>Add vacancy</h3>
+    <div class="field"><label>Role / title</label><input id="v-title" placeholder="e.g. Junior Bookkeeper"></div>
+    <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Randburg, Gauteng"></div>
+    <div class="field"><label>Closing date</label><input id="v-closing" placeholder="e.g. 15 Aug 2026"></div>
+    <div class="field"><label>Notes (requirements, salary, etc.)</label><textarea id="v-notes" placeholder="Optional details"></textarea></div>
+    <button class="sheet-submit" data-ripple onclick="saveVacancy()">Publish vacancy</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-overlay')">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ ADMIN SHEET ============ -->
+<div class="sheet-scrim" id="admin-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>Admin login</h3>
     <div id="admin-login-fields">
       <div class="field"><label>Email</label><input id="admin-email" type="email"></div>
       <div class="field"><label>Password</label><input id="admin-password" type="password"></div>
-      <div class="limit-hint" id="admin-error" style="color:#e2504a;"></div>
-      <div class="sheet-actions">
-        <button class="btn-cancel" onclick="closeSheet('admin-overlay')">Cancel</button>
-        <button class="btn-save" onclick="adminLogin()">Log in</button>
-      </div>
+      <div style="color:#ff5b5b;font-size:12.5px;margin-bottom:10px;" id="admin-error"></div>
+      <button class="sheet-submit" data-ripple onclick="adminLogin()">Log in</button>
     </div>
     <div id="admin-logged-in" style="display:none;">
-      <p style="font-size:14px; color:#93a3a3; margin-bottom:1rem;">You're logged in as admin.</p>
-      <div class="sheet-actions">
-        <button class="btn-cancel" style="flex:1;" onclick="closeSheet('admin-overlay')">Close</button>
-        <button class="btn-delete" style="flex:1;" onclick="adminLogout()">Log out</button>
-      </div>
+      <p style="font-size:13.5px;color:var(--text-2);margin-bottom:16px;">You're logged in as admin.</p>
+      <button class="sheet-submit" data-ripple style="background:rgba(227,6,19,.12);color:#ff5b5b;" onclick="adminLogout()">Log out</button>
     </div>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('admin-overlay')">Close</button>
   </div>
 </div>
 
-<div class="overlay" id="support-overlay">
+<!-- ============ SUPPORT SHEET ============ -->
+<div class="sheet-scrim" id="support-overlay">
   <div class="sheet">
-    <h2>Support this directory</h2>
-    <p style="font-size:13px; color:#93a3a3; margin:-6px 0 16px;">This app is run and kept up to date for free. If it's helped you, a small donation goes a long way toward keeping it running.</p>
-
-    <div class="field">
-      <label>Email</label>
-      <div class="card" style="padding:0.7rem 0.9rem;" onclick="copyText('Kamogeloralph@gmail.com', this)">
-        <div style="flex:1;">
-          <div class="aname" style="font-size:14px;">Kamogeloralph@gmail.com</div>
-        </div>
-        <div class="arrow" style="font-size:13px;">Copy</div>
-      </div>
+    <div class="sheet-handle"></div>
+    <h3>Support this directory</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">This app is free to use. If it's helped you, a small donation keeps it running.</p>
+    <div class="hub-contact-grid">
+      <div class="hub-contact-item wide" data-ripple onclick="copyText('Kamogeloralph@gmail.com', this)"><div class="hub-contact-label">Email</div><div class="hub-contact-value">Kamogeloralph@gmail.com</div></div>
+      <div class="hub-contact-item wide"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27711227954" style="color:inherit;">+27 71 122 7954</a></div></div>
+      <div class="hub-contact-item wide" data-ripple onclick="copyText('1721069818', this)"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">1721069818 (R. Chiloane)</div></div>
     </div>
-
-    <div class="field">
-      <label>WhatsApp</label>
-      <a class="card" style="padding:0.7rem 0.9rem; text-decoration:none;" href="https://wa.me/27711227954" target="_blank">
-        <div style="flex:1;">
-          <div class="aname" style="font-size:14px;">+27 71 122 7954</div>
-        </div>
-        <div class="arrow" style="font-size:13px;">Chat</div>
-      </a>
-    </div>
-
-    <div class="field">
-      <label>Donate — Capitec Bank</label>
-      <div class="card" style="padding:0.7rem 0.9rem; flex-direction:column; align-items:flex-start; gap:2px;" onclick="copyText('1721069818', this)">
-        <div style="display:flex; width:100%; align-items:center;">
-          <div style="flex:1;">
-            <div class="aname" style="font-size:14px;">1721069818</div>
-            <div class="asub">Beneficiary: R. Chiloane</div>
-          </div>
-          <div class="arrow" style="font-size:13px;">Copy</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="sheet-actions" style="margin-top:0.5rem;">
-      <button class="btn-cancel" style="flex:1;" onclick="closeSheet('support-overlay')">Close</button>
-    </div>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('support-overlay')">Close</button>
   </div>
 </div>
 
-<div class="overlay" id="menu-overlay">
+<!-- ============ CONTENT SHEET (menu items) ============ -->
+<div class="sheet-scrim" id="content-overlay">
   <div class="sheet">
-    <h2>More</h2>
-    <div style="display:flex; flex-direction:column; gap:8px; margin-top:0.5rem;">
-      <div class="card" style="padding:0.85rem 0.9rem;" onclick="openContentSheet('learning-hub')">
-        <div style="flex:1;"><div class="aname" style="font-size:14.5px;">📚 Learning Hub</div></div>
-        <div class="arrow">›</div>
-      </div>
-      <div class="card" style="padding:0.85rem 0.9rem;" onclick="openContentSheet('cv-prep')">
-        <div style="flex:1;"><div class="aname" style="font-size:14.5px;">📝 How to Prepare Your CV</div></div>
-        <div class="arrow">›</div>
-      </div>
-      <div class="card" style="padding:0.85rem 0.9rem;" onclick="openContentSheet('cv-revamp')">
-        <div style="flex:1;"><div class="aname" style="font-size:14.5px;">✨ CV Revamp Service</div></div>
-        <div class="arrow">›</div>
-      </div>
-      <div class="card" style="padding:0.85rem 0.9rem;" onclick="openContentSheet('interview-tips')">
-        <div style="flex:1;"><div class="aname" style="font-size:14.5px;">🎤 Interview Tips</div></div>
-        <div class="arrow">›</div>
-      </div>
-      <div class="card" style="padding:0.85rem 0.9rem;" onclick="openContentSheet('know-your-rights')">
-        <div style="flex:1;"><div class="aname" style="font-size:14.5px;">⚖️ Know Your Rights</div></div>
-        <div class="arrow">›</div>
-      </div>
-      <div class="card" style="padding:0.85rem 0.9rem;" onclick="openContentSheet('faq')">
-        <div style="flex:1;"><div class="aname" style="font-size:14.5px;">❓ FAQ</div></div>
-        <div class="arrow">›</div>
-      </div>
-    </div>
-    <div class="sheet-actions" style="margin-top:1rem;">
-      <button class="btn-cancel" style="flex:1;" onclick="closeSheet('menu-overlay')">Close</button>
-    </div>
+    <div class="sheet-handle"></div>
+    <h3 id="content-title">Section</h3>
+    <div id="content-body" style="font-size:14px;color:var(--text-2);line-height:1.6;white-space:pre-line;max-height:50vh;overflow-y:auto;margin-bottom:10px;"></div>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('content-overlay')">Close</button>
   </div>
 </div>
 
-<div class="overlay" id="content-overlay">
-  <div class="sheet">
-    <h2 id="content-title">Section</h2>
-    <div id="content-body" style="font-size:14.5px; color:#c7d0d0; line-height:1.6; white-space:pre-line; max-height:55vh; overflow-y:auto; margin-top:0.25rem;"></div>
-    <div class="sheet-actions" style="margin-top:1rem;">
-      <button class="btn-cancel" style="flex:1;" onclick="closeSheet('content-overlay')">Close</button>
-    </div>
-  </div>
-</div>
-// ===== Fill in your own Supabase project details here =====
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Supabase config =====
 var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
-// ============================================================
 var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 var editingId = null;
-var detailId = null;
-var pendingPhoto = null;
 var agenciesCache = [];
+var branchesCache = [];
+var vacanciesCache = [];
 var isAdmin = false;
+var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
 
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+function initials(n) {
+  return (n || '?').trim().split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+}
+
+// ===== Data =====
 async function getAgencies() {
   var { data, error } = await supabaseClient.from('agencies').select('*').order('created_at', { ascending: false });
-  if (error) { console.error(error); alert('Could not load agencies. Check your Supabase setup.'); return []; }
-  return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, cvpref: a.cvpref, photo: a.photo, companies: a.companies }; });
+  if (error) { console.error(error); return []; }
+  return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, cvpref: a.cvpref, photo: a.photo, companies: a.companies, verified: !!a.verified }; });
 }
 async function upsertAgency(a) {
   var { error } = await supabaseClient.from('agencies').upsert(a);
@@ -434,48 +432,241 @@ async function removeAgency(id) {
   var { error } = await supabaseClient.from('agencies').delete().eq('id', id);
   if (error) { console.error(error); alert('Could not delete. Check your Supabase setup.'); }
 }
-
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, function(c) {
-    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
-  });
+async function getBranches() {
+  var { data, error } = await supabaseClient.from('branches').select('*').order('created_at', { ascending: true });
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function upsertBranch(b) {
+  var { error } = await supabaseClient.from('branches').upsert(b);
+  if (error) { console.error(error); alert('Could not save branch.'); }
+}
+async function removeBranch(id) {
+  var { error } = await supabaseClient.from('branches').delete().eq('id', id);
+  if (error) { console.error(error); alert('Could not delete branch.'); }
+}
+async function getVacancies() {
+  var { data, error } = await supabaseClient.from('vacancies').select('*').order('created_at', { ascending: false });
+  if (error) { console.error(error); return []; }
+  return data;
+}
+async function upsertVacancy(v) {
+  var { error } = await supabaseClient.from('vacancies').upsert(v);
+  if (error) { console.error(error); alert('Could not save vacancy.'); }
+}
+async function removeVacancy(id) {
+  var { error } = await supabaseClient.from('vacancies').delete().eq('id', id);
+  if (error) { console.error(error); alert('Could not delete vacancy.'); }
 }
 
-async function renderList() {
+async function loadAll() {
   agenciesCache = await getAgencies();
+  branchesCache = await getBranches();
+  vacanciesCache = await getVacancies();
+  agenciesCache.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+  updateStats();
   filterAndRenderCached();
 }
 
-function filterAndRenderCached() {
-  var list = agenciesCache;
-  var q = document.getElementById('search').value.trim().toLowerCase();
-  if (q) {
-    list = list.filter(function(a) {
-      return (a.name + ' ' + a.location).toLowerCase().indexOf(q) !== -1;
-    });
-  }
-  list.sort(function(a,b) { return (a.name || '').localeCompare(b.name || ''); });
-  var container = document.getElementById('agency-list');
-  container.innerHTML = '';
-  document.getElementById('empty-msg').style.display = list.length ? 'none' : 'block';
-  list.forEach(function(a) {
-    var card = document.createElement('button');
-    card.className = 'card';
-    card.onclick = function() { openDetail(a.id); };
-    var thumbHtml = a.photo
-      ? '<img class="thumb" src="' + a.photo + '">'
-      : '<div class="thumb-fallback">🏢</div>';
-    card.innerHTML = thumbHtml +
-      '<div><div class="aname">' + escapeHtml(a.name || 'Unnamed agency') + '</div>' +
-      '<div class="asub">' + escapeHtml(a.location || 'No location') + '</div></div>' +
-      '<div class="arrow">→</div>';
-    container.appendChild(card);
-  });
+function updateStats() {
+  document.getElementById('stat-agencies').textContent = agenciesCache.length;
+  document.getElementById('stat-branches').textContent = branchesCache.length;
+  document.getElementById('stat-vacancies').textContent = vacanciesCache.length;
 }
 
+function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
+function vacanciesFor(agencyId) { return vacanciesCache.filter(function(v){ return v.agency_id === agencyId; }); }
+
+// ===== Hub card (agency) =====
+function avatarHtml(a) {
+  if (a.photo) return '<div class="avatar"><img src="' + a.photo + '"></div>';
+  return '<div class="avatar">' + initials(a.name) + '</div>';
+}
+
+function hubCard(a) {
+  var vCount = vacanciesFor(a.id).length;
+  var bCount = branchesFor(a.id).length;
+  var descBits = [];
+  if (a.location) descBits.push(a.location);
+  descBits.push(bCount + ' branch' + (bCount===1?'':'es'));
+  descBits.push(vCount + ' vacanc' + (vCount===1?'y':'ies'));
+  return '' +
+  '<div class="hub-card" id="hub-' + a.id + '">' +
+    '<button class="hub-summary" data-ripple onclick="toggleHub(\'' + a.id + '\')" aria-expanded="false">' +
+      avatarHtml(a) +
+      '<div class="hub-summary-body">' +
+        '<div class="agency-name-row"><span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span>' + (a.verified ? '<span class="badge">✓ Verified</span>' : '') + (vCount>0 ? '<span class="badge" style="background:linear-gradient(135deg,#00B04F,#00B04F)">' + vCount + '</span>' : '') + '</div>' +
+        '<div class="hub-summary-desc">' + escapeHtml(descBits.join(' · ')) + '</div>' +
+      '</div>' +
+      '<span class="chevron">' + ICON_CHEVRON + '</span>' +
+    '</button>' +
+    '<div class="hub-panel" id="hub-panel-' + a.id + '">' +
+      '<div class="hub-panel-inner">' +
+        '<div class="hub-tabs">' +
+          '<button class="hub-tab active" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'vacancies\')">Vacancies</button>' +
+          '<button class="hub-tab" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'branches\')">Branches</button>' +
+          '<button class="hub-tab" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'contact\')">Contact</button>' +
+        '</div>' +
+        '<div class="hub-tab-content" data-agency="' + a.id + '">' + hubVacancies(a) + '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function hubVacancies(a) {
+  var list = vacanciesFor(a.id);
+  var html = '<div class="hub-list">';
+  if (!list.length) {
+    html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No vacancies listed right now.</div>';
+  } else {
+    list.forEach(function(v) {
+      html += '<div class="hub-row" style="align-items:flex-start;">' +
+        '<div class="hub-row-avatar">💼</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div class="hub-row-title">' + escapeHtml(v.title || 'Untitled role') + '</div>' +
+          '<div class="hub-row-sub">' + escapeHtml([v.location, v.closing_date ? ('Closes ' + v.closing_date) : ''].filter(Boolean).join(' · ')) + '</div>' +
+          (v.notes ? '<div class="hub-row-sub" style="margin-top:4px;">' + escapeHtml(v.notes) + '</div>' : '') +
+        '</div>' +
+        (isAdmin ? '<button class="hub-row-del" data-ripple onclick="deleteVacancy(\'' + v.id + '\',\'' + a.id + '\')">✕</button>' : '') +
+      '</div>';
+    });
+  }
+  html += '</div>';
+  if (isAdmin) {
+    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openVacancySheet(\'' + a.id + '\')">+ Add vacancy</button></div>';
+  }
+  return html;
+}
+
+function hubBranches(a) {
+  var list = branchesFor(a.id);
+  var html = '<div class="hub-list">';
+  if (!list.length) {
+    html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No branches listed yet.</div>';
+  } else {
+    list.forEach(function(b) {
+      html += '<div class="hub-row">' +
+        '<div class="hub-row-avatar">📍</div>' +
+        '<div style="flex:1;min-width:0;"><div class="hub-row-title">' + escapeHtml(b.name || 'Branch') + '</div><div class="hub-row-sub">' + escapeHtml(b.location || '') + '</div></div>' +
+        (isAdmin ? '<button class="hub-row-del" data-ripple onclick="deleteBranch(\'' + b.id + '\',\'' + a.id + '\')">✕</button>' : '') +
+      '</div>';
+    });
+  }
+  html += '</div>';
+  if (isAdmin) {
+    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openBranchSheet(\'' + a.id + '\')">+ Add branch</button></div>';
+  }
+  return html;
+}
+
+function hubContact(a) {
+  var html = '<div class="hub-contact-grid">' +
+    '<div class="hub-contact-item"><div class="hub-contact-label">Contact</div><div class="hub-contact-value">' + escapeHtml(a.contact || '—') + '</div></div>' +
+    '<div class="hub-contact-item"><div class="hub-contact-label">Email</div><div class="hub-contact-value">' + escapeHtml(a.email || '—') + '</div></div>' +
+    '<div class="hub-contact-item wide"><div class="hub-contact-label">Website</div><div class="hub-contact-value">' + escapeHtml(a.website || '—') + '</div></div>' +
+    '<div class="hub-contact-item wide"><div class="hub-contact-label">Location</div><div class="hub-contact-value">' + escapeHtml(a.location || '—') + '</div></div>';
+  var companyList = (a.companies || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
+  if (companyList.length) {
+    html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Companies they recruit for</div><div class="hub-contact-value">' + escapeHtml(companyList.join(', ')) + '</div></div>';
+  }
+  html += '</div>';
+  if (isAdmin) {
+    html += '<div class="hub-admin-row">' +
+      '<button class="hub-add-btn" data-ripple onclick="openForm(\'' + a.id + '\')">Edit agency</button>' +
+      '<button class="btn-ghost-danger" data-ripple onclick="deleteAgencyById(\'' + a.id + '\')" style="flex-shrink:0;">Delete</button>' +
+    '</div>';
+  }
+  return html;
+}
+
+var ICON_CHEVRON = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+window.switchHubTab = function(btn, agencyId, tab) {
+  btn.parentElement.querySelectorAll('.hub-tab').forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+  var a = agenciesCache.find(function(x){ return x.id === agencyId; });
+  var target = document.querySelector('.hub-tab-content[data-agency="' + agencyId + '"]');
+  if (tab === 'vacancies') target.innerHTML = hubVacancies(a);
+  if (tab === 'branches') target.innerHTML = hubBranches(a);
+  if (tab === 'contact') target.innerHTML = hubContact(a);
+};
+
+window.toggleHub = function(id) {
+  var card = document.getElementById('hub-' + id);
+  var wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
+  if (!wasOpen) {
+    card.classList.add('open');
+    setTimeout(function(){ card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 200);
+  }
+};
+
+function filterAndRenderCached() {
+  var q = (document.getElementById('home-search').value || '').trim().toLowerCase();
+  var list = agenciesCache;
+  if (q) {
+    list = list.filter(function(a){ return ((a.name||'') + ' ' + (a.location||'')).toLowerCase().indexOf(q) !== -1; });
+  }
+  document.getElementById('empty-msg').style.display = list.length ? 'none' : 'block';
+  document.getElementById('hub-list').innerHTML = list.map(hubCard).join('');
+}
+
+// ===== Search screen =====
+window.handleSearchScreen = function(val) {
+  var q = val.trim().toLowerCase();
+  var el = document.getElementById('search-results');
+  if (!q) { el.innerHTML = '<div class="empty-state"><h3>Search the directory</h3><p>Find agencies, vacancies, or locations.</p></div>'; return; }
+  var am = agenciesCache.filter(function(a){ return (a.name||'').toLowerCase().indexOf(q)!==-1 || (a.location||'').toLowerCase().indexOf(q)!==-1; });
+  var vm = vacanciesCache.filter(function(v){
+    var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
+    return (v.title||'').toLowerCase().indexOf(q)!==-1 || (v.location||'').toLowerCase().indexOf(q)!==-1 || (agency && (agency.name||'').toLowerCase().indexOf(q)!==-1);
+  });
+  if (!am.length && !vm.length) { el.innerHTML = '<div class="empty-state"><h3>No matches</h3><p>Try a different agency name, role, or location.</p></div>'; return; }
+  var html = '';
+  if (am.length) html += am.map(hubCard).join('');
+  if (vm.length) {
+    vm.forEach(function(v) {
+      var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
+      html += vacancyCard(v, agency);
+    });
+  }
+  el.innerHTML = html;
+};
+
+function vacancyCard(v, agency) {
+  var key = v.id;
+  var saved = savedSet.has(key);
+  return '' +
+  '<article class="vacancy-card">' +
+    '<div class="vacancy-head">' +
+      '<div><div class="vacancy-title">' + escapeHtml(v.title || 'Untitled role') + '</div><div class="vacancy-org">' + escapeHtml(agency.name || '') + '</div></div>' +
+      '<button class="save-btn ' + (saved?'saved':'') + '" data-ripple onclick="toggleSave(this,\'' + key + '\')">' + (saved ? '★' : '☆') + '</button>' +
+    '</div>' +
+    '<div class="vacancy-meta">' + (v.location ? '<span class="meta-chip">' + escapeHtml(v.location) + '</span>' : '') + (v.closing_date ? '<span class="meta-chip">Closes ' + escapeHtml(v.closing_date) + '</span>' : '') + '</div>' +
+    (v.notes ? '<div class="vacancy-notes">' + escapeHtml(v.notes) + '</div>' : '') +
+  '</article>';
+}
+
+window.toggleSave = function(btn, key) {
+  if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); btn.textContent = '☆'; showToast('Removed from saved'); }
+  else { savedSet.add(key); btn.classList.add('saved'); btn.textContent = '★'; showToast('Saved'); }
+  localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+  renderSaved();
+};
+
+function renderSaved() {
+  var list = vacanciesCache.filter(function(v){ return savedSet.has(v.id); });
+  var el = document.getElementById('saved-list');
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>Nothing saved yet</h3><p>Tap the star on any vacancy to keep it here.</p></div>'; return; }
+  el.innerHTML = list.map(function(v) {
+    var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
+    return vacancyCard(v, agency);
+  }).join('');
+}
+
+// ===== Agency form =====
 function openForm(id) {
   editingId = id || null;
-  pendingPhoto = null;
   var a = id ? agenciesCache.find(function(x){ return x.id === id; }) : null;
   document.getElementById('form-title').textContent = id ? 'Edit agency' : 'Add agency';
   document.getElementById('f-name').value = a ? a.name : '';
@@ -485,21 +676,16 @@ function openForm(id) {
   document.getElementById('f-location').value = a ? a.location : '';
   document.getElementById('f-cvpref').value = a ? a.cvpref : 'Email';
   document.getElementById('f-companies').value = a ? (a.companies || '') : '';
+  document.getElementById('f-verified').checked = a ? !!a.verified : false;
+  document.getElementById('verified-toggle-row').style.display = isAdmin ? 'flex' : 'none';
+  window.pendingPhoto = a ? a.photo : null;
   var preview = document.getElementById('photo-preview');
   var fallback = document.getElementById('photo-fallback');
-  if (a && a.photo) {
-    preview.src = a.photo; preview.style.display = 'block'; fallback.style.display = 'none';
-    pendingPhoto = a.photo;
-  } else {
-    preview.style.display = 'none'; fallback.style.display = 'flex';
-  }
+  if (a && a.photo) { preview.src = a.photo; preview.style.display='block'; fallback.style.display='none'; }
+  else { preview.style.display='none'; fallback.style.display='flex'; }
+  document.getElementById('hub-list') && document.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
   document.getElementById('form-overlay').classList.add('open');
 }
-
-function closeForm() {
-  document.getElementById('form-overlay').classList.remove('open');
-}
-
 function handlePhoto(evt) {
   var file = evt.target.files[0];
   if (!file) return;
@@ -512,10 +698,9 @@ function handlePhoto(evt) {
       var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
       canvas.width = img.width * scale;
       canvas.height = img.height * scale;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      pendingPhoto = canvas.toDataURL('image/jpeg', 0.75);
-      document.getElementById('photo-preview').src = pendingPhoto;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      window.pendingPhoto = canvas.toDataURL('image/jpeg', 0.75);
+      document.getElementById('photo-preview').src = window.pendingPhoto;
       document.getElementById('photo-preview').style.display = 'block';
       document.getElementById('photo-fallback').style.display = 'none';
     };
@@ -523,141 +708,121 @@ function handlePhoto(evt) {
   };
   reader.readAsDataURL(file);
 }
-
 async function saveAgency() {
   var name = document.getElementById('f-name').value.trim();
-  var website = document.getElementById('f-website').value.trim();
-  var contact = document.getElementById('f-contact').value.trim();
-  var email = document.getElementById('f-email').value.trim();
-  var location = document.getElementById('f-location').value.trim();
-  var cvpref = document.getElementById('f-cvpref').value;
-  var companies = document.getElementById('f-companies').value.trim();
-  if (!name) {
-    alert('Add at least the agency name.');
-    return;
-  }
+  if (!name) { alert('Add at least the agency name.'); return; }
   var id = editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
-  await upsertAgency({ id: id, name: name, website: website, contact: contact, email: email, location: location, cvpref: cvpref, photo: pendingPhoto, companies: companies });
-  closeForm();
-  renderList();
+  var payload = {
+    id: id,
+    name: name,
+    website: document.getElementById('f-website').value.trim(),
+    contact: document.getElementById('f-contact').value.trim(),
+    email: document.getElementById('f-email').value.trim(),
+    location: document.getElementById('f-location').value.trim(),
+    cvpref: document.getElementById('f-cvpref').value,
+    companies: document.getElementById('f-companies').value.trim(),
+    photo: window.pendingPhoto
+  };
+  if (isAdmin) payload.verified = document.getElementById('f-verified').checked;
+  await upsertAgency(payload);
+  closeSheet('form-overlay');
+  showToast(editingId ? 'Agency updated' : 'Agency added');
+  editingId = null;
+  await loadAll();
+}
+async function deleteAgencyById(id) {
+  if (!confirm('Delete this agency? This cannot be undone.')) return;
+  await removeAgency(id);
+  showToast('Agency deleted');
+  await loadAll();
 }
 
-function openDetail(id) {
-  detailId = id;
-  var a = agenciesCache.find(function(x){ return x.id === id; });
-  if (!a) return;
-  document.getElementById('detail-name').textContent = a.name || 'Unnamed agency';
-  document.getElementById('detail-website').textContent = a.website || '—';
-  document.getElementById('detail-contact').textContent = a.contact || '—';
-  document.getElementById('detail-email').textContent = a.email || '—';
-  document.getElementById('detail-location').textContent = a.location || '—';
-  document.getElementById('detail-cvpref').textContent = a.cvpref || 'Email';
-  var companiesWrap = document.getElementById('detail-companies-wrap');
-  var companiesEl = document.getElementById('detail-companies');
-  companiesEl.innerHTML = '';
-  var companyList = (a.companies || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
-  if (companyList.length) {
-    companyList.forEach(function(c) {
-      var span = document.createElement('span');
-      span.className = 'tag';
-      span.textContent = c;
-      companiesEl.appendChild(span);
-    });
-    companiesWrap.style.display = 'block';
-  } else {
-    companiesWrap.style.display = 'none';
-  }
-  var photoEl = document.getElementById('detail-photo');
-  if (a.photo) { photoEl.src = a.photo; photoEl.style.display = 'block'; }
-  else { photoEl.style.display = 'none'; }
-  document.getElementById('detail-edit-btn').style.display = isAdmin ? 'block' : 'none';
-  document.getElementById('detail-delete-row').style.display = isAdmin ? 'flex' : 'none';
-  document.getElementById('detail-overlay').classList.add('open');
+// ===== Branch form =====
+var pendingBranchAgency = null;
+function openBranchSheet(agencyId) {
+  pendingBranchAgency = agencyId;
+  document.getElementById('b-name').value = '';
+  document.getElementById('b-location').value = '';
+  document.getElementById('branch-overlay').classList.add('open');
+}
+async function saveBranch() {
+  var name = document.getElementById('b-name').value.trim();
+  if (!name) { alert('Add a branch name.'); return; }
+  var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  await upsertBranch({ id: id, agency_id: pendingBranchAgency, name: name, location: document.getElementById('b-location').value.trim() });
+  closeSheet('branch-overlay');
+  showToast('Branch added');
+  await loadAll();
+  var card = document.getElementById('hub-' + pendingBranchAgency);
+  if (card) card.classList.add('open');
+}
+async function deleteBranch(id, agencyId) {
+  if (!confirm('Delete this branch?')) return;
+  await removeBranch(id);
+  await loadAll();
+  var card = document.getElementById('hub-' + agencyId);
+  if (card) card.classList.add('open');
 }
 
-function closeDetail() {
-  document.getElementById('detail-overlay').classList.remove('open');
-  detailId = null;
+// ===== Vacancy form =====
+var pendingVacancyAgency = null;
+function openVacancySheet(agencyId) {
+  pendingVacancyAgency = agencyId;
+  document.getElementById('v-title').value = '';
+  document.getElementById('v-location').value = '';
+  document.getElementById('v-closing').value = '';
+  document.getElementById('v-notes').value = '';
+  document.getElementById('vacancy-overlay').classList.add('open');
+}
+async function saveVacancy() {
+  var title = document.getElementById('v-title').value.trim();
+  if (!title) { alert('Add a role/title.'); return; }
+  var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  await upsertVacancy({
+    id: id, agency_id: pendingVacancyAgency, title: title,
+    location: document.getElementById('v-location').value.trim(),
+    closing_date: document.getElementById('v-closing').value.trim(),
+    notes: document.getElementById('v-notes').value.trim()
+  });
+  closeSheet('vacancy-overlay');
+  showToast('Vacancy published');
+  await loadAll();
+  var card = document.getElementById('hub-' + pendingVacancyAgency);
+  if (card) card.classList.add('open');
+}
+async function deleteVacancy(id, agencyId) {
+  if (!confirm('Delete this vacancy?')) return;
+  await removeVacancy(id);
+  await loadAll();
+  var card = document.getElementById('hub-' + agencyId);
+  if (card) card.classList.add('open');
 }
 
-function editFromDetail() {
-  var id = detailId;
-  closeDetail();
-  openForm(id);
-}
-
-async function deleteAgency() {
-  if (!detailId) return;
-  if (!confirm('Delete this agency record? This cannot be undone.')) return;
-  await removeAgency(detailId);
-  closeDetail();
-  renderList();
-}
-
-renderList();
-
-function closeSheet(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-function openSupportSheet() {
-  document.getElementById('support-overlay').classList.add('open');
-}
-
+// ===== Sheets / misc =====
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+function openSupportSheet() { document.getElementById('support-overlay').classList.add('open'); }
 function copyText(text, el) {
   var done = function() {
-    var arrowEl = el.querySelector('.arrow');
-    if (arrowEl) {
-      var original = arrowEl.textContent;
-      arrowEl.textContent = 'Copied ✓';
-      setTimeout(function() { arrowEl.textContent = original; }, 1200);
-    }
+    var original = el.querySelector('.hub-contact-value').textContent;
+    el.querySelector('.hub-contact-value').textContent = 'Copied ✓';
+    setTimeout(function(){ el.querySelector('.hub-contact-value').textContent = original; }, 1200);
   };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(done).catch(function() { prompt('Copy this:', text); });
-  } else {
-    prompt('Copy this:', text);
-  }
+  if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done).catch(function(){ prompt('Copy this:', text); }); }
+  else { prompt('Copy this:', text); }
 }
 
-// ===== "More" menu content — edit the text below for each section whenever you're ready =====
 var SECTION_CONTENT = {
-  'learning-hub': {
-    title: '📚 Learning Hub',
-    body: 'Coming soon.\n\nThis section will host short guides and resources to help job seekers build skills employers are looking for — things like basic computer literacy, workplace etiquette, and industry-specific tips.\n\nCheck back soon, or contact us if you\'d like to suggest a topic.'
-  },
-  'cv-prep': {
-    title: '📝 How to Prepare Your CV',
-    body: 'Coming soon.\n\nThis section will walk you through building a strong CV step by step — what to include, common mistakes to avoid, and how to tailor your CV for different industries.'
-  },
-  'cv-revamp': {
-    title: '✨ CV Revamp Service',
-    body: 'Coming soon.\n\nWant your CV professionally reviewed and rewritten to stand out? Details on this paid service will be added here soon — including pricing and how to get started.\n\nIn the meantime, reach out via the Support section to enquire.'
-  },
-  'interview-tips': {
-    title: '🎤 Interview Tips',
-    body: 'Coming soon.\n\nPractical advice for interviews — how to prepare, common questions to expect, and what to do after the interview.'
-  },
-  'know-your-rights': {
-    title: '⚖️ Know Your Rights',
-    body: 'Coming soon.\n\nA plain-language guide to basic labour rights in South Africa — UIF claims, CCMA processes, and what to know as a job seeker or new employee.'
-  },
-  'faq': {
-    title: '❓ FAQ',
-    body: 'Coming soon.\n\nAnswers to common questions about using this directory — how listings are added, how to report incorrect info, and more.'
-  }
+  'learning-hub': { title: '📚 Learning Hub', body: 'Coming soon.\n\nThis section will host short guides and resources to help job seekers build skills employers are looking for.' },
+  'cv-prep': { title: '📝 How to Prepare Your CV', body: 'Coming soon.\n\nA step-by-step guide to building a strong CV.' },
+  'cv-revamp': { title: '✨ CV Revamp Service', body: 'Coming soon.\n\nProfessional CV review and rewriting. Reach out via Support to enquire.' },
+  'interview-tips': { title: '🎤 Interview Tips', body: 'Coming soon.\n\nHow to prepare, common questions, and what to do after.' },
+  'know-your-rights': { title: '⚖️ Know Your Rights', body: 'Coming soon.\n\nUIF, CCMA, and basic labour rights in South Africa.' },
+  'faq': { title: '❓ FAQ', body: 'Coming soon.\n\nHow this directory works and how to report incorrect info.' }
 };
-
-function openMenuSheet() {
-  document.getElementById('menu-overlay').classList.add('open');
-}
-
 function openContentSheet(key) {
-  var section = SECTION_CONTENT[key];
-  if (!section) return;
-  document.getElementById('content-title').textContent = section.title;
-  document.getElementById('content-body').textContent = section.body;
-  closeSheet('menu-overlay');
+  var s = SECTION_CONTENT[key];
+  document.getElementById('content-title').textContent = s.title;
+  document.getElementById('content-body').textContent = s.body;
   document.getElementById('content-overlay').classList.add('open');
 }
 
@@ -667,41 +832,73 @@ function openAdminSheet() {
   document.getElementById('admin-logged-in').style.display = isAdmin ? 'block' : 'none';
   document.getElementById('admin-overlay').classList.add('open');
 }
-
 async function adminLogin() {
   var email = document.getElementById('admin-email').value.trim();
   var password = document.getElementById('admin-password').value;
-  var errorEl = document.getElementById('admin-error');
-  errorEl.textContent = '';
   var { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
-  if (error) {
-    errorEl.textContent = 'Incorrect email or password.';
-    return;
-  }
+  if (error) { document.getElementById('admin-error').textContent = 'Incorrect email or password.'; return; }
   isAdmin = true;
-  document.getElementById('admin-btn').textContent = '🔓';
+  updateAdminUI();
   closeSheet('admin-overlay');
+  filterAndRenderCached();
 }
-
 async function adminLogout() {
   await supabaseClient.auth.signOut();
   isAdmin = false;
-  document.getElementById('admin-btn').textContent = '🔒';
+  updateAdminUI();
   closeSheet('admin-overlay');
+  filterAndRenderCached();
 }
-
+function updateAdminUI() {
+  document.getElementById('admin-btn').textContent = isAdmin ? '🔓' : '🔒';
+  document.getElementById('admin-menu-label').textContent = isAdmin ? 'Admin (logged in) — tap to log out' : 'Admin login';
+  document.getElementById('profile-status-sub').textContent = isAdmin ? 'Logged in as admin' : 'Not logged in';
+}
 (async function checkSession() {
   var { data } = await supabaseClient.auth.getSession();
-  if (data && data.session) {
-    isAdmin = true;
-    document.getElementById('admin-btn').textContent = '🔓';
-  }
+  if (data && data.session) { isAdmin = true; updateAdminUI(); }
 })();
+
+// ===== Bottom nav =====
+document.querySelectorAll('.navbtn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b===btn); });
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
+    window.scrollTo({ top: 0 });
+    if (btn.dataset.tab === 'saved') renderSaved();
+  });
+});
+
+// ===== Toast =====
+var toastTimer;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+
+// ===== Ripple =====
+document.addEventListener('pointerdown', function(e) {
+  var el = e.target.closest('[data-ripple]');
+  if (!el) return;
+  var rect = el.getBoundingClientRect();
+  var size = Math.max(rect.width, rect.height) * 1.4;
+  var span = document.createElement('span');
+  span.className = 'ripple-el';
+  span.style.width = span.style.height = size + 'px';
+  span.style.left = (e.clientX - rect.left - size/2) + 'px';
+  span.style.top = (e.clientY - rect.top - size/2) + 'px';
+  el.appendChild(span);
+  span.addEventListener('animationend', function(){ span.remove(); });
+});
+
+loadAll();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function(){});
 }
 </script>
-
 </body>
 </html>
