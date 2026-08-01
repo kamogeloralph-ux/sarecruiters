@@ -1,215 +1,335 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SA Recruiters</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#000000" id="meta-theme">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
-:root{
+/* ============ THEME: DARK (iOS-style) ============ */
+:root, [data-theme="dark"]{
   --bg:#000000;
-  --card:#111111;
-  --card-2:#181818;
+  --bg-edge:#050505;
+  --card:#1C1C1E;
+  --card-2:#2C2C2E;
+  --card-3:#3A3A3C;
   --text:#FFFFFF;
-  --text-2:#9E9E9E;
-  --accent-green:#00B04F;
-  --accent-red:#E30613;
-  --radius:28px;
-  --radius-sm:16px;
+  --text-2:#8E8E93;
+  --text-3:#48484A;
+  --border:rgba(255,255,255,.08);
+  --border-strong:rgba(255,255,255,.14);
+  --separator:rgba(255,255,255,.06);
+  --accent:#0A84FF;
+  --accent-soft:rgba(10,132,255,.16);
+  --success:#30D158;
+  --danger:#FF453A;
+  --badge-bg:rgba(10,132,255,.18);
+  --badge-text:#0A84FF;
+  --radius:22px;
+  --radius-sm:14px;
   --radius-pill:999px;
-  --shadow-sm:0 4px 16px rgba(0,0,0,.3);
+  --shadow-sm:0 2px 12px rgba(0,0,0,.3);
   --shadow-lg:0 20px 50px -20px rgba(0,0,0,.85);
   --ease:cubic-bezier(.22,1,.36,1);
+  --sheet-bg:#1C1C1E;
+}
+/* ============ THEME: LIGHT (iOS day) ============ */
+[data-theme="light"]{
+  --bg:#F2F2F7;
+  --bg-edge:#E5E5EA;
+  --card:#FFFFFF;
+  --card-2:#F2F2F7;
+  --card-3:#E5E5EA;
+  --text:#000000;
+  --text-2:#8E8E93;
+  --text-3:#C7C7CC;
+  --border:rgba(0,0,0,.08);
+  --border-strong:rgba(0,0,0,.14);
+  --separator:rgba(0,0,0,.06);
+  --accent:#007AFF;
+  --accent-soft:rgba(0,122,255,.12);
+  --success:#34C759;
+  --danger:#FF3B30;
+  --badge-bg:rgba(0,122,255,.12);
+  --badge-text:#007AFF;
+  --shadow-sm:0 2px 12px rgba(0,0,0,.06);
+  --shadow-lg:0 20px 50px -24px rgba(0,0,0,.18);
+  --sheet-bg:#FFFFFF;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;transition:background .35s var(--ease),color .35s var(--ease)}
 button{font-family:inherit;cursor:pointer;color:inherit}
 input,select,textarea{font-family:inherit}
 a{color:inherit;text-decoration:none}
 
-.app{max-width:520px;margin:0 auto;padding:20px 16px 118px;position:relative;min-height:100vh}
-@media (min-width:900px){ body{background:#050505} .app{box-shadow:var(--shadow-lg)} }
+.app{max-width:520px;margin:0 auto;position:relative;min-height:100vh;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+@media (min-width:900px){ body{background:var(--bg-edge)} .app{box-shadow:var(--shadow-lg)} }
 
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.logo-wrap{display:flex;align-items:center;gap:12px}
-.logo-svg{width:40px;height:40px;border-radius:13px;box-shadow:var(--shadow-sm);flex-shrink:0}
-.logo-text{font-size:18px;font-weight:700;letter-spacing:-0.02em}
-.icon-btn{width:42px;height:42px;border-radius:15px;background:var(--card);border:none;color:var(--text);display:grid;place-items:center;position:relative;transition:transform .15s var(--ease),background .15s;font-size:17px}
+.logo-wrap{display:flex;align-items:center;gap:12px;min-width:0}
+.logo-svg{width:42px;height:42px;border-radius:13px;box-shadow:var(--shadow-sm);flex-shrink:0;overflow:hidden}
+.logo-text-wrap{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.logo-text{font-size:18px;font-weight:800;letter-spacing:-0.02em}
+.logo-slogan{font-size:10.5px;font-weight:500;color:var(--text-2);margin-top:2px;letter-spacing:.01em;line-height:1.25;white-space:normal;overflow:visible}
+.header-actions{display:flex;align-items:center;gap:8px}
+.icon-btn{width:42px;height:42px;border-radius:15px;background:var(--card);border:1px solid var(--border);color:var(--text);display:grid;place-items:center;position:relative;transition:transform .15s var(--ease),background .15s;font-size:17px}
 .icon-btn:active{transform:scale(.92);background:var(--card-2)}
+.icon-btn svg{width:20px;height:20px}
+.icon-btn#admin-btn.logged-in{color:var(--accent)}
+.theme-toggle{width:42px;height:42px;border-radius:15px;background:var(--card);border:1px solid var(--border);color:var(--text);display:grid;place-items:center;transition:transform .15s var(--ease),background .15s;font-size:18px;position:relative;overflow:hidden}
+.theme-toggle:active{transform:scale(.9)}
+.theme-toggle svg{width:20px;height:20px}
+.theme-toggle .sun,.theme-toggle .moon{position:absolute;transition:transform .4s var(--ease),opacity .3s ease}
+[data-theme="dark"] .theme-toggle .sun{transform:translateY(0) rotate(0);opacity:1}
+[data-theme="dark"] .theme-toggle .moon{transform:translateY(40px) rotate(-90deg);opacity:0}
+[data-theme="light"] .theme-toggle .sun{transform:translateY(-40px) rotate(90deg);opacity:0}
+[data-theme="light"] .theme-toggle .moon{transform:translateY(0) rotate(0);opacity:1}
 
-.greeting{margin:6px 0 4px}
-.greeting .eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin-bottom:6px}
-.greeting h2{font-size:24px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.greeting{margin:0 0 4px}
+.greeting h2{font-size:22px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
 
 .search{margin:20px 0 0}
-.search-inner{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:20px;height:56px;padding:0 18px;border:1px solid rgba(255,255,255,.06)}
+.search-inner{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:20px;height:56px;padding:0 18px;border:1px solid var(--border)}
 .search-inner svg{width:18px;height:18px;color:var(--text-2);flex-shrink:0}
 .search input{width:100%;height:100%;border:none;background:none;color:var(--text);font-size:15px;outline:none}
 .search input::placeholder{color:var(--text-2)}
+.search-mini{margin:12px 0 0}
+.search-mini .search-inner{height:40px;border-radius:14px;padding:0 14px;gap:8px}
+.search-mini .search-inner svg{width:16px;height:16px}
+.search-mini input{font-size:13.5px}
 
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0 0}
-.stat-card{background:var(--card);border-radius:20px;padding:18px 12px;text-align:center;border:1px solid rgba(255,255,255,.06)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 18px}
+.stat-card{background:var(--card);border-radius:20px;padding:18px 12px;text-align:center;border:1px solid var(--border)}
 .stat-value{font-size:22px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
 .stat-label{font-size:11px;color:var(--text-2);margin-top:4px}
 
-.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:30px 0 14px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:20px 0 14px}
 .section-title{font-size:18px;font-weight:700;letter-spacing:-0.02em}
 
-.avatar{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;letter-spacing:-0.02em;background:linear-gradient(135deg,var(--accent-green),var(--accent-red));overflow:hidden}
+.avatar{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:var(--text);flex-shrink:0;letter-spacing:-0.01em;background:var(--card-2);border:1px solid var(--border);overflow:hidden}
 .avatar img{width:100%;height:100%;object-fit:cover}
-.agency-name-row{display:flex;align-items:center;gap:6px;min-width:0}
-.agency-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.badge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,var(--accent-green),var(--accent-red));color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:var(--radius-pill);flex-shrink:0}
-.badge svg{width:8px;height:8px}
+/* Agency name + badge row — badge wraps below so it's never cut off */
+.agency-name-row{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.agency-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.badge{display:inline-flex;align-items:center;gap:3px;background:var(--badge-bg);color:var(--badge-text);font-size:10px;font-weight:600;padding:3px 9px;border-radius:var(--radius-pill);flex-shrink:0;line-height:1.4}
+.badge svg{width:9px;height:9px}
+.badge.count{background:var(--card-3);color:var(--text-2)}
 
-.pill{padding:11px 18px;border-radius:var(--radius-pill);background:var(--card);border:1px solid rgba(255,255,255,.07);font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;transition:transform .12s var(--ease)}
+.pill{padding:11px 18px;border-radius:var(--radius-pill);background:var(--card);border:1px solid var(--border);font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;transition:transform .12s var(--ease)}
 .pill:active{transform:scale(.94)}
 
-.vacancy-card{background:var(--card);border-radius:var(--radius);padding:18px;border:1px solid rgba(255,255,255,.06);margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.vacancy-card{background:var(--card);border-radius:var(--radius);padding:18px;border:1px solid var(--border);margin-bottom:12px;box-shadow:var(--shadow-sm)}
 .vacancy-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .vacancy-title{font-size:15.5px;font-weight:700;letter-spacing:-0.01em;line-height:1.3}
 .vacancy-org{font-size:12px;color:var(--text-2);margin-top:4px}
-.save-btn{width:36px;height:36px;border-radius:14px;background:var(--card-2);border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.save-btn svg{width:16px;height:16px}
-.save-btn.saved{background:linear-gradient(135deg,var(--accent-green),var(--accent-red))}
+/* Save / star buttons */
+.save-btn{width:38px;height:38px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .12s var(--ease),background .2s}
+.save-btn svg{width:18px;height:18px;transition:fill .2s}
+.save-btn svg path{fill:var(--text-3);stroke:var(--text-2)}
+.save-btn.saved{background:var(--accent-soft);border-color:transparent}
+.save-btn.saved svg path{fill:var(--accent);stroke:var(--accent)}
 .save-btn:active{transform:scale(.88)}
+/* Star row on agency cards (tap any star to save) */
+.stars-row{display:flex;gap:4px;margin:10px 0 6px}
+.star-btn{width:26px;height:26px;border:none;background:none;display:flex;align-items:center;justify-content:center;padding:2px;transition:transform .12s var(--ease)}
+.star-btn:active{transform:scale(.8)}
+.star-btn svg{width:20px;height:20px}
+.star-btn svg path{fill:var(--card-3);stroke:var(--text-2);stroke-width:1}
+.star-btn.lit svg path{fill:var(--accent);stroke:var(--accent)}
 .vacancy-meta{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
 .meta-chip{font-size:11px;font-weight:600;color:var(--text-2);background:var(--card-2);border-radius:8px;padding:6px 10px}
 .vacancy-notes{font-size:12.5px;color:var(--text-2);line-height:1.5;margin-bottom:10px}
-.vacancy-foot{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+.vacancy-foot{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border)}
 .closing{font-size:11.5px;color:var(--text-2)}
-.btn-primary{background:#fff;color:#000;border:none;height:40px;padding:0 18px;border-radius:14px;font-weight:700;font-size:13px}
+.btn-primary{background:var(--accent);color:#fff;border:none;height:40px;padding:0 18px;border-radius:12px;font-weight:600;font-size:13px}
 .btn-primary:active{transform:scale(.94)}
-.btn-ghost-danger{background:rgba(227,6,19,.1);color:#ff5b5b;border:none;height:32px;padding:0 14px;border-radius:10px;font-weight:600;font-size:11.5px}
+.btn-ghost-danger{background:rgba(255,59,48,.10);color:var(--danger);border:none;height:32px;padding:0 14px;border-radius:10px;font-weight:600;font-size:11.5px}
 
-.hub-card{background:var(--card);border-radius:var(--radius);border:1px solid rgba(255,255,255,.06);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
-.hub-summary{display:flex;align-items:center;gap:14px;padding:16px 18px;width:100%;background:none;border:none;text-align:left}
+.hub-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.hub-summary{display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;background:none;border:none;text-align:left}
 .hub-summary-body{flex:1;min-width:0}
-.hub-summary-desc{font-size:12px;color:var(--text-2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hub-summary-desc{font-size:11.5px;color:var(--text-2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hub-stats-row{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
+.hub-stat{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text-2);background:var(--card-2);padding:2px 8px;border-radius:8px}
+.hub-stat .hub-stat-icon{font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.hub-stat .hub-stat-icon svg{width:12px;height:12px;display:block}
+.ti{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}
+.ti svg{width:13px;height:13px;display:block}
 .chevron{width:18px;height:18px;color:var(--text-2);transition:transform .3s var(--ease);flex-shrink:0}
 .hub-card.open .chevron{transform:rotate(180deg)}
 .hub-panel{max-height:0;opacity:0;overflow:hidden;transition:max-height .45s var(--ease),opacity .3s ease}
-.hub-card.open .hub-panel{max-height:2000px;opacity:1}
+.hub-card.open .hub-panel{max-height:2600px;opacity:1}
 .hub-panel-inner{padding:0 18px 20px}
 .hub-tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto}
 .hub-tabs::-webkit-scrollbar{display:none}
 .hub-tab{font-size:12px;font-weight:600;padding:8px 14px;border-radius:12px;background:var(--card-2);color:var(--text-2);border:none;white-space:nowrap}
-.hub-tab.active{background:linear-gradient(135deg,var(--accent-green),var(--accent-red));color:#fff}
+.hub-tab.active{background:var(--accent);color:#fff}
 .hub-list{display:flex;flex-direction:column;gap:10px}
 .hub-row{display:flex;align-items:center;gap:12px;background:var(--card-2);border-radius:var(--radius-sm);padding:12px 14px}
-.hub-row-avatar{width:36px;height:36px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:1px solid rgba(255,255,255,.07)}
+.hub-row-avatar{width:36px;height:36px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:1px solid var(--border);color:var(--text)}
+.hub-row-avatar svg{width:18px;height:18px;display:block}
 .hub-row-title{font-size:13.5px;font-weight:600}
 .hub-row-sub{font-size:11.5px;color:var(--text-2);margin-top:1px}
-.hub-row-del{margin-left:auto;background:none;border:none;color:var(--text-2);font-size:16px;padding:4px 8px}
+.hub-row-del{margin-left:auto;background:none;border:none;color:var(--text-2);font-size:16px;padding:4px 8px;display:flex;align-items:center;justify-content:center}
+.hub-row-del svg{width:16px;height:16px;display:block}
 .hub-contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hub-contact-item{background:var(--card-2);border-radius:var(--radius-sm);padding:14px}
 .hub-contact-item.wide{grid-column:1/-1}
 .hub-contact-label{font-size:10.5px;color:var(--text-2);margin-bottom:4px}
 .hub-contact-value{font-size:13px;font-weight:600;word-break:break-word}
+.contact-link{color:var(--accent);font-weight:600;text-decoration:none}
+.contact-link:active{opacity:.6}
+.hub-contact-preferred{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;padding:6px 12px;border-radius:var(--radius-pill);margin-top:2px}
+.hub-contact-preferred svg{width:12px;height:12px}
+.company-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.company-chip{font-size:11px;font-weight:600;color:var(--text);background:var(--card-3);border:1px solid var(--border);border-radius:var(--radius-pill);padding:5px 11px}
 .hub-admin-row{display:flex;gap:8px;margin-top:14px}
-.hub-add-btn{flex:1;background:var(--card-2);border:1px dashed rgba(255,255,255,.15);border-radius:14px;padding:12px;font-size:12.5px;font-weight:600;color:var(--text-2)}
+.hub-add-btn{flex:1;background:var(--card-2);border:1px dashed var(--border-strong);border-radius:14px;padding:12px;font-size:12.5px;font-weight:600;color:var(--text-2)}
 .hub-add-btn:active{transform:scale(.97)}
 
-.screen{display:none}
-.screen.active{display:block}
+.screen{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+.screen.active{display:flex}
+.screen-fixed{flex-shrink:0;padding:16px 16px 10px}
+.screen-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 110px}
 .empty-state{text-align:center;padding:60px 20px 30px;color:var(--text-2)}
 .empty-state h3{color:var(--text);font-size:16px;margin:0 0 6px}
 .empty-state p{font-size:13px;line-height:1.6}
 
-.profile-card{margin:20px 0;background:var(--card);border-radius:var(--radius);border:1px solid rgba(255,255,255,.06);padding:26px 22px;text-align:center}
-.profile-avatar{width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,var(--accent-green),var(--accent-red));color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.profile-card{margin:20px 0;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:26px 22px;text-align:center}
+.profile-avatar{width:64px;height:64px;border-radius:20px;background:#fff;color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;overflow:hidden;box-shadow:var(--shadow-md)}
+.profile-avatar img{width:100%;height:100%;object-fit:cover}
 .profile-name{font-size:17px;font-weight:700}
 .profile-sub{font-size:12.5px;color:var(--text-2);margin-top:3px}
+.profile-slogan{font-size:11px;color:var(--text-2);margin-top:6px;font-style:italic}
 .profile-menu{margin:16px 0 20px;display:flex;flex-direction:column;gap:10px}
-.profile-menu-item{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-sm);padding:15px 16px;font-size:14px;font-weight:600;width:100%;text-align:left}
-.profile-menu-item .mi-icon{font-size:18px;width:22px;text-align:center}
+.profile-menu-item{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:15px 16px;font-size:14px;font-weight:600;width:100%;text-align:left}
+.profile-menu-item .mi-icon{font-size:18px;width:22px;text-align:center;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.profile-menu-item .mi-icon svg{width:19px;height:19px;display:block}
 .profile-menu-item .mi-sub{font-size:11.5px;color:var(--text-2);font-weight:400;margin-top:2px}
 
-.fab{position:fixed;bottom:104px;right:calc(50% - 260px + 20px);width:56px;height:56px;border-radius:28px;background:#fff;color:#000;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px -6px rgba(255,255,255,.2),0 8px 20px rgba(0,0,0,.6);z-index:40;font-size:26px;font-weight:700}
+.fab{position:fixed;bottom:100px;right:calc(50% - 260px + 20px);width:54px;height:54px;border-radius:27px;background:var(--accent);color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 28px -6px rgba(10,132,255,.5),0 6px 16px rgba(0,0,0,.3);z-index:40;font-size:26px;font-weight:400}
 .fab:active{transform:scale(.9)}
+.fab-suggest{background:var(--card);color:var(--accent);border:1.5px solid var(--accent);box-shadow:0 8px 24px -6px rgba(10,132,255,.35),0 4px 12px rgba(0,0,0,.2);font-size:22px}
+.fab-suggest svg{width:24px;height:24px}
 @media (max-width:559px){ .fab{right:20px} }
 
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:80px;max-width:520px;margin:0 auto;background:rgba(12,12,12,.88);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom);z-index:50}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:80px;max-width:520px;margin:0 auto;background:color-mix(in srgb,var(--card) 86%,transparent);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom);z-index:50}
 .navbtn{background:none;border:none;color:var(--text-2);display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 14px;border-radius:12px}
 .navbtn svg{width:22px;height:22px}
-.navbtn.active{color:var(--text)}
-.navbtn.active svg{stroke:url(#navgrad)}
+.navbtn.active{color:var(--accent)}
+.navbtn.active svg{stroke:var(--accent)}
 .navbtn-label{font-size:10px;font-weight:600}
 
-.sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:60}
+.sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:60}
 .sheet-scrim.open{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--card);border-radius:28px 28px 0 0;padding:10px 22px calc(26px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .4s var(--ease);z-index:61;border:1px solid rgba(255,255,255,.07);border-bottom:none;max-height:88vh;overflow-y:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--sheet-bg);border-radius:28px 28px 0 0;padding:10px 22px calc(26px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .4s var(--ease);z-index:61;border:1px solid var(--border);border-bottom:none;max-height:88vh;overflow-y:auto}
 .sheet-scrim.open .sheet{transform:translateY(0)}
-.sheet-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:8px auto 18px}
+.sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border-strong);margin:8px auto 18px}
 .sheet h3{font-size:18px;font-weight:700;margin-bottom:18px}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:12px;color:var(--text-2);margin-bottom:6px;font-weight:600}
-.field input,.field select,.field textarea{width:100%;background:var(--card-2);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:13px 15px;color:var(--text);font-size:14px}
+.field input,.field select,.field textarea{width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:14px;padding:13px 15px;color:var(--text);font-size:14px}
 .field textarea{resize:vertical;min-height:70px}
+.field input::placeholder,.field textarea::placeholder{color:var(--text-2)}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--card-2);border-radius:14px;padding:13px 15px;margin-bottom:12px}
 .toggle-row span{font-size:13.5px;font-weight:600}
 .switch{position:relative;width:44px;height:26px;flex-shrink:0}
 .switch input{opacity:0;width:0;height:0}
-.switch .track{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:999px;transition:background .2s}
+.switch .track{position:absolute;inset:0;background:var(--border-strong);border-radius:999px;transition:background .2s}
 .switch .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
-.switch input:checked+.track{background:linear-gradient(135deg,var(--accent-green),var(--accent-red))}
+.switch input:checked+.track{background:var(--success)}
 .switch input:checked+.track .knob{transform:translateX(18px)}
 .switch input:checked~.knob{transform:translateX(18px)}
-.sheet-submit{width:100%;background:#fff;color:#000;border:none;padding:16px;border-radius:16px;font-size:14.5px;font-weight:700;margin-top:6px}
+.sheet-submit{width:100%;background:var(--accent);color:#fff;border:none;padding:16px;border-radius:14px;font-size:15px;font-weight:600;margin-top:6px}
 .sheet-submit:active{transform:scale(.98)}
+.sheet-submit.danger{background:rgba(255,59,48,.14);color:var(--danger)}
 .sheet-cancel{width:100%;background:none;color:var(--text-2);border:none;padding:14px;font-size:13.5px;font-weight:600;margin-top:4px}
 .photo-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.photo-row .avatar{cursor:pointer}
-.photo-row label{background:var(--card-2);border:1px solid rgba(255,255,255,.08);color:var(--text);font-size:13px;padding:10px 16px;border-radius:999px;font-weight:600}
+.photo-row .avatar{cursor:pointer;position:relative}
+.photo-row label{background:var(--card-2);border:1px solid var(--border-strong);color:var(--text);font-size:13px;padding:10px 16px;border-radius:999px;font-weight:600}
 .photo-row input[type=file]{display:none}
 
-.toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%) translateY(20px);background:#fff;color:#000;font-size:13px;font-weight:700;padding:13px 22px;border-radius:14px;z-index:70;opacity:0;transition:opacity .3s ease,transform .3s var(--ease);pointer-events:none;white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
+.toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);font-size:13px;font-weight:700;padding:13px 22px;border-radius:14px;z-index:70;opacity:0;transition:opacity .3s ease,transform .3s var(--ease);pointer-events:none;white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 .ripple-el{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:ripple-anim .55s ease-out forwards;pointer-events:none}
 @keyframes ripple-anim{to{transform:scale(2.6);opacity:0}}
 [data-ripple]{position:relative;overflow:hidden}
+.fab[data-ripple]{position:fixed}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ===== SMART MANAGER (admin section) ===== */
+.sm-intro{padding:0 16px 12px}
+.sm-intro p{font-size:12.5px;color:var(--text-2);line-height:1.5;margin:0}
+.sm-card{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.sm-card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sm-card-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.sm-card-name{font-size:14.5px;font-weight:600;line-height:1.3;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sm-card-loc{font-size:11.5px;color:var(--text-2);margin-top:1px}
+.sm-link-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--text-2);word-break:break-all;line-height:1.4;margin-bottom:8px;max-height:42px;overflow:hidden}
+.sm-link-actions{display:flex;gap:8px}
+.sm-link-actions button{flex:1;padding:8px 0;border-radius:9px;font-size:12.5px;font-weight:600;border:1px solid var(--accent);background:var(--card);color:var(--accent);cursor:pointer}
+.sm-link-actions .sm-copy-btn{background:var(--accent);color:#fff}
+.sm-link-actions .sm-share-btn{background:var(--card);color:var(--accent)}
+
+/* ===== MANAGER MODE (agency self-service) ===== */
+.manager-banner{padding:0 16px 12px}
+.manager-banner p{font-size:12px;color:var(--text-2);line-height:1.5;margin:0;background:var(--card);border-radius:10px;padding:10px 12px;border:1px solid var(--border)}
+.manager-add-btn{display:flex;align-items:center;gap:8px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px}
+.manager-add-btn .mi-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;flex-shrink:0}
+.manager-add-btn .mi-icon svg{width:19px;height:19px;display:block}
+.manager-item{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.manager-item-title{font-size:13.5px;font-weight:600;margin-bottom:2px}
+.manager-item-sub{font-size:11.5px;color:var(--text-2);line-height:1.4}
+.manager-item-meta{font-size:11px;color:var(--accent);margin-top:4px;font-weight:600}
+.manager-read-only-tag{display:inline-block;font-size:10px;color:var(--text-2);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin-top:6px}
 </style>
 </head>
 <body>
 
 <svg width="0" height="0" style="position:absolute">
-  <defs><linearGradient id="navgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00B04F"/><stop offset="1" stop-color="#E30613"/></linearGradient></defs>
+  <defs><linearGradient id="navgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0A84FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs>
 </svg>
 
 <div class="app">
 
   <!-- ============ HOME ============ -->
   <div class="screen active" id="screen-home">
+    <div class="screen-fixed">
     <header>
       <div class="logo-wrap">
-        <svg class="logo-svg" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00B04F"/><stop offset="1" stop-color="#E30613"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#g1)"/><text x="256" y="320" font-size="220" font-weight="800" fill="#fff" text-anchor="middle" font-family="Inter,sans-serif">S</text></svg>
-        <div class="logo-text">SA Recruiters</div>
+        <img class="logo-svg" src="icon-512.png" alt="SA Recruiters logo" width="42" height="42">
+        <div class="logo-text-wrap">
+          <div class="logo-text">SA Recruiters</div>
+          <div class="logo-slogan">Connecting South Africa's Recruitment Community.</div>
+        </div>
       </div>
-      <button class="icon-btn" data-ripple id="admin-btn" onclick="openAdminSheet()" aria-label="Admin login">🔒</button>
+      <div class="header-actions">
+        <button class="theme-toggle" data-ripple id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle day or night theme">
+          <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span>
+          <span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        </button>
+        <button class="icon-btn" data-ripple id="admin-btn" onclick="openAdminSheet()" aria-label="Admin login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/><circle cx="12" cy="15.5" r="1.5"/></svg></button>
+      </div>
     </header>
 
-    <div class="greeting">
-      <p class="eyebrow">Directory</p>
-      <h2>Find trusted recruitment agencies across SA</h2>
-    </div>
-
-    <div class="search">
+    <div class="search search-mini">
       <div class="search-inner">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <label for="home-search" class="sr-only">Search agencies or location</label>
-        <input id="home-search" type="search" placeholder="Search agencies or location..." oninput="filterAndRenderCached()">
+        <input id="home-search" type="search" placeholder="Search agencies, trades, jobs, locations..." oninput="filterAndRenderCached()">
       </div>
     </div>
+    </div>
 
+    <div class="screen-scroll">
     <div class="stats">
       <div class="stat-card"><div class="stat-value" id="stat-agencies">0</div><div class="stat-label">Agencies</div></div>
       <div class="stat-card"><div class="stat-value" id="stat-branches">0</div><div class="stat-label">Branches</div></div>
@@ -224,55 +344,125 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="empty" id="empty-msg" style="display:none;">
       <div class="empty-state"><h3>No agencies yet</h3><p>Tap + to add the first one.</p></div>
     </div>
+    </div>
   </div>
 
   <!-- ============ SEARCH ============ -->
   <div class="screen" id="screen-search">
+    <div class="screen-fixed">
     <header>
       <div class="logo-text">Search</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+      </button>
     </header>
     <div class="search">
       <div class="search-inner">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input id="search-input" type="search" placeholder="Search agencies, vacancies, locations..." oninput="handleSearchScreen(this.value)">
+        <input id="search-input" type="search" placeholder="Search agencies, trades, jobs, locations..." oninput="handleSearchScreen(this.value)">
       </div>
     </div>
+    </div>
+    <div class="screen-scroll">
     <div id="search-results" style="margin-top:20px"></div>
+    </div>
   </div>
 
   <!-- ============ SAVED ============ -->
   <div class="screen" id="screen-saved">
+    <div class="screen-fixed">
     <header>
       <div class="logo-text">Saved vacancies</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+      </button>
     </header>
+    </div>
+    <div class="screen-scroll">
     <div id="saved-list"></div>
+    </div>
   </div>
 
   <!-- ============ PROFILE ============ -->
   <div class="screen" id="screen-profile">
+    <div class="screen-fixed">
     <header>
       <div class="logo-text">Profile</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+      </button>
     </header>
+    </div>
+    <div class="screen-scroll">
     <div class="profile-card">
-      <div class="profile-avatar">SA</div>
+      <div class="profile-avatar" id="profile-avatar"><img src="icon-512.png" alt="SA Recruiters"></div>
       <div class="profile-name" id="profile-status-name">SA Recruiters</div>
+      <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
       <div class="profile-sub" id="profile-status-sub">Not logged in</div>
     </div>
     <div class="profile-menu">
-      <button class="profile-menu-item" data-ripple onclick="openAdminSheet()"><span class="mi-icon">🔒</span><span id="admin-menu-label">Admin login</span></button>
-      <button class="profile-menu-item" data-ripple onclick="openSupportSheet()"><span class="mi-icon">❤️</span>Support this directory</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon">📚</span>Learning Hub</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon">📝</span>How to Prepare Your CV</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon">✨</span>CV Revamp Service</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon">🎤</span>Interview Tips</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon">⚖️</span>Know Your Rights</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon">❓</span>FAQ</button>
+      <button class="profile-menu-item" data-ripple onclick="openAdminSheet()"><span class="mi-icon" id="admin-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span id="admin-menu-label">Admin login</span></button>
+      <button class="profile-menu-item" id="sm-menu-item" data-ripple onclick="goSmartManager()" style="display:none;"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></span><span>Smart Manager<span class="mi-sub">Agency self-service links</span></span></button>
+      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span></button>
+      <button class="profile-menu-item" data-ripple onclick="openSupportSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>Support this directory</button>
+      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span></button>
+      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon" id="theme-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span id="theme-menu-label">Switch to day mode</span></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg></span>Learning Hub</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg></span>How to Prepare Your CV</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg></span>CV Revamp Service</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>Interview Tips</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span>Know Your Rights</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg></span>FAQ</button>
+    </div>
+    </div>
+  </div>
+
+  <!-- ============ SMART MANAGER (admin only) ============ -->
+  <div class="screen" id="screen-smartmanager">
+    <div class="screen-fixed">
+    <header>
+      <div class="logo-text">Smart Manager</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+      </button>
+    </header>
+    <div class="sm-intro">
+      <p>Each agency has a unique link. Send the link to the agency office so they can add their own branches and vacancies. They cannot edit or delete — only add.</p>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div id="smartmanager-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ MANAGER MODE (agency self-service) ============ -->
+  <div class="screen" id="screen-manager">
+    <div class="screen-fixed">
+    <header>
+      <div class="logo-text" id="manager-agency-name">Agency</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+      </button>
+    </header>
+    <div class="manager-banner">
+      <p>Add branches and vacancies for your agency. Once saved, changes can only be made by contacting the admin.</p>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="section-head"><div class="section-title">Branches</div></div>
+    <div id="manager-branch-list"></div>
+    <button class="manager-add-btn" data-ripple onclick="managerAddBranch()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span> Add branch</button>
+
+    <div class="section-head" style="margin-top:24px;"><div class="section-title">Vacancies</div></div>
+    <div id="manager-vacancy-list"></div>
+    <button class="manager-add-btn" data-ripple onclick="managerAddVacancy()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg></span> Add vacancy</button>
     </div>
   </div>
 
 </div>
-
-<button class="fab" data-ripple onclick="openForm()" aria-label="Add agency">+</button>
+<button class="fab fab-suggest" id="fab-suggest" data-ripple onclick="openSuggestionSheet()" aria-label="Suggest or comment">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
 
 <nav class="bottom-nav">
   <button class="navbtn active" data-tab="home" data-ripple aria-label="Home">
@@ -301,7 +491,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="photo-row">
       <div class="avatar" style="width:56px;height:56px;">
         <img id="photo-preview" style="display:none;">
-        <span id="photo-fallback">🏢</span>
+        <span id="photo-fallback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M14 21V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v12M4 21h16"/><path d="M7 7h2M7 11h2M7 15h2"/></svg></span>
       </div>
       <label>Add photo<input type="file" accept="image/*" onchange="handlePhoto(event)"></label>
     </div>
@@ -311,6 +501,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="field"><label>Email address</label><input id="f-email" placeholder="e.g. info@agency.co.za"></div>
     <div class="field"><label>Location</label><input id="f-location" placeholder="e.g. Sandton, Johannesburg"></div>
     <div class="field"><label>Companies (comma separated)</label><input id="f-companies" placeholder="e.g. Standard Bank, Shoprite"></div>
+    <div class="field"><label>Trades / Industries (comma separated)</label><input id="f-trades" placeholder="e.g. Forklift drivers, Mining, Logistics, Construction"></div>
     <div class="field">
       <label>CV preference</label>
       <select id="f-cvpref"><option>Email</option><option>Website</option><option>WhatsApp</option><option>Walk-in</option></select>
@@ -330,7 +521,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="sheet-handle"></div>
     <h3>Add branch</h3>
     <div class="field"><label>Branch name</label><input id="b-name" placeholder="e.g. Durban Branch"></div>
-    <div class="field"><label>Location</label><input id="b-location" placeholder="e.g. Umhlanga, Durban"></div>
+    <div class="field"><label>Address / location</label><input id="b-location" placeholder="e.g. 45 Kings Rd, Umhlanga, Durban"></div>
+    <div class="field"><label>Phone</label><input id="b-phone" type="tel" placeholder="e.g. 031 555 0123"></div>
+    <div class="field"><label>Email</label><input id="b-email" type="email" placeholder="e.g. durban@agency.co.za"></div>
     <button class="sheet-submit" data-ripple onclick="saveBranch()">Save branch</button>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('branch-overlay')">Cancel</button>
   </div>
@@ -345,6 +538,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Randburg, Gauteng"></div>
     <div class="field"><label>Closing date</label><input id="v-closing" placeholder="e.g. 15 Aug 2026"></div>
     <div class="field"><label>Notes (requirements, salary, etc.)</label><textarea id="v-notes" placeholder="Optional details"></textarea></div>
+    <div class="field"><label>Application link (optional)</label><input id="v-link" type="url" placeholder="e.g. https://agency.co.za/apply"></div>
     <button class="sheet-submit" data-ripple onclick="saveVacancy()">Publish vacancy</button>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-overlay')">Cancel</button>
   </div>
@@ -363,7 +557,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     </div>
     <div id="admin-logged-in" style="display:none;">
       <p style="font-size:13.5px;color:var(--text-2);margin-bottom:16px;">You're logged in as admin.</p>
-      <button class="sheet-submit" data-ripple style="background:rgba(227,6,19,.12);color:#ff5b5b;" onclick="adminLogout()">Log out</button>
+      <button class="sheet-submit danger" data-ripple onclick="adminLogout()">Log out</button>
     </div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('admin-overlay')">Close</button>
   </div>
@@ -381,6 +575,60 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
       <div class="hub-contact-item wide" data-ripple onclick="copyText('1721069818', this)"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">1721069818 (R. Chiloane)</div></div>
     </div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('support-overlay')">Close</button>
+  </div>
+</div>
+
+<!-- ============ REPORT SHEET ============ -->
+<div class="sheet-scrim" id="report-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>Report a problem</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Spotted wrong info, a broken link, or misuse of a listing? Let us know and we'll review it.</p>
+    <div class="field">
+      <label>Agency this is about</label>
+      <input id="r-agency" list="r-agency-list" placeholder="Type or pick the agency name">
+      <datalist id="r-agency-list"></datalist>
+    </div>
+    <div class="field">
+      <label>Reason</label>
+      <select id="r-reason">
+        <option>Incorrect contact details</option>
+        <option>Broken website link</option>
+        <option>Fake or misleading listing</option>
+        <option>Closed / no longer operating</option>
+        <option>Duplicate entry</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Details (optional)</label><textarea id="r-details" placeholder="Add anything that helps us fix it..."></textarea></div>
+    <div class="field"><label>Your contact (optional)</label><input id="r-contact" placeholder="Email or phone — so we can follow up"></div>
+    <div id="report-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+    <button class="sheet-submit" data-ripple onclick="submitReport()">Submit report</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('report-overlay')">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ SUGGESTION / COMMENT SHEET ============ -->
+<div class="sheet-scrim" id="suggestion-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>Suggest or comment</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Know an agency we should list? Have feedback or an idea? Share it here and we'll review it.</p>
+    <div class="field">
+      <label>Type</label>
+      <select id="s-type">
+        <option>Suggest an agency</option>
+        <option>Feedback / comment</option>
+        <option>Feature request</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Agency name (if suggesting)</label><input id="s-agency" placeholder="e.g. Prime Placements"></div>
+    <div class="field"><label>Details</label><textarea id="s-details" placeholder="Tell us anything — location, contact, trades, or just your thoughts..." style="min-height:90px;"></textarea></div>
+    <div class="field"><label>Your contact (optional)</label><input id="s-contact" placeholder="Email or phone — so we can follow up"></div>
+    <div id="suggestion-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+    <button class="sheet-submit" data-ripple onclick="submitSuggestion()">Submit</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('suggestion-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -408,6 +656,72 @@ var branchesCache = [];
 var vacanciesCache = [];
 var isAdmin = false;
 var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
+// ===== SMART MANAGER: agency self-service links =====
+var managerMode = false;   // true when URL has ?manage=TOKEN
+var managerAgency = null;  // the agency object the manager is allowed to update
+var managerTokenMap = {};  // { tokenId: agencyId } — persisted in localStorage
+var managerPendingToken = null; // token detected before agencies loaded
+
+function genToken() {
+  // 12-char URL-safe token
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var s = '';
+  for (var i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+function managerTokenKey(agencyId) { return 'sa_manager_token_' + agencyId; }
+function getManagerToken(agencyId) {
+  // token stored in localStorage keyed by agencyId
+  try { return localStorage.getItem(managerTokenKey(agencyId)) || ''; } catch(e){ return ''; }
+}
+function setManagerToken(agencyId, token) {
+  try { localStorage.setItem(managerTokenKey(agencyId), token); managerTokenMap[token] = agencyId; } catch(e){}
+}
+function agencyIdFromToken(token) {
+  if (!token) return null;
+  // check cache first
+  if (managerTokenMap[token]) return managerTokenMap[token];
+  // scan localStorage for matching token
+  for (var i = 0; i < agenciesCache.length; i++) {
+    if (getManagerToken(agenciesCache[i].id) === token) {
+      managerTokenMap[token] = agenciesCache[i].id;
+      return agenciesCache[i].id;
+    }
+  }
+  return null;
+}
+function buildManagerLink(token) {
+  // Use the current app URL with ?manage=TOKEN
+  var base = window.location.origin + window.location.pathname;
+  return base + '?manage=' + token;
+}
+
+// Star ratings saved locally (per agency): { agencyId: 1..5 }
+var starRatings = JSON.parse(localStorage.getItem('starRatings') || '{}');
+
+/* ── Theme (day / night) ───────────────────────────── */
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  var meta = document.getElementById('meta-theme');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#F2F2F7' : '#000000');
+  // Update menu label/icon
+  var mIcon = document.getElementById('theme-menu-icon');
+  var mLabel = document.getElementById('theme-menu-label');
+  if (mIcon) mIcon.innerHTML = theme === 'light'
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
+  if (mLabel) mLabel.textContent = theme === 'light' ? 'Switch to night mode' : 'Switch to day mode';
+}
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') || 'dark';
+  var next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('saTheme', next);
+  applyTheme(next);
+}
+(function initTheme() {
+  var saved = localStorage.getItem('saTheme') || 'dark';
+  applyTheme(saved);
+})();
 
 function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, function(c) {
@@ -418,45 +732,102 @@ function initials(n) {
   return (n || '?').trim().split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
 }
 
-// ===== Data =====
+// ===== Data: AGENCIES (live Supabase table that works) =====
 async function getAgencies() {
   var { data, error } = await supabaseClient.from('agencies').select('*').order('created_at', { ascending: false });
-  if (error) { console.error(error); return []; }
-  return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, cvpref: a.cvpref, photo: a.photo, companies: a.companies, verified: !!a.verified }; });
+  if (error) { console.error('agencies load', error); return []; }
+  return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, cvpref: a.cvpref, photo: a.photo, companies: a.companies, trades: a.trades, verified: !!a.verified }; });
 }
 async function upsertAgency(a) {
   var { error } = await supabaseClient.from('agencies').upsert(a);
-  if (error) { console.error(error); alert('Could not save. Check your Supabase setup.'); }
+  if (error) { console.error('agency save', error); alert('Could not save. Check your Supabase setup.'); }
 }
 async function removeAgency(id) {
   var { error } = await supabaseClient.from('agencies').delete().eq('id', id);
-  if (error) { console.error(error); alert('Could not delete. Check your Supabase setup.'); }
+  if (error) { console.error('agency delete', error); alert('Could not delete. Check your Supabase setup.'); }
 }
+
+/* ── Data: BRANCHES & VACANCIES ───────────────────────
+   The Supabase project does NOT yet have `branches` / `vacancies` tables
+   (and `reports` blocks anon inserts via RLS). To keep the features fully
+   functional right now we:
+     1) TRY to read/write Supabase (so the moment the tables exist they just work)
+     2) FALL BACK to localStorage so nothing is ever lost and the UX works.
+   This is transparent to the user — see SUPABASE_SETUP.md for the one-time
+   SQL to flip everything to live Supabase.                              */
+function localKey(kind) { return 'sa_' + kind + '_local'; }
+function readLocal(kind) {
+  try { return JSON.parse(localStorage.getItem(localKey(kind)) || '[]'); } catch(e){ return []; }
+}
+function writeLocal(kind, arr) {
+  try { localStorage.setItem(localKey(kind), JSON.stringify(arr)); } catch(e){ console.warn('storage full', e); }
+}
+
+// ----- Branches -----
 async function getBranches() {
-  var { data, error } = await supabaseClient.from('branches').select('*').order('created_at', { ascending: true });
-  if (error) { console.error(error); return []; }
-  return data;
+  try {
+    var { data, error } = await supabaseClient.from('branches').select('*').order('created_at', { ascending: true });
+    if (!error && data) return data;
+  } catch(e){}
+  return readLocal('branches');
 }
 async function upsertBranch(b) {
-  var { error } = await supabaseClient.from('branches').upsert(b);
-  if (error) { console.error(error); alert('Could not save branch.'); }
+  try {
+    var { error } = await supabaseClient.from('branches').upsert(b);
+    if (!error) return true;
+  } catch(e){}
+  // fallback: save locally
+  var arr = readLocal('branches');
+  var i = arr.findIndex(function(x){ return x.id === b.id; });
+  if (i >= 0) arr[i] = Object.assign({}, arr[i], b); else arr.push(b);
+  writeLocal('branches', arr);
+  return false; // indicates it was stored locally, not in Supabase
 }
 async function removeBranch(id) {
-  var { error } = await supabaseClient.from('branches').delete().eq('id', id);
-  if (error) { console.error(error); alert('Could not delete branch.'); }
+  try { await supabaseClient.from('branches').delete().eq('id', id); } catch(e){}
+  var arr = readLocal('branches').filter(function(x){ return x.id !== id; });
+  writeLocal('branches', arr);
 }
+
+// ----- Vacancies -----
 async function getVacancies() {
-  var { data, error } = await supabaseClient.from('vacancies').select('*').order('created_at', { ascending: false });
-  if (error) { console.error(error); return []; }
-  return data;
+  try {
+    var { data, error } = await supabaseClient.from('vacancies').select('*').order('created_at', { ascending: false });
+    if (!error && data) return data;
+  } catch(e){}
+  return readLocal('vacancies');
 }
 async function upsertVacancy(v) {
-  var { error } = await supabaseClient.from('vacancies').upsert(v);
-  if (error) { console.error(error); alert('Could not save vacancy.'); }
+  try {
+    var { error } = await supabaseClient.from('vacancies').upsert(v);
+    if (!error) return true;
+  } catch(e){}
+  var arr = readLocal('vacancies');
+  var i = arr.findIndex(function(x){ return x.id === v.id; });
+  if (i >= 0) arr[i] = Object.assign({}, arr[i], v); else arr.push(v);
+  writeLocal('vacancies', arr);
+  return false;
 }
 async function removeVacancy(id) {
-  var { error } = await supabaseClient.from('vacancies').delete().eq('id', id);
-  if (error) { console.error(error); alert('Could not delete vacancy.'); }
+  try { await supabaseClient.from('vacancies').delete().eq('id', id); } catch(e){}
+  var arr = readLocal('vacancies').filter(function(x){ return x.id !== id; });
+  writeLocal('vacancies', arr);
+}
+
+/* ── Data: REPORTS ───────────────────────────────────
+   `reports` table exists but RLS blocks anonymous inserts. We try the
+   live insert first; if RLS blocks it we store locally AND offer to send
+   via the support WhatsApp/email so the report always reaches the admin. */
+function readLocalReports() {
+  try { return JSON.parse(localStorage.getItem('sa_reports_local') || '[]'); } catch(e){ return []; }
+}
+function writeLocalReports(arr) {
+  try { localStorage.setItem('sa_reports_local', JSON.stringify(arr)); } catch(e){}
+}
+async function submitReportToSupabase(payload) {
+  var { data, error } = await supabaseClient.from('reports').insert([payload]).select();
+  if (error) return { ok: false, error: error };
+  return { ok: true, data: data };
 }
 
 async function loadAll() {
@@ -464,8 +835,27 @@ async function loadAll() {
   branchesCache = await getBranches();
   vacanciesCache = await getVacancies();
   agenciesCache.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+  // Backfill SMART MANAGER tokens for agencies that were added before this feature
+  agenciesCache.forEach(function(a) {
+    if (!getManagerToken(a.id)) {
+      var token = genToken();
+      setManagerToken(a.id, token);
+    }
+  });
   updateStats();
   filterAndRenderCached();
+  // If in manager mode, re-render the manager panel with fresh data
+  if (managerMode) renderManagerMode();
+  // If a pending manager token was detected before agencies loaded, enter manager mode now
+  if (managerPendingToken) {
+    var tok = managerPendingToken;
+    managerPendingToken = null;
+    enterManagerMode(tok);
+  }
+  // If admin is viewing SMART MANAGER section, re-render it
+  if (typeof renderSmartManager === 'function' && document.getElementById('screen-smartmanager') && document.getElementById('screen-smartmanager').classList.contains('active')) {
+    renderSmartManager();
+  }
 }
 
 function updateStats() {
@@ -488,15 +878,25 @@ function hubCard(a) {
   var bCount = branchesFor(a.id).length;
   var descBits = [];
   if (a.location) descBits.push(a.location);
-  descBits.push(bCount + ' branch' + (bCount===1?'':'es'));
-  descBits.push(vCount + ' vacanc' + (vCount===1?'y':'ies'));
+  // Badge row lives on its own line below the name so it is never cut off
+  var badgeRow = '<div style="margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;">';
+  if (a.verified) badgeRow += '<span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;vertical-align:-1px;margin-right:3px"><path d="M20 6L9 17l-5-5"/></svg>Verified</span>';
+  if (vCount>0) badgeRow += '<span class="badge count">' + vCount + ' open</span>';
+  badgeRow += '</div>';
+  // Stats row: branches + jobs with briefcase icon
+  var statsRow = '<div class="hub-stats-row">' +
+    '<span class="hub-stat"><span class="hub-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M14 21V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v12M4 21h16"/><path d="M7 7h2M7 11h2M7 15h2"/></svg></span>' + bCount + ' branch' + (bCount===1?'':'es') + '</span>' +
+    '<span class="hub-stat"><span class="hub-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg></span>' + vCount + ' job' + (vCount===1?'':'s') + '</span>' +
+  '</div>';
   return '' +
   '<div class="hub-card" id="hub-' + a.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleHub(\'' + a.id + '\')" aria-expanded="false">' +
       avatarHtml(a) +
       '<div class="hub-summary-body">' +
-        '<div class="agency-name-row"><span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span>' + (a.verified ? '<span class="badge">✓ Verified</span>' : '') + (vCount>0 ? '<span class="badge" style="background:linear-gradient(135deg,#00B04F,#00B04F)">' + vCount + '</span>' : '') + '</div>' +
-        '<div class="hub-summary-desc">' + escapeHtml(descBits.join(' · ')) + '</div>' +
+        '<div class="agency-name-row"><span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span></div>' +
+        (a.verified ? badgeRow : '') +
+        (a.location ? '<div class="hub-summary-desc">' + escapeHtml(a.location) + '</div>' : '') +
+        statsRow +
       '</div>' +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</button>' +
@@ -520,14 +920,17 @@ function hubVacancies(a) {
     html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No vacancies listed right now.</div>';
   } else {
     list.forEach(function(v) {
+      var saved = savedSet.has(v.id);
       html += '<div class="hub-row" style="align-items:flex-start;">' +
-        '<div class="hub-row-avatar">💼</div>' +
+        '<div class="hub-row-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg></div>' +
         '<div style="flex:1;min-width:0;">' +
           '<div class="hub-row-title">' + escapeHtml(v.title || 'Untitled role') + '</div>' +
-          '<div class="hub-row-sub">' + escapeHtml([v.location, v.closing_date ? ('Closes ' + v.closing_date) : ''].filter(Boolean).join(' · ')) + '</div>' +
+          '<div class="hub-row-sub">' + escapeHtml([v.location, v.closing_date ? ('Closes ' + v.closing_date) : ''].filter(Boolean).join(' \u00b7 ')) + '</div>' +
           (v.notes ? '<div class="hub-row-sub" style="margin-top:4px;">' + escapeHtml(v.notes) + '</div>' : '') +
+          (v.link ? '<div style="margin-top:6px;"><a href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" class="contact-link" style="font-size:12.5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>Apply here</a></div>' : '') +
+          '<div style="margin-top:8px;"><button class="save-btn ' + (saved?'saved':'') + '" data-ripple style="width:34px;height:34px;" onclick="toggleSave(this,\'' + v.id + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button></div>' +
         '</div>' +
-        (isAdmin ? '<button class="hub-row-del" data-ripple onclick="deleteVacancy(\'' + v.id + '\',\'' + a.id + '\')">✕</button>' : '') +
+        (isAdmin ? '<button class="hub-row-del" data-ripple onclick="deleteVacancy(\'' + v.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '') +
       '</div>';
     });
   }
@@ -545,10 +948,14 @@ function hubBranches(a) {
     html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No branches listed yet.</div>';
   } else {
     list.forEach(function(b) {
+      var subBits = [];
+      if (b.location) subBits.push(mapsLink(b.location));
+      if (b.phone) subBits.push(telLink(b.phone));
+      if (b.email) subBits.push(mailLink(b.email));
       html += '<div class="hub-row">' +
-        '<div class="hub-row-avatar">📍</div>' +
-        '<div style="flex:1;min-width:0;"><div class="hub-row-title">' + escapeHtml(b.name || 'Branch') + '</div><div class="hub-row-sub">' + escapeHtml(b.location || '') + '</div></div>' +
-        (isAdmin ? '<button class="hub-row-del" data-ripple onclick="deleteBranch(\'' + b.id + '\',\'' + a.id + '\')">✕</button>' : '') +
+        '<div class="hub-row-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>' +
+        '<div style="flex:1;min-width:0;"><div class="hub-row-title">' + escapeHtml(b.name || 'Branch') + '</div><div class="hub-row-sub">' + (subBits.length ? subBits.join(' &middot; ') : 'No contact details') + '</div></div>' +
+        (isAdmin ? '<button class="hub-row-del" data-ripple onclick="deleteBranch(\'' + b.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '') +
       '</div>';
     });
   }
@@ -560,18 +967,37 @@ function hubBranches(a) {
 }
 
 function hubContact(a) {
-  var html = '<div class="hub-contact-grid">' +
-    '<div class="hub-contact-item"><div class="hub-contact-label">Contact</div><div class="hub-contact-value">' + escapeHtml(a.contact || '—') + '</div></div>' +
-    '<div class="hub-contact-item"><div class="hub-contact-label">Email</div><div class="hub-contact-value">' + escapeHtml(a.email || '—') + '</div></div>' +
-    '<div class="hub-contact-item wide"><div class="hub-contact-label">Website</div><div class="hub-contact-value">' + escapeHtml(a.website || '—') + '</div></div>' +
-    '<div class="hub-contact-item wide"><div class="hub-contact-label">Location</div><div class="hub-contact-value">' + escapeHtml(a.location || '—') + '</div></div>';
+  var html = '<div class="hub-contact-grid">';
+  // Preferred contact method (CV preference) — shown prominently
+  var pref = (a.cvpref || '').trim();
+  html += '<div class="hub-contact-item wide" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+    '<div><div class="hub-contact-label">Preferred contact method</div>' +
+    '<div class="hub-contact-value">' + (pref ? escapeHtml(pref) : 'Not specified') + '</div></div>' +
+    (pref ? '<span class="hub-contact-preferred">' + prefIcon(pref) + escapeHtml(pref) + '</span>' : '') +
+  '</div>';
+  html += '<div class="hub-contact-item"><div class="hub-contact-label">Contact person / phone</div><div class="hub-contact-value">' + (a.contact ? telLink(a.contact) : '\u2014') + '</div></div>';
+  html += '<div class="hub-contact-item"><div class="hub-contact-label">Email</div><div class="hub-contact-value">' + (a.email ? mailLink(a.email) : '\u2014') + '</div></div>';
+  html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Website</div><div class="hub-contact-value">' + (a.website ? webLink(a.website) : '\u2014') + '</div></div>';
+  html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Location</div><div class="hub-contact-value">' + (a.location ? mapsLink(a.location) : '\u2014') + '</div></div>';
+  // Companies they recruit for — as chips
   var companyList = (a.companies || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
   if (companyList.length) {
-    html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Companies they recruit for</div><div class="hub-contact-value">' + escapeHtml(companyList.join(', ')) + '</div></div>';
+    html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Companies they recruit for</div><div class="company-chips">' +
+      companyList.map(function(c){ return '<span class="company-chip">' + escapeHtml(c) + '</span>'; }).join('') +
+    '</div></div>';
+  }
+  // Trades / Industries they recruit for — as chips
+  var tradeList = (a.trades || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
+  if (tradeList.length) {
+    html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Trades / Industries</div><div class="company-chips">' +
+      tradeList.map(function(c){ return '<span class="company-chip">' + escapeHtml(c) + '</span>'; }).join('') +
+    '</div></div>';
   }
   html += '</div>';
+  // Always show a "report" link so users can flag wrong info
+  html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openReportSheet(\'' + (a.name||'').replace(/'/g,"\\'") + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-3px;margin-right:5px"><path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Report wrong info</button></div>';
   if (isAdmin) {
-    html += '<div class="hub-admin-row">' +
+    html += '<div class="hub-admin-row" style="margin-top:8px;">' +
       '<button class="hub-add-btn" data-ripple onclick="openForm(\'' + a.id + '\')">Edit agency</button>' +
       '<button class="btn-ghost-danger" data-ripple onclick="deleteAgencyById(\'' + a.id + '\')" style="flex-shrink:0;">Delete</button>' +
     '</div>';
@@ -579,22 +1005,92 @@ function hubContact(a) {
   return html;
 }
 
+function prefIcon(pref) {
+  var p = (pref||'').toLowerCase();
+  if (p === 'whatsapp') return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg>';
+  if (p === 'email') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+  if (p === 'website') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>';
+  if (p === 'walk-in') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  return '';
+}
+function mailLink(email) {
+  // email may contain multiple comma separated
+  var first = email.split(',')[0].trim();
+  return '<a href="mailto:' + escapeHtml(first) + '" class="contact-link">' + escapeHtml(email) + '</a>';
+}
+function webLink(url) {
+  var href = url;
+  if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
+  return '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener" class="contact-link">' + escapeHtml(url) + '</a>';
+}
+function telLink(phone) {
+  // Extract first phone number, strip non-dial chars for tel:
+  var raw = phone.split(',')[0].trim();
+  var dial = raw.replace(/[^\d+]/g, '');
+  if (dial.charAt(0) === '0' && dial.length > 9) dial = '+27' + dial.substring(1);
+  return '<a href="tel:' + escapeHtml(dial) + '" class="contact-link">' + escapeHtml(phone) + '</a>';
+}
+function mapsLink(location) {
+  var href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(location);
+  return '<a href="' + href + '" target="_blank" rel="noopener" class="contact-link">' + escapeHtml(location) + '</a>';
+}
+
 var ICON_CHEVRON = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var STAR_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+
+/* ── Modern flat black-and-white icon set (currentColor, 2px stroke) ── */
+var IS = ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+var ICON_LOCK    = '<svg viewBox="0 0 24 24"' + IS + '><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+var ICON_UNLOCK  = '<svg viewBox="0 0 24 24"' + IS + '><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
+var ICON_LINK    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>';
+var ICON_CHAT    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg>';
+var ICON_HEART   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
+var ICON_FLAG    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg>';
+var ICON_BOOK    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg>';
+var ICON_DOC     = '<svg viewBox="0 0 24 24"' + IS + '><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg>';
+var ICON_SPARKLE = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg>';
+var ICON_MIC     = '<svg viewBox="0 0 24 24"' + IS + '><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+var ICON_SCALES  = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg>';
+var ICON_HELP    = '<svg viewBox="0 0 24 24"' + IS + '><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg>';
+var ICON_PIN     = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+var ICON_BRIEFCASE = '<svg viewBox="0 0 24 24"' + IS + '><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>';
+var ICON_BUILDING = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M14 21V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v12M4 21h16"/><path d="M7 7h2M7 11h2M7 15h2"/></svg>';
+var ICON_PHONE   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>';
+var ICON_MAIL    = '<svg viewBox="0 0 24 24"' + IS + '><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+var ICON_WARN    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+var ICON_CHECK   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M20 6L9 17l-5-5"/></svg>';
+var ICON_CLOSE   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M18 6L6 18M6 6l12 12"/></svg>';
+/* Wrap an icon for a 18px menu slot */
+function miSvg(svg) { return '<span class="mi-icon">' + svg + '</span>'; }
+/* Small inline icon (12-14px) for stats / sub-text */
+function tinySvg(svg) { return '<span class="ti">' + svg + '</span>'; }
 
 window.switchHubTab = function(btn, agencyId, tab) {
   btn.parentElement.querySelectorAll('.hub-tab').forEach(function(t){ t.classList.remove('active'); });
   btn.classList.add('active');
   var a = agenciesCache.find(function(x){ return x.id === agencyId; });
-  var target = document.querySelector('.hub-tab-content[data-agency="' + agencyId + '"]');
+  // Scope to the card that contains this button so duplicate IDs across screens don't conflict
+  var card = btn.closest('.hub-card');
+  var target = card ? card.querySelector('.hub-tab-content') : null;
+  if (!target) {
+    var active = document.querySelector('.screen.active');
+    target = active ? active.querySelector('.hub-tab-content[data-agency="' + agencyId + '"]') : document.querySelector('.hub-tab-content[data-agency="' + agencyId + '"]');
+  }
+  if (!target) return;
   if (tab === 'vacancies') target.innerHTML = hubVacancies(a);
   if (tab === 'branches') target.innerHTML = hubBranches(a);
   if (tab === 'contact') target.innerHTML = hubContact(a);
 };
 
 window.toggleHub = function(id) {
-  var card = document.getElementById('hub-' + id);
+  var card = null;
+  var active = document.querySelector('.screen.active');
+  if (active) card = active.querySelector('#hub-' + id);
+  if (!card) card = document.getElementById('hub-' + id);
+  if (!card) return;
   var wasOpen = card.classList.contains('open');
-  document.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
+  if (active) active.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
+  else document.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
   if (!wasOpen) {
     card.classList.add('open');
     setTimeout(function(){ card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 200);
@@ -605,23 +1101,60 @@ function filterAndRenderCached() {
   var q = (document.getElementById('home-search').value || '').trim().toLowerCase();
   var list = agenciesCache;
   if (q) {
-    list = list.filter(function(a){ return ((a.name||'') + ' ' + (a.location||'')).toLowerCase().indexOf(q) !== -1; });
+    // Search across name, location, companies, trades/industries, and any vacancy titles/notes
+    var matchingAgencyIds = {};
+    vacanciesCache.forEach(function(v) {
+      var hay = ((v.title||'') + ' ' + (v.notes||'') + ' ' + (v.location||'')).toLowerCase();
+      if (hay.indexOf(q) !== -1) matchingAgencyIds[v.agency_id] = true;
+    });
+    list = list.filter(function(a){
+      var hay = ((a.name||'') + ' ' + (a.location||'') + ' ' + (a.companies||'') + ' ' + (a.trades||'')).toLowerCase();
+      return hay.indexOf(q) !== -1 || matchingAgencyIds[a.id];
+    });
   }
   document.getElementById('empty-msg').style.display = list.length ? 'none' : 'block';
   document.getElementById('hub-list').innerHTML = list.map(hubCard).join('');
 }
 
 // ===== Search screen =====
+
+
+window.toggleSave = function(btn, key) {
+  if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); showToast('Removed from saved'); }
+  else { savedSet.add(key); btn.classList.add('saved'); showToast('Saved \u2605'); }
+  localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+  renderSaved();
+};
+
+function renderSaved() {
+  var list = vacanciesCache.filter(function(v){ return savedSet.has(v.id); });
+  var el = document.getElementById('saved-list');
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>Nothing saved yet</h3><p>Tap the star on any vacancy to keep it here.</p></div>'; return; }
+  el.innerHTML = list.map(function(v) {
+    var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
+    return vacancyCard(v, agency);
+  }).join('');
+}
+
+// ===== Search screen =====
 window.handleSearchScreen = function(val) {
   var q = val.trim().toLowerCase();
   var el = document.getElementById('search-results');
-  if (!q) { el.innerHTML = '<div class="empty-state"><h3>Search the directory</h3><p>Find agencies, vacancies, or locations.</p></div>'; return; }
-  var am = agenciesCache.filter(function(a){ return (a.name||'').toLowerCase().indexOf(q)!==-1 || (a.location||'').toLowerCase().indexOf(q)!==-1; });
+  if (!q) { el.innerHTML = '<div class="empty-state"><h3>Search the directory</h3><p>Find agencies, vacancies, trades, or locations.</p></div>'; return; }
+  // Agencies: match name, location, companies, trades/industries
+  var am = agenciesCache.filter(function(a){ return ((a.name||'') + ' ' + (a.location||'') + ' ' + (a.companies||'') + ' ' + (a.trades||'')).toLowerCase().indexOf(q)!==-1; });
+  // Vacancies: match title, notes, location, or parent agency name/trades
   var vm = vacanciesCache.filter(function(v){
     var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
-    return (v.title||'').toLowerCase().indexOf(q)!==-1 || (v.location||'').toLowerCase().indexOf(q)!==-1 || (agency && (agency.name||'').toLowerCase().indexOf(q)!==-1);
+    var hay = ((v.title||'') + ' ' + (v.notes||'') + ' ' + (v.location||'')).toLowerCase();
+    if (hay.indexOf(q)!==-1) return true;
+    if (agency) {
+      var aHay = ((agency.name||'') + ' ' + (agency.trades||'') + ' ' + (agency.companies||'')).toLowerCase();
+      if (aHay.indexOf(q)!==-1) return true;
+    }
+    return false;
   });
-  if (!am.length && !vm.length) { el.innerHTML = '<div class="empty-state"><h3>No matches</h3><p>Try a different agency name, role, or location.</p></div>'; return; }
+  if (!am.length && !vm.length) { el.innerHTML = '<div class="empty-state"><h3>No matches</h3><p>Try a different agency name, trade, role, or location.</p></div>'; return; }
   var html = '';
   if (am.length) html += am.map(hubCard).join('');
   if (vm.length) {
@@ -640,16 +1173,17 @@ function vacancyCard(v, agency) {
   '<article class="vacancy-card">' +
     '<div class="vacancy-head">' +
       '<div><div class="vacancy-title">' + escapeHtml(v.title || 'Untitled role') + '</div><div class="vacancy-org">' + escapeHtml(agency.name || '') + '</div></div>' +
-      '<button class="save-btn ' + (saved?'saved':'') + '" data-ripple onclick="toggleSave(this,\'' + key + '\')">' + (saved ? '★' : '☆') + '</button>' +
+      '<button class="save-btn ' + (saved?'saved':'') + '" data-ripple onclick="toggleSave(this,\'' + key + '\')">' + STAR_SVG + '</button>' +
     '</div>' +
     '<div class="vacancy-meta">' + (v.location ? '<span class="meta-chip">' + escapeHtml(v.location) + '</span>' : '') + (v.closing_date ? '<span class="meta-chip">Closes ' + escapeHtml(v.closing_date) + '</span>' : '') + '</div>' +
     (v.notes ? '<div class="vacancy-notes">' + escapeHtml(v.notes) + '</div>' : '') +
+    (v.link ? '<div style="margin-bottom:10px;"><a href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" class="contact-link" style="font-size:13px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>Apply here</a></div>' : '') +
   '</article>';
 }
 
 window.toggleSave = function(btn, key) {
-  if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); btn.textContent = '☆'; showToast('Removed from saved'); }
-  else { savedSet.add(key); btn.classList.add('saved'); btn.textContent = '★'; showToast('Saved'); }
+  if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); btn.innerHTML = STAR_SVG; showToast('Removed from saved'); }
+  else { savedSet.add(key); btn.classList.add('saved'); btn.innerHTML = STAR_SVG; showToast('Saved'); }
   localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
   renderSaved();
 };
@@ -676,6 +1210,7 @@ function openForm(id) {
   document.getElementById('f-location').value = a ? a.location : '';
   document.getElementById('f-cvpref').value = a ? a.cvpref : 'Email';
   document.getElementById('f-companies').value = a ? (a.companies || '') : '';
+  document.getElementById('f-trades').value = a ? (a.trades || '') : '';
   document.getElementById('f-verified').checked = a ? !!a.verified : false;
   document.getElementById('verified-toggle-row').style.display = isAdmin ? 'flex' : 'none';
   window.pendingPhoto = a ? a.photo : null;
@@ -721,12 +1256,18 @@ async function saveAgency() {
     location: document.getElementById('f-location').value.trim(),
     cvpref: document.getElementById('f-cvpref').value,
     companies: document.getElementById('f-companies').value.trim(),
+    trades: document.getElementById('f-trades').value.trim(),
     photo: window.pendingPhoto
   };
   if (isAdmin) payload.verified = document.getElementById('f-verified').checked;
   await upsertAgency(payload);
+  // Auto-generate a SMART MANAGER token for new agencies
+  if (!editingId) {
+    var token = genToken();
+    setManagerToken(id, token);
+  }
   closeSheet('form-overlay');
-  showToast(editingId ? 'Agency updated' : 'Agency added');
+  showToast(editingId ? 'Agency updated' : 'Agency added — SMART MANAGER link created');
   editingId = null;
   await loadAll();
 }
@@ -743,18 +1284,21 @@ function openBranchSheet(agencyId) {
   pendingBranchAgency = agencyId;
   document.getElementById('b-name').value = '';
   document.getElementById('b-location').value = '';
+  document.getElementById('b-phone').value = '';
+  document.getElementById('b-email').value = '';
   document.getElementById('branch-overlay').classList.add('open');
 }
 async function saveBranch() {
   var name = document.getElementById('b-name').value.trim();
   if (!name) { alert('Add a branch name.'); return; }
   var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-  await upsertBranch({ id: id, agency_id: pendingBranchAgency, name: name, location: document.getElementById('b-location').value.trim() });
+  var live = await upsertBranch({ id: id, agency_id: pendingBranchAgency, name: name, location: document.getElementById('b-location').value.trim(), phone: document.getElementById('b-phone').value.trim(), email: document.getElementById('b-email').value.trim() });
   closeSheet('branch-overlay');
-  showToast('Branch added');
+  showToast(live ? 'Branch added' : 'Branch added (saved on this device)');
   await loadAll();
+  if (managerMode) { renderManagerMode(); return; }
   var card = document.getElementById('hub-' + pendingBranchAgency);
-  if (card) card.classList.add('open');
+  if (card) { card.classList.add('open'); switchHubTab(card.querySelector('.hub-tab'), pendingBranchAgency, 'branches'); }
 }
 async function deleteBranch(id, agencyId) {
   if (!confirm('Delete this branch?')) return;
@@ -772,23 +1316,26 @@ function openVacancySheet(agencyId) {
   document.getElementById('v-location').value = '';
   document.getElementById('v-closing').value = '';
   document.getElementById('v-notes').value = '';
+  document.getElementById('v-link').value = '';
   document.getElementById('vacancy-overlay').classList.add('open');
 }
 async function saveVacancy() {
   var title = document.getElementById('v-title').value.trim();
   if (!title) { alert('Add a role/title.'); return; }
   var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-  await upsertVacancy({
+  var live = await upsertVacancy({
     id: id, agency_id: pendingVacancyAgency, title: title,
     location: document.getElementById('v-location').value.trim(),
     closing_date: document.getElementById('v-closing').value.trim(),
-    notes: document.getElementById('v-notes').value.trim()
+    notes: document.getElementById('v-notes').value.trim(),
+    link: document.getElementById('v-link').value.trim()
   });
   closeSheet('vacancy-overlay');
-  showToast('Vacancy published');
+  showToast(live ? 'Vacancy published' : 'Vacancy published (saved on this device)');
   await loadAll();
+  if (managerMode) { renderManagerMode(); return; }
   var card = document.getElementById('hub-' + pendingVacancyAgency);
-  if (card) card.classList.add('open');
+  if (card) { card.classList.add('open'); switchHubTab(card.querySelector('.hub-tab'), pendingVacancyAgency, 'vacancies'); }
 }
 async function deleteVacancy(id, agencyId) {
   if (!confirm('Delete this vacancy?')) return;
@@ -801,6 +1348,119 @@ async function deleteVacancy(id, agencyId) {
 // ===== Sheets / misc =====
 function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
 function openSupportSheet() { document.getElementById('support-overlay').classList.add('open'); }
+
+// ===== Report a problem =====
+function openReportSheet(presetAgency) {
+  // Populate agency suggestions
+  var dl = document.getElementById('r-agency-list');
+  if (dl) dl.innerHTML = agenciesCache.map(function(a){ return '<option value="' + escapeHtml(a.name||'') + '">'; }).join('');
+  document.getElementById('r-agency').value = presetAgency || '';
+  document.getElementById('r-reason').selectedIndex = 0;
+  document.getElementById('r-details').value = '';
+  document.getElementById('r-contact').value = '';
+  var err = document.getElementById('report-error');
+  err.style.display = 'none'; err.textContent = '';
+  document.getElementById('report-overlay').classList.add('open');
+}
+async function submitReport() {
+  var agencyName = document.getElementById('r-agency').value.trim();
+  var reason = document.getElementById('r-reason').value;
+  var details = document.getElementById('r-details').value.trim();
+  var contact = document.getElementById('r-contact').value.trim();
+  var err = document.getElementById('report-error');
+  err.style.display = 'none'; err.textContent = '';
+  if (!agencyName && !details) {
+    err.textContent = 'Please tell us which agency or add some details.'; err.style.display = 'block'; return;
+  }
+  // Match agency to an id if possible
+  var matched = agenciesCache.find(function(a){ return (a.name||'').toLowerCase() === agencyName.toLowerCase(); });
+  var payload = {
+    agency_name: agencyName,
+    agency_id: matched ? matched.id : null,
+    reason: reason,
+    details: (details ? details : '') + (contact ? ' | Reporter contact: ' + contact : ''),
+    status: 'open'
+  };
+  var btn = event && event.target ? event.target : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
+  var res = await submitReportToSupabase(payload);
+  if (btn) { btn.disabled = false; btn.textContent = 'Submit report'; }
+  if (res.ok) {
+    closeSheet('report-overlay');
+    showToast('Report submitted \u2713  Thank you!');
+    return;
+  }
+  // RLS or table error — store locally and offer to send via WhatsApp/email
+  var local = readLocalReports();
+  payload.created_at = new Date().toISOString();
+  local.push(payload);
+  writeLocalReports(local);
+  err.style.display = 'block';
+  err.innerHTML = 'Saved on this device. To make sure the admin sees it, send it via WhatsApp or email. ' +
+    '<div style="display:flex;gap:8px;margin-top:8px;">' +
+    '<a href="' + reportWhatsAppLink(payload) + '" target="_blank" rel="noopener" class="sheet-submit" style="padding:10px 14px;font-size:12px;flex:1;">WhatsApp</a>' +
+    '<a href="' + reportEmailLink(payload) + '" class="sheet-submit" style="padding:10px 14px;font-size:12px;flex:1;">Email</a>' +
+    '</div>';
+}
+function reportWhatsAppLink(p) {
+  var msg = 'SA Recruiters report:%0A' +
+    'Agency: ' + encodeURIComponent(p.agency_name || '-') + '%0A' +
+    'Reason: ' + encodeURIComponent(p.reason || '-') + '%0A' +
+    'Details: ' + encodeURIComponent(p.details || '-');
+  return 'https://wa.me/27711227954?text=' + msg;
+}
+function reportEmailLink(p) {
+  var subj = encodeURIComponent('SA Recruiters report: ' + (p.agency_name || 'Listing'));
+  var body = encodeURIComponent('Agency: ' + (p.agency_name||'-') + '\nReason: ' + (p.reason||'-') + '\nDetails: ' + (p.details||'-'));
+  return 'mailto:Kamogeloralph@gmail.com?subject=' + subj + '&body=' + body;
+}
+
+// ===== Suggestion / Comment =====
+function openSuggestionSheet() {
+  document.getElementById('s-type').selectedIndex = 0;
+  document.getElementById('s-agency').value = '';
+  document.getElementById('s-details').value = '';
+  document.getElementById('s-contact').value = '';
+  var err = document.getElementById('suggestion-error');
+  err.style.display = 'none'; err.textContent = '';
+  document.getElementById('suggestion-overlay').classList.add('open');
+}
+async function submitSuggestion() {
+  var type = document.getElementById('s-type').value;
+  var agency = document.getElementById('s-agency').value.trim();
+  var details = document.getElementById('s-details').value.trim();
+  var contact = document.getElementById('s-contact').value.trim();
+  var err = document.getElementById('suggestion-error');
+  err.style.display = 'none'; err.textContent = '';
+  if (!details && !agency) {
+    err.textContent = 'Please add some details or an agency name.'; err.style.display = 'block'; return;
+  }
+  var payload = {
+    type: type,
+    agency_name: agency,
+    details: (details ? details : '') + (contact ? ' | Contact: ' + contact : ''),
+    status: 'open'
+  };
+  var btn = event && event.target ? event.target : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
+  // Try Supabase suggestions table
+  var ok = false;
+  try {
+    var { error } = await supabaseClient.from('suggestions').insert([payload]);
+    if (!error) ok = true;
+  } catch(e){}
+  // Local fallback
+  try {
+    var local = JSON.parse(localStorage.getItem('sa_suggestions_local') || '[]');
+    payload.created_at = new Date().toISOString();
+    local.push(payload);
+    localStorage.setItem('sa_suggestions_local', JSON.stringify(local));
+  } catch(e){}
+  if (btn) { btn.disabled = false; btn.textContent = 'Submit'; }
+  closeSheet('suggestion-overlay');
+  showToast(ok ? 'Suggestion sent \u2713  Thank you!' : 'Suggestion saved \u2713  Thank you!');
+}
+
 function copyText(text, el) {
   var done = function() {
     var original = el.querySelector('.hub-contact-value').textContent;
@@ -812,16 +1472,16 @@ function copyText(text, el) {
 }
 
 var SECTION_CONTENT = {
-  'learning-hub': { title: '📚 Learning Hub', body: 'Coming soon.\n\nThis section will host short guides and resources to help job seekers build skills employers are looking for.' },
-  'cv-prep': { title: '📝 How to Prepare Your CV', body: 'Coming soon.\n\nA step-by-step guide to building a strong CV.' },
-  'cv-revamp': { title: '✨ CV Revamp Service', body: 'Coming soon.\n\nProfessional CV review and rewriting. Reach out via Support to enquire.' },
-  'interview-tips': { title: '🎤 Interview Tips', body: 'Coming soon.\n\nHow to prepare, common questions, and what to do after.' },
-  'know-your-rights': { title: '⚖️ Know Your Rights', body: 'Coming soon.\n\nUIF, CCMA, and basic labour rights in South Africa.' },
-  'faq': { title: '❓ FAQ', body: 'Coming soon.\n\nHow this directory works and how to report incorrect info.' }
+  'learning-hub': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg>Learning Hub', body: 'Coming soon.\n\nThis section will host short guides and resources to help job seekers build skills employers are looking for.' },
+  'cv-prep': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg>How to Prepare Your CV', body: 'Coming soon.\n\nA step-by-step guide to building a strong CV.' },
+  'cv-revamp': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg>CV Revamp Service', body: 'Coming soon.\n\nProfessional CV review and rewriting. Reach out via Support to enquire.' },
+  'interview-tips': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Interview Tips', body: 'Coming soon.\n\nHow to prepare, common questions, and what to do after.' },
+  'know-your-rights': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg>Know Your Rights', body: 'Coming soon.\n\nUIF, CCMA, and basic labour rights in South Africa.' },
+  'faq': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg>FAQ', body: 'Coming soon.\n\nHow this directory works and how to report incorrect info.' }
 };
 function openContentSheet(key) {
   var s = SECTION_CONTENT[key];
-  document.getElementById('content-title').textContent = s.title;
+  document.getElementById('content-title').innerHTML = s.title;
   document.getElementById('content-body').textContent = s.body;
   document.getElementById('content-overlay').classList.add('open');
 }
@@ -850,13 +1510,25 @@ async function adminLogout() {
   filterAndRenderCached();
 }
 function updateAdminUI() {
-  document.getElementById('admin-btn').textContent = isAdmin ? '🔓' : '🔒';
+  var btn = document.getElementById('admin-btn');
+  if (btn) {
+    btn.innerHTML = isAdmin ? ICON_UNLOCK : ICON_LOCK;
+    if (isAdmin) btn.classList.add('logged-in'); else btn.classList.remove('logged-in');
+  }
+  var mi = document.getElementById('admin-menu-icon');
+  if (mi) mi.innerHTML = isAdmin ? ICON_UNLOCK : ICON_LOCK;
   document.getElementById('admin-menu-label').textContent = isAdmin ? 'Admin (logged in) — tap to log out' : 'Admin login';
   document.getElementById('profile-status-sub').textContent = isAdmin ? 'Logged in as admin' : 'Not logged in';
+  var fabAdmin = document.getElementById('fab-admin');
+  var fabSuggest = document.getElementById('fab-suggest');
+  if (fabAdmin) fabAdmin.style.display = isAdmin ? 'flex' : 'none';
+  if (fabSuggest) fabSuggest.style.display = isAdmin ? 'none' : 'flex';
+  var smItem = document.getElementById('sm-menu-item');
+  if (smItem) smItem.style.display = isAdmin ? 'flex' : 'none';
 }
 (async function checkSession() {
   var { data } = await supabaseClient.auth.getSession();
-  if (data && data.session) { isAdmin = true; updateAdminUI(); }
+  if (data && data.session) { isAdmin = true; updateAdminUI(); if (typeof filterAndRenderCached === 'function') filterAndRenderCached(); }
 })();
 
 // ===== Bottom nav =====
@@ -893,6 +1565,179 @@ document.addEventListener('pointerdown', function(e) {
   el.appendChild(span);
   span.addEventListener('animationend', function(){ span.remove(); });
 });
+
+// ===== SMART MANAGER (admin section) =====
+function goSmartManager() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-smartmanager').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
+  window.scrollTo({ top: 0 });
+  renderSmartManager();
+}
+function renderSmartManager() {
+  var list = document.getElementById('smartmanager-list');
+  if (!list) return;
+  if (!agenciesCache.length) {
+    list.innerHTML = '<div class="empty-state"><h3>No agencies yet</h3><p>Add agencies first, then their links will appear here.</p></div>';
+    return;
+  }
+  var html = '';
+  agenciesCache.forEach(function(a) {
+    var token = getManagerToken(a.id);
+    var link = token ? buildManagerLink(token) : '(generating...)';
+    html += '<div class="sm-card">' +
+      '<div class="sm-card-head">' +
+        '<div class="sm-card-avatar">' + initials(a.name) + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="sm-card-name">' + escapeHtml(a.name) + '</div>' +
+          (a.location ? '<div class="sm-card-loc">' + escapeHtml(a.location) + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="sm-link-box" id="sm-link-' + a.id + '">' + escapeHtml(link) + '</div>' +
+      '<div class="sm-link-actions">' +
+        '<button class="sm-copy-btn" data-ripple onclick="copyManagerLink(\'' + a.id + '\')">Copy link</button>' +
+        '<button class="sm-share-btn" data-ripple onclick="shareManagerLink(\'' + a.id + '\')">Share</button>' +
+        '<button class="sm-share-btn" data-ripple onclick="openManagerLink(\'' + a.id + '\')">Open</button>' +
+      '</div>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+}
+function copyManagerLink(agencyId) {
+  var token = getManagerToken(agencyId);
+  if (!token) { showToast('Link not ready'); return; }
+  var link = buildManagerLink(token);
+  copyText(link, document.getElementById('sm-link-' + agencyId));
+}
+function shareManagerLink(agencyId) {
+  var token = getManagerToken(agencyId);
+  if (!token) { showToast('Link not ready'); return; }
+  var link = buildManagerLink(token);
+  var agency = agenciesCache.find(function(a){ return a.id === agencyId; });
+  var shareText = 'Hello ' + (agency ? agency.name : '') + ', here is your link to add branches and vacancies to SA Recruiters: ' + link;
+  if (navigator.share) {
+    navigator.share({ title: 'SA Recruiters — Agency Update Link', text: shareText, url: link }).catch(function(){});
+  } else {
+    copyText(link, null);
+    showToast('Link copied — paste it into a message to the agency');
+  }
+}
+function openManagerLink(agencyId) {
+  var token = getManagerToken(agencyId);
+  if (!token) { showToast('Link not ready'); return; }
+  window.open(buildManagerLink(token), '_blank');
+}
+
+// ===== MANAGER MODE (agency self-service, add-only) =====
+function enterManagerMode(token) {
+  var agencyId = agencyIdFromToken(token);
+  if (!agencyId) {
+    // Token not found — agencies may not be loaded yet, retry after loadAll
+    managerPendingToken = token;
+    return false;
+  }
+  managerMode = true;
+  managerAgency = agenciesCache.find(function(a){ return a.id === agencyId; });
+  if (!managerAgency) { managerMode = false; return false; }
+  // Hide normal app chrome, show manager screen
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-manager').classList.add('active');
+  var nav = document.querySelector('.bottom-nav');
+  if (nav) nav.style.display = 'none';
+  var fabAdmin = document.getElementById('fab-admin');
+  if (fabAdmin) fabAdmin.style.display = 'none';
+  var fabSuggest = document.getElementById('fab-suggest');
+  if (fabSuggest) fabSuggest.style.display = 'none';
+  document.getElementById('manager-agency-name').textContent = managerAgency.name || 'Agency';
+  renderManagerMode();
+  return true;
+}
+function exitManagerMode() {
+  managerMode = false;
+  managerAgency = null;
+  managerPendingToken = null;
+  // Clean URL
+  if (window.history && window.history.replaceState) {
+    var clean = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, document.title, clean);
+  }
+  // Restore app chrome
+  var nav = document.querySelector('.bottom-nav');
+  if (nav) nav.style.display = '';
+  var fabAdmin = document.getElementById('fab-admin');
+  if (fabAdmin) fabAdmin.style.display = isAdmin ? 'flex' : 'none';
+  var fabSuggest = document.getElementById('fab-suggest');
+  if (fabSuggest) fabSuggest.style.display = isAdmin ? 'none' : 'flex';
+  // Go back to home
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-home').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'home'); });
+}
+function renderManagerMode() {
+  if (!managerMode || !managerAgency) return;
+  // Branches
+  var branches = branchesFor(managerAgency.id);
+  var bHtml = '';
+  if (branches.length) {
+    branches.forEach(function(b) {
+      bHtml += '<div class="manager-item">' +
+        '<div class="manager-item-title">' + escapeHtml(b.name || '') + '</div>' +
+        (b.location ? '<div class="manager-item-sub">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + escapeHtml(b.location) + '</div>' : '') +
+        (b.phone ? '<div class="manager-item-sub">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>' + escapeHtml(b.phone) + '</div>' : '') +
+        (b.email ? '<div class="manager-item-sub">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>' + escapeHtml(b.email) + '</div>' : '') +
+        '<span class="manager-read-only-tag">Saved — contact admin to edit</span>' +
+      '</div>';
+    });
+  } else {
+    bHtml = '<div class="empty-state" style="padding:16px 0"><p style="font-size:13px;color:var(--text-2)">No branches added yet.</p></div>';
+  }
+  document.getElementById('manager-branch-list').innerHTML = bHtml;
+  // Vacancies
+  var vacancies = vacanciesFor(managerAgency.id);
+  var vHtml = '';
+  if (vacancies.length) {
+    vacancies.forEach(function(v) {
+      vHtml += '<div class="manager-item">' +
+        '<div class="manager-item-title">' + escapeHtml(v.title || '') + '</div>' +
+        (v.location ? '<div class="manager-item-sub">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + escapeHtml(v.location) + '</div>' : '') +
+        (v.closing_date ? '<div class="manager-item-meta">Closes: ' + escapeHtml(v.closing_date) + '</div>' : '') +
+        (v.notes ? '<div class="manager-item-sub" style="margin-top:6px">' + escapeHtml(v.notes) + '</div>' : '') +
+        '<span class="manager-read-only-tag">Saved — contact admin to edit</span>' +
+      '</div>';
+    });
+  } else {
+    vHtml = '<div class="empty-state" style="padding:16px 0"><p style="font-size:13px;color:var(--text-2)">No vacancies added yet.</p></div>';
+  }
+  document.getElementById('manager-vacancy-list').innerHTML = vHtml;
+}
+function managerAddBranch() {
+  if (!managerAgency) return;
+  pendingBranchAgency = managerAgency.id;
+  document.getElementById('b-name').value = '';
+  document.getElementById('b-location').value = '';
+  document.getElementById('b-phone').value = '';
+  document.getElementById('b-email').value = '';
+  document.getElementById('branch-overlay').classList.add('open');
+}
+function managerAddVacancy() {
+  if (!managerAgency) return;
+  pendingVacancyAgency = managerAgency.id;
+  document.getElementById('v-title').value = '';
+  document.getElementById('v-location').value = '';
+  document.getElementById('v-closing').value = '';
+  document.getElementById('v-notes').value = '';
+  document.getElementById('v-link').value = '';
+  document.getElementById('vacancy-overlay').classList.add('open');
+}
+// ===== Detect manager mode from URL (?manage=TOKEN) =====
+(function detectManagerMode() {
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('manage');
+  if (token) {
+    // Agencies aren't loaded yet; set pending token — loadAll() will enter manager mode
+    managerPendingToken = token;
+  }
+})();
 
 loadAll();
 
