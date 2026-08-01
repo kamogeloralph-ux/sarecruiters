@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sa-recruiters-v13';
-const ASSETS = ['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
+const CACHE_NAME = 'sa-recruiters-v17';
+const ASSETS = ['index.html', 'content.js', 'content-manager.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function(event) {
   self.skipWaiting();

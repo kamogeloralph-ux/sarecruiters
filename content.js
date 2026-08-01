@@ -1,0 +1,282 @@
+/* ============================================================
+   DEFAULT CONTENT for SA Recruiters
+   Each section is a list of "articles": { id, title, body }
+   body supports a subset of HTML (rendered via content-body).
+   Admins can edit / delete any article from inside the app.
+   Defaults are seeded into localStorage on first load and can be
+   reset by the admin ("Restore defaults").
+   ============================================================ */
+
+/* Helper: build the heading icon SVG prefix used in section titles */
+function contentIcon(svgInner, size){
+  size = size || 20;
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:'+size+'px;height:'+size+'px;vertical-align:-4px;margin-right:6px">'+svgInner+'</svg>';
+}
+
+var SECTION_META = {
+  'faq': {
+    title: contentIcon('<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/>') + 'FAQ',
+    icon: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/>'
+  },
+  'cv-prep': {
+    title: contentIcon('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/>') + 'How to Prepare Your CV',
+    icon: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/>'
+  },
+  'cv-revamp': {
+    title: contentIcon('<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/>') + 'CV Revamp Service',
+    icon: '<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/>'
+  },
+  'interview-tips': {
+    title: contentIcon('<rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>') + 'Interview Tips',
+    icon: '<rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'
+  },
+  'know-your-rights': {
+    title: contentIcon('<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/>') + 'Know Your Rights',
+    icon: '<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/>'
+  },
+  'learning-hub': {
+    title: contentIcon('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/>') + 'Learning Hub',
+    icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/>'
+  },
+  'support': {
+    title: contentIcon('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>') + 'Support &amp; Donations',
+    icon: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>'
+  },
+  'privacy': {
+    title: contentIcon('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>') + 'Privacy Policy',
+    icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'
+  }
+};
+
+var DEFAULT_CONTENT = {
+  /* ============ FAQ ============ */
+  'faq': [
+    {
+      id: 'faq-what',
+      title: 'What is SA Recruiters?',
+      body: '<p>SA Recruiters is a free, community-maintained directory of South African recruitment agencies. It brings agencies, the companies they recruit for, and job seekers together in one place. You can browse agencies by trade or location, see their open vacancies, and contact them directly using their preferred method.</p>'
+    },
+    {
+      id: 'faq-free',
+      title: 'Is it free to use?',
+      body: '<p>Yes. Searching agencies, viewing vacancies, and contacting agencies are completely free for job seekers. The directory is kept running through voluntary donations and community support.</p>'
+    },
+    {
+      id: 'faq-listed',
+      title: 'How does an agency get listed?',
+      body: '<p>Anyone can suggest an agency through the "Suggest or comment" option in the Profile menu. The admin reviews the suggestion and, once verified, adds the agency with its contact details, trades, and the companies it recruits for. Agencies can also be given a private Smart Manager link so they can add their own branches and vacancies directly.</p>'
+    },
+    {
+      id: 'faq-verified',
+      title: 'What does the "Verified" badge mean?',
+      body: '<p>A green Verified badge shows that the admin has confirmed the agency\'s contact details and that the agency is actively operating. It is not a guarantee of a job — it simply means the listing has been checked. If you spot wrong or outdated information on any listing, use "Report wrong info" on that agency\'s card so we can review it.</p>'
+    },
+    {
+      id: 'faq-cv',
+      title: 'How do I send my CV to an agency?',
+      body: '<p>Open an agency\'s card and tap the Contact tab. The preferred contact method (Email, Website, WhatsApp, or Walk-in) is shown at the top. Follow that method and include a short, professional message with your CV attached. For tips on building a strong CV, see the "How to Prepare Your CV" section in the Profile menu.</p>'
+    },
+    {
+      id: 'faq-save',
+      title: 'Can I save vacancies to apply later?',
+      body: '<p>Yes. Tap the bookmark icon on any vacancy card to save it. Saved vacancies appear under the "Saved" tab in the bottom navigation so you can return to them even when you are offline. Your saved list is stored on your device.</p>'
+    },
+    {
+      id: 'faq-report',
+      title: 'How do I report incorrect information?',
+      body: '<p>Every agency card has a "Report wrong info" button on its Contact tab. You can also use "Report a problem" in the Profile menu. Tell us which agency is affected, what is wrong, and how we can reach you if needed. We review every report and update listings accordingly.</p>'
+    },
+    {
+      id: 'faq-offline',
+      title: 'Does the app work offline?',
+      body: '<p>SA Recruiters is a Progressive Web App (PWA). Once you have loaded it, you can install it to your home screen and it will continue to work offline for content you have already viewed. New agencies and vacancies appear once you are back online.</p>'
+    },
+    {
+      id: 'faq-data',
+      title: 'How is my data handled?',
+      body: '<p>We only store what is needed to make the directory work. Your saved vacancies and star ratings are kept on your own device. Agency listings, branches, and vacancies are stored securely. See the Privacy Policy (linked in the app) for full details.</p>'
+    }
+  ],
+
+  /* ============ HOW TO PREPARE YOUR CV ============ */
+  'cv-prep': [
+    {
+      id: 'cv-intro',
+      title: 'Why your CV matters',
+      body: '<p>Your CV (curriculum vitae) is usually the first thing a recruiter or employer sees. For most South African recruitment agencies, a clear, well-structured CV is what gets you shortlisted for an interview. A good CV does not list everything you have ever done — it tells a focused story of why you are the right person for the role you are applying for. Aim for two to three pages at most, keep it neat, and make sure every detail is accurate, because recruiters do check.</p>'
+    },
+    {
+      id: 'cv-structure',
+      title: 'The essential sections of a CV',
+      body: '<p>A strong South African CV should include the following sections, in this order:</p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Contact details</strong> — full name, phone number, email, and the town or suburb where you live. You do not need a full street address, but your general location helps recruiters match you to nearby roles.</li><li><strong>Professional summary</strong> — two or three lines describing who you are, your trade or field, and the kind of work you are looking for.</li><li><strong>Work experience</strong> — list jobs from most recent to oldest. For each, give the job title, employer name, town, and the dates (month and year) you worked there, followed by your main duties and achievements.</li><li><strong>Education and qualifications</strong> — matric, diplomas, degrees, and any certificates such as a forklift licence, first aid, or a trade test.</li><li><strong>Skills</strong> — both technical skills (machinery, software, driving licences) and soft skills (teamwork, communication, reliability).</li><li><strong>References</strong> — at least two recent, contactable references with their name, position, company, and phone number. Always ask permission first.</li></ul>'
+    },
+    {
+      id: 'cv-tips',
+      title: 'Top tips for a CV that gets noticed',
+      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li>Keep it clean and easy to read. Use a simple font such as Arial or Calibri, size 11 or 12, with clear headings.</li><li>Tailor each CV to the job. Highlight the experience and skills that match the specific vacancy you are applying for.</li><li>Use action words and numbers. Write "operated a forklift to move up to 200 pallets per shift" rather than just "forklift duties".</li><li>Check your contact details carefully. A wrong phone number is the most common reason qualified people are never called back.</li><li>Keep it honest. Never invent qualifications or jobs. If something does not check out, you can lose the opportunity — and future ones too.</li><li>Save and send your CV as a PDF so the formatting stays the same on every recruiter\'s device.</li><li>Name the file clearly, for example "Jane_Dlamini_CV_2026.pdf", so it is easy for the recruiter to find again.</li></ul>'
+    },
+    {
+      id: 'cv-mistakes',
+      title: 'Common mistakes to avoid',
+      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li>Spelling and grammar errors — proofread twice and ask a friend to read it as well.</li><li>Gaps with no explanation — if you were studying, job hunting, or unwell, a short note is better than silence.</li><li>Too much personal information — you do not need to include your ID number, marital status, or a photo unless the employer specifically asks.</li><li>A CV that is too long — recruiters spend seconds on the first read. Keep it relevant and concise.</li><li>Using the same CV for every job — a generic CV is far less effective than one tailored to the role.</li></ul>'
+    },
+    {
+      id: 'cv-next',
+      title: 'What to do before you send it',
+      body: '<p>Before you email or upload your CV, do a final check. Make sure it is saved as a PDF, that your phone number and email are correct, and that it is tailored to the specific vacancy. Write a short, polite cover message — one or two lines introducing yourself and naming the role you are applying for. When you are ready, find an agency in this directory, open its card, and use the preferred contact method shown on the Contact tab. If you would like professional help improving an existing CV, see the "CV Revamp Service" section.</p>'
+    }
+  ],
+
+  /* ============ CV REVAMP SERVICE ============ */
+  'cv-revamp': [
+    {
+      id: 'revamp-what',
+      title: 'What is the CV Revamp Service?',
+      body: '<p>The CV Revamp Service is a professional CV review and rewriting service offered to job seekers who want to give their CV the best chance of getting shortlisted. Whether your CV is outdated, too long, or simply not getting responses, we help you restructure and rewrite it so that it highlights your strengths and matches what South African recruiters are actually looking for.</p>'
+    },
+    {
+      id: 'revamp-how',
+      title: 'How it works',
+      body: '<p>Reach out to us through the "Support &amp; Donations" section using the email or WhatsApp provided. Send us your current CV (or a list of your experience if you do not have one yet) and tell us the type of work you are aiming for. We will review it, suggest improvements, and send back a clean, professionally formatted PDF ready to send to agencies and employers.</p>'
+    },
+    {
+      id: 'revamp-cost',
+      title: 'What it costs',
+      body: '<p>The service is offered at a small, affordable fee to cover the time involved, and we keep it as accessible as possible. Contact us for current pricing and turnaround times. If you are unable to afford the fee, let us know — wherever we can, we assist job seekers through the donations that keep this directory running.</p>'
+    }
+  ],
+
+  /* ============ INTERVIEW TIPS ============ */
+  'interview-tips': [
+    {
+      id: 'iv-prep',
+      title: 'Before the interview: do your homework',
+      body: '<p>The single most important part of any interview is preparation. Research the company before you go: visit their website, understand their core business, and learn what they do and who they serve. Read the job advert carefully and match your experience to what they are asking for. Make sure you know the exact address, the time, and the name of the person you should ask for when you arrive. Plan your route and aim to arrive about ten to fifteen minutes early — never late. If it is an online interview, test your camera, microphone, and internet connection beforehand and find a quiet, well-lit place to sit.</p>'
+    },
+    {
+      id: 'iv-dress',
+      title: 'Dress for success',
+      body: '<p>It is always better to be slightly overdressed than underdressed. Even if the company\'s staff wear casual clothes, dress neatly and professionally for the interview itself. Your clothes should be clean, fit well, and be comfortable enough that you are not distracted by them. Good grooming — tidy hair, clean nails, and polished shoes — shows respect for the opportunity and for the people interviewing you.</p>'
+    },
+    {
+      id: 'iv-pitch',
+      title: 'Prepare your 30-second pitch',
+      body: '<p>Almost every interview starts with "tell me about yourself". Prepare a short, confident answer of about thirty seconds that describes who you are in a work context, your trade or field, your most relevant experience, and what makes you a good fit for this particular role. Avoid talking about your hobbies first — lead with your professional story, then add a sentence about your character at the end.</p>'
+    },
+    {
+      id: 'iv-questions',
+      title: 'Common interview questions and how to answer them',
+      body: '<p>Practise your answers to the questions that come up again and again:</p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Tell me about yourself.</strong> Summarise your work experience and key achievements, then tie them to the role.</li><li><strong>What are your strengths and weaknesses?</strong> Give three strengths that fit the job. For weaknesses, choose something real that you have recognised and are actively improving — never a flaw with no remedy.</li><li><strong>Why do you want to work here?</strong> Show you have researched the company. Mention what you admire and how you can contribute.</li><li><strong>How do you handle conflict or criticism?</strong> Give a positive example of a past situation, what you learnt, and how you resolved it.</li><li><strong>Where do you see yourself in five years?</strong> Keep it realistic and career-focused, showing growth within the field.</li><li><strong>What are your salary expectations?</strong> Research the market-related salary for the role and give a range rather than a fixed figure. Do not raise salary unless you are asked.</li></ul>'
+    },
+    {
+      id: 'iv-body',
+      title: 'Mind your body language',
+      body: '<p>People read more from how you act than from what you say. Greet the interviewer with a firm handshake and a smile, sit up straight, and keep comfortable eye contact without staring. Avoid crossing your arms, fidgeting, or checking your phone. Let your posture show that you are calm, confident, and interested. In a virtual interview, look at the camera when you speak, not at your own image on the screen.</p>'
+    },
+    {
+      id: 'iv-ask',
+      title: 'Always have questions ready',
+      body: '<p>When the interviewer asks "do you have any questions for us?", never say no. Having thoughtful questions shows genuine interest. Good examples include: "What would a typical day in this role look like?", "What are the biggest priorities for the person taking this position?", and "How does the team measure success in this role?". Avoid asking about leave and bonuses before you have been offered the job.</p>'
+    },
+    {
+      id: 'iv-after',
+      title: 'After the interview: follow up',
+      body: '<p>Within a day or two of the interview, send a short thank-you message or email to the person who interviewed you. Thank them for their time, reaffirm your interest in the role, and mention one specific thing you discussed. This small step sets you apart from most candidates. If you do not hear back within the time they gave you, it is acceptable to follow up politely once. If you are not successful, ask for feedback — it helps you improve for the next opportunity. Most of all, stay positive and keep applying; the right role often comes after a few attempts.</p>'
+    }
+  ],
+
+  /* ============ KNOW YOUR RIGHTS ============ */
+  'know-your-rights': [
+    {
+      id: 'kyr-intro',
+      title: 'Knowing your rights as a worker in South Africa',
+      body: '<p>South African labour law gives workers strong protections, but many job seekers and employees never learn what those protections are. Understanding your rights helps you spot unfair treatment, ask the right questions, and know where to go when something is wrong. The three things every worker should know about are the Basic Conditions of Employment Act (which sets minimum working conditions), the UIF (which supports you when you cannot work), and the CCMA (which helps resolve workplace disputes). The articles below explain each one in plain language. This information is a general guide and not legal advice — for a specific problem, contact the Department of Employment and Labour, the CCMA, or a qualified labour practitioner.</p>'
+    },
+    {
+      id: 'kyr-bcea',
+      title: 'The Basic Conditions of Employment Act (BCEA)',
+      body: '<p>The Basic Conditions of Employment Act (BCEA) sets the minimum standards every employer in South Africa must meet. These rights apply to you even if your written contract says nothing about them — and if your contract offers less than the Act allows, the Act wins. The BCEA covers most employees, including many part-time and temporary workers, though some sections work differently for people who earn above a threshold set by the Minister from time to time.</p><p><strong>The key protections include:</strong></p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Working hours</strong> — ordinary hours are capped (a standard guide is 45 hours per week), and overtime must be worked by agreement and paid at a premium rate, with limits on how much overtime you can work.</li><li><strong>Rest and meal breaks</strong> — you are entitled to a meal interval after a set number of continuous working hours, plus daily and weekly rest periods.</li><li><strong>Annual leave</strong> — you accrue paid annual leave over a leave cycle (a guide is 21 consecutive days, equal to about 15 working days, per year).</li><li><strong>Sick leave</strong> — paid sick leave is calculated over a defined sick-leave cycle.</li><li><strong>Maternity leave</strong> — pregnant employees are entitled to maternity leave (a guide is four consecutive months, unpaid under the BCEA but claimable from the UIF).</li><li><strong>Family responsibility leave</strong> — qualifying employees get paid leave for specific family events such as the birth or illness of a child or the death of an immediate family member (a guide is three days per year).</li><li><strong>Payslips</strong> — your employer must give you written particulars of your pay, including all deductions.</li><li><strong>Termination and notice</strong> — both sides must give notice before employment ends, with the notice period linked to how long you have worked (a guide is one week for less than six months, two weeks for six months to a year, and four weeks for more than a year).</li></ul><p>Because the exact hours, leave days, and thresholds can be amended by the Minister, confirm the current figures on the Department of Employment and Labour website before relying on a specific number. Keep copies of your contract and every payslip — they are your evidence if something goes wrong.</p>'
+    },
+    {
+      id: 'kyr-uif',
+      title: 'The Unemployment Insurance Fund (UIF)',
+      body: '<p>The Unemployment Insurance Fund (UIF) is a government safety net that gives short-term financial help to workers when they cannot earn an income. It supports you when you become unemployed, fall ill, go on maternity or adoption leave, and it assists the dependants of a contributing worker who has died. Think of it as financial protection for life\'s unexpected moments.</p><p><strong>How it is funded:</strong> Every employee pays 1% of their salary to the fund, and the employer matches that 1%, so a total of 2% is contributed each month. The employer is responsible for registering workers with the UIF and deducting the employee\'s share every month. You do not need a card to prove you have contributed — your contributions are recorded by the fund. It is illegal for an employer to deduct more than 1%, to charge you for deducting UIF, or to take a bigger percentage to make up for payments they fell behind on.</p><p><strong>Who can claim:</strong> All workers who contributed can claim if they are retrenched, dismissed, their contract expires, or their employer goes bankrupt. Domestic workers with more than one employer can claim if they lose one job. Foreigners employed permanently in South Africa also qualify. You generally cannot claim if you resigned voluntarily, were suspended for fraud or another criminal act, refused required training, or already receive a similar benefit.</p><p><strong>How to claim:</strong> Go to a Department of Employment and Labour office to sign the unemployment register, then return every four weeks to sign again and confirm you still need benefits. Bring your ID, your last payslip, a bank statement or proof of a bank account, and a letter from your employer confirming that you are no longer working there. If all your documents are in order, you should start receiving payments within about eight weeks, paid into your bank account every four weeks until the benefit is used up. You now have up to 12 months to submit a claim for unemployment, maternity, illness, and adoption benefits (and up to 18 months for a death benefit).</p><p><strong>Other UIF benefits:</strong> The fund also pays illness benefits (if you are booked off for two weeks or more), maternity benefits (claimable for up to 17 weeks of pregnancy), adoption benefits (for a child under two, while on adoption leave), and death benefits (for the spouse or child under 18 of a deceased contributor).</p>'
+    },
+    {
+      id: 'kyr-ccma',
+      title: 'The CCMA: resolving workplace disputes',
+      body: '<p>The Commission for Conciliation, Mediation and Arbitration (CCMA) is an independent body that helps employees and employers resolve workplace disputes under the Labour Relations Act (LRA). Its services are free, and you do not need a lawyer to use it. An employee, an employer, a union, or an employer organisation can refer a dispute to the CCMA.</p><p><strong>What you can refer to the CCMA:</strong></p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Unfair dismissal</strong> — if you were fired in a way that breaks labour law.</li><li><strong>Unfair labour practice</strong> — disputes about promotions, working conditions, and other workplace rights.</li><li><strong>Discrimination</strong> — if you were treated unfairly because of race, gender, or another protected characteristic.</li></ul><p><strong>When to refer a dispute (the deadlines are strict):</strong></p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li>Unfair dismissal — within 30 days of the date of dismissal.</li><li>Unfair labour practice — within 90 days of the date the dispute arose.</li><li>Discrimination — within 6 months of the date the dispute arose.</li></ul><p>These periods include weekends and public holidays, so do not delay.</p><p><strong>How the process works:</strong> You complete a CCMA case referral form (LRA Form 7.11) and deliver it to your employer, then send the form and proof of delivery to the CCMA by email, fax, or hand. The CCMA contacts both parties within 30 days to set a date for <em>conciliation</em>, an informal meeting where a commissioner tries to help both sides reach an agreement. You may not bring a lawyer to conciliation, but a registered trade union official may represent you. If you reach an agreement, it is made legally binding. If not, the commissioner issues a certificate of outcome and the matter can go to <em>arbitration</em> (using LRA Form 7.13 within 90 days), where a commissioner hears evidence from both sides and issues a final, legally binding award, usually within 14 days.</p><p><strong>Preparing for your hearing:</strong> Gather your employment contract, proof of dismissal, payslips, and any related messages. Be clear about exactly what you are claiming. Be ready to present your case calmly and concisely. Note that disputes about non-payment of wages are generally handled by the Department of Employment and Labour, not the CCMA, and the CCMA does not cover independent contractors.</p>'
+    },
+    {
+      id: 'kyr-where',
+      title: 'Where to get help',
+      body: '<p>If you believe your rights have been violated, follow a simple path: first read your contract and payslips and keep copies of everything; then raise the issue in writing with your employer or HR, since many problems are mistakes rather than deliberate unfairness. If it is not resolved, you can contact the Department of Employment and Labour (a labour inspector can investigate and enforce compliance), refer an unfair dismissal or labour practice dispute to the CCMA, or speak to a registered trade union or a qualified labour law practitioner. Useful contacts: the CCMA call centre, the Department of Employment and Labour offices countrywide, and Legal Aid South Africa for those who cannot afford a private lawyer. Keep records throughout — dates, payslips, and written messages are the evidence that supports your case.</p>'
+    }
+  ],
+
+  /* ============ LEARNING HUB ============ */
+  'learning-hub': [
+    {
+      id: 'lh-intro',
+      title: 'Welcome to the Learning Hub',
+      body: '<p>The Learning Hub is being built to host short, practical guides and resources that help South African job seekers build the skills employers are looking for. Over time this section will grow to cover topics such as basic computer skills, writing a cover letter, understanding workplace etiquette, and where to find free online courses and learnerships. Check back as new guides are added, and if there is a topic you would find useful, let us know through the "Suggest or comment" option in the Profile menu.</p>'
+    }
+  ],
+
+  /* ============ SUPPORT & DONATIONS ============ */
+  'support': [
+    {
+      id: 'sup-intro',
+      title: 'Keep this directory free for everyone',
+      body: '<p>SA Recruiters is free to use and community-supported. If the directory has helped you find an agency, contact a recruiter, or land an opportunity, a small donation helps cover hosting, maintenance, and the time it takes to verify and keep listings accurate. Every contribution, no matter how small, keeps the platform running for the next job seeker.</p>'
+    },
+    {
+      id: 'sup-how',
+      title: 'How to support us',
+      body: '<p>You can support the directory in several ways:</p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Bank donation</strong> — Capitec Bank, account number 1721069818, in the name of R. Chiloane.</li><li><strong>Email</strong> — Kamogeloralph@gmail.com for donation arrangements, partnerships, or queries.</li><li><strong>WhatsApp</strong> — +27 71 553 1005.</li><li><strong>Spread the word</strong> — share the directory with friends, family, and agencies that should be listed. Awareness is just as valuable as a donation.</li></ul><p>Thank you for helping keep South Africa\'s recruitment community connected.</p>'
+    }
+  ],
+  /* ============ PRIVACY POLICY ============ */
+  'privacy': [
+    {
+      id: 'priv-intro',
+      title: 'About this policy',
+      body: '<p>SA Recruiters ("the app") is a free, community-maintained directory of South African recruitment agencies. This policy explains what information is collected, how it is used, and your choices.</p><p style="color:var(--text-2);font-size:12px;margin-top:6px">Last updated: 27 July 2026</p>'
+    },
+    {
+      id: 'priv-collect',
+      title: 'What we collect',
+      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Agency directory data</strong> \u2014 agency names, phone numbers, email addresses, physical addresses, websites, and the companies they recruit for. This information is submitted by app users (recruiters, agencies, or members of the public) and is publicly visible to anyone using the app. Do not submit personal information you do not want displayed publicly.</li><li><strong>Admin login</strong> \u2014 a single administrator account (email and password) is used to manage the directory. This is stored securely by our database provider (Supabase) and is not accessible to other users.</li><li><strong>Photos</strong> \u2014 agencies may optionally have a profile photo or logo attached, submitted by users.</li></ul><p>We do not collect location data, device identifiers, analytics, or any information beyond what is voluntarily entered into the app\'s forms.</p>'
+    },
+    {
+      id: 'priv-use',
+      title: 'How data is used',
+      body: '<p>Submitted agency information is used solely to populate the public directory so job seekers can find recruitment agencies. It is not sold, shared with advertisers, or used for any purpose beyond the directory itself.</p>'
+    },
+    {
+      id: 'priv-storage',
+      title: 'Data storage',
+      body: '<p>All data is stored using Supabase, a third-party database provider. Data is transmitted over HTTPS. Only the app administrator can edit or delete directory entries; anyone can view the directory and submit new entries.</p>'
+    },
+    {
+      id: 'priv-choices',
+      title: 'Your choices',
+      body: '<p>If you would like an entry corrected or removed, contact us using the details below and we will action it directly, since edits and deletions are admin-only within the app.</p>'
+    },
+    {
+      id: 'priv-children',
+      title: 'Children\u2019s privacy',
+      body: '<p>This app is not directed at children and does not knowingly collect information from children.</p>'
+    },
+    {
+      id: 'priv-changes',
+      title: 'Changes to this policy',
+      body: '<p>This policy may be updated from time to time. Continued use of the app after changes means you accept the revised policy.</p>'
+    },
+    {
+      id: 'priv-contact',
+      title: 'Contact',
+      body: '<p>If you have any questions about this privacy policy or want an entry corrected or removed, please get in touch:</p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Email:</strong> <a href="mailto:Kamogeloralph@gmail.com">Kamogeloralph@gmail.com</a></li><li><strong>WhatsApp:</strong> <a href="https://wa.me/27715531005">+27 71 553 1005</a></li></ul>'
+    }
+  ]
+};
