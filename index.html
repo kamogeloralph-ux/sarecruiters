@@ -120,7 +120,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .agency-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .badge{display:inline-flex;align-items:center;gap:3px;background:var(--badge-bg);color:var(--badge-text);font-size:10px;font-weight:600;padding:3px 9px;border-radius:var(--radius-pill);flex-shrink:0;line-height:1.4}
 .badge svg{width:9px;height:9px}
-.badge.count{background:var(--card-3);color:var(--text-2)}
+.badge.count{background:rgba(48,209,88,.16);color:var(--success)}
 
 .pill{padding:11px 18px;border-radius:var(--radius-pill);background:var(--card);border:1px solid var(--border);font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;transition:transform .12s var(--ease)}
 .pill:active{transform:scale(.94)}
@@ -157,9 +157,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .hub-summary-body{flex:1;min-width:0}
 .hub-summary-desc{font-size:11.5px;color:var(--text-2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hub-stats-row{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
-.hub-stat{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text-2);background:var(--card-2);padding:2px 8px;border-radius:8px}
+.hub-stat{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--success);background:rgba(48,209,88,.14);padding:3px 9px;border-radius:8px}
 .hub-stat .hub-stat-icon{font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
-.hub-stat .hub-stat-icon svg{width:12px;height:12px;display:block}
+.hub-stat .hub-stat-icon svg{width:12px;height:12px;display:block;stroke:var(--success)}
 .ti{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}
 .ti svg{width:13px;height:13px;display:block}
 .chevron{width:18px;height:18px;color:var(--text-2);transition:transform .3s var(--ease);flex-shrink:0}
@@ -279,6 +279,25 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .sm-link-actions .sm-copy-btn{background:var(--accent);color:#fff}
 .sm-link-actions .sm-share-btn{background:var(--card);color:var(--accent)}
 
+/* ===== SUBMISSIONS (admin section) ===== */
+.sub-tabs{display:flex;gap:0;padding:0 16px 12px;border-bottom:1px solid var(--border)}
+.sub-tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-2);font-size:13.5px;font-weight:600;padding:10px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.sub-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.sub-tab-badge{background:var(--danger,#FF3B30);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+.sub-card{background:var(--card);border-radius:14px;padding:14px 16px;margin:0 16px 12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.sub-card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.sub-card-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.sub-card-icon.report{background:rgba(255,59,48,.15);color:#FF3B30}
+.sub-card-icon.suggestion{background:rgba(48,209,88,.15);color:var(--success,#30D158)}
+.sub-card-title{font-size:14px;font-weight:600;flex:1;min-width:0;line-height:1.3}
+.sub-card-meta{font-size:11.5px;color:var(--text-2);margin-top:2px;line-height:1.4}
+.sub-card-body{font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;word-break:break-word;margin:8px 0 10px}
+.sub-card-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sub-status-pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text-2);cursor:pointer}
+.sub-status-pill.resolved{background:rgba(48,209,88,.12);color:var(--success,#30D158);border-color:rgba(48,209,88,.3)}
+.sub-status-pill.open{background:rgba(255,159,10,.12);color:#FF9F0A;border-color:rgba(255,159,10,.3)}
+.sub-del-btn{background:none;border:1px solid var(--danger,#FF3B30);color:var(--danger,#FF3B30);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-left:auto}
+
 /* ===== MANAGER MODE (agency self-service) ===== */
 .manager-banner{padding:0 16px 12px}
 .manager-banner p{font-size:12px;color:var(--text-2);line-height:1.5;margin:0;background:var(--card);border-radius:10px;padding:10px 12px;border:1px solid var(--border)}
@@ -290,6 +309,29 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .manager-item-sub{font-size:11.5px;color:var(--text-2);line-height:1.4}
 .manager-item-meta{font-size:11px;color:var(--accent);margin-top:4px;font-weight:600}
 .manager-read-only-tag{display:inline-block;font-size:10px;color:var(--text-2);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin-top:6px}
+
+/* ===== CONTENT SECTIONS (FAQ / CV / Rights / Interview / Support) ===== */
+#content-body{white-space:normal}
+.content-article{background:var(--card-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 16px 14px;margin-bottom:12px}
+.content-article-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.3}
+.content-article-body{font-size:13.5px;color:var(--text-2);line-height:1.65}
+.content-article-body p{margin:0 0 10px}
+.content-article-body p:last-child{margin-bottom:0}
+.content-article-body ul,.content-article-body ol{margin:8px 0 10px}
+.content-article-body li{margin-bottom:5px}
+.content-article-body strong{color:var(--text);font-weight:600}
+.content-article-body a{color:var(--accent);text-decoration:underline}
+.content-article-actions{display:flex;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--border)}
+.content-edit-btn,.content-del-btn{flex:1;height:34px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid var(--border-strong);background:var(--card);color:var(--text)}
+.content-edit-btn{color:var(--accent);border-color:var(--accent)}
+.content-del-btn{color:var(--danger);border-color:rgba(255,59,48,.4)}
+.content-edit-btn:active,.content-del-btn:active{transform:scale(.97)}
+.content-admin-bar{display:flex;gap:8px;margin-top:6px;margin-bottom:6px}
+.content-add-btn{flex:1;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-size:13px;font-weight:600}
+.content-add-btn:active{transform:scale(.97)}
+.content-restore-btn{flex:0 0 auto;background:var(--card);color:var(--text-2);border:1px solid var(--border-strong);border-radius:12px;padding:13px 16px;font-size:12.5px;font-weight:600}
+.content-restore-btn:active{transform:scale(.97)}
+.content-empty{text-align:center;font-size:13px;color:var(--text-2);padding:30px 0}
 </style>
 </head>
 <body>
@@ -403,8 +445,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="profile-menu">
       <button class="profile-menu-item" data-ripple onclick="openAdminSheet()"><span class="mi-icon" id="admin-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span id="admin-menu-label">Admin login</span></button>
       <button class="profile-menu-item" id="sm-menu-item" data-ripple onclick="goSmartManager()" style="display:none;"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></span><span>Smart Manager<span class="mi-sub">Agency self-service links</span></span></button>
+      <button class="profile-menu-item" id="submissions-menu-item" data-ripple onclick="goSubmissions()" style="display:none;"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/><circle cx="8.5" cy="8.5" r="1.2"/><path d="M8 20h8"/></svg></span><span>Submissions<span class="mi-sub">Reports &amp; suggestions inbox</span></span></button>
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span></button>
-      <button class="profile-menu-item" data-ripple onclick="openSupportSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>Support this directory</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>Support &amp; Donations</button>
       <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span></button>
       <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon" id="theme-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span id="theme-menu-label">Switch to day mode</span></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg></span>Learning Hub</button>
@@ -413,6 +456,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>Interview Tips</button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span>Know Your Rights</button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg></span>FAQ</button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Privacy Policy</button>
     </div>
     </div>
   </div>
@@ -432,6 +476,26 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     </div>
     <div class="screen-scroll">
     <div id="smartmanager-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ SUBMISSIONS (admin only) ============ -->
+  <div class="screen" id="screen-submissions">
+    <div class="screen-fixed">
+    <header>
+      <div class="logo-text">Submissions</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+      </button>
+    </header>
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="sub-tab-reports" data-ripple onclick="switchSubTab('reports')">Reports <span class="sub-tab-badge" id="reports-badge" style="display:none;">0</span></button>
+      <button class="sub-tab" id="sub-tab-suggestions" data-ripple onclick="switchSubTab('suggestions')">Suggestions <span class="sub-tab-badge" id="suggestions-badge" style="display:none;">0</span></button>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div id="submissions-list"></div>
+    <button class="sheet-cancel" data-ripple onclick="goBackToProfile()" style="margin:20px auto;max-width:200px;">Back to Profile</button>
     </div>
   </div>
 
@@ -499,7 +563,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="field"><label>Website</label><input id="f-website" placeholder="e.g. www.example.co.za"></div>
     <div class="field"><label>Contact person / number</label><input id="f-contact" placeholder="e.g. Jane Dlamini, 082 000 0000"></div>
     <div class="field"><label>Email address</label><input id="f-email" placeholder="e.g. info@agency.co.za"></div>
-    <div class="field"><label>Location</label><input id="f-location" placeholder="e.g. Sandton, Johannesburg"></div>
+    <div class="field"><label>Head office location</label><input id="f-location" placeholder="e.g. Sandton, Johannesburg (main office address)"></div>
     <div class="field"><label>Companies (comma separated)</label><input id="f-companies" placeholder="e.g. Standard Bank, Shoprite"></div>
     <div class="field"><label>Trades / Industries (comma separated)</label><input id="f-trades" placeholder="e.g. Forklift drivers, Mining, Logistics, Construction"></div>
     <div class="field">
@@ -571,7 +635,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">This app is free to use. If it's helped you, a small donation keeps it running.</p>
     <div class="hub-contact-grid">
       <div class="hub-contact-item wide" data-ripple onclick="copyText('Kamogeloralph@gmail.com', this)"><div class="hub-contact-label">Email</div><div class="hub-contact-value">Kamogeloralph@gmail.com</div></div>
-      <div class="hub-contact-item wide"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27711227954" style="color:inherit;">+27 71 122 7954</a></div></div>
+      <div class="hub-contact-item wide"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div>
       <div class="hub-contact-item wide" data-ripple onclick="copyText('1721069818', this)"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">1721069818 (R. Chiloane)</div></div>
     </div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('support-overlay')">Close</button>
@@ -632,18 +696,47 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   </div>
 </div>
 
+<!-- ============ WHATSAPP CONFIRMATION SHEET (reports + suggestions) ============ -->
+<div class="sheet-scrim" id="whatsapp-confirm-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div id="wa-confirm-icon" style="text-align:center;margin-bottom:12px;font-size:40px;">✅</div>
+    <h3 id="wa-confirm-title" style="text-align:center;">Submitted — thank you!</h3>
+    <p id="wa-confirm-msg" style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">Your submission has been saved. Tap the button below to send it straight to the admin via WhatsApp so it's seen right away.</p>
+    <a id="wa-confirm-link" href="#" target="_blank" rel="noopener" class="sheet-submit" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.67c2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.42 5.82c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.16 8.16 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24z"/></svg>
+      Send via WhatsApp
+    </a>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('whatsapp-confirm-overlay')">Skip — just save it</button>
+  </div>
+</div>
+
 <!-- ============ CONTENT SHEET (menu items) ============ -->
 <div class="sheet-scrim" id="content-overlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
     <h3 id="content-title">Section</h3>
-    <div id="content-body" style="font-size:14px;color:var(--text-2);line-height:1.6;white-space:pre-line;max-height:50vh;overflow-y:auto;margin-bottom:10px;"></div>
+    <div id="content-body" style="font-size:14px;color:var(--text-2);line-height:1.6;max-height:55vh;overflow-y:auto;margin-bottom:10px;"></div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('content-overlay')">Close</button>
+  </div>
+</div>
+
+<!-- ============ CONTENT EDIT SHEET (admin add/edit article) ============ -->
+<div class="sheet-scrim" id="content-edit-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 id="content-edit-title">Add article</h3>
+    <div class="field"><label>Article title</label><input id="ce-title" placeholder="e.g. What is SA Recruiters?"></div>
+    <div class="field"><label>Content</label><textarea id="ce-body" placeholder="Write the article here. You can use simple HTML tags like &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt; and &lt;a href&gt;." style="min-height:180px;font-family:inherit;font-size:13.5px"></textarea></div>
+    <button class="sheet-submit" data-ripple onclick="saveContentArticle()">Save article</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('content-edit-overlay')">Cancel</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<script src="content.js"></script>
+<script src="content-manager.js"></script>
 <script>
 // ===== Supabase config =====
 var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
@@ -661,6 +754,9 @@ var managerMode = false;   // true when URL has ?manage=TOKEN
 var managerAgency = null;  // the agency object the manager is allowed to update
 var managerTokenMap = {};  // { tokenId: agencyId } — persisted in localStorage
 var managerPendingToken = null; // token detected before agencies loaded
+
+// Seed editable content sections (FAQ, CV prep, etc.) with defaults if needed
+if (window.ContentMgr) ContentMgr.ensureSeeded();
 
 function genToken() {
   // 12-char URL-safe token
@@ -895,7 +991,7 @@ function hubCard(a) {
       '<div class="hub-summary-body">' +
         '<div class="agency-name-row"><span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span></div>' +
         (a.verified ? badgeRow : '') +
-        (a.location ? '<div class="hub-summary-desc">' + escapeHtml(a.location) + '</div>' : '') +
+        (a.location ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Head office:</span> ' + escapeHtml(a.location) + '</div>' : '') +
         statsRow +
       '</div>' +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
@@ -978,7 +1074,7 @@ function hubContact(a) {
   html += '<div class="hub-contact-item"><div class="hub-contact-label">Contact person / phone</div><div class="hub-contact-value">' + (a.contact ? telLink(a.contact) : '\u2014') + '</div></div>';
   html += '<div class="hub-contact-item"><div class="hub-contact-label">Email</div><div class="hub-contact-value">' + (a.email ? mailLink(a.email) : '\u2014') + '</div></div>';
   html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Website</div><div class="hub-contact-value">' + (a.website ? webLink(a.website) : '\u2014') + '</div></div>';
-  html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Location</div><div class="hub-contact-value">' + (a.location ? mapsLink(a.location) : '\u2014') + '</div></div>';
+  html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Head office location</div><div class="hub-contact-value">' + (a.location ? mapsLink(a.location) : '\u2014') + '</div></div>';
   // Companies they recruit for — as chips
   var companyList = (a.companies || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
   if (companyList.length) {
@@ -1350,6 +1446,38 @@ function closeSheet(id) { document.getElementById(id).classList.remove('open'); 
 function openSupportSheet() { document.getElementById('support-overlay').classList.add('open'); }
 
 // ===== Report a problem =====
+// ===== WHATSAPP AUTO-SEND HELPER =====
+/* After a report or suggestion is saved, show a confirmation sheet
+   with a one-tap WhatsApp button so the admin receives it instantly. */
+var ADMIN_WHATSAPP = '27715531005'; // +27 71 553 1005
+var EMAILJS_CONFIG = { serviceId: '', templateId: '', publicKey: '' }; // placeholder for future EmailJS integration
+
+function showWhatsAppConfirm(opts) {
+  /* opts: { title, message, waText, skipSaveToast } */
+  var titleEl = document.getElementById('wa-confirm-title');
+  var msgEl = document.getElementById('wa-confirm-msg');
+  var linkEl = document.getElementById('wa-confirm-link');
+  if (opts.title) titleEl.textContent = opts.title;
+  if (opts.message) msgEl.textContent = opts.message;
+  var waUrl = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + opts.waText;
+  linkEl.href = waUrl;
+  document.getElementById('whatsapp-confirm-overlay').classList.add('open');
+}
+
+function tryEmailJS(payload) {
+  /* Placeholder for future EmailJS silent email delivery.
+     When configured, this will send an email to Kamogeloralph@gmail.com
+     automatically without any user action. Returns a Promise. */
+  if (!EMAILJS_CONFIG.serviceId || !EMAILJS_CONFIG.publicKey) {
+    return Promise.resolve({ sent: false, reason: 'not-configured' });
+  }
+  // When EmailJS SDK is loaded and configured:
+  // return emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, payload, EMAILJS_CONFIG.publicKey)
+  //   .then(function() { return { sent: true }; })
+  //   .catch(function(err) { return { sent: false, reason: err }; });
+  return Promise.resolve({ sent: false, reason: 'not-configured' });
+}
+
 function openReportSheet(presetAgency) {
   // Populate agency suggestions
   var dl = document.getElementById('r-agency-list');
@@ -1384,30 +1512,32 @@ async function submitReport() {
   var btn = event && event.target ? event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
   var res = await submitReportToSupabase(payload);
-  if (btn) { btn.disabled = false; btn.textContent = 'Submit report'; }
-  if (res.ok) {
-    closeSheet('report-overlay');
-    showToast('Report submitted \u2713  Thank you!');
-    return;
-  }
-  // RLS or table error — store locally and offer to send via WhatsApp/email
+  // Also save locally as backup
   var local = readLocalReports();
   payload.created_at = new Date().toISOString();
   local.push(payload);
   writeLocalReports(local);
-  err.style.display = 'block';
-  err.innerHTML = 'Saved on this device. To make sure the admin sees it, send it via WhatsApp or email. ' +
-    '<div style="display:flex;gap:8px;margin-top:8px;">' +
-    '<a href="' + reportWhatsAppLink(payload) + '" target="_blank" rel="noopener" class="sheet-submit" style="padding:10px 14px;font-size:12px;flex:1;">WhatsApp</a>' +
-    '<a href="' + reportEmailLink(payload) + '" class="sheet-submit" style="padding:10px 14px;font-size:12px;flex:1;">Email</a>' +
-    '</div>';
+  // Try silent email (EmailJS placeholder — no-op until configured)
+  tryEmailJS({ type: 'report', agency_name: payload.agency_name, reason: payload.reason, details: payload.details });
+  if (btn) { btn.disabled = false; btn.textContent = 'Submit report'; }
+  closeSheet('report-overlay');
+  // Build WhatsApp message and show confirmation sheet
+  var waMsg = 'SA Recruiters — REPORT%0A%0A' +
+    'Agency: ' + encodeURIComponent(payload.agency_name || '-') + '%0A' +
+    'Reason: ' + encodeURIComponent(payload.reason || '-') + '%0A' +
+    'Details: ' + encodeURIComponent(payload.details || '-');
+  showWhatsAppConfirm({
+    title: 'Report submitted \u2713',
+    message: 'Your report has been saved. Tap below to send it to the admin on WhatsApp so it can be reviewed quickly.',
+    waText: waMsg
+  });
 }
 function reportWhatsAppLink(p) {
   var msg = 'SA Recruiters report:%0A' +
     'Agency: ' + encodeURIComponent(p.agency_name || '-') + '%0A' +
     'Reason: ' + encodeURIComponent(p.reason || '-') + '%0A' +
     'Details: ' + encodeURIComponent(p.details || '-');
-  return 'https://wa.me/27711227954?text=' + msg;
+  return 'https://wa.me/27715531005?text=' + msg;
 }
 function reportEmailLink(p) {
   var subj = encodeURIComponent('SA Recruiters report: ' + (p.agency_name || 'Listing'));
@@ -1456,9 +1586,19 @@ async function submitSuggestion() {
     local.push(payload);
     localStorage.setItem('sa_suggestions_local', JSON.stringify(local));
   } catch(e){}
+  // Try silent email (EmailJS placeholder — no-op until configured)
+  tryEmailJS({ type: 'suggestion', suggestion_type: payload.type, agency_name: payload.agency_name, details: payload.details });
   if (btn) { btn.disabled = false; btn.textContent = 'Submit'; }
   closeSheet('suggestion-overlay');
-  showToast(ok ? 'Suggestion sent \u2713  Thank you!' : 'Suggestion saved \u2713  Thank you!');
+  // Build WhatsApp message and show confirmation sheet
+  var waMsg = 'SA Recruiters — ' + (payload.type ? payload.type.toUpperCase() : 'SUGGESTION') + '%0A%0A' +
+    'Agency: ' + encodeURIComponent(payload.agency_name || '-') + '%0A' +
+    'Details: ' + encodeURIComponent(payload.details || '-');
+  showWhatsAppConfirm({
+    title: 'Sent — thank you!',
+    message: 'Your ' + (payload.type || 'suggestion') + ' has been saved. Tap below to send it to the admin on WhatsApp so it can be seen right away.',
+    waText: waMsg
+  });
 }
 
 function copyText(text, el) {
@@ -1471,20 +1611,8 @@ function copyText(text, el) {
   else { prompt('Copy this:', text); }
 }
 
-var SECTION_CONTENT = {
-  'learning-hub': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg>Learning Hub', body: 'Coming soon.\n\nThis section will host short guides and resources to help job seekers build skills employers are looking for.' },
-  'cv-prep': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg>How to Prepare Your CV', body: 'Coming soon.\n\nA step-by-step guide to building a strong CV.' },
-  'cv-revamp': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg>CV Revamp Service', body: 'Coming soon.\n\nProfessional CV review and rewriting. Reach out via Support to enquire.' },
-  'interview-tips': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Interview Tips', body: 'Coming soon.\n\nHow to prepare, common questions, and what to do after.' },
-  'know-your-rights': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg>Know Your Rights', body: 'Coming soon.\n\nUIF, CCMA, and basic labour rights in South Africa.' },
-  'faq': { title: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg>FAQ', body: 'Coming soon.\n\nHow this directory works and how to report incorrect info.' }
-};
-function openContentSheet(key) {
-  var s = SECTION_CONTENT[key];
-  document.getElementById('content-title').innerHTML = s.title;
-  document.getElementById('content-body').textContent = s.body;
-  document.getElementById('content-overlay').classList.add('open');
-}
+/* SECTION_CONTENT + openContentSheet now live in content.js / content-manager.js
+   (admin-editable article system). */
 
 function openAdminSheet() {
   document.getElementById('admin-error').textContent = '';
@@ -1525,6 +1653,8 @@ function updateAdminUI() {
   if (fabSuggest) fabSuggest.style.display = isAdmin ? 'none' : 'flex';
   var smItem = document.getElementById('sm-menu-item');
   if (smItem) smItem.style.display = isAdmin ? 'flex' : 'none';
+  var subItem = document.getElementById('submissions-menu-item');
+  if (subItem) subItem.style.display = isAdmin ? 'flex' : 'none';
 }
 (async function checkSession() {
   var { data } = await supabaseClient.auth.getSession();
@@ -1565,6 +1695,161 @@ document.addEventListener('pointerdown', function(e) {
   el.appendChild(span);
   span.addEventListener('animationend', function(){ span.remove(); });
 });
+
+// ===== SUBMISSIONS (admin section — reports & suggestions) =====
+var subCurrentTab = 'reports';
+var subReportsCache = [];
+var subSuggestionsCache = [];
+
+function goSubmissions() {
+  if (!isAdmin) return;
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-submissions').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
+  window.scrollTo({ top: 0 });
+  subCurrentTab = 'reports';
+  switchSubTab('reports');
+}
+
+function goBackToProfile() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-profile').classList.add('active');
+  document.querySelector('.navbtn[data-tab=profile]').classList.add('active');
+  window.scrollTo({ top: 0 });
+}
+
+function switchSubTab(tab) {
+  subCurrentTab = tab;
+  document.getElementById('sub-tab-reports').classList.toggle('active', tab === 'reports');
+  document.getElementById('sub-tab-suggestions').classList.toggle('active', tab === 'suggestions');
+  renderSubmissionsList();
+  // Load data if not yet loaded
+  if (tab === 'reports' && subReportsCache.length === 0) loadReportsFromSupabase();
+  if (tab === 'suggestions' && subSuggestionsCache.length === 0) loadSuggestionsFromSupabase();
+}
+
+async function loadReportsFromSupabase() {
+  var list = document.getElementById('submissions-list');
+  list.innerHTML = '<div class="empty-state"><h3>Loading reports…</h3></div>';
+  try {
+    var { data, error } = await supabaseClient.from('reports').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    subReportsCache = data || [];
+    updateSubBadges();
+    renderSubmissionsList();
+  } catch(e) {
+    console.error('load reports', e);
+    // Try local fallback
+    subReportsCache = readLocalReports().slice().reverse();
+    updateSubBadges();
+    renderSubmissionsList();
+    if (subReportsCache.length === 0) {
+      list.innerHTML = '<div class="empty-state"><h3>Could not load reports</h3><p>Check your Supabase setup or run the SQL script.</p></div>';
+    }
+  }
+}
+
+async function loadSuggestionsFromSupabase() {
+  var list = document.getElementById('submissions-list');
+  list.innerHTML = '<div class="empty-state"><h3>Loading suggestions…</h3></div>';
+  try {
+    var { data, error } = await supabaseClient.from('suggestions').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    subSuggestionsCache = data || [];
+    updateSubBadges();
+    renderSubmissionsList();
+  } catch(e) {
+    console.error('load suggestions', e);
+    try {
+      subSuggestionsCache = JSON.parse(localStorage.getItem('sa_suggestions_local') || '[]').slice().reverse();
+    } catch(e2) { subSuggestionsCache = []; }
+    updateSubBadges();
+    renderSubmissionsList();
+    if (subSuggestionsCache.length === 0) {
+      list.innerHTML = '<div class="empty-state"><h3>Could not load suggestions</h3><p>Check your Supabase setup or run the SQL script.</p></div>';
+    }
+  }
+}
+
+function updateSubBadges() {
+  var reportsOpen = subReportsCache.filter(function(r){ return (r.status || 'open') === 'open'; }).length;
+  var suggOpen = subSuggestionsCache.filter(function(s){ return (s.status || 'open') === 'open'; }).length;
+  var rb = document.getElementById('reports-badge');
+  var sb = document.getElementById('suggestions-badge');
+  if (reportsOpen > 0) { rb.textContent = reportsOpen; rb.style.display = 'inline-block'; }
+  else { rb.style.display = 'none'; }
+  if (suggOpen > 0) { sb.textContent = suggOpen; sb.style.display = 'inline-block'; }
+  else { sb.style.display = 'none'; }
+}
+
+function renderSubmissionsList() {
+  var list = document.getElementById('submissions-list');
+  if (!list) return;
+  var items = subCurrentTab === 'reports' ? subReportsCache : subSuggestionsCache;
+  if (!items || items.length === 0) {
+    var label = subCurrentTab === 'reports' ? 'reports' : 'suggestions';
+    list.innerHTML = '<div class="empty-state"><h3>No ' + label + ' yet</h3><p>When users submit ' + label + ', they will appear here.</p>' +
+      '<button class="sheet-cancel" data-ripple onclick="' + (subCurrentTab === 'reports' ? 'loadReportsFromSupabase' : 'loadSuggestionsFromSupabase') + '()" style="margin-top:12px;">Refresh</button></div>';
+    return;
+  }
+  var html = items.map(function(item) {
+    var isReport = subCurrentTab === 'reports';
+    var iconClass = isReport ? 'report' : 'suggestion';
+    var iconEmoji = isReport ? '⚠️' : '💡';
+    var title = isReport ? (item.reason || 'Report') : (item.type || 'Suggestion');
+    var agency = item.agency_name ? escapeHtml(item.agency_name) : '';
+    var details = escapeHtml(item.details || '');
+    var dateStr = item.created_at ? new Date(item.created_at).toLocaleString('en-ZA', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+    var status = item.status || 'open';
+    var statusClass = status === 'resolved' || status === 'closed' ? 'resolved' : 'open';
+    var statusLabel = status === 'resolved' ? '✓ Resolved' : (status === 'closed' ? 'Closed' : 'Open');
+    var id = item.id || '';
+    var metaLine = agency ? 'Agency: ' + agency : '';
+    if (dateStr) metaLine += (metaLine ? ' · ' : '') + dateStr;
+    return '<div class="sub-card">' +
+      '<div class="sub-card-head">' +
+        '<div class="sub-card-icon ' + iconClass + '">' + iconEmoji + '</div>' +
+        '<div class="sub-card-title">' + escapeHtml(title) + (metaLine ? '<div class="sub-card-meta">' + metaLine + '</div>' : '') + '</div>' +
+      '</div>' +
+      (details ? '<div class="sub-card-body">' + details + '</div>' : '') +
+      '<div class="sub-card-actions">' +
+        '<button class="sub-status-pill ' + statusClass + '" data-ripple onclick="toggleSubStatus(\'' + (isReport ? 'reports' : 'suggestions') + '\',\'' + id + '\')">' + statusLabel + '</button>' +
+        '<button class="sub-del-btn" data-ripple onclick="deleteSubmission(\'' + (isReport ? 'reports' : 'suggestions') + '\',\'' + id + '\')">Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  html += '<button class="sheet-cancel" data-ripple onclick="' + (subCurrentTab === 'reports' ? 'loadReportsFromSupabase' : 'loadSuggestionsFromSupabase') + '()" style="margin:12px auto 20px;max-width:180px;">Refresh</button>';
+  list.innerHTML = html;
+}
+
+async function toggleSubStatus(table, id) {
+  if (!id) { showToast('Cannot update — missing ID'); return; }
+  var cache = table === 'reports' ? subReportsCache : subSuggestionsCache;
+  var item = cache.find(function(x){ return x.id === id; });
+  if (!item) return;
+  var newStatus = (item.status === 'resolved' || item.status === 'closed') ? 'open' : 'resolved';
+  item.status = newStatus;
+  try {
+    await supabaseClient.from(table).update({ status: newStatus }).eq('id', id);
+  } catch(e) { console.error('update status', e); }
+  updateSubBadges();
+  renderSubmissionsList();
+  showToast(newStatus === 'resolved' ? 'Marked as resolved' : 'Reopened');
+}
+
+async function deleteSubmission(table, id) {
+  if (!id) { showToast('Cannot delete — missing ID'); return; }
+  if (!confirm('Delete this submission? This cannot be undone.')) return;
+  try {
+    await supabaseClient.from(table).delete().eq('id', id);
+  } catch(e) { console.error('delete submission', e); }
+  // Remove from cache
+  if (table === 'reports') subReportsCache = subReportsCache.filter(function(x){ return x.id !== id; });
+  else subSuggestionsCache = subSuggestionsCache.filter(function(x){ return x.id !== id; });
+  updateSubBadges();
+  renderSubmissionsList();
+  showToast('Deleted');
+}
 
 // ===== SMART MANAGER (admin section) =====
 function goSmartManager() {
