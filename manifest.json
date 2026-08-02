@@ -150,29 +150,6 @@
       "purpose": "monochrome"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/mobile-1.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "SA Recruiters home — dark mode"
-    },
-    {
-      "src": "/screenshots/mobile-2.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "SA Recruiters home — day mode"
-    },
-    {
-      "src": "/screenshots/desktop-1.png",
-      "sizes": "1920x1080",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "SA Recruiters desktop view"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Search Agencies",
