@@ -1,12 +1,59 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en-ZA" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>SA Recruiters</title>
+<title>SA Recruiters — South African Recruitment Agencies Directory</title>
+<meta name="description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies, branches and vacancies.">
+
+<!-- Primary Meta Tags -->
+<meta name="application-name" content="SA Recruiters">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SA Recruiters">
+<meta name="format-detection" content="telephone=no">
+<meta name="msapplication-TileColor" content="#000000">
+<meta name="msapplication-tap-highlight" content="no">
+
+<!-- PWA / Manifest -->
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#000000" id="meta-theme">
+
+<!-- Favicons -->
+<link rel="icon" href="icons/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="icons/icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<!-- Apple touch icons -->
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-128.png">
+<link rel="apple-touch-icon" sizes="114x114" href="icons/icon-128.png">
+<link rel="apple-touch-icon" sizes="76x76" href="icons/icon-72.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<!-- Maskable / monochrome -->
+<link rel="icon" type="image/png" sizes="512x512" href="icons/maskable-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/maskable-192.png">
+
+<!-- Open Graph / social (helps App Capabilities + installability signals) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="SA Recruiters">
+<meta property="og:description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies.">
+<meta property="og:image" content="wordmark-lockup.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SA Recruiters">
+<meta name="twitter:description" content="Connecting South Africa's Recruitment Community.">
+<meta name="twitter:image" content="wordmark-lockup.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -3008,8 +3055,52 @@ function managerAddVacancy() {
 loadAll();
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(function(){});
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { scope: '/' }).then(function(reg) {
+      // Listen for updates
+      reg.addEventListener('updatefound', function() {
+        var newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', function() {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New content available — notify SW to take over
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+      // Auto-update when controller changes
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    }).catch(function(err) {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
 }
+
+// ===== PWA Shortcut / share_target param handling =====
+(function handlePwaParams() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var action = params.get('action');
+    var tab = params.get('tab');
+    // Defer until DOM + app data ready
+    function whenReady(cb) {
+      if (document.readyState === 'complete') setTimeout(cb, 300);
+      else window.addEventListener('load', function(){ setTimeout(cb, 600); });
+    }
+    whenReady(function() {
+      if (typeof openGeneralVacancySheet === 'function' && action === 'post-vacancy') openGeneralVacancySheet();
+      else if (typeof openSuggestionSheet === 'function' && action === 'suggest') openSuggestionSheet();
+      else if (typeof openContentSheet === 'function' && tab === 'learning-hub') openContentSheet('learning-hub');
+      else if (typeof focusSearch === 'function' && tab === 'search') focusSearch();
+      else if (action === 'share-received' && typeof showToast === 'function') showToast('Thanks! Your shared content was received.');
+    });
+  } catch (e) { /* no-op */ }
+})();
 </script>
 </body>
 </html>
