@@ -22,16 +22,37 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Long-cache the icons / screenshots (immutable assets)
+# PNG icons — explicit content type + CORS so PWABuilder & stores can fetch them
 [[headers]]
-  for = "/icons/*"
+  for = "/icons/*.png"
   [headers.values]
+    Content-Type = "image/png"
     Cache-Control = "public, max-age=31536000, immutable"
+    Access-Control-Allow-Origin = "*"
 
+# ICO favicon — correct MIME type
 [[headers]]
-  for = "/screenshots/*"
+  for = "/icons/*.ico"
   [headers.values]
+    Content-Type = "image/x-icon"
     Cache-Control = "public, max-age=31536000, immutable"
+    Access-Control-Allow-Origin = "*"
+
+# Root-level icons
+[[headers]]
+  for = "/icon-*.png"
+  [headers.values]
+    Content-Type = "image/png"
+    Cache-Control = "public, max-age=31536000, immutable"
+    Access-Control-Allow-Origin = "*"
+
+# Screenshots — explicit content type + CORS
+[[headers]]
+  for = "/screenshots/*.png"
+  [headers.values]
+    Content-Type = "image/png"
+    Cache-Control = "public, max-age=31536000, immutable"
+    Access-Control-Allow-Origin = "*"
 
 # Security headers (good for PWA / installability trust)
 [[headers]]
