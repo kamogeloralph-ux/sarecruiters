@@ -1,0 +1,45 @@
+# SA Recruiters PWA — Apache .htaccess
+# Use this file if your site runs on Apache instead of Netlify.
+
+# Ensure mod_headers is enabled (it usually is on most hosts)
+
+# Service worker — no cache + allow root scope
+<Files "sw.js">
+  Header set Service-Worker-Allowed "/"
+  Header set Cache-Control "public, max-age=0, must-revalidate"
+</Files>
+
+# Manifest — correct MIME type + no cache
+<Files "manifest.json">
+  Header set Content-Type "application/manifest+json; charset=utf-8"
+  Header set Cache-Control "public, max-age=0, must-revalidate"
+</Files>
+
+# Offline page — no cache
+<Files "offline.html">
+  Header set Cache-Control "public, max-age=0, must-revalidate"
+</Files>
+
+# PNG icons — explicit content type + CORS + immutable cache
+<FilesMatch "\.(png)$">
+  Header set Content-Type "image/png"
+  Header set Cache-Control "public, max-age=31536000, immutable"
+  Header set Access-Control-Allow-Origin "*"
+</FilesMatch>
+
+# ICO favicon — correct MIME type
+<FilesMatch "\.(ico)$">
+  Header set Content-Type "image/x-icon"
+  Header set Cache-Control "public, max-age=31536000, immutable"
+  Header set Access-Control-Allow-Origin "*"
+</FilesMatch>
+
+# Security headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Ensure .json files are served with correct type
+<FilesMatch "\.json$">
+  Header set Content-Type "application/json; charset=utf-8"
+</FilesMatch>
