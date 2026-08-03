@@ -21,26 +21,26 @@
 <meta name="theme-color" content="#000000" id="meta-theme">
 
 <!-- Favicons -->
-<link rel="icon" href="/icons/favicon.ico" sizes="48x48">
-<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="48x48" href="/icons/icon-48.png">
-<link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+<link rel="icon" href="icons/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="icons/icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 
 <!-- Apple touch icons -->
-<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
-<link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144.png">
-<link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-128.png">
-<link rel="apple-touch-icon" sizes="114x114" href="/icons/icon-128.png">
-<link rel="apple-touch-icon" sizes="76x76" href="/icons/icon-72.png">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-128.png">
+<link rel="apple-touch-icon" sizes="114x114" href="icons/icon-128.png">
+<link rel="apple-touch-icon" sizes="76x76" href="icons/icon-72.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 
 <!-- Maskable / monochrome -->
-<link rel="icon" type="image/png" sizes="512x512" href="/icons/maskable-512.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/maskable-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/maskable-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/maskable-192.png">
 
 <!-- Open Graph / social (helps App Capabilities + installability signals) -->
 <meta property="og:type" content="website">
@@ -340,6 +340,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .fab:active{transform:scale(.9)}
 .fab-suggest{background:var(--card);color:var(--accent);border:1.5px solid var(--accent);box-shadow:0 8px 24px -6px rgba(10,132,255,.35),0 4px 12px rgba(0,0,0,.2);font-size:22px}
 .fab-suggest svg{width:24px;height:24px}
+.fab svg{width:26px;height:26px;display:block}
 @media (max-width:559px){ .fab{right:20px} }
 
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:80px;max-width:520px;margin:0 auto;background:color-mix(in srgb,var(--card) 86%,transparent);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom);z-index:50}
@@ -472,7 +473,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="screen-fixed">
     <header>
       <div class="logo-wrap">
-        <img class="logo-svg" src="/icons/icon-512.png" alt="SA Recruiters logo" width="42" height="42">
+        <img class="logo-svg" src="icons/icon-512.png" alt="SA Recruiters logo" width="42" height="42" onerror="this.onerror=null;this.src='sa-recruiters-512-rounded.png'">
         <div class="logo-text-wrap">
           <div class="logo-text">SA Recruiters</div>
           <div class="logo-slogan">Connecting South Africa's Recruitment Community.</div>
@@ -562,7 +563,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     </div>
     <div class="screen-scroll">
     <div class="profile-card">
-      <div class="profile-avatar" id="profile-avatar"><img src="/icons/icon-512.png" alt="SA Recruiters"></div>
+      <div class="profile-avatar" id="profile-avatar"><img src="icons/icon-512.png" alt="SA Recruiters" onerror="this.onerror=null;this.src='sa-recruiters-512-rounded.png'"></div>
       <div class="profile-name" id="profile-status-name">SA Recruiters</div>
       <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
       <div class="profile-sub" id="profile-status-sub">Not logged in</div>
@@ -765,6 +766,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   </div>
 
 </div>
+<button class="fab" id="fab-admin" data-ripple onclick="openForm()" aria-label="Add agency" style="display:none">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
 <button class="fab fab-suggest" id="fab-suggest" data-ripple onclick="openSuggestionSheet()" aria-label="Suggest or comment">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </button>
@@ -1181,14 +1185,16 @@ async function removeAgency(id) {
   if (error) { console.error('agency delete', error); alert('Could not delete. Check your Supabase setup.'); }
 }
 
-/* ── Data: BRANCHES & VACANCIES ───────────────────────
-   The Supabase project does NOT yet have `branches` / `vacancies` tables
-   (and `reports` blocks anon inserts via RLS). To keep the features fully
-   functional right now we:
-     1) TRY to read/write Supabase (so the moment the tables exist they just work)
+/* ── Data: BRANCHES & VACANCIES ─────────────────────────
+   The `branches` table now EXISTS in Supabase (verified).
+   The `vacancies` table was NOT yet created — run CREATE_VACANCIES_TABLE.sql
+   in the Supabase SQL Editor, otherwise every vacancy save silently falls
+   back to THIS device's localStorage and other users will not see it.
+   To keep the features fully functional in the meantime we:
+     1) TRY to read/write Supabase (so the moment the table exists it works)
      2) FALL BACK to localStorage so nothing is ever lost and the UX works.
-   This is transparent to the user — see SUPABASE_SETUP.md for the one-time
-   SQL to flip everything to live Supabase.                              */
+   When a save is NOT live, saveVacancy()/saveGeneralVacancy() now show a
+   clear warning toast.                                              */
 function localKey(kind) { return 'sa_' + kind + '_local'; }
 function readLocal(kind) {
   try { return JSON.parse(localStorage.getItem(localKey(kind)) || '[]'); } catch(e){ return []; }
@@ -2123,7 +2129,7 @@ async function saveVacancy() {
     link: document.getElementById('v-link').value.trim()
   });
   closeSheet('vacancy-overlay');
-  showToast(live ? 'Vacancy published' : 'Vacancy published (saved on this device)');
+  showToast(live ? 'Vacancy published' : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
   await loadAll();
   if (managerMode) { renderManagerMode(); return; }
   var card = document.getElementById('hub-' + pendingVacancyAgency);
@@ -2180,14 +2186,14 @@ async function saveGeneralVacancy() {
   };
   if (editingGeneralVacancyId) {
     data.id = editingGeneralVacancyId;
-    await upsertVacancy(data);
+    var live2 = await upsertVacancy(data);
     closeSheet('general-vacancy-overlay');
-    showToast('Vacancy updated');
+    showToast(live2 ? 'Vacancy updated' : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
   } else {
     data.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    await upsertVacancy(data);
+    var live3 = await upsertVacancy(data);
     closeSheet('general-vacancy-overlay');
-    showToast('Vacancy published');
+    showToast(live3 ? 'Vacancy published' : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
   }
   editingGeneralVacancyId = null;
   await loadAll();
