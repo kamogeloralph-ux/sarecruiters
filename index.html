@@ -569,7 +569,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     </div>
     <div class="profile-menu">
       <button class="profile-menu-item" data-ripple onclick="openAdminSheet()"><span class="mi-icon" id="admin-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span id="admin-menu-label">Admin login</span></button>
-      <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()" style="display:none;"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/><path d="M12 2v4"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span></button>
+      <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/><path d="M12 2v4"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span></button>
       <button class="profile-menu-item" id="sm-menu-item" data-ripple onclick="goSmartManager()" style="display:none;"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></span><span>Smart Manager<span class="mi-sub">Agency self-service links</span></span></button>
       <button class="profile-menu-item" id="submissions-menu-item" data-ripple onclick="goSubmissions()" style="display:none;"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/><circle cx="8.5" cy="8.5" r="1.2"/><path d="M8 20h8"/></svg></span><span>Submissions<span class="mi-sub">Reports &amp; suggestions inbox</span></span></button>
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span></button>
@@ -866,6 +866,21 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   </div>
 </div>
 
+<!-- ============ VACANCY POSTING LOCKED SHEET (public) ============ -->
+<div class="sheet-scrim" id="vacancy-locked-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="text-align:center;font-size:40px;margin-bottom:12px;">🔒</div>
+    <h3 style="text-align:center;">Vacancy posting is closed</h3>
+    <p style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">To keep the directory free of spam, general vacancy posting is opened on request. Message the admin on WhatsApp and it'll be opened for you.</p>
+    <a id="vacancy-locked-wa-link" href="#" target="_blank" rel="noopener" class="sheet-submit" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg>
+      Message admin on WhatsApp
+    </a>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-locked-overlay')">Close</button>
+  </div>
+</div>
+
 <!-- ============ EDIT RATING SHEET ============ -->
 <div class="sheet-scrim" id="edit-rating-overlay">
   <div class="sheet">
@@ -905,6 +920,10 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     </div>
     <div id="admin-logged-in" style="display:none;">
       <p style="font-size:13.5px;color:var(--text-2);margin-bottom:16px;">You're logged in as admin.</p>
+      <div class="toggle-row">
+        <span>Public vacancy posting<br><small id="posting-toggle-sub" style="font-weight:400;color:var(--text-2);font-size:11.5px;">Closed — spam protected</small></span>
+        <label class="switch"><input type="checkbox" id="posting-toggle-input" onchange="togglePublicPosting(this.checked)"><span class="track"><span class="knob"></span></span></label>
+      </div>
       <button class="sheet-submit danger" data-ripple onclick="adminLogout()">Log out</button>
     </div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('admin-overlay')">Close</button>
@@ -1033,6 +1052,7 @@ var branchesCache = [];
 var vacanciesCache = [];
 var ratingsCache = [];
 var isAdmin = false;
+var publicVacancyPostingOpen = false;
 var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
 // ===== SMART MANAGER: agency self-service links =====
 var managerMode = false;   // true when URL has ?manage=TOKEN
@@ -1201,6 +1221,48 @@ async function removeBranch(id) {
   try { await supabaseClient.from('branches').delete().eq('id', id); } catch(e){}
   var arr = readLocal('branches').filter(function(x){ return x.id !== id; });
   writeLocal('branches', arr);
+}
+
+// ----- App settings (admin-controlled, e.g. public vacancy posting toggle) -----
+async function getAppSetting(key, fallback) {
+  try {
+    var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key', key).maybeSingle();
+    if (error || !data) return fallback;
+    return data.value;
+  } catch(e) { return fallback; }
+}
+async function setAppSetting(key, value) {
+  try {
+    var { error } = await supabaseClient.from('app_settings').upsert({ key: key, value: value, updated_at: new Date().toISOString() });
+    return !error;
+  } catch(e) { return false; }
+}
+async function loadPostingSetting() {
+  var v = await getAppSetting('public_vacancy_posting', 'false');
+  publicVacancyPostingOpen = (v === true || v === 'true');
+  updatePostingToggleUI();
+}
+function updatePostingToggleUI() {
+  var input = document.getElementById('posting-toggle-input');
+  if (input) input.checked = !!publicVacancyPostingOpen;
+  var sub = document.getElementById('posting-toggle-sub');
+  if (sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
+}
+async function togglePublicPosting(checked) {
+  var ok = await setAppSetting('public_vacancy_posting', checked ? 'true' : 'false');
+  if (ok) {
+    publicVacancyPostingOpen = checked;
+    showToast(checked ? 'Vacancy posting opened to the public' : 'Vacancy posting locked');
+  } else {
+    showToast('Could not update setting — try again');
+  }
+  updatePostingToggleUI();
+}
+function openVacancyLockedSheet() {
+  var msg = 'Hi, I\'d like to post a vacancy on SA Recruiters. Please could you open vacancy posting for me?';
+  var link = document.getElementById('vacancy-locked-wa-link');
+  if (link) link.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
+  document.getElementById('vacancy-locked-overlay').classList.add('open');
 }
 
 // ----- Vacancies -----
@@ -2078,6 +2140,7 @@ async function deleteVacancy(id, agencyId) {
 // ===== General vacancy posting (profile section, admin) =====
 var editingGeneralVacancyId = null;
 function openGeneralVacancySheet() {
+  if (!isAdmin && !publicVacancyPostingOpen) { openVacancyLockedSheet(); return; }
   editingGeneralVacancyId = null;
   document.getElementById('gv-title').textContent = 'Post a vacancy';
   document.getElementById('gv-submit-btn').textContent = 'Publish vacancy';
@@ -2517,8 +2580,7 @@ function updateAdminUI() {
   if (smItem) smItem.style.display = isAdmin ? 'flex' : 'none';
   var subItem = document.getElementById('submissions-menu-item');
   if (subItem) subItem.style.display = isAdmin ? 'flex' : 'none';
-  var pvItem = document.getElementById('postvacancy-menu-item');
-  if (pvItem) pvItem.style.display = isAdmin ? 'flex' : 'none';
+  updatePostingToggleUI();
 }
 (async function checkSession() {
   var { data } = await supabaseClient.auth.getSession();
@@ -3082,6 +3144,7 @@ function managerAddVacancy() {
 })();
 
 loadAll();
+loadPostingSetting();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
