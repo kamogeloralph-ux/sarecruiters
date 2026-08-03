@@ -1052,22 +1052,43 @@ function genToken() {
 }
 function managerTokenKey(agencyId) { return 'sa_manager_token_' + agencyId; }
 function getManagerToken(agencyId) {
-  // token stored in localStorage keyed by agencyId
+  // Source of truth is Supabase (agenciesCache), so the token resolves on
+  // any device, not just the one that generated it. Fall back to a local
+  // cache copy only if the agency isn't in agenciesCache yet (e.g. called
+  // before loadAll() finishes).
+  var a = agenciesCache.find(function(x){ return x.id === agencyId; });
+  if (a && a.manage_token) return a.manage_token;
   try { return localStorage.getItem(managerTokenKey(agencyId)) || ''; } catch(e){ return ''; }
 }
 function setManagerToken(agencyId, token) {
-  try { localStorage.setItem(managerTokenKey(agencyId), token); managerTokenMap[token] = agencyId; } catch(e){}
+  // Update in-memory cache immediately so the UI reflects it right away
+  var a = agenciesCache.find(function(x){ return x.id === agencyId; });
+  if (a) a.manage_token = token;
+  managerTokenMap[token] = agencyId;
+  try { localStorage.setItem(managerTokenKey(agencyId), token); } catch(e){}
+  // Persist to Supabase so the link works from any device
+  saveManagerTokenToSupabase(agencyId, token);
 }
 function agencyIdFromToken(token) {
   if (!token) return null;
   // check cache first
   if (managerTokenMap[token]) return managerTokenMap[token];
-  // scan localStorage for matching token
+  // Look up against Supabase-loaded agenciesCache (works cross-device)
   for (var i = 0; i < agenciesCache.length; i++) {
-    if (getManagerToken(agenciesCache[i].id) === token) {
+    if (agenciesCache[i].manage_token === token) {
       managerTokenMap[token] = agenciesCache[i].id;
       return agenciesCache[i].id;
     }
+  }
+  // Fallback: scan localStorage (covers agencies loaded before this fix
+  // shipped, on the same browser that originally generated the token)
+  for (var j = 0; j < agenciesCache.length; j++) {
+    try {
+      if (localStorage.getItem(managerTokenKey(agenciesCache[j].id)) === token) {
+        managerTokenMap[token] = agenciesCache[j].id;
+        return agenciesCache[j].id;
+      }
+    } catch(e){}
   }
   return null;
 }
@@ -1117,7 +1138,15 @@ function initials(n) {
 async function getAgencies() {
   var { data, error } = await supabaseClient.from('agencies').select('*').order('created_at', { ascending: false });
   if (error) { console.error('agencies load', error); return []; }
-  return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, address: a.address, cvpref: a.cvpref, photo: a.photo, companies: a.companies, trades: a.trades, verified: !!a.verified }; });
+  return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, address: a.address, cvpref: a.cvpref, photo: a.photo, companies: a.companies, trades: a.trades, verified: !!a.verified, manage_token: a.manage_token || '' }; });
+}
+// Persist a SMART MANAGER token to Supabase so any device can resolve it
+// (not just the browser that generated it). See ADD_MANAGE_TOKEN_COLUMN.sql.
+async function saveManagerTokenToSupabase(agencyId, token) {
+  try {
+    var { error } = await supabaseClient.from('agencies').update({ manage_token: token }).eq('id', agencyId);
+    if (error) console.error('manage_token save', error);
+  } catch(e) { console.error('manage_token save', e); }
 }
 async function upsertAgency(a) {
   // Strip 'trades' before sending to Supabase — the column may not exist yet.
