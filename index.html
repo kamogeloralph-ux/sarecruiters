@@ -372,6 +372,106 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .contact-label{font-size:12px;color:var(--text-2);flex-shrink:0}
 .contact-value{font-size:13px;font-weight:600;color:var(--badge-text);text-align:right;word-break:break-word}
 
+/* ===== iOS-STYLE GROUPED PROFILE MENU ===== */
+.profile-card-ios{margin:8px 0 4px;text-align:center;padding:8px 0}
+.profile-avatar-ios{width:72px;height:72px;border-radius:22px;background:linear-gradient(145deg,#0A84FF,#0051D5);font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;overflow:hidden;box-shadow:0 8px 24px -8px rgba(10,132,255,.5)}
+.profile-avatar-ios img{width:100%;height:100%;object-fit:cover}
+.profile-name{font-size:19px;font-weight:800;letter-spacing:-0.02em}
+.profile-slogan{font-size:12px;color:var(--text-2);margin-top:5px;font-weight:500;font-style:normal}
+.profile-sub{font-size:12px;color:var(--text-2);margin-top:4px}
+.pgroup-label{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin:22px 4px 8px}
+.pgrouped-list{background:var(--card);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
+.pgrouped-list + .pgroup-label{margin-top:20px}
+.profile-menu-item{display:flex;align-items:center;gap:13px;background:var(--card);border:none;border-radius:0;padding:12px 14px;font-size:15px;font-weight:600;width:100%;text-align:left;cursor:pointer;position:relative}
+.profile-menu-item + .profile-menu-item::before{content:'';position:absolute;top:0;left:52px;right:0;height:1px;background:var(--separator)}
+.profile-menu-item:active{background:var(--card-2)}
+.profile-menu-item .mi-icon{font-size:18px;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.profile-menu-item .mi-icon svg{width:19px;height:19px;display:block;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile-blue{background:linear-gradient(145deg,#0A84FF,#0051D5)}
+.tile-purple{background:linear-gradient(145deg,#BF5AF2,#8944AB)}
+.tile-teal{background:linear-gradient(145deg,#40C8E0,#0A9396)}
+.tile-green{background:linear-gradient(145deg,#30D158,#1A8F3B)}
+.tile-orange{background:linear-gradient(145deg,#FF9F0A,#CC6E00)}
+.tile-red{background:linear-gradient(145deg,#FF453A,#CC2E26)}
+.tile-indigo{background:linear-gradient(145deg,#5E5CE6,#3D3AB8)}
+.tile-pink{background:linear-gradient(145deg,#FF375F,#CC1A3F)}
+.tile-gray{background:linear-gradient(145deg,#8E8E93,#5A5A5E)}
+.tile-mint{background:linear-gradient(145deg,#66D4CF,#2EA39E)}
+.tile-amber{background:linear-gradient(145deg,#FFD60A,#CC9A00)}
+.tile-brown{background:linear-gradient(145deg,#AC8E68,#7A5F3D)}
+.profile-menu-item .mi-sub{font-size:12px;color:var(--text-2);font-weight:400;margin-top:2px;line-height:1.3}
+.profile-menu-item .mi-chev{width:16px;height:16px;color:var(--text-3);flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;margin-left:auto}
+/* keep old profile-menu hidden (replaced by grouped lists) */
+.profile-menu{display:none}
+/* version badge + force update */
+.app-version-badge{display:inline-block;margin-top:10px;padding:4px 12px;font-size:11px;font-weight:600;color:var(--text-3);background:var(--card-2);border:1px solid var(--border);border-radius:var(--radius-pill);letter-spacing:.02em}
+.force-update-btn{display:block;width:100%;margin-top:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#fff;background:linear-gradient(145deg,#0A84FF,#0051D5);border:none;border-radius:var(--radius-sm);cursor:pointer;transition:transform .15s var(--ease),opacity .15s}
+.force-update-btn:active{transform:scale(.97);opacity:.85}
+.force-update-btn svg{width:18px;height:18px;vertical-align:-4px;margin-right:8px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.update-banner{position:fixed;top:0;left:0;right:0;z-index:10000;padding:12px 16px;background:linear-gradient(145deg,#0A84FF,#0051D5);color:#fff;font-size:14px;font-weight:600;text-align:center;transform:translateY(-100%);transition:transform .3s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.update-banner.show{transform:translateY(0)}
+.update-banner button{margin-left:12px;padding:5px 14px;background:#fff;color:#0A84FF;border:none;border-radius:var(--radius-pill);font-weight:700;font-size:13px;cursor:pointer}
+/* contact card head with tile */
+.contact-card-head .mi-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.contact-card-head .mi-icon svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ===== NEW VACANCY CARDS (iOS-style, tap to expand) ===== */
+.vac-card{background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .12s;box-shadow:var(--shadow-sm)}
+.vac-card:active{transform:scale(.995)}
+.vac-card.open{border-color:var(--accent)}
+.vac-card-main{display:flex;align-items:flex-start;gap:12px;padding:14px}
+.vac-logo{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;overflow:hidden;background:var(--card-3)}
+.vac-logo img{width:100%;height:100%;object-fit:cover}
+/* Vacancy logo tile gradients (deterministic per company name) */
+.grad-blue{background:linear-gradient(145deg,#0A84FF,#0051D5)}
+.grad-green{background:linear-gradient(145deg,#30D158,#1A8F3B)}
+.grad-orange{background:linear-gradient(145deg,#FF9F0A,#CC6E00)}
+.grad-purple{background:linear-gradient(145deg,#BF5AF2,#8944AB)}
+.grad-teal{background:linear-gradient(145deg,#40C8E0,#0A9396)}
+.grad-pink{background:linear-gradient(145deg,#FF375F,#CC1A3F)}
+.grad-indigo{background:linear-gradient(145deg,#5E5CE6,#3D3AB8)}
+.grad-mint{background:linear-gradient(145deg,#66D4CF,#2EA39E)}
+.grad-amber{background:linear-gradient(145deg,#FFD60A,#CC9A00);color:#1a1a1a}
+.grad-red{background:linear-gradient(145deg,#FF453A,#CC2E26)}
+.grad-brown{background:linear-gradient(145deg,#AC8E68,#7A5F3D)}
+.grad-gray{background:linear-gradient(145deg,#8E8E93,#5A5A5E)}
+.vac-body{flex:1;min-width:0}
+.vac-title{font-size:15px;font-weight:700;line-height:1.3;letter-spacing:-0.01em}
+.vac-company{font-size:12.5px;color:var(--text-2);margin-top:3px;font-weight:600}
+.vac-company .vac-agency-tag{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:var(--radius-pill);margin-left:6px;vertical-align:1px}
+.vac-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.vac-chip{font-size:11px;font-weight:600;color:var(--text-2);background:var(--card-2);border-radius:8px;padding:5px 9px;display:inline-flex;align-items:center;gap:4px}
+.vac-chip svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vac-chip.green{color:var(--success);background:rgba(48,209,88,.14)}
+.vac-chip.red{color:var(--danger);background:rgba(255,69,58,.14)}
+.vac-save{width:34px;height:34px;border-radius:11px;background:var(--card-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:background .2s,border-color .2s}
+.vac-save svg{width:17px;height:17px;fill:var(--text-3);stroke:var(--text-2);stroke-width:2}
+.vac-save.saved{background:var(--accent-soft);border-color:transparent}
+.vac-save.saved svg{fill:var(--accent);stroke:var(--accent)}
+.vac-detail{max-height:0;overflow:hidden;transition:max-height .35s var(--ease)}
+.vac-card.open .vac-detail{max-height:1500px}
+.vac-detail-inner{padding:0 14px 14px;border-top:1px solid var(--separator)}
+.vac-detail-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--separator)}
+.vac-detail-row:last-of-type{border-bottom:none}
+.vac-detail-icon{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
+.vac-detail-icon svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vac-detail-label{font-size:11px;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.vac-detail-value{font-size:14px;color:var(--text);font-weight:600;margin-top:1px}
+.vac-desc-title{font-size:13px;font-weight:700;margin:14px 0 6px}
+.vac-desc{font-size:13px;color:var(--text-2);line-height:1.6;white-space:pre-wrap}
+.vac-actions{display:flex;gap:10px;margin-top:14px}
+.vac-apply{flex:1;background:var(--success);color:#fff;border:none;padding:14px;border-radius:13px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;text-decoration:none}
+.vac-apply:active{transform:scale(.98)}
+.vac-apply svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.vac-close-btn{background:var(--card-2);color:var(--text-2);border:1px solid var(--border);padding:14px 20px;border-radius:13px;font-size:14px;font-weight:600;cursor:pointer}
+.vac-admin-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--separator)}
+.vac-admin-actions button{flex:1;background:var(--card-2);border:1px solid var(--border);color:var(--text-2);padding:9px;border-radius:10px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+.vac-admin-actions button svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vac-admin-actions button.del{color:var(--danger)}
+.vac-empty{padding:40px 20px;text-align:center}
+.vac-empty h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.vac-empty p{font-size:13px;color:var(--text-2);line-height:1.5}
+
 .fab{position:fixed;bottom:100px;right:calc(50% - 260px + 20px);width:54px;height:54px;border-radius:27px;background:var(--accent);color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 28px -6px rgba(10,132,255,.5),0 6px 16px rgba(0,0,0,.3);z-index:40;font-size:26px;font-weight:400}
 .fab:active{transform:scale(.9)}
 .fab-suggest{background:var(--card);color:var(--accent);border:1.5px solid var(--accent);box-shadow:0 8px 24px -6px rgba(10,132,255,.35),0 4px 12px rgba(0,0,0,.2);font-size:22px}
@@ -498,6 +598,8 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 </head>
 <body>
 
+<div class="update-banner" id="update-banner">A new version is available. <button onclick="forceUpdateReload()">Reload now</button></div>
+
 <svg width="0" height="0" style="position:absolute">
   <defs><linearGradient id="navgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0A84FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs>
 </svg>
@@ -598,29 +700,49 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     </header>
     </div>
     <div class="screen-scroll">
-    <div class="profile-card">
-      <div class="profile-avatar" id="profile-avatar"><img src="icons/icon-512.png" alt="SA Recruiters" onerror="this.onerror=null;this.src='sa-recruiters-512-rounded.png'"></div>
+    <div class="profile-card-ios">
+      <div class="profile-avatar-ios" id="profile-avatar"><img src="icons/icon-512.png" alt="SA Recruiters" onerror="this.onerror=null;this.src='sa-recruiters-512-rounded.png'"></div>
       <div class="profile-name" id="profile-status-name">SA Recruiters</div>
       <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
       <div class="profile-sub" id="profile-status-sub">Not logged in</div>
+      <div class="app-version-badge" id="app-version-badge">v45</div>
+      <button class="force-update-btn" onclick="forceUpdate()"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Check for updates &amp; refresh</button>
     </div>
-    <div class="profile-menu">
-      <button class="profile-menu-item" data-ripple onclick="openAdminSheet()"><span class="mi-icon" id="admin-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span id="admin-menu-label">Admin login</span></button>
-      <button class="profile-menu-item" id="rateagencies-menu-item" data-ripple onclick="toggleRatingBoard()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span><span>Rate Agencies<span class="mi-sub">Rate &amp; review agencies — top-rated climb the ranks</span></span></button>
-      <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/><path d="M12 2v4"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span></button>
-      <button class="profile-menu-item" id="sm-menu-item" data-ripple onclick="goSmartManager()" style="display:none;"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></span><span>Smart Manager<span class="mi-sub">Agency self-service links</span></span></button>
-      <button class="profile-menu-item" id="submissions-menu-item" data-ripple onclick="goSubmissions()" style="display:none;"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/><circle cx="8.5" cy="8.5" r="1.2"/><path d="M8 20h8"/></svg></span><span>Submissions<span class="mi-sub">Reports &amp; suggestions inbox</span></span></button>
-      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>Support &amp; Donations</button>
-      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span></button>
-      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon" id="theme-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span id="theme-menu-label">Switch to day mode</span></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg></span>Learning Hub</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg></span>How to Prepare Your CV</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg></span>CV Revamp Service</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>Interview Tips</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span>Know Your Rights</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg></span>FAQ</button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Privacy Policy</button>
+
+    <div class="pgroup-label">Account</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="openAdminSheet()"><span class="mi-icon tile-blue" id="admin-menu-icon"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span id="admin-menu-label">Admin login</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" id="rateagencies-menu-item" data-ripple onclick="toggleRatingBoard()"><span class="mi-icon tile-amber"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span><span>Rate Agencies<span class="mi-sub">Rate &amp; review agencies &#8212; top-rated climb the ranks</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+
+    <div class="pgroup-label">Post &amp; Manage</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon tile-green"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/><path d="M12 2v4"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" id="sm-menu-item" data-ripple onclick="goSmartManager()" style="display:none;"><span class="mi-icon tile-indigo"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></span><span>Smart Manager<span class="mi-sub">Agency self-service links</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" id="submissions-menu-item" data-ripple onclick="goSubmissions()" style="display:none;"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/><circle cx="8.5" cy="8.5" r="1.2"/><path d="M8 20h8"/></svg></span><span>Submissions<span class="mi-sub">Reports &amp; suggestions inbox</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+
+    <div class="pgroup-label">Community</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span><span>Support &amp; Donations</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+
+    <div class="pgroup-label">Resources</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg></span><span>Learning Hub</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg></span><span>How to Prepare Your CV</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg></span><span>CV Revamp Service</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span>Interview Tips</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span><span>Know Your Rights</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg></span><span>FAQ</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+
+    <div class="pgroup-label">&nbsp;</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span>Privacy Policy</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span id="theme-menu-label">Switch to day mode</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
     <!-- ============ AGENCY RATING LEADERBOARD ============ -->
     <div id="rating-board" style="display:none"></div>
@@ -885,8 +1007,14 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <h3>Add vacancy</h3>
     <div class="field"><label>Role / title</label><input id="v-title" placeholder="e.g. Junior Bookkeeper"></div>
     <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Randburg, Gauteng"></div>
+    <div class="field"><label>Employment type</label><input id="v-etype" placeholder="e.g. Full-time, Part-time, Contract"></div>
+    <div class="field"><label>Contract type</label><input id="v-contract" placeholder="e.g. Permanent, Fixed-term, Casual"></div>
+    <div class="field"><label>Salary</label><input id="v-salary" placeholder="e.g. R18,000 pm or TBC"></div>
+    <div class="field"><label>Hours</label><input id="v-hours" placeholder="e.g. 45 hours per week"></div>
+    <div class="field"><label>Work schedule</label><input id="v-schedule" placeholder="e.g. Mon&ndash;Fri, shifts"></div>
+    <div class="field"><label>Start date</label><input id="v-start" placeholder="e.g. ASAP or 1 Oct 2026"></div>
     <div class="field"><label>Closing date</label><input id="v-closing" placeholder="e.g. 15 Aug 2026"></div>
-    <div class="field"><label>Notes (requirements, salary, etc.)</label><textarea id="v-notes" placeholder="Optional details"></textarea></div>
+    <div class="field"><label>Notes (requirements, job description, etc.)</label><textarea id="v-notes" placeholder="Optional details about the role, requirements, duties"></textarea></div>
     <div class="field"><label>Application link (optional)</label><input id="v-link" type="url" placeholder="e.g. https://agency.co.za/apply"></div>
     <button class="sheet-submit" data-ripple onclick="saveVacancy()">Publish vacancy</button>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-overlay')">Cancel</button>
@@ -901,8 +1029,14 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="field"><label>Role / title</label><input id="gv-role" placeholder="e.g. Senior Forklift Operator"></div>
     <div class="field"><label>Company / organisation</label><input id="gv-company" placeholder="e.g. ABC Logistics (optional)"></div>
     <div class="field"><label>Location</label><input id="gv-location" placeholder="e.g. Randburg, Gauteng"></div>
+    <div class="field"><label>Employment type</label><input id="gv-etype" placeholder="e.g. Full-time, Part-time, Contract"></div>
+    <div class="field"><label>Contract type</label><input id="gv-contract" placeholder="e.g. Permanent, Fixed-term, Casual"></div>
+    <div class="field"><label>Salary</label><input id="gv-salary" placeholder="e.g. R18,000 pm or TBC"></div>
+    <div class="field"><label>Hours</label><input id="gv-hours" placeholder="e.g. 45 hours per week"></div>
+    <div class="field"><label>Work schedule</label><input id="gv-schedule" placeholder="e.g. Mon&ndash;Fri, shifts"></div>
+    <div class="field"><label>Start date</label><input id="gv-start" placeholder="e.g. ASAP or 1 Oct 2026"></div>
     <div class="field"><label>Closing date</label><input id="gv-closing" placeholder="e.g. 15 Aug 2026"></div>
-    <div class="field"><label>Notes (requirements, salary, etc.)</label><textarea id="gv-notes" placeholder="Optional details"></textarea></div>
+    <div class="field"><label>Notes (requirements, job description, etc.)</label><textarea id="gv-notes" placeholder="Optional details about the role, requirements, duties"></textarea></div>
     <div class="field"><label>Application link</label><input id="gv-link" type="url" placeholder="e.g. https://company.co.za/apply"></div>
     <button class="sheet-submit" data-ripple onclick="saveGeneralVacancy()" id="gv-submit-btn">Publish vacancy</button>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('general-vacancy-overlay')">Cancel</button>
@@ -1172,9 +1306,10 @@ function applyTheme(theme) {
   // Update menu label/icon
   var mIcon = document.getElementById('theme-menu-icon');
   var mLabel = document.getElementById('theme-menu-label');
+  /* Tile icons: CSS .profile-menu-item .mi-icon svg sets stroke:#fff, size, etc. */
   if (mIcon) mIcon.innerHTML = theme === 'light'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
+    ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>'
+    : '<svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
   if (mLabel) mLabel.textContent = theme === 'light' ? 'Switch to night mode' : 'Switch to day mode';
 }
 function toggleTheme() {
@@ -1453,23 +1588,16 @@ function hubCard(a) {
 
 function hubVacancies(a) {
   var list = vacanciesFor(a.id);
-  var html = '<div class="hub-list">';
+  var html = '<div class="hub-list" style="padding:4px 0;">';
   if (!list.length) {
     html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No vacancies listed right now.</div>';
   } else {
     list.forEach(function(v) {
-      var saved = savedSet.has(v.id);
-      html += '<div class="hub-row" style="align-items:flex-start;">' +
-        '<div class="hub-row-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg></div>' +
-        '<div style="flex:1;min-width:0;">' +
-          '<div class="hub-row-title">' + escapeHtml(v.title || 'Untitled role') + '</div>' +
-          '<div class="hub-row-sub">' + escapeHtml([v.location, v.closing_date ? ('Closes ' + v.closing_date) : ''].filter(Boolean).join(' \u00b7 ')) + '</div>' +
-          (v.notes ? '<div class="hub-row-sub" style="margin-top:4px;">' + escapeHtml(v.notes) + '</div>' : '') +
-          (v.link ? '<div style="margin-top:6px;"><a href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" class="contact-link" style="font-size:12.5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>Apply here</a></div>' : '') +
-          '<div style="margin-top:8px;"><button class="save-btn ' + (saved?'saved':'') + '" data-ripple style="width:34px;height:34px;" onclick="toggleSave(this,\'' + v.id + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button></div>' +
-        '</div>' +
-        (isAdmin ? '<button class="hub-row-del" data-ripple onclick="deleteVacancy(\'' + v.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '') +
-      '</div>';
+      /* Use the new expandable vacancy card (agency vacancies show the agency photo) */
+      html += vacancyCard(v, a);
+      if (isAdmin) {
+        html += '<div style="text-align:right;margin:-4px 0 10px;"><button class="hub-row-del" data-ripple onclick="deleteVacancy(\'' + v.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>';
+      }
     });
   }
   html += '</div>';
@@ -2157,25 +2285,113 @@ function vacancyCard(v, agency) {
   var saved = savedSet.has(key);
   var isGeneral = v.agency_id === 'general';
   var orgName = isGeneral ? (v.company || 'General Vacancy') : (agency.name || '');
-  var adminActions = '';
+  var title = escapeHtml(v.title || 'Untitled role');
+
+  /* Logo tile: agency photo -> img; else company/agency initials on a gradient */
+  var logo;
+  if (!isGeneral && agency && agency.photo) {
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(agency.photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
+  } else {
+    var grad = vacGradFor(orgName);
+    logo = '<div class="vac-logo ' + grad + '">' + escapeHtml(initials(orgName)) + '</div>';
+  }
+
+  /* Chips (always-visible summary) */
+  var chips = '';
+  if (v.location) chips += '<span class="vac-chip">' + VAC_ICONS.pin + escapeHtml(v.location) + '</span>';
+  if (v.employment_type) chips += '<span class="vac-chip">' + VAC_ICONS.briefcase + escapeHtml(v.employment_type) + '</span>';
+  if (v.contract_type) chips += '<span class="vac-chip">' + VAC_ICONS.doc + escapeHtml(v.contract_type) + '</span>';
+  if (v.salary) chips += '<span class="vac-chip">' + VAC_ICONS.money + escapeHtml(v.salary) + '</span>';
+  if (v.closing_date) chips += '<span class="vac-chip">' + VAC_ICONS.clock + 'Closes ' + escapeHtml(v.closing_date) + '</span>';
+
+  /* Detail rows (inside expandable section) */
+  var detail = '';
+  if (v.location) detail += vacDetRow(VAC_ICONS.pin, 'Location', escapeHtml(v.location));
+  if (v.employment_type) detail += vacDetRow(VAC_ICONS.briefcase, 'Employment Type', escapeHtml(v.employment_type + (v.contract_type ? ' \u2014 ' + v.contract_type : '')));
+  if (v.salary) detail += vacDetRow(VAC_ICONS.money, 'Salary', escapeHtml(v.salary));
+  if (v.hours) detail += vacDetRow(VAC_ICONS.clock, 'Hours', escapeHtml(v.hours));
+  if (v.work_schedule) detail += vacDetRow(VAC_ICONS.calendar, 'Work Schedule', escapeHtml(v.work_schedule));
+  if (v.start_date) detail += vacDetRow(VAC_ICONS.calendar, 'Start Date', escapeHtml(v.start_date));
+  if (v.closing_date) detail += vacDetRow(VAC_ICONS.calendar, 'Closing Date', escapeHtml(v.closing_date));
+  if (orgName) detail += vacDetRow(VAC_ICONS.building, isGeneral ? 'Company' : 'Agency', escapeHtml(orgName));
+
+  var desc = v.notes ? '<div class="vac-desc-title">Job description</div><div class="vac-desc">' + escapeHtml(v.notes) + '</div>' : '';
+
+  /* Action buttons */
+  var actions = '<div class="vac-actions">';
+  if (v.link) {
+    actions += '<a class="vac-apply" href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Apply here</a>';
+  } else if (!isGeneral && agency && (agency.contact || agency.email || agency.website)) {
+    var cta = agency.website ? escapeHtml(agency.website) : '#';
+    actions += '<a class="vac-apply" href="' + cta + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Contact agency</a>';
+  } else {
+    actions += '<button class="vac-apply" onclick="event.stopPropagation();showToast(\'Contact the agency or company directly to apply.\')">' + VAC_ICONS.apply + 'Contact to apply</button>';
+  }
+  actions += '<button class="vac-close-btn" onclick="event.stopPropagation();closeVac(\'' + key + '\')">Close</button></div>';
+
+  /* Admin actions (general vacancies only, when admin) */
+  var admin = '';
   if (isAdmin && isGeneral) {
-    adminActions = '<div class="vacancy-admin-actions">' +
-      '<button class="rate-action-btn" data-ripple onclick="openEditGeneralVacancySheet(\'' + v.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>' +
-      '<button class="rate-action-btn danger" data-ripple onclick="deleteGeneralVacancy(\'' + v.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>' +
+    admin = '<div class="vac-admin-actions">' +
+      '<button class="rate-action-btn" data-ripple onclick="event.stopPropagation();openEditGeneralVacancySheet(\'' + v.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>' +
+      '<button class="rate-action-btn danger" data-ripple onclick="event.stopPropagation();deleteGeneralVacancy(\'' + v.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>' +
     '</div>';
   }
+
   return '' +
-  '<article class="vacancy-card">' +
-    '<div class="vacancy-head">' +
-      '<div><div class="vacancy-title">' + escapeHtml(v.title || 'Untitled role') + '</div><div class="vacancy-org">' + escapeHtml(orgName) + '</div></div>' +
-      '<button class="save-btn ' + (saved?'saved':'') + '" data-ripple onclick="toggleSave(this,\'' + key + '\')">' + STAR_SVG + '</button>' +
+  '<article class="vac-card" id="vc-' + key + '" onclick="toggleVac(\'' + key + '\')">' +
+    '<div class="vac-card-main">' +
+      logo +
+      '<div class="vac-body">' +
+        '<div class="vac-title">' + title + '</div>' +
+        '<div class="vac-company">' + (isGeneral ? '' : 'via ') + escapeHtml(orgName) + (isGeneral ? '' : ' (Agency)') + '</div>' +
+        (chips ? '<div class="vac-chips">' + chips + '</div>' : '') +
+      '</div>' +
+      '<button class="vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + key + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button>' +
     '</div>' +
-    '<div class="vacancy-meta">' + (v.location ? '<span class="meta-chip">' + escapeHtml(v.location) + '</span>' : '') + (v.closing_date ? '<span class="meta-chip">Closes ' + escapeHtml(v.closing_date) + '</span>' : '') + '</div>' +
-    (v.notes ? '<div class="vacancy-notes">' + escapeHtml(v.notes) + '</div>' : '') +
-    (v.link ? '<div style="margin-bottom:10px;"><a href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" class="contact-link" style="font-size:13px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>Apply here</a></div>' : '') +
-    adminActions +
+    '<div class="vac-detail"><div class="vac-detail-inner">' +
+      detail + desc + actions + admin +
+    '</div></div>' +
   '</article>';
 }
+
+/* Helper: detail row with icon + label + value */
+function vacDetRow(icn, label, val) {
+  return '<div class="vac-detail-row"><span class="vac-detail-icon">' + icn + '</span><div><div class="vac-detail-label">' + label + '</div><div class="vac-detail-value">' + val + '</div></div></div>';
+}
+
+/* Helper: deterministic gradient class from a name (so each company gets a stable color) */
+var VAC_GRADS = ['grad-blue','grad-green','grad-orange','grad-purple','grad-teal','grad-pink','grad-indigo','grad-mint','grad-amber','grad-red','grad-brown','grad-gray'];
+function vacGradFor(name) {
+  if (!name) return 'grad-gray';
+  var h = 0;
+  for (var i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+  return VAC_GRADS[Math.abs(h) % VAC_GRADS.length];
+}
+
+/* Vacancy card small inline icons (white stroke, sized by CSS) */
+var VAC_ICONS = {
+  pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  briefcase:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>',
+  doc:'<svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>',
+  money:'<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>',
+  clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  calendar:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  building:'<svg viewBox="0 0 24 24"><path d="M3 22h18M4 21h16M3.5 10L12 4.5 20.5 10M5 21V11M9 21V11M15 21V11M19 21V11M2 10h20"/></svg>',
+  apply:'<svg viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></svg>',
+  edit:'<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+};
+
+/* Toggle expand/collapse of a vacancy card */
+window.toggleVac = function(id) {
+  var c = document.getElementById('vc-' + id);
+  if (c) c.classList.toggle('open');
+};
+window.closeVac = function(id) {
+  var c = document.getElementById('vc-' + id);
+  if (c) c.classList.remove('open');
+};
 
 window.toggleSave = function(btn, key) {
   if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); btn.innerHTML = STAR_SVG; showToast('Removed from saved'); }
@@ -2312,6 +2528,12 @@ function openVacancySheet(agencyId) {
   pendingVacancyAgency = agencyId;
   document.getElementById('v-title').value = '';
   document.getElementById('v-location').value = '';
+  document.getElementById('v-etype').value = '';
+  document.getElementById('v-contract').value = '';
+  document.getElementById('v-salary').value = '';
+  document.getElementById('v-hours').value = '';
+  document.getElementById('v-schedule').value = '';
+  document.getElementById('v-start').value = '';
   document.getElementById('v-closing').value = '';
   document.getElementById('v-notes').value = '';
   document.getElementById('v-link').value = '';
@@ -2324,6 +2546,12 @@ async function saveVacancy() {
   var live = await upsertVacancy({
     id: id, agency_id: pendingVacancyAgency, title: title,
     location: document.getElementById('v-location').value.trim(),
+    employment_type: document.getElementById('v-etype').value.trim(),
+    contract_type: document.getElementById('v-contract').value.trim(),
+    salary: document.getElementById('v-salary').value.trim(),
+    hours: document.getElementById('v-hours').value.trim(),
+    work_schedule: document.getElementById('v-schedule').value.trim(),
+    start_date: document.getElementById('v-start').value.trim(),
     closing_date: document.getElementById('v-closing').value.trim(),
     notes: document.getElementById('v-notes').value.trim(),
     link: document.getElementById('v-link').value.trim()
@@ -2353,6 +2581,12 @@ function openGeneralVacancySheet() {
   document.getElementById('gv-role').value = '';
   document.getElementById('gv-company').value = '';
   document.getElementById('gv-location').value = '';
+  document.getElementById('gv-etype').value = '';
+  document.getElementById('gv-contract').value = '';
+  document.getElementById('gv-salary').value = '';
+  document.getElementById('gv-hours').value = '';
+  document.getElementById('gv-schedule').value = '';
+  document.getElementById('gv-start').value = '';
   document.getElementById('gv-closing').value = '';
   document.getElementById('gv-notes').value = '';
   document.getElementById('gv-link').value = '';
@@ -2367,6 +2601,12 @@ function openEditGeneralVacancySheet(id) {
   document.getElementById('gv-role').value = v.title || '';
   document.getElementById('gv-company').value = v.company || '';
   document.getElementById('gv-location').value = v.location || '';
+  document.getElementById('gv-etype').value = v.employment_type || '';
+  document.getElementById('gv-contract').value = v.contract_type || '';
+  document.getElementById('gv-salary').value = v.salary || '';
+  document.getElementById('gv-hours').value = v.hours || '';
+  document.getElementById('gv-schedule').value = v.work_schedule || '';
+  document.getElementById('gv-start').value = v.start_date || '';
   document.getElementById('gv-closing').value = v.closing_date || '';
   document.getElementById('gv-notes').value = v.notes || '';
   document.getElementById('gv-link').value = v.link || '';
@@ -2379,6 +2619,12 @@ async function saveGeneralVacancy() {
     title: title,
     company: document.getElementById('gv-company').value.trim(),
     location: document.getElementById('gv-location').value.trim(),
+    employment_type: document.getElementById('gv-etype').value.trim(),
+    contract_type: document.getElementById('gv-contract').value.trim(),
+    salary: document.getElementById('gv-salary').value.trim(),
+    hours: document.getElementById('gv-hours').value.trim(),
+    work_schedule: document.getElementById('gv-schedule').value.trim(),
+    start_date: document.getElementById('gv-start').value.trim(),
     closing_date: document.getElementById('gv-closing').value.trim(),
     notes: document.getElementById('gv-notes').value.trim(),
     link: document.getElementById('gv-link').value.trim(),
@@ -2816,6 +3062,54 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
+
+// ===== Force update: clear all caches + unregister SW + hard reload =====
+function forceUpdate() {
+  showToast('Clearing cache and reloading…');
+  if ('caches' in window) {
+    caches.keys().then(function(names) {
+      return Promise.all(names.map(function(n) { return caches.delete(n); }));
+    }).then(function() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          return Promise.all(regs.map(function(r) { return r.unregister(); }));
+        }).then(function() {
+          // bust the browser HTTP cache too
+          window.location.href = window.location.pathname + '?v=' + Date.now();
+        });
+      } else {
+        window.location.href = window.location.pathname + '?v=' + Date.now();
+      }
+    });
+  } else {
+    window.location.reload();
+  }
+}
+
+function forceUpdateReload() {
+  document.getElementById('update-banner').classList.remove('show');
+  forceUpdate();
+}
+
+// ===== Show the update version badge from SW =====
+(function showVersionBadge() {
+  var badge = document.getElementById('app-version-badge');
+  if (!badge || !('serviceWorker' in navigator)) return;
+  function askSW() {
+    if (navigator.serviceWorker.controller) {
+      var ch = new MessageChannel();
+      ch.port1.onmessage = function(e) {
+        if (e.data && e.data.version) badge.textContent = e.data.version.replace('sa-recruiters-', 'v');
+      };
+      navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [ch.port2]);
+    }
+  }
+  if (navigator.serviceWorker.controller) {
+    askSW();
+  } else {
+    navigator.serviceWorker.ready.then(askSW);
+  }
+})();
 
 // ===== Ripple =====
 document.addEventListener('pointerdown', function(e) {
@@ -3370,14 +3664,16 @@ loadPostingSetting();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js', { scope: '/' }).then(function(reg) {
+    navigator.serviceWorker.register('sw.js', { scope: '/', updateViaCache: 'none' }).then(function(reg) {
       // Listen for updates
       reg.addEventListener('updatefound', function() {
         var newWorker = reg.installing;
         if (!newWorker) return;
         newWorker.addEventListener('statechange', function() {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New content available — notify SW to take over
+            // New content available — show banner + notify SW to take over
+            var banner = document.getElementById('update-banner');
+            if (banner) banner.classList.add('show');
             newWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
@@ -3389,6 +3685,9 @@ if ('serviceWorker' in navigator) {
         refreshing = true;
         window.location.reload();
       });
+      // Aggressively check for updates on every load + every 60s
+      reg.update();
+      setInterval(function() { reg.update(); }, 60000);
     }).catch(function(err) {
       console.warn('Service worker registration failed:', err);
     });

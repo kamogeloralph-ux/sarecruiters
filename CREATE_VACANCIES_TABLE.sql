@@ -22,6 +22,12 @@ CREATE TABLE IF NOT EXISTS public.vacancies (
     title TEXT NOT NULL DEFAULT '',
     company TEXT DEFAULT '',
     location TEXT DEFAULT '',
+    employment_type TEXT DEFAULT '',
+    contract_type TEXT DEFAULT '',
+    salary TEXT DEFAULT '',
+    hours TEXT DEFAULT '',
+    work_schedule TEXT DEFAULT '',
+    start_date TEXT DEFAULT '',
     closing_date TEXT DEFAULT '',
     notes TEXT DEFAULT '',
     link TEXT DEFAULT '',
@@ -35,6 +41,41 @@ BEGIN
                    WHERE table_schema = 'public' AND table_name = 'vacancies'
                    AND column_name = 'company') THEN
         ALTER TABLE public.vacancies ADD COLUMN company TEXT DEFAULT '';
+    END IF;
+END $$;
+
+-- Add the new expandable-card columns if the table already exists without them
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public' AND table_name = 'vacancies'
+                   AND column_name = 'employment_type') THEN
+        ALTER TABLE public.vacancies ADD COLUMN employment_type TEXT DEFAULT '';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public' AND table_name = 'vacancies'
+                   AND column_name = 'contract_type') THEN
+        ALTER TABLE public.vacancies ADD COLUMN contract_type TEXT DEFAULT '';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public' AND table_name = 'vacancies'
+                   AND column_name = 'salary') THEN
+        ALTER TABLE public.vacancies ADD COLUMN salary TEXT DEFAULT '';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public' AND table_name = 'vacancies'
+                   AND column_name = 'hours') THEN
+        ALTER TABLE public.vacancies ADD COLUMN hours TEXT DEFAULT '';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public' AND table_name = 'vacancies'
+                   AND column_name = 'work_schedule') THEN
+        ALTER TABLE public.vacancies ADD COLUMN work_schedule TEXT DEFAULT '';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public' AND table_name = 'vacancies'
+                   AND column_name = 'start_date') THEN
+        ALTER TABLE public.vacancies ADD COLUMN start_date TEXT DEFAULT '';
     END IF;
 END $$;
 

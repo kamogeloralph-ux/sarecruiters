@@ -197,3 +197,103 @@ After running it, verify with: `SELECT * FROM public.vacancies LIMIT 5;` (it sho
 - **Issue 1 (vacancies not visible to users): Root cause = missing Supabase table.** I made the app warn you clearly when a save isn't live, but the **actual fix is to run `CREATE_VACANCIES_TABLE.sql` in your Supabase dashboard**. Once done, vacancies publish to the cloud and all users see them immediately.
 
 **To deploy the fixes:** upload the updated `index.html`, `sw.js`, `manifest.json`, and `offline.html` to your web server (replacing the old ones), then run the SQL above in Supabase. Because the service worker cache version was bumped to v43, returning visitors will automatically pick up the new files on their next visit — no manual cache-clear needed.
+
+---
+
+# Update 4 — iOS-Style Profile Redesign + Expandable Vacancy Cards
+
+## What changed
+
+### 1. Profile section → iOS/Luno-style grouped lists with colored icon tiles
+
+The Profile section was redesigned from a flat list of buttons into **iOS-style grouped lists** (like the Settings app on iPhone, or the Luno app). Each menu item now has its own **distinct colored rounded-square icon tile** instead of a plain monochrome icon.
+
+**Group structure:**
+
+| Group | Items | Tile colors |
+|-------|-------|-------------|
+| **Account** | Admin login, Rate Agencies | Blue, Amber |
+| **Post & Manage** | Post a Vacancy, Smart Manager (admin only), Submissions (admin only) | Green, Indigo, Orange |
+| **Community** | Suggest or comment, Support & Donations, Report a problem | Teal, Pink, Red |
+| **Resources** | Learning Hub, How to Prepare Your CV, CV Revamp Service, Interview Tips, Know Your Rights, FAQ | Blue, Purple, Mint, Orange, Brown, Gray |
+| *(unnamed)* | Privacy Policy, Switch to day/night mode | Gray, Gray |
+
+**Key design details:**
+- Each icon tile is a 34×34px rounded square (9px radius) with a two-color linear gradient (145°)
+- 12 tile colors available: blue, purple, teal, green, orange, red, indigo, pink, gray, mint, amber, brown
+- SVG icons inside tiles render in white (stroke:#fff) with 2px stroke width
+- Chevron arrows (›) appear at the right end of each row
+- Separator lines between rows (indented 52px from left, like iOS)
+- Section headers in uppercase, 13px, secondary text color
+- Cards remain neutral (card background, border) — only the icons are colored, keeping a professional look
+
+**CSS classes added:** `.profile-card-ios`, `.profile-avatar-ios`, `.pgroup-label`, `.pgrouped-list`, `.tile-blue` through `.tile-brown`, `.mi-chev`
+
+### 2. Vacancy cards → expandable iOS-style cards with company logos
+
+Vacancy cards were completely redesigned from flat text cards into **expandable cards** (like the job app screenshots the user provided). Key features:
+
+**Collapsed state (always visible):**
+- **Company logo tile** — 46×46px rounded square with a gradient background and company initials (e.g. "BE" for Basic Education). Agency vacancies show the agency's actual photo/logo if available.
+- Job title (bold, 15px)
+- Company/agency name (12.5px, secondary text)
+- **Info chips** — small rounded pills showing location, employment type, contract type, salary, and closing date
+- Save/bookmark star button (top right)
+
+**Expanded state (tap to expand):**
+- **Detail rows** with icon + label + value:
+  - Location (pin icon)
+  - Employment Type (briefcase icon) — combined with contract type
+  - Salary (money icon)
+  - Hours (clock icon)
+  - Work Schedule (calendar icon)
+  - Start Date (calendar icon)
+  - Closing Date (calendar icon)
+  - Company/Agency (building icon)
+- **Job description** section (from the Notes field)
+- **Action buttons:**
+  - "Apply here" (green, if a link exists) → opens the application URL
+  - "Contact agency" (green, for agency vacancies with contact info) → opens agency website
+  - "Contact to apply" (green, if no link) → shows a toast message
+  - "Close" (neutral) → collapses the card
+- **Admin actions** (admin only, general vacancies): Edit + Delete buttons
+
+**Logo tile gradients:** 12 deterministic gradient classes (`grad-blue` through `grad-gray`) — the gradient is chosen by hashing the company/agency name, so each company gets a stable, consistent color.
+
+**CSS classes added:** `.vac-card`, `.vac-card-main`, `.vac-logo`, `.grad-*`, `.vac-body`, `.vac-title`, `.vac-company`, `.vac-chips`, `.vac-chip`, `.vac-save`, `.vac-detail`, `.vac-detail-inner`, `.vac-detail-row`, `.vac-detail-icon`, `.vac-detail-label`, `.vac-detail-value`, `.vac-desc`, `.vac-actions`, `.vac-apply`, `.vac-close-btn`, `.vac-admin-actions`
+
+### 3. Vacancy form → new optional fields
+
+Both the **agency vacancy form** ("Add vacancy") and the **general vacancy form** ("Post a vacancy") now include these optional fields:
+- Employment type (e.g. Full-time, Part-time, Contract)
+- Contract type (e.g. Permanent, Fixed-term, Casual)
+- Salary (e.g. R18,000 pm or TBC)
+- Hours (e.g. 45 hours per week)
+- Work schedule (e.g. Mon–Fri, shifts)
+- Start date (e.g. ASAP or 1 Oct 2026)
+
+These fields power the new detail rows and chips in the expandable vacancy cards. They are all optional — existing vacancies without these fields still display correctly (the detail rows simply don't appear for missing fields).
+
+### 4. Supabase vacancies table → new columns
+
+`CREATE_VACANCIES_TABLE.sql` was updated to include the new columns: `employment_type`, `contract_type`, `salary`, `hours`, `work_schedule`, `start_date`. The script uses `DO $$ ... END $$` blocks with `IF NOT EXISTS` checks so it's safe to re-run on an existing table — it will `ALTER TABLE ADD COLUMN` only for columns that don't yet exist.
+
+**If you already created the vacancies table:** simply re-run `CREATE_VACANCIES_TABLE.sql` in your Supabase SQL Editor — it will add the new columns without dropping any data.
+
+### 5. Service worker cache bumped to v44
+
+`sw.js` version updated from `sa-recruiters-v43` → `sa-recruiters-v44` so returning visitors automatically pick up the redesigned Profile and vacancy cards on their next visit.
+
+## Files changed
+- `index.html` — Profile HTML restructured into iOS grouped lists; vacancy card CSS + JS rewritten; vacancy forms extended with new fields; theme icon JS updated for tile rendering
+- `sw.js` — cache version v43 → v44
+- `CREATE_VACANCIES_TABLE.sql` — new columns added
+
+## Verification
+- ✅ All JavaScript parses cleanly (`node --check` passes on both inline JS and `sw.js`)
+- ✅ Profile screen renders with 5 grouped sections, all colored tiles visible
+- ✅ Admin-only items (Smart Manager, Submissions) hidden when not logged in, shown when admin
+- ✅ Vacancy cards display with company logo tiles, info chips
+- ✅ Tap-to-expand works: detail rows (Location, Closing Date, Company) appear with icons
+- ✅ "Contact to apply" + "Close" buttons render and function correctly
+- ✅ Theme toggle icon updates correctly (sun/moon) on the gray tile
