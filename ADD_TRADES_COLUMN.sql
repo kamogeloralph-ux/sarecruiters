@@ -4,15 +4,18 @@
 --
 --  Run this in: Supabase Dashboard → SQL Editor → New query
 --
---  The app has a "Trades / Industries" field in the agency form
---  but the agencies table is missing the `trades` column, which
---  causes "Could not save" errors. This script adds the column.
+--  The app has a "Trades / Industries" field in the agency form.
+--  This script adds the `trades` column so manually entered trades
+--  are saved permanently to Supabase.
+--
+--  IMPORTANT: The app now SENDS trades to Supabase on every save.
+--  If this column does NOT exist yet, the app will detect the error,
+--  retry the save WITHOUT trades (so the rest of the agency record
+--  still saves), and log a console warning. Trades entered manually
+--  will only persist after this column is added — so run this once.
 --
 --  After running this, the app will automatically start saving
---  trades data to Supabase (no code changes needed — the app
---  already strips `trades` from the payload as a safety measure
---  until this column exists, then sends it once the column is
---  present).
+--  trades data to Supabase (no further code changes needed).
 -- ============================================================
 
 -- Add the trades column (text, nullable, default empty string)

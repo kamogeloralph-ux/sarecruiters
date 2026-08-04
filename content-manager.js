@@ -64,14 +64,26 @@
     }
   }
 
-  // Expose
-  window.ContentMgr = {
+  function resetAll(){
+    if (typeof DEFAULT_CONTENT === 'undefined') return;
+    var fresh = {};
+    Object.keys(DEFAULT_CONTENT).forEach(function(key){
+      fresh[key] = JSON.parse(JSON.stringify(DEFAULT_CONTENT[key]));
+    });
+    writeStore(fresh);
+  }
+
+  // Expose under both names so both the public app and admin.html can use it
+  var api = {
     ensureSeeded: ensureSeeded,
     getSection: getSection,
     upsertArticle: upsertArticle,
     deleteArticle: deleteArticle,
-    restoreDefaults: restoreDefaults
+    restoreDefaults: restoreDefaults,
+    resetAll: resetAll
   };
+  window.ContentMgr = api;
+  window.ContentManager = api;   // alias used by admin.html
 })();
 
 /* ===== Rendering & editing UI ===== */
