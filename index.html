@@ -169,6 +169,11 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .branch-row .br-loc{font-size:12.5px;color:var(--text-2);margin-bottom:4px;display:flex;align-items:flex-start;gap:5px}
 .branch-row .br-contact{font-size:12px;color:var(--text-2);display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
 .branch-row .br-contact a{color:var(--accent);text-decoration:none}
+.branch-row .br-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.branch-row .br-edit,.branch-row .br-del{display:inline-flex;align-items:center;gap:5px;background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--text-2)}
+.branch-row .br-edit:active,.branch-row .br-del:active{transform:scale(.97)}
+.branch-row .br-edit svg,.branch-row .br-del svg{width:14px;height:14px}
+.branch-row .br-del{color:#c0392b}
 
 .section-head{display:flex;align-items:baseline;justify-content:space-between;margin:20px 0 14px}
 .section-title{font-size:18px;font-weight:700;letter-spacing:-0.02em}
@@ -242,8 +247,10 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .hub-row-avatar svg{width:18px;height:18px;display:block}
 .hub-row-title{font-size:13.5px;font-weight:600}
 .hub-row-sub{font-size:11.5px;color:var(--text-2);margin-top:1px}
-.hub-row-del{margin-left:auto;background:none;border:none;color:var(--text-2);font-size:16px;padding:4px 8px;display:flex;align-items:center;justify-content:center}
-.hub-row-del svg{width:16px;height:16px;display:block}
+.hub-row-actions{margin-left:auto;display:flex;align-items:center;gap:2px;flex-shrink:0}
+.hub-row-edit,.hub-row-del{background:none;border:none;color:var(--text-2);font-size:16px;padding:4px 8px;display:flex;align-items:center;justify-content:center}
+.hub-row-edit:active,.hub-row-del:active{transform:scale(.92);color:var(--accent)}
+.hub-row-edit svg,.hub-row-del svg{width:16px;height:16px;display:block}
 .hub-contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hub-contact-item{background:var(--card-2);border-radius:var(--radius-sm);padding:14px}
 .hub-contact-item.wide{grid-column:1/-1}
@@ -382,7 +389,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .pgroup-label{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin:22px 4px 8px}
 .pgrouped-list{background:var(--card);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
 .pgrouped-list + .pgroup-label{margin-top:20px}
-.profile-menu-item{display:flex;align-items:center;gap:13px;background:var(--card);border:none;border-radius:0;padding:12px 14px;font-size:15px;font-weight:600;width:100%;text-align:left;cursor:pointer;position:relative}
+.profile-menu-item{display:flex;align-items:center;gap:13px;background:var(--card);border:none;border-radius:0;padding:13px 14px;font-size:15px;font-weight:600;width:100%;text-align:left;cursor:pointer;position:relative}
 .profile-menu-item + .profile-menu-item::before{content:'';position:absolute;top:0;left:52px;right:0;height:1px;background:var(--separator)}
 .profile-menu-item:active{background:var(--card-2)}
 .profile-menu-item .mi-icon{font-size:18px;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -399,7 +406,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .tile-mint{background:linear-gradient(145deg,#66D4CF,#2EA39E)}
 .tile-amber{background:linear-gradient(145deg,#FFD60A,#CC9A00)}
 .tile-brown{background:linear-gradient(145deg,#AC8E68,#7A5F3D)}
-.profile-menu-item .mi-sub{font-size:12px;color:var(--text-2);font-weight:400;margin-top:2px;line-height:1.3}
+.profile-menu-item .mi-sub{font-size:12px;color:var(--text-2);font-weight:400;margin-top:3px;line-height:1.3;display:block}
+/* text wrapper span: stack title above subtitle vertically */
+.profile-menu-item > span:not(.mi-icon):not(.mi-chev){display:flex;flex-direction:column;flex:1;min-width:0}
 .profile-menu-item .mi-chev{width:16px;height:16px;color:var(--text-3);flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;margin-left:auto}
 /* keep old profile-menu hidden (replaced by grouped lists) */
 .profile-menu{display:none}
@@ -408,6 +417,32 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .force-update-btn{display:block;width:100%;margin-top:14px;padding:13px 16px;font-size:15px;font-weight:600;color:#fff;background:linear-gradient(145deg,#0A84FF,#0051D5);border:none;border-radius:var(--radius-sm);cursor:pointer;transition:transform .15s var(--ease),opacity .15s}
 .force-update-btn:active{transform:scale(.97);opacity:.85}
 .force-update-btn svg{width:18px;height:18px;vertical-align:-4px;margin-right:8px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ===== Track of the Day player ===== */
+.track-card{margin:10px 0 6px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;display:flex;align-items:center;gap:14px;transition:border-color .25s var(--ease)}
+.track-card.has-track{border-color:rgba(10,132,255,.28)}
+.track-card .track-art{width:52px;height:52px;border-radius:14px;flex-shrink:0;background:linear-gradient(145deg,#0A84FF,#0051D5);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(10,132,255,.55);position:relative;overflow:hidden}
+.track-card .track-art svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.track-card .track-art .art-bars{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;gap:3px;padding:8px}
+.track-card.playing .track-art .art-bars{display:flex}
+.track-card .art-bars span{width:3px;background:rgba(255,255,255,.9);border-radius:2px;animation:barBounce .9s ease-in-out infinite}
+.track-card .art-bars span:nth-child(2){animation-delay:.2s}
+.track-card .art-bars span:nth-child(3){animation-delay:.4s}
+.track-card .art-bars span:nth-child(4){animation-delay:.1s}
+@keyframes barBounce{0%,100%{height:6px}50%{height:26px}}
+.track-card .track-info{flex:1;min-width:0;text-align:left}
+.track-card .track-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.track-card .track-title{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.track-card .track-artist{font-size:12.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.track-card .track-empty .track-title{font-size:13.5px;color:var(--text-2);font-weight:500}
+.track-card .track-empty .track-artist{font-size:11.5px}
+.track-play{width:46px;height:46px;border-radius:50%;flex-shrink:0;border:none;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s var(--ease),opacity .15s;box-shadow:0 4px 14px -3px rgba(10,132,255,.5)}
+.track-play:active{transform:scale(.9)}
+.track-play:disabled{opacity:.4;box-shadow:none}
+.track-play svg{width:20px;height:20px;fill:#fff;stroke:none}
+.track-card .track-progress{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(10,132,255,.15);overflow:hidden}
+.track-card .track-progress .track-progress-fill{height:100%;width:0;background:var(--accent);transition:width .15s linear}
+.track-card-wrap{position:relative}
 .update-banner{position:fixed;top:0;left:0;right:0;z-index:10000;padding:12px 16px;background:linear-gradient(145deg,#0A84FF,#0051D5);color:#fff;font-size:14px;font-weight:600;text-align:center;transform:translateY(-100%);transition:transform .3s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.25)}
 .update-banner.show{transform:translateY(0)}
 .update-banner button{margin-left:12px;padding:5px 14px;background:#fff;color:#0A84FF;border:none;border-radius:var(--radius-pill);font-weight:700;font-size:13px;cursor:pointer}
@@ -622,7 +657,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
           <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span>
           <span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
         </button>
-        <button class="icon-btn" data-ripple id="admin-btn" onclick="openAdminSheet()" aria-label="Admin login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/><circle cx="12" cy="15.5" r="1.5"/></svg></button>
       </div>
     </header>
 
@@ -705,44 +739,61 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
       <div class="profile-name" id="profile-status-name">SA Recruiters</div>
       <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
       <div class="profile-sub" id="profile-status-sub">Not logged in</div>
-      <div class="app-version-badge" id="app-version-badge">v45</div>
+      <div class="app-version-badge" id="app-version-badge">v50</div>
       <button class="force-update-btn" onclick="forceUpdate()"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Check for updates &amp; refresh</button>
     </div>
 
+    <!-- ===== Track of the Day ===== -->
+    <div class="track-card-wrap">
+      <div class="track-card" id="track-card">
+        <div class="track-art" id="track-art">
+          <svg id="track-art-icon" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <div class="art-bars"><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="track-info" id="track-info">
+          <div class="track-label">Track of the Day</div>
+          <div class="track-title" id="track-title">Loading…</div>
+          <div class="track-artist" id="track-artist"></div>
+        </div>
+        <button class="track-play" id="track-play" disabled onclick="toggleTrackPlay()" aria-label="Play track">
+          <svg id="track-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+      </div>
+      <div class="track-progress" id="track-progress" style="display:none"><div class="track-progress-fill" id="track-progress-fill"></div></div>
+    </div>
+    <audio id="track-audio" preload="metadata" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>
+
     <div class="pgroup-label">Account</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openAdminSheet()"><span class="mi-icon tile-blue" id="admin-menu-icon"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span id="admin-menu-label">Admin login</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="profile-menu-item" id="rateagencies-menu-item" data-ripple onclick="toggleRatingBoard()"><span class="mi-icon tile-amber"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span><span>Rate Agencies<span class="mi-sub">Rate &amp; review agencies &#8212; top-rated climb the ranks</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
 
     <div class="pgroup-label">Post &amp; Manage</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon tile-green"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/><path d="M12 2v4"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" id="sm-menu-item" data-ripple onclick="goSmartManager()" style="display:none;"><span class="mi-icon tile-indigo"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></span><span>Smart Manager<span class="mi-sub">Agency self-service links</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" id="submissions-menu-item" data-ripple onclick="goSubmissions()" style="display:none;"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/><circle cx="8.5" cy="8.5" r="1.2"/><path d="M8 20h8"/></svg></span><span>Submissions<span class="mi-sub">Reports &amp; suggestions inbox</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
 
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span><span>Support &amp; Donations</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
 
     <div class="pgroup-label">Resources</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg></span><span>Learning Hub</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg></span><span>How to Prepare Your CV</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg></span><span>CV Revamp Service</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span>Interview Tips</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span><span>Know Your Rights</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg></span><span>FAQ</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg></span><span>Learning Hub<span class="mi-sub">Guides &amp; resources for job seekers</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg></span><span>How to Prepare Your CV<span class="mi-sub">Step-by-step CV writing guide</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span>Interview Tips<span class="mi-sub">Ace your next interview with confidence</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
 
     <div class="pgroup-label">&nbsp;</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span>Privacy Policy</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span id="theme-menu-label">Switch to day mode</span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
     <!-- ============ AGENCY RATING LEADERBOARD ============ -->
     <div id="rating-board" style="display:none"></div>
@@ -927,9 +978,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   </div>
 
 </div>
-<button class="fab" id="fab-admin" data-ripple onclick="openForm()" aria-label="Add agency" style="display:none">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-</button>
 <button class="fab fab-suggest" id="fab-suggest" data-ripple onclick="openSuggestionSheet()" aria-label="Suggest or comment">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </button>
@@ -1072,40 +1120,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   </div>
 </div>
 
-<!-- ============ ADMIN SHEET ============ -->
-<div class="sheet-scrim" id="admin-overlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h3>Admin login</h3>
-    <div class="admin-warning">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span><strong>Restricted area.</strong> This section is reserved for admin access only. Unauthorised use is prohibited.</span>
-    </div>
-    <!-- PIN GATE (shown first, before email/password) -->
-    <div id="admin-pin-gate">
-      <div class="field"><label>Security PIN</label><input id="admin-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Enter PIN" style="letter-spacing:6px;text-align:center;font-size:18px;"></div>
-      <div style="color:#ff5b5b;font-size:12.5px;margin-bottom:10px;" id="pin-error"></div>
-      <div id="pin-lock-msg" style="display:none;font-size:13px;color:#FF9F0A;background:rgba(255,159,10,.1);border-radius:10px;padding:10px 12px;margin-bottom:10px;line-height:1.5;"></div>
-      <button class="sheet-submit" data-ripple onclick="verifyPin()">Unlock</button>
-    </div>
-    <!-- LOGIN FIELDS (shown after PIN is verified) -->
-    <div id="admin-login-fields" style="display:none;">
-      <div class="field"><label>Email</label><input id="admin-email" type="email"></div>
-      <div class="field"><label>Password</label><input id="admin-password" type="password"></div>
-      <div style="color:#ff5b5b;font-size:12.5px;margin-bottom:10px;" id="admin-error"></div>
-      <button class="sheet-submit" data-ripple onclick="adminLogin()">Log in</button>
-    </div>
-    <div id="admin-logged-in" style="display:none;">
-      <p style="font-size:13.5px;color:var(--text-2);margin-bottom:16px;">You're logged in as admin.</p>
-      <div class="toggle-row">
-        <span>Public vacancy posting<br><small id="posting-toggle-sub" style="font-weight:400;color:var(--text-2);font-size:11.5px;">Closed — spam protected</small></span>
-        <label class="switch"><input type="checkbox" id="posting-toggle-input" onchange="togglePublicPosting(this.checked)"><span class="track"><span class="knob"></span></span></label>
-      </div>
-      <button class="sheet-submit danger" data-ripple onclick="adminLogout()">Log out</button>
-    </div>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('admin-overlay')">Close</button>
-  </div>
-</div>
+<!-- ============ ADMIN SHEET (REMOVED — admin now lives in admin.html) ============ -->
 
 <!-- ============ SUPPORT SHEET ============ -->
 <div class="sheet-scrim" id="support-overlay">
@@ -1310,7 +1325,16 @@ function applyTheme(theme) {
   if (mIcon) mIcon.innerHTML = theme === 'light'
     ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>'
     : '<svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
-  if (mLabel) mLabel.textContent = theme === 'light' ? 'Switch to night mode' : 'Switch to day mode';
+  if (mLabel) {
+    // Update only the title text node, preserving the .mi-sub subtitle
+    var labelText = theme === 'light' ? 'Switch to night mode' : 'Switch to day mode';
+    if (mLabel.firstChild && mLabel.firstChild.nodeType === 3) {
+      mLabel.firstChild.nodeValue = labelText;
+    } else {
+      // Fallback: rebuild with subtitle
+      mLabel.innerHTML = labelText + '<span class="mi-sub">Toggle between light &amp; dark appearance</span>';
+    }
+  }
 }
 function toggleTheme() {
   var current = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -1347,12 +1371,28 @@ async function saveManagerTokenToSupabase(agencyId, token) {
   } catch(e) { console.error('manage_token save', e); }
 }
 async function upsertAgency(a) {
-  // Strip 'trades' before sending to Supabase — the column may not exist yet.
-  // See ADD_TRADES_COLUMN.sql to add it permanently.
+  // Send the FULL payload (including trades) to Supabase.
+  // The `trades` column must exist on the agencies table — run
+  // ADD_TRADES_COLUMN.sql once in the Supabase SQL Editor if it doesn't.
+  // To stay resilient, if the upsert fails specifically because the
+  // `trades` column is missing, we retry once without trades so the rest
+  // of the agency record still saves (and trades keeps working via the
+  // cached in-memory copy until the column is added).
   var safe = Object.assign({}, a);
-  delete safe.trades;
   var { error } = await supabaseClient.from('agencies').upsert(safe);
-  if (error) { console.error('agency save', error); alert('Could not save. Check your Supabase setup.'); }
+  if (error) {
+    var msg = (error.message || '') + ' ' + (error.hint || '') + ' ' + JSON.stringify(error.details || '');
+    if (/trades/i.test(msg)) {
+      // Column missing — retry without trades so the agency still saves.
+      var safeNoTrades = Object.assign({}, a); delete safeNoTrades.trades;
+      var r2 = await supabaseClient.from('agencies').upsert(safeNoTrades);
+      if (r2.error) { console.error('agency save', r2.error); alert('Could not save. Check your Supabase setup.'); }
+      else { console.warn('Saved agency, but the `trades` column is missing — run ADD_TRADES_COLUMN.sql so trades persist.'); }
+      return;
+    }
+    console.error('agency save', error);
+    alert('Could not save. Check your Supabase setup.');
+  }
 }
 async function removeAgency(id) {
   var { error } = await supabaseClient.from('agencies').delete().eq('id', id);
@@ -1428,6 +1468,140 @@ function updatePostingToggleUI() {
   var sub = document.getElementById('posting-toggle-sub');
   if (sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
 }
+
+/* ===== Track of the Day =====
+   Reads today's track from the `daily_tracks` table (Supabase).
+   If the table doesn't exist or no track is set for today, shows a graceful
+   "No track today" message. The audio file is served from the `daily-tracks`
+   storage bucket (public). */
+var todayTrack = null;       // {id,title,artist,track_date,file_url}
+var trackAudio = null;       // <audio> element
+var trackIsPlaying = false;
+
+function todayISO() {
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+async function loadTodayTrack() {
+  try {
+    var today = todayISO();
+    var { data, error } = await supabaseClient
+      .from('daily_tracks')
+      .select('id,title,artist,track_date,file_url')
+      .eq('track_date', today)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) { renderTrackEmpty(); return; }
+    if (data && data.length > 0) {
+      todayTrack = data[0];
+      renderTrackReady();
+    } else {
+      // Fallback: maybe there's a track for a nearby date? No — show empty.
+      todayTrack = null;
+      renderTrackEmpty();
+    }
+  } catch(e) {
+    todayTrack = null;
+    renderTrackEmpty();
+  }
+}
+
+function renderTrackEmpty() {
+  var card = document.getElementById('track-card');
+  var info = document.getElementById('track-info');
+  var btn = document.getElementById('track-play');
+  if (!card) return;
+  card.classList.remove('has-track', 'playing');
+  if (info) info.classList.add('track-empty');
+  var t = document.getElementById('track-title');
+  var a = document.getElementById('track-artist');
+  if (t) t.textContent = 'No track today';
+  if (a) a.textContent = 'Check back tomorrow for a fresh pick';
+  if (btn) btn.disabled = true;
+  var prog = document.getElementById('track-progress');
+  if (prog) prog.style.display = 'none';
+}
+
+function renderTrackReady() {
+  if (!todayTrack) { renderTrackEmpty(); return; }
+  var card = document.getElementById('track-card');
+  var info = document.getElementById('track-info');
+  var btn = document.getElementById('track-play');
+  if (!card) return;
+  card.classList.add('has-track');
+  if (info) info.classList.remove('track-empty');
+  var t = document.getElementById('track-title');
+  var a = document.getElementById('track-artist');
+  if (t) t.textContent = todayTrack.title || 'Today\'s track';
+  if (a) a.textContent = todayTrack.artist || '';
+  if (btn) btn.disabled = false;
+  // Set audio source
+  trackAudio = document.getElementById('track-audio');
+  if (trackAudio && todayTrack.file_url) {
+    trackAudio.src = todayTrack.file_url;
+    trackAudio.load();
+  }
+}
+
+function toggleTrackPlay() {
+  if (!todayTrack || !trackAudio) return;
+  if (trackIsPlaying) {
+    trackAudio.pause();
+  } else {
+    trackAudio.play().catch(function(){ /* autoplay blocked or load error */ });
+  }
+}
+
+function onTrackLoaded() {
+  // metadata loaded — nothing needed yet
+}
+
+function updateTrackProgress() {
+  if (!trackAudio) return;
+  var prog = document.getElementById('track-progress');
+  var fill = document.getElementById('track-progress-fill');
+  if (!prog || !fill) return;
+  prog.style.display = 'block';
+  var pct = 0;
+  if (trackAudio.duration && isFinite(trackAudio.duration)) {
+    pct = (trackAudio.currentTime / trackAudio.duration) * 100;
+  }
+  fill.style.width = pct + '%';
+}
+
+function onTrackEnded() {
+  trackIsPlaying = false;
+  var card = document.getElementById('track-card');
+  var icon = document.getElementById('track-play-icon');
+  if (card) card.classList.remove('playing');
+  if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+  var fill = document.getElementById('track-progress-fill');
+  if (fill) fill.style.width = '0%';
+}
+
+// Update play/pause icon + state on play & pause events
+document.addEventListener('play', function(e){
+  if (e.target && e.target.id === 'track-audio') {
+    trackIsPlaying = true;
+    var card = document.getElementById('track-card');
+    var icon = document.getElementById('track-play-icon');
+    if (card) card.classList.add('playing');
+    if (icon) icon.innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+  }
+}, true);
+document.addEventListener('pause', function(e){
+  if (e.target && e.target.id === 'track-audio') {
+    trackIsPlaying = false;
+    var card = document.getElementById('track-card');
+    var icon = document.getElementById('track-play-icon');
+    if (card) card.classList.remove('playing');
+    if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+  }
+}, true);
 async function togglePublicPosting(checked) {
   var ok = await setAppSetting('public_vacancy_posting', checked ? 'true' : 'false');
   if (ok) {
@@ -1621,7 +1795,10 @@ function hubBranches(a) {
       html += '<div class="hub-row">' +
         '<div class="hub-row-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>' +
         '<div style="flex:1;min-width:0;"><div class="hub-row-title">' + escapeHtml(b.name || 'Branch') + '</div><div class="hub-row-sub">' + (subBits.length ? subBits.join(' &middot; ') : 'No contact details') + '</div></div>' +
-        (isAdmin ? '<button class="hub-row-del" data-ripple onclick="deleteBranch(\'' + b.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '') +
+        (isAdmin ? '<div class="hub-row-actions">' +
+          '<button class="hub-row-edit" data-ripple title="Edit branch" onclick="openBranchSheet(\'' + a.id + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' +
+          '<button class="hub-row-del" data-ripple title="Delete branch" onclick="deleteBranch(\'' + b.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+        '</div>' : '') +
       '</div>';
     });
   }
@@ -2494,21 +2671,39 @@ async function deleteAgencyById(id) {
 
 // ===== Branch form =====
 var pendingBranchAgency = null;
-function openBranchSheet(agencyId) {
+var pendingBranchId = null; // set when EDITING an existing branch; null when adding
+function openBranchSheet(agencyId, branchId) {
   pendingBranchAgency = agencyId;
-  document.getElementById('b-name').value = '';
-  document.getElementById('b-location').value = '';
-  document.getElementById('b-phone').value = '';
-  document.getElementById('b-email').value = '';
+  pendingBranchId = branchId || null;
+  // Find existing branch (for editing) — looks in both cache and localStorage fallback
+  var existing = null;
+  if (branchId) {
+    existing = branchesCache.find(function(x){ return x.id === branchId; });
+    if (!existing) {
+      var local = readLocal('branches');
+      existing = local.find(function(x){ return x.id === branchId; });
+    }
+  }
+  // Update sheet title
+  var titleEl = document.querySelector('#branch-overlay .sheet h3');
+  if (titleEl) titleEl.textContent = existing ? 'Edit branch' : 'Add branch';
+  // Populate fields
+  document.getElementById('b-name').value = existing ? (existing.name || '') : '';
+  document.getElementById('b-location').value = existing ? (existing.location || '') : '';
+  document.getElementById('b-phone').value = existing ? (existing.phone || '') : '';
+  document.getElementById('b-email').value = existing ? (existing.email || '') : '';
   document.getElementById('branch-overlay').classList.add('open');
 }
 async function saveBranch() {
   var name = document.getElementById('b-name').value.trim();
   if (!name) { alert('Add a branch name.'); return; }
-  var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  // Reuse existing id when editing; generate a new one only when adding
+  var id = pendingBranchId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
   var live = await upsertBranch({ id: id, agency_id: pendingBranchAgency, name: name, location: document.getElementById('b-location').value.trim(), phone: document.getElementById('b-phone').value.trim(), email: document.getElementById('b-email').value.trim() });
+  var editing = !!pendingBranchId;
+  pendingBranchId = null; // reset
   closeSheet('branch-overlay');
-  showToast(live ? 'Branch added' : 'Branch added (saved on this device)');
+  showToast(live ? (editing ? 'Branch updated' : 'Branch added') : (editing ? 'Branch updated (saved on this device)' : 'Branch added (saved on this device)'));
   await loadAll();
   if (managerMode) { renderManagerMode(); return; }
   var card = document.getElementById('hub-' + pendingBranchAgency);
@@ -2850,194 +3045,35 @@ function copyText(text, el) {
 /* SECTION_CONTENT + openContentSheet now live in content.js / content-manager.js
    (admin-editable article system). */
 
-// ===== ADMIN PIN GATE (5 attempts, 15-min lockout) =====
-var ADMIN_PIN = '910821'; // ← Change this to your desired PIN
-var pinVerified = false; // reset on page reload
-var PIN_MAX_ATTEMPTS = 5;
-var PIN_LOCK_MINUTES = 15;
-
-function getPinAttempts() {
-  try { return parseInt(localStorage.getItem('sa_pin_attempts') || '0', 10); } catch(e) { return 0; }
-}
-function setPinAttempts(n) {
-  try { localStorage.setItem('sa_pin_attempts', String(n)); } catch(e) {}
-}
-function getPinLockTime() {
-  try { return parseInt(localStorage.getItem('sa_pin_lock_until') || '0', 10); } catch(e) { return 0; }
-}
-function setPinLockTime(ts) {
-  try { localStorage.setItem('sa_pin_lock_until', String(ts)); } catch(e) {}
-}
-
-function isPinLocked() {
-  var lockUntil = getPinLockTime();
-  if (lockUntil && Date.now() < lockUntil) return lockUntil;
-  // Lock expired — reset
-  if (lockUntil && Date.now() >= lockUntil) {
-    setPinLockTime(0);
-    setPinAttempts(0);
-  }
-  return 0;
-}
-
-function formatRemainingTime(ms) {
-  var mins = Math.ceil(ms / 60000);
-  if (mins >= 1) return mins + ' minute' + (mins > 1 ? 's' : '');
-  var secs = Math.ceil(ms / 1000);
-  return secs + ' second' + (secs > 1 ? 's' : '');
-}
-
-function verifyPin() {
-  var lockUntil = isPinLocked();
-  if (lockUntil) {
-    showPinLockMsg(lockUntil);
-    return;
-  }
-  var input = document.getElementById('admin-pin');
-  var errEl = document.getElementById('pin-error');
-  var enteredPin = input ? input.value.trim() : '';
-  errEl.style.display = 'none';
-  errEl.textContent = '';
-
-  if (!enteredPin) {
-    errEl.textContent = 'Please enter the PIN.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  if (enteredPin === ADMIN_PIN) {
-    // Success — reset attempts, show login fields
-    pinVerified = true;
-    setPinAttempts(0);
-    setPinLockTime(0);
-    document.getElementById('admin-pin-gate').style.display = 'none';
-    document.getElementById('admin-login-fields').style.display = 'block';
-    input.value = '';
-  } else {
-    // Wrong PIN — increment attempts
-    var attempts = getPinAttempts() + 1;
-    setPinAttempts(attempts);
-    var remaining = PIN_MAX_ATTEMPTS - attempts;
-    if (remaining <= 0) {
-      // Lock out
-      var lockTs = Date.now() + (PIN_LOCK_MINUTES * 60 * 1000);
-      setPinLockTime(lockTs);
-      showPinLockMsg(lockTs);
-      input.value = '';
-    } else {
-      errEl.textContent = 'Wrong PIN. ' + remaining + ' attempt' + (remaining > 1 ? 's' : '') + ' left before lockout.';
-      errEl.style.display = 'block';
-      input.value = '';
-      // Shake effect
-      input.style.borderColor = '#FF3B30';
-      setTimeout(function(){ input.style.borderColor = ''; }, 800);
-    }
-  }
-}
-
-function showPinLockMsg(lockUntil) {
-  var msgEl = document.getElementById('pin-lock-msg');
-  var errEl = document.getElementById('pin-error');
-  var input = document.getElementById('admin-pin');
-  var btn = document.querySelector('#admin-pin-gate .sheet-submit');
-  errEl.style.display = 'none';
-  var remaining = lockUntil - Date.now();
-  msgEl.innerHTML = '🔒 Too many wrong attempts. Try again in ' + formatRemainingTime(remaining) + '.';
-  msgEl.style.display = 'block';
-  if (input) input.disabled = true;
-  if (btn) btn.disabled = true;
-  // Update countdown every second
-  if (window._pinLockTimer) clearInterval(window._pinLockTimer);
-  window._pinLockTimer = setInterval(function() {
-    var stillLocked = isPinLocked();
-    if (!stillLocked) {
-      clearInterval(window._pinLockTimer);
-      window._pinLockTimer = null;
-      msgEl.style.display = 'none';
-      if (input) { input.disabled = false; input.value = ''; }
-      if (btn) btn.disabled = false;
-    } else {
-      var rem = stillLocked - Date.now();
-      msgEl.innerHTML = '🔒 Too many wrong attempts. Try again in ' + formatRemainingTime(rem) + '.';
-    }
-  }, 1000);
-}
+// ===== ADMIN (removed from public app — admin console now lives in admin.html) =====
+// isAdmin is permanently false in the public app. All admin-only UI is hidden.
+// The ?manage=TOKEN agency self-service flow (managerMode) remains fully functional.
+var ADMIN_PIN = '';          // PIN removed — no longer used
+var pinVerified = false;     // kept for backward-compat references
+function getPinAttempts() { return 0; }
+function setPinAttempts() {}
+function getPinLockTime() { return 0; }
+function setPinLockTime() {}
+function isPinLocked() { return 0; }
+function formatRemainingTime() { return ''; }
+function verifyPin() {}
+function showPinLockMsg() {}
 
 function openAdminSheet() {
-  // If already logged in, show logged-in state
-  if (isAdmin) {
-    document.getElementById('admin-pin-gate').style.display = 'none';
-    document.getElementById('admin-login-fields').style.display = 'none';
-    document.getElementById('admin-logged-in').style.display = 'block';
-  } else if (pinVerified) {
-    // PIN already verified this session — skip to login
-    document.getElementById('admin-pin-gate').style.display = 'none';
-    document.getElementById('admin-login-fields').style.display = 'block';
-    document.getElementById('admin-logged-in').style.display = 'none';
-  } else {
-    // Show PIN gate first
-    document.getElementById('admin-pin-gate').style.display = 'block';
-    document.getElementById('admin-login-fields').style.display = 'none';
-    document.getElementById('admin-logged-in').style.display = 'none';
-    // Check if currently locked
-    var lockUntil = isPinLocked();
-    if (lockUntil) {
-      showPinLockMsg(lockUntil);
-    } else {
-      var msgEl = document.getElementById('pin-lock-msg');
-      if (msgEl) msgEl.style.display = 'none';
-      var input = document.getElementById('admin-pin');
-      if (input) { input.disabled = false; input.value = ''; }
-      var btn = document.querySelector('#admin-pin-gate .sheet-submit');
-      if (btn) btn.disabled = false;
-    }
-  }
-  document.getElementById('admin-error').textContent = '';
-  var pinErr = document.getElementById('pin-error');
-  if (pinErr) { pinErr.textContent = ''; pinErr.style.display = 'none'; }
-  document.getElementById('admin-overlay').classList.add('open');
+  // Admin access has moved to the separate admin.html console.
+  alert('Admin access has moved.\n\nPlease use the separate admin console URL (admin.html).');
 }
-async function adminLogin() {
-  var email = document.getElementById('admin-email').value.trim();
-  var password = document.getElementById('admin-password').value;
-  var { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
-  if (error) { document.getElementById('admin-error').textContent = 'Incorrect email or password.'; return; }
-  isAdmin = true;
-  updateAdminUI();
-  closeSheet('admin-overlay');
-  filterAndRenderCached();
-}
-async function adminLogout() {
-  await supabaseClient.auth.signOut();
-  isAdmin = false;
-  updateAdminUI();
-  closeSheet('admin-overlay');
-  filterAndRenderCached();
-}
+async function adminLogin() {}
+async function adminLogout() {}
 function updateAdminUI() {
-  var btn = document.getElementById('admin-btn');
-  if (btn) {
-    btn.innerHTML = isAdmin ? ICON_UNLOCK : ICON_LOCK;
-    if (isAdmin) btn.classList.add('logged-in'); else btn.classList.remove('logged-in');
-  }
-  var mi = document.getElementById('admin-menu-icon');
-  if (mi) mi.innerHTML = isAdmin ? ICON_UNLOCK : ICON_LOCK;
-  document.getElementById('admin-menu-label').textContent = isAdmin ? 'Admin (logged in) — tap to log out' : 'Admin login';
-  document.getElementById('profile-status-sub').textContent = isAdmin ? 'Logged in as admin' : 'Not logged in';
-  var fabAdmin = document.getElementById('fab-admin');
+  // No admin UI in public app — keep as no-op for any callers.
   var fabSuggest = document.getElementById('fab-suggest');
-  if (fabAdmin) fabAdmin.style.display = isAdmin ? 'flex' : 'none';
-  if (fabSuggest) fabSuggest.style.display = isAdmin ? 'none' : 'flex';
-  var smItem = document.getElementById('sm-menu-item');
-  if (smItem) smItem.style.display = isAdmin ? 'flex' : 'none';
-  var subItem = document.getElementById('submissions-menu-item');
-  if (subItem) subItem.style.display = isAdmin ? 'flex' : 'none';
-  updatePostingToggleUI();
+  if (fabSuggest) fabSuggest.style.display = 'flex';
+  var fabAdmin = document.getElementById('fab-admin');
+  if (fabAdmin) fabAdmin.style.display = 'none';
 }
-(async function checkSession() {
-  var { data } = await supabaseClient.auth.getSession();
-  if (data && data.session) { isAdmin = true; updateAdminUI(); if (typeof filterAndRenderCached === 'function') filterAndRenderCached(); }
-})();
+// Do NOT auto-restore an admin session in the public app.
+// (Supabase session restore + admin console handled in admin.html.)
 
 // ===== Bottom nav =====
 document.querySelectorAll('.navbtn').forEach(function(btn) {
@@ -3247,9 +3283,26 @@ function renderAllBranchesList() {
       '<div class="br-name">' + escapeHtml(b.name || 'Branch') + '</div>' +
       (b.location ? '<div class="br-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0;margin-top:1px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + escapeHtml(b.location) + '</div>' : '') +
       (contactHtml ? '<div class="br-contact">' + contactHtml + '</div>' : '') +
+      (isAdmin ? '<div class="br-actions">' +
+        '<button class="br-edit" data-ripple onclick="openBranchSheet(\'' + (b.agency_id||'') + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg> Edit</button>' +
+        '<button class="br-del" data-ripple onclick="deleteBranchAllList(\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>' +
+      '</div>' : '') +
     '</div>';
   }).join('');
   el.innerHTML = html;
+}
+
+// Delete a branch from the All Branches list (admin). Looks up the branch
+// name for the confirm dialog so branch names with apostrophes/quotes are
+// safe, then reloads the data and re-renders the list.
+async function deleteBranchAllList(id) {
+  var b = branchesCache.find(function(x){ return x.id === id; });
+  var name = b ? (b.name || 'this branch') : 'this branch';
+  if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+  await removeBranch(id);
+  showToast('Branch deleted');
+  await loadAll();
+  renderAllBranchesList();
 }
 
 function renderAllVacanciesList() {
@@ -3474,6 +3527,7 @@ async function deleteSubmission(table, id) {
 
 // ===== SMART MANAGER (admin section) =====
 function goSmartManager() {
+  if (!isAdmin) return; // admin-only — managed via admin.html now
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-smartmanager').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -3632,12 +3686,9 @@ function renderManagerMode() {
 }
 function managerAddBranch() {
   if (!managerAgency) return;
-  pendingBranchAgency = managerAgency.id;
-  document.getElementById('b-name').value = '';
-  document.getElementById('b-location').value = '';
-  document.getElementById('b-phone').value = '';
-  document.getElementById('b-email').value = '';
-  document.getElementById('branch-overlay').classList.add('open');
+  // Use openBranchSheet in "add" mode (no branchId) so the title and
+  // pendingBranchId stay consistent with the edit-aware branch sheet.
+  openBranchSheet(managerAgency.id, null);
 }
 function managerAddVacancy() {
   if (!managerAgency) return;
@@ -3661,6 +3712,7 @@ function managerAddVacancy() {
 
 loadAll();
 loadPostingSetting();
+loadTodayTrack();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {

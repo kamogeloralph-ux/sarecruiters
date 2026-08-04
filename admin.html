@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>SA Recruiters — Admin Console</title>
+<link rel="icon" href="icons/favicon.ico">
+<style>
+/* ===== Theme tokens ===== */
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --card-2:#f0f1f4; --border:#e3e5ea; --border-strong:#cdd0d7;
+  --text:#1c1e22; --text-2:#6b7280; --accent:#2563eb; --accent-soft:rgba(37,99,235,.1);
+  --danger:#dc2626; --ok:#16a34a; --warn:#d97706; --radius:14px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+}
+[data-theme="dark"]{
+  --bg:#0e1116; --card:#171b22; --card-2:#1e232c; --border:#262b35; --border-strong:#333a47;
+  --text:#e8eaed; --text-2:#9aa3b2; --accent:#5b8cff; --accent-soft:rgba(91,140,255,.14);
+  --danger:#f87171; --ok:#34d399; --warn:#fbbf24; --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+a{color:var(--accent);text-decoration:none}
+
+/* ===== Login screen ===== */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:32px 26px;width:100%;max-width:380px}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px}
+.login-logo img{width:40px;height:40px;border-radius:10px;object-fit:cover}
+.login-logo span{font-weight:800;font-size:18px}
+.login-sub{text-align:center;color:var(--text-2);font-size:13px;margin-bottom:22px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14.5px;color:var(--text);font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field textarea{min-height:80px;resize:vertical}
+.btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;transition:transform .08s}
+.btn:active{transform:scale(.98)}
+.btn.secondary{background:var(--card-2);color:var(--text);border:1px solid var(--border)}
+.btn.danger{background:var(--danger)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.login-error{color:var(--danger);font-size:13px;min-height:18px;text-align:center;margin-bottom:8px}
+.login-hint{text-align:center;font-size:12px;color:var(--text-2);margin-top:14px;line-height:1.5}
+.theme-toggle-login{position:fixed;top:16px;right:16px;background:var(--card);border:1px solid var(--border);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-2)}
+.theme-toggle-login svg{width:18px;height:18px}
+
+/* ===== App shell ===== */
+#app{display:none}
+.topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 16px}
+.topbar .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px}
+.topbar .brand img{width:28px;height:28px;border-radius:7px;object-fit:cover}
+.topbar .spacer{flex:1}
+.topbar .who{font-size:12.5px;color:var(--text-2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{background:var(--card-2);border:1px solid var(--border);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-2)}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn:active{transform:scale(.93)}
+
+.layout{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 62px)}
+@media(max-width:760px){.layout{grid-template-columns:1fr}}
+.sidebar{background:var(--card);border-right:1px solid var(--border);padding:14px 10px}
+@media(max-width:760px){.sidebar{border-right:none;border-bottom:1px solid var(--border);display:flex;overflow-x:auto;gap:6px;padding:8px}}
+.nav-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;cursor:pointer;color:var(--text-2);font-size:14px;font-weight:500;white-space:nowrap;user-select:none}
+.nav-item:hover{background:var(--card-2)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;border-radius:8px;padding:2px 7px;min-width:20px;text-align:center}
+.nav-item.active .nav-badge{background:var(--accent);color:#fff}
+
+.main{padding:20px;max-width:1100px;width:100%;margin:0 auto}
+@media(max-width:760px){.main{padding:16px}}
+.section{display:none}
+.section.active{display:block}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.section-head h2{font-size:20px;margin:0}
+.section-head .spacer{flex:1}
+
+/* ===== Cards & tables ===== */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card + .card{margin-top:14px}
+.card-pad{padding:16px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.stat .v{font-size:26px;font-weight:800}
+.stat .l{font-size:12.5px;color:var(--text-2);margin-top:2px}
+
+.row-item{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--border)}
+.row-item:first-child{border-top:none}
+.row-item:hover{background:var(--card-2)}
+.row-avatar{width:40px;height:40px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px;overflow:hidden;background:linear-gradient(145deg,#2563eb,#1e40af)}
+.row-avatar img{width:100%;height:100%;object-fit:cover}
+.row-main{flex:1;min-width:0}
+.row-title{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-sub{font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.row-actions{display:flex;gap:6px;flex-shrink:0}
+.minibtn{background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:7px 10px;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.minibtn svg{width:14px;height:14px}
+.minibtn:active{transform:scale(.95)}
+.minibtn.danger{color:var(--danger)}
+.minibtn.ok{color:var(--ok)}
+.badge{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px}
+.badge.verified{background:rgba(22,163,74,.15);color:var(--ok)}
+.badge.unverified{background:var(--card-2);color:var(--text-2)}
+.badge.open{background:rgba(217,119,6,.15);color:var(--warn)}
+.badge.resolved{background:rgba(22,163,74,.15);color:var(--ok)}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text-2)}
+.empty svg{width:40px;height:40px;opacity:.5;margin-bottom:8px}
+.empty h3{margin:0 0 4px;font-size:16px;color:var(--text)}
+.empty p{margin:0;font-size:13px}
+
+.search{width:100%;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:11px 14px;font-size:14px;color:var(--text);margin-bottom:14px}
+.search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* ===== Sheet (modal) ===== */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.scrim.open{display:flex}
+@media(min-width:640px){.scrim{align-items:center}}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:18px 20px 26px;animation:slideUp .25s ease}
+@media(min-width:640px){.sheet{border-radius:20px}}
+@keyframes slideUp{from{transform:translateY(40px);opacity:.4}to{transform:translateY(0);opacity:1}}
+.sheet h3{margin:0 0 16px;font-size:18px}
+.sheet-actions{display:flex;gap:10px;margin-top:8px}
+.sheet-actions .btn{flex:1}
+.chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.chip{background:var(--card-2);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:12px}
+
+/* ===== Toast ===== */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--card);padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== Toggle switch ===== */
+.switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .track{position:absolute;inset:0;background:var(--border-strong);border-radius:13px;transition:.2s}
+.switch .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked + .track{background:var(--ok)}
+.switch input:checked + .track .knob{transform:translateX(20px)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+.toggle-row .t-label{font-weight:600;font-size:14.5px}
+.toggle-row .t-sub{font-size:12.5px;color:var(--text-2);margin-top:2px}
+
+.muted{color:var(--text-2);font-size:12.5px}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:13px;margin:4px 0}
+.kv .k{color:var(--text-2)}
+.copy-link{display:flex;gap:8px;align-items:center;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-top:8px}
+.copy-link input{flex:1;background:none;border:none;color:var(--text);font-size:12.5px;font-family:monospace;outline:none;min-width:0}
+.copy-link button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
+.divider{height:1px;background:var(--border);margin:16px 0}
+</style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="login-screen">
+  <button class="theme-toggle-login" onclick="toggleTheme()" aria-label="Toggle theme">
+    <svg id="theme-icon-login" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+  </button>
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="icons/icon-512.png" onerror="this.src='sa-recruiters-512-rounded.png'" alt="">
+      <span>SA Recruiters</span>
+    </div>
+    <div class="login-sub">Admin Console — restricted access</div>
+    <div class="field"><label>Email</label><input id="login-email" type="email" autocomplete="username" placeholder="admin@example.com"></div>
+    <div class="field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <div class="login-error" id="login-error"></div>
+    <button class="btn" onclick="doLogin()">Log in</button>
+    <div class="login-hint">This is the private admin console. It is not linked from the public app. Use your Supabase admin credentials.</div>
+  </div>
+</div>
+
+<!-- ============ APP CONSOLE ============ -->
+<div id="app">
+  <div class="topbar">
+    <div class="brand"><img src="icons/icon-512.png" onerror="this.src='sa-recruiters-512-rounded.png'" alt=""> SA Recruiters</div>
+    <div class="spacer"></div>
+    <div class="who" id="who-am-i"></div>
+    <button class="iconbtn" onclick="toggleTheme()" aria-label="Theme">
+      <svg id="theme-icon-app" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+    </button>
+    <button class="iconbtn" onclick="doLogout()" aria-label="Log out" title="Log out">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </div>
+
+  <div class="layout">
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main">
+      <!-- DASHBOARD -->
+      <div class="section active" id="sec-dashboard">
+        <div class="section-head"><h2>Dashboard</h2></div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div style="margin-top:18px" class="muted">Use the sidebar to manage agencies, branches, vacancies, submissions, settings and content. Changes here appear instantly in the public app.</div>
+      </div>
+
+      <!-- AGENCIES -->
+      <div class="section" id="sec-agencies">
+        <div class="section-head"><h2>Agencies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
+        <input class="search" id="ag-search" placeholder="Search name, location, trades, companies..." oninput="renderAgencies()">
+        <div id="ag-list"></div>
+      </div>
+
+      <!-- BRANCHES -->
+      <div class="section" id="sec-branches">
+        <div class="section-head"><h2>Branches</h2><div class="spacer"></div><button class="minibtn ok" onclick="openBranchSheet()">+ Add branch</button></div>
+        <input class="search" id="br-search" placeholder="Search branch, location, agency..." oninput="renderBranches()">
+        <div id="br-list"></div>
+      </div>
+
+      <!-- VACANCIES -->
+      <div class="section" id="sec-vacancies">
+        <div class="section-head"><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
+        <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="renderVacancies()">
+        <div id="va-list"></div>
+      </div>
+
+      <!-- SUBMISSIONS -->
+      <div class="section" id="sec-submissions">
+        <div class="section-head"><h2>Submissions</h2></div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="minibtn" id="sub-tab-reports" onclick="switchSubTab('reports')">Reports <span class="nav-badge" id="sub-badge-reports"></span></button>
+          <button class="minibtn" id="sub-tab-suggestions" onclick="switchSubTab('suggestions')">Suggestions <span class="nav-badge" id="sub-badge-suggestions"></span></button>
+        </div>
+        <div id="sub-list"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="section" id="sec-settings">
+        <div class="section-head"><h2>Settings</h2></div>
+        <div class="toggle-row">
+          <div><div class="t-label">Public vacancy posting</div><div class="t-sub" id="posting-sub">Loading…</div></div>
+          <label class="switch"><input type="checkbox" id="posting-toggle" onchange="togglePosting(this.checked)"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div style="margin-top:14px" class="muted">When ON, anyone can post a general vacancy from the public app. When OFF, posting is locked and users are asked to message the admin on WhatsApp.</div>
+      </div>
+
+      <!-- DAILY TRACK -->
+      <div class="section" id="sec-dailytrack">
+        <div class="section-head"><h2>Daily Track</h2><div class="spacer"></div><button class="minibtn" onclick="openTrackSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Upload track</button></div>
+        <div class="muted" style="margin-bottom:14px">Upload an MP3 to feature as "Track of the Day" in the public app. Set the date to control which day each track plays. The newest track for a given date is shown.</div>
+        <div id="track-setup-warn" class="card card-pad" style="margin-bottom:14px;display:none;border-color:var(--danger);color:var(--danger);font-size:13px;line-height:1.5"></div>
+        <div id="track-list"></div>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="section" id="sec-content">
+        <div class="section-head"><h2>Content</h2><div class="spacer"></div><button class="minibtn" onclick="restoreDefaults()">Restore defaults</button></div>
+        <div class="muted" style="margin-bottom:14px">Edit the FAQ, CV guides, interview tips, rights, learning hub and support articles that appear in the public app.</div>
+        <div id="content-list"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ AGENCY SHEET ============ -->
+<div class="scrim" id="agency-overlay">
+  <div class="sheet">
+    <h3 id="agency-sheet-title">Add agency</h3>
+    <div class="field"><label>Agency name *</label><input id="a-name" placeholder="e.g. Kelly Recruitment"></div>
+    <div class="field"><label>Website</label><input id="a-website" placeholder="https://…"></div>
+    <div class="field"><label>Contact person / phone</label><input id="a-contact" placeholder="e.g. Jane 011 555 0123"></div>
+    <div class="field"><label>Email</label><input id="a-email" type="email" placeholder="info@agency.co.za"></div>
+    <div class="field"><label>Head office location</label><input id="a-location" placeholder="e.g. Bedfordview, Johannesburg"></div>
+    <div class="field"><label>Head office address</label><input id="a-address" placeholder="Street address"></div>
+    <div class="field"><label>Companies (comma separated)</label><input id="a-companies" placeholder="e.g. Standard Bank, Shoprite"></div>
+    <div class="field"><label>Trades / Industries (comma separated)</label><input id="a-trades" placeholder="e.g. Mining, Logistics, Construction"></div>
+    <div class="field"><label>CV preference</label><select id="a-cvpref"><option>Email</option><option>WhatsApp</option><option>Online form</option><option>Phone</option><option>Upload portal</option></select></div>
+    <div class="field"><label>Agency photo / logo</label><input type="file" id="a-photo" accept="image/*" onchange="handlePhoto(event)"></div>
+    <div id="a-photo-preview" style="display:none;margin-bottom:12px"><img id="a-photo-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></div>
+    <div class="toggle-row" style="margin-bottom:16px">
+      <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified agencies show a badge and rank higher</div></div>
+      <label class="switch"><input type="checkbox" id="a-verified"><span class="track"><span class="knob"></span></span></label>
+    </div>
+    <div id="a-manager-box" style="display:none"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('agency-overlay')">Cancel</button>
+      <button class="btn" onclick="saveAgency()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BRANCH SHEET ============ -->
+<div class="scrim" id="branch-overlay">
+  <div class="sheet">
+    <h3 id="branch-sheet-title">Add branch</h3>
+    <div class="field"><label>Parent agency *</label><select id="b-agency"></select></div>
+    <div class="field"><label>Branch name *</label><input id="b-name" placeholder="e.g. Durban Branch"></div>
+    <div class="field"><label>Address / location</label><input id="b-location" placeholder="Street address"></div>
+    <div class="field"><label>Phone</label><input id="b-phone" type="tel" placeholder="031 555 0123"></div>
+    <div class="field"><label>Email</label><input id="b-email" type="email" placeholder="durban@agency.co.za"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('branch-overlay')">Cancel</button>
+      <button class="btn" onclick="saveBranch()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VACANCY SHEET ============ -->
+<div class="scrim" id="vacancy-overlay">
+  <div class="sheet">
+    <h3 id="vacancy-sheet-title">Add vacancy</h3>
+    <div class="field"><label>Parent agency</label><select id="v-agency"><option value="general">— General (no agency) —</option></select></div>
+    <div class="field"><label>Job title *</label><input id="v-title" placeholder="e.g. Forklift Driver"></div>
+    <div class="field"><label>Company</label><input id="v-company" placeholder="e.g. ABC Logistics"></div>
+    <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Durban, KZN"></div>
+    <div class="field"><label>Employment type</label><input id="v-etype" placeholder="Full-time / Part-time / Contract"></div>
+    <div class="field"><label>Contract type</label><input id="v-contract" placeholder="Permanent / Fixed-term / Casual"></div>
+    <div class="field"><label>Salary</label><input id="v-salary" placeholder="e.g. R18,000 pm or TBC"></div>
+    <div class="field"><label>Hours</label><input id="v-hours" placeholder="e.g. 45 hours/week"></div>
+    <div class="field"><label>Work schedule</label><input id="v-schedule" placeholder="e.g. Mon–Fri, shifts"></div>
+    <div class="field"><label>Start date</label><input id="v-start" placeholder="e.g. ASAP or 1 Oct 2026"></div>
+    <div class="field"><label>Closing date</label><input id="v-closing" placeholder="e.g. 30 Sep 2026"></div>
+    <div class="field"><label>Notes / description</label><textarea id="v-notes" placeholder="Job description, requirements…"></textarea></div>
+    <div class="field"><label>Apply link</label><input id="v-link" placeholder="https://…"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('vacancy-overlay')">Cancel</button>
+      <button class="btn" onclick="saveVacancy()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONTENT ARTICLE SHEET ============ -->
+<div class="scrim" id="content-overlay">
+  <div class="sheet">
+    <h3 id="content-sheet-title">Add article</h3>
+    <div class="field"><label>Section</label><select id="c-section"></select></div>
+    <div class="field"><label>Title *</label><input id="c-title" placeholder="Article title"></div>
+    <div class="field"><label>Body (HTML allowed)</label><textarea id="c-body" style="min-height:160px" placeholder="<p>Article content…</p><ul><li>…</li></ul>"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('content-overlay')">Cancel</button>
+      <button class="btn" onclick="saveArticle()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="track-overlay">
+  <div class="sheet">
+    <h3 id="track-sheet-title">Upload track</h3>
+    <div class="field"><label>Track title *</label><input id="t-title" placeholder="e.g. Motivation Monday Mix"></div>
+    <div class="field"><label>Artist / subtitle</label><input id="t-artist" placeholder="e.g. DJ Sbu or Inspirational Talk"></div>
+    <div class="field"><label>Date (which day this plays) *</label><input id="t-date" type="date"></div>
+    <div class="field">
+      <label>MP3 file *<span id="t-file-hint" style="font-weight:400;color:var(--text-2)"></span></label>
+      <input id="t-file" type="file" accept="audio/mpeg,audio/mp3,.mp3" style="padding:9px 13px">
+    </div>
+    <div id="t-progress" style="display:none;font-size:13px;color:var(--accent);margin-bottom:12px"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('track-overlay')">Cancel</button>
+      <button class="btn" id="t-save-btn" onclick="saveTrack()">Save track</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="content.js"></script>
+<script src="content-manager.js"></script>
+<script>
+/* ============================================================
+   SA RECRUITERS — STANDALONE ADMIN CONSOLE
+   Separate URL from the public app. Protected by Supabase Auth.
+   No client-side PIN/secret. Not linked from the public app.
+   ============================================================ */
+
+// ===== Supabase config (same project as the public app) =====
+var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var ADMIN_WHATSAPP = '27715531005';
+
+// ===== State =====
+var cache = { agencies: [], branches: [], vacancies: [], reports: [], suggestions: [], tracks: [] };
+var editing = { agency: null, branch: null, vacancy: null, article: null, articleSection: null };
+var pendingPhoto = null;
+var subTab = 'reports';
+var publicVacancyPostingOpen = false;
+
+// ===== Theme =====
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  try{ localStorage.setItem('sa_admin_theme', t); }catch(e){}
+  var sun = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+  var inner = t === 'dark' ? sun : moon;
+  ['theme-icon-login','theme-icon-app'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML = inner; });
+}
+function toggleTheme(){
+  var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+}
+(function initTheme(){ var t='light'; try{ t = localStorage.getItem('sa_admin_theme') || 'light'; }catch(e){} applyTheme(t); })();
+
+// ===== Toast =====
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+
+// ===== Sheets =====
+function openSheet(id){ document.getElementById(id).classList.add('open'); }
+function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
+
+// ===== Helpers =====
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function initials(n){ return (n||'?').trim().split(/\s+/).map(function(w){return w[0];}).join('').slice(0,2).toUpperCase(); }
+function genToken(){ var c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',s=''; for(var i=0;i<12;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; }
+function newId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function fmtDate(s){ if(!s) return '—'; var d=new Date(s); if(isNaN(d)) return s; return d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}); }
+
+// ===== Auth =====
+async function doLogin(){
+  var email = document.getElementById('login-email').value.trim();
+  var password = document.getElementById('login-password').value;
+  var err = document.getElementById('login-error');
+  err.textContent = '';
+  if(!email || !password){ err.textContent = 'Enter email and password.'; return; }
+  var btn = event.target; btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    var res = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
+    if (res.error) { err.textContent = 'Incorrect email or password.'; btn.disabled=false; btn.textContent='Log in'; return; }
+    await enterConsole(res.data.user);
+  } catch(e){ err.textContent = 'Login failed. Check your connection.'; btn.disabled=false; btn.textContent='Log in'; }
+}
+async function doLogout(){
+  try{ await supabaseClient.auth.signOut(); }catch(e){}
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-password').value = '';
+  cache = { agencies:[], branches:[], vacancies:[], reports:[], suggestions:[] };
+}
+async function enterConsole(user){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('who-am-i').textContent = user.email || 'admin';
+  await loadAll();
+  await checkTracksTable();
+  renderNav();
+  renderDashboard();
+}
+// Restore session on reload
+(async function checkSession(){
+  try {
+    var { data } = await supabaseClient.auth.getSession();
+    if (data && data.session && data.session.user) { await enterConsole(data.session.user); }
+  } catch(e){}
+})();
+
+// ===== Data access =====
+async function getAgencies(){
+  var { data, error } = await supabaseClient.from('agencies').select('*').order('created_at',{ascending:false});
+  if (error){ console.error('agencies',error); return []; }
+  return data;
+}
+async function getBranches(){
+  var { data, error } = await supabaseClient.from('branches').select('*').order('created_at',{ascending:true});
+  if (error){ console.error('branches',error); return []; }
+  return data || [];
+}
+async function getVacancies(){
+  try { var { data, error } = await supabaseClient.from('vacancies').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  return [];
+}
+async function getReports(){
+  try { var { data, error } = await supabaseClient.from('reports').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  return [];
+}
+async function getSuggestions(){
+  try { var { data, error } = await supabaseClient.from('suggestions').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  return [];
+}
+async function getTracks(){
+  try { var { data, error } = await supabaseClient.from('daily_tracks').select('*').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  return [];
+}
+async function upsertAgency(a){
+  var { error } = await supabaseClient.from('agencies').upsert(a);
+  if(error){ var msg=(error.message||'')+' '+(error.hint||''); if(/trades/i.test(msg)){ var s2=Object.assign({},a); delete s2.trades; var r2=await supabaseClient.from('agencies').upsert(s2); if(r2.error){ console.error('agency save',r2.error); alert('Could not save agency: '+r2.error.message); } else { console.warn('Saved agency without trades — add the trades column (ADD_TRADES_COLUMN.sql)'); } return; } console.error('agency save',error); alert('Could not save agency: '+error.message); }
+}
+async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } }
+async function upsertBranch(b){ var { error } = await supabaseClient.from('branches').upsert(b); if(error){ console.error('branch save',error); alert('Could not save branch: '+error.message); } }
+async function removeBranch(id){ var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error) console.error('branch del',error); }
+async function upsertVacancy(v){ var { error } = await supabaseClient.from('vacancies').upsert(v); if(error){ console.error('vacancy save',error); alert('Could not save vacancy: '+error.message); } }
+async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); }
+async function updateReportStatus(id, status){ var { error } = await supabaseClient.from('reports').update({status:status}).eq('id',id); if(error) console.error('report upd',error); }
+async function deleteReport(id){ var { error } = await supabaseClient.from('reports').delete().eq('id',id); if(error) console.error('report del',error); }
+async function deleteSuggestion(id){ var { error } = await supabaseClient.from('suggestions').delete().eq('id',id); if(error) console.error('sugg del',error); }
+async function getAppSetting(key, fb){ try{ var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key',key).maybeSingle(); if(error||!data) return fb; return data.value; }catch(e){ return fb; } }
+async function setAppSetting(key, value){ try{ var { error } = await supabaseClient.from('app_settings').upsert({key:key,value:value,updated_at:new Date().toISOString()}); return !error; }catch(e){ return false; } }
+async function saveManagerToken(agencyId, token){ try{ await supabaseClient.from('agencies').update({manage_token:token}).eq('id',agencyId); }catch(e){} }
+
+async function loadAll(){
+  cache.agencies = await getAgencies();
+  cache.branches = await getBranches();
+  cache.vacancies = await getVacancies();
+  cache.reports = await getReports();
+  cache.suggestions = await getSuggestions();
+  cache.tracks = await getTracks();
+  var pv = await getAppSetting('public_vacancy_posting','false');
+  publicVacancyPostingOpen = (pv===true||pv==='true');
+  updatePostingUI();
+  fillAgencySelects();
+}
+
+// ===== Navigation =====
+var NAV = [
+  { id:'dashboard', label:'Dashboard', icon:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
+  { id:'agencies', label:'Agencies', icon:'<path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/>' },
+  { id:'branches', label:'Branches', icon:'<path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
+  { id:'vacancies', label:'Vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
+  { id:'submissions', label:'Submissions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
+  { id:'settings', label:'Settings', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+  { id:'dailytrack', label:'Daily Track', icon:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
+  { id:'content', label:'Content', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' }
+];
+function renderNav(){
+  var el = document.getElementById('sidebar');
+  el.innerHTML = NAV.map(function(n){
+    var badge = '';
+    if(n.id==='agencies') badge = '<span class="nav-badge">'+cache.agencies.length+'</span>';
+    if(n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
+    if(n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
+    if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; badge = '<span class="nav-badge">'+c+'</span>'; }
+    if(n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
+    return '<div class="nav-item" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
+  }).join('');
+}
+function goSection(id){
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.toggle('active', n.dataset.nav===id); });
+  if(id==='agencies') renderAgencies();
+  if(id==='branches') renderBranches();
+  if(id==='vacancies') renderVacancies();
+  if(id==='submissions') renderSubmissions();
+  if(id==='content') renderContent();
+  if(id==='dailytrack') renderDailyTracks();
+  if(id==='settings') updatePostingUI();
+  window.scrollTo(0,0);
+}
+
+// ===== Dashboard =====
+function renderDashboard(){
+  var openReports = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length;
+  var stats = [
+    { v:cache.agencies.length, l:'Agencies' },
+    { v:cache.branches.length, l:'Branches' },
+    { v:cache.vacancies.length, l:'Vacancies' },
+    { v:cache.reports.length, l:'Reports ('+openReports+' open)' },
+    { v:cache.suggestions.length, l:'Suggestions' },
+    { v:cache.tracks.length, l:'Daily Tracks' }
+  ];
+  document.getElementById('stats-grid').innerHTML = stats.map(function(s){
+    return '<div class="stat"><div class="v">'+s.v+'</div><div class="l">'+s.l+'</div></div>';
+  }).join('');
+}
+
+// ===== Agencies =====
+function agencyById(id){ return cache.agencies.find(function(a){return a.id===id;}); }
+function renderAgencies(){
+  var q = (document.getElementById('ag-search').value||'').trim().toLowerCase();
+  var list = cache.agencies.slice();
+  if(q){ list = list.filter(function(a){ var hay=((a.name||'')+' '+(a.location||'')+' '+(a.trades||'')+' '+(a.companies||'')+' '+(a.email||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  var el = document.getElementById('ag-list');
+  if(!list.length){ el.innerHTML = emptyState('No agencies','Add your first agency or adjust your search.'); return; }
+  el.innerHTML = list.map(function(a){
+    var sub = [a.location, a.email].filter(Boolean).join(' · ');
+    return '<div class="row-item">'+
+      '<div class="row-avatar">'+(a.photo?'<img src="'+a.photo+'">':initials(a.name))+'</div>'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(a.name||'Unnamed')+' '+(a.verified?'<span class="badge verified">Verified</span>':'<span class="badge unverified">Unverified</span>')+'</div>'+
+      '<div class="row-sub">'+escapeHtml(sub||'No details')+'</div></div>'+
+      '<div class="row-actions">'+
+        '<button class="minibtn" onclick="openAgencySheet(\''+a.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="deleteAgency(\''+a.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div></div>';
+  }).join('');
+}
+function openAgencySheet(id){
+  editing.agency = id || null;
+  var a = id ? agencyById(id) : null;
+  document.getElementById('agency-sheet-title').textContent = id ? 'Edit agency' : 'Add agency';
+  document.getElementById('a-name').value = a ? (a.name||'') : '';
+  document.getElementById('a-website').value = a ? (a.website||'') : '';
+  document.getElementById('a-contact').value = a ? (a.contact||'') : '';
+  document.getElementById('a-email').value = a ? (a.email||'') : '';
+  document.getElementById('a-location').value = a ? (a.location||'') : '';
+  document.getElementById('a-address').value = a ? (a.address||'') : '';
+  document.getElementById('a-companies').value = a ? (a.companies||'') : '';
+  document.getElementById('a-trades').value = a ? (a.trades||'') : '';
+  document.getElementById('a-cvpref').value = a ? (a.cvpref||'Email') : 'Email';
+  document.getElementById('a-verified').checked = a ? !!a.verified : false;
+  pendingPhoto = a ? (a.photo||null) : null;
+  var prev = document.getElementById('a-photo-preview');
+  if(pendingPhoto){ document.getElementById('a-photo-img').src = pendingPhoto; prev.style.display='block'; } else { prev.style.display='none'; }
+  document.getElementById('a-photo').value = '';
+  // Manager link box (edit only)
+  var mbox = document.getElementById('a-manager-box');
+  if(a){
+    var tok = a.manage_token || '';
+    var link = tok ? (location.origin + location.pathname.replace(/admin\.html.*/,'index.html') + '?manage=' + tok) : '';
+    mbox.innerHTML = '<div class="divider"></div><div class="t-label" style="margin-bottom:6px">Smart Manager link</div>'+
+      (tok ? '<div class="copy-link"><input id="mgr-link" value="'+escapeHtml(link)+'" readonly><button onclick="copyLink(\'mgr-link\')">Copy</button></div>'+
+            '<button class="minibtn" style="margin-top:8px" onclick="regenToken(\''+a.id+'\')">Regenerate token</button>'+
+            '<div class="muted" style="margin-top:6px">Send this link to the agency so they can add their own branches & vacancies (no edit/delete).</div>'
+           : '<div class="muted">No manager token yet. <button class="minibtn" onclick="regenToken(\''+a.id+'\')" style="margin-left:6px">Generate</button></div>');
+    mbox.style.display = 'block';
+  } else { mbox.style.display = 'none'; mbox.innerHTML = ''; }
+  openSheet('agency-overlay');
+}
+function handlePhoto(evt){
+  var file = evt.target.files[0]; if(!file) return;
+  var reader = new FileReader(); var img = new Image();
+  reader.onload = function(e){ img.onload = function(){ var c=document.createElement('canvas'); var max=480; var sc=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingPhoto=c.toDataURL('image/jpeg',0.75); document.getElementById('a-photo-img').src=pendingPhoto; document.getElementById('a-photo-preview').style.display='block'; }; img.src=e.target.result; };
+  reader.readAsDataURL(file);
+}
+async function saveAgency(){
+  var name = document.getElementById('a-name').value.trim();
+  if(!name){ alert('Add at least the agency name.'); return; }
+  var id = editing.agency || newId();
+  var payload = {
+    id:id, name:name,
+    website:document.getElementById('a-website').value.trim(),
+    contact:document.getElementById('a-contact').value.trim(),
+    email:document.getElementById('a-email').value.trim(),
+    location:document.getElementById('a-location').value.trim(),
+    address:document.getElementById('a-address').value.trim(),
+    cvpref:document.getElementById('a-cvpref').value,
+    companies:document.getElementById('a-companies').value.trim(),
+    trades:document.getElementById('a-trades').value.trim(),
+    photo:pendingPhoto,
+    verified:document.getElementById('a-verified').checked
+  };
+  await upsertAgency(payload);
+  if(!editing.agency){ var tok=genToken(); await saveManagerToken(id, tok); payload.manage_token = tok; }
+  closeSheet('agency-overlay');
+  showToast(editing.agency ? 'Agency updated' : 'Agency added');
+  editing.agency = null; pendingPhoto = null;
+  await loadAll(); renderNav(); renderAgencies(); renderDashboard();
+}
+async function deleteAgency(id){
+  var a = agencyById(id);
+  if(!confirm('Delete "'+(a?a.name:'this agency')+'"? This also removes its branches & vacancies visibility. This cannot be undone.')) return;
+  await removeAgency(id);
+  showToast('Agency deleted');
+  await loadAll(); renderNav(); renderAgencies(); renderDashboard();
+}
+async function regenToken(id){
+  if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
+  var tok = genToken(); await saveManagerToken(id, tok);
+  var a = agencyById(id); if(a) a.manage_token = tok;
+  openAgencySheet(id);
+  showToast('New manager link generated');
+}
+function copyLink(inputId){
+  var inp = document.getElementById(inputId); inp.select();
+  try{ navigator.clipboard.writeText(inp.value); }catch(e){}
+  showToast('Link copied');
+}
+
+// ===== Branches =====
+function fillAgencySelects(){
+  var opts = cache.agencies.map(function(a){ return '<option value="'+a.id+'">'+escapeHtml(a.name||'Unnamed')+'</option>'; }).join('');
+  document.getElementById('b-agency').innerHTML = opts || '<option value="">— no agencies yet —</option>';
+  var v = document.getElementById('v-agency');
+  v.innerHTML = '<option value="general">— General (no agency) —</option>' + opts;
+}
+function renderBranches(){
+  var q = (document.getElementById('br-search').value||'').trim().toLowerCase();
+  var list = cache.branches.slice().map(function(b){ b._ag = agencyById(b.agency_id); return b; });
+  if(q){ list = list.filter(function(b){ var hay=((b.name||'')+' '+(b.location||'')+' '+(b.phone||'')+' '+((b._ag&&b._ag.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  list.sort(function(a,b){ var c=((a._ag&&a._ag.name)||'').localeCompare((b._ag&&b._ag.name)||''); return c!==0?c:(a.name||'').localeCompare(b.name||''); });
+  var el = document.getElementById('br-list');
+  if(!list.length){ el.innerHTML = emptyState('No branches','Add a branch or adjust your search.'); return; }
+  el.innerHTML = list.map(function(b){
+    var sub = [b.location, b.phone, b.email].filter(Boolean).join(' · ');
+    return '<div class="row-item">'+
+      '<div class="row-avatar" style="background:linear-gradient(145deg,#16a34a,#15803d)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(b.name||'Branch')+'</div><div class="row-sub">'+escapeHtml((b._ag&&b._ag.name)||'Unknown agency')+' · '+escapeHtml(sub||'no details')+'</div></div>'+
+      '<div class="row-actions">'+
+        '<button class="minibtn" onclick="openBranchSheet(\''+b.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="deleteBranch(\''+b.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div></div>';
+  }).join('');
+}
+function openBranchSheet(id){
+  editing.branch = id || null;
+  var b = id ? cache.branches.find(function(x){return x.id===id;}) : null;
+  document.getElementById('branch-sheet-title').textContent = id ? 'Edit branch' : 'Add branch';
+  document.getElementById('b-agency').value = b ? (b.agency_id||'') : (cache.agencies[0]?cache.agencies[0].id:'');
+  document.getElementById('b-name').value = b ? (b.name||'') : '';
+  document.getElementById('b-location').value = b ? (b.location||'') : '';
+  document.getElementById('b-phone').value = b ? (b.phone||'') : '';
+  document.getElementById('b-email').value = b ? (b.email||'') : '';
+  openSheet('branch-overlay');
+}
+async function saveBranch(){
+  var name = document.getElementById('b-name').value.trim();
+  var agencyId = document.getElementById('b-agency').value;
+  if(!name){ alert('Add a branch name.'); return; }
+  if(!agencyId){ alert('Choose a parent agency first.'); return; }
+  var id = editing.branch || newId();
+  await upsertBranch({ id:id, agency_id:agencyId, name:name, location:document.getElementById('b-location').value.trim(), phone:document.getElementById('b-phone').value.trim(), email:document.getElementById('b-email').value.trim() });
+  closeSheet('branch-overlay');
+  showToast(editing.branch ? 'Branch updated' : 'Branch added');
+  editing.branch = null;
+  await loadAll(); renderNav(); renderBranches(); renderDashboard();
+}
+async function deleteBranch(id){
+  var b = cache.branches.find(function(x){return x.id===id;});
+  if(!confirm('Delete "'+(b?b.name:'this branch')+'"?')) return;
+  await removeBranch(id);
+  showToast('Branch deleted');
+  await loadAll(); renderNav(); renderBranches(); renderDashboard();
+}
+
+// ===== Vacancies =====
+function renderVacancies(){
+  var q = (document.getElementById('va-search').value||'').trim().toLowerCase();
+  var list = cache.vacancies.slice().map(function(v){ v._ag = agencyById(v.agency_id); return v; });
+  if(q){ list = list.filter(function(v){ var hay=((v.title||'')+' '+(v.company||'')+' '+(v.location||'')+' '+(v.notes||'')+((v._ag&&v._ag.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  var el = document.getElementById('va-list');
+  if(!list.length){ el.innerHTML = emptyState('No vacancies','Add a vacancy or adjust your search.'); return; }
+  el.innerHTML = list.map(function(v){
+    var sub = [v.location, v.company, (v._ag&&v._ag.name), v.closing_date?('closes '+v.closing_date):null].filter(Boolean).join(' · ');
+    return '<div class="row-item">'+
+      '<div class="row-avatar" style="background:linear-gradient(145deg,#d97706,#b45309)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(v.title||'Untitled role')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+'</div></div>'+
+      '<div class="row-actions">'+
+        '<button class="minibtn" onclick="openVacancySheet(\''+v.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="deleteVacancy(\''+v.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div></div>';
+  }).join('');
+}
+function openVacancySheet(id){
+  editing.vacancy = id || null;
+  var v = id ? cache.vacancies.find(function(x){return x.id===id;}) : null;
+  document.getElementById('vacancy-sheet-title').textContent = id ? 'Edit vacancy' : 'Add vacancy';
+  document.getElementById('v-agency').value = v ? (v.agency_id||'general') : 'general';
+  document.getElementById('v-title').value = v ? (v.title||'') : '';
+  document.getElementById('v-company').value = v ? (v.company||'') : '';
+  document.getElementById('v-location').value = v ? (v.location||'') : '';
+  document.getElementById('v-etype').value = v ? (v.employment_type||'') : '';
+  document.getElementById('v-contract').value = v ? (v.contract_type||'') : '';
+  document.getElementById('v-salary').value = v ? (v.salary||'') : '';
+  document.getElementById('v-hours').value = v ? (v.hours||'') : '';
+  document.getElementById('v-schedule').value = v ? (v.work_schedule||'') : '';
+  document.getElementById('v-start').value = v ? (v.start_date||'') : '';
+  document.getElementById('v-closing').value = v ? (v.closing_date||'') : '';
+  document.getElementById('v-notes').value = v ? (v.notes||'') : '';
+  document.getElementById('v-link').value = v ? (v.link||'') : '';
+  openSheet('vacancy-overlay');
+}
+async function saveVacancy(){
+  var title = document.getElementById('v-title').value.trim();
+  if(!title){ alert('Add a job title.'); return; }
+  var id = editing.vacancy || newId();
+  await upsertVacancy({
+    id:id, agency_id:document.getElementById('v-agency').value, title:title,
+    company:document.getElementById('v-company').value.trim(),
+    location:document.getElementById('v-location').value.trim(),
+    employment_type:document.getElementById('v-etype').value.trim(),
+    contract_type:document.getElementById('v-contract').value.trim(),
+    salary:document.getElementById('v-salary').value.trim(),
+    hours:document.getElementById('v-hours').value.trim(),
+    work_schedule:document.getElementById('v-schedule').value.trim(),
+    start_date:document.getElementById('v-start').value.trim(),
+    closing_date:document.getElementById('v-closing').value.trim(),
+    notes:document.getElementById('v-notes').value.trim(),
+    link:document.getElementById('v-link').value.trim()
+  });
+  closeSheet('vacancy-overlay');
+  showToast(editing.vacancy ? 'Vacancy updated' : 'Vacancy added');
+  editing.vacancy = null;
+  await loadAll(); renderNav(); renderVacancies(); renderDashboard();
+}
+async function deleteVacancy(id){
+  var v = cache.vacancies.find(function(x){return x.id===id;});
+  if(!confirm('Delete "'+(v?v.title:'this vacancy')+'"?')) return;
+  await removeVacancy(id);
+  showToast('Vacancy deleted');
+  await loadAll(); renderNav(); renderVacancies(); renderDashboard();
+}
+
+// ===== Submissions =====
+function switchSubTab(tab){ subTab = tab; document.getElementById('sub-tab-reports').classList.toggle('active', tab==='reports'); document.getElementById('sub-tab-suggestions').classList.toggle('active', tab==='suggestions'); renderSubmissions(); }
+function renderSubmissions(){
+  var el = document.getElementById('sub-list');
+  var openR = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length;
+  document.getElementById('sub-badge-reports').textContent = openR || '';
+  document.getElementById('sub-badge-suggestions').textContent = cache.suggestions.length || '';
+  if(subTab==='reports'){
+    if(!cache.reports.length){ el.innerHTML = emptyState('No reports','Reports submitted by users will appear here.'); return; }
+    el.innerHTML = cache.reports.map(function(r){
+      var st = (r.status||'open');
+      return '<div class="row-item"><div class="row-main">'+
+        '<div class="row-title">'+escapeHtml(r.agency_name||'General report')+' <span class="badge '+(st==='resolved'?'resolved':'open')+'">'+st+'</span></div>'+
+        '<div class="row-sub"><strong>Reason:</strong> '+escapeHtml(r.reason||'—')+'</div>'+
+        (r.details?'<div class="row-sub" style="white-space:normal">'+escapeHtml(r.details)+'</div>':'')+
+        '<div class="muted" style="margin-top:3px">'+fmtDate(r.created_at)+'</div>'+
+      '</div><div class="row-actions">'+
+        (st!=='resolved'?'<button class="minibtn ok" onclick="resolveReport('+r.id+')">Resolve</button>':'<button class="minibtn" onclick="reopenReport('+r.id+')">Reopen</button>')+
+        '<button class="minibtn danger" onclick="delReport('+r.id+')">Delete</button>'+
+      '</div></div>';
+    }).join('');
+  } else {
+    if(!cache.suggestions.length){ el.innerHTML = emptyState('No suggestions','Suggestions & feedback from users will appear here.'); return; }
+    el.innerHTML = cache.suggestions.map(function(s){
+      return '<div class="row-item"><div class="row-main">'+
+        '<div class="row-title">'+escapeHtml(s.type||'Suggestion')+ (s.agency_name?(' — '+escapeHtml(s.agency_name)):'')+'</div>'+
+        (s.details?'<div class="row-sub" style="white-space:normal">'+escapeHtml(s.details)+'</div>':'')+
+        (s.contact?'<div class="muted" style="margin-top:3px">Contact: '+escapeHtml(s.contact)+'</div>':'')+
+        '<div class="muted" style="margin-top:3px">'+fmtDate(s.created_at)+'</div>'+
+      '</div><div class="row-actions"><button class="minibtn danger" onclick="delSuggestion('+s.id+')">Delete</button></div></div>';
+    }).join('');
+  }
+}
+async function resolveReport(id){ await updateReportStatus(id,'resolved'); showToast('Marked resolved'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function reopenReport(id){ await updateReportStatus(id,'open'); showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function delReport(id){ if(!confirm('Delete this report?')) return; await deleteReport(id); showToast('Report deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+
+// ===== Settings =====
+function updatePostingUI(){
+  var t = document.getElementById('posting-toggle'); if(t) t.checked = !!publicVacancyPostingOpen;
+  var sub = document.getElementById('posting-sub'); if(sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
+}
+async function togglePosting(checked){
+  var ok = await setAppSetting('public_vacancy_posting', checked?'true':'false');
+  if(ok){ publicVacancyPostingOpen = checked; updatePostingUI(); showToast(checked?'Vacancy posting opened':'Vacancy posting locked'); }
+  else { updatePostingUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
+}
+
+// ===== Content =====
+function sectionMeta(){ try{ return window.SECTION_META || {}; }catch(e){ return {}; } }
+function cm(){ return (typeof ContentManager !== 'undefined' && ContentManager) ? ContentManager : (typeof ContentMgr !== 'undefined' ? ContentMgr : null); }
+function renderContent(){
+  var el = document.getElementById('content-list');
+  var meta = sectionMeta();
+  var CM = cm();
+  if(!CM || !CM.getSection){ el.innerHTML = '<div class="muted">Content manager unavailable.</div>'; return; }
+  // Make sure defaults are seeded so every section shows its articles
+  try { if (CM.ensureSeeded) CM.ensureSeeded(); } catch(e){}
+  var keys = Object.keys(meta);
+  if(!keys.length){ el.innerHTML = '<div class="muted">No content sections defined.</div>'; return; }
+  el.innerHTML = keys.map(function(key){
+    var articles = CM.getSection(key);
+    var titleText = (meta[key]&&meta[key].title) ? meta[key].title.replace(/<[^>]+>/g,'') : key;
+    var arts = articles.map(function(a){
+      return '<div class="row-item"><div class="row-main"><div class="row-title">'+escapeHtml(a.title||'Untitled')+'</div><div class="row-sub">'+escapeHtml((a.body||'').replace(/<[^>]+>/g,'').slice(0,90))+'</div></div>'+
+        '<div class="row-actions"><button class="minibtn" onclick="openArticleSheet(\''+key+'\',\''+a.id+'\')">Edit</button><button class="minibtn danger" onclick="delArticle(\''+key+'\',\''+a.id+'\')">Delete</button></div></div>';
+    }).join('') || '<div class="muted" style="padding:10px 16px">No articles.</div>';
+    return '<div class="card"><div class="card-pad" style="display:flex;align-items:center;justify-content:space-between"><strong>'+escapeHtml(titleText)+'</strong><button class="minibtn ok" onclick="openArticleSheet(\''+key+'\')">+ Add</button></div>'+arts+'</div>';
+  }).join('');
+  // Fill the section select in the sheet
+  document.getElementById('c-section').innerHTML = keys.map(function(k){ var t=(meta[k]&&meta[k].title)?meta[k].title.replace(/<[^>]+>/g,''):k; return '<option value="'+k+'">'+escapeHtml(t)+'</option>'; }).join('');
+}
+function openArticleSheet(section, id){
+  editing.articleSection = section || null;
+  editing.article = id || null;
+  var CM = cm();
+  var a = id ? CM.getSection(section).find(function(x){return x.id===id;}) : null;
+  document.getElementById('content-sheet-title').textContent = id ? 'Edit article' : 'Add article';
+  if(section) document.getElementById('c-section').value = section;
+  document.getElementById('c-title').value = a ? (a.title||'') : '';
+  document.getElementById('c-body').value = a ? (a.body||'') : '';
+  openSheet('content-overlay');
+}
+function saveArticle(){
+  var section = document.getElementById('c-section').value;
+  var title = document.getElementById('c-title').value.trim();
+  if(!title){ alert('Add a title.'); return; }
+  var body = document.getElementById('c-body').value;
+  var id = editing.article || newId();
+  cm().upsertArticle(section, { id:id, title:title, body:body });
+  closeSheet('content-overlay');
+  showToast(editing.article ? 'Article updated' : 'Article added');
+  editing.article = null; editing.articleSection = null;
+  renderContent();
+}
+function delArticle(section, id){
+  if(!confirm('Delete this article?')) return;
+  cm().deleteArticle(section, id);
+  showToast('Article deleted');
+  renderContent();
+}
+function restoreDefaults(){
+  if(!confirm('Restore ALL content sections to their defaults? Your edits will be lost.')) return;
+  var CM = cm();
+  if(CM && CM.resetAll){ CM.resetAll(); }
+  else { try{ localStorage.removeItem('sa_content_v1'); }catch(e){} }
+  showToast('Defaults restored');
+  renderContent();
+}
+
+// ===== Daily Track management =====
+var BUCKET = 'daily-tracks';
+var editingTrackId = null;
+var trackFileChosen = null;   // File object chosen in the sheet
+
+function fmtTrackDate(d){
+  if(!d) return '';
+  var dt = new Date(d);
+  if(isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-ZA', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
+}
+
+function renderDailyTracks(){
+  var el = document.getElementById('track-list');
+  if(!el) return;
+  // Show setup warning if the table appears empty AND there might be a setup issue
+  var warn = document.getElementById('track-setup-warn');
+  if(warn){
+    // Detect if the daily_tracks table is missing: we check via the cache length + a flag
+    if(cache.tracks.length === 0 && window._tracksTableMissing){
+      warn.style.display = 'block';
+      warn.innerHTML = '<strong>Setup needed:</strong> The <code>daily_tracks</code> table or the <code>daily-tracks</code> storage bucket hasn\'t been created yet. Run <code>CREATE_DAILY_TRACKS.sql</code> in the Supabase SQL Editor, then reload this page.';
+    } else {
+      warn.style.display = 'none';
+    }
+  }
+  if(!cache.tracks.length){
+    el.innerHTML = emptyState('No tracks yet', 'Click "Upload track" to add an MP3 for the Track of the Day.');
+    return;
+  }
+  el.innerHTML = cache.tracks.map(function(t){
+    var isToday = (t.track_date === todayStr());
+    var badge = isToday ? ' <span class="nav-badge" style="background:var(--accent);color:#fff">Today</span>' : '';
+    return '<div class="card"><div class="row-item">'
+      + '<div class="row-avatar" style="background:linear-gradient(145deg,#0A84FF,#0051D5)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'
+      + '<div class="row-main"><div class="row-title">'+escapeHtml(t.title||'Untitled')+badge+'</div>'
+      + '<div class="row-sub">'+escapeHtml(t.artist||'No artist')+' &middot; '+fmtTrackDate(t.track_date)+'</div></div>'
+      + '<div class="row-actions">'
+      + '<button class="minibtn" onclick="editTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Edit</button>'
+      + '<button class="minibtn danger" onclick="deleteTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</button>'
+      + '</div></div></div>';
+  }).join('');
+}
+
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function openTrackSheet(){
+  editingTrackId = null;
+  trackFileChosen = null;
+  document.getElementById('track-sheet-title').textContent = 'Upload track';
+  document.getElementById('t-title').value = '';
+  document.getElementById('t-artist').value = '';
+  document.getElementById('t-date').value = todayStr();
+  document.getElementById('t-file').value = '';
+  document.getElementById('t-file-hint').textContent = ' (required)';
+  document.getElementById('t-file').required = true;
+  document.getElementById('t-progress').style.display = 'none';
+  openSheet('track-overlay');
+}
+
+function editTrack(id){
+  var t = cache.tracks.find(function(x){ return x.id === id; });
+  if(!t) return;
+  editingTrackId = id;
+  trackFileChosen = null;
+  document.getElementById('track-sheet-title').textContent = 'Edit track';
+  document.getElementById('t-title').value = t.title || '';
+  document.getElementById('t-artist').value = t.artist || '';
+  document.getElementById('t-date').value = t.track_date || todayStr();
+  document.getElementById('t-file').value = '';
+  document.getElementById('t-file-hint').textContent = ' (leave empty to keep current file)';
+  document.getElementById('t-file').required = false;
+  document.getElementById('t-progress').style.display = 'none';
+  openSheet('track-overlay');
+}
+
+// Watch for file selection
+document.addEventListener('change', function(e){
+  if(e.target && e.target.id === 't-file'){
+    trackFileChosen = e.target.files[0] || null;
+  }
+});
+
+async function saveTrack(){
+  var title = document.getElementById('t-title').value.trim();
+  var artist = document.getElementById('t-artist').value.trim();
+  var date = document.getElementById('t-date').value;
+  if(!title){ alert('Please enter a track title.'); return; }
+  if(!date){ alert('Please pick a date.'); return; }
+
+  var isEditing = !!editingTrackId;
+  var existing = isEditing ? cache.tracks.find(function(x){ return x.id === editingTrackId; }) : null;
+
+  // If creating new, file is required
+  if(!isEditing && !trackFileChosen){ alert('Please choose an MP3 file to upload.'); return; }
+
+  var saveBtn = document.getElementById('t-save-btn');
+  saveBtn.disabled = true;
+  var prog = document.getElementById('t-progress');
+  prog.style.display = 'block';
+  prog.textContent = 'Uploading…';
+
+  try {
+    var id = editingTrackId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
+    var filePath = '';
+    var fileUrl = '';
+
+    // Upload file to storage if a new file was chosen
+    if(trackFileChosen){
+      var ext = (trackFileChosen.name.match(/\.(\w+)$/) || [,'mp3'])[1];
+      filePath = 'tracks/' + id + '.' + ext;
+      var upRes = await supabaseClient.storage.from(BUCKET).upload(filePath, trackFileChosen, { contentType: 'audio/mpeg', upsert: true });
+      if(upRes.error){
+        // Likely bucket doesn't exist or RLS blocks
+        prog.style.display = 'none';
+        saveBtn.disabled = false;
+        alert('Upload failed: ' + (upRes.error.message || 'Could not upload file') + '\n\nMake sure the "daily-tracks" storage bucket exists. Run CREATE_DAILY_TRACKS.sql in Supabase.');
+        return;
+      }
+      fileUrl = supabaseClient.storage.from(BUCKET).getPublicUrl(filePath).data.publicUrl;
+    } else if(isEditing && existing) {
+      // Keep existing file
+      filePath = existing.file_path || '';
+      fileUrl = existing.file_url || '';
+    } else {
+      prog.style.display = 'none';
+      saveBtn.disabled = false;
+      alert('No file selected.');
+      return;
+    }
+
+    prog.textContent = 'Saving details…';
+    var row = {
+      id: id,
+      title: title,
+      artist: artist,
+      track_date: date,
+      file_url: fileUrl,
+      file_path: filePath
+    };
+    var dbRes = await supabaseClient.from('daily_tracks').upsert(row);
+    if(dbRes.error){
+      prog.style.display = 'none';
+      saveBtn.disabled = false;
+      alert('Could not save track: ' + (dbRes.error.message || 'Database error') + '\n\nMake sure the daily_tracks table exists. Run CREATE_DAILY_TRACKS.sql in Supabase.');
+      return;
+    }
+
+    // If editing and we uploaded a new file, optionally delete the old file
+    if(isEditing && existing && existing.file_path && existing.file_path !== filePath){
+      try { await supabaseClient.storage.from(BUCKET).remove([existing.file_path]); } catch(e){}
+    }
+
+    // Refresh cache
+    cache.tracks = await getTracks();
+    renderNav();
+    renderDailyTracks();
+    closeSheet('track-overlay');
+    saveBtn.disabled = false;
+    prog.style.display = 'none';
+    showToast(isEditing ? 'Track updated' : 'Track uploaded');
+  } catch(e){
+    prog.style.display = 'none';
+    saveBtn.disabled = false;
+    alert('Something went wrong: ' + (e.message || e));
+  }
+}
+
+async function deleteTrack(id){
+  var t = cache.tracks.find(function(x){ return x.id === id; });
+  if(!t) return;
+  if(!confirm('Delete "' + (t.title||'this track') + '"? This removes the file and record permanently.')) return;
+  // Delete file from storage
+  if(t.file_path){
+    try { await supabaseClient.storage.from(BUCKET).remove([t.file_path]); } catch(e){}
+  }
+  // Delete row
+  var { error } = await supabaseClient.from('daily_tracks').delete().eq('id', id);
+  if(error){ alert('Could not delete: ' + (error.message || 'error')); return; }
+  cache.tracks = await getTracks();
+  renderNav();
+  renderDailyTracks();
+  showToast('Track deleted');
+}
+
+// Detect missing table on first load attempt (called after enterConsole)
+async function checkTracksTable(){
+  try {
+    var { error } = await supabaseClient.from('daily_tracks').select('id').limit(1);
+    window._tracksTableMissing = !!(error && /Could not find|schema cache|PGRST205/i.test(error.message||''));
+  } catch(e){ window._tracksTableMissing = false; }
+}
+
+// ===== Misc =====
+function emptyState(title, sub){
+  return '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg><h3>'+escapeHtml(title)+'</h3><p>'+escapeHtml(sub)+'</p></div>';
+}
+
+// Enter key submits login
+document.getElementById('login-password').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+document.getElementById('login-email').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('login-password').focus(); });
+</script>
+</body>
+</html>
