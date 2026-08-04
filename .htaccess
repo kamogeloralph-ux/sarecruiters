@@ -6,7 +6,12 @@
 # Service worker — no cache + allow root scope
 <Files "sw.js">
   Header set Service-Worker-Allowed "/"
-  Header set Cache-Control "public, max-age=0, must-revalidate"
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+</Files>
+
+# Index page — no cache (so new versions are always served)
+<Files "index.html">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
 </Files>
 
 # Manifest — correct MIME type + no cache
