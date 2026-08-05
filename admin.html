@@ -20,9 +20,10 @@
   --danger:#f87171; --ok:#34d399; --warn:#fbbf24; --shadow:0 1px 3px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden;word-wrap:break-word;overflow-wrap:break-word}
+html{overflow-x:hidden}
 button{font-family:inherit}
-a{color:var(--accent);text-decoration:none}
+a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
 /* ===== Login screen ===== */
 #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -48,11 +49,11 @@ a{color:var(--accent);text-decoration:none}
 
 /* ===== App shell ===== */
 #app{display:none}
-.topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 16px}
-.topbar .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px}
+.topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 16px;overflow:hidden}
+.topbar .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;flex-shrink:0}
 .topbar .brand img{width:28px;height:28px;border-radius:7px;object-fit:cover}
-.topbar .spacer{flex:1}
-.topbar .who{font-size:12.5px;color:var(--text-2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .spacer{flex:1;min-width:0}
+.topbar .who{font-size:12.5px;color:var(--text-2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1}
 .iconbtn{background:var(--card-2);border:1px solid var(--border);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-2)}
 .iconbtn svg{width:18px;height:18px}
 .iconbtn:active{transform:scale(.93)}
@@ -69,11 +70,36 @@ a{color:var(--accent);text-decoration:none}
 .nav-item.active .nav-badge{background:var(--accent);color:#fff}
 
 .main{padding:20px;max-width:1100px;width:100%;margin:0 auto}
-@media(max-width:760px){.main{padding:16px}}
+@media(max-width:760px){.main{padding:14px;max-width:100%}}
 .section{display:none}
 .section.active{display:block}
-.section-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .section-head h2{font-size:20px;margin:0}
+/* Mobile: prevent horizontal overflow on all content */
+@media(max-width:760px){
+  .main{overflow-x:hidden;word-wrap:break-word;overflow-wrap:break-word}
+  .section-head{flex-wrap:wrap;gap:8px}
+  .section-head h2{font-size:18px;flex:1;min-width:0}
+  .section-head .spacer{display:none}
+  .section-head .minibtn{font-size:12px;padding:7px 10px}
+  .search{font-size:13px;padding:10px 12px}
+  .card{overflow:hidden}
+  /* Row details: reduce left padding on mobile so content fits */
+  .row-details{padding:0 14px 14px 14px !important;font-size:13px;line-height:1.55;overflow-wrap:break-word;word-break:break-word}
+  .row-details .det-row{overflow-wrap:break-word;word-break:break-word}
+  /* Ensure long URLs and trades lists wrap */
+  .row-details a,.row-details span{overflow-wrap:break-word;word-break:break-all}
+  /* Row items: constrain to viewport */
+  .row-item{padding:12px 14px;max-width:100%;overflow:hidden}
+  .row-main{min-width:0;overflow:hidden}
+  .row-title{white-space:normal;overflow-wrap:break-word}
+  .row-sub{white-space:normal;overflow-wrap:break-word}
+  /* Expanded action buttons stack vertically on narrow screens */
+  .row-expanded-actions{flex-direction:column;gap:8px}
+  .minibtn.full{width:100%;flex:none}
+  /* Muted text wrapping */
+  .muted{overflow-wrap:break-word;word-break:break-word}
+}
 .section-head .spacer{flex:1}
 
 /* ===== Cards & tables ===== */
@@ -81,24 +107,80 @@ a{color:var(--accent);text-decoration:none}
 .card + .card{margin-top:14px}
 .card-pad{padding:16px}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+@media(max-width:760px){.stats-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
 .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+@media(max-width:760px){.stat{padding:12px 10px}}
 .stat .v{font-size:26px;font-weight:800}
+@media(max-width:760px){.stat .v{font-size:20px}}
 .stat .l{font-size:12.5px;color:var(--text-2);margin-top:2px}
+@media(max-width:760px){.stat .l{font-size:11px}}
 
-.row-item{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--border)}
+/* ===== Home card grid (Dashboard hub like Profile section) ===== */
+.home-section-label{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px 2px}
+.home-grouped-list{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.home-nav-card{display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;width:100%;text-align:left;border:none;background:none;font-family:inherit;font-size:15px;font-weight:600;color:var(--text);position:relative}
+.home-nav-card + .home-nav-card::before{content:'';position:absolute;top:0;left:60px;right:0;height:1px;background:var(--border)}
+.home-nav-card:active{background:var(--card-2)}
+.home-nav-card .hc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.home-nav-card .hc-icon svg{width:20px;height:20px;display:block;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hc-tile-blue{background:linear-gradient(145deg,#2563eb,#1e40af)}
+.hc-tile-green{background:linear-gradient(145deg,#16a34a,#15803d)}
+.hc-tile-amber{background:linear-gradient(145deg,#d97706,#b45309)}
+.hc-tile-purple{background:linear-gradient(145deg,#7c3aed,#5b21b6)}
+.hc-tile-pink{background:linear-gradient(145deg,#db2777,#9d174d)}
+.hc-tile-teal{background:linear-gradient(145deg,#0d9488,#0f766e)}
+.hc-tile-red{background:linear-gradient(145deg,#dc2626,#991b1b)}
+.hc-tile-gray{background:linear-gradient(145deg,#6b7280,#4b5563)}
+.home-nav-card .hc-text{display:flex;flex-direction:column;flex:1;min-width:0}
+.home-nav-card .hc-title{font-size:15px;font-weight:600}
+.home-nav-card .hc-sub{font-size:12px;color:var(--text-2);font-weight:400;margin-top:2px;line-height:1.3}
+.home-nav-card .hc-badge{margin-left:auto;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;border-radius:8px;padding:3px 8px;min-width:22px;text-align:center;flex-shrink:0}
+.home-nav-card .hc-chev{width:16px;height:16px;color:var(--text-2);flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+/* Back button shown on sub-sections */
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;margin-right:8px}
+.back-btn svg{width:16px;height:16px}
+.back-btn:active{transform:scale(.95)}
+/* On mobile, hide the horizontal sidebar scroll bar — Dashboard hub is the main nav */
+@media(max-width:760px){
+  .sidebar{display:none !important}
+  .layout{grid-template-columns:1fr !important}
+}
+
+.row-item{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--border);cursor:pointer;position:relative}
 .row-item:first-child{border-top:none}
 .row-item:hover{background:var(--card-2)}
+.row-item.expanded{background:var(--card-2)}
 .row-avatar{width:40px;height:40px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px;overflow:hidden;background:linear-gradient(145deg,#2563eb,#1e40af)}
 .row-avatar img{width:100%;height:100%;object-fit:cover}
 .row-main{flex:1;min-width:0}
 .row-title{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row-sub{font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
-.row-actions{display:flex;gap:6px;flex-shrink:0}
+.row-chevron{flex-shrink:0;color:var(--text-2);transition:transform .2s ease}
+.row-chevron svg{width:18px;height:18px;display:block}
+.row-item.expanded .row-chevron{transform:rotate(180deg)}
+/* Inline action buttons hidden by default; shown when row is expanded (mobile-first tap-to-open) */
+.row-inline-actions{display:none;flex-direction:column;gap:8px;padding:0 16px 14px 16px}
+.row-item.expanded + .row-inline-actions{display:flex}
+@media(min-width:761px){
+  /* On desktop/tablet with sidebar, show actions inline like before but also allow tap-to-expand for details */
+  .row-inline-actions{display:none}
+  .row-item .row-actions-inline{display:flex;gap:6px;flex-shrink:0}
+}
+.row-actions-inline{display:none;gap:6px;flex-shrink:0}
+@media(min-width:761px){.row-actions-inline{display:flex}}
+/* Full details panel shown on expand */
+.row-details{display:none;padding:0 16px 14px 52px;font-size:13px;color:var(--text-2);line-height:1.6}
+.row-item.expanded + .row-details{display:block}
+.row-details .det-row{margin-bottom:3px}
+.row-details .det-label{color:var(--text);font-weight:600;display:inline}
+.row-expanded-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .minibtn{background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:7px 10px;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .minibtn svg{width:14px;height:14px}
 .minibtn:active{transform:scale(.95)}
 .minibtn.danger{color:var(--danger)}
 .minibtn.ok{color:var(--ok)}
+.minibtn.full{flex:1;justify-content:center;padding:10px;font-size:13px}
+.minibtn.full.danger{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.3)}
 .badge{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px}
 .badge.verified{background:rgba(22,163,74,.15);color:var(--ok)}
 .badge.unverified{background:var(--card-2);color:var(--text-2)}
@@ -193,33 +275,33 @@ a{color:var(--accent);text-decoration:none}
       <div class="section active" id="sec-dashboard">
         <div class="section-head"><h2>Dashboard</h2></div>
         <div class="stats-grid" id="stats-grid"></div>
-        <div style="margin-top:18px" class="muted">Use the sidebar to manage agencies, branches, vacancies, submissions, settings and content. Changes here appear instantly in the public app.</div>
+        <div id="home-cards" style="margin-top:8px"></div>
       </div>
 
       <!-- AGENCIES -->
       <div class="section" id="sec-agencies">
-        <div class="section-head"><h2>Agencies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Agencies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
         <input class="search" id="ag-search" placeholder="Search name, location, trades, companies..." oninput="renderAgencies()">
         <div id="ag-list"></div>
       </div>
 
       <!-- BRANCHES -->
       <div class="section" id="sec-branches">
-        <div class="section-head"><h2>Branches</h2><div class="spacer"></div><button class="minibtn ok" onclick="openBranchSheet()">+ Add branch</button></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Branches</h2><div class="spacer"></div><button class="minibtn ok" onclick="openBranchSheet()">+ Add branch</button></div>
         <input class="search" id="br-search" placeholder="Search branch, location, agency..." oninput="renderBranches()">
         <div id="br-list"></div>
       </div>
 
       <!-- VACANCIES -->
       <div class="section" id="sec-vacancies">
-        <div class="section-head"><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
         <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="renderVacancies()">
         <div id="va-list"></div>
       </div>
 
       <!-- SUBMISSIONS -->
       <div class="section" id="sec-submissions">
-        <div class="section-head"><h2>Submissions</h2></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Submissions</h2></div>
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="minibtn" id="sub-tab-reports" onclick="switchSubTab('reports')">Reports <span class="nav-badge" id="sub-badge-reports"></span></button>
           <button class="minibtn" id="sub-tab-suggestions" onclick="switchSubTab('suggestions')">Suggestions <span class="nav-badge" id="sub-badge-suggestions"></span></button>
@@ -229,7 +311,7 @@ a{color:var(--accent);text-decoration:none}
 
       <!-- SETTINGS -->
       <div class="section" id="sec-settings">
-        <div class="section-head"><h2>Settings</h2></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Settings</h2></div>
         <div class="toggle-row">
           <div><div class="t-label">Public vacancy posting</div><div class="t-sub" id="posting-sub">Loading…</div></div>
           <label class="switch"><input type="checkbox" id="posting-toggle" onchange="togglePosting(this.checked)"><span class="track"><span class="knob"></span></span></label>
@@ -239,15 +321,15 @@ a{color:var(--accent);text-decoration:none}
 
       <!-- DAILY TRACK -->
       <div class="section" id="sec-dailytrack">
-        <div class="section-head"><h2>Daily Track</h2><div class="spacer"></div><button class="minibtn" onclick="openTrackSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Upload track</button></div>
-        <div class="muted" style="margin-bottom:14px">Upload an MP3 to feature as "Track of the Day" in the public app. Set the date to control which day each track plays. The newest track for a given date is shown.</div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Daily Track</h2><div class="spacer"></div><button class="minibtn" onclick="openTrackSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Upload track</button></div>
+        <div class="muted" style="margin-bottom:14px">Upload an MP3 to feature as "Track of the Day" in the public app. Set the date to control which day each track plays. The newest track for a given date is shown. <strong>Tracks are kept for 7 days</strong> and automatically deleted after one week.</div>
         <div id="track-setup-warn" class="card card-pad" style="margin-bottom:14px;display:none;border-color:var(--danger);color:var(--danger);font-size:13px;line-height:1.5"></div>
         <div id="track-list"></div>
       </div>
 
       <!-- CONTENT -->
       <div class="section" id="sec-content">
-        <div class="section-head"><h2>Content</h2><div class="spacer"></div><button class="minibtn" onclick="restoreDefaults()">Restore defaults</button></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Content</h2><div class="spacer"></div><button class="minibtn" onclick="restoreDefaults()">Restore defaults</button></div>
         <div class="muted" style="margin-bottom:14px">Edit the FAQ, CV guides, interview tips, rights, learning hub and support articles that appear in the public app.</div>
         <div id="content-list"></div>
       </div>
@@ -315,6 +397,8 @@ a{color:var(--accent);text-decoration:none}
     <div class="field"><label>Closing date</label><input id="v-closing" placeholder="e.g. 30 Sep 2026"></div>
     <div class="field"><label>Notes / description</label><textarea id="v-notes" placeholder="Job description, requirements…"></textarea></div>
     <div class="field"><label>Apply link</label><input id="v-link" placeholder="https://…"></div>
+    <div class="field"><label>Contact email (if no link)</label><input id="v-email" type="email" placeholder="e.g. hr@company.co.za"></div>
+    <div class="field"><label>Contact phone (if no link)</label><input id="v-phone" type="tel" placeholder="e.g. 011 123 4567"></div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('vacancy-overlay')">Cancel</button>
       <button class="btn" onclick="saveVacancy()">Save</button>
@@ -441,6 +525,7 @@ async function enterConsole(user){
   document.getElementById('who-am-i').textContent = user.email || 'admin';
   await loadAll();
   await checkTracksTable();
+  await cleanupOldTracks();
   renderNav();
   renderDashboard();
 }
@@ -486,7 +571,25 @@ async function upsertAgency(a){
 async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } }
 async function upsertBranch(b){ var { error } = await supabaseClient.from('branches').upsert(b); if(error){ console.error('branch save',error); alert('Could not save branch: '+error.message); } }
 async function removeBranch(id){ var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error) console.error('branch del',error); }
-async function upsertVacancy(v){ var { error } = await supabaseClient.from('vacancies').upsert(v); if(error){ console.error('vacancy save',error); alert('Could not save vacancy: '+error.message); } }
+async function upsertVacancy(v){
+  var { error } = await supabaseClient.from('vacancies').upsert(v);
+  if(error){
+    // If the error is about a missing column, retry with only the
+    // columns that are guaranteed to exist in the original schema.
+    if(error.message && error.message.indexOf('column') > -1){
+      var safe = {
+        id:v.id, agency_id:v.agency_id||'general', title:v.title||'',
+        company:v.company||'', location:v.location||'',
+        closing_date:v.closing_date||'', notes:v.notes||'',
+        link:v.link||'', email:v.email||'', phone:v.phone||''
+      };
+      var { error:err2 } = await supabaseClient.from('vacancies').upsert(safe);
+      if(err2){ console.error('vacancy save (retry)',err2); alert('Could not save vacancy: '+err2.message+'\n\nPlease run UPDATE_VACANCIES_SCHEMA.sql in Supabase to add the missing columns.'); }
+    } else {
+      console.error('vacancy save',error); alert('Could not save vacancy: '+error.message);
+    }
+  }
+}
 async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); }
 async function updateReportStatus(id, status){ var { error } = await supabaseClient.from('reports').update({status:status}).eq('id',id); if(error) console.error('report upd',error); }
 async function deleteReport(id){ var { error } = await supabaseClient.from('reports').delete().eq('id',id); if(error) console.error('report del',error); }
@@ -508,16 +611,27 @@ async function loadAll(){
   fillAgencySelects();
 }
 
+// ===== Tap-to-open row toggle (mobile-friendly) =====
+function toggleRow(rowEl){
+  // Close any other expanded rows in the same container
+  var container = rowEl.parentNode;
+  container.querySelectorAll('.row-item.expanded').forEach(function(r){
+    if(r !== rowEl) r.classList.remove('expanded');
+  });
+  rowEl.classList.toggle('expanded');
+}
+function stopProp(e){ if(e && e.stopPropagation) e.stopPropagation(); }
+
 // ===== Navigation =====
 var NAV = [
-  { id:'dashboard', label:'Dashboard', icon:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
-  { id:'agencies', label:'Agencies', icon:'<path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/>' },
-  { id:'branches', label:'Branches', icon:'<path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
-  { id:'vacancies', label:'Vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
-  { id:'submissions', label:'Submissions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
-  { id:'settings', label:'Settings', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
-  { id:'dailytrack', label:'Daily Track', icon:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
-  { id:'content', label:'Content', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' }
+  { id:'dashboard', label:'Dashboard', tile:'hc-tile-blue', sub:'Overview & quick stats', icon:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
+  { id:'agencies', label:'Agencies', tile:'hc-tile-blue', sub:'Manage recruitment agencies', icon:'<path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/>' },
+  { id:'branches', label:'Branches', tile:'hc-tile-green', sub:'Agency branch locations', icon:'<path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
+  { id:'vacancies', label:'Vacancies', tile:'hc-tile-amber', sub:'Job postings & vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
+  { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
+  { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+  { id:'dailytrack', label:'Daily Track', tile:'hc-tile-pink', sub:'Track of the Day music', icon:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
+  { id:'content', label:'Content', tile:'hc-tile-teal', sub:'FAQ, guides & articles', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' }
 ];
 function renderNav(){
   var el = document.getElementById('sidebar');
@@ -531,6 +645,14 @@ function renderNav(){
     return '<div class="nav-item" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
+function navBadge(id){
+  if(id==='agencies') return cache.agencies.length;
+  if(id==='branches') return cache.branches.length;
+  if(id==='vacancies') return cache.vacancies.length;
+  if(id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; return c; }
+  if(id==='dailytrack') return cache.tracks.length;
+  return null;
+}
 function goSection(id){
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('sec-'+id).classList.add('active');
@@ -543,6 +665,9 @@ function goSection(id){
   if(id==='dailytrack') renderDailyTracks();
   if(id==='settings') updatePostingUI();
   window.scrollTo(0,0);
+}
+function goHome(){
+  goSection('dashboard');
 }
 
 // ===== Dashboard =====
@@ -559,6 +684,36 @@ function renderDashboard(){
   document.getElementById('stats-grid').innerHTML = stats.map(function(s){
     return '<div class="stat"><div class="v">'+s.v+'</div><div class="l">'+s.l+'</div></div>';
   }).join('');
+  // Build the home card grid (grouped like Profile section)
+  var homeEl = document.getElementById('home-cards');
+  if(homeEl){
+    // Group: Manage
+    var manageItems = ['agencies','branches','vacancies'];
+    var reviewItems = ['submissions'];
+    var mediaItems = ['dailytrack','content'];
+    var configItems = ['settings'];
+    var html = '';
+    html += buildHomeGroup('Manage', manageItems);
+    html += buildHomeGroup('Review', reviewItems);
+    html += buildHomeGroup('Content & Media', mediaItems);
+    html += buildHomeGroup('Configuration', configItems);
+    homeEl.innerHTML = html;
+  }
+}
+function buildHomeGroup(label, itemIds){
+  var cards = itemIds.map(function(id){
+    var n = NAV.find(function(x){ return x.id===id; });
+    if(!n) return '';
+    var b = navBadge(id);
+    var badgeHtml = (b!==null) ? '<span class="hc-badge">'+b+'</span>' : '';
+    return '<button class="home-nav-card" onclick="goSection(\''+id+'\')">'+
+      '<span class="hc-icon '+n.tile+'"><svg viewBox="0 0 24 24">'+n.icon+'</svg></span>'+
+      '<span class="hc-text"><span class="hc-title">'+n.label+'</span><span class="hc-sub">'+n.sub+'</span></span>'+
+      badgeHtml+
+      '<svg class="hc-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'+
+    '</button>';
+  }).join('');
+  return '<div class="home-section-label">'+label+'</div><div class="home-grouped-list">'+cards+'</div>';
 }
 
 // ===== Agencies =====
@@ -571,14 +726,31 @@ function renderAgencies(){
   if(!list.length){ el.innerHTML = emptyState('No agencies','Add your first agency or adjust your search.'); return; }
   el.innerHTML = list.map(function(a){
     var sub = [a.location, a.email].filter(Boolean).join(' · ');
-    return '<div class="row-item">'+
+    var details = '';
+    if(a.website) details += '<div class="det-row"><span class="det-label">Website:</span> '+escapeHtml(a.website)+'</div>';
+    if(a.contact) details += '<div class="det-row"><span class="det-label">Contact:</span> '+escapeHtml(a.contact)+'</div>';
+    if(a.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(a.email)+'</div>';
+    if(a.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(a.address)+'</div>';
+    if(a.trades) details += '<div class="det-row"><span class="det-label">Trades:</span> '+escapeHtml(a.trades)+'</div>';
+    if(a.companies) details += '<div class="det-row"><span class="det-label">Companies:</span> '+escapeHtml(a.companies)+'</div>';
+    if(a.cvpref) details += '<div class="det-row"><span class="det-label">CV pref:</span> '+escapeHtml(a.cvpref)+'</div>';
+    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar">'+(a.photo?'<img src="'+a.photo+'">':initials(a.name))+'</div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(a.name||'Unnamed')+' '+(a.verified?'<span class="badge verified">Verified</span>':'<span class="badge unverified">Unverified</span>')+'</div>'+
       '<div class="row-sub">'+escapeHtml(sub||'No details')+'</div></div>'+
-      '<div class="row-actions">'+
-        '<button class="minibtn" onclick="openAgencySheet(\''+a.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
-        '<button class="minibtn danger" onclick="deleteAgency(\''+a.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
-      '</div></div>';
+      '<div class="row-actions-inline">'+
+        '<button class="minibtn" onclick="stopProp(event);openAgencySheet(\''+a.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deleteAgency(\''+a.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openAgencySheet(\''+a.id+'\')">Edit agency</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deleteAgency(\''+a.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
   }).join('');
 }
 function openAgencySheet(id){
@@ -679,13 +851,27 @@ function renderBranches(){
   if(!list.length){ el.innerHTML = emptyState('No branches','Add a branch or adjust your search.'); return; }
   el.innerHTML = list.map(function(b){
     var sub = [b.location, b.phone, b.email].filter(Boolean).join(' · ');
-    return '<div class="row-item">'+
+    var details = '';
+    if(b._ag && b._ag.name) details += '<div class="det-row"><span class="det-label">Agency:</span> '+escapeHtml(b._ag.name)+'</div>';
+    if(b.location) details += '<div class="det-row"><span class="det-label">Location:</span> '+escapeHtml(b.location)+'</div>';
+    if(b.phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(b.phone)+'</div>';
+    if(b.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(b.email)+'</div>';
+    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#16a34a,#15803d)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(b.name||'Branch')+'</div><div class="row-sub">'+escapeHtml((b._ag&&b._ag.name)||'Unknown agency')+' · '+escapeHtml(sub||'no details')+'</div></div>'+
-      '<div class="row-actions">'+
-        '<button class="minibtn" onclick="openBranchSheet(\''+b.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
-        '<button class="minibtn danger" onclick="deleteBranch(\''+b.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
-      '</div></div>';
+      '<div class="row-actions-inline">'+
+        '<button class="minibtn" onclick="stopProp(event);openBranchSheet(\''+b.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deleteBranch(\''+b.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openBranchSheet(\''+b.id+'\')">Edit branch</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deleteBranch(\''+b.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
   }).join('');
 }
 function openBranchSheet(id){
@@ -728,13 +914,37 @@ function renderVacancies(){
   if(!list.length){ el.innerHTML = emptyState('No vacancies','Add a vacancy or adjust your search.'); return; }
   el.innerHTML = list.map(function(v){
     var sub = [v.location, v.company, (v._ag&&v._ag.name), v.closing_date?('closes '+v.closing_date):null].filter(Boolean).join(' · ');
-    return '<div class="row-item">'+
+    var details = '';
+    if(v._ag && v._ag.name) details += '<div class="det-row"><span class="det-label">Agency:</span> '+escapeHtml(v._ag.name)+'</div>';
+    if(v.company) details += '<div class="det-row"><span class="det-label">Company:</span> '+escapeHtml(v.company)+'</div>';
+    if(v.location) details += '<div class="det-row"><span class="det-label">Location:</span> '+escapeHtml(v.location)+'</div>';
+    if(v.employment_type) details += '<div class="det-row"><span class="det-label">Type:</span> '+escapeHtml(v.employment_type)+'</div>';
+    if(v.contract_type) details += '<div class="det-row"><span class="det-label">Contract:</span> '+escapeHtml(v.contract_type)+'</div>';
+    if(v.salary) details += '<div class="det-row"><span class="det-label">Salary:</span> '+escapeHtml(v.salary)+'</div>';
+    if(v.hours) details += '<div class="det-row"><span class="det-label">Hours:</span> '+escapeHtml(v.hours)+'</div>';
+    if(v.work_schedule) details += '<div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(v.work_schedule)+'</div>';
+    if(v.start_date) details += '<div class="det-row"><span class="det-label">Start:</span> '+escapeHtml(v.start_date)+'</div>';
+    if(v.closing_date) details += '<div class="det-row"><span class="det-label">Closing:</span> '+escapeHtml(v.closing_date)+'</div>';
+    if(v.notes) details += '<div class="det-row"><span class="det-label">Notes:</span> '+escapeHtml((v.notes||'').replace(/<[^>]+>/g,'').slice(0,200))+'</div>';
+    if(v.link) details += '<div class="det-row"><span class="det-label">Link:</span> '+escapeHtml(v.link)+'</div>';
+    if(v.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(v.email)+'</div>';
+    if(v.phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(v.phone)+'</div>';
+    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#d97706,#b45309)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(v.title||'Untitled role')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+'</div></div>'+
-      '<div class="row-actions">'+
-        '<button class="minibtn" onclick="openVacancySheet(\''+v.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
-        '<button class="minibtn danger" onclick="deleteVacancy(\''+v.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
-      '</div></div>';
+      '<div class="row-actions-inline">'+
+        '<button class="minibtn" onclick="stopProp(event);openVacancySheet(\''+v.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openVacancySheet(\''+v.id+'\')">Edit vacancy</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
   }).join('');
 }
 function openVacancySheet(id){
@@ -754,6 +964,8 @@ function openVacancySheet(id){
   document.getElementById('v-closing').value = v ? (v.closing_date||'') : '';
   document.getElementById('v-notes').value = v ? (v.notes||'') : '';
   document.getElementById('v-link').value = v ? (v.link||'') : '';
+  document.getElementById('v-email').value = v ? (v.email||'') : '';
+  document.getElementById('v-phone').value = v ? (v.phone||'') : '';
   openSheet('vacancy-overlay');
 }
 async function saveVacancy(){
@@ -772,7 +984,9 @@ async function saveVacancy(){
     start_date:document.getElementById('v-start').value.trim(),
     closing_date:document.getElementById('v-closing').value.trim(),
     notes:document.getElementById('v-notes').value.trim(),
-    link:document.getElementById('v-link').value.trim()
+    link:document.getElementById('v-link').value.trim(),
+    email:document.getElementById('v-email').value.trim(),
+    phone:document.getElementById('v-phone').value.trim()
   });
   closeSheet('vacancy-overlay');
   showToast(editing.vacancy ? 'Vacancy updated' : 'Vacancy added');
@@ -851,11 +1065,20 @@ function renderContent(){
   el.innerHTML = keys.map(function(key){
     var articles = CM.getSection(key);
     var titleText = (meta[key]&&meta[key].title) ? meta[key].title.replace(/<[^>]+>/g,'') : key;
+    var artCount = articles.length;
     var arts = articles.map(function(a){
-      return '<div class="row-item"><div class="row-main"><div class="row-title">'+escapeHtml(a.title||'Untitled')+'</div><div class="row-sub">'+escapeHtml((a.body||'').replace(/<[^>]+>/g,'').slice(0,90))+'</div></div>'+
-        '<div class="row-actions"><button class="minibtn" onclick="openArticleSheet(\''+key+'\',\''+a.id+'\')">Edit</button><button class="minibtn danger" onclick="delArticle(\''+key+'\',\''+a.id+'\')">Delete</button></div></div>';
+      var preview = (a.body||'').replace(/<[^>]+>/g,'').slice(0,100);
+      var fullBody = (a.body||'').replace(/<[^>]+>/g,'');
+      var details = '<div class="det-row"><span class="det-label">Body preview:</span> '+escapeHtml(fullBody.slice(0,300))+(fullBody.length>300?'…':'')+'</div>';
+      if(!fullBody) details = '<div class="det-row muted">No body content</div>';
+      return '<div class="row-item" onclick="toggleRow(this)"><div class="row-main"><div class="row-title">'+escapeHtml(a.title||'Untitled')+'</div><div class="row-sub">'+escapeHtml(preview||'No content')+'</div></div>'+
+        '<div class="row-actions-inline"><button class="minibtn" onclick="stopProp(event);openArticleSheet(\''+key+'\',\''+a.id+'\')">Edit</button><button class="minibtn danger" onclick="stopProp(event);delArticle(\''+key+'\',\''+a.id+'\')">Delete</button></div>'+
+        '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>'+
+        '<div class="row-details">'+details+
+          '<div class="row-expanded-actions"><button class="minibtn full" onclick="stopProp(event);openArticleSheet(\''+key+'\',\''+a.id+'\')">Edit article</button><button class="minibtn full danger" onclick="stopProp(event);delArticle(\''+key+'\',\''+a.id+'\')">Delete</button></div>'+
+        '</div>';
     }).join('') || '<div class="muted" style="padding:10px 16px">No articles.</div>';
-    return '<div class="card"><div class="card-pad" style="display:flex;align-items:center;justify-content:space-between"><strong>'+escapeHtml(titleText)+'</strong><button class="minibtn ok" onclick="openArticleSheet(\''+key+'\')">+ Add</button></div>'+arts+'</div>';
+    return '<div class="card"><div class="card-pad" style="display:flex;align-items:center;justify-content:space-between"><strong>'+escapeHtml(titleText)+'</strong><span style="display:flex;align-items:center;gap:8px"><span class="nav-badge">'+artCount+'</span><button class="minibtn ok" onclick="openArticleSheet(\''+key+'\')">+ Add</button></span></div>'+arts+'</div>';
   }).join('');
   // Fill the section select in the sheet
   document.getElementById('c-section').innerHTML = keys.map(function(k){ var t=(meta[k]&&meta[k].title)?meta[k].title.replace(/<[^>]+>/g,''):k; return '<option value="'+k+'">'+escapeHtml(t)+'</option>'; }).join('');
@@ -931,13 +1154,26 @@ function renderDailyTracks(){
   el.innerHTML = cache.tracks.map(function(t){
     var isToday = (t.track_date === todayStr());
     var badge = isToday ? ' <span class="nav-badge" style="background:var(--accent);color:#fff">Today</span>' : '';
-    return '<div class="card"><div class="row-item">'
+    var ageDays = trackAgeDays(t.track_date);
+    var ageLabel = ageDays===0 ? 'Today' : (ageDays===1 ? '1 day old' : ageDays+' days old');
+    var ageBadge = ageDays>=7 ? ' <span class="nav-badge" style="background:rgba(220,38,38,.15);color:var(--danger)">Expires soon</span>' : (ageDays>=5 ? ' <span class="nav-badge" style="background:rgba(217,119,6,.15);color:var(--warn)">'+ageLabel+'</span>' : '');
+    var details = '<div class="det-row"><span class="det-label">Artist:</span> '+escapeHtml(t.artist||'No artist')+'</div>'+
+      '<div class="det-row"><span class="det-label">Date:</span> '+fmtTrackDate(t.track_date)+'</div>'+
+      '<div class="det-row"><span class="det-label">Age:</span> '+ageLabel+ageBadge+'</div>';
+    return '<div class="card"><div class="row-item" onclick="toggleRow(this)">'
       + '<div class="row-avatar" style="background:linear-gradient(145deg,#0A84FF,#0051D5)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'
       + '<div class="row-main"><div class="row-title">'+escapeHtml(t.title||'Untitled')+badge+'</div>'
-      + '<div class="row-sub">'+escapeHtml(t.artist||'No artist')+' &middot; '+fmtTrackDate(t.track_date)+'</div></div>'
-      + '<div class="row-actions">'
-      + '<button class="minibtn" onclick="editTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Edit</button>'
-      + '<button class="minibtn danger" onclick="deleteTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</button>'
+      + '<div class="row-sub">'+escapeHtml(t.artist||'No artist')+' · '+fmtTrackDate(t.track_date)+'</div></div>'
+      + '<div class="row-actions-inline">'
+      + '<button class="minibtn" onclick="stopProp(event);editTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>'
+      + '<button class="minibtn danger" onclick="stopProp(event);deleteTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'
+      + '</div>'
+      + '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'
+      + '</div>'
+      + '<div class="row-details">'+details
+      + '<div class="row-expanded-actions">'
+      + '<button class="minibtn full" onclick="stopProp(event);editTrack(\''+t.id+'\')">Edit track</button>'
+      + '<button class="minibtn full danger" onclick="stopProp(event);deleteTrack(\''+t.id+'\')">Delete</button>'
       + '</div></div></div>';
   }).join('');
 }
@@ -945,6 +1181,44 @@ function renderDailyTracks(){
 function todayStr(){
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+/* Calculate how many days old a track is (based on track_date) */
+function trackAgeDays(trackDate){
+  if(!trackDate) return 0;
+  var d = new Date(trackDate + 'T00:00:00');
+  if(isNaN(d)) return 0;
+  var now = new Date();
+  now.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return Math.floor((now - d) / (1000 * 60 * 60 * 24));
+}
+
+/* Automatic weekly cleanup: delete tracks older than 7 days.
+   Tracks are retained for a full week (7 days) before deletion.
+   Called after loading tracks and after saving a track. */
+async function cleanupOldTracks(){
+  if(!cache.tracks || !cache.tracks.length) return;
+  var toDelete = [];
+  cache.tracks.forEach(function(t){
+    if(trackAgeDays(t.track_date) > 7){
+      toDelete.push(t);
+    }
+  });
+  if(!toDelete.length) return;
+  for(var i=0; i<toDelete.length; i++){
+    var t = toDelete[i];
+    // Delete file from storage
+    if(t.file_path){
+      try { await supabaseClient.storage.from(BUCKET).remove([t.file_path]); } catch(e){}
+    }
+    // Delete row
+    try { await supabaseClient.from('daily_tracks').delete().eq('id', t.id); } catch(e){}
+  }
+  console.log('Weekly cleanup: removed '+toDelete.length+' track(s) older than 7 days');
+  // Refresh cache after cleanup
+  cache.tracks = await getTracks();
+  renderNav();
 }
 
 function openTrackSheet(){

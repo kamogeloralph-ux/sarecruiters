@@ -251,20 +251,44 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .hub-row-edit,.hub-row-del{background:none;border:none;color:var(--text-2);font-size:16px;padding:4px 8px;display:flex;align-items:center;justify-content:center}
 .hub-row-edit:active,.hub-row-del:active{transform:scale(.92);color:var(--accent)}
 .hub-row-edit svg,.hub-row-del svg{width:16px;height:16px;display:block}
-.hub-contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.hub-contact-item{background:var(--card-2);border-radius:var(--radius-sm);padding:14px}
+.hub-contact-grid{display:flex;flex-direction:column;gap:0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.hub-contact-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-top:1px solid var(--border);position:relative}
+.hub-contact-item:first-child{border-top:none}
 .hub-contact-item.wide{grid-column:1/-1}
-.hub-contact-label{font-size:10.5px;color:var(--text-2);margin-bottom:4px}
-.hub-contact-value{font-size:13px;font-weight:600;word-break:break-word}
-.contact-link{color:var(--accent);font-weight:600;text-decoration:none}
+.hub-contact-label{font-size:11px;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;line-height:1.3}
+.hub-contact-value{font-size:14px;font-weight:600;word-break:break-word;overflow-wrap:break-word;line-height:1.45}
+.hub-contact-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--accent-soft);color:var(--accent)}
+.hub-contact-icon svg{width:17px;height:17px}
+.hub-contact-body{flex:1;min-width:0}
+.hub-contact-item.is-link{cursor:pointer}
+.hub-contact-item.is-link:active{background:var(--card-2)}
+.hub-contact-item.is-link .hub-contact-value{color:var(--accent)}
+.hub-contact-item .copy-hint{font-size:10px;color:var(--text-2);margin-top:3px}
+.contact-link{color:var(--accent);font-weight:600;text-decoration:none;word-break:break-word;overflow-wrap:break-word}
 .contact-link:active{opacity:.6}
 .hub-contact-preferred{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;padding:6px 12px;border-radius:var(--radius-pill);margin-top:2px}
 .hub-contact-preferred svg{width:12px;height:12px}
-.company-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.company-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .company-chip{font-size:11px;font-weight:600;color:var(--text);background:var(--card-3);border:1px solid var(--border);border-radius:var(--radius-pill);padding:5px 11px}
 .hub-admin-row{display:flex;gap:8px;margin-top:14px}
 .hub-add-btn{flex:1;background:var(--card-2);border:1px dashed var(--border-strong);border-radius:14px;padding:12px;font-size:12.5px;font-weight:600;color:var(--text-2)}
 .hub-add-btn:active{transform:scale(.97)}
+
+/* ===== BRANCH BLOCKS (clean labeled layout) ===== */
+.branch-block{margin-bottom:14px}
+.branch-block:last-child{margin-bottom:0}
+.branch-block-head{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;position:relative}
+.branch-block-head .hub-contact-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--accent-soft);color:var(--accent)}
+.branch-block-head .hub-contact-icon svg{width:17px;height:17px}
+.branch-block-head .hub-contact-body{flex:1;min-width:0}
+.branch-block-head .hub-contact-label{font-size:11px;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.branch-block-head .hub-contact-value{font-size:14px;font-weight:600;word-break:break-word;overflow-wrap:break-word}
+.branch-block-actions{display:flex;gap:6px;flex-shrink:0}
+.branch-block-actions .hub-row-edit,.branch-block-actions .hub-row-del{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--card-2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.branch-block-actions .hub-row-edit svg,.branch-block-actions .hub-row-del svg{width:14px;height:14px;stroke:var(--text-2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.branch-block-actions .hub-row-del{color:var(--danger)}
+.branch-block-actions .hub-row-del svg{stroke:var(--danger)}
+.branch-block .hub-contact-grid{border-radius:0 0 var(--radius) var(--radius);border-top:none}
 
 /* ===== RATE AGENCY ===== */
 .rate-section{padding:4px 0}
@@ -491,11 +515,14 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .vac-detail-icon{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
 .vac-detail-icon svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .vac-detail-label{font-size:11px;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
-.vac-detail-value{font-size:14px;color:var(--text);font-weight:600;margin-top:1px}
+.vac-detail-value{font-size:14px;color:var(--text);font-weight:600;margin-top:1px;word-break:break-word;overflow-wrap:break-word}
+.vac-detail-value a{color:var(--accent);text-decoration:none;font-weight:600;word-break:break-word;overflow-wrap:break-word}
+.vac-detail-value a:active{opacity:.6}
 .vac-desc-title{font-size:13px;font-weight:700;margin:14px 0 6px}
-.vac-desc{font-size:13px;color:var(--text-2);line-height:1.6;white-space:pre-wrap}
-.vac-actions{display:flex;gap:10px;margin-top:14px}
-.vac-apply{flex:1;background:var(--success);color:#fff;border:none;padding:14px;border-radius:13px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;text-decoration:none}
+.vac-desc{font-size:13px;color:var(--text-2);line-height:1.6;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word}
+.vac-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.vac-apply{flex:1;background:var(--success);color:#fff;border:none;padding:14px;border-radius:13px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;text-decoration:none;min-width:140px}
+.vac-apply-secondary{background:var(--accent)}
 .vac-apply:active{transform:scale(.98)}
 .vac-apply svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .vac-close-btn{background:var(--card-2);color:var(--text-2);border:1px solid var(--border);padding:14px 20px;border-radius:13px;font-size:14px;font-weight:600;cursor:pointer}
@@ -739,7 +766,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
       <div class="profile-name" id="profile-status-name">SA Recruiters</div>
       <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
       <div class="profile-sub" id="profile-status-sub">Not logged in</div>
-      <div class="app-version-badge" id="app-version-badge">v50</div>
+      <div class="app-version-badge" id="app-version-badge">v53</div>
       <button class="force-update-btn" onclick="forceUpdate()"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Check for updates &amp; refresh</button>
     </div>
 
@@ -1086,6 +1113,8 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="field"><label>Closing date</label><input id="gv-closing" placeholder="e.g. 15 Aug 2026"></div>
     <div class="field"><label>Notes (requirements, job description, etc.)</label><textarea id="gv-notes" placeholder="Optional details about the role, requirements, duties"></textarea></div>
     <div class="field"><label>Application link</label><input id="gv-link" type="url" placeholder="e.g. https://company.co.za/apply"></div>
+    <div class="field"><label>Contact email (if no link)</label><input id="gv-email" type="email" placeholder="e.g. hr@company.co.za"></div>
+    <div class="field"><label>Contact phone (if no link)</label><input id="gv-phone" type="tel" placeholder="e.g. 011 123 4567"></div>
     <button class="sheet-submit" data-ripple onclick="saveGeneralVacancy()" id="gv-submit-btn">Publish vacancy</button>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('general-vacancy-overlay')">Cancel</button>
   </div>
@@ -1129,9 +1158,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <h3>Support this directory</h3>
     <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">This app is free to use. If it's helped you, a small donation keeps it running.</p>
     <div class="hub-contact-grid">
-      <div class="hub-contact-item wide" data-ripple onclick="copyText('sarecruiters.directory@gmail.com', this)"><div class="hub-contact-label">Email</div><div class="hub-contact-value">sarecruiters.directory@gmail.com</div></div>
-      <div class="hub-contact-item wide"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div>
-      <div class="hub-contact-item wide" data-ripple onclick="copyText('2573389037', this)"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">2573389037 (SA Recruiters)</div></div>
+      <div class="hub-contact-item wide" data-ripple onclick="copyText('sarecruiters.directory@gmail.com', this)"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Email</div><div class="hub-contact-value">sarecruiters.directory@gmail.com</div></div></div>
+      <div class="hub-contact-item is-link"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div></div>
+      <div class="hub-contact-item wide" data-ripple onclick="copyText('2573389037', this)"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">2573389037 (SA Recruiters)</div></div></div>
     </div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('support-overlay')">Close</button>
   </div>
@@ -1628,9 +1657,30 @@ async function getVacancies() {
   return readLocal('vacancies');
 }
 async function upsertVacancy(v) {
+  // First attempt: send all fields
   try {
     var { error } = await supabaseClient.from('vacancies').upsert(v);
     if (!error) return true;
+    // If the error is about a missing column, retry with only the
+    // columns that are guaranteed to exist in the original schema.
+    if (error && error.message && error.message.indexOf('column') > -1) {
+      var safe = {
+        id: v.id,
+        agency_id: v.agency_id || 'general',
+        title: v.title || '',
+        company: v.company || '',
+        location: v.location || '',
+        closing_date: v.closing_date || '',
+        notes: v.notes || '',
+        link: v.link || '',
+        email: v.email || '',
+        phone: v.phone || ''
+      };
+      try {
+        var { error: err2 } = await supabaseClient.from('vacancies').upsert(safe);
+        if (!err2) return true;
+      } catch(e2){}
+    }
   } catch(e){}
   var arr = readLocal('vacancies');
   var i = arr.findIndex(function(x){ return x.id === v.id; });
@@ -1782,27 +1832,63 @@ function hubVacancies(a) {
 }
 
 function hubBranches(a) {
+  var ICON_PIN   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  var ICON_PHONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+  var ICON_MAIL  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+  var ICON_BUILD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/></svg>';
+
   var list = branchesFor(a.id);
-  var html = '<div class="hub-list">';
+  var html = '';
   if (!list.length) {
     html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No branches listed yet.</div>';
   } else {
     list.forEach(function(b) {
-      var subBits = [];
-      if (b.location) subBits.push(mapsLink(b.location));
-      if (b.phone) subBits.push(telLink(b.phone));
-      if (b.email) subBits.push(mailLink(b.email));
-      html += '<div class="hub-row">' +
-        '<div class="hub-row-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>' +
-        '<div style="flex:1;min-width:0;"><div class="hub-row-title">' + escapeHtml(b.name || 'Branch') + '</div><div class="hub-row-sub">' + (subBits.length ? subBits.join(' &middot; ') : 'No contact details') + '</div></div>' +
-        (isAdmin ? '<div class="hub-row-actions">' +
+      /* Branch header — name with building icon */
+      html += '<div class="branch-block">';
+      html += '<div class="branch-block-head">' +
+        '<div class="hub-contact-icon">' + ICON_BUILD + '</div>' +
+        '<div class="hub-contact-body">' +
+          '<div class="hub-contact-label">Branch</div>' +
+          '<div class="hub-contact-value">' + escapeHtml(b.name || 'Branch') + '</div>' +
+        '</div>' +
+        (isAdmin ? '<div class="branch-block-actions">' +
           '<button class="hub-row-edit" data-ripple title="Edit branch" onclick="openBranchSheet(\'' + a.id + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' +
           '<button class="hub-row-del" data-ripple title="Delete branch" onclick="deleteBranch(\'' + b.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
         '</div>' : '') +
       '</div>';
+      /* Contact detail rows — clean labeled layout */
+      html += '<div class="hub-contact-grid">';
+      if (b.location) {
+        html += '<div class="hub-contact-item is-link">' +
+          '<div class="hub-contact-icon">' + ICON_PIN + '</div>' +
+          '<div class="hub-contact-body">' +
+            '<div class="hub-contact-label">Address</div>' +
+            '<div class="hub-contact-value">' + mapsLink(b.location) + '</div>' +
+          '</div>' +
+        '</div>';
+      }
+      if (b.phone) {
+        html += '<div class="hub-contact-item is-link">' +
+          '<div class="hub-contact-icon">' + ICON_PHONE + '</div>' +
+          '<div class="hub-contact-body">' +
+            '<div class="hub-contact-label">Phone</div>' +
+            '<div class="hub-contact-value">' + telLink(b.phone) + '</div>' +
+          '</div>' +
+        '</div>';
+      }
+      if (b.email) {
+        html += '<div class="hub-contact-item is-link">' +
+          '<div class="hub-contact-icon">' + ICON_MAIL + '</div>' +
+          '<div class="hub-contact-body">' +
+            '<div class="hub-contact-label">Email</div>' +
+            '<div class="hub-contact-value">' + mailLink(b.email) + '</div>' +
+          '</div>' +
+        '</div>';
+      }
+      html += '</div>'; // close hub-contact-grid
+      html += '</div>'; // close branch-block
     });
   }
-  html += '</div>';
   if (isAdmin) {
     html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openBranchSheet(\'' + a.id + '\')">+ Add branch</button></div>';
   }
@@ -1810,34 +1896,101 @@ function hubBranches(a) {
 }
 
 function hubContact(a) {
+  var ICON_PHONE  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+  var ICON_EMAIL  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+  var ICON_WEB    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>';
+  var ICON_PIN    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  var ICON_BUILD  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/></svg>';
+  var ICON_BRIEF  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+  var ICON_SEND   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+
   var html = '<div class="hub-contact-grid">';
-  // Preferred contact method (CV preference) — shown prominently
+  // Preferred contact method (CV preference) — shown as first row with badge
   var pref = (a.cvpref || '').trim();
-  html += '<div class="hub-contact-item wide" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-    '<div><div class="hub-contact-label">Preferred contact method</div>' +
-    '<div class="hub-contact-value">' + (pref ? escapeHtml(pref) : 'Not specified') + '</div></div>' +
-    (pref ? '<span class="hub-contact-preferred">' + prefIcon(pref) + escapeHtml(pref) + '</span>' : '') +
-  '</div>';
-  html += '<div class="hub-contact-item"><div class="hub-contact-label">Contact person / phone</div><div class="hub-contact-value">' + (a.contact ? telLink(a.contact) : '\u2014') + '</div></div>';
-  html += '<div class="hub-contact-item"><div class="hub-contact-label">Email</div><div class="hub-contact-value">' + (a.email ? mailLink(a.email) : '\u2014') + '</div></div>';
-  html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Website</div><div class="hub-contact-value">' + (a.website ? webLink(a.website) : '\u2014') + '</div></div>';
-  html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Head office location</div><div class="hub-contact-value">' + (a.location ? mapsLink(a.location) : '\u2014') + '</div></div>';
+  if (pref) {
+    html += '<div class="hub-contact-item wide">' +
+      '<div class="hub-contact-icon">' + (prefIcon(pref) || ICON_SEND) + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Preferred contact method</div>' +
+        '<div class="hub-contact-value"><span class="hub-contact-preferred">' + prefIcon(pref) + escapeHtml(pref) + '</span></div>' +
+      '</div>' +
+    '</div>';
+  }
+  // Contact person / phone — clickable tel: link
+  if (a.contact) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + ICON_PHONE + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Contact person / phone</div>' +
+        '<div class="hub-contact-value">' + telLink(a.contact) + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  // Email — clickable mailto: link
+  if (a.email) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + ICON_EMAIL + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Email</div>' +
+        '<div class="hub-contact-value">' + mailLink(a.email) + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  // Website — clickable link
+  if (a.website) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + ICON_WEB + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Website</div>' +
+        '<div class="hub-contact-value">' + webLink(a.website) + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  // Head office location — clickable maps link
+  if (a.location) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + ICON_PIN + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Head office location</div>' +
+        '<div class="hub-contact-value">' + mapsLink(a.location) + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  // Head office address — clickable maps link (if different from location)
   if (a.address && a.address !== a.location) {
-    html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Head office address</div><div class="hub-contact-value">' + mapsLink(a.address) + '</div></div>';
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + ICON_BUILD + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Head office address</div>' +
+        '<div class="hub-contact-value">' + mapsLink(a.address) + '</div>' +
+      '</div>' +
+    '</div>';
   }
   // Companies they recruit for — as chips
   var companyList = (a.companies || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
   if (companyList.length) {
-    html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Companies they recruit for</div><div class="company-chips">' +
-      companyList.map(function(c){ return '<span class="company-chip">' + escapeHtml(c) + '</span>'; }).join('') +
-    '</div></div>';
+    html += '<div class="hub-contact-item wide">' +
+      '<div class="hub-contact-icon">' + ICON_BRIEF + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Companies they recruit for</div>' +
+        '<div class="company-chips">' +
+          companyList.map(function(c){ return '<span class="company-chip">' + escapeHtml(c) + '</span>'; }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>';
   }
-  // Trades / Industries they recruit for — as chips
+  // Trades / Industries — as chips
   var tradeList = (a.trades || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
   if (tradeList.length) {
-    html += '<div class="hub-contact-item wide"><div class="hub-contact-label">Trades / Industries</div><div class="company-chips">' +
-      tradeList.map(function(c){ return '<span class="company-chip">' + escapeHtml(c) + '</span>'; }).join('') +
-    '</div></div>';
+    html += '<div class="hub-contact-item wide">' +
+      '<div class="hub-contact-icon">' + ICON_BUILD + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Trades / Industries</div>' +
+        '<div class="company-chips">' +
+          tradeList.map(function(c){ return '<span class="company-chip">' + escapeHtml(c) + '</span>'; }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>';
   }
   html += '</div>';
   // Always show a "report" link so users can flag wrong info
@@ -2480,6 +2633,9 @@ function vacancyCard(v, agency) {
   if (v.contract_type) chips += '<span class="vac-chip">' + VAC_ICONS.doc + escapeHtml(v.contract_type) + '</span>';
   if (v.salary) chips += '<span class="vac-chip">' + VAC_ICONS.money + escapeHtml(v.salary) + '</span>';
   if (v.closing_date) chips += '<span class="vac-chip">' + VAC_ICONS.clock + 'Closes ' + escapeHtml(v.closing_date) + '</span>';
+  /* Show email/phone chips in the top section when there's no apply link */
+  if (!v.link && v.email) chips += '<span class="vac-chip">' + VAC_ICONS.mail + escapeHtml(v.email) + '</span>';
+  if (!v.link && v.phone) chips += '<span class="vac-chip">' + VAC_ICONS.phone + escapeHtml(v.phone) + '</span>';
 
   /* Detail rows (inside expandable section) */
   var detail = '';
@@ -2491,6 +2647,9 @@ function vacancyCard(v, agency) {
   if (v.start_date) detail += vacDetRow(VAC_ICONS.calendar, 'Start Date', escapeHtml(v.start_date));
   if (v.closing_date) detail += vacDetRow(VAC_ICONS.calendar, 'Closing Date', escapeHtml(v.closing_date));
   if (orgName) detail += vacDetRow(VAC_ICONS.building, isGeneral ? 'Company' : 'Agency', escapeHtml(orgName));
+  /* Email and phone detail rows with clickable links */
+  if (v.email) detail += vacDetRow(VAC_ICONS.mail, 'Contact Email', mailLink(v.email));
+  if (v.phone) detail += vacDetRow(VAC_ICONS.phone, 'Contact Phone', telLink(v.phone));
 
   var desc = v.notes ? '<div class="vac-desc-title">Job description</div><div class="vac-desc">' + escapeHtml(v.notes) + '</div>' : '';
 
@@ -2498,6 +2657,14 @@ function vacancyCard(v, agency) {
   var actions = '<div class="vac-actions">';
   if (v.link) {
     actions += '<a class="vac-apply" href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Apply here</a>';
+  } else if (v.email || v.phone) {
+    /* No link but has email/phone — show contact buttons */
+    if (v.email) {
+      actions += '<a class="vac-apply" href="mailto:' + escapeHtml(v.email) + '" onclick="event.stopPropagation()">' + VAC_ICONS.mail + 'Email to apply</a>';
+    }
+    if (v.phone) {
+      actions += '<a class="vac-apply' + (v.email ? ' vac-apply-secondary' : '') + '" href="tel:' + escapeHtml(v.phone.replace(/\s/g,'')) + '" onclick="event.stopPropagation()">' + VAC_ICONS.phone + 'Call to apply</a>';
+    }
   } else if (!isGeneral && agency && (agency.contact || agency.email || agency.website)) {
     var cta = agency.website ? escapeHtml(agency.website) : '#';
     actions += '<a class="vac-apply" href="' + cta + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Contact agency</a>';
@@ -2555,6 +2722,8 @@ var VAC_ICONS = {
   clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   calendar:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   building:'<svg viewBox="0 0 24 24"><path d="M3 22h18M4 21h16M3.5 10L12 4.5 20.5 10M5 21V11M9 21V11M15 21V11M19 21V11M2 10h20"/></svg>',
+  mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  phone:'<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
   apply:'<svg viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></svg>',
   edit:'<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
@@ -2785,6 +2954,8 @@ function openGeneralVacancySheet() {
   document.getElementById('gv-closing').value = '';
   document.getElementById('gv-notes').value = '';
   document.getElementById('gv-link').value = '';
+  document.getElementById('gv-email').value = '';
+  document.getElementById('gv-phone').value = '';
   document.getElementById('general-vacancy-overlay').classList.add('open');
 }
 function openEditGeneralVacancySheet(id) {
@@ -2805,6 +2976,8 @@ function openEditGeneralVacancySheet(id) {
   document.getElementById('gv-closing').value = v.closing_date || '';
   document.getElementById('gv-notes').value = v.notes || '';
   document.getElementById('gv-link').value = v.link || '';
+  document.getElementById('gv-email').value = v.email || '';
+  document.getElementById('gv-phone').value = v.phone || '';
   document.getElementById('general-vacancy-overlay').classList.add('open');
 }
 async function saveGeneralVacancy() {
@@ -2823,6 +2996,8 @@ async function saveGeneralVacancy() {
     closing_date: document.getElementById('gv-closing').value.trim(),
     notes: document.getElementById('gv-notes').value.trim(),
     link: document.getElementById('gv-link').value.trim(),
+    email: document.getElementById('gv-email').value.trim(),
+    phone: document.getElementById('gv-phone').value.trim(),
     agency_id: 'general'
   };
   if (editingGeneralVacancyId) {
