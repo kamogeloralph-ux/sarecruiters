@@ -14,3 +14,9 @@ This repo is connected to Netlify for continuous deployment — every push to `m
 
 ## Backend
 Data (agencies, admin auth) is powered by Supabase — see the Supabase project dashboard for schema and RLS policies.
+
+## Talent Pool
+Job seekers can list themselves (R20/year, paid by manual EFT and approved by an admin) so employers can browse and contact them directly — see `CREATE_POOL_CANDIDATES_TABLE.sql`. Registrations land as `pending` in Admin → Talent Pool; approving sets `status = active` and `paid_until` to one year out, which is what makes a candidate visible in the public app. Before launch, replace the placeholder banking details in the registration sheet in `index.html` (search for "Banking details") with real ones.
+
+## Advanced Vacancy Filters
+Vacancies now carry `remote` (On-site/Remote/Hybrid) and `experience_level` fields — run `ADD_VACANCY_FILTER_FIELDS.sql` to add the columns. The All Vacancies screen filters on these plus an Industry dropdown (built from agencies' existing Trades field, no schema change needed). Salary range filtering was intentionally left out since salary is still free text.

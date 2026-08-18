@@ -10,13 +10,13 @@
 /* ===== Theme tokens ===== */
 :root{
   --bg:#f4f5f7; --card:#ffffff; --card-2:#f0f1f4; --border:#e3e5ea; --border-strong:#cdd0d7;
-  --text:#1c1e22; --text-2:#6b7280; --accent:#2563eb; --accent-soft:rgba(37,99,235,.1);
+  --text:#1c1e22; --text-2:#6b7280; --accent:#5B4FE8; --accent-soft:rgba(91,79,232,.12);
   --danger:#dc2626; --ok:#16a34a; --warn:#d97706; --radius:14px;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
 }
 [data-theme="dark"]{
   --bg:#0e1116; --card:#171b22; --card-2:#1e232c; --border:#262b35; --border-strong:#333a47;
-  --text:#e8eaed; --text-2:#9aa3b2; --accent:#5b8cff; --accent-soft:rgba(91,140,255,.14);
+  --text:#e8eaed; --text-2:#9aa3b2; --accent:#8B7FFF; --accent-soft:rgba(139,127,255,.16);
   --danger:#f87171; --ok:#34d399; --warn:#fbbf24; --shadow:0 1px 3px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -309,6 +309,19 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div id="sub-list"></div>
       </div>
 
+      <!-- TALENT POOL -->
+      <div class="section" id="sec-poolcandidates">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Talent Pool</h2></div>
+        <div class="muted" style="margin-bottom:14px">New registrations land here as <strong>Pending</strong>. Check the EFT reference against your bank statement, then Approve to make the candidate visible in the public Talent Pool for one year (paid-until date is set automatically, editable).</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="minibtn" id="pool-tab-pending" onclick="switchPoolTab('pending')">Pending <span class="nav-badge" id="pool-badge-pending"></span></button>
+          <button class="minibtn" id="pool-tab-active" onclick="switchPoolTab('active')">Active <span class="nav-badge" id="pool-badge-active"></span></button>
+          <button class="minibtn" id="pool-tab-other" onclick="switchPoolTab('other')">Expired / Rejected <span class="nav-badge" id="pool-badge-other"></span></button>
+        </div>
+        <input class="search" id="pool-admin-search" placeholder="Search name, sector, location..." oninput="renderPoolCandidates()">
+        <div id="pool-admin-list"></div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="section" id="sec-settings">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Settings</h2></div>
@@ -388,7 +401,9 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Job title *</label><input id="v-title" placeholder="e.g. Forklift Driver"></div>
     <div class="field"><label>Company</label><input id="v-company" placeholder="e.g. ABC Logistics"></div>
     <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Durban, KZN"></div>
+    <div class="field"><label>Work arrangement</label><select id="v-remote"><option value="">— Not specified —</option><option value="On-site">On-site</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option></select></div>
     <div class="field"><label>Employment type</label><input id="v-etype" placeholder="Full-time / Part-time / Contract"></div>
+    <div class="field"><label>Experience level</label><select id="v-exp"><option value="">— Not specified —</option><option value="Entry-level">Entry-level</option><option value="Mid-level">Mid-level</option><option value="Senior">Senior</option><option value="Executive">Executive</option></select></div>
     <div class="field"><label>Contract type</label><input id="v-contract" placeholder="Permanent / Fixed-term / Casual"></div>
     <div class="field"><label>Salary</label><input id="v-salary" placeholder="e.g. R18,000 pm or TBC"></div>
     <div class="field"><label>Hours</label><input id="v-hours" placeholder="e.g. 45 hours/week"></div>
@@ -402,6 +417,28 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('vacancy-overlay')">Cancel</button>
       <button class="btn" onclick="saveVacancy()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TALENT POOL CANDIDATE SHEET ============ -->
+<div class="scrim" id="pool-overlay">
+  <div class="sheet">
+    <h3 id="pool-sheet-title">Candidate</h3>
+    <div class="field"><label>Full name *</label><input id="pc-name"></div>
+    <div class="field"><label>Phone</label><input id="pc-phone" type="tel"></div>
+    <div class="field"><label>Email</label><input id="pc-email" type="email"></div>
+    <div class="field"><label>Sector / industry</label><input id="pc-sector"></div>
+    <div class="field"><label>Position</label><input id="pc-position"></div>
+    <div class="field"><label>Location</label><input id="pc-location"></div>
+    <div class="field"><label>CV link</label><input id="pc-cv" type="url"></div>
+    <div class="field"><label>EFT payment reference</label><input id="pc-payref"></div>
+    <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
+    <div class="field"><label>Paid until</label><input id="pc-paiduntil" type="date"></div>
+    <div class="field"><label>Admin notes (internal only)</label><textarea id="pc-notes" placeholder="e.g. EFT confirmed 12 Aug, matches ref"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('pool-overlay')">Cancel</button>
+      <button class="btn" onclick="savePoolCandidate()">Save</button>
     </div>
   </div>
 </div>
@@ -458,7 +495,7 @@ var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KE
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], reports: [], suggestions: [], tracks: [] };
+var cache = { agencies: [], branches: [], vacancies: [], reports: [], suggestions: [], tracks: [], poolCandidates: [] };
 var editing = { agency: null, branch: null, vacancy: null, article: null, articleSection: null };
 var pendingPhoto = null;
 var subTab = 'reports';
@@ -517,7 +554,7 @@ async function doLogout(){
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
-  cache = { agencies:[], branches:[], vacancies:[], reports:[], suggestions:[] };
+  cache = { agencies:[], branches:[], vacancies:[], reports:[], suggestions:[], tracks:[], poolCandidates:[] };
 }
 async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
@@ -560,6 +597,9 @@ async function getSuggestions(){
   try { var { data, error } = await supabaseClient.from('suggestions').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
+async function getPoolCandidates(){ var { data, error } = await supabaseClient.from('pool_candidates').select('*').order('created_at', { ascending: false }); if(error){ console.error('pool load', error); return []; } return data || []; }
+async function upsertPoolCandidate(p){ var { error } = await supabaseClient.from('pool_candidates').upsert(p); if(error){ console.error('pool save', error); alert('Could not save: '+error.message); } }
+async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); }
 async function getTracks(){
   try { var { data, error } = await supabaseClient.from('daily_tracks').select('*').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
@@ -605,6 +645,7 @@ async function loadAll(){
   cache.reports = await getReports();
   cache.suggestions = await getSuggestions();
   cache.tracks = await getTracks();
+  cache.poolCandidates = await getPoolCandidates();
   var pv = await getAppSetting('public_vacancy_posting','false');
   publicVacancyPostingOpen = (pv===true||pv==='true');
   updatePostingUI();
@@ -629,6 +670,7 @@ var NAV = [
   { id:'branches', label:'Branches', tile:'hc-tile-green', sub:'Agency branch locations', icon:'<path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
   { id:'vacancies', label:'Vacancies', tile:'hc-tile-amber', sub:'Job postings & vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
   { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
+  { id:'poolcandidates', label:'Talent Pool', tile:'hc-tile-blue', sub:'Job seeker registrations & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
   { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
   { id:'dailytrack', label:'Daily Track', tile:'hc-tile-pink', sub:'Track of the Day music', icon:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
   { id:'content', label:'Content', tile:'hc-tile-teal', sub:'FAQ, guides & articles', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' }
@@ -641,6 +683,7 @@ function renderNav(){
     if(n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
     if(n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
     if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; badge = '<span class="nav-badge">'+c+'</span>'; }
+    if(n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
     return '<div class="nav-item" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
@@ -651,6 +694,7 @@ function navBadge(id){
   if(id==='vacancies') return cache.vacancies.length;
   if(id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; return c; }
   if(id==='dailytrack') return cache.tracks.length;
+  if(id==='poolcandidates'){ return cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; }
   return null;
 }
 function goSection(id){
@@ -664,6 +708,7 @@ function goSection(id){
   if(id==='content') renderContent();
   if(id==='dailytrack') renderDailyTracks();
   if(id==='settings') updatePostingUI();
+  if(id==='poolcandidates') renderPoolCandidates();
   window.scrollTo(0,0);
 }
 function goHome(){
@@ -673,13 +718,15 @@ function goHome(){
 // ===== Dashboard =====
 function renderDashboard(){
   var openReports = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length;
+  var poolPending = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length;
   var stats = [
     { v:cache.agencies.length, l:'Agencies' },
     { v:cache.branches.length, l:'Branches' },
     { v:cache.vacancies.length, l:'Vacancies' },
     { v:cache.reports.length, l:'Reports ('+openReports+' open)' },
     { v:cache.suggestions.length, l:'Suggestions' },
-    { v:cache.tracks.length, l:'Daily Tracks' }
+    { v:cache.tracks.length, l:'Daily Tracks' },
+    { v:cache.poolCandidates.length, l:'Talent Pool ('+poolPending+' pending)' }
   ];
   document.getElementById('stats-grid').innerHTML = stats.map(function(s){
     return '<div class="stat"><div class="v">'+s.v+'</div><div class="l">'+s.l+'</div></div>';
@@ -689,7 +736,7 @@ function renderDashboard(){
   if(homeEl){
     // Group: Manage
     var manageItems = ['agencies','branches','vacancies'];
-    var reviewItems = ['submissions'];
+    var reviewItems = ['submissions','poolcandidates'];
     var mediaItems = ['dailytrack','content'];
     var configItems = ['settings'];
     var html = '';
@@ -918,7 +965,9 @@ function renderVacancies(){
     if(v._ag && v._ag.name) details += '<div class="det-row"><span class="det-label">Agency:</span> '+escapeHtml(v._ag.name)+'</div>';
     if(v.company) details += '<div class="det-row"><span class="det-label">Company:</span> '+escapeHtml(v.company)+'</div>';
     if(v.location) details += '<div class="det-row"><span class="det-label">Location:</span> '+escapeHtml(v.location)+'</div>';
+    if(v.remote) details += '<div class="det-row"><span class="det-label">Work arrangement:</span> '+escapeHtml(v.remote)+'</div>';
     if(v.employment_type) details += '<div class="det-row"><span class="det-label">Type:</span> '+escapeHtml(v.employment_type)+'</div>';
+    if(v.experience_level) details += '<div class="det-row"><span class="det-label">Experience:</span> '+escapeHtml(v.experience_level)+'</div>';
     if(v.contract_type) details += '<div class="det-row"><span class="det-label">Contract:</span> '+escapeHtml(v.contract_type)+'</div>';
     if(v.salary) details += '<div class="det-row"><span class="det-label">Salary:</span> '+escapeHtml(v.salary)+'</div>';
     if(v.hours) details += '<div class="det-row"><span class="det-label">Hours:</span> '+escapeHtml(v.hours)+'</div>';
@@ -955,7 +1004,9 @@ function openVacancySheet(id){
   document.getElementById('v-title').value = v ? (v.title||'') : '';
   document.getElementById('v-company').value = v ? (v.company||'') : '';
   document.getElementById('v-location').value = v ? (v.location||'') : '';
+  document.getElementById('v-remote').value = v ? (v.remote||'') : '';
   document.getElementById('v-etype').value = v ? (v.employment_type||'') : '';
+  document.getElementById('v-exp').value = v ? (v.experience_level||'') : '';
   document.getElementById('v-contract').value = v ? (v.contract_type||'') : '';
   document.getElementById('v-salary').value = v ? (v.salary||'') : '';
   document.getElementById('v-hours').value = v ? (v.hours||'') : '';
@@ -976,7 +1027,9 @@ async function saveVacancy(){
     id:id, agency_id:document.getElementById('v-agency').value, title:title,
     company:document.getElementById('v-company').value.trim(),
     location:document.getElementById('v-location').value.trim(),
+    remote:document.getElementById('v-remote').value,
     employment_type:document.getElementById('v-etype').value.trim(),
+    experience_level:document.getElementById('v-exp').value,
     contract_type:document.getElementById('v-contract').value.trim(),
     salary:document.getElementById('v-salary').value.trim(),
     hours:document.getElementById('v-hours').value.trim(),
@@ -999,6 +1052,133 @@ async function deleteVacancy(id){
   await removeVacancy(id);
   showToast('Vacancy deleted');
   await loadAll(); renderNav(); renderVacancies(); renderDashboard();
+}
+
+// ===== Talent Pool =====
+var poolTab = 'pending';
+var editingPool = null;
+function poolCandidateById(id){ return cache.poolCandidates.find(function(p){return p.id===id;}); }
+function switchPoolTab(tab){
+  poolTab = tab;
+  ['pending','active','other'].forEach(function(t){ document.getElementById('pool-tab-'+t).classList.toggle('active', t===tab); });
+  renderPoolCandidates();
+}
+function renderPoolCandidates(){
+  var pendingCount = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length;
+  var activeCount = cache.poolCandidates.filter(function(p){return p.status==='active';}).length;
+  var otherCount = cache.poolCandidates.filter(function(p){return p.status==='expired'||p.status==='rejected';}).length;
+  document.getElementById('pool-badge-pending').textContent = pendingCount;
+  document.getElementById('pool-badge-active').textContent = activeCount;
+  document.getElementById('pool-badge-other').textContent = otherCount;
+  var q = (document.getElementById('pool-admin-search').value||'').trim().toLowerCase();
+  var list = cache.poolCandidates.slice();
+  if(poolTab==='pending') list = list.filter(function(p){return (p.status||'pending')==='pending';});
+  else if(poolTab==='active') list = list.filter(function(p){return p.status==='active';});
+  else list = list.filter(function(p){return p.status==='expired'||p.status==='rejected';});
+  if(q){ list = list.filter(function(p){ var hay=((p.full_name||'')+' '+(p.sector||'')+' '+(p.position||'')+' '+(p.location||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  var el = document.getElementById('pool-admin-list');
+  if(!list.length){ el.innerHTML = emptyState('Nothing here','No candidates in this view.'); return; }
+  el.innerHTML = list.map(function(p){
+    var sub = [p.position, p.sector, p.location].filter(Boolean).join(' · ');
+    var details = '';
+    if(p.contact_phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(p.contact_phone)+'</div>';
+    if(p.contact_email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(p.contact_email)+'</div>';
+    if(p.cv_link) details += '<div class="det-row"><span class="det-label">CV:</span> '+escapeHtml(p.cv_link)+'</div>';
+    if(p.payment_ref) details += '<div class="det-row"><span class="det-label">EFT ref:</span> '+escapeHtml(p.payment_ref)+'</div>';
+    if(p.paid_until) details += '<div class="det-row"><span class="det-label">Paid until:</span> '+fmtDate(p.paid_until)+'</div>';
+    if(p.admin_notes) details += '<div class="det-row"><span class="det-label">Notes:</span> '+escapeHtml(p.admin_notes)+'</div>';
+    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    var quickActions = '';
+    if((p.status||'pending')==='pending'){
+      quickActions = '<button class="minibtn ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Approve</button>' +
+        '<button class="minibtn danger" onclick="stopProp(event);rejectPoolCandidate(\''+p.id+'\')">Reject</button>';
+    } else if(p.status==='active'){
+      quickActions = '<button class="minibtn" onclick="stopProp(event);expirePoolCandidate(\''+p.id+'\')">Mark expired</button>';
+    }
+    return '<div class="row-item" onclick="toggleRow(this)">'+
+      '<div class="row-avatar" style="background:linear-gradient(145deg,#5E5CE6,#3D3AB8)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg></div>'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(p.full_name||'Candidate')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div></div>'+
+      '<div class="row-actions-inline">'+quickActions+
+        '<button class="minibtn" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')">Edit</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
+  }).join('');
+}
+function openPoolSheet(id){
+  editingPool = id || null;
+  var p = id ? poolCandidateById(id) : null;
+  document.getElementById('pool-sheet-title').textContent = id ? 'Edit candidate' : 'Add candidate';
+  document.getElementById('pc-name').value = p ? (p.full_name||'') : '';
+  document.getElementById('pc-phone').value = p ? (p.contact_phone||'') : '';
+  document.getElementById('pc-email').value = p ? (p.contact_email||'') : '';
+  document.getElementById('pc-sector').value = p ? (p.sector||'') : '';
+  document.getElementById('pc-position').value = p ? (p.position||'') : '';
+  document.getElementById('pc-location').value = p ? (p.location||'') : '';
+  document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
+  document.getElementById('pc-payref').value = p ? (p.payment_ref||'') : '';
+  document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
+  document.getElementById('pc-paiduntil').value = p && p.paid_until ? String(p.paid_until).slice(0,10) : '';
+  document.getElementById('pc-notes').value = p ? (p.admin_notes||'') : '';
+  openSheet('pool-overlay');
+}
+async function savePoolCandidate(){
+  var name = document.getElementById('pc-name').value.trim();
+  if(!name){ alert('Add the candidate\'s full name.'); return; }
+  var id = editingPool || newId();
+  var paidUntil = document.getElementById('pc-paiduntil').value;
+  await upsertPoolCandidate({
+    id:id,
+    full_name:name,
+    contact_phone:document.getElementById('pc-phone').value.trim(),
+    contact_email:document.getElementById('pc-email').value.trim(),
+    sector:document.getElementById('pc-sector').value.trim(),
+    position:document.getElementById('pc-position').value.trim(),
+    location:document.getElementById('pc-location').value.trim(),
+    cv_link:document.getElementById('pc-cv').value.trim(),
+    payment_ref:document.getElementById('pc-payref').value.trim(),
+    status:document.getElementById('pc-status').value,
+    paid_until: paidUntil ? new Date(paidUntil).toISOString() : null,
+    admin_notes:document.getElementById('pc-notes').value.trim()
+  });
+  closeSheet('pool-overlay');
+  showToast(editingPool ? 'Candidate updated' : 'Candidate added');
+  editingPool = null;
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function approvePoolCandidate(id){
+  var p = poolCandidateById(id);
+  if(!p) return;
+  var oneYear = new Date(); oneYear.setFullYear(oneYear.getFullYear()+1);
+  await upsertPoolCandidate({ id:id, status:'active', paid_until: oneYear.toISOString() });
+  showToast('Approved — now live in the public Talent Pool');
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function rejectPoolCandidate(id){
+  if(!confirm('Reject this registration? It will not appear publicly.')) return;
+  await upsertPoolCandidate({ id:id, status:'rejected' });
+  showToast('Registration rejected');
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function expirePoolCandidate(id){
+  if(!confirm('Mark this candidate as expired? They will be removed from the public Talent Pool.')) return;
+  await upsertPoolCandidate({ id:id, status:'expired' });
+  showToast('Marked expired');
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function deletePoolCandidate(id){
+  var p = poolCandidateById(id);
+  if(!confirm('Delete "'+(p?p.full_name:'this candidate')+'" permanently?')) return;
+  await removePoolCandidate(id);
+  showToast('Candidate deleted');
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 
 // ===== Submissions =====

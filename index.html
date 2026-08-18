@@ -73,17 +73,17 @@
   --border:rgba(255,255,255,.08);
   --border-strong:rgba(255,255,255,.14);
   --separator:rgba(255,255,255,.06);
-  --accent:#0A84FF;
-  --accent-soft:rgba(10,132,255,.16);
+  --accent:#6C5DFF;
+  --accent-soft:rgba(108,93,255,.20);
   --success:#30D158;
   --danger:#FF453A;
-  --badge-bg:rgba(10,132,255,.18);
-  --badge-text:#0A84FF;
+  --badge-bg:rgba(108,93,255,.20);
+  --badge-text:#8B7FFF;
   --radius:22px;
   --radius-sm:14px;
   --radius-pill:999px;
-  --shadow-sm:0 2px 12px rgba(0,0,0,.3);
-  --shadow-lg:0 20px 50px -20px rgba(0,0,0,.85);
+  --shadow-sm:0 2px 14px rgba(0,0,0,.32);
+  --shadow-lg:0 22px 54px -20px rgba(0,0,0,.85);
   --ease:cubic-bezier(.22,1,.36,1);
   --sheet-bg:#1C1C1E;
 }
@@ -100,14 +100,14 @@
   --border:rgba(0,0,0,.08);
   --border-strong:rgba(0,0,0,.14);
   --separator:rgba(0,0,0,.06);
-  --accent:#007AFF;
-  --accent-soft:rgba(0,122,255,.12);
+  --accent:#5B4FE8;
+  --accent-soft:rgba(91,79,232,.14);
   --success:#34C759;
   --danger:#FF3B30;
-  --badge-bg:rgba(0,122,255,.12);
-  --badge-text:#007AFF;
-  --shadow-sm:0 2px 12px rgba(0,0,0,.06);
-  --shadow-lg:0 20px 50px -24px rgba(0,0,0,.18);
+  --badge-bg:rgba(91,79,232,.14);
+  --badge-text:#5B4FE8;
+  --shadow-sm:0 2px 14px rgba(20,10,60,.07);
+  --shadow-lg:0 22px 54px -24px rgba(20,10,60,.18);
   --sheet-bg:#FFFFFF;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
@@ -151,9 +151,10 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .search-mini{margin:12px 0 0}
 .search-mini .search-inner{height:40px;border-radius:14px;padding:0 14px;gap:8px}
 .search-mini .search-inner svg{width:16px;height:16px}
+.vac-filter-select{flex:1;min-width:0;height:38px;border-radius:12px;border:1px solid var(--border-strong);background:var(--card);color:var(--text);padding:0 10px;font-size:12.5px;font-weight:500}
 .search-mini input{font-size:13.5px}
 
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0 22px}
 .stat-card{background:var(--card);border-radius:20px;padding:18px 12px;text-align:center;border:1px solid var(--border);cursor:pointer;transition:border-color .2s,transform .15s,box-shadow .2s;position:relative;overflow:hidden}
 .stat-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px -8px rgba(0,0,0,.25)}
 .stat-card:active{transform:translateY(0)}
@@ -175,7 +176,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .branch-row .br-edit svg,.branch-row .br-del svg{width:14px;height:14px}
 .branch-row .br-del{color:#c0392b}
 
-.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:20px 0 14px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:24px 0 16px}
 .section-title{font-size:18px;font-weight:700;letter-spacing:-0.02em}
 
 .avatar{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:var(--text);flex-shrink:0;letter-spacing:-0.01em;background:var(--card-2);border:1px solid var(--border);overflow:hidden}
@@ -220,7 +221,8 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .btn-primary:active{transform:scale(.94)}
 .btn-ghost-danger{background:rgba(255,59,48,.10);color:var(--danger);border:none;height:32px;padding:0 14px;border-radius:10px;font-weight:600;font-size:11.5px}
 
-.hub-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.hub-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow-sm);transition:box-shadow .2s,border-color .2s}
+.hub-card:hover{border-color:var(--accent-soft)}
 .hub-summary{display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;background:none;border:none;text-align:left}
 .hub-summary-body{flex:1;min-width:0}
 .hub-summary-desc{font-size:11.5px;color:var(--text-2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -475,7 +477,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .contact-card-head .mi-icon svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ===== NEW VACANCY CARDS (iOS-style, tap to expand) ===== */
-.vac-card{background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .12s;box-shadow:var(--shadow-sm)}
+.vac-card{background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:14px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .12s,box-shadow .2s;box-shadow:var(--shadow-sm)}
 .vac-card:active{transform:scale(.995)}
 .vac-card.open{border-color:var(--accent)}
 .vac-card-main{display:flex;align-items:flex-start;gap:12px;padding:14px}
@@ -499,7 +501,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .vac-company{font-size:12.5px;color:var(--text-2);margin-top:3px;font-weight:600}
 .vac-company .vac-agency-tag{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:var(--radius-pill);margin-left:6px;vertical-align:1px}
 .vac-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
-.vac-chip{font-size:11px;font-weight:600;color:var(--text-2);background:var(--card-2);border-radius:8px;padding:5px 9px;display:inline-flex;align-items:center;gap:4px}
+.vac-chip{font-size:11px;font-weight:600;color:var(--text-2);background:var(--card-2);border-radius:10px;padding:6px 10px;display:inline-flex;align-items:center;gap:4px}
 .vac-chip svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .vac-chip.green{color:var(--success);background:rgba(48,209,88,.14)}
 .vac-chip.red{color:var(--danger);background:rgba(255,69,58,.14)}
@@ -766,7 +768,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
       <div class="profile-name" id="profile-status-name">SA Recruiters</div>
       <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
       <div class="profile-sub" id="profile-status-sub">Not logged in</div>
-      <div class="app-version-badge" id="app-version-badge">v53</div>
+      <div class="app-version-badge" id="app-version-badge">v55</div>
       <button class="force-update-btn" onclick="forceUpdate()"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Check for updates &amp; refresh</button>
     </div>
 
@@ -798,6 +800,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="pgroup-label">Post &amp; Manage</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon tile-green"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/><path d="M12 2v4"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="goPool()"><span class="mi-icon tile-indigo"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/></svg></span><span>Talent Pool<span class="mi-sub">Browse candidates free, or list yourself for R20/year</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
 
     <div class="pgroup-label">Community</div>
@@ -997,10 +1000,47 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
         <input id="allvacancies-search" type="search" placeholder="Search job title, role, location..." oninput="renderAllVacanciesList()">
       </div>
     </div>
+    <div class="vac-filter-row" style="display:flex;gap:8px;margin:0 16px 12px;flex-wrap:wrap">
+      <select id="allvacancies-remote" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any work arrangement</option><option value="On-site">On-site</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option></select>
+      <select id="allvacancies-exp" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any experience level</option><option value="Entry-level">Entry-level</option><option value="Mid-level">Mid-level</option><option value="Senior">Senior</option><option value="Executive">Executive</option></select>
+      <select id="allvacancies-industry" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any industry</option></select>
+    </div>
     </div>
     <div class="screen-scroll">
     <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to Home</button></div>
     <div id="allvacancies-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ TALENT POOL ============ -->
+  <div class="screen" id="screen-pool">
+    <div class="screen-fixed">
+    <header>
+      <div class="logo-text">Talent Pool</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+      </button>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 10px">
+      <div class="search-inner">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <label for="pool-search" class="sr-only">Search the talent pool</label>
+        <input id="pool-search" type="search" placeholder="Search name, position, location..." oninput="renderPoolList()">
+      </div>
+    </div>
+    <div style="margin:0 16px 12px">
+      <select id="pool-sector-filter" onchange="renderPoolList()" style="width:100%;height:44px;border-radius:12px;border:1px solid var(--border-strong);background:var(--card);color:var(--text);padding:0 12px;font-size:13.5px">
+        <option value="">All sectors</option>
+      </select>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to Home</button></div>
+    <div class="manager-banner">
+      <p>Browse job seekers who've joined the Talent Pool — open profiles, contact them directly. Employers of any sector are welcome to browse for free.</p>
+    </div>
+    <div id="pool-list"></div>
+    <button class="manager-add-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:4px 16px 24px;width:calc(100% - 32px)"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/><path d="M19 8h4M21 6v4"/></svg></span> Join the Talent Pool — R20/year</button>
     </div>
   </div>
 
@@ -1104,7 +1144,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="field"><label>Role / title</label><input id="gv-role" placeholder="e.g. Senior Forklift Operator"></div>
     <div class="field"><label>Company / organisation</label><input id="gv-company" placeholder="e.g. ABC Logistics (optional)"></div>
     <div class="field"><label>Location</label><input id="gv-location" placeholder="e.g. Randburg, Gauteng"></div>
+    <div class="field"><label>Work arrangement</label><select id="gv-remote"><option value="">— Not specified —</option><option value="On-site">On-site</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option></select></div>
     <div class="field"><label>Employment type</label><input id="gv-etype" placeholder="e.g. Full-time, Part-time, Contract"></div>
+    <div class="field"><label>Experience level</label><select id="gv-exp"><option value="">— Not specified —</option><option value="Entry-level">Entry-level</option><option value="Mid-level">Mid-level</option><option value="Senior">Senior</option><option value="Executive">Executive</option></select></div>
     <div class="field"><label>Contract type</label><input id="gv-contract" placeholder="e.g. Permanent, Fixed-term, Casual"></div>
     <div class="field"><label>Salary</label><input id="gv-salary" placeholder="e.g. R18,000 pm or TBC"></div>
     <div class="field"><label>Hours</label><input id="gv-hours" placeholder="e.g. 45 hours per week"></div>
@@ -1117,6 +1159,35 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="field"><label>Contact phone (if no link)</label><input id="gv-phone" type="tel" placeholder="e.g. 011 123 4567"></div>
     <button class="sheet-submit" data-ripple onclick="saveGeneralVacancy()" id="gv-submit-btn">Publish vacancy</button>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('general-vacancy-overlay')">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ TALENT POOL REGISTRATION SHEET (public) ============ -->
+<div class="sheet-scrim" id="pool-register-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>Join the Talent Pool</h3>
+    <div class="manager-banner" style="padding:0 0 12px">
+      <p>R20/year lists your profile so employers across all sectors can browse and contact you directly. Payment is by manual EFT — pay first, then submit this form with your reference so we can confirm it.</p>
+    </div>
+    <div class="sm-link-box" style="margin-bottom:14px">
+      <strong>Banking details</strong><br>
+      Account name: SA Recruiters<br>
+      Bank: [add bank name]<br>
+      Account number: [add account number]<br>
+      Branch code: [add branch code]<br>
+      Reference: use your full name
+    </div>
+    <div class="field"><label>Full name *</label><input id="pool-name" placeholder="e.g. Thabo Nkosi"></div>
+    <div class="field"><label>Phone *</label><input id="pool-phone" type="tel" placeholder="e.g. 082 123 4567"></div>
+    <div class="field"><label>Email</label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com"></div>
+    <div class="field"><label>Sector / industry *</label><input id="pool-sector" placeholder="e.g. Logistics, Construction, Finance"></div>
+    <div class="field"><label>Position / role</label><input id="pool-position" placeholder="e.g. Forklift Driver"></div>
+    <div class="field"><label>Location *</label><input id="pool-location" placeholder="e.g. Durban, KZN"></div>
+    <div class="field"><label>CV link</label><input id="pool-cv" type="url" placeholder="Google Drive / Dropbox share link"></div>
+    <div class="field"><label>EFT payment reference *</label><input id="pool-payref" placeholder="The reference you used on your EFT"></div>
+    <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Submit registration</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('pool-register-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -2629,7 +2700,9 @@ function vacancyCard(v, agency) {
   /* Chips (always-visible summary) */
   var chips = '';
   if (v.location) chips += '<span class="vac-chip">' + VAC_ICONS.pin + escapeHtml(v.location) + '</span>';
+  if (v.remote) chips += '<span class="vac-chip">' + VAC_ICONS.globe + escapeHtml(v.remote) + '</span>';
   if (v.employment_type) chips += '<span class="vac-chip">' + VAC_ICONS.briefcase + escapeHtml(v.employment_type) + '</span>';
+  if (v.experience_level) chips += '<span class="vac-chip">' + VAC_ICONS.star + escapeHtml(v.experience_level) + '</span>';
   if (v.contract_type) chips += '<span class="vac-chip">' + VAC_ICONS.doc + escapeHtml(v.contract_type) + '</span>';
   if (v.salary) chips += '<span class="vac-chip">' + VAC_ICONS.money + escapeHtml(v.salary) + '</span>';
   if (v.closing_date) chips += '<span class="vac-chip">' + VAC_ICONS.clock + 'Closes ' + escapeHtml(v.closing_date) + '</span>';
@@ -2640,6 +2713,8 @@ function vacancyCard(v, agency) {
   /* Detail rows (inside expandable section) */
   var detail = '';
   if (v.location) detail += vacDetRow(VAC_ICONS.pin, 'Location', escapeHtml(v.location));
+  if (v.remote) detail += vacDetRow(VAC_ICONS.globe, 'Work Arrangement', escapeHtml(v.remote));
+  if (v.experience_level) detail += vacDetRow(VAC_ICONS.star, 'Experience Level', escapeHtml(v.experience_level));
   if (v.employment_type) detail += vacDetRow(VAC_ICONS.briefcase, 'Employment Type', escapeHtml(v.employment_type + (v.contract_type ? ' \u2014 ' + v.contract_type : '')));
   if (v.salary) detail += vacDetRow(VAC_ICONS.money, 'Salary', escapeHtml(v.salary));
   if (v.hours) detail += vacDetRow(VAC_ICONS.clock, 'Hours', escapeHtml(v.hours));
@@ -2725,6 +2800,8 @@ var VAC_ICONS = {
   mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
   phone:'<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
   apply:'<svg viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></svg>',
+  globe:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"/></svg>',
+  star:'<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
   edit:'<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
 };
@@ -2945,7 +3022,9 @@ function openGeneralVacancySheet() {
   document.getElementById('gv-role').value = '';
   document.getElementById('gv-company').value = '';
   document.getElementById('gv-location').value = '';
+  document.getElementById('gv-remote').value = '';
   document.getElementById('gv-etype').value = '';
+  document.getElementById('gv-exp').value = '';
   document.getElementById('gv-contract').value = '';
   document.getElementById('gv-salary').value = '';
   document.getElementById('gv-hours').value = '';
@@ -2967,7 +3046,9 @@ function openEditGeneralVacancySheet(id) {
   document.getElementById('gv-role').value = v.title || '';
   document.getElementById('gv-company').value = v.company || '';
   document.getElementById('gv-location').value = v.location || '';
+  document.getElementById('gv-remote').value = v.remote || '';
   document.getElementById('gv-etype').value = v.employment_type || '';
+  document.getElementById('gv-exp').value = v.experience_level || '';
   document.getElementById('gv-contract').value = v.contract_type || '';
   document.getElementById('gv-salary').value = v.salary || '';
   document.getElementById('gv-hours').value = v.hours || '';
@@ -2987,7 +3068,9 @@ async function saveGeneralVacancy() {
     title: title,
     company: document.getElementById('gv-company').value.trim(),
     location: document.getElementById('gv-location').value.trim(),
+    remote: document.getElementById('gv-remote').value,
     employment_type: document.getElementById('gv-etype').value.trim(),
+    experience_level: document.getElementById('gv-exp').value,
     contract_type: document.getElementById('gv-contract').value.trim(),
     salary: document.getElementById('gv-salary').value.trim(),
     hours: document.getElementById('gv-hours').value.trim(),
@@ -3205,6 +3288,113 @@ async function submitSuggestion() {
     message: 'Your ' + (payload.type || 'suggestion') + ' has been saved. Tap below to send it to the admin on WhatsApp so it can be seen right away.',
     waText: waMsg
   });
+}
+
+// ===== TALENT POOL (public browse + self-registration) =====
+var poolCache = [];
+var poolLoaded = false;
+
+function goPool() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-pool').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
+  window.scrollTo({ top: 0 });
+  loadPoolCandidates();
+}
+
+async function loadPoolCandidates() {
+  var listEl = document.getElementById('pool-list');
+  if (listEl && !poolLoaded) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>Loading…</h3></div></div>';
+  try {
+    // RLS only returns status = 'active' rows to anonymous visitors
+    var { data, error } = await supabaseClient.from('pool_candidates').select('*').order('created_at', { ascending: false });
+    if (error) { console.error('pool load', error); poolCache = []; }
+    else poolCache = data || [];
+  } catch(e) { console.error('pool load', e); poolCache = []; }
+  poolLoaded = true;
+  // Populate sector filter options from whatever is currently listed
+  var sel = document.getElementById('pool-sector-filter');
+  if (sel) {
+    var current = sel.value;
+    var sectors = Array.from(new Set(poolCache.map(function(c){ return (c.sector||'').trim(); }).filter(Boolean))).sort();
+    sel.innerHTML = '<option value="">All sectors</option>' + sectors.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
+    sel.value = sectors.indexOf(current) !== -1 ? current : '';
+  }
+  renderPoolList();
+}
+
+function renderPoolList() {
+  var listEl = document.getElementById('pool-list');
+  if (!listEl) return;
+  var q = ((document.getElementById('pool-search')||{}).value || '').trim().toLowerCase();
+  var sector = ((document.getElementById('pool-sector-filter')||{}).value || '');
+  var list = poolCache.slice();
+  if (sector) list = list.filter(function(c){ return (c.sector||'') === sector; });
+  if (q) {
+    list = list.filter(function(c){
+      var hay = ((c.full_name||'') + ' ' + (c.position||'') + ' ' + (c.location||'') + ' ' + (c.sector||'')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+  }
+  if (!list.length) {
+    listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>No candidates yet</h3><p>Be the first to join the Talent Pool.</p></div></div>';
+    return;
+  }
+  listEl.innerHTML = list.map(function(c){
+    var sub = [c.position, c.sector, c.location].filter(Boolean).join(' · ');
+    var contactBits = [];
+    if (c.contact_phone) contactBits.push('<a href="tel:'+escapeHtml(c.contact_phone)+'">'+escapeHtml(c.contact_phone)+'</a>');
+    if (c.contact_email) contactBits.push('<a href="mailto:'+escapeHtml(c.contact_email)+'">'+escapeHtml(c.contact_email)+'</a>');
+    if (c.cv_link) contactBits.push('<a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">View CV</a>');
+    return '<div class="manager-item">' +
+      '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+'</div>' +
+      '<div class="manager-item-sub">'+escapeHtml(sub||'')+'</div>' +
+      (contactBits.length ? '<div class="manager-item-meta">'+contactBits.join(' &nbsp;·&nbsp; ')+'</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function openPoolRegisterSheet() {
+  document.getElementById('pool-name').value = '';
+  document.getElementById('pool-phone').value = '';
+  document.getElementById('pool-email').value = '';
+  document.getElementById('pool-sector').value = '';
+  document.getElementById('pool-position').value = '';
+  document.getElementById('pool-location').value = '';
+  document.getElementById('pool-cv').value = '';
+  document.getElementById('pool-payref').value = '';
+  document.getElementById('pool-register-overlay').classList.add('open');
+}
+
+async function submitPoolRegistration() {
+  var name = document.getElementById('pool-name').value.trim();
+  var phone = document.getElementById('pool-phone').value.trim();
+  var sector = document.getElementById('pool-sector').value.trim();
+  var location = document.getElementById('pool-location').value.trim();
+  var payref = document.getElementById('pool-payref').value.trim();
+  if (!name || !phone || !sector || !location) { showToast('Please fill in name, phone, sector and location.'); return; }
+  if (!payref) { showToast('Add the reference you used on your EFT so we can match your payment.'); return; }
+  var payload = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+    full_name: name,
+    contact_phone: phone,
+    contact_email: document.getElementById('pool-email').value.trim(),
+    sector: sector,
+    position: document.getElementById('pool-position').value.trim(),
+    location: location,
+    cv_link: document.getElementById('pool-cv').value.trim(),
+    payment_ref: payref,
+    status: 'pending'
+  };
+  var btn = document.getElementById('pool-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  try {
+    var { error } = await supabaseClient.from('pool_candidates').insert([payload]);
+    if (error) { console.error('pool submit', error); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
+  } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Submit registration'; }
+  closeSheet('pool-register-overlay');
+  showToast('Registration received — you\'ll go live once payment is confirmed.');
 }
 
 function copyText(text, el) {
@@ -3482,8 +3672,35 @@ async function deleteBranchAllList(id) {
 
 function renderAllVacanciesList() {
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
+  var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
+  var expFilter = ((document.getElementById('allvacancies-exp')||{}).value || '');
+  var industryFilter = ((document.getElementById('allvacancies-industry')||{}).value || '');
   var el = document.getElementById('allvacancies-list');
   var list = vacanciesCache.slice();
+  // Populate the industry dropdown from agency trades on the currently loaded vacancies
+  var industrySel = document.getElementById('allvacancies-industry');
+  if (industrySel) {
+    var industries = new Set();
+    vacanciesCache.forEach(function(v){
+      var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
+      if (agency && agency.trades) {
+        agency.trades.split(',').forEach(function(t){ t = t.trim(); if (t) industries.add(t); });
+      }
+    });
+    var sortedIndustries = Array.from(industries).sort();
+    var current = industrySel.value;
+    industrySel.innerHTML = '<option value="">Any industry</option>' + sortedIndustries.map(function(t){ return '<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>'; }).join('');
+    industrySel.value = sortedIndustries.indexOf(current) !== -1 ? current : '';
+    industryFilter = industrySel.value;
+  }
+  if (remoteFilter) list = list.filter(function(v){ return (v.remote||'') === remoteFilter; });
+  if (expFilter) list = list.filter(function(v){ return (v.experience_level||'') === expFilter; });
+  if (industryFilter) {
+    list = list.filter(function(v){
+      var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
+      return !!(agency && agency.trades && agency.trades.toLowerCase().indexOf(industryFilter.toLowerCase()) !== -1);
+    });
+  }
   if (q) {
     list = list.filter(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
@@ -3491,7 +3708,7 @@ function renderAllVacanciesList() {
       return hay.indexOf(q) !== -1;
     });
   }
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No vacancies found</h3><p>Vacancies are added by agencies. Check back soon or try a different search.</p></div>'; return; }
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No vacancies found</h3><p>Try a different search or adjust your filters.</p></div>'; return; }
   var html = list.map(function(v){
     var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
     return vacancyCard(v, agency);
