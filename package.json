@@ -1,0 +1,11 @@
+{
+  "name": "sa-recruiters-static-pages",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "generate": "node generate-pages.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}
