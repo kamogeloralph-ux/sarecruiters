@@ -333,11 +333,16 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .rate-action-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:rgba(255,59,48,.08)}
 
 /* ============ RATING LEADERBOARD (Profile section) ============ */
+#rating-board{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 14px;margin:6px 0 22px}
 .lb-header{margin:4px 0 14px}
 .lb-title{font-size:18px;font-weight:800;letter-spacing:-0.01em}
 .lb-subtitle{font-size:12.5px;color:var(--text-2);line-height:1.5;margin-top:6px}
 .lb-summary{font-size:12px;font-weight:600;color:var(--text-2);background:var(--card-2);border-radius:var(--radius-pill);padding:7px 14px;display:inline-block;margin-bottom:16px}
 .lb-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.lb-scroll{max-height:58vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 0}
+.lb-scroll::-webkit-scrollbar{width:5px}
+.lb-scroll::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
+.lb-scroll .lb-card:last-child{margin-bottom:2px}
 .lb-card-open{border-color:var(--accent)}
 .lb-row{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:13px 14px;background:none;border:none;color:var(--text)}
 .lb-row:active{background:var(--card-2)}
@@ -394,10 +399,14 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .contact-warning-title{font-size:12.5px;font-weight:800;color:#fff;line-height:1.5;letter-spacing:0.02em}
 .contact-warning-emergency{font-size:18px;font-weight:800;color:#fff;margin-top:8px;letter-spacing:0.04em}
 .contact-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
-.contact-card-head{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:13.5px;font-weight:700;border-bottom:1px solid var(--border)}
+.contact-card-head{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:13.5px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.contact-card.open .contact-card-head{border-bottom:1px solid var(--border)}
+.contact-card-chev{width:16px;height:16px;color:var(--text-3);flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;margin-left:auto;transition:transform .2s var(--ease)}
+.contact-card.open .contact-card-chev{transform:rotate(90deg)}
 .contact-card-icon{display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;color:var(--text)}
 .contact-card-icon svg{width:20px;height:20px;display:block}
-.contact-card-body{display:flex;flex-direction:column}
+.contact-card-body{display:none;flex-direction:column}
+.contact-card.open .contact-card-body{display:flex}
 .contact-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);border-bottom:1px solid var(--border);transition:background .15s}
 .contact-row:last-child{border-bottom:none}
 .contact-row:active{background:var(--card-2)}
@@ -412,6 +421,20 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .profile-name{font-size:19px;font-weight:800;letter-spacing:-0.02em}
 .profile-slogan{font-size:12px;color:var(--text-2);margin-top:5px;font-weight:500;font-style:normal}
 .profile-sub{font-size:12px;color:var(--text-2);margin-top:4px}
+.pool-feature-card{position:relative;display:block;width:100%;text-align:left;margin:16px 0 6px;padding:20px 46px 22px 20px;border-radius:var(--radius);background:linear-gradient(150deg,#7B6BFF,#5E5CE6 45%,#3D3AB8 100%);border:none;overflow:hidden;box-shadow:0 16px 32px -14px rgba(92,74,230,.6);cursor:pointer}
+.pool-feature-card::after{content:'';position:absolute;top:-46px;right:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.09);pointer-events:none}
+.pool-feature-card::before{content:'';position:absolute;bottom:-60px;left:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none}
+.pool-feature-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1}
+.pool-feature-icon{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pool-feature-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
+.pool-feature-star{font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:rgba(255,255,255,.2);padding:5px 11px;border-radius:var(--radius-pill)}
+.pool-feature-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.01em;position:relative;z-index:1}
+.pool-feature-sub{font-size:12.5px;color:rgba(255,255,255,.85);line-height:1.5;margin-top:5px;position:relative;z-index:1;max-width:88%}
+.pool-feature-tags{display:flex;gap:8px;margin-top:14px;position:relative;z-index:1;flex-wrap:wrap}
+.pool-feature-tag{font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);padding:5px 10px;border-radius:var(--radius-pill)}
+.pool-feature-chev{position:absolute;right:18px;bottom:20px;width:20px;height:20px;color:rgba(255,255,255,.75);z-index:1}
+.pool-feature-card:active{transform:scale(.985)}
+
 .pgroup-label{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin:22px 4px 8px}
 .pgrouped-list{background:var(--card);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
 .pgrouped-list + .pgroup-label{margin-top:20px}
@@ -792,6 +815,18 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     </div>
     <audio id="track-audio" preload="metadata" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>
 
+    <!-- ===== Talent Pool — Featured ===== -->
+    <button class="pool-feature-card" data-ripple onclick="goPool()">
+      <div class="pool-feature-top">
+        <span class="pool-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/></svg></span>
+        <span class="pool-feature-star">★ Featured</span>
+      </div>
+      <div class="pool-feature-title">Talent Pool</div>
+      <div class="pool-feature-sub">Browse job seekers for free, or list yourself so employers can find you</div>
+      <div class="pool-feature-tags"><span class="pool-feature-tag">Browse free</span><span class="pool-feature-tag">List for R20/year</span></div>
+      <svg class="pool-feature-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+
     <div class="pgroup-label">Account</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item" id="rateagencies-menu-item" data-ripple onclick="toggleRatingBoard()"><span class="mi-icon tile-amber"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span><span>Rate Agencies<span class="mi-sub">Rate &amp; review agencies &#8212; top-rated climb the ranks</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -800,7 +835,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="pgroup-label">Post &amp; Manage</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon tile-green"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/><path d="M12 2v4"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="goPool()"><span class="mi-icon tile-indigo"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/></svg></span><span>Talent Pool<span class="mi-sub">Browse candidates free, or list yourself for R20/year</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
 
     <div class="pgroup-label">Community</div>
@@ -835,7 +869,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
         <div class="contact-warning-emergency">EMERGENCY 0800 428 428</div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>Department of Employment &amp; Labour</div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>Department of Employment &amp; Labour<svg class="contact-card-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0123094000" class="contact-row"><span class="contact-label">Head Office</span><span class="contact-value">012 309 4000</span></a>
           <a href="tel:0860666883" class="contact-row"><span class="contact-label">Fraud Hotline</span><span class="contact-value">0860 666 883</span></a>
@@ -845,7 +879,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
         </div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>CCMA</div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>CCMA<svg class="contact-card-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0861161616" class="contact-row"><span class="contact-label">Call Centre</span><span class="contact-value">0861 161 616</span></a>
           <a href="tel:0113776650" class="contact-row"><span class="contact-label">National Office</span><span class="contact-value">011 377 6650</span></a>
@@ -855,7 +889,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
         </div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>UIF (Unemployment Insurance Fund)</div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>UIF (Unemployment Insurance Fund)<svg class="contact-card-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0800030007" class="contact-row"><span class="contact-label">Call Centre (Toll Free)</span><span class="contact-value">0800 030 007</span></a>
           <a href="tel:0123371600" class="contact-row"><span class="contact-label">Switchboard</span><span class="contact-value">012 337 1600</span></a>
@@ -2162,6 +2196,7 @@ function renderRatingBoard() {
   // Summary: how many agencies have been rated
   var ratedCount = ranked.filter(function(a){ return agencyScore(a).count > 0; }).length;
   html += '<div class="lb-summary">⭐ ' + ratedCount + ' of ' + ranked.length + ' agencies rated · ' + ratingsCache.length + ' total reviews</div>';
+  html += '<div class="lb-scroll">';
   ranked.forEach(function(a, idx) {
     var sc = agencyScore(a);
     var rank = idx + 1;
@@ -2187,6 +2222,7 @@ function renderRatingBoard() {
     }
     html += '</div>';
   });
+  html += '</div>';
   el.innerHTML = html;
 }
 
@@ -3589,6 +3625,14 @@ function goBackToProfile() {
   document.querySelector('.navbtn[data-tab=profile]').classList.add('active');
   window.scrollTo({ top: 0 });
 }
+
+// Show / hide a Contact Details card (accordion)
+window.toggleContactCard = function(headEl) {
+  var card = headEl.closest('.contact-card');
+  if (!card) return;
+  var open = card.classList.toggle('open');
+  headEl.setAttribute('aria-expanded', open ? 'true' : 'false');
+};
 
 // Show / hide the agency rating leaderboard in the Profile section
 window.toggleRatingBoard = function() {
