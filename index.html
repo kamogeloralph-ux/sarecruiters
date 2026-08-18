@@ -1170,7 +1170,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="manager-banner" style="padding:0 0 12px">
       <p>R20/year lists your profile so employers across all sectors can browse and contact you directly. Payment is by manual EFT — pay first, then submit this form with your reference so we can confirm it.</p>
     </div>
-    <div class="sm-link-box" style="margin-bottom:14px">
+    <div class="sm-link-box" style="margin-bottom:14px" id="pool-banking-box">
       <strong>Banking details</strong><br>
       Account name: SA Recruiters<br>
       Bank: [add bank name]<br>
@@ -1184,6 +1184,10 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="field"><label>Sector / industry *</label><input id="pool-sector" placeholder="e.g. Logistics, Construction, Finance"></div>
     <div class="field"><label>Position / role</label><input id="pool-position" placeholder="e.g. Forklift Driver"></div>
     <div class="field"><label>Location *</label><input id="pool-location" placeholder="e.g. Durban, KZN"></div>
+    <div class="field"><label>Gender *</label><select id="pool-gender"><option value="">— Select —</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
+    <div class="field"><label>Grade 12 / Matric? *</label><select id="pool-grade12"><option value="">— Select —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Criminal record *</label><select id="pool-criminal"><option value="">— Select —</option><option value="Clear">Clear</option><option value="Yes">Yes</option></select></div>
+    <div class="field"><label>Years of experience *</label><select id="pool-experience"><option value="">— Select —</option><option value="0">0 years</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
     <div class="field"><label>CV link</label><input id="pool-cv" type="url" placeholder="Google Drive / Dropbox share link"></div>
     <div class="field"><label>EFT payment reference *</label><input id="pool-payref" placeholder="The reference you used on your EFT"></div>
     <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Submit registration</button>
@@ -3346,9 +3350,17 @@ function renderPoolList() {
     if (c.contact_phone) contactBits.push('<a href="tel:'+escapeHtml(c.contact_phone)+'">'+escapeHtml(c.contact_phone)+'</a>');
     if (c.contact_email) contactBits.push('<a href="mailto:'+escapeHtml(c.contact_email)+'">'+escapeHtml(c.contact_email)+'</a>');
     if (c.cv_link) contactBits.push('<a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">View CV</a>');
+    var screenBits = [];
+    if (c.gender) screenBits.push(escapeHtml(c.gender));
+    if (c.grade12) screenBits.push('Grade 12: '+escapeHtml(c.grade12));
+    if (c.criminal_record) screenBits.push('Criminal record: '+escapeHtml(c.criminal_record));
+    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') {
+      screenBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs experience');
+    }
     return '<div class="manager-item">' +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+'</div>' +
       '<div class="manager-item-sub">'+escapeHtml(sub||'')+'</div>' +
+      (screenBits.length ? '<div class="manager-item-meta">'+screenBits.join(', ')+'</div>' : '') +
       (contactBits.length ? '<div class="manager-item-meta">'+contactBits.join(' &nbsp;·&nbsp; ')+'</div>' : '') +
       '</div>';
   }).join('');
@@ -3361,9 +3373,29 @@ function openPoolRegisterSheet() {
   document.getElementById('pool-sector').value = '';
   document.getElementById('pool-position').value = '';
   document.getElementById('pool-location').value = '';
+  document.getElementById('pool-gender').value = '';
+  document.getElementById('pool-grade12').value = '';
+  document.getElementById('pool-criminal').value = '';
+  document.getElementById('pool-experience').value = '';
   document.getElementById('pool-cv').value = '';
   document.getElementById('pool-payref').value = '';
   document.getElementById('pool-register-overlay').classList.add('open');
+  loadPoolBankingDetails();
+}
+
+// ----- Talent Pool banking details (admin-editable, stored in app_settings) -----
+async function loadPoolBankingDetails() {
+  var box = document.getElementById('pool-banking-box');
+  if (!box) return;
+  var raw = await getAppSetting('pool_banking_details', '');
+  var d = { account_name: 'SA Recruiters', bank: '', account_number: '', branch_code: '' };
+  if (raw) { try { Object.assign(d, JSON.parse(raw)); } catch(e) {} }
+  box.innerHTML = '<strong>Banking details</strong><br>' +
+    'Account name: ' + escapeHtml(d.account_name || 'SA Recruiters') + '<br>' +
+    'Bank: ' + escapeHtml(d.bank || '[add bank name]') + '<br>' +
+    'Account number: ' + escapeHtml(d.account_number || '[add account number]') + '<br>' +
+    'Branch code: ' + escapeHtml(d.branch_code || '[add branch code]') + '<br>' +
+    'Reference: use your full name';
 }
 
 async function submitPoolRegistration() {
@@ -3371,8 +3403,13 @@ async function submitPoolRegistration() {
   var phone = document.getElementById('pool-phone').value.trim();
   var sector = document.getElementById('pool-sector').value.trim();
   var location = document.getElementById('pool-location').value.trim();
+  var gender = document.getElementById('pool-gender').value;
+  var grade12 = document.getElementById('pool-grade12').value;
+  var criminal = document.getElementById('pool-criminal').value;
+  var experience = document.getElementById('pool-experience').value;
   var payref = document.getElementById('pool-payref').value.trim();
   if (!name || !phone || !sector || !location) { showToast('Please fill in name, phone, sector and location.'); return; }
+  if (!gender || !grade12 || !criminal || experience === '') { showToast('Please answer gender, Grade 12, criminal record and experience.'); return; }
   if (!payref) { showToast('Add the reference you used on your EFT so we can match your payment.'); return; }
   var payload = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2),
@@ -3382,6 +3419,10 @@ async function submitPoolRegistration() {
     sector: sector,
     position: document.getElementById('pool-position').value.trim(),
     location: location,
+    gender: gender,
+    grade12: grade12,
+    criminal_record: criminal,
+    experience_years: parseInt(experience, 10),
     cv_link: document.getElementById('pool-cv').value.trim(),
     payment_ref: payref,
     status: 'pending'
