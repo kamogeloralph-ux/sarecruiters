@@ -330,6 +330,16 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
           <label class="switch"><input type="checkbox" id="posting-toggle" onchange="togglePosting(this.checked)"><span class="track"><span class="knob"></span></span></label>
         </div>
         <div style="margin-top:14px" class="muted">When ON, anyone can post a general vacancy from the public app. When OFF, posting is locked and users are asked to message the admin on WhatsApp.</div>
+
+        <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border)">
+          <div class="t-label" style="margin-bottom:2px">Talent Pool banking details</div>
+          <div class="muted" style="margin-bottom:12px">Shown to job seekers on the public "Join the Talent Pool" registration form so they know where to pay their R20/year.</div>
+          <div class="field"><label>Account name</label><input id="bank-account-name" placeholder="e.g. SA Recruiters"></div>
+          <div class="field"><label>Bank</label><input id="bank-name" placeholder="e.g. Capitec Business"></div>
+          <div class="field"><label>Account number</label><input id="bank-account-number" placeholder="e.g. 1234567890"></div>
+          <div class="field"><label>Branch code</label><input id="bank-branch-code" placeholder="e.g. 470010"></div>
+          <button class="btn" onclick="savePoolBankingDetails()">Save banking details</button>
+        </div>
       </div>
 
       <!-- DAILY TRACK -->
@@ -431,6 +441,10 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Sector / industry</label><input id="pc-sector"></div>
     <div class="field"><label>Position</label><input id="pc-position"></div>
     <div class="field"><label>Location</label><input id="pc-location"></div>
+    <div class="field"><label>Gender</label><select id="pc-gender"><option value="">— Not set —</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
+    <div class="field"><label>Grade 12 / Matric?</label><select id="pc-grade12"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Criminal record</label><select id="pc-criminal"><option value="">— Not set —</option><option value="Clear">Clear</option><option value="Yes">Yes</option></select></div>
+    <div class="field"><label>Years of experience</label><select id="pc-experience"><option value="">— Not set —</option><option value="0">0 years</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
     <div class="field"><label>CV link</label><input id="pc-cv" type="url"></div>
     <div class="field"><label>EFT payment reference</label><input id="pc-payref"></div>
     <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
@@ -707,7 +721,7 @@ function goSection(id){
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
   if(id==='dailytrack') renderDailyTracks();
-  if(id==='settings') updatePostingUI();
+  if(id==='settings'){ updatePostingUI(); loadPoolBankingDetails(); }
   if(id==='poolcandidates') renderPoolCandidates();
   window.scrollTo(0,0);
 }
@@ -1083,6 +1097,12 @@ function renderPoolCandidates(){
     var details = '';
     if(p.contact_phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(p.contact_phone)+'</div>';
     if(p.contact_email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(p.contact_email)+'</div>';
+    var screenBits = [];
+    if(p.gender) screenBits.push(escapeHtml(p.gender));
+    if(p.grade12) screenBits.push('Grade 12: '+escapeHtml(p.grade12));
+    if(p.criminal_record) screenBits.push('Criminal record: '+escapeHtml(p.criminal_record));
+    if(p.experience_years !== null && p.experience_years !== undefined) screenBits.push((p.experience_years>=10?'10+':p.experience_years)+' yrs experience');
+    if(screenBits.length) details += '<div class="det-row"><span class="det-label">Screening:</span> '+screenBits.join(', ')+'</div>';
     if(p.cv_link) details += '<div class="det-row"><span class="det-label">CV:</span> '+escapeHtml(p.cv_link)+'</div>';
     if(p.payment_ref) details += '<div class="det-row"><span class="det-label">EFT ref:</span> '+escapeHtml(p.payment_ref)+'</div>';
     if(p.paid_until) details += '<div class="det-row"><span class="det-label">Paid until:</span> '+fmtDate(p.paid_until)+'</div>';
@@ -1122,6 +1142,10 @@ function openPoolSheet(id){
   document.getElementById('pc-sector').value = p ? (p.sector||'') : '';
   document.getElementById('pc-position').value = p ? (p.position||'') : '';
   document.getElementById('pc-location').value = p ? (p.location||'') : '';
+  document.getElementById('pc-gender').value = p ? (p.gender||'') : '';
+  document.getElementById('pc-grade12').value = p ? (p.grade12||'') : '';
+  document.getElementById('pc-criminal').value = p ? (p.criminal_record||'') : '';
+  document.getElementById('pc-experience').value = p && (p.experience_years !== null && p.experience_years !== undefined) ? String(p.experience_years) : '';
   document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
   document.getElementById('pc-payref').value = p ? (p.payment_ref||'') : '';
   document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
@@ -1142,6 +1166,10 @@ async function savePoolCandidate(){
     sector:document.getElementById('pc-sector').value.trim(),
     position:document.getElementById('pc-position').value.trim(),
     location:document.getElementById('pc-location').value.trim(),
+    gender:document.getElementById('pc-gender').value,
+    grade12:document.getElementById('pc-grade12').value,
+    criminal_record:document.getElementById('pc-criminal').value,
+    experience_years: document.getElementById('pc-experience').value === '' ? null : parseInt(document.getElementById('pc-experience').value, 10),
     cv_link:document.getElementById('pc-cv').value.trim(),
     payment_ref:document.getElementById('pc-payref').value.trim(),
     status:document.getElementById('pc-status').value,
@@ -1220,6 +1248,26 @@ async function delReport(id){ if(!confirm('Delete this report?')) return; await 
 async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 
 // ===== Settings =====
+async function loadPoolBankingDetails(){
+  var raw = await getAppSetting('pool_banking_details','');
+  var d = { account_name:'SA Recruiters', bank:'', account_number:'', branch_code:'' };
+  if(raw){ try{ Object.assign(d, JSON.parse(raw)); }catch(e){} }
+  document.getElementById('bank-account-name').value = d.account_name || '';
+  document.getElementById('bank-name').value = d.bank || '';
+  document.getElementById('bank-account-number').value = d.account_number || '';
+  document.getElementById('bank-branch-code').value = d.branch_code || '';
+}
+async function savePoolBankingDetails(){
+  var d = {
+    account_name: document.getElementById('bank-account-name').value.trim() || 'SA Recruiters',
+    bank: document.getElementById('bank-name').value.trim(),
+    account_number: document.getElementById('bank-account-number').value.trim(),
+    branch_code: document.getElementById('bank-branch-code').value.trim()
+  };
+  var ok = await setAppSetting('pool_banking_details', JSON.stringify(d));
+  if(ok) showToast('Banking details saved');
+  else alert('Could not save banking details. Check your Supabase app_settings table.');
+}
 function updatePostingUI(){
   var t = document.getElementById('posting-toggle'); if(t) t.checked = !!publicVacancyPostingOpen;
   var sub = document.getElementById('posting-sub'); if(sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
