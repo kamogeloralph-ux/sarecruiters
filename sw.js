@@ -10,7 +10,7 @@
             sync, periodicsync, beforeevicted, controllerchange-friendly skipWaiting
    ========================================================================== */
 
-const VERSION = 'sa-recruiters-v53';
+const VERSION = 'sa-recruiters-v55';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
