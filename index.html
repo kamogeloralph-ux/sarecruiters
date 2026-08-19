@@ -1074,6 +1074,10 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
       <p>Browse job seekers who've joined the Talent Pool — open profiles, contact them directly. Employers of any sector are welcome to browse for free.</p>
     </div>
     <div id="pool-list"></div>
+    <div class="sm-link-box pool-banking-box" style="margin:0 16px 14px">
+      <strong>Banking details</strong><br>
+      Loading…
+    </div>
     <button class="manager-add-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:4px 16px 24px;width:calc(100% - 32px)"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/><path d="M19 8h4M21 6v4"/></svg></span> Join the Talent Pool — R20/year</button>
     </div>
   </div>
@@ -1204,7 +1208,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <div class="manager-banner" style="padding:0 0 12px">
       <p>R20/year lists your profile so employers across all sectors can browse and contact you directly. Payment is by manual EFT — pay first, then submit this form with your reference so we can confirm it.</p>
     </div>
-    <div class="sm-link-box" style="margin-bottom:14px" id="pool-banking-box">
+    <div class="sm-link-box pool-banking-box" style="margin-bottom:14px">
       <strong>Banking details</strong><br>
       Account name: SA Recruiters<br>
       Bank: [add bank name]<br>
@@ -3340,6 +3344,7 @@ function goPool() {
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
   window.scrollTo({ top: 0 });
   loadPoolCandidates();
+  loadPoolBankingDetails();
 }
 
 async function loadPoolCandidates() {
@@ -3421,17 +3426,18 @@ function openPoolRegisterSheet() {
 
 // ----- Talent Pool banking details (admin-editable, stored in app_settings) -----
 async function loadPoolBankingDetails() {
-  var box = document.getElementById('pool-banking-box');
-  if (!box) return;
+  var boxes = document.querySelectorAll('.pool-banking-box');
+  if (!boxes.length) return;
   var raw = await getAppSetting('pool_banking_details', '');
   var d = { account_name: 'SA Recruiters', bank: '', account_number: '', branch_code: '' };
   if (raw) { try { Object.assign(d, JSON.parse(raw)); } catch(e) {} }
-  box.innerHTML = '<strong>Banking details</strong><br>' +
+  var html = '<strong>Banking details</strong><br>' +
     'Account name: ' + escapeHtml(d.account_name || 'SA Recruiters') + '<br>' +
     'Bank: ' + escapeHtml(d.bank || '[add bank name]') + '<br>' +
     'Account number: ' + escapeHtml(d.account_number || '[add account number]') + '<br>' +
     'Branch code: ' + escapeHtml(d.branch_code || '[add branch code]') + '<br>' +
     'Reference: use your full name';
+  boxes.forEach(function(box){ box.innerHTML = html; });
 }
 
 async function submitPoolRegistration() {
