@@ -106,6 +106,7 @@
       <div class="stat-card" data-ripple onclick="showAllAgencies()" role="button" tabindex="0" aria-label="View all agencies"><span class="stat-arrow">→</span><div class="stat-value" id="stat-agencies">0</div><div class="stat-label">Agencies</div></div>
       <div class="stat-card" data-ripple onclick="showAllBranches()" role="button" tabindex="0" aria-label="View all branches"><span class="stat-arrow">→</span><div class="stat-value" id="stat-branches">0</div><div class="stat-label">Branches</div></div>
       <div class="stat-card" data-ripple onclick="showAllVacancies()" role="button" tabindex="0" aria-label="View all vacancies"><span class="stat-arrow">→</span><div class="stat-value" id="stat-vacancies">0</div><div class="stat-label">Vacancies</div></div>
+      <div class="stat-card" data-ripple onclick="showAllEmployers()" role="button" tabindex="0" aria-label="View all employers"><span class="stat-arrow">→</span><div class="stat-value" id="stat-employers">0</div><div class="stat-label">Employers</div></div>
     </div>
 
     <div class="section-head">
@@ -214,6 +215,7 @@
     <div class="pgroup-label">Post &amp; Manage</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon tile-green"><svg><use href="icons.svg#i952b6f"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" id="registeremployer-menu-item" data-ripple onclick="openEmployerForm()"><span class="mi-icon tile-indigo"><svg><use href="icons.svg#i30b4d5"/></svg></span><span>Register Your Company<span class="mi-sub">List as an employer and post vacancies directly</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
 
     <div class="pgroup-label">Community</div>
@@ -431,6 +433,34 @@
     </div>
   </div>
 
+  <!-- ============ ALL EMPLOYERS LIST ============ -->
+  <div class="screen" id="screen-allemployers">
+    <div class="screen-fixed">
+    <header>
+      <div class="logo-text">Employers</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 12px">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="allemployers-search" class="sr-only">Search employers</label>
+        <input id="allemployers-search" type="search" placeholder="Search companies, industries, locations..." oninput="renderAllEmployersList()">
+      </div>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="screen-intro">
+      <p>Companies that post their own vacancies directly. Verified employers post here — their jobs also show up in All Vacancies.</p>
+    </div>
+    <div class="hub-admin-row" style="margin:0 16px 14px;">
+      <button class="hub-add-btn" data-ripple onclick="openEmployerForm()">+ Register your company</button>
+    </div>
+    <div id="allemployers-list"></div>
+    </div>
+  </div>
+
   <!-- ============ TALENT POOL ============ -->
   <div class="screen" id="screen-pool">
     <div class="screen-fixed">
@@ -516,6 +546,34 @@
     </div>
     <button class="sheet-submit" data-ripple onclick="saveAgency()">Save</button>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('form-overlay')">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ ADD/EDIT EMPLOYER SHEET ============ -->
+<div class="sheet-scrim" id="employer-form-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 id="employer-form-title">Register your company</h3>
+    <div class="photo-row">
+      <div class="avatar" style="width:56px;height:56px;">
+        <img id="emp-photo-preview" style="display:none;">
+        <span id="emp-photo-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
+      </div>
+      <label>Add logo<input type="file" accept="image/*" onchange="handleEmployerPhoto(event)"></label>
+    </div>
+    <div class="field"><label>Company name</label><input id="e-name" placeholder="e.g. Shoprite Checkers"></div>
+    <div class="field"><label>Industry</label><input id="e-industry" placeholder="e.g. Retail, Manufacturing, Logistics"></div>
+    <div class="field"><label>Website</label><input id="e-website" placeholder="e.g. www.example.co.za"></div>
+    <div class="field"><label>Contact person / number</label><input id="e-contact" placeholder="e.g. HR Dept, 082 000 0000"></div>
+    <div class="field"><label>Email address</label><input id="e-email" placeholder="e.g. careers@company.co.za"></div>
+    <div class="field"><label>Location</label><input id="e-location" placeholder="e.g. Sandton, Johannesburg"></div>
+    <div class="field"><label>Address</label><input id="e-address" placeholder="e.g. 4 Dunton Road, Rivonia, Sandton, 2128"></div>
+    <div class="toggle-row" id="employer-verified-toggle-row" style="display:none;">
+      <span>Mark as Verified</span>
+      <label class="switch"><input type="checkbox" id="e-verified"><span class="track"><span class="knob"></span></span></label>
+    </div>
+    <button class="sheet-submit" data-ripple onclick="saveEmployer()">Save</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('employer-form-overlay')">Cancel</button>
   </div>
 </div>
 
