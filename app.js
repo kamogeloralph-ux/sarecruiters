@@ -2177,8 +2177,6 @@ async function adminLogin() {}
 async function adminLogout() {}
 function updateAdminUI() {
   // No admin UI in public app — keep as no-op for any callers.
-  var fabSuggest = document.getElementById('fab-suggest');
-  if (fabSuggest) fabSuggest.style.display = 'flex';
   var fabAdmin = document.getElementById('fab-admin');
   if (fabAdmin) fabAdmin.style.display = 'none';
 }
@@ -2188,6 +2186,7 @@ function updateAdminUI() {
 // ===== Bottom nav =====
 document.querySelectorAll('.navbtn').forEach(function(btn) {
   btn.addEventListener('click', function() {
+    if (!btn.dataset.tab) return; // action buttons (e.g. Feedback) handle their own click
     document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b===btn); });
     document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
     document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
@@ -2802,8 +2801,6 @@ function enterManagerMode(token) {
   if (nav) nav.style.display = 'none';
   var fabAdmin = document.getElementById('fab-admin');
   if (fabAdmin) fabAdmin.style.display = 'none';
-  var fabSuggest = document.getElementById('fab-suggest');
-  if (fabSuggest) fabSuggest.style.display = 'none';
   document.getElementById('manager-agency-name').textContent = managerAgency.name || 'Agency';
   renderManagerMode();
   return true;
@@ -2822,8 +2819,6 @@ function exitManagerMode() {
   if (nav) nav.style.display = '';
   var fabAdmin = document.getElementById('fab-admin');
   if (fabAdmin) fabAdmin.style.display = isAdmin ? 'flex' : 'none';
-  var fabSuggest = document.getElementById('fab-suggest');
-  if (fabSuggest) fabSuggest.style.display = isAdmin ? 'none' : 'flex';
   // Go back to home
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-home').classList.add('active');

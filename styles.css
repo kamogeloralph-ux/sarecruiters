@@ -106,7 +106,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 
 /* ===== Screen intro banner (replaces the old back-bar on list screens) ===== */
 .screen-intro{padding:14px 16px 14px}
-.screen-intro p{margin:0;font-size:13px;line-height:1.55;color:var(--text-2);background:linear-gradient(180deg,var(--accent-soft),transparent);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:11px 13px}
+.screen-intro p{margin:0;font-size:13px;line-height:1.55;color:var(--text-2);padding:0 2px}
 
 /* ===== GLOBAL ICON SAFETY: every <use>-based icon gets a sane default size,
    stroke colour and weight so nothing can ever render as a huge black blob
@@ -524,19 +524,14 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-empty h3{font-size:16px;font-weight:700;margin-bottom:6px}
 .vac-empty p{font-size:13px;color:var(--text-2);line-height:1.5}
 
-.fab{position:fixed;bottom:100px;right:calc(50% - 260px + 20px);width:54px;height:54px;border-radius:27px;background:var(--accent);color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 28px -6px rgba(10,132,255,.5),0 6px 16px rgba(0,0,0,.3);z-index:40;font-size:26px;font-weight:400}
-.fab:active{transform:scale(.9)}
-.fab-suggest{background:var(--card);color:var(--accent);border:1.5px solid var(--accent);box-shadow:0 8px 24px -6px rgba(10,132,255,.35),0 4px 12px rgba(0,0,0,.2);font-size:22px}
-.fab-suggest svg{width:24px;height:24px}
-.fab svg{width:26px;height:26px;display:block}
-@media (max-width:559px){ .fab{right:20px} }
+
 
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:80px;max-width:520px;margin:0 auto;background:color-mix(in srgb,var(--card) 86%,transparent);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom);z-index:50}
-.navbtn{background:none;border:none;color:var(--accent);opacity:.5;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 14px;border-radius:12px;transition:opacity .2s}
+.navbtn{background:none;border:none;color:var(--accent);opacity:.5;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 8px;border-radius:12px;transition:opacity .2s;flex:1;min-width:0}
 .navbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .navbtn.active{color:var(--accent);opacity:1}
 .navbtn.active svg{stroke:var(--accent)}
-.navbtn-label{font-size:10px;font-weight:600}
+.navbtn-label{font-size:9.5px;font-weight:600}
 
 .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:60}
 .sheet-scrim.open{opacity:1;pointer-events:auto}
@@ -583,7 +578,6 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .ripple-el{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:ripple-anim .55s ease-out forwards;pointer-events:none}
 @keyframes ripple-anim{to{transform:scale(2.6);opacity:0}}
 [data-ripple]{position:relative;overflow:hidden}
-.fab[data-ripple]{position:fixed}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 /* ===== SMART MANAGER (admin section) ===== */
