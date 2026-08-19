@@ -1466,6 +1466,19 @@ function timeAgo(dateStr) {
   return year + (year === 1 ? ' year ago' : ' years ago');
 }
 
+/* Shorten a full street address down to "Suburb, City" for compact collapsed rows.
+   Drops a trailing postal code / "South Africa" if present, then keeps the last
+   two comma-separated segments. Falls back gracefully for short addresses. */
+function shortLocation(loc) {
+  if (!loc) return '';
+  var parts = loc.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  while (parts.length > 2 && (/^\d+$/.test(parts[parts.length - 1]) || /^south africa$/i.test(parts[parts.length - 1]))) {
+    parts.pop();
+  }
+  if (parts.length <= 2) return parts.join(', ');
+  return parts.slice(-2).join(', ');
+}
+
 /* Helper: detail row with icon + label + value */
 function vacDetRow(icn, label, val) {
   return '<div class="vac-detail-row"><span class="vac-detail-icon">' + icn + '</span><div><div class="vac-detail-label">' + label + '</div><div class="vac-detail-value">' + val + '</div></div></div>';
@@ -2390,11 +2403,13 @@ function renderAllBranchesList() {
   if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No branches found</h3><p>Try a different search term.</p></div>'; return; }
   var html = list.map(function(b){
     var bid = 'ab-' + b.id;
-    /* Collapsed: branch name + location only, Indeed-style. Tap to reveal agency, phone, email. */
+    var agencyName = b._agencyName || 'Unknown agency';
+    /* Collapsed: agency name + short branch location only, Indeed-style.
+       Tap to reveal the branch label, full address, phone and email. */
     var head = '<div class="branch-block-head" onclick="toggleBranchBlock(\'' + bid + '\')">' +
       '<div class="hub-contact-body">' +
-        '<div class="hub-contact-value">' + escapeHtml(b.name || 'Branch') + '</div>' +
-        (b.location ? '<div class="branch-sub">' + VAC_ICONS.pin + escapeHtml(b.location) + '</div>' : '') +
+        '<div class="hub-contact-value">' + escapeHtml(agencyName) + '</div>' +
+        (b.location ? '<div class="branch-sub">' + VAC_ICONS.pin + escapeHtml(shortLocation(b.location)) + '</div>' : '') +
       '</div>' +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</div>';
@@ -2402,8 +2417,8 @@ function renderAllBranchesList() {
     body += '<div class="hub-contact-item">' +
       '<div class="hub-contact-icon">' + VAC_ICONS.building + '</div>' +
       '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Agency</div>' +
-        '<div class="hub-contact-value">' + escapeHtml(b._agencyName || 'Unknown agency') + '</div>' +
+        '<div class="hub-contact-label">Branch</div>' +
+        '<div class="hub-contact-value">' + escapeHtml(b.name || 'Branch') + '</div>' +
       '</div>' +
     '</div>';
     if (b.location) {

@@ -119,10 +119,12 @@ button > svg:only-child, .mi-icon svg, .icon-btn svg,
 a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 /* Neutral / inactive icons use the purple accent at reduced opacity (soft purple, never black) */
 .save-btn svg path,.vac-save svg,.star-btn svg path,.rate-list-title svg,
-.branch-block-actions .hub-row-edit svg,.search-inner svg,.navbtn:not(.active) svg,
+.branch-block-actions .hub-row-edit svg,.search-inner svg,
 .hub-row-edit svg,.hub-row-del svg{stroke:var(--accent);fill:none}
-.navbtn:not(.active){color:var(--accent);opacity:.55}
-.navbtn.active{color:var(--accent);opacity:1}
+.navbtn:not(.active) svg{stroke:var(--text-2)}
+.navbtn.active svg{stroke:var(--text)}
+.navbtn:not(.active){color:var(--text-2);opacity:.7}
+.navbtn.active{color:var(--text);opacity:1}
 /* Filled-style brand glyphs (WhatsApp logo, chat bubble) — fill, no stroke */
 .sheet-submit svg use, .wa-glyph{fill:currentColor;stroke:none}
 /* Icons that are explicitly filled (stars, save, play, badges) keep their fill behaviour */
@@ -526,10 +528,10 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 
 
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:80px;max-width:520px;margin:0 auto;background:color-mix(in srgb,var(--card) 86%,transparent);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom);z-index:50}
-.navbtn{background:none;border:none;color:var(--accent);opacity:.5;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 8px;border-radius:12px;transition:opacity .2s;flex:1;min-width:0}
+.navbtn{background:none;border:none;color:var(--text-2);opacity:.7;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 8px;border-radius:12px;transition:opacity .2s,color .2s;flex:1;min-width:0}
 .navbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.navbtn.active{color:var(--accent);opacity:1}
-.navbtn.active svg{stroke:var(--accent)}
+.navbtn.active{color:var(--text);opacity:1}
+.navbtn.active svg{stroke:var(--text)}
 .navbtn-label{font-size:9.5px;font-weight:600}
 
 .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:60}
