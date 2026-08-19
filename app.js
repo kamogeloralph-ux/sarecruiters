@@ -580,35 +580,31 @@ function hubVacancies(a) {
 }
 
 function hubBranches(a) {
-  var ICON_PIN   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
-  var ICON_PHONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
-  var ICON_MAIL  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
-  var ICON_BUILD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/></svg>';
-
   var list = branchesFor(a.id);
   var html = '';
   if (!list.length) {
     html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No branches listed yet.</div>';
   } else {
     list.forEach(function(b) {
-      /* Branch header — name with building icon */
-      html += '<div class="branch-block">';
-      html += '<div class="branch-block-head">' +
-        '<div class="hub-contact-icon">' + ICON_BUILD + '</div>' +
+      var bid = 'hb-' + a.id + '-' + b.id;
+      /* Collapsed: name + location only, Indeed-style. Tap to reveal contact details. */
+      html += '<div class="branch-block" id="' + bid + '">';
+      html += '<div class="branch-block-head" onclick="toggleBranchBlock(\'' + bid + '\')">' +
         '<div class="hub-contact-body">' +
-          '<div class="hub-contact-label">Branch</div>' +
           '<div class="hub-contact-value">' + escapeHtml(b.name || 'Branch') + '</div>' +
+          (b.location ? '<div class="branch-sub">' + VAC_ICONS.pin + escapeHtml(b.location) + '</div>' : '') +
         '</div>' +
         (isAdmin ? '<div class="branch-block-actions">' +
-          '<button class="hub-row-edit" data-ripple title="Edit branch" onclick="openBranchSheet(\'' + a.id + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' +
-          '<button class="hub-row-del" data-ripple title="Delete branch" onclick="deleteBranch(\'' + b.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+          '<button class="hub-row-edit" data-ripple title="Edit branch" onclick="event.stopPropagation();openBranchSheet(\'' + a.id + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' +
+          '<button class="hub-row-del" data-ripple title="Delete branch" onclick="event.stopPropagation();deleteBranch(\'' + b.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
         '</div>' : '') +
+        '<span class="chevron">' + ICON_CHEVRON + '</span>' +
       '</div>';
-      /* Contact detail rows — clean labeled layout */
-      html += '<div class="hub-contact-grid">';
+      /* Expanded: full contact detail rows — clean labeled layout */
+      html += '<div class="branch-detail"><div class="branch-detail-inner"><div class="hub-contact-grid">';
       if (b.location) {
         html += '<div class="hub-contact-item is-link">' +
-          '<div class="hub-contact-icon">' + ICON_PIN + '</div>' +
+          '<div class="hub-contact-icon">' + VAC_ICONS.pin + '</div>' +
           '<div class="hub-contact-body">' +
             '<div class="hub-contact-label">Address</div>' +
             '<div class="hub-contact-value">' + mapsLink(b.location) + '</div>' +
@@ -617,7 +613,7 @@ function hubBranches(a) {
       }
       if (b.phone) {
         html += '<div class="hub-contact-item is-link">' +
-          '<div class="hub-contact-icon">' + ICON_PHONE + '</div>' +
+          '<div class="hub-contact-icon">' + VAC_ICONS.phone + '</div>' +
           '<div class="hub-contact-body">' +
             '<div class="hub-contact-label">Phone</div>' +
             '<div class="hub-contact-value">' + telLink(b.phone) + '</div>' +
@@ -626,14 +622,14 @@ function hubBranches(a) {
       }
       if (b.email) {
         html += '<div class="hub-contact-item is-link">' +
-          '<div class="hub-contact-icon">' + ICON_MAIL + '</div>' +
+          '<div class="hub-contact-icon">' + VAC_ICONS.mail + '</div>' +
           '<div class="hub-contact-body">' +
             '<div class="hub-contact-label">Email</div>' +
             '<div class="hub-contact-value">' + mailLink(b.email) + '</div>' +
           '</div>' +
         '</div>';
       }
-      html += '</div>'; // close hub-contact-grid
+      html += '</div></div></div>'; // close hub-contact-grid, branch-detail-inner, branch-detail
       html += '</div>'; // close branch-block
     });
   }
@@ -1376,18 +1372,11 @@ function vacancyCard(v, agency) {
     logo = '<div class="vac-logo ' + grad + '">' + escapeHtml(initials(orgName)) + '</div>';
   }
 
-  /* Chips (always-visible summary) */
-  var chips = '';
-  if (v.location) chips += '<span class="vac-chip">' + VAC_ICONS.pin + escapeHtml(v.location) + '</span>';
-  if (v.remote) chips += '<span class="vac-chip">' + VAC_ICONS.globe + escapeHtml(v.remote) + '</span>';
-  if (v.employment_type) chips += '<span class="vac-chip">' + VAC_ICONS.briefcase + escapeHtml(v.employment_type) + '</span>';
-  if (v.experience_level) chips += '<span class="vac-chip">' + VAC_ICONS.star + escapeHtml(v.experience_level) + '</span>';
-  if (v.contract_type) chips += '<span class="vac-chip">' + VAC_ICONS.doc + escapeHtml(v.contract_type) + '</span>';
-  if (v.salary) chips += '<span class="vac-chip">' + VAC_ICONS.money + escapeHtml(v.salary) + '</span>';
-  if (v.closing_date) chips += '<span class="vac-chip">' + VAC_ICONS.clock + 'Closes ' + escapeHtml(v.closing_date) + '</span>';
-  /* Show email/phone chips in the top section when there's no apply link */
-  if (!v.link && v.email) chips += '<span class="vac-chip">' + VAC_ICONS.mail + escapeHtml(v.email) + '</span>';
-  if (!v.link && v.phone) chips += '<span class="vac-chip">' + VAC_ICONS.phone + escapeHtml(v.phone) + '</span>';
+  /* Indeed-style summary: title, company, location, posted time — nothing else.
+     Everything else (work arrangement, salary, closing date, contacts...) only
+     shows once the card is tapped open. */
+  var locLine = v.location ? ('<div class="vac-loc-line">' + VAC_ICONS.pin + escapeHtml(v.location) + '</div>') : '';
+  var postedLine = '<div class="vac-posted">' + timeAgo(v.created_at) + '</div>';
 
   /* Detail rows (inside expandable section) */
   var detail = '';
@@ -1444,14 +1433,37 @@ function vacancyCard(v, agency) {
       '<div class="vac-body">' +
         '<div class="vac-title">' + title + '</div>' +
         '<div class="vac-company">' + (isGeneral ? '' : 'via ') + escapeHtml(orgName) + (isGeneral ? '' : ' (Agency)') + '</div>' +
-        (chips ? '<div class="vac-chips">' + chips + '</div>' : '') +
+        locLine +
+        postedLine +
       '</div>' +
-      '<button class="vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + key + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button>' +
+      '<div class="vac-card-side">' +
+        '<button class="vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + key + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button>' +
+        '<span class="chevron">' + ICON_CHEVRON + '</span>' +
+      '</div>' +
     '</div>' +
     '<div class="vac-detail"><div class="vac-detail-inner">' +
       detail + desc + actions + admin +
     '</div></div>' +
   '</article>';
+}
+
+/* Human-friendly relative time, Indeed-style ("Just posted", "1 day ago", "3 days ago"...) */
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  var then = new Date(dateStr).getTime();
+  if (!then || isNaN(then)) return '';
+  var diff = Date.now() - then;
+  if (diff < 0) diff = 0;
+  var min = Math.floor(diff / 60000);
+  if (min < 60) return min < 1 ? 'Just posted' : (min + (min === 1 ? ' minute ago' : ' minutes ago'));
+  var hr = Math.floor(min / 60);
+  if (hr < 24) return hr + (hr === 1 ? ' hour ago' : ' hours ago');
+  var day = Math.floor(hr / 24);
+  if (day < 30) return day + (day === 1 ? ' day ago' : ' days ago');
+  var month = Math.floor(day / 30);
+  if (month < 12) return month + (month === 1 ? ' month ago' : ' months ago');
+  var year = Math.floor(month / 12);
+  return year + (year === 1 ? ' year ago' : ' years ago');
 }
 
 /* Helper: detail row with icon + label + value */
@@ -1494,6 +1506,12 @@ window.toggleVac = function(id) {
 window.closeVac = function(id) {
   var c = document.getElementById('vc-' + id);
   if (c) c.classList.remove('open');
+};
+
+/* Toggle expand/collapse of a branch block/row (used by hub branch tab and the All Branches screen) */
+window.toggleBranchBlock = function(id) {
+  var c = document.getElementById(id);
+  if (c) c.classList.toggle('open');
 };
 
 window.toggleSave = function(btn, key) {
@@ -2372,22 +2390,59 @@ function renderAllBranchesList() {
   });
   if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No branches found</h3><p>Try a different search term.</p></div>'; return; }
   var html = list.map(function(b){
-    var locParts = [];
-    if (b.name) locParts.push(escapeHtml(b.name));
-    if (b.location) locParts.push(escapeHtml(b.location));
-    var contactHtml = '';
-    if (b.phone) contactHtml += '<span>☎ ' + escapeHtml(b.phone) + '</span>';
-    if (b.email) contactHtml += '<a href="mailto:' + escapeHtml(b.email) + '">✉ ' + escapeHtml(b.email) + '</a>';
-    return '<div class="branch-row">' +
-      '<div class="br-agency">' + escapeHtml(b._agencyName || 'Unknown agency') + '</div>' +
-      '<div class="br-name">' + escapeHtml(b.name || 'Branch') + '</div>' +
-      (b.location ? '<div class="br-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0;margin-top:1px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + escapeHtml(b.location) + '</div>' : '') +
-      (contactHtml ? '<div class="br-contact">' + contactHtml + '</div>' : '') +
-      (isAdmin ? '<div class="br-actions">' +
-        '<button class="br-edit" data-ripple onclick="openBranchSheet(\'' + (b.agency_id||'') + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg> Edit</button>' +
-        '<button class="br-del" data-ripple onclick="deleteBranchAllList(\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>' +
-      '</div>' : '') +
+    var bid = 'ab-' + b.id;
+    /* Collapsed: branch name + location only, Indeed-style. Tap to reveal agency, phone, email. */
+    var head = '<div class="branch-block-head" onclick="toggleBranchBlock(\'' + bid + '\')">' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-value">' + escapeHtml(b.name || 'Branch') + '</div>' +
+        (b.location ? '<div class="branch-sub">' + VAC_ICONS.pin + escapeHtml(b.location) + '</div>' : '') +
+      '</div>' +
+      '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</div>';
+    var body = '<div class="branch-detail"><div class="branch-detail-inner"><div class="hub-contact-grid">';
+    body += '<div class="hub-contact-item">' +
+      '<div class="hub-contact-icon">' + VAC_ICONS.building + '</div>' +
+      '<div class="hub-contact-body">' +
+        '<div class="hub-contact-label">Agency</div>' +
+        '<div class="hub-contact-value">' + escapeHtml(b._agencyName || 'Unknown agency') + '</div>' +
+      '</div>' +
+    '</div>';
+    if (b.location) {
+      body += '<div class="hub-contact-item is-link">' +
+        '<div class="hub-contact-icon">' + VAC_ICONS.pin + '</div>' +
+        '<div class="hub-contact-body">' +
+          '<div class="hub-contact-label">Address</div>' +
+          '<div class="hub-contact-value">' + mapsLink(b.location) + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    if (b.phone) {
+      body += '<div class="hub-contact-item is-link">' +
+        '<div class="hub-contact-icon">' + VAC_ICONS.phone + '</div>' +
+        '<div class="hub-contact-body">' +
+          '<div class="hub-contact-label">Phone</div>' +
+          '<div class="hub-contact-value">' + telLink(b.phone) + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    if (b.email) {
+      body += '<div class="hub-contact-item is-link">' +
+        '<div class="hub-contact-icon">' + VAC_ICONS.mail + '</div>' +
+        '<div class="hub-contact-body">' +
+          '<div class="hub-contact-label">Email</div>' +
+          '<div class="hub-contact-value">' + mailLink(b.email) + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    body += '</div>';
+    if (isAdmin) {
+      body += '<div class="branch-detail-actions">' +
+        '<button class="br-edit" data-ripple onclick="event.stopPropagation();openBranchSheet(\'' + (b.agency_id||'') + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg> Edit</button>' +
+        '<button class="br-del" data-ripple onclick="event.stopPropagation();deleteBranchAllList(\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>' +
+      '</div>';
+    }
+    body += '</div></div>'; // close branch-detail-inner, branch-detail
+    return '<div class="branch-block" id="' + bid + '">' + head + body + '</div>';
   }).join('');
   el.innerHTML = html;
 }
