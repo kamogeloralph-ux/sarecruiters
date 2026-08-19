@@ -370,7 +370,9 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg><use href="icons.svg#i48c59a"/></svg> Back to Home</button></div>
+    <div class="screen-intro">
+      <p>Browse every listed recruitment agency — search by name, trade or industry, then open a profile to see branches, contacts and vacancies.</p>
+    </div>
     <div id="allagencies-list"></div>
     </div>
   </div>
@@ -393,7 +395,9 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg><use href="icons.svg#i48c59a"/></svg> Back to Home</button></div>
+    <div class="screen-intro">
+      <p>Search agency branches by name, location or parent agency. Tap a branch for contact details and linked vacancies.</p>
+    </div>
     <div id="allbranches-list"></div>
     </div>
   </div>
@@ -421,7 +425,9 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg><use href="icons.svg#i48c59a"/></svg> Back to Home</button></div>
+    <div class="screen-intro">
+      <p>Latest vacancies across all agencies. Filter by work arrangement, experience level or industry, then apply directly.</p>
+    </div>
     <div id="allvacancies-list"></div>
     </div>
   </div>
@@ -449,8 +455,7 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg><use href="icons.svg#i48c59a"/></svg> Back to Home</button></div>
-    <div class="manager-banner">
+    <div class="screen-intro">
       <p>Browse job seekers who've joined the Talent Pool — open profiles, contact them directly. Employers of any sector are welcome to browse for free.</p>
     </div>
     <div id="pool-list"></div>
@@ -616,8 +621,8 @@
     <div style="text-align:center;font-size:40px;margin-bottom:12px;">🔒</div>
     <h3 style="text-align:center;">Vacancy posting is closed</h3>
     <p style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">To keep the directory free of spam, general vacancy posting is opened on request. Message the admin on WhatsApp and it'll be opened for you.</p>
-    <a id="vacancy-locked-wa-link" href="#" target="_blank" rel="noopener" class="sheet-submit" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
-      <svg><use href="icons.svg#i7ebf0f"/></svg>
+    <a id="vacancy-locked-wa-link" href="#" target="_blank" rel="noopener" class="sheet-submit wa-btn" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
+      <svg class="wa-glyph"><use href="icons.svg#i7ebf0f"/></svg>
       Message admin on WhatsApp
     </a>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-locked-overlay')">Close</button>
@@ -653,7 +658,7 @@
            Bank: Capitec 2573389037 (SA Recruiters)
            Keep these three blocks exactly as-is in any future edit. -->
       <div class="hub-contact-item wide" data-ripple onclick="copyText('sarecruiters.directory@gmail.com', this)"><div class="hub-contact-icon"><svg><use href="icons.svg#i651ffa"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Email</div><div class="hub-contact-value">sarecruiters.directory@gmail.com</div></div></div>
-      <div class="hub-contact-item is-link"><div class="hub-contact-icon"><svg><use href="icons.svg#i7ebf0f"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div></div>
+      <div class="hub-contact-item is-link"><div class="hub-contact-icon wa-tile"><svg class="wa-glyph"><use href="icons.svg#i7ebf0f"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div></div>
       <div class="hub-contact-item wide" data-ripple onclick="copyText('2573389037', this)"><div class="hub-contact-icon"><svg><use href="icons.svg#i536d55"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">2573389037 (SA Recruiters)</div></div></div>
       <!-- ⚠️ END PROTECTED CONTACT DETAILS ⚠️ -->
     </div>
@@ -722,8 +727,8 @@
     <div id="wa-confirm-icon" style="text-align:center;margin-bottom:12px;font-size:40px;">✅</div>
     <h3 id="wa-confirm-title" style="text-align:center;">Submitted — thank you!</h3>
     <p id="wa-confirm-msg" style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">Your submission has been saved. Tap the button below to send it straight to the admin via WhatsApp so it's seen right away.</p>
-    <a id="wa-confirm-link" href="#" target="_blank" rel="noopener" class="sheet-submit" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
-      <svg><use href="icons.svg#ic4f1c0"/></svg>
+    <a id="wa-confirm-link" href="#" target="_blank" rel="noopener" class="sheet-submit wa-btn" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
+      <svg class="wa-glyph"><use href="icons.svg#ic4f1c0"/></svg>
       Send via WhatsApp
     </a>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('whatsapp-confirm-overlay')">Skip — just save it</button>
