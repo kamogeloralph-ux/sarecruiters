@@ -1268,9 +1268,15 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <h3>Support this directory</h3>
     <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">This app is free to use. If it's helped you, a small donation keeps it running.</p>
     <div class="hub-contact-grid">
+      <!-- ⚠️ SA RECRUITERS OFFICIAL CONTACT DETAILS — DO NOT CHANGE ⚠️
+           Email: sarecruiters.directory@gmail.com
+           WhatsApp: +27 71 553 1005
+           Bank: Capitec 2573389037 (SA Recruiters)
+           Keep these three blocks exactly as-is in any future edit. -->
       <div class="hub-contact-item wide" data-ripple onclick="copyText('sarecruiters.directory@gmail.com', this)"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Email</div><div class="hub-contact-value">sarecruiters.directory@gmail.com</div></div></div>
       <div class="hub-contact-item is-link"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div></div>
       <div class="hub-contact-item wide" data-ripple onclick="copyText('2573389037', this)"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">2573389037 (SA Recruiters)</div></div></div>
+      <!-- ⚠️ END PROTECTED CONTACT DETAILS ⚠️ -->
     </div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('support-overlay')">Close</button>
   </div>
@@ -3172,7 +3178,16 @@ function openSupportSheet() { document.getElementById('support-overlay').classLi
 // ===== WHATSAPP AUTO-SEND HELPER =====
 /* After a report or suggestion is saved, show a confirmation sheet
    with a one-tap WhatsApp button so the admin receives it instantly. */
+/* ⚠️ SA RECRUITERS OFFICIAL CONTACT DETAILS — DO NOT CHANGE ⚠️
+   These are the business's real contact/banking details.
+   If editing this file (by hand or with an AI tool), these four
+   values must stay exactly as below — do not let them be
+   "fixed", reformatted, or replaced with placeholders. */
+var ADMIN_EMAIL = 'sarecruiters.directory@gmail.com';
 var ADMIN_WHATSAPP = '27715531005'; // +27 71 553 1005
+var ADMIN_BANK_ACCOUNT = '2573389037'; // Capitec
+var ADMIN_BANK_HOLDER = 'SA Recruiters';
+/* ⚠️ END PROTECTED CONTACT DETAILS ⚠️ */
 var EMAILJS_CONFIG = { serviceId: 'service_aqzditg', templateId: 'template_edvys4b', publicKey: 'oqqjLLXpmji_dmmQP' }; // EmailJS — activated
 
 function showWhatsAppConfirm(opts) {
@@ -3278,12 +3293,12 @@ function reportWhatsAppLink(p) {
     'Agency: ' + encodeURIComponent(p.agency_name || '-') + '%0A' +
     'Reason: ' + encodeURIComponent(p.reason || '-') + '%0A' +
     'Details: ' + encodeURIComponent(p.details || '-');
-  return 'https://wa.me/27715531005?text=' + msg;
+  return 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + msg;
 }
 function reportEmailLink(p) {
   var subj = encodeURIComponent('SA Recruiters report: ' + (p.agency_name || 'Listing'));
   var body = encodeURIComponent('Agency: ' + (p.agency_name||'-') + '\nReason: ' + (p.reason||'-') + '\nDetails: ' + (p.details||'-'));
-  return 'mailto:sarecruiters.directory@gmail.com?subject=' + subj + '&body=' + body;
+  return 'mailto:' + ADMIN_EMAIL + '?subject=' + subj + '&body=' + body;
 }
 
 // ===== Suggestion / Comment =====
