@@ -8,6 +8,7 @@ var editingId = null;
 var agenciesCache = [];
 var branchesCache = [];
 var vacanciesCache = [];
+var employersCache = [];
 var ratingsCache = [];
 var isAdmin = false;
 var publicVacancyPostingOpen = false;
@@ -173,6 +174,36 @@ async function upsertAgency(a) {
 async function removeAgency(id) {
   var { error } = await supabaseClient.from('agencies').delete().eq('id', id);
   if (error) { console.error('agency delete', error); alert('Could not delete. Check your Supabase setup.'); }
+}
+
+/* ── Data: EMPLOYERS ──────────────────────────────────
+   Companies that register directly and post their own vacancies (separate
+   from the recruitment-agency directory). Same try-Supabase-then-fall-back
+   pattern as branches/vacancies, so this works immediately even before the
+   `employers` table + `employer_id` vacancies column are created — run
+   CREATE_EMPLOYERS_TABLE.sql in the Supabase SQL Editor to make it live. */
+async function getEmployers() {
+  try {
+    var { data, error } = await supabaseClient.from('employers').select('*').order('created_at', { ascending: false });
+    if (!error && data) return data.map(function(e) { return { id: e.id, name: e.name, industry: e.industry, website: e.website, contact: e.contact, email: e.email, location: e.location, address: e.address, photo: e.photo, verified: !!e.verified, manage_token: e.manage_token || '' }; });
+  } catch(err){}
+  return readLocal('employers');
+}
+async function upsertEmployer(e) {
+  try {
+    var { error } = await supabaseClient.from('employers').upsert(e);
+    if (!error) return true;
+  } catch(err){}
+  var arr = readLocal('employers');
+  var i = arr.findIndex(function(x){ return x.id === e.id; });
+  if (i >= 0) arr[i] = Object.assign({}, arr[i], e); else arr.push(e);
+  writeLocal('employers', arr);
+  return false;
+}
+async function removeEmployer(id) {
+  try { await supabaseClient.from('employers').delete().eq('id', id); } catch(err){}
+  var arr = readLocal('employers').filter(function(x){ return x.id !== id; });
+  writeLocal('employers', arr);
 }
 
 /* ── Data: BRANCHES & VACANCIES ─────────────────────────
@@ -471,6 +502,12 @@ async function loadAll() {
   agenciesCache = await getAgencies();
   branchesCache = await getBranches();
   vacanciesCache = await getVacancies();
+  employersCache = await getEmployers();
+  // Sort employers: verified first, then alphabetical
+  employersCache.sort(function(a,b){
+    if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
+    return (a.name||'').localeCompare(b.name||'');
+  });
   loadRatingsFromSupabase();
   // Sort: rating score first (higher = better, climbs to top), then verified,
   // then rating count (more ratings = more trust), then alphabetical by name
@@ -509,10 +546,13 @@ function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   document.getElementById('stat-branches').textContent = branchesCache.length;
   document.getElementById('stat-vacancies').textContent = vacanciesCache.length;
+  var statEmployers = document.getElementById('stat-employers');
+  if (statEmployers) statEmployers.textContent = employersCache.length;
 }
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
 function vacanciesFor(agencyId) { return vacanciesCache.filter(function(v){ return v.agency_id === agencyId; }); }
+function vacanciesForEmployer(employerId) { return vacanciesCache.filter(function(v){ return v.employer_id === employerId; }); }
 
 // ===== Hub card (agency) =====
 function avatarHtml(a) {
@@ -746,6 +786,160 @@ function hubContact(a) {
     '</div>';
   }
   return html;
+}
+
+// ===== Hub card (employer) =====
+// Same visual structure as the agency hub card, but scoped to employers:
+// employers only ever appear in the Employers section, and posting a
+// vacancy from here tags it with employer_id so it also shows in the
+// main Vacancies list/section.
+function employerHubCard(e) {
+  var vCount = vacanciesForEmployer(e.id).length;
+  var verifiedCheck = e.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
+  var jobsBadge = vCount > 0 ? '<span class="hub-stat hub-stat-right" title="' + vCount + ' job' + (vCount===1?'':'s') + '"><span class="hub-stat-num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>' + vCount + '</span></span>' : '';
+  return '' +
+  '<div class="hub-card" id="emphub-' + e.id + '">' +
+    '<button class="hub-summary" data-ripple onclick="toggleEmpHub(\'' + e.id + '\')" aria-expanded="false">' +
+      avatarHtml(e) +
+      '<div class="hub-summary-body">' +
+        '<div class="agency-name-row">' + verifiedCheck + '<span class="agency-name">' + escapeHtml(e.name || 'Unnamed company') + '</span></div>' +
+        (e.industry ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Industry:</span> ' + escapeHtml(e.industry) + '</div>' : (e.location ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Location:</span> ' + escapeHtml(e.location) + '</div>' : '')) +
+      '</div>' +
+      jobsBadge +
+      '<span class="chevron">' + ICON_CHEVRON + '</span>' +
+    '</button>' +
+    '<div class="hub-panel" id="emphub-panel-' + e.id + '">' +
+      '<div class="hub-panel-inner">' +
+        '<div class="hub-tabs">' +
+          '<button class="hub-tab active" data-ripple onclick="switchEmpHubTab(this,\'' + e.id + '\',\'vacancies\')">Vacancies</button>' +
+          '<button class="hub-tab" data-ripple onclick="switchEmpHubTab(this,\'' + e.id + '\',\'contact\')">Contact</button>' +
+        '</div>' +
+        '<div class="hub-tab-content" data-employer="' + e.id + '">' + employerHubVacancies(e) + '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function employerHubVacancies(e) {
+  var list = vacanciesForEmployer(e.id);
+  var html = '<div class="hub-list" style="padding:4px 0;">';
+  if (!list.length) {
+    html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No vacancies posted yet.</div>';
+  } else {
+    list.forEach(function(v) {
+      html += vacancyCard(v, {});
+      if (isAdmin) {
+        html += '<div style="text-align:right;margin:-4px 0 10px;"><button class="hub-row-del" data-ripple onclick="deleteGeneralVacancy(\'' + v.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>';
+      }
+    });
+  }
+  html += '</div>';
+  if (isAdmin || publicVacancyPostingOpen) {
+    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openEmployerVacancySheet(\'' + e.id + '\')">+ Post vacancy</button></div>';
+  } else {
+    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openVacancyLockedSheet()">+ Post vacancy</button></div>';
+  }
+  return html;
+}
+
+function employerHubContact(e) {
+  var html = '<div class="hub-contact-grid">';
+  if (e.contact) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + VAC_ICONS.phone + '</div>' +
+      '<div class="hub-contact-body"><div class="hub-contact-label">Contact person / phone</div><div class="hub-contact-value">' + telLink(e.contact) + '</div></div>' +
+    '</div>';
+  }
+  if (e.email) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + VAC_ICONS.mail + '</div>' +
+      '<div class="hub-contact-body"><div class="hub-contact-label">Email</div><div class="hub-contact-value">' + mailLink(e.email) + '</div></div>' +
+    '</div>';
+  }
+  if (e.website) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>' +
+      '<div class="hub-contact-body"><div class="hub-contact-label">Website</div><div class="hub-contact-value">' + webLink(e.website) + '</div></div>' +
+    '</div>';
+  }
+  if (e.location) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + VAC_ICONS.pin + '</div>' +
+      '<div class="hub-contact-body"><div class="hub-contact-label">Location</div><div class="hub-contact-value">' + mapsLink(e.location) + '</div></div>' +
+    '</div>';
+  }
+  if (e.address && e.address !== e.location) {
+    html += '<div class="hub-contact-item is-link">' +
+      '<div class="hub-contact-icon">' + VAC_ICONS.building + '</div>' +
+      '<div class="hub-contact-body"><div class="hub-contact-label">Address</div><div class="hub-contact-value">' + mapsLink(e.address) + '</div></div>' +
+    '</div>';
+  }
+  if (e.industry) {
+    html += '<div class="hub-contact-item wide">' +
+      '<div class="hub-contact-icon">' + VAC_ICONS.building + '</div>' +
+      '<div class="hub-contact-body"><div class="hub-contact-label">Industry</div><div class="company-chips"><span class="company-chip">' + escapeHtml(e.industry) + '</span></div></div>' +
+    '</div>';
+  }
+  html += '</div>';
+  if (isAdmin) {
+    html += '<div class="hub-admin-row" style="margin-top:8px;">' +
+      '<button class="hub-add-btn" data-ripple onclick="openEmployerForm(\'' + e.id + '\')">Edit employer</button>' +
+      '<button class="btn-ghost-danger" data-ripple onclick="deleteEmployerById(\'' + e.id + '\')" style="flex-shrink:0;">Delete</button>' +
+    '</div>';
+  }
+  return html;
+}
+
+window.toggleEmpHub = function(id) {
+  var card = null;
+  var active = document.querySelector('.screen.active');
+  if (active) card = active.querySelector('#emphub-' + id);
+  if (!card) card = document.getElementById('emphub-' + id);
+  if (!card) return;
+  var wasOpen = card.classList.contains('open');
+  if (active) active.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
+  else document.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
+  if (!wasOpen) {
+    card.classList.add('open');
+    setTimeout(function(){ card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 200);
+  }
+};
+
+window.switchEmpHubTab = function(btn, employerId, tab) {
+  btn.parentElement.querySelectorAll('.hub-tab').forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+  var e = employersCache.find(function(x){ return x.id === employerId; });
+  var card = btn.closest('.hub-card');
+  var target = card ? card.querySelector('.hub-tab-content') : null;
+  if (!target) return;
+  if (tab === 'vacancies') target.innerHTML = employerHubVacancies(e);
+  if (tab === 'contact') target.innerHTML = employerHubContact(e);
+};
+
+function showAllEmployers() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-allemployers').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
+  window.scrollTo({ top: 0 });
+  renderAllEmployersList();
+}
+
+function renderAllEmployersList() {
+  var q = ((document.getElementById('allemployers-search')||{}).value || '').trim().toLowerCase();
+  var el = document.getElementById('allemployers-list');
+  var list = employersCache.slice();
+  if (q) {
+    list = list.filter(function(e){
+      var hay = ((e.name||'') + ' ' + (e.industry||'') + ' ' + (e.location||'') + ' ' + (e.address||'')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+  }
+  list.sort(function(a,b){
+    if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
+    return (a.name||'').localeCompare(b.name||'');
+  });
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No employers yet</h3><p>Be the first company to register and post a vacancy.</p></div>'; return; }
+  el.innerHTML = list.map(employerHubCard).join('');
 }
 
 // ===== RATE AGENCY =====
@@ -1360,12 +1554,17 @@ function vacancyCard(v, agency) {
   var key = v.id;
   var saved = savedSet.has(key);
   var isGeneral = v.agency_id === 'general';
-  var orgName = isGeneral ? (v.company || 'General Vacancy') : (agency.name || '');
+  var employer = v.employer_id ? (employersCache.find(function(e){ return e.id === v.employer_id; }) || null) : null;
+  var isEmployerPost = !!employer;
+  var orgName = isEmployerPost ? (employer.name || 'Employer') : (isGeneral ? (v.company || 'General Vacancy') : (agency.name || ''));
   var title = escapeHtml(v.title || 'Untitled role');
+  var verifiedCheck = (isEmployerPost && employer.verified) ? '<span class="verified-check" title="Verified employer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
 
-  /* Logo tile: agency photo -> img; else company/agency initials on a gradient */
+  /* Logo tile: employer/agency photo -> img; else company/agency initials on a gradient */
   var logo;
-  if (!isGeneral && agency && agency.photo) {
+  if (isEmployerPost && employer.photo) {
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(employer.photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
+  } else if (!isEmployerPost && !isGeneral && agency && agency.photo) {
     logo = '<div class="vac-logo"><img src="' + escapeHtml(agency.photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
   } else {
     var grad = vacGradFor(orgName);
@@ -1389,7 +1588,7 @@ function vacancyCard(v, agency) {
   if (v.work_schedule) detail += vacDetRow(VAC_ICONS.calendar, 'Work Schedule', escapeHtml(v.work_schedule));
   if (v.start_date) detail += vacDetRow(VAC_ICONS.calendar, 'Start Date', escapeHtml(v.start_date));
   if (v.closing_date) detail += vacDetRow(VAC_ICONS.calendar, 'Closing Date', escapeHtml(v.closing_date));
-  if (orgName) detail += vacDetRow(VAC_ICONS.building, isGeneral ? 'Company' : 'Agency', escapeHtml(orgName));
+  if (orgName) detail += vacDetRow(VAC_ICONS.building, isEmployerPost ? 'Employer' + (employer.verified ? ' \u2713 Verified' : '') : (isGeneral ? 'Company' : 'Agency'), escapeHtml(orgName));
   /* Email and phone detail rows with clickable links */
   if (v.email) detail += vacDetRow(VAC_ICONS.mail, 'Contact Email', mailLink(v.email));
   if (v.phone) detail += vacDetRow(VAC_ICONS.phone, 'Contact Phone', telLink(v.phone));
@@ -1408,7 +1607,10 @@ function vacancyCard(v, agency) {
     if (v.phone) {
       actions += '<a class="vac-apply' + (v.email ? ' vac-apply-secondary' : '') + '" href="tel:' + escapeHtml(v.phone.replace(/\s/g,'')) + '" onclick="event.stopPropagation()">' + VAC_ICONS.phone + 'Call to apply</a>';
     }
-  } else if (!isGeneral && agency && (agency.contact || agency.email || agency.website)) {
+  } else if (isEmployerPost && (employer.contact || employer.email || employer.website)) {
+    var ecta = employer.website ? escapeHtml(employer.website) : '#';
+    actions += '<a class="vac-apply" href="' + ecta + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Contact employer</a>';
+  } else if (!isGeneral && !isEmployerPost && agency && (agency.contact || agency.email || agency.website)) {
     var cta = agency.website ? escapeHtml(agency.website) : '#';
     actions += '<a class="vac-apply" href="' + cta + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Contact agency</a>';
   } else {
@@ -1417,9 +1619,9 @@ function vacancyCard(v, agency) {
   actions += '<a class="vac-apply vac-apply-secondary" href="/vacancy/' + slugify(v.title) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation()">View public listing ↗</a>';
   actions += '<button class="vac-close-btn" onclick="event.stopPropagation();closeVac(\'' + key + '\')">Close</button></div>';
 
-  /* Admin actions (general vacancies only, when admin) */
+  /* Admin actions (general vacancies + employer vacancies, when admin) */
   var admin = '';
-  if (isAdmin && isGeneral) {
+  if (isAdmin && (isGeneral || isEmployerPost)) {
     admin = '<div class="vac-admin-actions">' +
       '<button class="rate-action-btn" data-ripple onclick="event.stopPropagation();openEditGeneralVacancySheet(\'' + v.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>' +
       '<button class="rate-action-btn danger" data-ripple onclick="event.stopPropagation();deleteGeneralVacancy(\'' + v.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>' +
@@ -1432,7 +1634,7 @@ function vacancyCard(v, agency) {
       logo +
       '<div class="vac-body">' +
         '<div class="vac-title">' + title + '</div>' +
-        '<div class="vac-company">' + (isGeneral ? '' : 'via ') + escapeHtml(orgName) + (isGeneral ? '' : ' (Agency)') + '</div>' +
+        '<div class="vac-company">' + (isGeneral && !isEmployerPost ? '' : 'via ') + verifiedCheck + escapeHtml(orgName) + (isEmployerPost ? ' (Employer)' : (isGeneral ? '' : ' (Agency)')) + '</div>' +
         locLine +
         postedLine +
       '</div>' +
@@ -1626,6 +1828,81 @@ async function deleteAgencyById(id) {
   await loadAll();
 }
 
+// ===== Employer form =====
+var editingEmployerId = null;
+function openEmployerForm(id) {
+  editingEmployerId = id || null;
+  var e = id ? employersCache.find(function(x){ return x.id === id; }) : null;
+  document.getElementById('employer-form-title').textContent = id ? 'Edit employer' : 'Register your company';
+  document.getElementById('e-name').value = e ? e.name : '';
+  document.getElementById('e-industry').value = e ? (e.industry || '') : '';
+  document.getElementById('e-website').value = e ? (e.website || '') : '';
+  document.getElementById('e-contact').value = e ? (e.contact || '') : '';
+  document.getElementById('e-email').value = e ? (e.email || '') : '';
+  document.getElementById('e-location').value = e ? (e.location || '') : '';
+  document.getElementById('e-address').value = e ? (e.address || '') : '';
+  document.getElementById('e-verified').checked = e ? !!e.verified : false;
+  document.getElementById('employer-verified-toggle-row').style.display = isAdmin ? 'flex' : 'none';
+  window.pendingEmployerPhoto = e ? e.photo : null;
+  var preview = document.getElementById('emp-photo-preview');
+  var fallback = document.getElementById('emp-photo-fallback');
+  if (e && e.photo) { preview.src = e.photo; preview.style.display='block'; fallback.style.display='none'; }
+  else { preview.style.display='none'; fallback.style.display='flex'; }
+  document.getElementById('employer-form-overlay').classList.add('open');
+}
+function handleEmployerPhoto(evt) {
+  var file = evt.target.files[0];
+  if (!file) return;
+  var img = new Image();
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxDim = 480;
+      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      window.pendingEmployerPhoto = canvas.toDataURL('image/jpeg', 0.75);
+      document.getElementById('emp-photo-preview').src = window.pendingEmployerPhoto;
+      document.getElementById('emp-photo-preview').style.display = 'block';
+      document.getElementById('emp-photo-fallback').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+async function saveEmployer() {
+  var name = document.getElementById('e-name').value.trim();
+  if (!name) { alert('Add at least the company name.'); return; }
+  var id = editingEmployerId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
+  var payload = {
+    id: id,
+    name: name,
+    industry: document.getElementById('e-industry').value.trim(),
+    website: document.getElementById('e-website').value.trim(),
+    contact: document.getElementById('e-contact').value.trim(),
+    email: document.getElementById('e-email').value.trim(),
+    location: document.getElementById('e-location').value.trim(),
+    address: document.getElementById('e-address').value.trim(),
+    photo: window.pendingEmployerPhoto
+  };
+  if (isAdmin) payload.verified = document.getElementById('e-verified').checked;
+  var live = await upsertEmployer(payload);
+  closeSheet('employer-form-overlay');
+  showToast(editingEmployerId ? 'Employer updated' : (live ? 'Company registered — you can now post vacancies' : '⚠ Only saved on THIS device — run CREATE_EMPLOYERS_TABLE.sql so it shows for everyone.'));
+  editingEmployerId = null;
+  await loadAll();
+  if (document.getElementById('screen-allemployers').classList.contains('active')) renderAllEmployersList();
+}
+async function deleteEmployerById(id) {
+  if (!confirm('Delete this employer? Their posted vacancies will remain listed as unattributed unless you also remove them.')) return;
+  await removeEmployer(id);
+  showToast('Employer deleted');
+  await loadAll();
+  if (document.getElementById('screen-allemployers').classList.contains('active')) renderAllEmployersList();
+}
+
 // ===== Branch form =====
 var pendingBranchAgency = null;
 var pendingBranchId = null; // set when EDITING an existing branch; null when adding
@@ -1725,9 +2002,11 @@ async function deleteVacancy(id, agencyId) {
 
 // ===== General vacancy posting (profile section, admin) =====
 var editingGeneralVacancyId = null;
+var pendingVacancyEmployer = null; // set when posting/editing a vacancy from an employer's profile
 function openGeneralVacancySheet() {
   if (!isAdmin && !publicVacancyPostingOpen) { openVacancyLockedSheet(); return; }
   editingGeneralVacancyId = null;
+  pendingVacancyEmployer = null;
   document.getElementById('gv-title').textContent = 'Post a vacancy';
   document.getElementById('gv-submit-btn').textContent = 'Publish vacancy';
   document.getElementById('gv-role').value = '';
@@ -1748,10 +2027,41 @@ function openGeneralVacancySheet() {
   document.getElementById('gv-phone').value = '';
   document.getElementById('general-vacancy-overlay').classList.add('open');
 }
+// Post a vacancy as a specific registered employer — same form, but the
+// company field is locked to the employer's name and the saved vacancy is
+// tagged with employer_id so it shows the employer's logo/verified badge
+// and appears in both the employer's profile AND the main Vacancies list.
+function openEmployerVacancySheet(employerId) {
+  if (!isAdmin && !publicVacancyPostingOpen) { openVacancyLockedSheet(); return; }
+  var emp = employersCache.find(function(x){ return x.id === employerId; });
+  if (!emp) { showToast('Employer not found'); return; }
+  editingGeneralVacancyId = null;
+  pendingVacancyEmployer = employerId;
+  document.getElementById('gv-title').textContent = 'Post a vacancy — ' + emp.name;
+  document.getElementById('gv-submit-btn').textContent = 'Publish vacancy';
+  document.getElementById('gv-role').value = '';
+  document.getElementById('gv-company').value = emp.name || '';
+  document.getElementById('gv-location').value = emp.location || '';
+  document.getElementById('gv-remote').value = '';
+  document.getElementById('gv-etype').value = '';
+  document.getElementById('gv-exp').value = '';
+  document.getElementById('gv-contract').value = '';
+  document.getElementById('gv-salary').value = '';
+  document.getElementById('gv-hours').value = '';
+  document.getElementById('gv-schedule').value = '';
+  document.getElementById('gv-start').value = '';
+  document.getElementById('gv-closing').value = '';
+  document.getElementById('gv-notes').value = '';
+  document.getElementById('gv-link').value = '';
+  document.getElementById('gv-email').value = emp.email || '';
+  document.getElementById('gv-phone').value = emp.contact || '';
+  document.getElementById('general-vacancy-overlay').classList.add('open');
+}
 function openEditGeneralVacancySheet(id) {
   var v = vacanciesCache.find(function(x) { return x.id === id; });
   if (!v) { showToast('Vacancy not found'); return; }
   editingGeneralVacancyId = id;
+  pendingVacancyEmployer = v.employer_id || null;
   document.getElementById('gv-title').textContent = 'Edit vacancy';
   document.getElementById('gv-submit-btn').textContent = 'Save changes';
   document.getElementById('gv-role').value = v.title || '';
@@ -1792,8 +2102,11 @@ async function saveGeneralVacancy() {
     link: document.getElementById('gv-link').value.trim(),
     email: document.getElementById('gv-email').value.trim(),
     phone: document.getElementById('gv-phone').value.trim(),
-    agency_id: 'general'
+    agency_id: pendingVacancyEmployer ? 'employer' : 'general'
   };
+  if (pendingVacancyEmployer) data.employer_id = pendingVacancyEmployer;
+  var wasEmployerPost = !!pendingVacancyEmployer;
+  var employerIdForRefresh = pendingVacancyEmployer;
   if (editingGeneralVacancyId) {
     data.id = editingGeneralVacancyId;
     var live2 = await upsertVacancy(data);
@@ -1806,10 +2119,17 @@ async function saveGeneralVacancy() {
     showToast(live3 ? 'Vacancy published' : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
   }
   editingGeneralVacancyId = null;
+  pendingVacancyEmployer = null;
   await loadAll();
   // If the all-vacancies screen is active, re-render it
   if (document.getElementById('screen-allvacancies').classList.contains('active')) {
     renderAllVacanciesList();
+  }
+  // If we posted from an employer's profile, re-open that employer's card
+  if (wasEmployerPost && employerIdForRefresh && document.getElementById('screen-allemployers').classList.contains('active')) {
+    renderAllEmployersList();
+    var empCard = document.getElementById('emphub-' + employerIdForRefresh);
+    if (empCard) empCard.classList.add('open');
   }
 }
 async function deleteGeneralVacancy(id) {
@@ -1819,6 +2139,9 @@ async function deleteGeneralVacancy(id) {
   await loadAll();
   if (document.getElementById('screen-allvacancies').classList.contains('active')) {
     renderAllVacanciesList();
+  }
+  if (document.getElementById('screen-allemployers').classList.contains('active')) {
+    renderAllEmployersList();
   }
 }
 
