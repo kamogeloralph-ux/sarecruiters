@@ -84,7 +84,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 
 .search{margin:20px 0 0}
 .search-inner{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:20px;height:56px;padding:0 18px;border:1px solid var(--border)}
-.search-inner svg{width:18px;height:18px;color:var(--text-2);flex-shrink:0}
+.search-inner svg{width:18px;height:18px;color:var(--accent);opacity:.8;flex-shrink:0}
 .search input{width:100%;height:100%;border:none;background:none;color:var(--text);font-size:15px;outline:none}
 .search input::placeholder{color:var(--text-2)}
 .search-mini{margin:12px 0 0}
@@ -103,6 +103,30 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .list-back-bar{display:flex;align-items:center;gap:10px;padding:12px 0}
 .list-back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;padding:6px 10px;border-radius:10px}
 .list-back-btn:active{opacity:.7}
+
+/* ===== Screen intro banner (replaces the old back-bar on list screens) ===== */
+.screen-intro{padding:14px 16px 14px}
+.screen-intro p{margin:0;font-size:13px;line-height:1.55;color:var(--text-2);background:linear-gradient(180deg,var(--accent-soft),transparent);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:11px 13px}
+
+/* ===== GLOBAL ICON SAFETY: every <use>-based icon gets a sane default size,
+   stroke colour and weight so nothing can ever render as a huge black blob
+   even if a specific selector is missing. Default icon colour is the purple
+   accent (not black) for a seamless, friendly look across both themes. ===== */
+svg{display:block;flex-shrink:0}
+svg use{color:inherit}
+.list-back-btn svg,.screen-intro svg,
+button > svg:only-child, .mi-icon svg, .icon-btn svg,
+a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* Neutral / inactive icons use the purple accent at reduced opacity (soft purple, never black) */
+.save-btn svg path,.vac-save svg,.star-btn svg path,.rate-list-title svg,
+.branch-block-actions .hub-row-edit svg,.search-inner svg,.navbtn:not(.active) svg,
+.hub-row-edit svg,.hub-row-del svg{stroke:var(--accent);fill:none}
+.navbtn:not(.active){color:var(--accent);opacity:.55}
+.navbtn.active{color:var(--accent);opacity:1}
+/* Filled-style brand glyphs (WhatsApp logo, chat bubble) — fill, no stroke */
+.sheet-submit svg use, .wa-glyph{fill:currentColor;stroke:none}
+/* Icons that are explicitly filled (stars, save, play, badges) keep their fill behaviour */
+.star-btn svg,.save-btn svg,.track-play svg,.badge svg,.verified-check svg{fill:currentColor;stroke:none}
 .branch-row{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:10px}
 .branch-row .br-name{font-size:14px;font-weight:700;margin-bottom:3px}
 .branch-row .br-agency{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:6px}
@@ -138,18 +162,18 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .vacancy-org{font-size:12px;color:var(--text-2);margin-top:4px}
 /* Save / star buttons */
 .save-btn{width:38px;height:38px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .12s var(--ease),background .2s}
-.save-btn svg{width:18px;height:18px;transition:fill .2s}
-.save-btn svg path{fill:var(--text-3);stroke:var(--text-2)}
+.save-btn svg{width:18px;height:18px;transition:fill .2s,stroke .2s}
+.save-btn svg path{fill:none;stroke:var(--accent);opacity:.7}
 .save-btn.saved{background:var(--accent-soft);border-color:transparent}
-.save-btn.saved svg path{fill:var(--accent);stroke:var(--accent)}
+.save-btn.saved svg path{fill:var(--accent);stroke:var(--accent);opacity:1}
 .save-btn:active{transform:scale(.88)}
 /* Star row on agency cards (tap any star to save) */
 .stars-row{display:flex;gap:4px;margin:10px 0 6px}
 .star-btn{width:26px;height:26px;border:none;background:none;display:flex;align-items:center;justify-content:center;padding:2px;transition:transform .12s var(--ease)}
 .star-btn:active{transform:scale(.8)}
 .star-btn svg{width:20px;height:20px}
-.star-btn svg path{fill:var(--card-3);stroke:var(--text-2);stroke-width:1}
-.star-btn.lit svg path{fill:var(--accent);stroke:var(--accent)}
+.star-btn svg path{fill:none;stroke:var(--accent);stroke-width:1.5;opacity:.55}
+.star-btn.lit svg path{fill:var(--accent);stroke:var(--accent);opacity:1}
 .vacancy-meta{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
 .meta-chip{font-size:11px;font-weight:600;color:var(--text-2);background:var(--card-2);border-radius:8px;padding:6px 10px}
 .vacancy-notes{font-size:12.5px;color:var(--text-2);line-height:1.5;margin-bottom:10px}
@@ -226,7 +250,8 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .branch-block-head .hub-contact-value{font-size:14px;font-weight:600;word-break:break-word;overflow-wrap:break-word}
 .branch-block-actions{display:flex;gap:6px;flex-shrink:0}
 .branch-block-actions .hub-row-edit,.branch-block-actions .hub-row-del{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--card-2);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.branch-block-actions .hub-row-edit svg,.branch-block-actions .hub-row-del svg{width:14px;height:14px;stroke:var(--text-2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.branch-block-actions .hub-row-edit svg{width:14px;height:14px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.branch-block-actions .hub-row-del svg{width:14px;height:14px;stroke:var(--danger);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .branch-block-actions .hub-row-del{color:var(--danger)}
 .branch-block-actions .hub-row-del svg{stroke:var(--danger)}
 .branch-block .hub-contact-grid{border-radius:0 0 var(--radius) var(--radius);border-top:none}
@@ -256,7 +281,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .rate-summary-chip .rsc-emoji{font-size:16px}
 .rate-summary-chip .rsc-count{color:var(--accent);font-weight:700}
 .rate-list-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.rate-list-title svg{width:14px;height:14px;color:var(--text-2)}
+.rate-list-title svg{width:14px;height:14px;color:var(--accent)}
 .rate-item{background:var(--card-2);border-radius:12px;padding:12px 14px;margin-bottom:8px}
 .rate-item-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .rate-item-emoji{font-size:20px;line-height:1}
@@ -468,9 +493,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .vac-chip.green{color:var(--success);background:rgba(48,209,88,.14)}
 .vac-chip.red{color:var(--danger);background:rgba(255,69,58,.14)}
 .vac-save{width:34px;height:34px;border-radius:11px;background:var(--card-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:background .2s,border-color .2s}
-.vac-save svg{width:17px;height:17px;fill:var(--text-3);stroke:var(--text-2);stroke-width:2}
+.vac-save svg{width:17px;height:17px;fill:none;stroke:var(--accent);stroke-width:2;opacity:.7}
 .vac-save.saved{background:var(--accent-soft);border-color:transparent}
-.vac-save.saved svg{fill:var(--accent);stroke:var(--accent)}
+.vac-save.saved svg{fill:var(--accent);stroke:var(--accent);opacity:1}
 .vac-detail{max-height:0;overflow:hidden;transition:max-height .35s var(--ease)}
 .vac-card.open .vac-detail{max-height:1500px}
 .vac-detail-inner{padding:0 14px 14px;border-top:1px solid var(--separator)}
@@ -506,9 +531,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 @media (max-width:559px){ .fab{right:20px} }
 
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:80px;max-width:520px;margin:0 auto;background:color-mix(in srgb,var(--card) 86%,transparent);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom);z-index:50}
-.navbtn{background:none;border:none;color:var(--text-2);display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 14px;border-radius:12px}
-.navbtn svg{width:22px;height:22px}
-.navbtn.active{color:var(--accent)}
+.navbtn{background:none;border:none;color:var(--accent);opacity:.5;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 14px;border-radius:12px;transition:opacity .2s}
+.navbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.navbtn.active{color:var(--accent);opacity:1}
 .navbtn.active svg{stroke:var(--accent)}
 .navbtn-label{font-size:10px;font-weight:600}
 
@@ -538,6 +563,13 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .sheet-submit{width:100%;background:var(--accent);color:#fff;border:none;padding:16px;border-radius:14px;font-size:15px;font-weight:600;margin-top:6px}
 .sheet-submit:active{transform:scale(.98)}
 .sheet-submit.danger{background:rgba(255,59,48,.14);color:var(--danger)}
+
+/* ===== WhatsApp buttons & glyphs (filled logo, never a black outline) ===== */
+.wa-btn{background:#25D366 !important;color:#fff !important}
+.wa-btn:active{transform:scale(.98)}
+.wa-glyph{width:20px;height:20px;fill:#fff;stroke:none;flex-shrink:0}
+.wa-tile{background:#25D366 !important;color:#fff !important}
+.wa-tile .wa-glyph{fill:#fff}
 .sheet-cancel{width:100%;background:none;color:var(--text-2);border:none;padding:14px;font-size:13.5px;font-weight:600;margin-top:4px}
 .photo-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .photo-row .avatar{cursor:pointer;position:relative}
