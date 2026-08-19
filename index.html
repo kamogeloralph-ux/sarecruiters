@@ -57,9 +57,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
+<link rel="preload" as="style" href="styles.css">
+<link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css"></noscript>
 </head>
 <body>
 
@@ -84,15 +86,15 @@
       </div>
       <div class="header-actions">
         <button class="theme-toggle" data-ripple id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle day or night theme">
-          <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span>
-          <span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span>
+          <span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
         </button>
       </div>
     </header>
 
     <div class="search search-mini">
       <div class="search-inner">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="home-search" class="sr-only">Search agencies or location</label>
         <input id="home-search" type="search" placeholder="Search agencies, trades, jobs, locations..." oninput="filterAndRenderCached()">
       </div>
@@ -123,12 +125,12 @@
     <header>
       <div class="logo-text">Search</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     <div class="search">
       <div class="search-inner">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <input id="search-input" type="search" placeholder="Search agencies, trades, jobs, locations..." oninput="handleSearchScreen(this.value)">
       </div>
     </div>
@@ -144,7 +146,7 @@
     <header>
       <div class="logo-text">Saved vacancies</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     </div>
@@ -159,7 +161,7 @@
     <header>
       <div class="logo-text">Profile</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     </div>
@@ -170,14 +172,14 @@
       <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
       <div class="profile-sub" id="profile-status-sub">Not logged in</div>
       <div class="app-version-badge" id="app-version-badge">v57</div>
-      <button class="force-update-btn" onclick="forceUpdate()"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Check for updates &amp; refresh</button>
+      <button class="force-update-btn" onclick="forceUpdate()"><svg><use href="icons.svg#i3e2031"/></svg>Check for updates &amp; refresh</button>
     </div>
 
     <!-- ===== Track of the Day ===== -->
     <div class="track-card-wrap">
       <div class="track-card" id="track-card">
         <div class="track-art" id="track-art">
-          <svg id="track-art-icon" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <svg><use href="icons.svg#ibdb88b"/></svg>
           <div class="art-bars"><span></span><span></span><span></span><span></span></div>
         </div>
         <div class="track-info" id="track-info">
@@ -186,7 +188,7 @@
           <div class="track-artist" id="track-artist"></div>
         </div>
         <button class="track-play" id="track-play" disabled onclick="toggleTrackPlay()" aria-label="Play track">
-          <svg id="track-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg><use href="icons.svg#idac8d7"/></svg>
         </button>
       </div>
       <div class="track-progress" id="track-progress" style="display:none"><div class="track-progress-fill" id="track-progress-fill"></div></div>
@@ -196,46 +198,46 @@
     <!-- ===== Talent Pool — Featured ===== -->
     <button class="pool-feature-card" data-ripple onclick="goPool()">
       <div class="pool-feature-top">
-        <span class="pool-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/></svg></span>
+        <span class="pool-feature-icon"><svg><use href="icons.svg#ief3ce7"/></svg></span>
         <span class="pool-feature-star">★ Featured</span>
       </div>
       <div class="pool-feature-title">Talent Pool</div>
       <div class="pool-feature-sub">Browse job seekers for free, or list yourself so employers can find you</div>
       <div class="pool-feature-tags"><span class="pool-feature-tag">Browse free</span><span class="pool-feature-tag">List for R20/year</span></div>
-      <svg class="pool-feature-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      <svg class="pool-feature-chev"><use href="icons.svg#i36fdbb"/></svg>
     </button>
 
     <div class="pgroup-label">Account</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" id="rateagencies-menu-item" data-ripple onclick="toggleRatingBoard()"><span class="mi-icon tile-amber"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span><span>Rate Agencies<span class="mi-sub">Rate &amp; review agencies &#8212; top-rated climb the ranks</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" id="rateagencies-menu-item" data-ripple onclick="toggleRatingBoard()"><span class="mi-icon tile-amber"><svg><use href="icons.svg#i8bd618"/></svg></span><span>Rate Agencies<span class="mi-sub">Rate &amp; review agencies &#8212; top-rated climb the ranks</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
 
     <div class="pgroup-label">Post &amp; Manage</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon tile-green"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/><path d="M12 2v4"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon tile-green"><svg><use href="icons.svg#i952b6f"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
 
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
 
     <div class="pgroup-label">Resources</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg></span><span>Learning Hub<span class="mi-sub">Guides &amp; resources for job seekers</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg></span><span>How to Prepare Your CV<span class="mi-sub">Step-by-step CV writing guide</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span>Interview Tips<span class="mi-sub">Ace your next interview with confidence</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Learning Hub<span class="mi-sub">Guides &amp; resources for job seekers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg><use href="icons.svg#ia65142"/></svg></span><span>How to Prepare Your CV<span class="mi-sub">Step-by-step CV writing guide</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg><use href="icons.svg#ib745ad"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg><use href="icons.svg#i4ccc00"/></svg></span><span>Interview Tips<span class="mi-sub">Ace your next interview with confidence</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg><use href="icons.svg#i053685"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ie9938a"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
 
     <div class="pgroup-label">&nbsp;</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
     <!-- ============ AGENCY RATING LEADERBOARD ============ -->
     <div id="rating-board" style="display:none"></div>
@@ -247,7 +249,7 @@
         <div class="contact-warning-emergency">EMERGENCY 0800 428 428</div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>Department of Employment &amp; Labour<svg class="contact-card-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg><use href="icons.svg#i30b4d5"/></svg></span>Department of Employment &amp; Labour<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0123094000" class="contact-row"><span class="contact-label">Head Office</span><span class="contact-value">012 309 4000</span></a>
           <a href="tel:0860666883" class="contact-row"><span class="contact-label">Fraud Hotline</span><span class="contact-value">0860 666 883</span></a>
@@ -257,7 +259,7 @@
         </div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>CCMA<svg class="contact-card-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg><use href="icons.svg#i30b4d5"/></svg></span>CCMA<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0861161616" class="contact-row"><span class="contact-label">Call Centre</span><span class="contact-value">0861 161 616</span></a>
           <a href="tel:0113776650" class="contact-row"><span class="contact-label">National Office</span><span class="contact-value">011 377 6650</span></a>
@@ -267,7 +269,7 @@
         </div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M4 21h16"/><path d="M3.5 10L12 4.5 20.5 10"/><path d="M5 21V11M9 21V11M15 21V11M19 21V11"/><path d="M2 10h20"/><path d="M11 4.5c0-.8.4-1.5 1-1.5s1 .7 1 1.5"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></span>UIF (Unemployment Insurance Fund)<svg class="contact-card-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg><use href="icons.svg#i30b4d5"/></svg></span>UIF (Unemployment Insurance Fund)<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0800030007" class="contact-row"><span class="contact-label">Call Centre (Toll Free)</span><span class="contact-value">0800 030 007</span></a>
           <a href="tel:0123371600" class="contact-row"><span class="contact-label">Switchboard</span><span class="contact-value">012 337 1600</span></a>
@@ -287,7 +289,7 @@
     <header>
       <div class="logo-text">Smart Manager</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     <div class="sm-intro">
@@ -295,7 +297,7 @@
     </div>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="sm-search" class="sr-only">Search agencies</label>
         <input id="sm-search" type="search" placeholder="Search agencies by name or location..." oninput="filterSmartManager()">
       </div>
@@ -312,7 +314,7 @@
     <header>
       <div class="logo-text">Submissions</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     <div class="sub-tabs">
@@ -332,7 +334,7 @@
     <header>
       <div class="logo-text" id="manager-agency-name">Agency</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     <div class="manager-banner">
@@ -342,11 +344,11 @@
     <div class="screen-scroll">
     <div class="section-head"><div class="section-title">Branches</div></div>
     <div id="manager-branch-list"></div>
-    <button class="manager-add-btn" data-ripple onclick="managerAddBranch()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span> Add branch</button>
+    <button class="manager-add-btn" data-ripple onclick="managerAddBranch()"><span class="mi-icon"><svg><use href="icons.svg#i0248b0"/></svg></span> Add branch</button>
 
     <div class="section-head" style="margin-top:24px;"><div class="section-title">Vacancies</div></div>
     <div id="manager-vacancy-list"></div>
-    <button class="manager-add-btn" data-ripple onclick="managerAddVacancy()"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg></span> Add vacancy</button>
+    <button class="manager-add-btn" data-ripple onclick="managerAddVacancy()"><span class="mi-icon"><svg><use href="icons.svg#i0f1c52"/></svg></span> Add vacancy</button>
     </div>
   </div>
 
@@ -356,19 +358,19 @@
     <header>
       <div class="logo-text">All Agencies</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="allagencies-search" class="sr-only">Search agencies</label>
         <input id="allagencies-search" type="search" placeholder="Search agencies, trades, industries..." oninput="renderAllAgenciesList()">
       </div>
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to Home</button></div>
+    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg><use href="icons.svg#i48c59a"/></svg> Back to Home</button></div>
     <div id="allagencies-list"></div>
     </div>
   </div>
@@ -379,19 +381,19 @@
     <header>
       <div class="logo-text">All Branches</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="allbranches-search" class="sr-only">Search branches</label>
         <input id="allbranches-search" type="search" placeholder="Search branch name, location, agency..." oninput="renderAllBranchesList()">
       </div>
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to Home</button></div>
+    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg><use href="icons.svg#i48c59a"/></svg> Back to Home</button></div>
     <div id="allbranches-list"></div>
     </div>
   </div>
@@ -402,12 +404,12 @@
     <header>
       <div class="logo-text">All Vacancies</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="allvacancies-search" class="sr-only">Search vacancies</label>
         <input id="allvacancies-search" type="search" placeholder="Search job title, role, location..." oninput="renderAllVacanciesList()">
       </div>
@@ -419,7 +421,7 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to Home</button></div>
+    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg><use href="icons.svg#i48c59a"/></svg> Back to Home</button></div>
     <div id="allvacancies-list"></div>
     </div>
   </div>
@@ -430,12 +432,12 @@
     <header>
       <div class="logo-text">Talent Pool</div>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg></span><span class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button>
     </header>
     <div class="search search-mini" style="margin:0 16px 10px">
       <div class="search-inner">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="pool-search" class="sr-only">Search the talent pool</label>
         <input id="pool-search" type="search" placeholder="Search name, position, location..." oninput="renderPoolList()">
       </div>
@@ -447,35 +449,35 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to Home</button></div>
+    <div class="list-back-bar"><button class="list-back-btn" data-ripple onclick="goBackHome()"><svg><use href="icons.svg#i48c59a"/></svg> Back to Home</button></div>
     <div class="manager-banner">
       <p>Browse job seekers who've joined the Talent Pool — open profiles, contact them directly. Employers of any sector are welcome to browse for free.</p>
     </div>
     <div id="pool-list"></div>
-    <button class="manager-add-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:4px 16px 24px;width:calc(100% - 32px)"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/><path d="M19 8h4M21 6v4"/></svg></span> Join the Talent Pool — R20/year</button>
+    <button class="manager-add-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:4px 16px 24px;width:calc(100% - 32px)"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span> Join the Talent Pool — R20/year</button>
     </div>
   </div>
 
 </div>
 <button class="fab fab-suggest" id="fab-suggest" data-ripple onclick="openSuggestionSheet()" aria-label="Suggest or comment">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  <svg><use href="icons.svg#i36ccb3"/></svg>
 </button>
 
 <nav class="bottom-nav">
   <button class="navbtn active" data-tab="home" data-ripple aria-label="Home">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+    <svg><use href="icons.svg#i36f2ce"/></svg>
     <span class="navbtn-label">Home</span>
   </button>
   <button class="navbtn" data-tab="search" data-ripple aria-label="Search">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <svg><use href="icons.svg#i628077"/></svg>
     <span class="navbtn-label">Search</span>
   </button>
   <button class="navbtn" data-tab="saved" data-ripple aria-label="Saved">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12v17l-6-4-6 4V4z"/></svg>
+    <svg><use href="icons.svg#i74f28f"/></svg>
     <span class="navbtn-label">Saved</span>
   </button>
   <button class="navbtn" data-tab="profile" data-ripple aria-label="Profile">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+    <svg><use href="icons.svg#ieb1ff2"/></svg>
     <span class="navbtn-label">Profile</span>
   </button>
 </nav>
@@ -488,7 +490,7 @@
     <div class="photo-row">
       <div class="avatar" style="width:56px;height:56px;">
         <img id="photo-preview" style="display:none;">
-        <span id="photo-fallback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M14 21V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v12M4 21h16"/><path d="M7 7h2M7 11h2M7 15h2"/></svg></span>
+        <span id="photo-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
       </div>
       <label>Add photo<input type="file" accept="image/*" onchange="handlePhoto(event)"></label>
     </div>
@@ -615,7 +617,7 @@
     <h3 style="text-align:center;">Vacancy posting is closed</h3>
     <p style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">To keep the directory free of spam, general vacancy posting is opened on request. Message the admin on WhatsApp and it'll be opened for you.</p>
     <a id="vacancy-locked-wa-link" href="#" target="_blank" rel="noopener" class="sheet-submit" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg>
+      <svg><use href="icons.svg#i7ebf0f"/></svg>
       Message admin on WhatsApp
     </a>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-locked-overlay')">Close</button>
@@ -650,9 +652,9 @@
            WhatsApp: +27 71 553 1005
            Bank: Capitec 2573389037 (SA Recruiters)
            Keep these three blocks exactly as-is in any future edit. -->
-      <div class="hub-contact-item wide" data-ripple onclick="copyText('sarecruiters.directory@gmail.com', this)"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Email</div><div class="hub-contact-value">sarecruiters.directory@gmail.com</div></div></div>
-      <div class="hub-contact-item is-link"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div></div>
-      <div class="hub-contact-item wide" data-ripple onclick="copyText('2573389037', this)"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">2573389037 (SA Recruiters)</div></div></div>
+      <div class="hub-contact-item wide" data-ripple onclick="copyText('sarecruiters.directory@gmail.com', this)"><div class="hub-contact-icon"><svg><use href="icons.svg#i651ffa"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Email</div><div class="hub-contact-value">sarecruiters.directory@gmail.com</div></div></div>
+      <div class="hub-contact-item is-link"><div class="hub-contact-icon"><svg><use href="icons.svg#i7ebf0f"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div></div>
+      <div class="hub-contact-item wide" data-ripple onclick="copyText('2573389037', this)"><div class="hub-contact-icon"><svg><use href="icons.svg#i536d55"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">2573389037 (SA Recruiters)</div></div></div>
       <!-- ⚠️ END PROTECTED CONTACT DETAILS ⚠️ -->
     </div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('support-overlay')">Close</button>
@@ -721,7 +723,7 @@
     <h3 id="wa-confirm-title" style="text-align:center;">Submitted — thank you!</h3>
     <p id="wa-confirm-msg" style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">Your submission has been saved. Tap the button below to send it straight to the admin via WhatsApp so it's seen right away.</p>
     <a id="wa-confirm-link" href="#" target="_blank" rel="noopener" class="sheet-submit" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
-      <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.67c2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.42 5.82c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.16 8.16 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24z"/></svg>
+      <svg><use href="icons.svg#ic4f1c0"/></svg>
       Send via WhatsApp
     </a>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('whatsapp-confirm-overlay')">Skip — just save it</button>

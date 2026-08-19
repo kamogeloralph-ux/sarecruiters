@@ -18,10 +18,11 @@ const IMAGE_CACHE = VERSION + '-images';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './offline.html',
-  './manifest.json',
   './styles.css',
   './app.js',
+  './icons.svg',
+  './offline.html',
+  './manifest.json',
   './content.js',
   './content-manager.js',
   './privacy.html',

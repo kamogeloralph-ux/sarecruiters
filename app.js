@@ -1,3 +1,4 @@
+
 // ===== Supabase config =====
 var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
