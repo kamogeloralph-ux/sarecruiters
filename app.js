@@ -556,11 +556,43 @@ async function submitReportToSupabase(payload) {
   return { ok: true };
 }
 
+// ----- Local data cache: lets the app paint instantly from the last
+// successful load while fresh data streams in behind the scenes, instead
+// of showing a blank screen every time while Supabase responds. -----
+var DATA_CACHE_KEY = 'sa_data_cache_v1';
+function saveDataCache() {
+  try {
+    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({
+      agencies: agenciesCache,
+      branches: branchesCache,
+      vacancies: vacanciesCache,
+      employers: employersCache,
+      savedAt: Date.now()
+    }));
+  } catch(e) { /* storage full or unavailable — safe to skip */ }
+}
+function loadDataCache() {
+  try {
+    var raw = localStorage.getItem(DATA_CACHE_KEY);
+    if (!raw) return false;
+    var d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.agencies)) return false;
+    agenciesCache = d.agencies || [];
+    branchesCache = d.branches || [];
+    vacanciesCache = d.vacancies || [];
+    employersCache = d.employers || [];
+    return true;
+  } catch(e) { return false; }
+}
+
 async function loadAll() {
-  agenciesCache = await getAgencies();
-  branchesCache = await getBranches();
-  vacanciesCache = await getVacancies();
-  employersCache = await getEmployers();
+  // Fire all four Supabase queries in parallel instead of one-after-another —
+  // total wait time becomes the slowest single query, not the sum of all four.
+  var results = await Promise.all([getAgencies(), getBranches(), getVacancies(), getEmployers()]);
+  agenciesCache = results[0];
+  branchesCache = results[1];
+  vacanciesCache = results[2];
+  employersCache = results[3];
   // Sort employers: verified first, then alphabetical
   employersCache.sort(function(a,b){
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
@@ -588,6 +620,7 @@ async function loadAll() {
   });
   updateStats();
   filterAndRenderCached();
+  saveDataCache();
   // If in manager mode, re-render the manager panel with fresh data
   if (managerMode) renderManagerMode();
   if (employerManagerMode) renderEmployerManagerMode();
@@ -2753,6 +2786,15 @@ function managerEmployerAddVacancy() {
     employerManagerPendingToken = empToken;
   }
 })();
+
+// Paint immediately from whatever was cached on the last successful load
+// (if any), then loadAll() below fetches fresh data in the background and
+// silently re-renders once it lands — so repeat visits never show a blank
+// screen while waiting on the network.
+if (loadDataCache()) {
+  updateStats();
+  filterAndRenderCached();
+}
 
 loadAll();
 loadPostingSetting();
