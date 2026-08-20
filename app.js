@@ -666,102 +666,18 @@ function hubBranches(a) {
 }
 
 function hubContact(a) {
-  var ICON_PHONE  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
-  var ICON_EMAIL  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
-  var ICON_WEB    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>';
-  var ICON_PIN    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
-  var ICON_BUILD  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/></svg>';
-  var ICON_BRIEF  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
-  var ICON_SEND   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
-
-  var html = '<div class="hub-contact-grid">';
-  // Preferred contact method (CV preference) — shown as first row with badge
+  var ICON_SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+  var html = '<div class="det-plain">';
   var pref = (a.cvpref || '').trim();
-  if (pref) {
-    html += '<div class="hub-contact-item wide">' +
-      '<div class="hub-contact-icon">' + (prefIcon(pref) || ICON_SEND) + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Preferred contact method</div>' +
-        '<div class="hub-contact-value"><span class="hub-contact-preferred">' + prefIcon(pref) + escapeHtml(pref) + '</span></div>' +
-      '</div>' +
-    '</div>';
-  }
-  // Contact person / phone — clickable tel: link
-  if (a.contact) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + ICON_PHONE + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Contact person / phone</div>' +
-        '<div class="hub-contact-value">' + telLink(a.contact) + '</div>' +
-      '</div>' +
-    '</div>';
-  }
-  // Email — clickable mailto: link
-  if (a.email) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + ICON_EMAIL + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Email</div>' +
-        '<div class="hub-contact-value">' + mailLink(a.email) + '</div>' +
-      '</div>' +
-    '</div>';
-  }
-  // Website — clickable link
-  if (a.website) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + ICON_WEB + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Website</div>' +
-        '<div class="hub-contact-value">' + webLink(a.website) + '</div>' +
-      '</div>' +
-    '</div>';
-  }
-  // Head office location — clickable maps link
-  if (a.location) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + ICON_PIN + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Head office location</div>' +
-        '<div class="hub-contact-value">' + mapsLink(a.location) + '</div>' +
-      '</div>' +
-    '</div>';
-  }
-  // Head office address — clickable maps link (if different from location)
-  if (a.address && a.address !== a.location) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + ICON_BUILD + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Head office address</div>' +
-        '<div class="hub-contact-value">' + mapsLink(a.address) + '</div>' +
-      '</div>' +
-    '</div>';
-  }
-  // Companies they recruit for — as chips
-  var companyList = (a.companies || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
-  if (companyList.length) {
-    html += '<div class="hub-contact-item wide">' +
-      '<div class="hub-contact-icon">' + ICON_BRIEF + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Companies they recruit for</div>' +
-        '<div class="company-chips">' +
-          companyList.map(function(c){ return '<span class="company-chip">' + escapeHtml(c) + '</span>'; }).join('') +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }
-  // Trades / Industries — as chips
-  var tradeList = (a.trades || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
-  if (tradeList.length) {
-    html += '<div class="hub-contact-item wide">' +
-      '<div class="hub-contact-icon">' + ICON_BUILD + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Trades / Industries</div>' +
-        '<div class="company-chips">' +
-          tradeList.map(function(c){ return '<span class="company-chip">' + escapeHtml(c) + '</span>'; }).join('') +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }
+  if (pref) html += '<div class="det-row"><span class="det-label">Preferred contact:</span> <span class="hub-contact-preferred">' + (prefIcon(pref) || ICON_SEND) + escapeHtml(pref) + '</span></div>';
+  if (a.contact) html += '<div class="det-row"><span class="det-label">Contact:</span> ' + telLink(a.contact) + '</div>';
+  if (a.email) html += '<div class="det-row"><span class="det-label">Email:</span> ' + mailLink(a.email) + '</div>';
+  if (a.website) html += '<div class="det-row"><span class="det-label">Website:</span> ' + webLink(a.website) + '</div>';
+  if (a.location) html += '<div class="det-row"><span class="det-label">Head office:</span> ' + mapsLink(a.location) + '</div>';
+  if (a.address && a.address !== a.location) html += '<div class="det-row"><span class="det-label">Address:</span> ' + mapsLink(a.address) + '</div>';
+  if (a.companies) html += '<div class="det-row"><span class="det-label">Companies:</span> ' + escapeHtml(a.companies) + '</div>';
+  if (a.trades) html += '<div class="det-row"><span class="det-label">Trades:</span> ' + escapeHtml(a.trades) + '</div>';
+  if (html === '<div class="det-plain">') html += '<div class="det-row muted">No additional details</div>';
   html += '</div>';
   // Always show a "report" link so users can flag wrong info
   html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openReportSheet(\'' + (a.name||'').replace(/'/g,"\\'") + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-3px;margin-right:5px"><path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Report wrong info</button></div>';
@@ -829,43 +745,14 @@ function employerHubVacancies(e) {
 }
 
 function employerHubContact(e) {
-  var html = '<div class="hub-contact-grid">';
-  if (e.contact) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + VAC_ICONS.phone + '</div>' +
-      '<div class="hub-contact-body"><div class="hub-contact-label">Contact person / phone</div><div class="hub-contact-value">' + telLink(e.contact) + '</div></div>' +
-    '</div>';
-  }
-  if (e.email) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + VAC_ICONS.mail + '</div>' +
-      '<div class="hub-contact-body"><div class="hub-contact-label">Email</div><div class="hub-contact-value">' + mailLink(e.email) + '</div></div>' +
-    '</div>';
-  }
-  if (e.website) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>' +
-      '<div class="hub-contact-body"><div class="hub-contact-label">Website</div><div class="hub-contact-value">' + webLink(e.website) + '</div></div>' +
-    '</div>';
-  }
-  if (e.location) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + VAC_ICONS.pin + '</div>' +
-      '<div class="hub-contact-body"><div class="hub-contact-label">Location</div><div class="hub-contact-value">' + mapsLink(e.location) + '</div></div>' +
-    '</div>';
-  }
-  if (e.address && e.address !== e.location) {
-    html += '<div class="hub-contact-item is-link">' +
-      '<div class="hub-contact-icon">' + VAC_ICONS.building + '</div>' +
-      '<div class="hub-contact-body"><div class="hub-contact-label">Address</div><div class="hub-contact-value">' + mapsLink(e.address) + '</div></div>' +
-    '</div>';
-  }
-  if (e.industry) {
-    html += '<div class="hub-contact-item wide">' +
-      '<div class="hub-contact-icon">' + VAC_ICONS.building + '</div>' +
-      '<div class="hub-contact-body"><div class="hub-contact-label">Industry</div><div class="company-chips"><span class="company-chip">' + escapeHtml(e.industry) + '</span></div></div>' +
-    '</div>';
-  }
+  var html = '<div class="det-plain">';
+  if (e.contact) html += '<div class="det-row"><span class="det-label">Contact:</span> ' + telLink(e.contact) + '</div>';
+  if (e.email) html += '<div class="det-row"><span class="det-label">Email:</span> ' + mailLink(e.email) + '</div>';
+  if (e.website) html += '<div class="det-row"><span class="det-label">Website:</span> ' + webLink(e.website) + '</div>';
+  if (e.location) html += '<div class="det-row"><span class="det-label">Location:</span> ' + mapsLink(e.location) + '</div>';
+  if (e.address && e.address !== e.location) html += '<div class="det-row"><span class="det-label">Address:</span> ' + mapsLink(e.address) + '</div>';
+  if (e.industry) html += '<div class="det-row"><span class="det-label">Industry:</span> ' + escapeHtml(e.industry) + '</div>';
+  if (html === '<div class="det-plain">') html += '<div class="det-row muted">No additional details</div>';
   html += '</div>';
   if (isAdmin) {
     html += '<div class="hub-admin-row" style="margin-top:8px;">' +
