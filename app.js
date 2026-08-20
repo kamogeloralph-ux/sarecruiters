@@ -9,7 +9,6 @@ var agenciesCache = [];
 var branchesCache = [];
 var vacanciesCache = [];
 var employersCache = [];
-var ratingsCache = [];
 var isAdmin = false;
 var publicVacancyPostingOpen = false;
 var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
@@ -76,9 +75,6 @@ function buildManagerLink(token) {
   var base = window.location.origin + window.location.pathname;
   return base + '?manage=' + token;
 }
-
-// Star ratings saved locally (per agency): { agencyId: 1..5 }
-var starRatings = JSON.parse(localStorage.getItem('starRatings') || '{}');
 
 /* ── Theme (day / night) ───────────────────────────── */
 function applyTheme(theme) {
@@ -508,15 +504,10 @@ async function loadAll() {
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
     return (a.name||'').localeCompare(b.name||'');
   });
-  loadRatingsFromSupabase();
-  // Sort: rating score first (higher = better, climbs to top), then verified,
-  // then rating count (more ratings = more trust), then alphabetical by name
+  // Sort agencies: verified first, then alphabetical by name
   agenciesCache.sort(function(a,b){
-    var as = agencyScore(a), bs = agencyScore(b);
-    if (bs.score !== as.score) return bs.score - as.score;   // higher avg score first
     var av = a.verified ? 1 : 0, bv = b.verified ? 1 : 0;
-    if (av !== bv) return bv - av;            // verified sinks to top within same score
-    if (bs.count !== as.count) return bs.count - as.count;   // more ratings first
+    if (av !== bv) return bv - av;            // verified sinks to top
     return (a.name||'').localeCompare(b.name||'');           // alphabetical tie-break
   });
   // Backfill SMART MANAGER tokens for agencies that were added before this feature
@@ -568,9 +559,6 @@ function hubCard(a) {
   var verifiedCheck = a.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
   // Jobs badge: only shows when there is at least 1 vacancy; placed at right end of card
   var jobsBadge = vCount > 0 ? '<span class="hub-stat hub-stat-right" title="' + vCount + ' job' + (vCount===1?'':'s') + '"><span class="hub-stat-num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>' + vCount + '</span></span>' : '';
-  // Ratings badge: shows the average score + count when the agency has ratings
-  var rInfo = agencyScore(a);
-  var ratingsBadge = rInfo.count > 0 ? '<span class="hub-stat hub-stat-right" title="' + rInfo.count + ' rating' + (rInfo.count===1?'':'s') + ' \u2014 avg ' + rInfo.avg + ' / 5"><span class="hub-stat-num" style="font-size:13px">\u2b50' + rInfo.avg + '</span></span>' : '';
   return '' +
   '<div class="hub-card" id="hub-' + a.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleHub(\'' + a.id + '\')" aria-expanded="false">' +
@@ -580,7 +568,6 @@ function hubCard(a) {
         (a.location ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Head office:</span> ' + escapeHtml(a.location) + '</div>' : '') +
       '</div>' +
       jobsBadge +
-      ratingsBadge +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</button>' +
     '<div class="hub-panel" id="hub-panel-' + a.id + '">' +
@@ -590,7 +577,6 @@ function hubCard(a) {
           '<button class="hub-tab active" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'vacancies\')">Vacancies</button>' +
           '<button class="hub-tab" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'branches\')">Branches</button>' +
           '<button class="hub-tab" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'contact\')">Contact</button>' +
-          '<button class="hub-tab" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'rate\')">Rate \u2b50</button>' +
         '</div>' +
         '<div class="hub-tab-content" data-agency="' + a.id + '">' + hubVacancies(a) + '</div>' +
       '</div>' +
@@ -942,436 +928,6 @@ function renderAllEmployersList() {
   el.innerHTML = list.map(employerHubCard).join('');
 }
 
-// ===== RATE AGENCY =====
-// Each emoji carries a numeric score used to rank agencies on the leaderboard.
-// Higher score = better rating.😍=5 (Great) … 👎=1 (Bad)
-var RATE_EMOJIS = [
-  {emoji:'\ud83d\ude0d', label:'Great', value:'\ud83d\ude0d', score:5},
-  {emoji:'\ud83d\ude42', label:'Good', value:'\ud83d\ude42', score:4},
-  {emoji:'\ud83d\ude10', label:'Okay', value:'\ud83d\ude10', score:3},
-  {emoji:'\ud83d\ude15', label:'Poor', value:'\ud83d\ude15', score:2},
-  {emoji:'\ud83d\udc4e', label:'Bad', value:'\ud83d\udc4e', score:1}
-];
-var rateSelectedEmoji = null;
-
-function ratingsFor(agencyId) {
-  return ratingsCache.filter(function(r){ return r.agency_id === agencyId; });
-}
-
-// Look up the numeric score for a given emoji value
-function emojiScore(emoji) {
-  for (var i = 0; i < RATE_EMOJIS.length; i++) {
-    if (RATE_EMOJIS[i].value === emoji) return RATE_EMOJIS[i].score;
-  }
-  return 3; // default to "Okay" if unknown
-}
-
-// Compute a ranking object for an agency from its ratings.
-// Returns { score, count, avg, stars } where:
-//   score  = average emoji score (1-5), used for ranking & star display
-//   count  = total number of ratings
-//   avg    = score rounded to 1 decimal for display
-//   stars  = rounded score (1-5) for the star row
-function agencyScore(a) {
-  var ratings = ratingsFor(a.id);
-  if (!ratings.length) return { score: 0, count: 0, avg: '0.0', stars: 0 };
-  var total = 0;
-  for (var i = 0; i < ratings.length; i++) total += emojiScore(ratings[i].emoji);
-  var avgScore = total / ratings.length;
-  return {
-    score: avgScore,
-    count: ratings.length,
-    avg: avgScore.toFixed(1),
-    stars: Math.round(avgScore)
-  };
-}
-
-// Render a row of 5 stars; filled stars use the accent colour, empty ones are dim.
-function starsHtml(filled) {
-  var html = '<span class="lb-stars">';
-  for (var i = 1; i <= 5; i++) {
-    html += i <= filled
-      ? '<svg viewBox="0 0 24 24" fill="currentColor" class="lb-star lb-star-on"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="currentColor" class="lb-star lb-star-off"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-  }
-  html += '</span>';
-  return html;
-}
-
-// ===== RATING LEADERBOARD (Profile section) =====
-// Builds a ranked list of ALL agencies sorted by rating score.
-// Each row shows rank number, avatar, name, star score, rating count,
-// a "Rate" button that opens an inline rating panel, and the list of
-// public reviews. Agencies with more / better ratings climb to the top.
-var lbExpandedAgency = null; // agency id whose inline rate panel is open
-
-function renderRatingBoard() {
-  var el = document.getElementById('rating-board');
-  if (!el) return;
-  if (!agenciesCache.length) {
-    el.innerHTML = '<div class="empty-state"><h3>Loading agencies…</h3><p>Please wait a moment.</p></div>';
-    return;
-  }
-  // Rank: score desc first, then verified, then count desc, then alphabetical
-  var ranked = agenciesCache.slice().sort(function(a,b){
-    var as = agencyScore(a), bs = agencyScore(b);
-    if (bs.score !== as.score) return bs.score - as.score;
-    var av = a.verified ? 1 : 0, bv = b.verified ? 1 : 0;
-    if (av !== bv) return bv - av;
-    if (bs.count !== as.count) return bs.count - as.count;
-    return (a.name||'').localeCompare(b.name||'');
-  });
-  var html = '<div class="lb-header"><div class="lb-title">Agency Ratings</div><div class="lb-subtitle">Rate the agencies you have worked with. Agencies with better ratings climb to the top.</div></div>';
-  // Summary: how many agencies have been rated
-  var ratedCount = ranked.filter(function(a){ return agencyScore(a).count > 0; }).length;
-  html += '<div class="lb-summary">⭐ ' + ratedCount + ' of ' + ranked.length + ' agencies rated · ' + ratingsCache.length + ' total reviews</div>';
-  html += '<div class="lb-scroll">';
-  ranked.forEach(function(a, idx) {
-    var sc = agencyScore(a);
-    var rank = idx + 1;
-    var rankClass = rank === 1 ? 'lb-rank lb-rank-gold' : (rank === 2 ? 'lb-rank lb-rank-silver' : (rank === 3 ? 'lb-rank lb-rank-bronze' : 'lb-rank'));
-    var open = lbExpandedAgency === a.id;
-    html += '<div class="lb-card' + (open ? ' lb-card-open' : '') + '" id="lb-' + a.id + '">';
-    html += '<button class="lb-row" data-ripple onclick="toggleLbRate(\'' + a.id + '\')" aria-expanded="' + (open ? 'true' : 'false') + '">';
-    html += '<span class="' + rankClass + '">' + rank + '</span>';
-    html += avatarHtml(a);
-    html += '<div class="lb-info">';
-    html += '<div class="lb-name">' + escapeHtml(a.name || 'Unnamed agency') + '</div>';
-    if (sc.count > 0) {
-      html += '<div class="lb-score-row">' + starsHtml(sc.stars) + '<span class="lb-avg">' + sc.avg + '</span><span class="lb-count">(' + sc.count + ')</span></div>';
-    } else {
-      html += '<div class="lb-no-rate">Not rated yet — be the first!</div>';
-    }
-    html += '</div>';
-    html += '<span class="lb-rate-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Rate</span>';
-    html += '</button>';
-    // Inline rate panel + reviews (shown when expanded)
-    if (open) {
-      html += '<div class="lb-panel">' + hubRatings(a) + '</div>';
-    }
-    html += '</div>';
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-window.toggleLbRate = function(agencyId) {
-  lbExpandedAgency = (lbExpandedAgency === agencyId) ? null : agencyId;
-  renderRatingBoard();
-  // Scroll the opened card into view
-  if (lbExpandedAgency) {
-    setTimeout(function() {
-      var card = document.getElementById('lb-' + agencyId);
-      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 50);
-  }
-};
-
-// Re-render the leaderboard (and the hub lists) after a rating is submitted
-// so the agency climbs / descends to its correct rank immediately.
-function refreshRatingBoard() {
-  // Re-sort the master cache so Home/Search also reflect the new order
-  agenciesCache.sort(function(a,b){
-    var as = agencyScore(a), bs = agencyScore(b);
-    if (bs.score !== as.score) return bs.score - as.score;
-    var av = a.verified ? 1 : 0, bv = b.verified ? 1 : 0;
-    if (av !== bv) return bv - av;
-    if (bs.count !== as.count) return bs.count - as.count;
-    return (a.name||'').localeCompare(b.name||'');
-  });
-  filterAndRenderCached();
-  if (document.getElementById('screen-profile') && document.getElementById('screen-profile').classList.contains('active')) {
-    renderRatingBoard();
-  }
-}
-
-function hubRatings(a) {
-  var ratings = ratingsFor(a.id);
-  var html = '<div class="rate-section">';
-  html += '<div class="rate-intro"><strong>Rate this agency</strong> — Share your experience working with them. Your rating is public for everyone to see.</div>';
-  
-  // Emoji picker
-  html += '<div class="rate-emoji-row" id="rate-emoji-row-' + a.id + '">';
-  RATE_EMOJIS.forEach(function(e) {
-    html += '<button class="rate-emoji-btn" data-ripple onclick="selectRateEmoji(this,\'' + e.value + '\')"><span class="re-emoji">' + e.emoji + '</span><span class="re-label">' + e.label + '</span></button>';
-  });
-  html += '</div>';
-  
-  // Name and comment fields
-  html += '<div class="rate-field"><label>Your name (optional)</label><input id="rate-name-' + a.id + '" type="text" placeholder="Anonymous" maxlength="50"></div>';
-  html += '<div class="rate-field"><label>Comment (optional)</label><textarea id="rate-comment-' + a.id + '" placeholder="Share your experience..." maxlength="500"></textarea></div>';
-  html += '<button class="rate-submit-btn" id="rate-submit-' + a.id + '" data-ripple onclick="submitRating(\'' + a.id + '\')">Submit Rating</button>';
-  html += '<div id="rate-msg-' + a.id + '"></div>';
-  
-  // Summary
-  if (ratings.length > 0) {
-    var sc = agencyScore(a);
-    html += '<div style="margin-top:20px;">';
-    html += '<div class="rate-list-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Public Ratings (' + ratings.length + ')</div>';
-    // Overall score row
-    html += '<div class="rate-overall">' + starsHtml(sc.stars) + '<span class="rate-overall-avg">' + sc.avg + '</span><span class="rate-overall-count">based on ' + ratings.length + ' rating' + (ratings.length===1?'':'s') + '</span></div>';
-    
-    // Summary chips
-    html += '<div class="rate-summary">';
-    RATE_EMOJIS.forEach(function(e) {
-      var count = ratings.filter(function(r){ return r.emoji === e.value; }).length;
-      if (count > 0) {
-        html += '<div class="rate-summary-chip"><span class="rsc-emoji">' + e.emoji + '</span><span class="rsc-count">' + count + '</span></div>';
-      }
-    });
-    html += '</div>';
-    
-    // Individual ratings (most recent first)
-    ratings.sort(function(x,y) {
-      var dx = new Date(x.created_at).getTime() || 0;
-      var dy = new Date(y.created_at).getTime() || 0;
-      return dy - dx;
-    });
-    ratings.forEach(function(r) {
-      var dateStr = '';
-      try {
-        var d = new Date(r.created_at);
-        dateStr = d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
-      } catch(e2) {}
-      html += '<div class="rate-item">';
-      html += '<div class="rate-item-head">';
-      html += '<span class="rate-item-emoji">' + (r.emoji || '\ud83d\ude42') + '</span>';
-      html += '<span class="rate-item-name">' + escapeHtml(r.name || 'Anonymous') + '</span>';
-      html += '<span class="rate-item-date">' + escapeHtml(dateStr) + '</span>';
-      html += '</div>';
-      if (r.comment) {
-        html += '<div class="rate-item-comment">' + escapeHtml(r.comment) + '</div>';
-      }
-      if (isAdmin) {
-        html += '<div class="rate-item-actions">';
-        html += '<button class="rate-action-btn" data-ripple onclick="openEditRatingSheet(\'' + r.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>';
-        html += '<button class="rate-action-btn danger" data-ripple onclick="deleteRating(\'' + r.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>';
-        html += '</div>';
-      }
-      html += '</div>';
-    });
-    html += '</div>';
-  } else {
-    html += '<div style="margin-top:20px;"><div class="rate-empty">No ratings yet. Be the first to rate this agency!</div></div>';
-  }
-  
-  html += '</div>';
-  return html;
-}
-
-window.selectRateEmoji = function(btn, emoji) {
-  var row = btn.parentElement;
-  row.querySelectorAll('.rate-emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
-  btn.classList.add('selected');
-  rateSelectedEmoji = emoji;
-};
-
-window.submitRating = async function(agencyId) {
-  var msgEl = document.getElementById('rate-msg-' + agencyId);
-  var name = (document.getElementById('rate-name-' + agencyId) || {}).value || '';
-  var comment = (document.getElementById('rate-comment-' + agencyId) || {}).value || '';
-  
-  if (!rateSelectedEmoji) {
-    if (msgEl) { msgEl.innerHTML = '<div style="color:#ff5b5b;font-size:12.5px;margin-top:10px;">Please select an emoji rating first.</div>'; }
-    return;
-  }
-  
-  var rating = {
-    agency_id: agencyId,
-    emoji: rateSelectedEmoji,
-    name: name.trim(),
-    comment: comment.trim()
-  };
-  
-  var submitBtn = document.getElementById('rate-submit-' + agencyId);
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
-  
-  // Try Supabase first
-  var supaOk = false;
-  try {
-    var { data, error } = await supabaseClient.from('ratings').insert(rating).select();
-    if (!error && data && data.length > 0) {
-      ratingsCache.unshift(data[0]);
-      supaOk = true;
-    }
-  } catch(e) {
-    console.warn('rating supabase error', e);
-  }
-  
-  // Fallback to localStorage
-  if (!supaOk) {
-    rating.id = 'local-' + Date.now() + '-' + Math.random().toString(36).substr(2,9);
-    rating.created_at = new Date().toISOString();
-    ratingsCache.unshift(rating);
-    saveLocalRatings();
-  }
-  
-  rateSelectedEmoji = null;
-  if (msgEl) { msgEl.innerHTML = '<div class="rate-success">\u2705 Thank you for your rating! It is now public for everyone to see.</div>'; }
-  
-  // Re-render: update the rate tab on the hub card, the leaderboard, and re-sort all lists
-  setTimeout(function() {
-    var a = agenciesCache.find(function(x){ return x.id === agencyId; });
-    if (a) {
-      var active = document.querySelector('.screen.active');
-      var target = active ? active.querySelector('.hub-tab-content[data-agency="' + agencyId + '"]') : null;
-      if (target) target.innerHTML = hubRatings(a);
-    }
-    // Re-rank the leaderboard + re-sort Home/Search so the agency climbs to its new spot
-    refreshRatingBoard();
-  }, 1500);
-};
-
-function loadRatingsFromSupabase() {
-  supabaseClient.from('ratings').select('*').order('created_at', { ascending: false })
-    .then(function(result) {
-      if (result.error) {
-        console.warn('ratings load error, using localStorage', result.error.message);
-        loadLocalRatings();
-        ratingsLoaded();
-        return;
-      }
-      ratingsCache = result.data || [];
-      ratingsLoaded();
-    })
-    .catch(function(e) {
-      console.warn('ratings load exception, using localStorage', e);
-      loadLocalRatings();
-      ratingsLoaded();
-    });
-}
-
-// Called once ratings have been loaded (from Supabase or localStorage).
-// Re-sorts the agency list by rating score and re-renders everything so
-// highly-rated agencies climb to the top on the Home / Search / Profile screens.
-function ratingsLoaded() {
-  if (!agenciesCache.length) return;
-  agenciesCache.sort(function(a,b){
-    var as = agencyScore(a), bs = agencyScore(b);
-    if (bs.score !== as.score) return bs.score - as.score;
-    var av = a.verified ? 1 : 0, bv = b.verified ? 1 : 0;
-    if (av !== bv) return bv - av;
-    if (bs.count !== as.count) return bs.count - as.count;
-    return (a.name||'').localeCompare(b.name||'');
-  });
-  filterAndRenderCached();
-  if (document.getElementById('screen-profile') && document.getElementById('screen-profile').classList.contains('active')) {
-    var board = document.getElementById('rating-board');
-    if (board && board.style.display !== 'none') renderRatingBoard();
-  }
-}
-
-function loadLocalRatings() {
-  try {
-    var stored = localStorage.getItem('sa-recruiters-ratings');
-    if (stored) ratingsCache = JSON.parse(stored) || [];
-  } catch(e) { ratingsCache = []; }
-}
-
-function saveLocalRatings() {
-  try {
-    localStorage.setItem('sa-recruiters-ratings', JSON.stringify(ratingsCache));
-  } catch(e) { console.warn('save ratings local error', e); }
-}
-
-// ===== Admin: edit / delete ratings =====
-var editingRatingId = null;
-var editingRatingAgencyId = null;
-var editRateSelectedEmoji = null;
-
-window.deleteRating = async function(id, agencyId) {
-  if (!confirm('Delete this rating? This cannot be undone.')) return;
-  // Try Supabase delete
-  var supaOk = false;
-  if (supabaseClient && !String(id).startsWith('local-')) {
-    try {
-      var { error } = await supabaseClient.from('ratings').delete().eq('id', id);
-      if (!error) supaOk = true;
-    } catch(e) { console.warn('delete rating supabase error', e); }
-  }
-  // Remove from cache regardless (covers both Supabase success and localStorage-only)
-  ratingsCache = ratingsCache.filter(function(r) { return r.id !== id; });
-  if (!supaOk) saveLocalRatings();
-  showToast('Rating deleted');
-  // Re-render the rate tab
-  var a = agenciesCache.find(function(x) { return x.id === agencyId; });
-  if (a) {
-    var active = document.querySelector('.screen.active');
-    var target = active ? active.querySelector('.hub-tab-content[data-agency="' + agencyId + '"]') : null;
-    if (target) target.innerHTML = hubRatings(a);
-  }
-  refreshRatingBoard();
-};
-
-window.openEditRatingSheet = function(id, agencyId) {
-  var r = ratingsCache.find(function(x) { return x.id === id; });
-  if (!r) { showToast('Rating not found'); return; }
-  editingRatingId = id;
-  editingRatingAgencyId = agencyId;
-  editRateSelectedEmoji = r.emoji || null;
-  // Build emoji picker
-  var row = document.getElementById('edit-rate-emoji-row');
-  if (row) {
-    var eh = '';
-    RATE_EMOJIS.forEach(function(e) {
-      var sel = (e.value === editRateSelectedEmoji) ? ' selected' : '';
-      eh += '<button class="rate-emoji-btn' + sel + '" data-ripple onclick="selectEditRateEmoji(this,\'' + e.value + '\')"><span class="re-emoji">' + e.emoji + '</span><span class="re-label">' + e.label + '</span></button>';
-    });
-    row.innerHTML = eh;
-  }
-  document.getElementById('edit-rate-name').value = r.name || '';
-  document.getElementById('edit-rate-comment').value = r.comment || '';
-  document.getElementById('edit-rating-overlay').classList.add('open');
-};
-
-window.selectEditRateEmoji = function(btn, emoji) {
-  var row = btn.parentElement;
-  row.querySelectorAll('.rate-emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
-  btn.classList.add('selected');
-  editRateSelectedEmoji = emoji;
-};
-
-window.saveEditedRating = async function() {
-  if (!editingRatingId) return;
-  if (!editRateSelectedEmoji) { alert('Please select an emoji rating.'); return; }
-  var name = (document.getElementById('edit-rate-name') || {}).value || '';
-  var comment = (document.getElementById('edit-rate-comment') || {}).value || '';
-  var updates = { emoji: editRateSelectedEmoji, name: name.trim(), comment: comment.trim() };
-  var supaOk = false;
-  if (supabaseClient && !String(editingRatingId).startsWith('local-')) {
-    try {
-      var { data, error } = await supabaseClient.from('ratings').update(updates).eq('id', editingRatingId).select();
-      if (!error && data && data.length > 0) {
-        // Update cache with returned record
-        ratingsCache = ratingsCache.map(function(r) { return r.id === editingRatingId ? data[0] : r; });
-        supaOk = true;
-      }
-    } catch(e) { console.warn('update rating supabase error', e); }
-  }
-  if (!supaOk) {
-    // Update in cache and localStorage
-    ratingsCache = ratingsCache.map(function(r) {
-      if (r.id === editingRatingId) { r.emoji = updates.emoji; r.name = updates.name; r.comment = updates.comment; }
-      return r;
-    });
-    saveLocalRatings();
-  }
-  closeSheet('edit-rating-overlay');
-  var savedAgencyId = editingRatingAgencyId;
-  editingRatingId = null;
-  editingRatingAgencyId = null;
-  editRateSelectedEmoji = null;
-  showToast('Rating updated');
-  // Re-render the rate tab
-  var a = agenciesCache.find(function(x) { return x.id === savedAgencyId; });
-  if (a) {
-    var active2 = document.querySelector('.screen.active');
-    var target2 = active2 ? active2.querySelector('.hub-tab-content[data-agency="' + a.id + '"]') : null;
-    if (target2) target2.innerHTML = hubRatings(a);
-  }
-  refreshRatingBoard();
-};
-
 function prefIcon(pref) {
   var p = (pref||'').toLowerCase();
   if (p === 'whatsapp') return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg>';
@@ -1447,7 +1003,6 @@ window.switchHubTab = function(btn, agencyId, tab) {
   if (tab === 'vacancies') target.innerHTML = hubVacancies(a);
   if (tab === 'branches') target.innerHTML = hubBranches(a);
   if (tab === 'contact') target.innerHTML = hubContact(a);
-  if (tab === 'rate') target.innerHTML = hubRatings(a);
 };
 
 window.toggleHub = function(id) {
@@ -2528,10 +2083,6 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
     document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
     window.scrollTo({ top: 0 });
     if (btn.dataset.tab === 'saved') renderSaved();
-    if (btn.dataset.tab === 'profile') {
-      var board = document.getElementById('rating-board');
-      if (board && board.style.display !== 'none') renderRatingBoard();
-    }
   });
 });
 
@@ -2635,18 +2186,6 @@ window.toggleContactCard = function(headEl) {
   if (!card) return;
   var open = card.classList.toggle('open');
   headEl.setAttribute('aria-expanded', open ? 'true' : 'false');
-};
-
-// Show / hide the agency rating leaderboard in the Profile section
-window.toggleRatingBoard = function() {
-  var board = document.getElementById('rating-board');
-  if (!board) return;
-  var willShow = board.style.display === 'none' || !board.style.display;
-  board.style.display = willShow ? 'block' : 'none';
-  if (willShow) {
-    renderRatingBoard();
-    setTimeout(function(){ board.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
-  }
 };
 
 // ===== Stats bar: clickable list views =====

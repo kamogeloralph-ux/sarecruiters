@@ -94,7 +94,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'faq-data',
       title: 'How is my data handled?',
-      body: '<p>We only store what is needed to make the directory work. Your saved vacancies and star ratings are kept on your own device. Agency listings, branches, and vacancies are stored securely. See the Privacy Policy (linked in the app) for full details.</p>'
+      body: '<p>We only store what is needed to make the directory work. Your saved vacancies are kept on your own device. Agency listings, branches, and vacancies are stored securely. See the Privacy Policy (linked in the app) for full details.</p>'
     }
   ],
 
