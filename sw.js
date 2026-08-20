@@ -10,7 +10,7 @@
             sync, periodicsync, beforeevicted, controllerchange-friendly skipWaiting
    ========================================================================== */
 
-const VERSION = 'sa-recruiters-v63';
+const VERSION = 'sa-recruiters-v64';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -28,7 +28,7 @@ const CORE_ASSETS = [
   './privacy.html',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/maskable-512.png',
+  './icons/Maskable-192.png',
   './icons/favicon.ico'
 ];
 

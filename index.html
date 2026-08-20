@@ -39,20 +39,20 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 
 <!-- Maskable / monochrome -->
-<link rel="icon" type="image/png" sizes="512x512" href="icons/maskable-512.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/maskable-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/Maskable-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/Maskable-192.png">
 
 <!-- Open Graph / social (helps App Capabilities + installability signals) -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="SA Recruiters">
 <meta property="og:description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies.">
-<meta property="og:image" content="wordmark-lockup.png">
+<meta property="og:image" content="icons/icon-512.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="SA Recruiters">
 <meta name="twitter:description" content="Connecting South Africa's Recruitment Community.">
-<meta name="twitter:image" content="wordmark-lockup.png">
+<meta name="twitter:image" content="icons/icon-512.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -370,10 +370,11 @@
   <div class="screen" id="screen-allagencies">
     <div class="screen-fixed">
     <header>
-      <div class="logo-text">All Agencies</div>
+      <div class="screen-title-group"><div class="logo-text">All Agencies</div><div class="screen-context">Directory</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button>
+      </button></div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -396,7 +397,7 @@
     <div class="screen-fixed">
     <header>
       <div class="screen-title-group"><div class="logo-text">All Branches</div><div class="screen-context">Directory</div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile menu" title="Back to profile menu">×</button>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -422,7 +423,7 @@
     <div class="screen-fixed">
     <header>
       <div class="screen-title-group"><div class="logo-text">All Vacancies</div><div class="screen-context">Directory</div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile menu" title="Back to profile menu">×</button>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -453,7 +454,7 @@
     <div class="screen-fixed">
     <header>
       <div class="screen-title-group"><div class="logo-text">Employers</div><div class="screen-context">Directory</div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile menu" title="Back to profile menu">×</button>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
