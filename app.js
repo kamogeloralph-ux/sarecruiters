@@ -626,36 +626,18 @@ function hubBranches(a) {
         '</div>' : '') +
         '<span class="chevron">' + ICON_CHEVRON + '</span>' +
       '</div>';
-      /* Expanded: full contact detail rows — clean labeled layout */
-      html += '<div class="branch-detail"><div class="branch-detail-inner"><div class="hub-contact-grid">';
+      /* Expanded: plain labeled rows, matching the agency contact tab */
+      html += '<div class="branch-detail"><div class="branch-detail-inner"><div class="det-plain">';
       if (b.location) {
-        html += '<div class="hub-contact-item is-link">' +
-          '<div class="hub-contact-icon">' + VAC_ICONS.pin + '</div>' +
-          '<div class="hub-contact-body">' +
-            '<div class="hub-contact-label">Address</div>' +
-            '<div class="hub-contact-value">' + mapsLink(b.location) + '</div>' +
-          '</div>' +
-        '</div>';
+        html += '<div class="det-row"><span class="det-label">Address:</span> ' + mapsLink(b.location) + '</div>';
       }
       if (b.phone) {
-        html += '<div class="hub-contact-item is-link">' +
-          '<div class="hub-contact-icon">' + VAC_ICONS.phone + '</div>' +
-          '<div class="hub-contact-body">' +
-            '<div class="hub-contact-label">Phone</div>' +
-            '<div class="hub-contact-value">' + telLink(b.phone) + '</div>' +
-          '</div>' +
-        '</div>';
+        html += '<div class="det-row"><span class="det-label">Phone:</span> ' + telLink(b.phone) + '</div>';
       }
       if (b.email) {
-        html += '<div class="hub-contact-item is-link">' +
-          '<div class="hub-contact-icon">' + VAC_ICONS.mail + '</div>' +
-          '<div class="hub-contact-body">' +
-            '<div class="hub-contact-label">Email</div>' +
-            '<div class="hub-contact-value">' + mailLink(b.email) + '</div>' +
-          '</div>' +
-        '</div>';
+        html += '<div class="det-row"><span class="det-label">Email:</span> ' + mailLink(b.email) + '</div>';
       }
-      html += '</div></div></div>'; // close hub-contact-grid, branch-detail-inner, branch-detail
+      html += '</div></div></div>'; // close det-plain, branch-detail-inner, branch-detail
       html += '</div>'; // close branch-block
     });
   }
@@ -2162,40 +2144,16 @@ function renderAllBranchesList() {
       '</div>' +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</div>';
-    var body = '<div class="branch-detail"><div class="branch-detail-inner"><div class="hub-contact-grid">';
-    body += '<div class="hub-contact-item">' +
-      '<div class="hub-contact-icon">' + VAC_ICONS.building + '</div>' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-label">Branch</div>' +
-        '<div class="hub-contact-value">' + escapeHtml(b.name || 'Branch') + '</div>' +
-      '</div>' +
-    '</div>';
+    var body = '<div class="branch-detail"><div class="branch-detail-inner"><div class="det-plain">';
+    body += '<div class="det-row"><span class="det-label">Branch:</span> ' + escapeHtml(b.name || 'Branch') + '</div>';
     if (b.location) {
-      body += '<div class="hub-contact-item is-link">' +
-        '<div class="hub-contact-icon">' + VAC_ICONS.pin + '</div>' +
-        '<div class="hub-contact-body">' +
-          '<div class="hub-contact-label">Address</div>' +
-          '<div class="hub-contact-value">' + mapsLink(b.location) + '</div>' +
-        '</div>' +
-      '</div>';
+      body += '<div class="det-row"><span class="det-label">Address:</span> ' + mapsLink(b.location) + '</div>';
     }
     if (b.phone) {
-      body += '<div class="hub-contact-item is-link">' +
-        '<div class="hub-contact-icon">' + VAC_ICONS.phone + '</div>' +
-        '<div class="hub-contact-body">' +
-          '<div class="hub-contact-label">Phone</div>' +
-          '<div class="hub-contact-value">' + telLink(b.phone) + '</div>' +
-        '</div>' +
-      '</div>';
+      body += '<div class="det-row"><span class="det-label">Phone:</span> ' + telLink(b.phone) + '</div>';
     }
     if (b.email) {
-      body += '<div class="hub-contact-item is-link">' +
-        '<div class="hub-contact-icon">' + VAC_ICONS.mail + '</div>' +
-        '<div class="hub-contact-body">' +
-          '<div class="hub-contact-label">Email</div>' +
-          '<div class="hub-contact-value">' + mailLink(b.email) + '</div>' +
-        '</div>' +
-      '</div>';
+      body += '<div class="det-row"><span class="det-label">Email:</span> ' + mailLink(b.email) + '</div>';
     }
     body += '</div>';
     if (isAdmin) {
