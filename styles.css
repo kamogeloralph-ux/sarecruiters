@@ -607,3 +607,10 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .pool-feature-tag{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
 .contact-card-icon{width:28px;height:28px;color:var(--text-2)}
 .contact-card-icon svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Talent Pool email-alert consent */
+.alert-optin-row{display:flex;align-items:flex-start;gap:10px;margin:14px 0 16px;padding:12px 13px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--text);font-size:13px;line-height:1.35;cursor:pointer}
+.alert-optin-row input{width:18px;height:18px;accent-color:var(--accent);margin:1px 0 0;flex:none}
+.alert-optin-row span{display:flex;flex-direction:column;gap:4px}
+.alert-optin-row strong{font-weight:700}
+.alert-optin-row small{font-size:11.5px;color:var(--text-2);line-height:1.45}

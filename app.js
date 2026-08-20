@@ -1973,6 +1973,8 @@ function openPoolRegisterSheet() {
   document.getElementById('pool-experience').value = '';
   document.getElementById('pool-cv').value = '';
   document.getElementById('pool-payref').value = '';
+  var alertOptIn = document.getElementById('pool-email-alerts');
+  if (alertOptIn) alertOptIn.checked = false;
   document.getElementById('pool-register-overlay').classList.add('open');
   loadPoolBankingDetails();
 }
@@ -2003,15 +2005,23 @@ async function submitPoolRegistration() {
   var criminal = document.getElementById('pool-criminal').value;
   var experience = document.getElementById('pool-experience').value;
   var payref = document.getElementById('pool-payref').value.trim();
+  var email = document.getElementById('pool-email').value.trim();
+  var alertOptIn = !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked);
   if (!name || !phone || !sector || !location) { showToast('Please fill in name, phone, sector and location.'); return; }
+  if (alertOptIn && !email) { showToast('Add your email address to receive vacancy alerts.'); return; }
   if (!gender || !grade12 || !criminal || experience === '') { showToast('Please answer gender, Grade 12, criminal record and experience.'); return; }
   if (!payref) { showToast('Add the reference you used on your EFT so we can match your payment.'); return; }
   var payload = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2),
     full_name: name,
     contact_phone: phone,
-    contact_email: document.getElementById('pool-email').value.trim(),
+    contact_email: email,
     sector: sector,
+    email_alert_opt_in: alertOptIn,
+    alert_sectors: sector,
+    alert_locations: location,
+    alert_consent_at: alertOptIn ? new Date().toISOString() : null,
+    alert_unsubscribe_token: alertOptIn ? ('u_' + Date.now().toString(36) + Math.random().toString(36).slice(2)) : null,
     position: document.getElementById('pool-position').value.trim(),
     location: location,
     gender: gender,
@@ -2025,8 +2035,20 @@ async function submitPoolRegistration() {
   var btn = document.getElementById('pool-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
   try {
-    var { error } = await supabaseClient.from('pool_candidates').insert([payload]);
-    if (error) { console.error('pool submit', error); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
+    var result = await supabaseClient.from('pool_candidates').insert([payload]);
+    if (result.error && /column|schema cache/i.test(result.error.message || '')) {
+      // Keep registration working on older databases until CREATE_EMAIL_ALERTS.sql
+      // has been run; alert consent becomes active after the schema is updated.
+      var legacyPayload = Object.assign({}, payload);
+      delete legacyPayload.email_alert_opt_in;
+      delete legacyPayload.alert_sectors;
+      delete legacyPayload.alert_locations;
+      delete legacyPayload.alert_consent_at;
+      delete legacyPayload.alert_unsubscribe_token;
+      result = await supabaseClient.from('pool_candidates').insert([legacyPayload]);
+      if (!result.error) showToast('Registration received — email alerts activate after the alert setup is completed.');
+    }
+    if (result.error) { console.error('pool submit', result.error); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
   } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
   if (btn) { btn.disabled = false; btn.textContent = 'Submit registration'; }
   closeSheet('pool-register-overlay');
@@ -2825,6 +2847,17 @@ function managerEmployerAddVacancy() {
   if (!managerEmployer) return;
   openEmployerVacancySheet(managerEmployer.id);
 }
+// ===== Talent Pool email-alert unsubscribe =====
+async function processAlertUnsubscribe() {
+  var token = new URLSearchParams(window.location.search).get('unsubscribe');
+  if (!token) return;
+  try {
+    var result = await supabaseClient.rpc('unsubscribe_pool_email_alerts', { p_token: token });
+    if (result && result.data) showToast('Email alerts stopped');
+    else showToast('This unsubscribe link is invalid or already used');
+  } catch (e) { showToast('Could not update email alerts — please try again'); }
+}
+
 // ===== Detect manager mode from URL (?manage=TOKEN or ?manage_employer=TOKEN) =====
 (function detectManagerMode() {
   var params = new URLSearchParams(window.location.search);
@@ -2850,6 +2883,7 @@ if (loadDataCache()) {
 }
 
 loadAll();
+processAlertUnsubscribe();
 // The shell and cached directory paint first; secondary settings are already
 // included in loadAll, while the optional daily track loads just after paint.
 setTimeout(loadTodayTrack, 250);
