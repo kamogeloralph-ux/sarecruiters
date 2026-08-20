@@ -573,3 +573,20 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .content-restore-btn{flex:0 0 auto;background:var(--card);color:var(--text-2);border:1px solid var(--border-strong);border-radius:12px;padding:13px 16px;font-size:12.5px;font-weight:600}
 .content-restore-btn:active{transform:scale(.97)}
 .content-empty{text-align:center;font-size:13px;color:var(--text-2);padding:30px 0}
+
+/* ===== Profile and directory polish ===== */
+.screen-title-group{display:flex;flex-direction:column;gap:2px;min-width:0}
+.screen-context{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
+.screen-close-btn{width:42px;height:42px;border-radius:15px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent);display:grid;place-items:center;font-size:28px;font-weight:300;line-height:1;transition:transform .15s var(--ease),background .2s,color .2s}
+.screen-close-btn:active{transform:scale(.9);background:var(--accent);color:#fff}
+.screen-close-btn:focus-visible,.theme-toggle:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:2px}
+.theme-toggle{color:var(--accent);background:linear-gradient(145deg,var(--accent-soft),color-mix(in srgb,var(--card) 82%,var(--accent)));border-color:color-mix(in srgb,var(--accent) 22%,transparent);box-shadow:0 6px 16px -10px color-mix(in srgb,var(--accent) 65%,transparent)}
+.theme-toggle svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#screen-profile .screen-scroll{overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--accent) 45%,transparent) transparent}
+#screen-profile .screen-scroll::-webkit-scrollbar{width:5px}
+#screen-profile .screen-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 45%,transparent);border-radius:99px}
+#screen-profile .profile-card-ios{padding-top:10px;padding-bottom:6px}
+#screen-profile .pgroup-label{margin-top:20px}
+#screen-profile .pgrouped-list{box-shadow:0 5px 18px -14px rgba(0,0,0,.45)}
+#screen-profile .contact-section{padding-bottom:14px}
+@media(max-width:420px){.screen-close-btn,.theme-toggle{width:40px;height:40px}.screen-close-btn{font-size:26px}.screen-fixed{padding-left:14px;padding-right:14px}.screen-scroll{padding-left:14px;padding-right:14px}}
