@@ -223,8 +223,13 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .hub-contact-item .copy-hint{font-size:10px;color:var(--text-2);margin-top:3px}
 .contact-link{color:var(--accent);font-weight:600;text-decoration:none;word-break:break-word;overflow-wrap:break-word}
 .contact-link:active{opacity:.6}
-.hub-contact-preferred{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;padding:6px 12px;border-radius:var(--radius-pill);margin-top:2px}
+.hub-contact-preferred{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;padding:5px 11px;border-radius:var(--radius-pill);vertical-align:middle}
 .hub-contact-preferred svg{width:12px;height:12px}
+/* Compact "Label: value" contact rows — same neat, low-space layout as admin.html */
+.det-plain{padding:2px 2px 6px;font-size:13.5px;line-height:1.85}
+.det-row{word-break:break-word;overflow-wrap:break-word;color:var(--text)}
+.det-row.muted{color:var(--text-2);font-style:italic}
+.det-label{color:var(--text-2);font-weight:600;margin-right:3px}
 .company-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .company-chip{font-size:11px;font-weight:600;color:var(--text);background:var(--card-3);border:1px solid var(--border);border-radius:var(--radius-pill);padding:5px 11px}
 .hub-admin-row{display:flex;gap:8px;margin-top:14px}
