@@ -581,3 +581,29 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 #screen-profile .pgrouped-list{box-shadow:0 5px 18px -14px rgba(0,0,0,.45)}
 #screen-profile .contact-section{padding-bottom:14px}
 @media(max-width:420px){.screen-close-btn,.theme-toggle{width:40px;height:40px}.screen-close-btn{font-size:26px}.screen-fixed{padding-left:14px;padding-right:14px}.screen-scroll{padding-left:14px;padding-right:14px}}
+
+/* ===== Unified iOS-style sheet dismissal ===== */
+.sheet{position:fixed}
+.sheet-close-btn{position:absolute;top:14px;right:16px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--card-2);border:1px solid var(--border);color:var(--text-2);font-size:24px;font-weight:300;line-height:1;cursor:pointer;z-index:2;transition:transform .15s var(--ease),background .2s,color .2s}
+.sheet-close-btn:hover{background:var(--accent-soft);color:var(--accent)}
+.sheet-close-btn:active{transform:scale(.9);background:var(--accent);color:#fff}
+.sheet-close-btn:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:2px}
+.sheet h3{padding-right:44px}
+@media(max-width:420px){.sheet-close-btn{top:12px;right:14px;width:34px;height:34px;font-size:23px}}
+
+/* Secondary screens use the same restrained monochrome outline language as Profile. */
+#screen-smartmanager .screen-close-btn,#screen-submissions .screen-close-btn,#screen-manager .screen-close-btn,#screen-manager-employer .screen-close-btn{flex-shrink:0}
+#screen-smartmanager header,#screen-submissions header,#screen-manager header,#screen-manager-employer header{gap:12px}
+#screen-smartmanager .manager-add-btn .mi-icon svg,#screen-submissions .manager-add-btn .mi-icon svg,#screen-manager .manager-add-btn .mi-icon svg,#screen-manager-employer .manager-add-btn .mi-icon svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Keep semantic status colors, but use neutral outline icons for navigation and actions. */
+.sub-card-icon.report,.sub-card-icon.suggestion{border:1px solid currentColor;background:transparent}
+
+/* ===== Purple business actions ===== */
+.force-update-btn{background:linear-gradient(145deg,var(--accent),color-mix(in srgb,var(--accent) 72%,#000));box-shadow:0 7px 18px -7px color-mix(in srgb,var(--accent) 70%,transparent)}
+.track-card.has-track{border-color:color-mix(in srgb,var(--accent) 34%,transparent)}
+.track-card .track-art{background:linear-gradient(145deg,var(--accent),color-mix(in srgb,var(--accent) 72%,#000));box-shadow:0 6px 18px -6px color-mix(in srgb,var(--accent) 65%,transparent)}
+.track-play{background:var(--accent);box-shadow:0 4px 14px -3px color-mix(in srgb,var(--accent) 58%,transparent)}
+.pool-feature-tag{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+.contact-card-icon{width:28px;height:28px;color:var(--text-2)}
+.contact-card-icon svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
