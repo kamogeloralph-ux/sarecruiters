@@ -207,11 +207,6 @@
       <svg class="pool-feature-chev"><use href="icons.svg#i36fdbb"/></svg>
     </button>
 
-    <div class="pgroup-label">Account</div>
-    <div class="pgrouped-list">
-      <button class="profile-menu-item" id="rateagencies-menu-item" data-ripple onclick="toggleRatingBoard()"><span class="mi-icon tile-amber"><svg><use href="icons.svg#i8bd618"/></svg></span><span>Rate Agencies<span class="mi-sub">Rate &amp; review agencies &#8212; top-rated climb the ranks</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-    </div>
-
     <div class="pgroup-label">Post &amp; Manage</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item" id="postvacancy-menu-item" data-ripple onclick="openGeneralVacancySheet()"><span class="mi-icon tile-green"><svg><use href="icons.svg#i952b6f"/></svg></span><span>Post a Vacancy<span class="mi-sub">Add a general job posting with apply link</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -240,8 +235,6 @@
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
-    <!-- ============ AGENCY RATING LEADERBOARD ============ -->
-    <div id="rating-board" style="display:none"></div>
     <!-- ============ CONTACT DETAILS ============ -->
     <div class="contact-section">
       <div class="contact-section-title">Contact Details</div>
@@ -683,20 +676,6 @@
       Message admin on WhatsApp
     </a>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-locked-overlay')">Close</button>
-  </div>
-</div>
-
-<!-- ============ EDIT RATING SHEET ============ -->
-<div class="sheet-scrim" id="edit-rating-overlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h3>Edit rating</h3>
-    <div class="rate-intro" style="margin-bottom:16px"><strong>Admin editing.</strong> Update the emoji, name and comment for this public rating.</div>
-    <div class="rate-emoji-row" id="edit-rate-emoji-row"></div>
-    <div class="field"><label>Name</label><input id="edit-rate-name" type="text" placeholder="Anonymous" maxlength="50"></div>
-    <div class="field"><label>Comment</label><textarea id="edit-rate-comment" placeholder="Share your experience..." maxlength="500"></textarea></div>
-    <button class="sheet-submit" data-ripple onclick="saveEditedRating()">Save changes</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('edit-rating-overlay')">Cancel</button>
   </div>
 </div>
 
