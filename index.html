@@ -723,8 +723,13 @@
     <div class="access-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
     <h3>Talent Pool registration required</h3>
     <p class="access-lock-copy">The Employer Directory and employer vacancies are currently available only to registered Talent Pool members.</p>
-    <p class="access-lock-copy muted">Join the Talent Pool to browse employers and see their vacancies.</p>
-    <button class="sheet-submit" data-ripple onclick="closeSheet('employer-directory-locked-overlay');openPoolRegisterSheet();">Register for Talent Pool</button>
+    <p class="access-lock-copy muted">Enter the same email and phone number used when you registered.</p>
+    <div class="access-verify-fields">
+      <label>Email address<input id="employer-access-email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+      <label>Phone number<input id="employer-access-phone" type="tel" autocomplete="tel" placeholder="082 000 0000"></label>
+    </div>
+    <button class="sheet-submit" data-ripple onclick="verifyEmployerDirectoryAccess()">Verify Talent Pool membership</button>
+    <button class="access-register-link" data-ripple onclick="closeSheet('employer-directory-locked-overlay');openPoolRegisterSheet();">Not registered? Join Talent Pool</button>
   </div>
 </div>
 
