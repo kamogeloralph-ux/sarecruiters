@@ -11,12 +11,18 @@ var vacanciesCache = [];
 var employersCache = [];
 var isAdmin = false;
 var publicVacancyPostingOpen = false;
+var publicEmployerRegistrationOpen = false;
 var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
 // ===== SMART MANAGER: agency self-service links =====
 var managerMode = false;   // true when URL has ?manage=TOKEN
 var managerAgency = null;  // the agency object the manager is allowed to update
 var managerTokenMap = {};  // { tokenId: agencyId } — persisted in localStorage
 var managerPendingToken = null; // token detected before agencies loaded
+// ===== SMART MANAGER: employer self-service links (vacancies only) =====
+var employerManagerMode = false;   // true when URL has ?manage_employer=TOKEN
+var managerEmployer = null;        // the employer object the manager is allowed to post vacancies for
+var employerManagerTokenMap = {};  // { tokenId: employerId } — persisted in localStorage
+var employerManagerPendingToken = null; // token detected before employers loaded
 
 // Seed editable content sections (FAQ, CV prep, etc.) with defaults if needed
 if (window.ContentMgr) ContentMgr.ensureSeeded();
@@ -74,6 +80,52 @@ function buildManagerLink(token) {
   // Use the current app URL with ?manage=TOKEN
   var base = window.location.origin + window.location.pathname;
   return base + '?manage=' + token;
+}
+
+// ----- Employer manager tokens (mirrors the agency ones above, but keyed
+// off the `employers` table and its own ?manage_employer=TOKEN param, so
+// the two self-service links never collide) -----
+function employerManagerTokenKey(employerId) { return 'sa_emp_manager_token_' + employerId; }
+function getEmployerManagerToken(employerId) {
+  var e = employersCache.find(function(x){ return x.id === employerId; });
+  if (e && e.manage_token) return e.manage_token;
+  try { return localStorage.getItem(employerManagerTokenKey(employerId)) || ''; } catch(e){ return ''; }
+}
+function setEmployerManagerToken(employerId, token) {
+  var e = employersCache.find(function(x){ return x.id === employerId; });
+  if (e) e.manage_token = token;
+  employerManagerTokenMap[token] = employerId;
+  try { localStorage.setItem(employerManagerTokenKey(employerId), token); } catch(e){}
+  saveEmployerManagerTokenToSupabase(employerId, token);
+}
+async function saveEmployerManagerTokenToSupabase(employerId, token) {
+  try {
+    var { error } = await supabaseClient.from('employers').update({ manage_token: token }).eq('id', employerId);
+    if (error) console.error('employer manage_token save', error);
+  } catch(e) { console.error('employer manage_token save', e); }
+}
+function employerIdFromToken(token) {
+  if (!token) return null;
+  if (employerManagerTokenMap[token]) return employerManagerTokenMap[token];
+  for (var i = 0; i < employersCache.length; i++) {
+    if (employersCache[i].manage_token === token) {
+      employerManagerTokenMap[token] = employersCache[i].id;
+      return employersCache[i].id;
+    }
+  }
+  for (var j = 0; j < employersCache.length; j++) {
+    try {
+      if (localStorage.getItem(employerManagerTokenKey(employersCache[j].id)) === token) {
+        employerManagerTokenMap[token] = employersCache[j].id;
+        return employersCache[j].id;
+      }
+    } catch(e){}
+  }
+  return null;
+}
+function buildEmployerManagerLink(token) {
+  var base = window.location.origin + window.location.pathname;
+  return base + '?manage_employer=' + token;
 }
 
 /* ── Theme (day / night) ───────────────────────────── */
@@ -271,6 +323,10 @@ function updatePostingToggleUI() {
   var sub = document.getElementById('posting-toggle-sub');
   if (sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
 }
+async function loadEmployerRegSetting() {
+  var v = await getAppSetting('public_employer_registration', 'false');
+  publicEmployerRegistrationOpen = (v === true || v === 'true');
+}
 
 /* ===== Track of the Day =====
    Reads today's track from the `daily_tracks` table (Supabase).
@@ -421,6 +477,12 @@ function openVacancyLockedSheet() {
   if (link) link.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
   document.getElementById('vacancy-locked-overlay').classList.add('open');
 }
+function openEmployerLockedSheet() {
+  var msg = 'Hi, I\'d like to register my company as an employer on SA Recruiters. Please could you set this up for me?';
+  var link = document.getElementById('employer-locked-wa-link');
+  if (link) link.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
+  document.getElementById('employer-locked-overlay').classList.add('open');
+}
 
 // ----- Vacancies -----
 async function getVacancies() {
@@ -517,15 +579,28 @@ async function loadAll() {
       setManagerToken(a.id, token);
     }
   });
+  // Backfill SMART MANAGER tokens for employers that were added before this feature
+  employersCache.forEach(function(e) {
+    if (!getEmployerManagerToken(e.id)) {
+      var token = genToken();
+      setEmployerManagerToken(e.id, token);
+    }
+  });
   updateStats();
   filterAndRenderCached();
   // If in manager mode, re-render the manager panel with fresh data
   if (managerMode) renderManagerMode();
+  if (employerManagerMode) renderEmployerManagerMode();
   // If a pending manager token was detected before agencies loaded, enter manager mode now
   if (managerPendingToken) {
     var tok = managerPendingToken;
     managerPendingToken = null;
     enterManagerMode(tok);
+  }
+  if (employerManagerPendingToken) {
+    var etok = employerManagerPendingToken;
+    employerManagerPendingToken = null;
+    enterEmployerManagerMode(etok);
   }
   // If admin is viewing SMART MANAGER section, re-render it
   if (typeof renderSmartManager === 'function' && document.getElementById('screen-smartmanager') && document.getElementById('screen-smartmanager').classList.contains('active')) {
@@ -718,10 +793,8 @@ function employerHubVacancies(e) {
     });
   }
   html += '</div>';
-  if (isAdmin || publicVacancyPostingOpen) {
+  if (isAdmin) {
     html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openEmployerVacancySheet(\'' + e.id + '\')">+ Post vacancy</button></div>';
-  } else {
-    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openVacancyLockedSheet()">+ Post vacancy</button></div>';
   }
   return html;
 }
@@ -1255,6 +1328,7 @@ async function deleteAgencyById(id) {
 // ===== Employer form =====
 var editingEmployerId = null;
 function openEmployerForm(id) {
+  if (!id && !isAdmin && !publicEmployerRegistrationOpen) { openEmployerLockedSheet(); return; }
   editingEmployerId = id || null;
   var e = id ? employersCache.find(function(x){ return x.id === id; }) : null;
   document.getElementById('employer-form-title').textContent = id ? 'Edit employer' : 'Register your company';
@@ -1456,7 +1530,8 @@ function openGeneralVacancySheet() {
 // tagged with employer_id so it shows the employer's logo/verified badge
 // and appears in both the employer's profile AND the main Vacancies list.
 function openEmployerVacancySheet(employerId) {
-  if (!isAdmin && !publicVacancyPostingOpen) { openVacancyLockedSheet(); return; }
+  var isSelfManaging = employerManagerMode && managerEmployer && managerEmployer.id === employerId;
+  if (!isAdmin && !isSelfManaging) { showToast('Vacancy posting for employers is managed by the admin.'); return; }
   var emp = employersCache.find(function(x){ return x.id === employerId; });
   if (!emp) { showToast('Employer not found'); return; }
   editingGeneralVacancyId = null;
@@ -2599,7 +2674,72 @@ function managerAddVacancy() {
   document.getElementById('v-link').value = '';
   document.getElementById('vacancy-overlay').classList.add('open');
 }
-// ===== Detect manager mode from URL (?manage=TOKEN) =====
+
+// ===== EMPLOYER MANAGER MODE (employer self-service, vacancies only) =====
+// Mirrors the agency manager mode above, but scoped to a single employer's
+// vacancies via ?manage_employer=TOKEN. Employers can add vacancies for
+// themselves here; everything else (contact details, verification) stays
+// admin-controlled. Once saved, a vacancy is read-only from this screen.
+function enterEmployerManagerMode(token) {
+  var employerId = employerIdFromToken(token);
+  if (!employerId) {
+    // Employers may not be loaded yet — retry after loadAll
+    employerManagerPendingToken = token;
+    return false;
+  }
+  employerManagerMode = true;
+  managerEmployer = employersCache.find(function(e){ return e.id === employerId; });
+  if (!managerEmployer) { employerManagerMode = false; return false; }
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-manager-employer').classList.add('active');
+  var nav = document.querySelector('.bottom-nav');
+  if (nav) nav.style.display = 'none';
+  var fabAdmin = document.getElementById('fab-admin');
+  if (fabAdmin) fabAdmin.style.display = 'none';
+  document.getElementById('manager-employer-name').textContent = managerEmployer.name || 'Company';
+  renderEmployerManagerMode();
+  return true;
+}
+function exitEmployerManagerMode() {
+  employerManagerMode = false;
+  managerEmployer = null;
+  employerManagerPendingToken = null;
+  if (window.history && window.history.replaceState) {
+    var clean = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, document.title, clean);
+  }
+  var nav = document.querySelector('.bottom-nav');
+  if (nav) nav.style.display = '';
+  var fabAdmin = document.getElementById('fab-admin');
+  if (fabAdmin) fabAdmin.style.display = isAdmin ? 'flex' : 'none';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-home').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'home'); });
+}
+function renderEmployerManagerMode() {
+  if (!employerManagerMode || !managerEmployer) return;
+  var vacancies = vacanciesForEmployer(managerEmployer.id);
+  var vHtml = '';
+  if (vacancies.length) {
+    vacancies.forEach(function(v) {
+      vHtml += '<div class="manager-item">' +
+        '<div class="manager-item-title">' + escapeHtml(v.title || '') + '</div>' +
+        (v.location ? '<div class="manager-item-sub">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + escapeHtml(v.location) + '</div>' : '') +
+        (v.closing_date ? '<div class="manager-item-meta">Closes: ' + escapeHtml(v.closing_date) + '</div>' : '') +
+        (v.notes ? '<div class="manager-item-sub" style="margin-top:6px">' + escapeHtml(v.notes) + '</div>' : '') +
+        '<span class="manager-read-only-tag">Saved — contact admin to edit</span>' +
+      '</div>';
+    });
+  } else {
+    vHtml = '<div class="empty-state" style="padding:16px 0"><p style="font-size:13px;color:var(--text-2)">No vacancies added yet.</p></div>';
+  }
+  document.getElementById('manager-employer-vacancy-list').innerHTML = vHtml;
+}
+function managerEmployerAddVacancy() {
+  if (!managerEmployer) return;
+  openEmployerVacancySheet(managerEmployer.id);
+}
+// ===== Detect manager mode from URL (?manage=TOKEN or ?manage_employer=TOKEN) =====
 (function detectManagerMode() {
   var params = new URLSearchParams(window.location.search);
   var token = params.get('manage');
@@ -2607,10 +2747,16 @@ function managerAddVacancy() {
     // Agencies aren't loaded yet; set pending token — loadAll() will enter manager mode
     managerPendingToken = token;
   }
+  var empToken = params.get('manage_employer');
+  if (empToken) {
+    // Employers aren't loaded yet; set pending token — loadAll() will enter employer manager mode
+    employerManagerPendingToken = empToken;
+  }
 })();
 
 loadAll();
 loadPostingSetting();
+loadEmployerRegSetting();
 loadTodayTrack();
 
 if ('serviceWorker' in navigator) {

@@ -346,6 +346,26 @@
     </div>
   </div>
 
+  <!-- ============ MANAGER MODE (employer self-service, vacancies only) ============ -->
+  <div class="screen" id="screen-manager-employer">
+    <div class="screen-fixed">
+    <header>
+      <div class="logo-text" id="manager-employer-name">Company</div>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button>
+    </header>
+    <div class="manager-banner">
+      <p>Post vacancies for your company. Once saved, changes can only be made by contacting the admin.</p>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="section-head"><div class="section-title">Vacancies</div></div>
+    <div id="manager-employer-vacancy-list"></div>
+    <button class="manager-add-btn" data-ripple onclick="managerEmployerAddVacancy()"><span class="mi-icon"><svg><use href="icons.svg#i0f1c52"/></svg></span> Add vacancy</button>
+    </div>
+  </div>
+
   <!-- ============ ALL AGENCIES LIST ============ -->
   <div class="screen" id="screen-allagencies">
     <div class="screen-fixed">
@@ -676,6 +696,21 @@
       Message admin on WhatsApp
     </a>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-locked-overlay')">Close</button>
+  </div>
+</div>
+
+<!-- ============ EMPLOYER REGISTRATION LOCKED SHEET (public) ============ -->
+<div class="sheet-scrim" id="employer-locked-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="text-align:center;font-size:40px;margin-bottom:12px;">🔒</div>
+    <h3 style="text-align:center;">Company registration is closed</h3>
+    <p style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">To keep the directory free of spam, employer registration is opened on request. Message the admin on WhatsApp and it'll be set up for you.</p>
+    <a id="employer-locked-wa-link" href="#" target="_blank" rel="noopener" class="sheet-submit wa-btn" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
+      <svg class="wa-glyph"><use href="icons.svg#i7ebf0f"/></svg>
+      Message admin on WhatsApp
+    </a>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('employer-locked-overlay')">Close</button>
   </div>
 </div>
 

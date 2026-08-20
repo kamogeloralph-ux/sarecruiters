@@ -340,6 +340,12 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         </div>
         <div style="margin-top:14px" class="muted">When ON, anyone can post a general vacancy from the public app. When OFF, posting is locked and users are asked to message the admin on WhatsApp.</div>
 
+        <div class="toggle-row" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+          <div><div class="t-label">Public employer registration</div><div class="t-sub" id="emp-reg-sub">Loading…</div></div>
+          <label class="switch"><input type="checkbox" id="emp-reg-toggle" onchange="toggleEmployerReg(this.checked)"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div style="margin-top:14px" class="muted">When ON, anyone can register their company from the public app. When OFF, registration is locked and users are asked to message the admin on WhatsApp. Employers never post vacancies directly in the public app — send each one their Smart Manager link (in their employer profile) so they can add vacancies themselves.</div>
+
         <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border)">
           <div class="t-label" style="margin-bottom:2px">Talent Pool banking details</div>
           <div class="muted" style="margin-bottom:12px">Shown to job seekers on the public "Join the Talent Pool" registration form so they know where to pay their R20/year.</div>
@@ -457,6 +463,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified employers show a badge and rank higher</div></div>
       <label class="switch"><input type="checkbox" id="emp-verified" checked><span class="track"><span class="knob"></span></span></label>
     </div>
+    <div id="emp-manager-box" style="display:none"></div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('employer-overlay')">Cancel</button>
       <button class="btn" onclick="saveEmployer()">Save</button>
@@ -547,6 +554,7 @@ var editing = { agency: null, branch: null, vacancy: null, employer: null, artic
 var pendingPhoto = null;
 var subTab = 'reports';
 var publicVacancyPostingOpen = false;
+var publicEmployerRegistrationOpen = false;
 
 // ===== Theme =====
 function applyTheme(t){
@@ -690,6 +698,7 @@ async function deleteSuggestion(id){ var { error } = await supabaseClient.from('
 async function getAppSetting(key, fb){ try{ var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key',key).maybeSingle(); if(error||!data) return fb; return data.value; }catch(e){ return fb; } }
 async function setAppSetting(key, value){ try{ var { error } = await supabaseClient.from('app_settings').upsert({key:key,value:value,updated_at:new Date().toISOString()}); return !error; }catch(e){ return false; } }
 async function saveManagerToken(agencyId, token){ try{ await supabaseClient.from('agencies').update({manage_token:token}).eq('id',agencyId); }catch(e){} }
+async function saveEmployerManagerToken(employerId, token){ try{ await supabaseClient.from('employers').update({manage_token:token}).eq('id',employerId); }catch(e){} }
 
 async function loadAll(){
   cache.agencies = await getAgencies();
@@ -703,6 +712,9 @@ async function loadAll(){
   var pv = await getAppSetting('public_vacancy_posting','false');
   publicVacancyPostingOpen = (pv===true||pv==='true');
   updatePostingUI();
+  var pe = await getAppSetting('public_employer_registration','false');
+  publicEmployerRegistrationOpen = (pe===true||pe==='true');
+  updateEmployerRegUI();
   fillAgencySelects();
 }
 
@@ -765,7 +777,7 @@ function goSection(id){
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
   if(id==='dailytrack') renderDailyTracks();
-  if(id==='settings'){ updatePostingUI(); loadPoolBankingDetails(); }
+  if(id==='settings'){ updatePostingUI(); updateEmployerRegUI(); loadPoolBankingDetails(); }
   if(id==='poolcandidates') renderPoolCandidates();
   window.scrollTo(0,0);
 }
@@ -996,6 +1008,18 @@ function openEmployerSheet(id){
   var prev = document.getElementById('emp-photo-preview');
   if(pendingEmployerPhoto){ document.getElementById('emp-photo-img').src = pendingEmployerPhoto; prev.style.display='block'; } else { prev.style.display='none'; }
   document.getElementById('emp-photo').value = '';
+  // Manager link box (edit only) — lets the employer post their own vacancies
+  var mbox = document.getElementById('emp-manager-box');
+  if(e){
+    var tok = e.manage_token || '';
+    var link = tok ? (location.origin + location.pathname.replace(/admin\.html.*/,'index.html') + '?manage_employer=' + tok) : '';
+    mbox.innerHTML = '<div class="divider"></div><div class="t-label" style="margin-bottom:6px">Smart Manager link</div>'+
+      (tok ? '<div class="copy-link"><input id="emp-mgr-link" value="'+escapeHtml(link)+'" readonly><button onclick="copyLink(\'emp-mgr-link\')">Copy</button></div>'+
+            '<button class="minibtn" style="margin-top:8px" onclick="regenEmployerToken(\''+e.id+'\')">Regenerate token</button>'+
+            '<div class="muted" style="margin-top:6px">Send this link to the employer so they can post their own vacancies (no edit/delete). Employers cannot post vacancies from the public app directly.</div>'
+           : '<div class="muted">No manager token yet. <button class="minibtn" onclick="regenEmployerToken(\''+e.id+'\')" style="margin-left:6px">Generate</button></div>');
+    mbox.style.display = 'block';
+  } else { mbox.style.display = 'none'; mbox.innerHTML = ''; }
   openSheet('employer-overlay');
 }
 function handleEmployerPhoto(evt){
@@ -1020,10 +1044,18 @@ async function saveEmployer(){
     verified:document.getElementById('emp-verified').checked
   };
   await upsertEmployer(payload);
+  if(!editing.employer){ var tok=genToken(); await saveEmployerManagerToken(id, tok); payload.manage_token = tok; }
   closeSheet('employer-overlay');
   showToast(editing.employer ? 'Employer updated' : 'Employer registered');
   editing.employer = null; pendingEmployerPhoto = null;
   await loadAll(); renderNav(); renderEmployers(); renderDashboard();
+}
+async function regenEmployerToken(id){
+  if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
+  var tok = genToken(); await saveEmployerManagerToken(id, tok);
+  var e = employerById(id); if(e) e.manage_token = tok;
+  openEmployerSheet(id);
+  showToast('New manager link generated');
 }
 async function deleteEmployer(id){
   var e = employerById(id);
@@ -1432,6 +1464,15 @@ async function togglePosting(checked){
   var ok = await setAppSetting('public_vacancy_posting', checked?'true':'false');
   if(ok){ publicVacancyPostingOpen = checked; updatePostingUI(); showToast(checked?'Vacancy posting opened':'Vacancy posting locked'); }
   else { updatePostingUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
+}
+function updateEmployerRegUI(){
+  var t = document.getElementById('emp-reg-toggle'); if(t) t.checked = !!publicEmployerRegistrationOpen;
+  var sub = document.getElementById('emp-reg-sub'); if(sub) sub.textContent = publicEmployerRegistrationOpen ? 'Open — anyone can register a company right now' : 'Closed — spam protected';
+}
+async function toggleEmployerReg(checked){
+  var ok = await setAppSetting('public_employer_registration', checked?'true':'false');
+  if(ok){ publicEmployerRegistrationOpen = checked; updateEmployerRegUI(); showToast(checked?'Employer registration opened':'Employer registration locked'); }
+  else { updateEmployerRegUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
 }
 
 // ===== Content =====
