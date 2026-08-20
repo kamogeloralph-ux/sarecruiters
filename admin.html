@@ -345,6 +345,12 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         </div>
         <div style="margin-top:14px" class="muted">When ON, anyone can register their company from the public app. When OFF, registration is locked and users are asked to message the admin on WhatsApp. Employers never post vacancies directly in the public app — send each one their Smart Manager link (in their employer profile) so they can add vacancies themselves.</div>
 
+        <div class="toggle-row" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+          <div><div class="t-label">Employer Directory access</div><div class="t-sub" id="emp-dir-sub">Loading…</div></div>
+          <label class="switch"><input type="checkbox" id="emp-dir-toggle" onchange="toggleEmployerDirectory(this.checked)"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div style="margin-top:14px" class="muted">When ON, everyone can browse employers and their vacancies. When OFF, only users who have registered for the Talent Pool can open the Employer Directory and employer vacancies.</div>
+
         <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border)">
           <div class="t-label" style="margin-bottom:2px">Talent Pool banking details</div>
           <div class="muted" style="margin-bottom:12px">Shown to job seekers on the public "Join the Talent Pool" registration form so they know where to pay their R20/year.</div>
@@ -554,6 +560,7 @@ var pendingPhoto = null;
 var subTab = 'reports';
 var publicVacancyPostingOpen = false;
 var publicEmployerRegistrationOpen = false;
+var employerDirectoryOpen = true;
 
 // ===== Theme =====
 function applyTheme(t){
@@ -759,6 +766,9 @@ async function loadAll(){
   var pe = await getAppSetting('public_employer_registration','false');
   publicEmployerRegistrationOpen = (pe===true||pe==='true');
   updateEmployerRegUI();
+  var pd = await getAppSetting('public_employer_directory','true');
+  employerDirectoryOpen = (pd===true||pd==='true');
+  updateEmployerDirectoryUI();
   fillAgencySelects();
 }
 
@@ -1519,6 +1529,15 @@ async function toggleEmployerReg(checked){
   var ok = await setAppSetting('public_employer_registration', checked?'true':'false');
   if(ok){ publicEmployerRegistrationOpen = checked; updateEmployerRegUI(); showToast(checked?'Employer registration opened':'Employer registration locked'); }
   else { updateEmployerRegUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
+}
+function updateEmployerDirectoryUI(){
+  var t = document.getElementById('emp-dir-toggle'); if(t) t.checked = !!employerDirectoryOpen;
+  var sub = document.getElementById('emp-dir-sub'); if(sub) sub.textContent = employerDirectoryOpen ? 'Open — all users can browse employers and employer vacancies' : 'Closed — Talent Pool registration required';
+}
+async function toggleEmployerDirectory(checked){
+  var ok = await setAppSetting('public_employer_directory', checked?'true':'false');
+  if(ok){ employerDirectoryOpen = checked; updateEmployerDirectoryUI(); showToast(checked?'Employer Directory opened':'Employer Directory locked to Talent Pool members'); }
+  else { updateEmployerDirectoryUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
 }
 
 // ===== Content =====

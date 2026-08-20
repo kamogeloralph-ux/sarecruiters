@@ -12,6 +12,7 @@ var employersCache = [];
 var isAdmin = false;
 var publicVacancyPostingOpen = false;
 var publicEmployerRegistrationOpen = false;
+var employerDirectoryOpen = true; // when false, only Talent Pool registrants may browse employers and employer vacancies
 var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
 // ===== SMART MANAGER: agency self-service links =====
 var managerMode = false;   // true when URL has ?manage=TOKEN
@@ -592,7 +593,8 @@ async function loadAll() {
   var results = await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(),
     getAppSetting('public_vacancy_posting', 'false'),
-    getAppSetting('public_employer_registration', 'false')
+    getAppSetting('public_employer_registration', 'false'),
+    getAppSetting('public_employer_directory', 'true')
   ]);
   agenciesCache = results[0];
   branchesCache = results[1];
@@ -600,6 +602,7 @@ async function loadAll() {
   employersCache = results[3];
   publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
   publicEmployerRegistrationOpen = (results[5] === true || results[5] === 'true');
+  employerDirectoryOpen = (results[6] === true || results[6] === 'true');
   // Sort employers: verified first, then alphabetical
   employersCache.sort(function(a,b){
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
@@ -857,6 +860,7 @@ function employerHubContact(e) {
 }
 
 window.toggleEmpHub = function(id) {
+  if (!requireEmployerDirectoryAccess()) return;
   var card = null;
   var active = document.querySelector('.screen.active');
   if (active) card = active.querySelector('#emphub-' + id);
@@ -872,6 +876,7 @@ window.toggleEmpHub = function(id) {
 };
 
 window.switchEmpHubTab = function(btn, employerId, tab) {
+  if (!requireEmployerDirectoryAccess()) return;
   btn.parentElement.querySelectorAll('.hub-tab').forEach(function(t){ t.classList.remove('active'); });
   btn.classList.add('active');
   var e = employersCache.find(function(x){ return x.id === employerId; });
@@ -884,7 +889,37 @@ window.switchEmpHubTab = function(btn, employerId, tab) {
 
 var directoryReturnScreen = 'home';
 
+function talentPoolAccessRecord() {
+  try { return JSON.parse(localStorage.getItem('sa_pool_member_access') || 'null'); } catch(e) { return null; }
+}
+function hasTalentPoolAccess() {
+  var record = talentPoolAccessRecord();
+  return !!(record && record.registered === true);
+}
+function markTalentPoolAccess(name, phone, email) {
+  try {
+    localStorage.setItem('sa_pool_member_access', JSON.stringify({
+      registered: true,
+      name: name || '',
+      phone: phone || '',
+      email: email || '',
+      registered_at: new Date().toISOString()
+    }));
+  } catch(e) {}
+}
+function openEmployerDirectoryAccessMessage() {
+  var sheet = document.getElementById('employer-directory-locked-overlay');
+  if (sheet) sheet.classList.add('open');
+  else showToast('Please register for the Talent Pool first to browse employers and employer vacancies.');
+}
+function requireEmployerDirectoryAccess() {
+  if (employerDirectoryOpen || hasTalentPoolAccess()) return true;
+  openEmployerDirectoryAccessMessage();
+  return false;
+}
+
 function showAllEmployers() {
+  if (!requireEmployerDirectoryAccess()) return;
   directoryReturnScreen = 'home';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allemployers').classList.add('active');
@@ -1094,6 +1129,7 @@ function vacancyCard(v, agency) {
   var isGeneral = v.agency_id === 'general';
   var employer = v.employer_id ? (employersCache.find(function(e){ return e.id === v.employer_id; }) || null) : null;
   var isEmployerPost = !!employer;
+  var employerAccessLocked = isEmployerPost && !employerDirectoryOpen && !hasTalentPoolAccess();
   var orgName = isEmployerPost ? (employer.name || 'Employer') : (isGeneral ? (v.company || 'General Vacancy') : (agency.name || ''));
   var title = escapeHtml(v.title || 'Untitled role');
   var verifiedCheck = (isEmployerPost && employer.verified) ? '<span class="verified-check" title="Verified employer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
@@ -1167,7 +1203,7 @@ function vacancyCard(v, agency) {
   }
 
   return '' +
-  '<article class="vac-card" id="vc-' + key + '" onclick="toggleVac(this)">' +
+  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + '" id="vc-' + key + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
     '<div class="vac-card-main">' +
       logo +
       '<div class="vac-body">' +
@@ -2051,6 +2087,7 @@ async function submitPoolRegistration() {
     if (result.error) { console.error('pool submit', result.error); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
   } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
   if (btn) { btn.disabled = false; btn.textContent = 'Submit registration'; }
+  markTalentPoolAccess(name, phone, email);
   closeSheet('pool-register-overlay');
   showToast('Registration received — you\'ll go live once payment is confirmed.');
 }
