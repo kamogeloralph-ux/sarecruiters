@@ -121,17 +121,16 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .home-nav-card{display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;width:100%;text-align:left;border:none;background:none;font-family:inherit;font-size:15px;font-weight:600;color:var(--text);position:relative}
 .home-nav-card + .home-nav-card::before{content:'';position:absolute;top:0;left:60px;right:0;height:1px;background:var(--border)}
 .home-nav-card:active{background:var(--card-2)}
-.home-nav-card .hc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.home-nav-card .hc-icon svg{width:20px;height:20px;display:block;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.hc-tile-blue{background:linear-gradient(145deg,#2563eb,#1e40af)}
-.hc-tile-green{background:linear-gradient(145deg,#16a34a,#15803d)}
-.hc-tile-amber{background:linear-gradient(145deg,#d97706,#b45309)}
-.hc-tile-purple{background:linear-gradient(145deg,#7c3aed,#5b21b6)}
-.hc-tile-pink{background:linear-gradient(145deg,#db2777,#9d174d)}
-.hc-tile-teal{background:linear-gradient(145deg,#0d9488,#0f766e)}
-.hc-tile-red{background:linear-gradient(145deg,#dc2626,#991b1b)}
-.hc-tile-gray{background:linear-gradient(145deg,#6b7280,#4b5563)}
-.hc-tile-indigo{background:linear-gradient(145deg,#4f46e5,#3730a3)}
+.home-nav-card .hc-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent;border:0;color:var(--text-2)}
+.home-nav-card .hc-icon svg{width:21px;height:21px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* Keep the dashboard menu in the same restrained monochrome language as the reference iOS profile menu. */
+.hc-tile-blue,.hc-tile-green,.hc-tile-amber,.hc-tile-purple,.hc-tile-pink,.hc-tile-teal,.hc-tile-red,.hc-tile-gray,.hc-tile-indigo{background:transparent}
+.home-nav-card{min-height:64px}
+.home-nav-card.pool-nav-card{min-height:64px;padding-top:10px;padding-bottom:10px}
+.section-close-btn{width:40px;height:40px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);color:var(--text-2);display:grid;place-items:center;font-size:26px;font-weight:300;line-height:1;cursor:pointer;transition:transform .15s ease,background .2s ease,color .2s ease}
+.section-close-btn:hover{background:var(--accent-soft);color:var(--accent)}
+.section-close-btn:active{transform:scale(.92)}
+.section-close-btn:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .home-nav-card .hc-text{display:flex;flex-direction:column;flex:1;min-width:0}
 .home-nav-card .hc-title{font-size:15px;font-weight:600}
 .home-nav-card .hc-sub{font-size:12px;color:var(--text-2);font-weight:400;margin-top:2px;line-height:1.3}
@@ -320,7 +319,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
       <!-- TALENT POOL -->
       <div class="section" id="sec-poolcandidates">
-        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Talent Pool</h2></div>
+        <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>Talent Pool</h2></div>
         <div class="muted" style="margin-bottom:14px">New registrations land here as <strong>Pending</strong>. Check the EFT reference against your bank statement, then Approve to make the candidate visible in the public Talent Pool for one year (paid-until date is set automatically, editable).</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
           <button class="minibtn" id="pool-tab-pending" onclick="switchPoolTab('pending')">Pending <span class="nav-badge" id="pool-badge-pending"></span></button>
@@ -824,7 +823,7 @@ function buildHomeGroup(label, itemIds){
     if(!n) return '';
     var b = navBadge(id);
     var badgeHtml = (b!==null) ? '<span class="hc-badge">'+b+'</span>' : '';
-    return '<button class="home-nav-card" onclick="goSection(\''+id+'\')">'+
+    return '<button class="home-nav-card '+(id==='poolcandidates'?'pool-nav-card':'')+'" onclick="goSection(\''+id+'\')">'+
       '<span class="hc-icon '+n.tile+'"><svg viewBox="0 0 24 24">'+n.icon+'</svg></span>'+
       '<span class="hc-text"><span class="hc-title">'+n.label+'</span><span class="hc-sub">'+n.sub+'</span></span>'+
       badgeHtml+
