@@ -586,13 +586,20 @@ function loadDataCache() {
 }
 
 async function loadAll() {
-  // Fire all four Supabase queries in parallel instead of one-after-another —
-  // total wait time becomes the slowest single query, not the sum of all four.
-  var results = await Promise.all([getAgencies(), getBranches(), getVacancies(), getEmployers()]);
+  // Fetch all startup data and the two public settings concurrently. The
+  // home screen can render from the fastest useful response instead of
+  // waiting for a chain of independent requests.
+  var results = await Promise.all([
+    getAgencies(), getBranches(), getVacancies(), getEmployers(),
+    getAppSetting('public_vacancy_posting', 'false'),
+    getAppSetting('public_employer_registration', 'false')
+  ]);
   agenciesCache = results[0];
   branchesCache = results[1];
   vacanciesCache = results[2];
   employersCache = results[3];
+  publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
+  publicEmployerRegistrationOpen = (results[5] === true || results[5] === 'true');
   // Sort employers: verified first, then alphabetical
   employersCache.sort(function(a,b){
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
@@ -604,23 +611,23 @@ async function loadAll() {
     if (av !== bv) return bv - av;            // verified sinks to top
     return (a.name||'').localeCompare(b.name||'');           // alphabetical tie-break
   });
-  // Backfill SMART MANAGER tokens for agencies that were added before this feature
-  agenciesCache.forEach(function(a) {
-    if (!getManagerToken(a.id)) {
-      var token = genToken();
-      setManagerToken(a.id, token);
-    }
-  });
-  // Backfill SMART MANAGER tokens for employers that were added before this feature
-  employersCache.forEach(function(e) {
-    if (!getEmployerManagerToken(e.id)) {
-      var token = genToken();
-      setEmployerManagerToken(e.id, token);
-    }
-  });
+  // Token backfills are maintenance work, not startup-critical. Defer them
+  // until after the first paint so they never compete with the home screen.
+  var runBackfill = function() {
+    agenciesCache.forEach(function(a) {
+      if (!getManagerToken(a.id)) setManagerToken(a.id, genToken());
+    });
+    employersCache.forEach(function(e) {
+      if (!getEmployerManagerToken(e.id)) setEmployerManagerToken(e.id, genToken());
+    });
+  };
+  if (window.requestIdleCallback) requestIdleCallback(runBackfill, { timeout: 2500 });
+  else setTimeout(runBackfill, 1200);
   updateStats();
   filterAndRenderCached();
   saveDataCache();
+  updatePostingToggleUI();
+  updateEmployerRegUI();
   // If in manager mode, re-render the manager panel with fresh data
   if (managerMode) renderManagerMode();
   if (employerManagerMode) renderEmployerManagerMode();
@@ -1712,6 +1719,21 @@ function showWhatsAppConfirm(opts) {
   document.getElementById('whatsapp-confirm-overlay').classList.add('open');
 }
 
+var emailJsLoader = null;
+function loadEmailJS() {
+  if (window.emailjs) return Promise.resolve(window.emailjs);
+  if (emailJsLoader) return emailJsLoader;
+  emailJsLoader = new Promise(function(resolve, reject) {
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    script.async = true;
+    script.onload = function(){ resolve(window.emailjs); };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return emailJsLoader;
+}
+
 function tryEmailJS(payload) {
   /* Silent email delivery via EmailJS.
      Sends an email to the admin automatically without any user action.
@@ -1725,12 +1747,6 @@ function tryEmailJS(payload) {
   if (!EMAILJS_CONFIG.serviceId || !EMAILJS_CONFIG.templateId || !EMAILJS_CONFIG.publicKey) {
     return Promise.resolve({ sent: false, reason: 'not-configured' });
   }
-  try {
-    if (window.emailjs && !emailjs._initialized) {
-      emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey });
-      emailjs._initialized = true;
-    }
-  } catch(e) { console.warn('emailjs init', e); }
   var templateParams = {
     submission_type: (payload.type === 'report' ? 'REPORT' : (payload.type === 'suggestion' ? 'SUGGESTION' : (payload.submission_type || 'SUBMISSION'))),
     agency_name: payload.agency_name || '-',
@@ -1738,8 +1754,14 @@ function tryEmailJS(payload) {
     details: payload.details || '-',
     submit_date: new Date().toLocaleString('en-ZA', { dateStyle: 'full', timeStyle: 'short' })
   };
-  return emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, templateParams)
-    .then(function() { console.log('emailjs sent ok'); return { sent: true }; })
+  return loadEmailJS().then(function(client) {
+    if (!client) return { sent: false, reason: 'emailjs-unavailable' };
+    if (!client._initialized) {
+      client.init({ publicKey: EMAILJS_CONFIG.publicKey });
+      client._initialized = true;
+    }
+    return client.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, templateParams);
+  }).then(function() { console.log('emailjs sent ok'); return { sent: true }; })
     .catch(function(err) { console.error('emailjs error', err); return { sent: false, reason: err }; });
 }
 
@@ -2830,9 +2852,9 @@ if (loadDataCache()) {
 }
 
 loadAll();
-loadPostingSetting();
-loadEmployerRegSetting();
-loadTodayTrack();
+// The shell and cached directory paint first; secondary settings are already
+// included in loadAll, while the optional daily track loads just after paint.
+setTimeout(loadTodayTrack, 250);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
