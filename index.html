@@ -318,7 +318,6 @@
     </div>
     <div class="screen-scroll">
     <div id="submissions-list"></div>
-    <button class="sheet-cancel" data-ripple onclick="goBackToProfile()" style="margin:20px auto;max-width:200px;">Back to Profile</button>
     </div>
   </div>
 
@@ -565,7 +564,6 @@
       <label class="switch"><input type="checkbox" id="f-verified"><span class="track"><span class="knob"></span></span></label>
     </div>
     <button class="sheet-submit" data-ripple onclick="saveAgency()">Save</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('form-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -593,7 +591,6 @@
       <label class="switch"><input type="checkbox" id="e-verified"><span class="track"><span class="knob"></span></span></label>
     </div>
     <button class="sheet-submit" data-ripple onclick="saveEmployer()">Save</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('employer-form-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -607,7 +604,6 @@
     <div class="field"><label>Phone</label><input id="b-phone" type="tel" placeholder="e.g. 031 555 0123"></div>
     <div class="field"><label>Email</label><input id="b-email" type="email" placeholder="e.g. durban@agency.co.za"></div>
     <button class="sheet-submit" data-ripple onclick="saveBranch()">Save branch</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('branch-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -628,7 +624,6 @@
     <div class="field"><label>Notes (requirements, job description, etc.)</label><textarea id="v-notes" placeholder="Optional details about the role, requirements, duties"></textarea></div>
     <div class="field"><label>Application link (optional)</label><input id="v-link" type="url" placeholder="e.g. https://agency.co.za/apply"></div>
     <button class="sheet-submit" data-ripple onclick="saveVacancy()">Publish vacancy</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -654,7 +649,6 @@
     <div class="field"><label>Contact email (if no link)</label><input id="gv-email" type="email" placeholder="e.g. hr@company.co.za"></div>
     <div class="field"><label>Contact phone (if no link)</label><input id="gv-phone" type="tel" placeholder="e.g. 011 123 4567"></div>
     <button class="sheet-submit" data-ripple onclick="saveGeneralVacancy()" id="gv-submit-btn">Publish vacancy</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('general-vacancy-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -691,7 +685,6 @@
     <div class="field"><label>CV link</label><input id="pool-cv" type="url" placeholder="Google Drive / Dropbox share link"></div>
     <div class="field"><label>EFT payment reference *</label><input id="pool-payref" placeholder="The reference you used on your EFT"></div>
     <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Submit registration</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('pool-register-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -706,7 +699,6 @@
       <svg class="wa-glyph"><use href="icons.svg#i7ebf0f"/></svg>
       Message admin on WhatsApp
     </a>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('vacancy-locked-overlay')">Close</button>
   </div>
 </div>
 
@@ -721,7 +713,6 @@
       <svg class="wa-glyph"><use href="icons.svg#i7ebf0f"/></svg>
       Message admin on WhatsApp
     </a>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('employer-locked-overlay')">Close</button>
   </div>
 </div>
 
@@ -744,7 +735,6 @@
       <div class="hub-contact-item wide" data-ripple onclick="copyText('2573389037', this)"><div class="hub-contact-icon"><svg><use href="icons.svg#i536d55"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">2573389037 (SA Recruiters)</div></div></div>
       <!-- ⚠️ END PROTECTED CONTACT DETAILS ⚠️ -->
     </div>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('support-overlay')">Close</button>
   </div>
 </div>
 
@@ -774,7 +764,6 @@
     <div class="field"><label>Your contact (optional)</label><input id="r-contact" placeholder="Email or phone — so we can follow up"></div>
     <div id="report-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
     <button class="sheet-submit" data-ripple onclick="submitReport()">Submit report</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('report-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -798,7 +787,6 @@
     <div class="field"><label>Your contact (optional)</label><input id="s-contact" placeholder="Email or phone — so we can follow up"></div>
     <div id="suggestion-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
     <button class="sheet-submit" data-ripple onclick="submitSuggestion()">Submit</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('suggestion-overlay')">Cancel</button>
   </div>
 </div>
 
@@ -813,7 +801,6 @@
       <svg class="wa-glyph"><use href="icons.svg#ic4f1c0"/></svg>
       Send via WhatsApp
     </a>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('whatsapp-confirm-overlay')">Skip — just save it</button>
   </div>
 </div>
 
@@ -823,7 +810,6 @@
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3 id="content-title">Section</h3>
     <div id="content-body" style="font-size:14px;color:var(--text-2);line-height:1.6;max-height:55vh;overflow-y:auto;margin-bottom:10px;"></div>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('content-overlay')">Close</button>
   </div>
 </div>
 
@@ -835,7 +821,6 @@
     <div class="field"><label>Article title</label><input id="ce-title" placeholder="e.g. What is SA Recruiters?"></div>
     <div class="field"><label>Content</label><textarea id="ce-body" placeholder="Write the article here. You can use simple HTML tags like &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt; and &lt;a href&gt;." style="min-height:180px;font-family:inherit;font-size:13.5px"></textarea></div>
     <button class="sheet-submit" data-ripple onclick="saveContentArticle()">Save article</button>
-    <button class="sheet-cancel" data-ripple onclick="closeSheet('content-edit-overlay')">Cancel</button>
   </div>
 </div>
 

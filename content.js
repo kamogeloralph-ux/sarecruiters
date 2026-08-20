@@ -233,7 +233,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'sup-how',
       title: 'How to support us',
-      body: '<p>You can support the directory in several ways:</p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Bank donation</strong> — Capitec Bank, account number 1721069818, in the name of R. Chiloane.</li><li><strong>Email</strong> — Kamogeloralph@gmail.com for donation arrangements, partnerships, or queries.</li><li><strong>WhatsApp</strong> — +27 71 553 1005.</li><li><strong>Spread the word</strong> — share the directory with friends, family, and agencies that should be listed. Awareness is just as valuable as a donation.</li></ul><p>Thank you for helping keep South Africa\'s recruitment community connected.</p>'
+      body: '<p>You can support the directory in several ways:</p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Bank donation</strong> — Account number 2573389037, in the name of SA Recruiters.</li><li><strong>Email</strong> — <a href="mailto:sarecruiters.directory@gmail.com">sarecruiters.directory@gmail.com</a> for donation arrangements, partnerships, or queries.</li><li><strong>WhatsApp</strong> — +27 71 553 1005.</li><li><strong>Spread the word</strong> — share the directory with friends, family, and agencies that should be listed. Awareness is just as valuable as a donation.</li></ul><p>Thank you for helping keep South Africa\'s recruitment community connected.</p>'
     }
   ],
   /* ============ PRIVACY POLICY ============ */
@@ -276,7 +276,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'priv-contact',
       title: 'Contact',
-      body: '<p>If you have any questions about this privacy policy or want an entry corrected or removed, please get in touch:</p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Email:</strong> <a href="mailto:Kamogeloralph@gmail.com">Kamogeloralph@gmail.com</a></li><li><strong>WhatsApp:</strong> <a href="https://wa.me/27715531005">+27 71 553 1005</a></li></ul>'
+      body: '<p>If you have any questions about this privacy policy or want an entry corrected or removed, please get in touch:</p><ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Email:</strong> <a href="mailto:sarecruiters.directory@gmail.com">sarecruiters.directory@gmail.com</a></li><li><strong>WhatsApp:</strong> <a href="https://wa.me/27715531005">+27 71 553 1005</a></li></ul>'
     }
   ]
 };

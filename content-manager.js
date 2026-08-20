@@ -22,6 +22,15 @@
     if (typeof DEFAULT_CONTENT === 'undefined') return;
     var store = readStore();
     var changed = false;
+    // One-time official contact-details migration. Older localStorage content
+    // can otherwise keep restoring obsolete Support & Donations values.
+    var contactVersion = 'official-contact-v2';
+    if (store.__contact_details_version !== contactVersion) {
+      if (DEFAULT_CONTENT.support) store.support = JSON.parse(JSON.stringify(DEFAULT_CONTENT.support));
+      if (DEFAULT_CONTENT.privacy) store.privacy = JSON.parse(JSON.stringify(DEFAULT_CONTENT.privacy));
+      store.__contact_details_version = contactVersion;
+      changed = true;
+    }
     Object.keys(DEFAULT_CONTENT).forEach(function(key){
       if (!store[key] || !Array.isArray(store[key]) || store[key].length === 0) {
         // deep clone defaults
