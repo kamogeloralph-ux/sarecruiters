@@ -242,7 +242,7 @@
         <div class="contact-warning-emergency">EMERGENCY 0800 428 428</div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg><use href="icons.svg#i30b4d5"/></svg></span>Department of Employment &amp; Labour<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span>Department of Employment &amp; Labour<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0123094000" class="contact-row"><span class="contact-label">Head Office</span><span class="contact-value">012 309 4000</span></a>
           <a href="tel:0860666883" class="contact-row"><span class="contact-label">Fraud Hotline</span><span class="contact-value">0860 666 883</span></a>
@@ -252,7 +252,7 @@
         </div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg><use href="icons.svg#i30b4d5"/></svg></span>CCMA<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M8 11h8M8 14h5"/></svg></span>CCMA<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0861161616" class="contact-row"><span class="contact-label">Call Centre</span><span class="contact-value">0861 161 616</span></a>
           <a href="tel:0113776650" class="contact-row"><span class="contact-label">National Office</span><span class="contact-value">011 377 6650</span></a>
@@ -262,7 +262,7 @@
         </div>
       </div>
       <div class="contact-card">
-        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon"><svg><use href="icons.svg#i30b4d5"/></svg></span>UIF (Unemployment Insurance Fund)<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5.2-3.4 8.8-8 10-4.6-1.2-8-4.8-8-10V6l8-3z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></span>UIF (Unemployment Insurance Fund)<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
         <div class="contact-card-body">
           <a href="tel:0800030007" class="contact-row"><span class="contact-label">Call Centre (Toll Free)</span><span class="contact-value">0800 030 007</span></a>
           <a href="tel:0123371600" class="contact-row"><span class="contact-label">Switchboard</span><span class="contact-value">012 337 1600</span></a>
@@ -280,10 +280,11 @@
   <div class="screen" id="screen-smartmanager">
     <div class="screen-fixed">
     <header>
-      <div class="logo-text">Smart Manager</div>
+      <div class="screen-title-group"><div class="logo-text">Smart Manager</div><div class="screen-context">Admin tools</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile menu" title="Back to profile menu">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button>
+      </button></div>
     </header>
     <div class="sm-intro">
       <p>Each agency has a unique link. Send the link to the agency office so they can add their own branches and vacancies. They cannot edit or delete — only add.</p>
@@ -305,10 +306,11 @@
   <div class="screen" id="screen-submissions">
     <div class="screen-fixed">
     <header>
-      <div class="logo-text">Submissions</div>
+      <div class="screen-title-group"><div class="logo-text">Submissions</div><div class="screen-context">Admin tools</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile menu" title="Back to profile menu">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button>
+      </button></div>
     </header>
     <div class="sub-tabs">
       <button class="sub-tab active" id="sub-tab-reports" data-ripple onclick="switchSubTab('reports')">Reports <span class="sub-tab-badge" id="reports-badge" style="display:none;">0</span></button>
@@ -325,10 +327,11 @@
   <div class="screen" id="screen-manager">
     <div class="screen-fixed">
     <header>
-      <div class="logo-text" id="manager-agency-name">Agency</div>
+      <div class="screen-title-group"><div class="logo-text" id="manager-agency-name">Agency</div><div class="screen-context">Agency manager</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button>
+      </button></div>
     </header>
     <div class="manager-banner">
       <p>Add branches and vacancies for your agency. Once saved, changes can only be made by contacting the admin.</p>
@@ -349,10 +352,11 @@
   <div class="screen" id="screen-manager-employer">
     <div class="screen-fixed">
     <header>
-      <div class="logo-text" id="manager-employer-name">Company</div>
+      <div class="screen-title-group"><div class="logo-text" id="manager-employer-name">Company</div><div class="screen-context">Employer manager</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button>
+      </button></div>
     </header>
     <div class="manager-banner">
       <p>Post vacancies for your company. Once saved, changes can only be made by contacting the admin.</p>
@@ -536,7 +540,7 @@
 <!-- ============ ADD/EDIT AGENCY SHEET ============ -->
 <div class="sheet-scrim" id="form-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3 id="form-title">Add agency</h3>
     <div class="photo-row">
       <div class="avatar" style="width:56px;height:56px;">
@@ -569,7 +573,7 @@
 <!-- ============ ADD/EDIT EMPLOYER SHEET ============ -->
 <div class="sheet-scrim" id="employer-form-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3 id="employer-form-title">Register your company</h3>
     <div class="photo-row">
       <div class="avatar" style="width:56px;height:56px;">
@@ -597,7 +601,7 @@
 <!-- ============ BRANCH SHEET ============ -->
 <div class="sheet-scrim" id="branch-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3>Add branch</h3>
     <div class="field"><label>Branch name</label><input id="b-name" placeholder="e.g. Durban Branch"></div>
     <div class="field"><label>Address / location</label><input id="b-location" placeholder="e.g. 45 Kings Rd, Umhlanga, Durban"></div>
@@ -611,7 +615,7 @@
 <!-- ============ VACANCY SHEET ============ -->
 <div class="sheet-scrim" id="vacancy-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3>Add vacancy</h3>
     <div class="field"><label>Role / title</label><input id="v-title" placeholder="e.g. Junior Bookkeeper"></div>
     <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Randburg, Gauteng"></div>
@@ -632,7 +636,7 @@
 <!-- ============ GENERAL VACANCY SHEET (post / edit) ============ -->
 <div class="sheet-scrim" id="general-vacancy-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3 id="gv-title">Post a vacancy</h3>
     <div class="field"><label>Role / title</label><input id="gv-role" placeholder="e.g. Senior Forklift Operator"></div>
     <div class="field"><label>Company / organisation</label><input id="gv-company" placeholder="e.g. ABC Logistics (optional)"></div>
@@ -658,7 +662,7 @@
 <!-- ============ TALENT POOL REGISTRATION SHEET (public) ============ -->
 <div class="sheet-scrim" id="pool-register-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3>Join the Talent Pool</h3>
     <div class="manager-banner" style="padding:0 0 12px">
       <p>R20/year lists your profile so employers across all sectors can browse and contact you directly. Payment is by manual EFT — pay first, then submit this form with your reference so we can confirm it.</p>
@@ -691,7 +695,7 @@
 <!-- ============ VACANCY POSTING LOCKED SHEET (public) ============ -->
 <div class="sheet-scrim" id="vacancy-locked-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <div style="text-align:center;font-size:40px;margin-bottom:12px;">🔒</div>
     <h3 style="text-align:center;">Vacancy posting is closed</h3>
     <p style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">To keep the directory free of spam, general vacancy posting is opened on request. Message the admin on WhatsApp and it'll be opened for you.</p>
@@ -706,7 +710,7 @@
 <!-- ============ EMPLOYER REGISTRATION LOCKED SHEET (public) ============ -->
 <div class="sheet-scrim" id="employer-locked-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <div style="text-align:center;font-size:40px;margin-bottom:12px;">🔒</div>
     <h3 style="text-align:center;">Company registration is closed</h3>
     <p style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">To keep the directory free of spam, employer registration is opened on request. Message the admin on WhatsApp and it'll be set up for you.</p>
@@ -723,7 +727,7 @@
 <!-- ============ SUPPORT SHEET ============ -->
 <div class="sheet-scrim" id="support-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3>Support this directory</h3>
     <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">This app is free to use. If it's helped you, a small donation keeps it running.</p>
     <div class="hub-contact-grid">
@@ -744,7 +748,7 @@
 <!-- ============ REPORT SHEET ============ -->
 <div class="sheet-scrim" id="report-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3>Report a problem</h3>
     <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Spotted wrong info, a broken link, or misuse of a listing? Let us know and we'll review it.</p>
     <div class="field">
@@ -774,7 +778,7 @@
 <!-- ============ SUGGESTION / COMMENT SHEET ============ -->
 <div class="sheet-scrim" id="suggestion-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3>Suggest or comment</h3>
     <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Know an agency we should list? Have feedback or an idea? Share it here and we'll review it.</p>
     <div class="field">
@@ -798,7 +802,7 @@
 <!-- ============ WHATSAPP CONFIRMATION SHEET (reports + suggestions) ============ -->
 <div class="sheet-scrim" id="whatsapp-confirm-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <div id="wa-confirm-icon" style="text-align:center;margin-bottom:12px;font-size:40px;">✅</div>
     <h3 id="wa-confirm-title" style="text-align:center;">Submitted — thank you!</h3>
     <p id="wa-confirm-msg" style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">Your submission has been saved. Tap the button below to send it straight to the admin via WhatsApp so it's seen right away.</p>
@@ -813,7 +817,7 @@
 <!-- ============ CONTENT SHEET (menu items) ============ -->
 <div class="sheet-scrim" id="content-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3 id="content-title">Section</h3>
     <div id="content-body" style="font-size:14px;color:var(--text-2);line-height:1.6;max-height:55vh;overflow-y:auto;margin-bottom:10px;"></div>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('content-overlay')">Close</button>
@@ -823,7 +827,7 @@
 <!-- ============ CONTENT EDIT SHEET (admin add/edit article) ============ -->
 <div class="sheet-scrim" id="content-edit-overlay">
   <div class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3 id="content-edit-title">Add article</h3>
     <div class="field"><label>Article title</label><input id="ce-title" placeholder="e.g. What is SA Recruiters?"></div>
     <div class="field"><label>Content</label><textarea id="ce-body" placeholder="Write the article here. You can use simple HTML tags like &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt; and &lt;a href&gt;." style="min-height:180px;font-family:inherit;font-size:13.5px"></textarea></div>

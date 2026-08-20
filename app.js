@@ -1150,7 +1150,7 @@ function vacancyCard(v, agency) {
     actions += '<button class="vac-apply" onclick="event.stopPropagation();showToast(\'Contact the agency or company directly to apply.\')">' + VAC_ICONS.apply + 'Contact to apply</button>';
   }
   actions += '<a class="vac-apply vac-apply-secondary" href="/vacancy/' + slugify(v.title) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation()">View public listing ↗</a>';
-  actions += '<button class="vac-close-btn" onclick="event.stopPropagation();closeVac(\'' + key + '\')">Close</button></div>';
+  actions += '<button class="vac-close-btn" onclick="event.stopPropagation();closeVac(this)">Close</button></div>';
 
   /* Admin actions (general vacancies + employer vacancies, when admin) */
   var admin = '';
@@ -1162,7 +1162,7 @@ function vacancyCard(v, agency) {
   }
 
   return '' +
-  '<article class="vac-card" id="vc-' + key + '" onclick="toggleVac(\'' + key + '\')">' +
+  '<article class="vac-card" id="vc-' + key + '" onclick="toggleVac(this)">' +
     '<div class="vac-card-main">' +
       logo +
       '<div class="vac-body">' +
@@ -1247,12 +1247,12 @@ var VAC_ICONS = {
 };
 
 /* Toggle expand/collapse of a vacancy card */
-window.toggleVac = function(id) {
-  var c = document.getElementById('vc-' + id);
+window.toggleVac = function(target) {
+  var c = target && target.closest ? target.closest('.vac-card') : document.getElementById('vc-' + target);
   if (c) c.classList.toggle('open');
 };
-window.closeVac = function(id) {
-  var c = document.getElementById('vc-' + id);
+window.closeVac = function(target) {
+  var c = target && target.closest ? target.closest('.vac-card') : document.getElementById('vc-' + target);
   if (c) c.classList.remove('open');
 };
 
@@ -2156,8 +2156,16 @@ function goSubmissions() {
 function goBackToProfile() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-profile').classList.add('active');
-  document.querySelector('.navbtn[data-tab=profile]').classList.add('active');
-  window.scrollTo({ top: 0 });
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'profile'); });
+  resetActiveScreenScroll('screen-profile');
+}
+
+function goBackToHome() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var home = document.getElementById('screen-home');
+  if (home) home.classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'home'); });
+  resetActiveScreenScroll('screen-home');
 }
 
 // Show / hide a Contact Details card (accordion)
