@@ -12,7 +12,8 @@ var employersCache = [];
 var isAdmin = false;
 var publicVacancyPostingOpen = false;
 var publicEmployerRegistrationOpen = false;
-var employerDirectoryOpen = true; // when false, only Talent Pool registrants may browse employers and employer vacancies
+var employerDirectoryOpen = true; // when false, only Supabase-verified Talent Pool registrants may browse employers and employer vacancies
+var talentPoolVerified = false;
 var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
 // ===== SMART MANAGER: agency self-service links =====
 var managerMode = false;   // true when URL has ?manage=TOKEN
@@ -634,6 +635,7 @@ async function loadAll() {
   // If in manager mode, re-render the manager panel with fresh data
   if (managerMode) renderManagerMode();
   if (employerManagerMode) renderEmployerManagerMode();
+  restoreTalentPoolMembership();
   // If a pending manager token was detected before agencies loaded, enter manager mode now
   if (managerPendingToken) {
     var tok = managerPendingToken;
@@ -889,31 +891,54 @@ window.switchEmpHubTab = function(btn, employerId, tab) {
 
 var directoryReturnScreen = 'home';
 
-function talentPoolAccessRecord() {
-  try { return JSON.parse(localStorage.getItem('sa_pool_member_access') || 'null'); } catch(e) { return null; }
+function talentPoolIdentityRecord() {
+  try { return JSON.parse(localStorage.getItem('sa_pool_identity') || 'null'); } catch(e) { return null; }
 }
 function hasTalentPoolAccess() {
-  var record = talentPoolAccessRecord();
-  return !!(record && record.registered === true);
+  return employerDirectoryOpen || talentPoolVerified;
 }
-function markTalentPoolAccess(name, phone, email) {
+function rememberTalentPoolIdentity(phone, email) {
+  try { localStorage.setItem('sa_pool_identity', JSON.stringify({ phone: phone || '', email: email || '' })); } catch(e) {}
+}
+async function verifyTalentPoolMembership(phone, email, quiet) {
+  phone = (phone || '').trim(); email = (email || '').trim().toLowerCase();
+  if (!phone || !email) { if (!quiet) showToast('Enter the email and phone number used for Talent Pool registration.'); return false; }
   try {
-    localStorage.setItem('sa_pool_member_access', JSON.stringify({
-      registered: true,
-      name: name || '',
-      phone: phone || '',
-      email: email || '',
-      registered_at: new Date().toISOString()
-    }));
-  } catch(e) {}
+    var result = await supabaseClient.rpc('verify_talent_pool_access', { p_email: email, p_phone: phone });
+    if (result.error) { console.error('Talent Pool verification', result.error); if (!quiet) showToast('Membership verification is not configured yet. Run CREATE_TALENT_POOL_ACCESS.sql in Supabase.'); return false; }
+    talentPoolVerified = result.data === true;
+    if (talentPoolVerified) rememberTalentPoolIdentity(phone, email);
+    else if (!quiet) showToast('We could not verify that Talent Pool registration. Check your details.');
+    return talentPoolVerified;
+  } catch(e) { if (!quiet) showToast('Could not verify Talent Pool membership right now.'); return false; }
+}
+async function restoreTalentPoolMembership() {
+  if (employerDirectoryOpen) return;
+  var identity = talentPoolIdentityRecord();
+  if (identity) await verifyTalentPoolMembership(identity.phone, identity.email, true);
 }
 function openEmployerDirectoryAccessMessage() {
   var sheet = document.getElementById('employer-directory-locked-overlay');
+  var identity = talentPoolIdentityRecord();
+  var phone = document.getElementById('employer-access-phone');
+  var email = document.getElementById('employer-access-email');
+  if (phone && identity) phone.value = identity.phone || '';
+  if (email && identity) email.value = identity.email || '';
   if (sheet) sheet.classList.add('open');
-  else showToast('Please register for the Talent Pool first to browse employers and employer vacancies.');
+  else showToast('Please verify your Talent Pool registration first to browse employers and employer vacancies.');
+}
+async function verifyEmployerDirectoryAccess() {
+  var phone = (document.getElementById('employer-access-phone') || {}).value || '';
+  var email = (document.getElementById('employer-access-email') || {}).value || '';
+  var ok = await verifyTalentPoolMembership(phone, email, false);
+  if (ok) {
+    closeSheet('employer-directory-locked-overlay');
+    showToast('Talent Pool membership verified');
+    showAllEmployers();
+  }
 }
 function requireEmployerDirectoryAccess() {
-  if (employerDirectoryOpen || hasTalentPoolAccess()) return true;
+  if (employerDirectoryOpen || talentPoolVerified) return true;
   openEmployerDirectoryAccessMessage();
   return false;
 }
@@ -2043,7 +2068,7 @@ async function submitPoolRegistration() {
   var payref = document.getElementById('pool-payref').value.trim();
   var email = document.getElementById('pool-email').value.trim();
   var alertOptIn = !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked);
-  if (!name || !phone || !sector || !location) { showToast('Please fill in name, phone, sector and location.'); return; }
+  if (!name || !phone || !email || !sector || !location) { showToast('Please fill in name, email, phone, sector and location. Email is used for cross-device Talent Pool verification.'); return; }
   if (alertOptIn && !email) { showToast('Add your email address to receive vacancy alerts.'); return; }
   if (!gender || !grade12 || !criminal || experience === '') { showToast('Please answer gender, Grade 12, criminal record and experience.'); return; }
   if (!payref) { showToast('Add the reference you used on your EFT so we can match your payment.'); return; }
@@ -2087,7 +2112,8 @@ async function submitPoolRegistration() {
     if (result.error) { console.error('pool submit', result.error); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
   } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
   if (btn) { btn.disabled = false; btn.textContent = 'Submit registration'; }
-  markTalentPoolAccess(name, phone, email);
+  rememberTalentPoolIdentity(phone, email);
+  verifyTalentPoolMembership(phone, email, true);
   closeSheet('pool-register-overlay');
   showToast('Registration received — you\'ll go live once payment is confirmed.');
 }

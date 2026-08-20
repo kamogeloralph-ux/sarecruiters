@@ -635,3 +635,8 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .access-lock-sheet .sheet-submit{margin-top:16px}
 .vac-card-locked{cursor:pointer}
 .vac-card-locked .vac-card-side .chevron{opacity:.45}
+
+.access-verify-fields{display:grid;gap:10px;text-align:left;max-width:360px;margin:14px auto 0}
+.access-verify-fields label{font-size:12px;font-weight:700;color:var(--text-2)}
+.access-verify-fields input{display:block;width:100%;margin-top:5px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface-2);color:var(--text);font:inherit;box-sizing:border-box}
+.access-register-link{display:block;margin:12px auto 0;border:0;background:none;color:var(--accent);font-weight:700;font:inherit;cursor:pointer}
