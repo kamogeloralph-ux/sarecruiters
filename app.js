@@ -669,8 +669,6 @@ function avatarHtml(a) {
 function hubCard(a) {
   var vCount = vacanciesFor(a.id).length;
   var bCount = branchesFor(a.id).length;
-  var descBits = [];
-  if (a.location) descBits.push(a.location);
   var verifiedCheck = a.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
   // Jobs badge: only shows when there is at least 1 vacancy; placed at right end of card
   var jobsBadge = vCount > 0 ? '<span class="hub-stat hub-stat-right" title="' + vCount + ' job' + (vCount===1?'':'s') + '"><span class="hub-stat-num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>' + vCount + '</span></span>' : '';
@@ -680,7 +678,7 @@ function hubCard(a) {
       avatarHtml(a) +
       '<div class="hub-summary-body">' +
         '<div class="agency-name-row">' + verifiedCheck + '<span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span></div>' +
-        (a.location ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Head office:</span> ' + escapeHtml(a.location) + '</div>' : '') +
+        ((a.address || a.location) ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Head office</span></div>' : '') +
       '</div>' +
       jobsBadge +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
@@ -765,13 +763,13 @@ function hubBranches(a) {
 function hubContact(a) {
   var ICON_SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
   var html = '<div class="det-plain">';
+  var headOfficeAddress = a.address || a.location || '';
   var pref = (a.cvpref || '').trim();
   if (pref) html += '<div class="det-row"><span class="det-label">Preferred contact:</span> <span class="hub-contact-preferred">' + (prefIcon(pref) || ICON_SEND) + escapeHtml(pref) + '</span></div>';
   if (a.contact) html += '<div class="det-row"><span class="det-label">Contact:</span> ' + telLink(a.contact) + '</div>';
   if (a.email) html += '<div class="det-row"><span class="det-label">Email:</span> ' + mailLink(a.email) + '</div>';
   if (a.website) html += '<div class="det-row"><span class="det-label">Website:</span> ' + webLink(a.website) + '</div>';
-  if (a.location) html += '<div class="det-row"><span class="det-label">Head office:</span> ' + mapsLink(a.location) + '</div>';
-  if (a.address && a.address !== a.location) html += '<div class="det-row"><span class="det-label">Address:</span> ' + mapsLink(a.address) + '</div>';
+  if (headOfficeAddress) html += '<div class="det-row"><span class="det-label">Head office address:</span> ' + mapsLink(headOfficeAddress) + '</div>';
   if (a.companies) html += '<div class="det-row"><span class="det-label">Companies:</span> ' + escapeHtml(a.companies) + '</div>';
   if (a.trades) html += '<div class="det-row"><span class="det-label">Trades:</span> ' + escapeHtml(a.trades) + '</div>';
   if (html === '<div class="det-plain">') html += '<div class="det-row muted">No additional details</div>';
