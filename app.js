@@ -1968,7 +1968,7 @@ async function loadPoolCandidates() {
     // RLS only returns status = 'active' rows to anonymous visitors
     var { data, error } = await supabaseClient.from('pool_candidates').select('*').order('created_at', { ascending: false });
     if (error) { console.error('pool load', error); poolCache = []; }
-    else poolCache = data || [];
+    else poolCache = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
   } catch(e) { console.error('pool load', e); poolCache = []; }
   poolLoaded = true;
   // Populate sector filter options from whatever is currently listed
@@ -1987,7 +1987,8 @@ function renderPoolList() {
   if (!listEl) return;
   var q = ((document.getElementById('pool-search')||{}).value || '').trim().toLowerCase();
   var sector = ((document.getElementById('pool-sector-filter')||{}).value || '');
-  var list = poolCache.slice();
+  // Defense-in-depth: only approved/active candidates may ever be rendered publicly.
+  var list = poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice();
   if (sector) list = list.filter(function(c){ return (c.sector||'') === sector; });
   if (q) {
     list = list.filter(function(c){
