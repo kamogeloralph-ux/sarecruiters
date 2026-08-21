@@ -647,32 +647,32 @@ async function enterConsole(user){
 
 // ===== Data access =====
 async function getAgencies(){
-  var { data, error } = await supabaseClient.from('agencies').select('*').order('created_at',{ascending:false});
+  var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token').order('created_at',{ascending:false});
   if (error){ console.error('agencies',error); return []; }
   return data;
 }
 async function getBranches(){
-  var { data, error } = await supabaseClient.from('branches').select('*').order('created_at',{ascending:true});
+  var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email,verified,created_at').order('created_at',{ascending:true});
   if (error){ console.error('branches',error); return []; }
   return data || [];
 }
 async function getVacancies(){
-  try { var { data, error } = await supabaseClient.from('vacancies').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('vacancies').select('id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function getReports(){
-  try { var { data, error } = await supabaseClient.from('reports').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('reports').select('id,agency_name,reason,details,status,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function getSuggestions(){
-  try { var { data, error } = await supabaseClient.from('suggestions').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('suggestions').select('id,type,agency_name,details,contact,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
-async function getPoolCandidates(){ var { data, error } = await supabaseClient.from('pool_candidates').select('*').order('created_at', { ascending: false }); if(error){ console.error('pool load', error); return []; } return data || []; }
+async function getPoolCandidates(){ var { data, error } = await supabaseClient.from('pool_candidates').select('id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,created_at').order('created_at', { ascending: false }); if(error){ console.error('pool load', error); return []; } return data || []; }
 async function upsertPoolCandidate(p){ var { error } = await supabaseClient.from('pool_candidates').upsert(p); if(error){ console.error('pool save', error); alert('Could not save: '+error.message); } }
 async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); }
 async function getTracks(){
-  try { var { data, error } = await supabaseClient.from('daily_tracks').select('*').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('daily_tracks').select('id,title,artist,file_path,track_date,created_at').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function upsertAgency(a){
@@ -681,7 +681,7 @@ async function upsertAgency(a){
 }
 async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } }
 async function getEmployers(){
-  try { var { data, error } = await supabaseClient.from('employers').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified,manage_token').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function upsertEmployer(e){ var { error } = await supabaseClient.from('employers').upsert(e); if(error){ console.error('employer save',error); alert('Could not save employer: '+error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } }
