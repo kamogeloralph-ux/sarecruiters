@@ -672,22 +672,20 @@ function avatarHtml(a) {
 }
 
 function hubCard(a) {
-  var vCount = vacanciesFor(a.id).length;
   var bCount = branchesFor(a.id).length;
+  var headOfficeLocation = (a.location || a.address || '').trim();
   var verifiedCheck = a.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
-  // Compact notification-style badges: branches are shown like an unread count;
-  // vacancies retain the existing job badge beside it.
+  // Compact notification-style badge showing the agency's branch count.
   var branchBadge = bCount > 0 ? '<span class="hub-branch-badge" title="' + bCount + ' branch' + (bCount===1?'':'es') + '" aria-label="' + bCount + ' branch' + (bCount===1?'':'es') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="5" r="2.2"/><circle cx="18" cy="19" r="2.2"/><circle cx="6" cy="19" r="2.2"/><path d="M6 7.2v7.6M8 5h4a6 6 0 0 1 6 6v5.8M8 19h5.8"/></svg><span>' + bCount + '</span></span>' : '';
-  var jobsBadge = vCount > 0 ? '<span class="hub-stat hub-stat-right" title="' + vCount + ' job' + (vCount===1?'':'s') + '"><span class="hub-stat-num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>' + vCount + '</span></span>' : '';
   return '' +
   '<div class="hub-card" id="hub-' + a.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleHub(\'' + a.id + '\')" aria-expanded="false">' +
       avatarHtml(a) +
       '<div class="hub-summary-body">' +
         '<div class="agency-name-row">' + verifiedCheck + '<span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span></div>' +
-        ((a.address || a.location) ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Head office</span></div>' : '') +
+        (headOfficeLocation ? '<div class="hub-summary-desc hub-head-office-location">' + VAC_ICONS.pin + '<span>' + escapeHtml(headOfficeLocation) + '</span></div>' : '') +
       '</div>' +
-      branchBadge + jobsBadge +
+      branchBadge +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</button>' +
     '<div class="hub-panel" id="hub-panel-' + a.id + '">' +
@@ -2373,9 +2371,7 @@ function renderAllAgenciesList() {
 function renderAllBranchesList() {
   var q = ((document.getElementById('allbranches-search')||{}).value || '').trim().toLowerCase();
   var el = document.getElementById('allbranches-list');
-  var list = branchesCache.slice();
-  // Enrich each branch with its parent agency name
-  list = list.map(function(b){
+  var list = branchesCache.slice().map(function(b){
     var agency = agenciesCache.find(function(a){ return a.id === b.agency_id; });
     b._agencyName = agency ? agency.name : '';
     b._agencyTrades = agency ? (agency.trades||'') : '';
@@ -2383,51 +2379,49 @@ function renderAllBranchesList() {
   });
   if (q) {
     list = list.filter(function(b){
-      var hay = ((b.name||'') + ' ' + (b.location||'') + ' ' + (b.phone||'') + ' ' + (b.email||'') + ' ' + (b._agencyName||'') + ' ' + (b._agencyTrades||'')).toLowerCase();
+      var hay = ((b.name||'')+' '+(b.location||'')+' '+(b.phone||'')+' '+(b.email||'')+' '+(b._agencyName||'')+' '+(b._agencyTrades||'')).toLowerCase();
       return hay.indexOf(q) !== -1;
     });
   }
-  // Sort by agency name then branch name
-  list.sort(function(a,b){
-    var c = (a._agencyName||'').localeCompare(b._agencyName||'');
-    if (c !== 0) return c;
-    return (a.name||'').localeCompare(b.name||'');
-  });
   if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No branches found</h3><p>Try a different search term.</p></div>'; return; }
-  var html = list.map(function(b){
-    var bid = 'ab-' + b.id;
-    var agencyName = b._agencyName || 'Unknown agency';
-    /* Collapsed: agency name + short branch location only, Indeed-style.
-       Tap to reveal the branch label, full address, phone and email. */
-    var head = '<div class="branch-block-head" onclick="toggleBranchBlock(\'' + bid + '\')">' +
-      '<div class="hub-contact-body">' +
-        '<div class="hub-contact-value">' + escapeHtml(agencyName) + '</div>' +
-        (b.location ? '<div class="branch-sub">' + VAC_ICONS.pin + escapeHtml(shortLocation(b.location)) + '</div>' : '') +
-      '</div>' +
-      '<span class="chevron">' + ICON_CHEVRON + '</span>' +
-    '</div>';
-    var body = '<div class="branch-detail"><div class="branch-detail-inner"><div class="det-plain">';
-    body += '<div class="det-row"><span class="det-label">Branch:</span> ' + escapeHtml(b.name || 'Branch') + '</div>';
-    if (b.location) {
-      body += '<div class="det-row"><span class="det-label">Address:</span> ' + mapsLink(b.location) + '</div>';
-    }
-    if (b.phone) {
-      body += '<div class="det-row"><span class="det-label">Phone:</span> ' + telLink(b.phone) + '</div>';
-    }
-    if (b.email) {
-      body += '<div class="det-row"><span class="det-label">Email:</span> ' + mailLink(b.email) + '</div>';
-    }
-    body += '</div>';
-    if (isAdmin) {
-      body += '<div class="branch-detail-actions">' +
-        '<button class="br-edit" data-ripple onclick="event.stopPropagation();openBranchSheet(\'' + (b.agency_id||'') + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg> Edit</button>' +
-        '<button class="br-del" data-ripple onclick="event.stopPropagation();deleteBranchAllList(\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>' +
+
+  var groups = {};
+  list.forEach(function(b){
+    var key = b.agency_id || '__unknown__';
+    if (!groups[key]) groups[key] = { name: b._agencyName || 'Other / Unassigned', items: [] };
+    groups[key].items.push(b);
+  });
+  var keys = Object.keys(groups).sort(function(a,b){ return groups[a].name.localeCompare(groups[b].name); });
+  el.innerHTML = keys.map(function(key){
+    var group = groups[key];
+    group.items.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+    var rows = group.items.map(function(b){
+      var bid = 'ab-' + b.id;
+      var head = '<div class="branch-block-head" onclick="toggleBranchBlock(\'' + bid + '\')">' +
+        '<div class="hub-contact-body">' +
+          '<div class="hub-contact-value">' + escapeHtml(b.name || 'Branch') + '</div>' +
+          (b.location ? '<div class="branch-sub">' + VAC_ICONS.pin + escapeHtml(shortLocation(b.location)) + '</div>' : '') +
+        '</div>' +
+        '<span class="chevron">' + ICON_CHEVRON + '</span>' +
       '</div>';
-    }
-    body += '</div></div>'; // close branch-detail-inner, branch-detail
-    return '<div class="branch-block" id="' + bid + '">' + head + body + '</div>';
+      var body = '<div class="branch-detail"><div class="branch-detail-inner"><div class="det-plain">';
+      body += '<div class="det-row"><span class="det-label">Agency:</span> ' + escapeHtml(group.name) + '</div>';
+      if (b.location) body += '<div class="det-row"><span class="det-label">Address:</span> ' + mapsLink(b.location) + '</div>';
+      if (b.phone) body += '<div class="det-row"><span class="det-label">Phone:</span> ' + telLink(b.phone) + '</div>';
+      if (b.email) body += '<div class="det-row"><span class="det-label">Email:</span> ' + mailLink(b.email) + '</div>';
+      body += '</div>';
+      if (isAdmin) {
+        body += '<div class="branch-detail-actions">' +
+          '<button class="br-edit" data-ripple onclick="event.stopPropagation();openBranchSheet(\'' + (b.agency_id||'') + '\',\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg> Edit</button>' +
+          '<button class="br-del" data-ripple onclick="event.stopPropagation();deleteBranchAllList(\'' + b.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>' +
+        '</div>';
+      }
+      body += '</div></div>';
+      return '<div class="branch-block" id="' + bid + '">' + head + body + '</div>';
+    }).join('');
+    return '<section class="directory-group" aria-label="' + escapeHtml(group.name) + '">' +
+      '<div class="directory-group-head"><div><div class="directory-group-title">' + escapeHtml(group.name) + '</div><div class="directory-group-sub">' + group.items.length + ' branch' + (group.items.length===1?'':'es') + '</div></div></div>' + rows + '</section>';
   }).join('');
-  el.innerHTML = html;
 }
 
 // Delete a branch from the All Branches list (admin). Looks up the branch
@@ -2450,15 +2444,14 @@ function renderAllVacanciesList() {
   var industryFilter = ((document.getElementById('allvacancies-industry')||{}).value || '');
   var el = document.getElementById('allvacancies-list');
   var list = vacanciesCache.slice();
-  // Populate the industry dropdown from agency trades on the currently loaded vacancies
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
     var industries = new Set();
     vacanciesCache.forEach(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
-      if (agency && agency.trades) {
-        agency.trades.split(',').forEach(function(t){ t = t.trim(); if (t) industries.add(t); });
-      }
+      var employer = v.employer_id ? employersCache.find(function(e){ return e.id === v.employer_id; }) : null;
+      if (agency && agency.trades) agency.trades.split(',').forEach(function(t){ t=t.trim(); if(t) industries.add(t); });
+      if (employer && employer.industry) employer.industry.split(',').forEach(function(t){ t=t.trim(); if(t) industries.add(t); });
     });
     var sortedIndustries = Array.from(industries).sort();
     var current = industrySel.value;
@@ -2471,22 +2464,44 @@ function renderAllVacanciesList() {
   if (industryFilter) {
     list = list.filter(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
-      return !!(agency && agency.trades && agency.trades.toLowerCase().indexOf(industryFilter.toLowerCase()) !== -1);
+      var employer = v.employer_id ? employersCache.find(function(e){ return e.id === v.employer_id; }) : null;
+      var hay = ((agency && agency.trades)||'') + ' ' + ((employer && employer.industry)||'');
+      return hay.toLowerCase().indexOf(industryFilter.toLowerCase()) !== -1;
     });
   }
   if (q) {
     list = list.filter(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
-      var hay = ((v.title||'') + ' ' + (v.notes||'') + ' ' + (v.location||'') + ' ' + (v.company||'') + ' ' + (agency?(agency.name||''):'') + ' ' + (agency?(agency.trades||''):'')).toLowerCase();
+      var employer = v.employer_id ? employersCache.find(function(e){ return e.id === v.employer_id; }) : null;
+      var hay = ((v.title||'')+' '+(v.notes||'')+' '+(v.location||'')+' '+(v.company||'')+' '+(agency?(agency.name||''):'')+' '+(agency?(agency.trades||''):'')+' '+(employer?(employer.name||''):'')+' '+(employer?(employer.industry||''):'')).toLowerCase();
       return hay.indexOf(q) !== -1;
     });
   }
   if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No vacancies found</h3><p>Try a different search or adjust your filters.</p></div>'; return; }
-  var html = list.map(function(v){
-    var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
-    return vacancyCard(v, agency);
+
+  var groups = {};
+  list.forEach(function(v){
+    var employer = v.employer_id ? employersCache.find(function(e){ return e.id === v.employer_id; }) : null;
+    var agency = v.agency_id && v.agency_id !== 'general' ? agenciesCache.find(function(a){ return a.id === v.agency_id; }) : null;
+    var key, name, type;
+    if (employer) { key='employer:'+employer.id; name=employer.name||'Employer'; type='Employer'; }
+    else if (agency) { key='agency:'+agency.id; name=agency.name||'Agency'; type='Agency'; }
+    else { key='general'; name='General vacancies'; type='General'; }
+    if (!groups[key]) groups[key] = { name:name, type:type, agency:agency || null, items:[] };
+    groups[key].items.push(v);
+  });
+  var keys = Object.keys(groups).sort(function(a,b){
+    if (groups[a].type !== groups[b].type) return groups[a].type.localeCompare(groups[b].type);
+    return groups[a].name.localeCompare(groups[b].name);
+  });
+  el.innerHTML = keys.map(function(key){
+    var group = groups[key];
+    group.items.sort(function(a,b){ return new Date(b.created_at||0) - new Date(a.created_at||0); });
+    var agency = group.agency || {};
+    var cards = group.items.map(function(v){ return vacancyCard(v, agency); }).join('');
+    return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' +
+      '<div class="directory-group-head"><div><div class="directory-group-title">' + escapeHtml(group.name) + '</div><div class="directory-group-sub">' + group.type + ' · ' + group.items.length + ' vacanc' + (group.items.length===1?'y':'ies') + '</div></div></div>' + cards + '</section>';
   }).join('');
-  el.innerHTML = html;
 }
 
 function switchSubTab(tab) {

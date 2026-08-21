@@ -95,6 +95,9 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 22px}
 .stat-card{background:var(--card);border-radius:16px;padding:12px 4px;text-align:center;border:1px solid var(--border);cursor:pointer;transition:border-color .2s,transform .15s,box-shadow .2s;position:relative;overflow:hidden}
+.stat-icon{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin:0 auto 5px;color:var(--accent)}
+.stat-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stat-card-branches .stat-icon{color:#6d5ce7}.stat-card-vacancies .stat-icon{color:#c58a27}.stat-card-employers .stat-icon{color:#5b67d8}.stat-card-agencies .stat-icon{color:#6252d8}
 .stat-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px -8px rgba(0,0,0,.25)}
 .stat-card:active{transform:translateY(0)}
 .stat-card .stat-arrow{position:absolute;top:6px;right:7px;opacity:.3;font-size:10px}
@@ -181,6 +184,9 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .hub-summary{display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;background:none;border:none;text-align:left}
 .hub-summary-body{flex:1;min-width:0}
 .hub-summary-desc{font-size:11.5px;color:var(--text-2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hub-head-office-location{display:flex;align-items:center;gap:5px;color:var(--text-2)}
+.hub-head-office-location svg{width:14px;height:14px;flex:0 0 14px;stroke:currentColor;fill:none;vertical-align:-2px}
+.hub-head-office-location span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hub-stats-row{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
 .hub-stat-right{flex-shrink:0;margin-right:2px}
 /* WhatsApp-like unread indicator for the number of agency branches. */
@@ -240,6 +246,14 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .hub-add-btn:active{transform:scale(.97)}
 
 /* ===== Branch blocks (Indeed-style: name + location only, tap to reveal contact details) ===== */
+.directory-group{background:var(--card);border:1px solid var(--border);border-radius:18px;margin:0 0 14px;padding:0 14px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.directory-group-head{display:flex;align-items:center;justify-content:space-between;padding:13px 2px 10px;border-bottom:1px solid var(--separator)}
+.directory-group-title{font-size:15px;font-weight:750;color:var(--text);letter-spacing:-.01em}
+.directory-group-sub{font-size:11.5px;color:var(--text-2);margin-top:2px}
+.vacancy-directory-group{padding:0 12px 10px}
+.vacancy-directory-group .directory-group-head{margin-bottom:4px}
+.vacancy-directory-group .vac-card{border-left:0;border-right:0;border-radius:0;margin:0;padding:16px 2px;box-shadow:none}
+.vacancy-directory-group .vac-card:last-child{border-bottom:0}
 .branch-block{border-bottom:1px solid var(--separator)}
 .branch-block:last-child{border-bottom:none}
 .branch-block-head{display:flex;align-items:center;gap:12px;padding:14px 2px;position:relative;cursor:pointer}
@@ -569,7 +583,12 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .content-empty{text-align:center;font-size:13px;color:var(--text-2);padding:30px 0}
 
 /* ===== Profile and directory polish ===== */
-.screen-title-group{display:flex;flex-direction:column;gap:2px;min-width:0}
+.screen-title-group{display:flex;align-items:center;gap:10px;min-width:0}.screen-title-group>div:not(.directory-title-icon){display:flex;flex-direction:column;gap:2px;min-width:0}
+.directory-title-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);flex:0 0 34px}
+.directory-title-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.directory-icon-branches{color:#6d5ce7;background:color-mix(in srgb,#6d5ce7 12%,transparent)}
+.directory-icon-vacancies{color:#c58a27;background:color-mix(in srgb,#c58a27 14%,transparent)}
+.directory-icon-employers{color:#5b67d8;background:color-mix(in srgb,#5b67d8 12%,transparent)}
 .screen-context{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
 .screen-close-btn{width:42px;height:42px;border-radius:15px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent);display:grid;place-items:center;font-size:28px;font-weight:300;line-height:1;transition:transform .15s var(--ease),background .2s,color .2s}
 .screen-close-btn:active{transform:scale(.9);background:var(--accent);color:#fff}
