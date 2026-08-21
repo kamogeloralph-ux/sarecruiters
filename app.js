@@ -2025,18 +2025,24 @@ function renderPoolList() {
     if (c.contact_phone) contactBits.push('<a href="tel:'+escapeHtml(c.contact_phone)+'">'+escapeHtml(c.contact_phone)+'</a>');
     if (c.contact_email) contactBits.push('<a href="mailto:'+escapeHtml(c.contact_email)+'">'+escapeHtml(c.contact_email)+'</a>');
     if (c.cv_link) contactBits.push('<a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">View CV</a>');
-    var screenBits = [];
-    if (c.gender) screenBits.push(escapeHtml(c.gender));
-    if (c.grade12) screenBits.push('Grade 12: '+escapeHtml(c.grade12));
-    if (c.criminal_record) screenBits.push('Criminal record: '+escapeHtml(c.criminal_record));
-    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') {
-      screenBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs experience');
-    }
-    return '<div class="manager-item">' +
+    var frontBits = [];
+    if (c.gender) frontBits.push(escapeHtml(c.gender));
+    if (c.position) frontBits.push(escapeHtml(c.position));
+    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs');
+    var detailBits = [];
+    function detail(label, value){ if(value !== null && value !== undefined && String(value).trim() !== '') detailBits.push('<div class="det-row"><span class="det-label">'+label+':</span> '+escapeHtml(value)+'</div>'); }
+    detail('Sector', c.sector); detail('Location', c.location); detail('Highest qualification', c.qualification);
+    detail('Driver’s licence', c.drivers_license); detail('Reliable transport', c.reliable_transport); detail('Willing to relocate', c.willing_relocate);
+    detail('Availability', c.availability); detail('Preferred employment', c.preferred_employment); detail('Salary expectation', c.salary_expectation);
+    detail('Eligible to work in South Africa', c.work_authorized); detail('Grade 12 / Matric', c.grade12); detail('Criminal record', c.criminal_record);
+    if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
+    if (c.cv_link) detailBits.push('<div class="det-row"><span class="det-label">CV:</span> <a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">Open CV</a></div>');
+    if (contactBits.length) detailBits.push('<div class="det-row"><span class="det-label">Contact:</span> '+contactBits.join(' &nbsp;·&nbsp; ')+'</div>');
+    return '<div class="manager-item pool-mini-card" onclick="toggleRow(this)" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){toggleRow(this)}">' +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+'</div>' +
-      '<div class="manager-item-sub">'+escapeHtml(sub||'')+'</div>' +
-      (screenBits.length ? '<div class="manager-item-meta">'+screenBits.join(', ')+'</div>' : '') +
-      (contactBits.length ? '<div class="manager-item-meta">'+contactBits.join(' &nbsp;·&nbsp; ')+'</div>' : '') +
+      '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : escapeHtml(sub||''))+'</div>' +
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
+      '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
       '</div>';
   }).join('');
 }
@@ -2052,6 +2058,15 @@ function openPoolRegisterSheet() {
   document.getElementById('pool-grade12').value = '';
   document.getElementById('pool-criminal').value = '';
   document.getElementById('pool-experience').value = '';
+  document.getElementById('pool-qualification').value = '';
+  document.getElementById('pool-drivers-license').value = '';
+  document.getElementById('pool-transport').value = '';
+  document.getElementById('pool-relocate').value = '';
+  document.getElementById('pool-availability').value = '';
+  document.getElementById('pool-employment').value = '';
+  document.getElementById('pool-salary').value = '';
+  document.getElementById('pool-work-authorized').value = '';
+  document.getElementById('pool-about').value = '';
   document.getElementById('pool-cv').value = '';
   document.getElementById('pool-payref').value = '';
   var alertOptIn = document.getElementById('pool-email-alerts');
@@ -2109,6 +2124,15 @@ async function submitPoolRegistration() {
     grade12: grade12,
     criminal_record: criminal,
     experience_years: parseInt(experience, 10),
+    qualification: document.getElementById('pool-qualification').value.trim(),
+    drivers_license: document.getElementById('pool-drivers-license').value,
+    reliable_transport: document.getElementById('pool-transport').value,
+    willing_relocate: document.getElementById('pool-relocate').value,
+    availability: document.getElementById('pool-availability').value.trim(),
+    preferred_employment: document.getElementById('pool-employment').value,
+    salary_expectation: document.getElementById('pool-salary').value.trim(),
+    work_authorized: document.getElementById('pool-work-authorized').value,
+    about_you: document.getElementById('pool-about').value.trim().slice(0, 150),
     cv_link: document.getElementById('pool-cv').value.trim(),
     payment_ref: payref,
     status: 'pending'
@@ -2126,6 +2150,15 @@ async function submitPoolRegistration() {
       delete legacyPayload.alert_locations;
       delete legacyPayload.alert_consent_at;
       delete legacyPayload.alert_unsubscribe_token;
+      delete legacyPayload.qualification;
+      delete legacyPayload.drivers_license;
+      delete legacyPayload.reliable_transport;
+      delete legacyPayload.willing_relocate;
+      delete legacyPayload.availability;
+      delete legacyPayload.preferred_employment;
+      delete legacyPayload.salary_expectation;
+      delete legacyPayload.work_authorized;
+      delete legacyPayload.about_you;
       result = await supabaseClient.from('pool_candidates').insert([legacyPayload]);
       if (!result.error) showToast('Registration received — email alerts activate after the alert setup is completed.');
     }
@@ -3039,4 +3072,19 @@ if ('serviceWorker' in navigator) {
       else if (action === 'share-received' && typeof showToast === 'function') showToast('Thanks! Your shared content was received.');
     });
   } catch (e) { /* no-op */ }
+})();
+
+
+// Mini-CV pitch character counter
+(function initMiniCvCounter(){
+  function update(el){
+    var counter = document.querySelector('.char-counter[data-for="'+el.id+'"]');
+    if(counter) counter.textContent = String(el.value.length) + ' / 150';
+  }
+  document.addEventListener('input', function(e){
+    if(e.target && (e.target.id === 'pool-about' || e.target.id === 'pc-about')) update(e.target);
+  });
+  document.addEventListener('focusin', function(e){
+    if(e.target && (e.target.id === 'pool-about' || e.target.id === 'pc-about')) update(e.target);
+  });
 })();
