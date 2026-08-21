@@ -742,7 +742,15 @@ async function queueAndSendVacancyAlerts(vacancy){
       var c=matches[i];
       try{
         await client.send(ALERT_EMAIL_CONFIG.serviceId,ALERT_EMAIL_CONFIG.templateId,{
-          to_email:c.contact_email,to_name:c.full_name||'Talent Pool member',vacancy_title:vacancy.title||'New vacancy',company:vacancy.company||'',location:vacancy.location||'',apply_link:vacancy.link||'',unsubscribe_token:c.alert_unsubscribe_token||''
+          to_email:c.contact_email,
+          email_subject:'SA Recruiters | New vacancy: '+(vacancy.title||'Opportunity'),
+          notification_type:'VACANCY ALERT',
+          notification_title:'New vacancy opportunity',
+          notification_intro:'A new vacancy matching your Talent Pool preferences has been posted.',
+          notification_body:'Role: '+(vacancy.title||'-')+'\nCompany: '+(vacancy.company||'-')+'\nLocation: '+(vacancy.location||'-')+'\nEmployment type: '+(vacancy.employment_type||'-')+'\nClosing date: '+(vacancy.closing_date||'-')+'\nApply: '+(vacancy.link||vacancy.email||vacancy.phone||'-'),
+          to_name:c.full_name||'Talent Pool member',
+          vacancy_title:vacancy.title||'New vacancy',company:vacancy.company||'',location:vacancy.location||'',apply_link:vacancy.link||'',unsubscribe_token:c.alert_unsubscribe_token||'',
+          submitted_via:'SA Recruiters'
         });
         sent++;
         await supabaseClient.from('vacancy_alert_queue').update({status:'sent',sent_at:new Date().toISOString(),error_message:null}).eq('vacancy_id',vacancy.id).eq('candidate_id',c.id);

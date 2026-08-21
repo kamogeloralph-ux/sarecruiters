@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{email_subject}}</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f1f8;font-family:Arial,Helvetica,sans-serif;color:#1f1b2d;">
+  <div style="padding:28px 12px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e6e1ef;border-radius:18px;overflow:hidden;">
+      <tr>
+        <td style="background:#5b2ca0;padding:26px 28px;color:#ffffff;">
+          <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;font-weight:700;opacity:.82;">SA Recruiters</div>
+          <div style="font-size:25px;line-height:1.25;font-weight:800;margin-top:8px;">{{notification_title}}</div>
+          <div style="font-size:13px;line-height:1.5;margin-top:8px;opacity:.9;">{{notification_type}}</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:28px;">
+          <p style="font-size:16px;line-height:1.55;margin:0 0 20px;color:#312a40;">{{notification_intro}}</p>
+          <div style="background:#faf8fd;border:1px solid #e8e0f4;border-radius:12px;padding:20px;white-space:pre-line;font-size:14px;line-height:1.7;color:#40384e;">{{notification_body}}</div>
+          <p style="margin:22px 0 0;font-size:12px;line-height:1.6;color:#756b83;">Received via {{submitted_via}}<br>{{submit_date}}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="border-top:1px solid #eeeaf4;padding:18px 28px;background:#fcfbfe;font-size:12px;line-height:1.6;color:#756b83;">
+          SA Recruiters<br>
+          <a href="mailto:sarecruiters.directory@gmail.com" style="color:#5b2ca0;text-decoration:none;">sarecruiters.directory@gmail.com</a>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>
+
+EmailJS template settings:
+Subject: {{email_subject}}
+To email: {{to_email}}
+
+Required variables:
+{{email_subject}}
+{{to_email}}
+{{notification_type}}
+{{notification_title}}
+{{notification_intro}}
+{{notification_body}}
+{{submitted_via}}
+{{submit_date}}
+
+The template is intentionally event-neutral. Vacancy alerts send a vacancy-specific title and body; reports and suggestions send their own title and body, so irrelevant fields are not displayed.
