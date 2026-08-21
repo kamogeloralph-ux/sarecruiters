@@ -154,13 +154,13 @@ function applyTheme(theme) {
   }
 }
 function toggleTheme() {
-  var current = document.documentElement.getAttribute('data-theme') || 'dark';
+  var current = document.documentElement.getAttribute('data-theme') || 'light';
   var next = current === 'dark' ? 'light' : 'dark';
   localStorage.setItem('saTheme', next);
   applyTheme(next);
 }
 (function initTheme() {
-  var saved = localStorage.getItem('saTheme') || 'dark';
+  var saved = localStorage.getItem('saTheme') || 'light';
   applyTheme(saved);
 })();
 
