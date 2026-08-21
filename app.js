@@ -675,7 +675,9 @@ function hubCard(a) {
   var vCount = vacanciesFor(a.id).length;
   var bCount = branchesFor(a.id).length;
   var verifiedCheck = a.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
-  // Jobs badge: only shows when there is at least 1 vacancy; placed at right end of card
+  // Compact notification-style badges: branches are shown like an unread count;
+  // vacancies retain the existing job badge beside it.
+  var branchBadge = bCount > 0 ? '<span class="hub-branch-badge" title="' + bCount + ' branch' + (bCount===1?'':'es') + '" aria-label="' + bCount + ' branch' + (bCount===1?'':'es') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="5" r="2.2"/><circle cx="18" cy="19" r="2.2"/><circle cx="6" cy="19" r="2.2"/><path d="M6 7.2v7.6M8 5h4a6 6 0 0 1 6 6v5.8M8 19h5.8"/></svg><span>' + bCount + '</span></span>' : '';
   var jobsBadge = vCount > 0 ? '<span class="hub-stat hub-stat-right" title="' + vCount + ' job' + (vCount===1?'':'s') + '"><span class="hub-stat-num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>' + vCount + '</span></span>' : '';
   return '' +
   '<div class="hub-card" id="hub-' + a.id + '">' +
@@ -685,7 +687,7 @@ function hubCard(a) {
         '<div class="agency-name-row">' + verifiedCheck + '<span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span></div>' +
         ((a.address || a.location) ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Head office</span></div>' : '') +
       '</div>' +
-      jobsBadge +
+      branchBadge + jobsBadge +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</button>' +
     '<div class="hub-panel" id="hub-panel-' + a.id + '">' +
