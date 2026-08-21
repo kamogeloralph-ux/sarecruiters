@@ -108,6 +108,31 @@
       <div class="stat-card stat-card-employers" data-ripple onclick="showAllEmployers()" role="button" tabindex="0" aria-label="View all employers"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/></svg></span><div class="stat-value" id="stat-employers">0</div><div class="stat-label">Employers</div></div>
     </div>
 
+    <section class="employer-cta" aria-labelledby="employer-cta-title">
+      <div class="employer-cta-heading">
+        <div class="employer-cta-kicker">For employers</div>
+        <h2 id="employer-cta-title">Hire with SA Recruiters</h2>
+        <p>List your company, publish a vacancy, or browse approved local candidates.</p>
+      </div>
+      <div class="employer-cta-actions">
+        <button class="employer-cta-action" data-ripple onclick="openEmployerForm()">
+          <span class="employer-cta-icon"><svg><use href="icons.svg#i30b4d5"/></svg></span>
+          <span class="employer-cta-copy"><strong>Register your company</strong><small>Create your employer profile</small></span>
+          <svg class="employer-cta-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <button class="employer-cta-action" data-ripple onclick="openGeneralVacancySheet()">
+          <span class="employer-cta-icon"><svg><use href="icons.svg#i952b6f"/></svg></span>
+          <span class="employer-cta-copy"><strong>Post a vacancy</strong><small>Reach candidates looking for work</small></span>
+          <svg class="employer-cta-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <button class="employer-cta-action" data-ripple onclick="goPool()">
+          <span class="employer-cta-icon"><svg><use href="icons.svg#ief3ce7"/></svg></span>
+          <span class="employer-cta-copy"><strong>Browse the Talent Pool</strong><small>Find approved local candidates</small></span>
+          <svg class="employer-cta-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </section>
+
     <div class="section-head">
       <div class="section-title">All agencies</div>
     </div>

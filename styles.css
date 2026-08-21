@@ -134,6 +134,22 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .star-btn svg,.save-btn svg,.track-play svg,.badge svg,.verified-check svg{fill:currentColor;stroke:none}
 
 
+.employer-cta{margin:16px 0 22px;background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--accent) 7%,var(--card)));border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
+.employer-cta-heading{padding:18px 16px 12px}
+.employer-cta-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--accent);margin-bottom:5px}
+.employer-cta-heading h2{margin:0;font-size:18px;letter-spacing:-.02em;color:var(--text)}
+.employer-cta-heading p{margin:5px 0 0;color:var(--text-2);font-size:12.5px;line-height:1.4}
+.employer-cta-actions{border-top:1px solid var(--border)}
+.employer-cta-action{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;background:transparent;border:0;color:var(--text);text-align:left;cursor:pointer;position:relative;font:inherit}
+.employer-cta-action+.employer-cta-action{border-top:1px solid var(--separator)}
+.employer-cta-action:active{background:var(--card-2)}
+.employer-cta-icon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;flex:0 0 34px;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
+.employer-cta-icon svg{width:19px;height:19px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.employer-cta-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.employer-cta-copy strong{font-size:14px;font-weight:700}
+.employer-cta-copy small{font-size:11.5px;color:var(--text-2);line-height:1.25}
+.employer-cta-chevron{width:16px;height:16px;flex:0 0 16px;color:var(--text-3);stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+@media(min-width:620px){.employer-cta-actions{display:grid;grid-template-columns:repeat(3,1fr)}.employer-cta-action+.employer-cta-action{border-top:0;border-left:1px solid var(--separator)}.employer-cta-action{align-items:flex-start;flex-direction:column;gap:9px;padding:14px}.employer-cta-chevron{position:absolute;right:14px;top:16px}}
 .section-head{display:flex;align-items:baseline;justify-content:space-between;margin:24px 0 16px}
 .section-title{font-size:18px;font-weight:700;letter-spacing:-0.02em}
 
