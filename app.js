@@ -676,7 +676,7 @@ function hubCard(a) {
   var headOfficeLocation = (a.location || a.address || '').trim();
   var verifiedCheck = a.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
   // Compact notification-style badge showing the agency's branch count.
-  var branchBadge = bCount > 0 ? '<span class="hub-branch-badge" title="' + bCount + ' branch' + (bCount===1?'':'es') + '" aria-label="' + bCount + ' branch' + (bCount===1?'':'es') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="5" r="2.2"/><circle cx="18" cy="19" r="2.2"/><circle cx="6" cy="19" r="2.2"/><path d="M6 7.2v7.6M8 5h4a6 6 0 0 1 6 6v5.8M8 19h5.8"/></svg><span>' + bCount + '</span></span>' : '';
+  var branchBadge = bCount > 0 ? '<span class="hub-branch-badge" title="' + bCount + ' branch' + (bCount===1?'':'es') + '" aria-label="' + bCount + ' branch' + (bCount===1?'':'es') + '"><span class="hub-branch-pin" aria-hidden="true">' + VAC_ICONS.pin + '</span><span>' + bCount + '</span></span>' : '';
   return '' +
   '<div class="hub-card" id="hub-' + a.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleHub(\'' + a.id + '\')" aria-expanded="false">' +
