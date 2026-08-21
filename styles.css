@@ -693,3 +693,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .pool-mini-card .pool-mini-details{display:none}
 .pool-mini-card.expanded .pool-mini-details{display:block}
 .pool-mini-card.expanded .row-chevron svg{transform:rotate(180deg)}
+
+
+/* Collapsed Talent Pool summary emphasis */
+.pool-mini-card > .manager-item-sub{color:var(--text);font-weight:600}
