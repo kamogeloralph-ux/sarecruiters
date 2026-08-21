@@ -1036,6 +1036,13 @@ function renderEmployers(){
     if(e.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(e.address)+'</div>';
     if(e.industry) details += '<div class="det-row"><span class="det-label">Industry:</span> '+escapeHtml(e.industry)+'</div>';
     details += '<div class="det-row"><span class="det-label">Vacancies posted:</span> '+jobCount+'</div>';
+    var employerVacancies = cache.vacancies.filter(function(v){ return v.employer_id===e.id; });
+    if (employerVacancies.length) {
+      details += '<div class="det-row" style="margin-top:10px"><span class="det-label">Employer vacancies:</span></div>';
+      details += employerVacancies.map(function(v){
+        return '<div class="det-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(v.title||'Untitled vacancy')+'</span><span style="display:flex;gap:5px;flex-shrink:0"><button class="minibtn" onclick="stopProp(event);openVacancySheet(\''+v.id+'\')" title="Edit vacancy">Edit</button><button class="minibtn danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')" title="Delete vacancy">Delete</button></span></div>';
+      }).join('');
+    }
     return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar">'+(e.photo?'<img src="'+e.photo+'">':initials(e.name))+'</div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(e.name||'Unnamed')+' '+(e.verified?'<span class="badge verified">Verified</span>':'<span class="badge unverified">Unverified</span>')+'</div>'+
@@ -1123,7 +1130,8 @@ async function regenEmployerToken(id){
 }
 async function deleteEmployer(id){
   var e = employerById(id);
-  if(!confirm('Delete "'+(e?e.name:'this employer')+'"? Their existing vacancies will stay but lose the employer link. This cannot be undone.')) return;
+  var linkedVacancies = cache.vacancies.filter(function(v){ return v.employer_id===id; });
+  if(!confirm('Delete "'+(e?e.name:'this employer')+'"? '+(linkedVacancies.length ? linkedVacancies.length+' linked vacancy/ies will remain in the Vacancies section and can be deleted separately. ' : '')+'This cannot be undone.')) return;
   await removeEmployer(id);
   showToast('Employer deleted');
   await loadAll(); renderNav(); renderEmployers(); renderDashboard();
