@@ -2026,9 +2026,9 @@ function renderPoolList() {
     if (c.contact_email) contactBits.push('<a href="mailto:'+escapeHtml(c.contact_email)+'">'+escapeHtml(c.contact_email)+'</a>');
     if (c.cv_link) contactBits.push('<a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">View CV</a>');
     var frontBits = [];
-    if (c.location) frontBits.push(escapeHtml(c.location));
-    if (c.sector) frontBits.push(escapeHtml(c.sector));
     if (c.position) frontBits.push(escapeHtml(c.position));
+    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs');
+    if (c.location) frontBits.push(escapeHtml(c.location));
     if (c.gender) frontBits.push(escapeHtml(c.gender));
     var detailBits = [];
     function detail(label, value){ if(value !== null && value !== undefined && String(value).trim() !== '') detailBits.push('<div class="det-row"><span class="det-label">'+label+':</span> '+escapeHtml(value)+'</div>'); }
@@ -2040,9 +2040,9 @@ function renderPoolList() {
     if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
     if (c.cv_link) detailBits.push('<div class="det-row"><span class="det-label">CV:</span> <a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">Open CV</a></div>');
     if (contactBits.length) detailBits.push('<div class="det-row"><span class="det-label">Contact:</span> '+contactBits.join(' &nbsp;·&nbsp; ')+'</div>');
-    return '<div class="manager-item pool-mini-card" onclick="toggleRow(this)" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){toggleRow(this)}">' +
+    return '<div class="manager-item pool-mini-card" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+'</div>' +
-      '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : escapeHtml(sub||''))+'</div>' +
+      '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : 'Profile details available')+'</div>' +
       '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
       '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
       '</div>';
@@ -3090,3 +3090,11 @@ if ('serviceWorker' in navigator) {
     if(e.target && (e.target.id === 'pool-about' || e.target.id === 'pc-about')) update(e.target);
   });
 })();
+
+
+// Public Talent Pool cards use their own toggle so expanded details stay hidden until opened.
+function togglePoolCard(card){
+  if (!card) return;
+  var expanded = card.classList.toggle('expanded');
+  card.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+}
