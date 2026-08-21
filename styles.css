@@ -697,3 +697,10 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 
 /* Collapsed Talent Pool summary emphasis */
 .pool-mini-card > .manager-item-sub{color:var(--text);font-weight:600}
+
+
+/* Public Talent Pool CV action */
+.pool-cv-row{margin-top:10px}
+.pool-cv-link{display:inline-flex;align-items:center;gap:5px;color:var(--accent);font-weight:800;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.pool-cv-link:hover{color:var(--accent-strong,var(--accent))}
+.pool-cv-link:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:3px;border-radius:4px}
