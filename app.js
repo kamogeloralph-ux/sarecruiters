@@ -1794,24 +1794,23 @@ function loadEmailJS() {
 }
 
 function tryEmailJS(payload) {
-  /* Silent email delivery via EmailJS.
-     Sends an email to the admin automatically without any user action.
-     The template uses these variables:
-       {{submission_type}}  → "REPORT" or "SUGGESTION"
-       {{agency_name}}      → agency name or "-"
-       {{reason}}           → report reason or suggestion type
-       {{details}}          → full details text
-       {{submit_date}}      → date/time string
-  */
+  /* One unified EmailJS template is used for both admin submissions and
+     vacancy alerts. The variable notification_body is already tailored to
+     the event, so the template never displays irrelevant report/vacancy fields. */
   if (!EMAILJS_CONFIG.serviceId || !EMAILJS_CONFIG.templateId || !EMAILJS_CONFIG.publicKey) {
     return Promise.resolve({ sent: false, reason: 'not-configured' });
   }
+  var type = payload.type === 'report' ? 'REPORT' : (payload.type === 'suggestion' ? 'SUGGESTION' : 'SUBMISSION');
+  var submitDate = new Date().toLocaleString('en-ZA', { dateStyle: 'full', timeStyle: 'short' });
   var templateParams = {
-    submission_type: (payload.type === 'report' ? 'REPORT' : (payload.type === 'suggestion' ? 'SUGGESTION' : (payload.submission_type || 'SUBMISSION'))),
-    agency_name: payload.agency_name || '-',
-    reason: payload.reason || payload.suggestion_type || '-',
-    details: payload.details || '-',
-    submit_date: new Date().toLocaleString('en-ZA', { dateStyle: 'full', timeStyle: 'short' })
+    to_email: payload.to_email || ADMIN_EMAIL,
+    email_subject: payload.email_subject || ('SA Recruiters | New ' + type.toLowerCase()),
+    notification_type: type,
+    notification_title: payload.notification_title || ('New ' + type.toLowerCase()),
+    notification_intro: payload.notification_intro || 'A new notification has been received through SA Recruiters.',
+    notification_body: payload.notification_body || payload.details || '-',
+    submit_date: submitDate,
+    submitted_via: 'SA Recruiters'
   };
   return loadEmailJS().then(function(client) {
     if (!client) return { sent: false, reason: 'emailjs-unavailable' };
@@ -1865,7 +1864,14 @@ async function submitReport() {
   local.push(payload);
   writeLocalReports(local);
   // Try silent email (EmailJS placeholder — no-op until configured)
-  tryEmailJS({ type: 'report', agency_name: payload.agency_name, reason: payload.reason, details: payload.details });
+  tryEmailJS({
+    type: 'report',
+    to_email: ADMIN_EMAIL,
+    email_subject: 'SA Recruiters | New report received',
+    notification_title: 'New report received',
+    notification_intro: 'A user submitted a report about a listing or agency.',
+    notification_body: 'Agency: ' + (payload.agency_name || '-') + '\nReason: ' + (payload.reason || '-') + '\nDetails: ' + (payload.details || '-')
+  });
   if (btn) { btn.disabled = false; btn.textContent = 'Submit report'; }
   closeSheet('report-overlay');
   // Build WhatsApp message and show confirmation sheet
@@ -1935,7 +1941,14 @@ async function submitSuggestion() {
     localStorage.setItem('sa_suggestions_local', JSON.stringify(local));
   } catch(e){}
   // Try silent email (EmailJS placeholder — no-op until configured)
-  tryEmailJS({ type: 'suggestion', suggestion_type: payload.type, agency_name: payload.agency_name, details: payload.details });
+  tryEmailJS({
+    type: 'suggestion',
+    to_email: ADMIN_EMAIL,
+    email_subject: 'SA Recruiters | New suggestion received',
+    notification_title: 'New suggestion received',
+    notification_intro: 'A user submitted a suggestion or comment through SA Recruiters.',
+    notification_body: 'Type: ' + (payload.type || '-') + '\nAgency: ' + (payload.agency_name || '-') + '\nDetails: ' + (payload.details || '-')
+  });
   if (btn) { btn.disabled = false; btn.textContent = 'Submit'; }
   closeSheet('suggestion-overlay');
   // Build WhatsApp message and show confirmation sheet
