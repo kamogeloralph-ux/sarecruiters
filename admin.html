@@ -652,7 +652,7 @@ async function getAgencies(){
   return data;
 }
 async function getBranches(){
-  var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email,verified,created_at').order('created_at',{ascending:true});
+  var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email').order('name',{ascending:true});
   if (error){ console.error('branches',error); return []; }
   return data || [];
 }

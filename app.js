@@ -277,7 +277,7 @@ function writeLocal(kind, arr) {
 // ----- Branches -----
 async function getBranches() {
   try {
-    var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email,verified,created_at').order('created_at', { ascending: true });
+    var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email').order('name', { ascending: true });
     if (!error && data) return data;
   } catch(e){}
   return readLocal('branches');
