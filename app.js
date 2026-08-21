@@ -1239,7 +1239,7 @@ function vacancyCard(v, agency) {
       logo +
       '<div class="vac-body">' +
         '<div class="vac-title">' + title + '</div>' +
-        '<div class="vac-company">' + (isGeneral && !isEmployerPost ? '' : 'via ') + verifiedCheck + escapeHtml(orgName) + (isEmployerPost ? ' (Employer)' : (isGeneral ? '' : ' (Agency)')) + '</div>' +
+        '<div class="vac-company">' + (isEmployerPost ? verifiedCheck + escapeHtml(orgName) : ((isGeneral && !isEmployerPost ? '' : 'via ') + verifiedCheck + escapeHtml(orgName) + (isGeneral ? '' : ' (Agency)'))) + '</div>' +
         locLine +
         postedLine +
       '</div>' +
