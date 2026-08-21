@@ -488,8 +488,18 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Location</label><input id="pc-location"></div>
     <div class="field"><label>Gender</label><select id="pc-gender"><option value="">— Not set —</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
     <div class="field"><label>Grade 12 / Matric?</label><select id="pc-grade12"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-    <div class="field"><label>Criminal record</label><select id="pc-criminal"><option value="">— Not set —</option><option value="Clear">Clear</option><option value="Yes">Yes</option></select></div>
+    <div class="field"><label>Do you have a criminal record?</label><select id="pc-criminal"><option value="">— Not set —</option><option value="Clear">Clear</option><option value="Yes">Yes</option></select></div>
     <div class="field"><label>Years of experience</label><select id="pc-experience"><option value="">— Not set —</option><option value="0">0 years</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
+    <div class="mini-cv-heading">Mini CV questions</div>
+    <div class="field"><label>Highest qualification</label><input id="pc-qualification"></div>
+    <div class="field"><label>Driver’s licence</label><select id="pc-drivers-license"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Reliable transport</label><select id="pc-transport"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Willing to relocate</label><select id="pc-relocate"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option><option value="Negotiable">Negotiable</option></select></div>
+    <div class="field"><label>Availability</label><input id="pc-availability"></div>
+    <div class="field"><label>Preferred employment</label><select id="pc-employment"><option value="">— Not set —</option><option value="Permanent">Permanent</option><option value="Contract">Contract</option><option value="Temporary">Temporary</option><option value="Part-time">Part-time</option><option value="Any">Any suitable opportunity</option></select></div>
+    <div class="field"><label>Salary expectation</label><input id="pc-salary"></div>
+    <div class="field"><label>Eligible to work in South Africa</label><select id="pc-work-authorized"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Sell yourself / Tell us about yourself <span class="field-optional">150 characters</span></label><textarea id="pc-about" maxlength="150"></textarea><small class="char-counter" data-for="pc-about">0 / 150</small></div>
     <div class="field"><label>CV link</label><input id="pc-cv" type="url"></div>
     <div class="field"><label>EFT payment reference</label><input id="pc-payref"></div>
     <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
@@ -1380,6 +1390,15 @@ function renderPoolCandidates(){
     if(p.criminal_record) screenBits.push('Criminal record: '+escapeHtml(p.criminal_record));
     if(p.experience_years !== null && p.experience_years !== undefined) screenBits.push((p.experience_years>=10?'10+':p.experience_years)+' yrs experience');
     if(screenBits.length) details += '<div class="det-row"><span class="det-label">Screening:</span> '+screenBits.join(', ')+'</div>';
+    if(p.qualification) details += '<div class="det-row"><span class="det-label">Highest qualification:</span> '+escapeHtml(p.qualification)+'</div>';
+    if(p.drivers_license) details += '<div class="det-row"><span class="det-label">Driver’s licence:</span> '+escapeHtml(p.drivers_license)+'</div>';
+    if(p.reliable_transport) details += '<div class="det-row"><span class="det-label">Reliable transport:</span> '+escapeHtml(p.reliable_transport)+'</div>';
+    if(p.willing_relocate) details += '<div class="det-row"><span class="det-label">Willing to relocate:</span> '+escapeHtml(p.willing_relocate)+'</div>';
+    if(p.availability) details += '<div class="det-row"><span class="det-label">Availability:</span> '+escapeHtml(p.availability)+'</div>';
+    if(p.preferred_employment) details += '<div class="det-row"><span class="det-label">Preferred employment:</span> '+escapeHtml(p.preferred_employment)+'</div>';
+    if(p.salary_expectation) details += '<div class="det-row"><span class="det-label">Salary expectation:</span> '+escapeHtml(p.salary_expectation)+'</div>';
+    if(p.work_authorized) details += '<div class="det-row"><span class="det-label">Eligible to work in South Africa:</span> '+escapeHtml(p.work_authorized)+'</div>';
+    if(p.about_you) details += '<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(p.about_you)+'</div>';
     if(p.cv_link) details += '<div class="det-row"><span class="det-label">CV:</span> '+escapeHtml(p.cv_link)+'</div>';
     if(p.payment_ref) details += '<div class="det-row"><span class="det-label">EFT ref:</span> '+escapeHtml(p.payment_ref)+'</div>';
     if(p.paid_until) details += '<div class="det-row"><span class="det-label">Paid until:</span> '+fmtDate(p.paid_until)+'</div>';
@@ -1423,6 +1442,15 @@ function openPoolSheet(id){
   document.getElementById('pc-grade12').value = p ? (p.grade12||'') : '';
   document.getElementById('pc-criminal').value = p ? (p.criminal_record||'') : '';
   document.getElementById('pc-experience').value = p && (p.experience_years !== null && p.experience_years !== undefined) ? String(p.experience_years) : '';
+  document.getElementById('pc-qualification').value = p ? (p.qualification||'') : '';
+  document.getElementById('pc-drivers-license').value = p ? (p.drivers_license||'') : '';
+  document.getElementById('pc-transport').value = p ? (p.reliable_transport||'') : '';
+  document.getElementById('pc-relocate').value = p ? (p.willing_relocate||'') : '';
+  document.getElementById('pc-availability').value = p ? (p.availability||'') : '';
+  document.getElementById('pc-employment').value = p ? (p.preferred_employment||'') : '';
+  document.getElementById('pc-salary').value = p ? (p.salary_expectation||'') : '';
+  document.getElementById('pc-work-authorized').value = p ? (p.work_authorized||'') : '';
+  document.getElementById('pc-about').value = p ? (p.about_you||'') : '';
   document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
   document.getElementById('pc-payref').value = p ? (p.payment_ref||'') : '';
   document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
@@ -1447,6 +1475,15 @@ async function savePoolCandidate(){
     grade12:document.getElementById('pc-grade12').value,
     criminal_record:document.getElementById('pc-criminal').value,
     experience_years: document.getElementById('pc-experience').value === '' ? null : parseInt(document.getElementById('pc-experience').value, 10),
+    qualification:document.getElementById('pc-qualification').value.trim(),
+    drivers_license:document.getElementById('pc-drivers-license').value,
+    reliable_transport:document.getElementById('pc-transport').value,
+    willing_relocate:document.getElementById('pc-relocate').value,
+    availability:document.getElementById('pc-availability').value.trim(),
+    preferred_employment:document.getElementById('pc-employment').value,
+    salary_expectation:document.getElementById('pc-salary').value.trim(),
+    work_authorized:document.getElementById('pc-work-authorized').value,
+    about_you:document.getElementById('pc-about').value.trim().slice(0,150),
     cv_link:document.getElementById('pc-cv').value.trim(),
     payment_ref:document.getElementById('pc-payref').value.trim(),
     status:document.getElementById('pc-status').value,
@@ -1903,3 +1940,18 @@ document.getElementById('login-email').addEventListener('keydown', function(e){ 
 </script>
 </body>
 </html>
+
+<script>
+(function initPoolPitchCounter(){
+  function update(el){
+    var counter=document.querySelector('.char-counter[data-for="'+el.id+'"]');
+    if(counter) counter.textContent=String(el.value.length)+' / 150';
+  }
+  document.addEventListener('input',function(e){
+    if(e.target && e.target.id==='pc-about') update(e.target);
+  });
+  document.addEventListener('focusin',function(e){
+    if(e.target && e.target.id==='pc-about') update(e.target);
+  });
+})();
+</script>
