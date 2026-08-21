@@ -521,7 +521,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <h3 id="track-sheet-title">Upload track</h3>
     <div class="field"><label>Track title *</label><input id="t-title" placeholder="e.g. Motivation Monday Mix"></div>
     <div class="field"><label>Artist / subtitle</label><input id="t-artist" placeholder="e.g. DJ Sbu or Inspirational Talk"></div>
-    <div class="field"><label>Date (which day this plays) *</label><input id="t-date" type="date"></div>
+    <div class="field"><label>Date (which day this plays) *</label><input id="t-date" type="date"><small style="display:block;margin-top:5px;color:var(--text-2)">Tracks remain available to visitors for 7 days from this date.</small></div>
     <div class="field">
       <label>MP3 file *<span id="t-file-hint" style="font-weight:400;color:var(--text-2)"></span></label>
       <input id="t-file" type="file" accept="audio/mpeg,audio/mp3,.mp3" style="padding:9px 13px">
@@ -1646,6 +1646,7 @@ function restoreDefaults(){
 
 // ===== Daily Track management =====
 var BUCKET = 'daily-tracks';
+var TRACK_RETENTION_DAYS = 7;
 var editingTrackId = null;
 var trackFileChosen = null;   // File object chosen in the sheet
 
@@ -1717,14 +1718,14 @@ function trackAgeDays(trackDate){
   return Math.floor((now - d) / (1000 * 60 * 60 * 24));
 }
 
-/* Automatic weekly cleanup: delete tracks older than 7 days.
+/* Automatic weekly cleanup: delete tracks older than TRACK_RETENTION_DAYS.
    Tracks are retained for a full week (7 days) before deletion.
    Called after loading tracks and after saving a track. */
 async function cleanupOldTracks(){
   if(!cache.tracks || !cache.tracks.length) return;
   var toDelete = [];
   cache.tracks.forEach(function(t){
-    if(trackAgeDays(t.track_date) > 7){
+    if(trackAgeDays(t.track_date) > TRACK_RETENTION_DAYS){
       toDelete.push(t);
     }
   });
@@ -1738,7 +1739,7 @@ async function cleanupOldTracks(){
     // Delete row
     try { await supabaseClient.from('daily_tracks').delete().eq('id', t.id); } catch(e){}
   }
-  console.log('Weekly cleanup: removed '+toDelete.length+' track(s) older than 7 days');
+  console.log('Track cleanup: removed '+toDelete.length+' track(s) older than '+TRACK_RETENTION_DAYS+' days');
   // Refresh cache after cleanup
   cache.tracks = await getTracks();
   renderNav();
