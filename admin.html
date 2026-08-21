@@ -770,22 +770,29 @@ async function saveManagerToken(agencyId, token){ try{ await supabaseClient.from
 async function saveEmployerManagerToken(employerId, token){ try{ await supabaseClient.from('employers').update({manage_token:token}).eq('id',employerId); }catch(e){} }
 
 async function loadAll(){
-  cache.agencies = await getAgencies();
-  cache.branches = await getBranches();
-  cache.vacancies = await getVacancies();
-  cache.employers = await getEmployers();
-  cache.reports = await getReports();
-  cache.suggestions = await getSuggestions();
-  cache.tracks = await getTracks();
-  cache.poolCandidates = await getPoolCandidates();
-  var pv = await getAppSetting('public_vacancy_posting','false');
-  publicVacancyPostingOpen = (pv===true||pv==='true');
+  var results = await Promise.all([
+    getAgencies(), getBranches(), getVacancies(), getEmployers(),
+    getReports(), getSuggestions(), getTracks(), getPoolCandidates()
+  ]);
+  cache.agencies = results[0] || [];
+  cache.branches = results[1] || [];
+  cache.vacancies = results[2] || [];
+  cache.employers = results[3] || [];
+  cache.reports = results[4] || [];
+  cache.suggestions = results[5] || [];
+  cache.tracks = results[6] || [];
+  cache.poolCandidates = results[7] || [];
+
+  var settings = await Promise.all([
+    getAppSetting('public_vacancy_posting','false'),
+    getAppSetting('public_employer_registration','false'),
+    getAppSetting('public_employer_directory','true')
+  ]);
+  publicVacancyPostingOpen = (settings[0]===true||settings[0]==='true');
+  publicEmployerRegistrationOpen = (settings[1]===true||settings[1]==='true');
+  employerDirectoryOpen = (settings[2]===true||settings[2]==='true');
   updatePostingUI();
-  var pe = await getAppSetting('public_employer_registration','false');
-  publicEmployerRegistrationOpen = (pe===true||pe==='true');
   updateEmployerRegUI();
-  var pd = await getAppSetting('public_employer_directory','true');
-  employerDirectoryOpen = (pd===true||pd==='true');
   updateEmployerDirectoryUI();
   fillAgencySelects();
 }
