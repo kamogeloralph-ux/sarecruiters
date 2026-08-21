@@ -2026,15 +2026,17 @@ function renderPoolList() {
     if (c.contact_email) contactBits.push('<a href="mailto:'+escapeHtml(c.contact_email)+'">'+escapeHtml(c.contact_email)+'</a>');
     if (c.cv_link) contactBits.push('<a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">View CV</a>');
     var frontBits = [];
-    if (c.gender) frontBits.push(escapeHtml(c.gender));
+    if (c.location) frontBits.push(escapeHtml(c.location));
+    if (c.sector) frontBits.push(escapeHtml(c.sector));
     if (c.position) frontBits.push(escapeHtml(c.position));
-    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs');
+    if (c.gender) frontBits.push(escapeHtml(c.gender));
     var detailBits = [];
     function detail(label, value){ if(value !== null && value !== undefined && String(value).trim() !== '') detailBits.push('<div class="det-row"><span class="det-label">'+label+':</span> '+escapeHtml(value)+'</div>'); }
     detail('Sector', c.sector); detail('Location', c.location); detail('Highest qualification', c.qualification);
     detail('Driver’s licence', c.drivers_license); detail('Reliable transport', c.reliable_transport); detail('Willing to relocate', c.willing_relocate);
     detail('Availability', c.availability); detail('Preferred employment', c.preferred_employment); detail('Salary expectation', c.salary_expectation);
     detail('Eligible to work in South Africa', c.work_authorized); detail('Grade 12 / Matric', c.grade12); detail('Criminal record', c.criminal_record);
+    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') detail('Years of experience', (c.experience_years >= 10 ? '10+' : c.experience_years) + ' years');
     if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
     if (c.cv_link) detailBits.push('<div class="det-row"><span class="det-label">CV:</span> <a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">Open CV</a></div>');
     if (contactBits.length) detailBits.push('<div class="det-row"><span class="det-label">Contact:</span> '+contactBits.join(' &nbsp;·&nbsp; ')+'</div>');
