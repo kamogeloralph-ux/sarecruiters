@@ -2024,7 +2024,6 @@ function renderPoolList() {
     var contactBits = [];
     if (c.contact_phone) contactBits.push('<a href="tel:'+escapeHtml(c.contact_phone)+'">'+escapeHtml(c.contact_phone)+'</a>');
     if (c.contact_email) contactBits.push('<a href="mailto:'+escapeHtml(c.contact_email)+'">'+escapeHtml(c.contact_email)+'</a>');
-    if (c.cv_link) contactBits.push('<a href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener">View CV</a>');
     var frontBits = [];
     if (c.position) frontBits.push(escapeHtml(c.position));
     if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs');
@@ -2038,6 +2037,7 @@ function renderPoolList() {
     detail('Eligible to work in South Africa', c.work_authorized); detail('Grade 12 / Matric', c.grade12); detail('Criminal record', c.criminal_record);
     if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') detail('Years of experience', (c.experience_years >= 10 ? '10+' : c.experience_years) + ' years');
     if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
+    if (c.cv_link) detailBits.push('<div class="det-row pool-cv-row"><a class="pool-cv-link" href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">View CV</a></div>');
     if (contactBits.length) detailBits.push('<div class="det-row"><span class="det-label">Contact:</span> '+contactBits.join(' &nbsp;·&nbsp; ')+'</div>');
     return '<div class="manager-item pool-mini-card" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+'</div>' +
