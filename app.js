@@ -331,10 +331,10 @@ async function loadEmployerRegSetting() {
 }
 
 /* ===== Track of the Day =====
-   Reads today's track from the `daily_tracks` table (Supabase).
-   If the table doesn't exist or no track is set for today, shows a graceful
-   "No track today" message. The audio file is served from the `daily-tracks`
-   storage bucket (public). */
+   Reads the newest track published within the seven-day retention window from
+   the `daily_tracks` table (Supabase). This keeps an uploaded track available
+   to visitors for at least seven days instead of showing it only on its upload
+   date. The audio file is served from the `daily-tracks` storage bucket. */
 var todayTrack = null;       // {id,title,artist,track_date,file_url}
 var trackAudio = null;       // <audio> element
 var trackIsPlaying = false;
@@ -350,10 +350,16 @@ function todayISO() {
 async function loadTodayTrack() {
   try {
     var today = todayISO();
+    var cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - 7);
+    var cutoffISO = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0');
     var { data, error } = await supabaseClient
       .from('daily_tracks')
       .select('id,title,artist,track_date,file_url')
-      .eq('track_date', today)
+      .gte('track_date', cutoffISO)
+      .lte('track_date', today)
+      .order('track_date', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(1);
     if (error) { renderTrackEmpty(); return; }
@@ -361,7 +367,7 @@ async function loadTodayTrack() {
       todayTrack = data[0];
       renderTrackReady();
     } else {
-      // Fallback: maybe there's a track for a nearby date? No — show empty.
+      // No track has been published in the current seven-day window.
       todayTrack = null;
       renderTrackEmpty();
     }
