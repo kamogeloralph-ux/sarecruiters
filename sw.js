@@ -10,7 +10,7 @@
             sync, periodicsync, beforeevicted, controllerchange-friendly skipWaiting
    ========================================================================== */
 
-const VERSION = 'sa-recruiters-v103';
+const VERSION = 'sa-recruiters-v104';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -106,6 +106,13 @@ function cacheFirst(request, cacheName) {
   });
 }
 
+function navigationShellFor(request) {
+  var path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
+  var shell = path === '/admin.html' ? './admin.html' : './index.html';
+  return caches.match(shell).then(function(response) {
+    return response || caches.match('./offline.html');
+  });
+}
 function networkFirstWithFallback(request) {
   return fetch(request).then(function(response) {
     if (response && response.status === 200 && response.type === 'basic') {
@@ -114,11 +121,10 @@ function networkFirstWithFallback(request) {
     }
     return response;
   }).catch(function() {
-    return caches.match(request).then(function(cached) {
-      return cached || caches.match('./index.html').then(function(idx) {
-        return idx || caches.match('./offline.html');
-      });
-    });
+    // Never serve a previously cached navigation URL here: that can reopen
+    // an old public/manager page after refresh. Always use the shell matching
+    // the requested pathname.
+    return navigationShellFor(request);
   });
 }
 
