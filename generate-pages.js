@@ -89,9 +89,31 @@ async function fetchAll() {
       supabase.from('vacancies').select('*'),
     ]);
 
-  if (aErr) console.error('agencies fetch error:', aErr.message);
-  if (bErr) console.error('branches fetch error:', bErr.message);
-  if (vErr) console.error('vacancies fetch error:', vErr.message);
+  if (aErr) console.error('agencies fetch error:', JSON.stringify(aErr));
+  if (bErr) console.error('branches fetch error:', JSON.stringify(bErr));
+  if (vErr) console.error('vacancies fetch error:', JSON.stringify(vErr));
+
+  // A real Supabase error here must stop the build. Without this, the
+  // script logs the error and carries on with an empty array, writes zero
+  // agency/vacancy pages, exits 0 (green check), and GitHub Pages happily
+  // deploys that empty result OVER whatever was working before — every
+  // public listing page 404s even though the workflow "succeeded".
+  if (aErr || bErr || vErr) {
+    throw new Error(
+      'Aborting build: Supabase fetch failed, refusing to deploy an empty/partial site. ' +
+      'See the fetch error(s) logged above.'
+    );
+  }
+
+  // Belt-and-braces: this directory normally has dozens of agencies. A
+  // clean (no-error) but empty result is still a red flag worth stopping
+  // for rather than silently publishing an empty directory.
+  if (!agencies || agencies.length === 0) {
+    throw new Error(
+      'Aborting build: agencies table returned 0 rows with no error — ' +
+      'that is almost certainly wrong for this directory, refusing to deploy.'
+    );
+  }
 
   return {
     agencies: agencies || [],
