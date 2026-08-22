@@ -118,6 +118,33 @@ function shellForNavigation(request) {
   return CORE_SHELLS[pathname] || './index.html';
 }
 
+function isPublicListingNavigation(request) {
+  var pathname = new URL(request.url).pathname;
+  return /^\/(agency|vacancy)(?:\/|$)/i.test(pathname);
+}
+
+function publicListingNavigation(request) {
+  return caches.match(request).then(function(cached) {
+    if (cached) return cached;
+    return fetch(request).then(function(response) {
+      if (!response || !response.ok) {
+        throw new Error('Public listing response was not successful');
+      }
+      caches.open(RUNTIME_CACHE).then(function(cache) {
+        cache.put(request, response.clone());
+      });
+      return response;
+    }).catch(function() {
+      // Never substitute the SPA shell for a public listing URL. If the page
+      // was visited before, an exact runtime-cached copy is valid; otherwise
+      // show the true offline page rather than a misleading empty home screen.
+      return caches.match(request).then(function(exactCached) {
+        return exactCached || caches.match('./offline.html');
+      });
+    });
+  });
+}
+
 function cachedShellResponse(request) {
   var shell = shellForNavigation(request);
   return caches.match(shell).then(function(response) {
@@ -153,10 +180,15 @@ self.addEventListener('fetch', function(event) {
   var url = new URL(request.url);
 
   if (request.mode === 'navigate') {
+    if (isPublicListingNavigation(request)) {
+      event.respondWith(publicListingNavigation(request));
+      return;
+    }
+
     event.respondWith(
-      // Cache-first is the key fix. A pull-to-refresh must never replace a
-      // healthy cached app shell with offline.html merely because the network
-      // request is slow or momentarily unavailable.
+      // Cache-first is the key fix for the SPA shell. A pull-to-refresh must
+      // never replace a healthy cached app shell with offline.html merely
+      // because the network request is slow or momentarily unavailable.
       cachedShellResponse(request).then(function(cached) {
         return cached || networkNavigationFallback(request);
       })
