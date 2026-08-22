@@ -271,11 +271,12 @@ function renderManagedPosters(posters) {
     target.innerHTML = '<div class="poster-empty">Campaign posters will appear here soon.</div>';
     return;
   }
-  target.innerHTML = posters.map(function(p){
-    var label = p.audience === 'employers' ? 'For Employers' : 'For Candidates';
-    return '<article class="managed-poster poster-page-card"><img loading="lazy" src="'+escapeHtml(p.image_url)+'" alt="'+escapeHtml(p.title || label+' campaign poster')+'" onerror="this.closest(\'.poster-page-card\').remove()">'+
-      '<div class="managed-poster-copy"><strong>'+escapeHtml(p.title || label)+'</strong>'+(p.subtitle?'<span>'+escapeHtml(p.subtitle)+'</span>':'')+'</div></article>';
-  }).join('');
+  // The page intentionally displays one poster at a time. Admin ordering controls
+  // which active poster is shown, while the fixed frame prevents layout shifts.
+  var p = posters[0];
+  var label = p.audience === 'employers' ? 'For Employers' : 'For Candidates';
+  target.innerHTML = '<article class="managed-poster poster-page-card"><img loading="lazy" src="'+escapeHtml(p.image_url)+'" alt="'+escapeHtml(p.title || label+' campaign poster')+'" onerror="this.closest(\'.poster-page-card\').remove()">'+
+    '<div class="managed-poster-copy"><strong>'+escapeHtml(p.title || label)+'</strong>'+(p.subtitle?'<span>'+escapeHtml(p.subtitle)+'</span>':'')+'</div></article>';
 }
 
 async function upsertEmployer(e) {
