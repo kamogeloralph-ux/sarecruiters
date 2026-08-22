@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Regenerate + redeploy every 3 hours so agencies/vacancies added
+    # directly in Supabase (via the admin panel) get a public listing
+    # page without needing a code push. Without this, generate-pages.js
+    # only ever runs when someone pushes to main, so anything added to
+    # the directory in between has no static page and 404s.
+    - cron: "0 */3 * * *"
 
 permissions:
   contents: read
