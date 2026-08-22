@@ -507,7 +507,7 @@
     <div class="screen-fixed">
     <header>
       <div class="screen-title-group"><div class="logo-text">Talent Pool</div><div class="screen-context">Directory</div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromPool()" aria-label="Back to previous screen" title="Back to previous screen">×</button>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="closeTalentPool()" aria-label="Back to previous screen" title="Back to previous screen">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -536,7 +536,7 @@
 
 </div>
 <nav class="bottom-nav">
-  <button class="navbtn active" data-tab="home" data-ripple aria-label="Home">
+  <button class="navbtn active" data-tab="home" data-ripple onclick="refreshHome()" aria-label="Home">
     <svg><use href="icons.svg#i36f2ce"/></svg>
     <span class="navbtn-label">Home</span>
   </button>

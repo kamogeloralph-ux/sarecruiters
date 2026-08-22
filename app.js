@@ -2224,12 +2224,14 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
     document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
     window.scrollTo({ top: 0 });
     if (btn.dataset.tab === 'saved') renderSaved();
-    if (btn.dataset.tab === 'home') {
-      showToast('Refreshing…');
-      loadAll();
-    }
   });
 });
+function refreshHome() {
+  var home = document.getElementById('screen-home');
+  if (home) home.classList.add('active');
+  showToast('Refreshing…');
+  loadAll();
+}
 
 // ===== Toast =====
 var toastTimer;
@@ -2318,9 +2320,17 @@ function goSubmissions() {
   switchSubTab('reports');
 }
 
+function closeTalentPool() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var targetId = poolReturnScreen === 'profile' ? 'screen-profile' : 'screen-home';
+  var target = document.getElementById(targetId);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === (poolReturnScreen === 'profile' ? 'profile' : 'home')); });
+  resetActiveScreenScroll(targetId);
+}
+window.closeTalentPool = closeTalentPool;
 function goBackFromPool() {
-  if (poolReturnScreen === 'profile') goBackToProfile();
-  else goBackToHome();
+  closeTalentPool();
 }
 function goBackToProfile() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
