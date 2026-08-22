@@ -193,9 +193,11 @@ function initials(n) {
 
 // ===== Data: AGENCIES (live Supabase table that works) =====
 async function getAgencies() {
-  var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token').order('created_at', { ascending: false });
-  if (error) { console.error('agencies load', error); return []; }
-  return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, address: a.address, cvpref: a.cvpref, photo: a.photo, companies: a.companies, trades: a.trades, verified: !!a.verified, manage_token: a.manage_token || '' }; });
+  try {
+    var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token').order('created_at', { ascending: false });
+    if (error) { console.error('agencies load', error); return markLoadError([]); }
+    return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, address: a.address, cvpref: a.cvpref, photo: a.photo, companies: a.companies, trades: a.trades, verified: !!a.verified, manage_token: a.manage_token || '' }; });
+  } catch(e) { console.error('agencies load', e); return markLoadError([]); }
 }
 // Persist a SMART MANAGER token to Supabase so any device can resolve it
 // (not just the browser that generated it). See ADD_MANAGE_TOKEN_COLUMN.sql.
@@ -245,7 +247,7 @@ async function getEmployers() {
     var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified,manage_token').order('created_at', { ascending: false });
     if (!error && data) return data.map(function(e) { return { id: e.id, name: e.name, industry: e.industry, website: e.website, contact: e.contact, email: e.email, location: e.location, address: e.address, photo: e.photo, verified: !!e.verified, manage_token: e.manage_token || '' }; });
   } catch(err){}
-  return readLocal('employers');
+  return markLoadError(readLocal('employers'));
 }
 async function getManagedPosters() {
   try {
@@ -320,7 +322,7 @@ async function getBranches() {
     var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email').order('name', { ascending: true });
     if (!error && data) return data;
   } catch(e){}
-  return readLocal('branches');
+  return markLoadError(readLocal('branches'));
 }
 async function upsertBranch(b) {
   try {
@@ -538,7 +540,7 @@ async function getVacancies() {
     var { data, error } = await supabaseClient.from('vacancies').select('id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at').order('created_at', { ascending: false });
     if (!error && data) return data;
   } catch(e){}
-  return readLocal('vacancies');
+  return markLoadError(readLocal('vacancies'));
 }
 async function upsertVacancy(v) {
   // First attempt: send all fields
@@ -604,6 +606,13 @@ async function submitReportToSupabase(payload) {
   return { ok: true };
 }
 
+// Marks an array result as having come from a failed fetch (network error,
+// Supabase error, etc.) without changing its shape — callers elsewhere just
+// see a plain array. loadAll() checks this flag to decide whether to (a)
+// keep showing the last good cached data instead of wiping it to empty, and
+// (b) surface the retry banner. See initIdleResumeRefresh/retryLoadAll.
+function markLoadError(arr) { try { arr.__loadError = true; } catch(e) {} return arr; }
+
 // ----- Local data cache: lets the app paint instantly from the last
 // successful load while fresh data streams in behind the scenes, instead
 // of showing a blank screen every time while Supabase responds. -----
@@ -643,10 +652,16 @@ async function loadAll() {
     getAppSetting('public_employer_registration', 'false'),
     getAppSetting('public_employer_directory', 'true')
   ]);
-  agenciesCache = results[0];
-  branchesCache = results[1];
-  vacanciesCache = results[2];
-  employersCache = results[3];
+  // If a fetch failed, keep whatever was already on screen (last good cache)
+  // instead of wiping it to an empty list — a failed refresh should never
+  // make the directory look emptier than it did a moment ago. Track whether
+  // anything failed so we can surface the retry banner below.
+  var hadLoadError = false;
+  if (results[0].__loadError) { hadLoadError = true; } else { agenciesCache = results[0]; }
+  if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
+  if (results[2].__loadError) { hadLoadError = true; } else { vacanciesCache = results[2]; }
+  if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
+  setRetryBanner(hadLoadError);
   publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
   publicEmployerRegistrationOpen = (results[5] === true || results[5] === 'true');
   employerDirectoryOpen = (results[6] === true || results[6] === 'true');
@@ -2424,6 +2439,25 @@ function forceUpdate() {
 function forceUpdateReload() {
   document.getElementById('update-banner').classList.remove('show');
   forceUpdate();
+}
+
+// ===== Retry banner: shown when a data refresh genuinely fails =====
+// Unlike the offline.html fallback (which is the service worker's last
+// resort for a broken navigation), this is an honest, in-app signal that
+// the *data* refresh failed while the app itself is fine — the person can
+// see it happened and tap to try again, instead of the screen silently
+// staying frozen or looking emptier than it should.
+function setRetryBanner(show) {
+  var el = document.getElementById('retry-banner');
+  if (!el) return;
+  el.classList.toggle('show', !!show);
+}
+function retryLoadAll() {
+  var btn = document.querySelector('#retry-banner button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
+  loadAll().finally(function() {
+    if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
+  });
 }
 
 // ===== Show the update version badge from SW =====
