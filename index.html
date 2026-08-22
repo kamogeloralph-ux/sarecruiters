@@ -106,7 +106,7 @@
       <div class="stat-card stat-card-branches" data-ripple onclick="showAllBranches()" role="button" tabindex="0" aria-label="View all branches"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div class="stat-value" id="stat-branches">0</div><div class="stat-label">Branches</div></div>
       <div class="stat-card stat-card-vacancies" data-ripple onclick="showAllVacancies()" role="button" tabindex="0" aria-label="View all vacancies"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div class="stat-value" id="stat-vacancies">0</div><div class="stat-label">Vacancies</div></div>
       <div class="stat-card stat-card-employers" data-ripple onclick="showAllEmployers()" role="button" tabindex="0" aria-label="View all employers"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/></svg></span><div class="stat-value" id="stat-employers">0</div><div class="stat-label">Employers</div></div>
-      <div class="stat-card stat-card-pool" data-ripple onclick="goPool()" role="button" tabindex="0" aria-label="View Pool Candidates"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M16 11a3 3 0 1 0 0-6M17 15c2.4.4 3.7 2 4 5"/></svg></span><div class="stat-value" id="stat-pool">0</div><div class="stat-label">Pool Candidates</div></div>
+      <div class="stat-card stat-card-pool" data-ripple onclick="goPool('home')" role="button" tabindex="0" aria-label="View Pool Candidates"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M16 11a3 3 0 1 0 0-6M17 15c2.4.4 3.7 2 4 5"/></svg></span><div class="stat-value" id="stat-pool">0</div><div class="stat-label">Pool Candidates</div></div>
     </div>
 
     <section class="employer-cta" aria-labelledby="employer-cta-title">
@@ -126,7 +126,7 @@
           <span class="employer-cta-copy"><strong>Post a vacancy</strong><small>Reach candidates looking for work</small></span>
           <svg class="employer-cta-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
         </button>
-        <button class="employer-cta-action" data-ripple onclick="goPool()">
+        <button class="employer-cta-action" data-ripple onclick="goPool('home')">
           <span class="employer-cta-icon"><svg><use href="icons.svg#ief3ce7"/></svg></span>
           <span class="employer-cta-copy"><strong>Browse the Talent Pool</strong><small>Find approved local candidates</small></span>
           <svg class="employer-cta-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
@@ -195,8 +195,7 @@
       <div class="profile-name" id="profile-status-name">SA Recruiters</div>
       <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
       <div class="profile-sub" id="profile-status-sub">Not logged in</div>
-      <button class="force-update-btn" onclick="forceUpdate()" aria-label="Check for updates &amp; refresh" title="Check for updates &amp; refresh"><svg><use href="icons.svg#i3e2031"/></svg></button>
-    </div>
+          </div>
 
     <!-- ===== Track of the Day ===== -->
     <div class="track-card-wrap">
@@ -219,7 +218,7 @@
     <audio id="track-audio" preload="metadata" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>
 
     <!-- ===== Talent Pool — Featured ===== -->
-    <button class="pool-feature-card" data-ripple onclick="goPool()">
+    <button class="pool-feature-card" data-ripple onclick="goPool('profile')">
       <div class="pool-feature-top">
         <span class="pool-feature-icon"><svg><use href="icons.svg#ief3ce7"/></svg></span>
         <span class="pool-feature-star">★ Featured</span>
@@ -508,7 +507,7 @@
     <div class="screen-fixed">
     <header>
       <div class="screen-title-group"><div class="logo-text">Talent Pool</div><div class="screen-context">Directory</div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to menu" title="Back to menu">×</button>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromPool()" aria-label="Back to previous screen" title="Back to previous screen">×</button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
