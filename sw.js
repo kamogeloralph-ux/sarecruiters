@@ -1,23 +1,21 @@
-/* ==========================================================================
-   SA Recruiters — Service Worker
-   Strategies:
-     - Precache core app shell on install
-     - Cache-first for static assets (icons, screenshots, fonts cache)
-     - Stale-while-revalidate for same-origin JS/CSS/JSON
-     - Network-first for navigation (HTML) with offline fallback
-     - passthrough + cache for cross-origin (CDN/Supabase)
-   Handles: install, activate, fetch, message, push, notificationclick,
-            sync, periodicsync, beforeevicted, controllerchange-friendly skipWaiting
-   ========================================================================== */
+/*
+ * SA Recruiters service worker
+ *
+ * Navigation uses the cached app shell first. This is intentional: a browser
+ * reload/pull-to-refresh is a navigation request, and the app shell must be
+ * available even when the network is slow or temporarily unavailable. The
+ * application then refreshes its directory data independently after startup.
+ */
 
-const VERSION = 'sa-recruiters-v130';
+const VERSION = 'sa-recruiters-v131';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
 
 const CORE_ASSETS = [
-  './',
   './index.html',
+  './admin.html',
+  './privacy.html',
   './styles.css',
   './app.js',
   './icons.svg',
@@ -25,69 +23,75 @@ const CORE_ASSETS = [
   './manifest.json',
   './content.js',
   './content-manager.js',
-  './privacy.html',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/Maskable-192.png',
   './icons/favicon.ico'
 ];
 
-// ---------- INSTALL: precache core shell ----------
+const CORE_SHELLS = {
+  '/': './index.html',
+  '/admin.html': './admin.html',
+  '/privacy.html': './privacy.html',
+  '/offline.html': './offline.html'
+};
+
 self.addEventListener('install', function(event) {
-  self.skipWaiting();
   event.waitUntil(
-    caches.open(CORE_CACHE).then(function(cache) {
-      // addAll fails atomically if one request fails; use tolerant add
-      return Promise.all(
-        CORE_ASSETS.map(function(url) {
-          return cache.add(new Request(url, { cache: 'reload' })).catch(function() {
-            /* ignore individual failures (e.g. missing optional asset) */
-          });
-        })
-      );
-    }).then(function() {
-      // enable navigation preload if supported
-      if (self.registration.navigationPreload) {
-        return self.registration.navigationPreload.enable();
-      }
-    })
+    caches.open(CORE_CACHE)
+      // Keep installation atomic for the app shell. Activating a worker with
+      // a partial shell is what causes an offline page after the next reload.
+      .then(function(cache) { return cache.addAll(CORE_ASSETS); })
+      .then(function() { return self.skipWaiting(); })
   );
 });
 
-// ---------- ACTIVATE: clean old caches + claim clients ----------
 self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(names) {
-      return Promise.all(
-        names
-          .filter(function(n) { return n.indexOf('sa-recruiters-') === 0 && n !== VERSION + '-core' && n !== VERSION + '-runtime' && n !== VERSION + '-images'; })
-          .map(function(n) { return caches.delete(n); })
+      return Promise.all(names
+        .filter(function(name) {
+          return name.indexOf('sa-recruiters-') === 0 &&
+            name !== CORE_CACHE &&
+            name !== RUNTIME_CACHE &&
+            name !== IMAGE_CACHE;
+        })
+        .map(function(name) { return caches.delete(name); })
       );
     }).then(function() {
-      if (self.registration.navigationPreload) {
-        return self.registration.navigationPreload.reset();
-      }
+      return self.registration.navigationPreload
+        ? self.registration.navigationPreload.disable().catch(function() {})
+        : undefined;
     }).then(function() {
       return self.clients.claim();
     })
   );
 });
 
-// ---------- helpers ----------
-function isImageRequest(req) {
-  return req.destination === 'image' || /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(req.url);
+function isImageRequest(request) {
+  return request.destination === 'image' ||
+    /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(request.url);
+}
+
+function isCacheableSameOriginResponse(response) {
+  return response && response.status === 200 &&
+    (response.type === 'basic' || response.type === 'cors');
+}
+
+function isCacheableCrossOriginResponse(response) {
+  return response && (response.status === 200 || response.status === 0);
 }
 
 function staleWhileRevalidate(request, cacheName) {
   return caches.open(cacheName).then(function(cache) {
     return cache.match(request).then(function(cached) {
-      var fetchPromise = fetch(request).then(function(response) {
-        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
+      var network = fetch(request).then(function(response) {
+        if (isCacheableSameOriginResponse(response)) {
           cache.put(request, response.clone());
         }
         return response;
       }).catch(function() { return cached; });
-      return cached || fetchPromise;
+      return cached || network;
     });
   });
 }
@@ -97,141 +101,110 @@ function cacheFirst(request, cacheName) {
     return cache.match(request).then(function(cached) {
       if (cached) return cached;
       return fetch(request).then(function(response) {
-        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
+        if (isCacheableSameOriginResponse(response) ||
+            isCacheableCrossOriginResponse(response)) {
           cache.put(request, response.clone());
         }
         return response;
-      }).catch(function() { return caches.match('./offline.html'); });
+      }).catch(function() {
+        return caches.match('./offline.html');
+      });
     });
   });
 }
 
-function navigationShellFor(request) {
-  var path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
-  var shell = path === '/admin.html' ? './admin.html' : './index.html';
+function shellForNavigation(request) {
+  var pathname = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
+  return CORE_SHELLS[pathname] || './index.html';
+}
+
+function cachedShellResponse(request) {
+  var shell = shellForNavigation(request);
   return caches.match(shell).then(function(response) {
-    return response || caches.match('./offline.html');
-  });
-}
-// Wraps fetch() with a timeout so a slow-to-wake connection (e.g. right
-// after the phone/PWA comes back from idle or the radio is reconnecting)
-// gets a real chance to respond instead of being treated as "offline"
-// the instant the promise is slow. Also retries once on outright failure
-// before giving up — most idle-resume failures are a single transient
-// blip, not a genuine offline state.
-function fetchWithTimeout(request, ms) {
-  return new Promise(function(resolve, reject) {
-    var timer = setTimeout(function() { reject(new Error('timeout')); }, ms);
-    fetch(request.clone ? request.clone() : request).then(function(res) {
-      clearTimeout(timer);
-      resolve(res);
-    }, function(err) {
-      clearTimeout(timer);
-      reject(err);
-    });
+    if (response) return response;
+    // A route-specific shell may be absent in an older installation; the main
+    // app shell is still a valid fallback for all application routes.
+    return shell === './index.html' ? undefined : caches.match('./index.html');
   });
 }
 
-function networkFirstWithFallback(request) {
-  return fetchWithTimeout(request, 8000).catch(function() {
-    // One short retry — covers the common case of the connection still
-    // waking up after the device/app was idle.
-    return new Promise(function(res) { setTimeout(res, 700); }).then(function() {
-      return fetchWithTimeout(request, 8000);
-    });
-  }).then(function(response) {
-    if (response && response.status === 200 && response.type === 'basic') {
-      var copy = response.clone();
-      caches.open(RUNTIME_CACHE).then(function(cache) { cache.put(request, copy); });
-    }
-    return response;
+function networkNavigationFallback(request) {
+  return fetch(request).then(function(response) {
+    // Do not return a server error as a successful navigation response.
+    if (response && response.ok) return response;
+    throw new Error('Navigation response was not successful');
   }).catch(function() {
-    // Never serve a previously cached navigation URL here: that can reopen
-    // an old public/manager page after refresh. Always use the shell matching
-    // the requested pathname. This is a last resort after a real failure
-    // and one retry, not the first sign of trouble.
-    return navigationShellFor(request);
+    return cachedShellResponse(request).then(function(shell) {
+      return shell || caches.match('./offline.html');
+    });
   });
 }
 
-// ---------- FETCH ----------
 self.addEventListener('fetch', function(event) {
-  var req = event.request;
+  var request = event.request;
 
-  // Only handle GET
-  if (req.method !== 'GET') {
-    // Allow share_target POST to be received offline — store and let app handle
-    if (req.method === 'POST' && req.url.indexOf('action=share') !== -1) {
+  if (request.method !== 'GET') {
+    if (request.method === 'POST' && request.url.indexOf('action=share') !== -1) {
       event.respondWith(Response.redirect('/?source=pwa&action=share-received', 303));
-      return;
     }
     return;
   }
 
-  var url = new URL(req.url);
+  var url = new URL(request.url);
 
-  // Navigation requests -> network first with offline fallback
-  if (req.mode === 'navigate') {
+  if (request.mode === 'navigate') {
     event.respondWith(
-      (function() {
-        var preload = event.preloadResponse;
-        if (preload) {
-          return preload.then(function(resp) {
-            if (resp && resp.ok) {
-              var copy = resp.clone();
-              caches.open(RUNTIME_CACHE).then(function(c) { c.put(req, copy); });
-              return resp;
-            }
-            return networkFirstWithFallback(req);
-          }).catch(function() { return networkFirstWithFallback(req); });
-        }
-        return networkFirstWithFallback(req);
-      })()
+      // Cache-first is the key fix. A pull-to-refresh must never replace a
+      // healthy cached app shell with offline.html merely because the network
+      // request is slow or momentarily unavailable.
+      cachedShellResponse(request).then(function(cached) {
+        return cached || networkNavigationFallback(request);
+      })
     );
     return;
   }
 
-  // Images -> cache first, then runtime
-  if (isImageRequest(req)) {
-    event.respondWith(cacheFirst(req, IMAGE_CACHE));
+  if (isImageRequest(request)) {
+    event.respondWith(cacheFirst(request, IMAGE_CACHE));
     return;
   }
 
-  // Same-origin static assets (js, css, json, fonts) -> stale-while-revalidate
   if (url.origin === self.location.origin) {
-    event.respondWith(staleWhileRevalidate(req, RUNTIME_CACHE));
+    event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
     return;
   }
 
-  // Cross-origin (CDNs / Supabase) -> network, cache good responses, fallback to cache
   event.respondWith(
-    fetch(req).then(function(response) {
-      if (response && (response.status === 200 || response.status === 0)) {
-        var copy = response.clone();
-        caches.open(RUNTIME_CACHE).then(function(cache) { cache.put(req, copy); });
+    fetch(request).then(function(response) {
+      if (isCacheableCrossOriginResponse(response)) {
+        caches.open(RUNTIME_CACHE).then(function(cache) {
+          cache.put(request, response.clone());
+        });
       }
       return response;
     }).catch(function() {
-      return caches.match(req);
+      return caches.match(request);
     })
   );
 });
 
-// ---------- MESSAGE: allow page to trigger update ----------
 self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  if (event.data && event.data.type === 'GET_VERSION') {
+  if (event.data && event.data.type === 'GET_VERSION' && event.source) {
     event.source.postMessage({ type: 'VERSION', version: VERSION });
   }
 });
 
-// ---------- PUSH notifications ----------
 self.addEventListener('push', function(event) {
   var payload = { title: 'SA Recruiters', body: 'You have a new update', data: { url: '/' } };
-  try { if (event.data) payload = Object.assign(payload, event.data.json()); } catch (e) { if (event.data) payload.body = event.data.text(); }
-  var options = {
+  try {
+    if (event.data) payload = Object.assign(payload, event.data.json());
+  } catch (error) {
+    if (event.data) payload.body = event.data.text();
+  }
+  event.waitUntil(self.registration.showNotification(payload.title, {
     body: payload.body,
     icon: 'icons/icon-192.png',
     badge: 'icons/monochrome-192.png',
@@ -239,47 +212,48 @@ self.addEventListener('push', function(event) {
     data: payload.data || { url: '/' },
     tag: payload.tag || 'sa-recruiters',
     renotify: true
-  };
-  event.waitUntil(self.registration.showNotification(payload.title, options));
+  }));
 });
 
-// ---------- NOTIFICATION CLICK ----------
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  var targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
+  var targetUrl = event.notification.data && event.notification.data.url
+    ? event.notification.data.url : '/';
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-      for (var i = 0; i < clientList.length; i++) {
-        var c = clientList[i];
-        if ('focus' in c) { c.focus(); c.navigate(targetUrl); return; }
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clients) {
+      for (var i = 0; i < clients.length; i++) {
+        if ('focus' in clients[i]) {
+          clients[i].focus();
+          clients[i].navigate(targetUrl);
+          return;
+        }
       }
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
   );
 });
 
-// ---------- BACKGROUND SYNC (resubmit pending reports/suggestions) ----------
 self.addEventListener('sync', function(event) {
   if (event.tag === 'sa-sync-pending') {
     event.waitUntil(
       self.clients.matchAll({ includeUncontrolled: true }).then(function(clients) {
-        clients.forEach(function(c) { c.postMessage({ type: 'SYNC_PENDING' }); });
+        clients.forEach(function(client) {
+          client.postMessage({ type: 'SYNC_PENDING' });
+        });
       })
     );
   }
 });
 
-// ---------- PERIODIC SYNC ----------
 self.addEventListener('periodicsync', function(event) {
   if (event.tag === 'sa-refresh-content') {
     event.waitUntil(
-      fetch('./content.js', { cache: 'reload' }).then(function(r) {
-        return caches.open(RUNTIME_CACHE).then(function(c) { return c.put('./content.js', r); });
+      fetch('./content.js', { cache: 'reload' }).then(function(response) {
+        if (!response.ok) throw new Error('Content refresh failed');
+        return caches.open(RUNTIME_CACHE).then(function(cache) {
+          return cache.put('./content.js', response);
+        });
       }).catch(function() {})
     );
   }
 });
-
-// ---------- EVICTION / clean shutdown ----------
-self.addEventListener('beforeevicted', function() { /* allow cleanup before eviction */ });
-self.addEventListener('evicted', function() { /* SW was evicted */ });
