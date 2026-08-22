@@ -413,6 +413,15 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .update-banner{position:fixed;top:0;left:0;right:0;z-index:10000;padding:12px 16px;background:linear-gradient(145deg,#0A84FF,#0051D5);color:#fff;font-size:14px;font-weight:600;text-align:center;transform:translateY(-100%);transition:transform .3s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.25)}
 .update-banner.show{transform:translateY(0)}
 .update-banner button{margin-left:12px;padding:5px 14px;background:#fff;color:#0A84FF;border:none;border-radius:var(--radius-pill);font-weight:700;font-size:13px;cursor:pointer}
+
+/* Retry banner: shown when a data refresh (Supabase) fails, so the app
+   never just silently sits on stale/frozen data without telling the user.
+   Bottom-fixed as a snackbar so it never collides with the update-banner
+   or covers the search header. */
+.retry-banner{position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;padding:12px 16px;background:linear-gradient(145deg,#3A3A3C,#1C1C1E);color:#fff;font-size:13.5px;font-weight:600;text-align:center;border-radius:var(--radius-lg,14px);box-shadow:0 8px 28px rgba(0,0,0,.35);transform:translateY(140%);opacity:0;transition:transform .3s var(--ease),opacity .3s var(--ease);pointer-events:none}
+.retry-banner.show{transform:translateY(0);opacity:1;pointer-events:auto}
+.retry-banner button{margin-left:10px;padding:5px 14px;background:#FF9F0A;color:#1C1C1E;border:none;border-radius:var(--radius-pill);font-weight:700;font-size:13px;cursor:pointer}
+.retry-banner button:disabled{opacity:.6;cursor:default}
 /* contact card head with tile */
 .contact-card-head .mi-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .contact-card-head .mi-icon svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
