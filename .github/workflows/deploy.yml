@@ -32,6 +32,9 @@ jobs:
       - name: Generate static agency/vacancy pages + sitemap
         run: node generate-pages.js
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
       - name: Upload build output as Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
