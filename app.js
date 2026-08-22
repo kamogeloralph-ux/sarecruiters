@@ -3,6 +3,14 @@
 var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// First-party analytics: no IP address, user-agent, name, phone, or email is stored.
+var analyticsSessionId = (function(){ try { var k='sa_analytics_session'; var v=localStorage.getItem(k); if(!v){ v='s_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10); localStorage.setItem(k,v); } return v; } catch(e){ return 's_'+Date.now().toString(36); } })();
+function trackEvent(eventName, entityType, entityId, metadata) {
+  try {
+    var row = { event_name:String(eventName||'unknown'), entity_type:entityType ? String(entityType) : null, entity_id:entityId ? String(entityId) : null, session_id:analyticsSessionId, page_path:location.pathname, metadata:metadata || {} };
+    supabaseClient.from('analytics_events').insert([row]).then(function(){}, function(){});
+  } catch(e) {}
+}
 
 var editingId = null;
 var agenciesCache = [];
@@ -881,6 +889,7 @@ window.toggleEmpHub = function(id) {
   else document.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
   if (!wasOpen) {
     card.classList.add('open');
+    trackEvent('employer_view', 'employer', id);
     setTimeout(function(){ card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 200);
   }
 };
@@ -1205,25 +1214,25 @@ function vacancyCard(v, agency) {
   /* Action buttons */
   var actions = '<div class="vac-actions">';
   if (v.link) {
-    actions += '<a class="vac-apply" href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Apply here</a>';
+    actions += '<a class="vac-apply" href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + 'Apply here</a>';
   } else if (v.email || v.phone) {
     /* No link but has email/phone — show contact buttons */
     if (v.email) {
-      actions += '<a class="vac-apply" href="mailto:' + escapeHtml(v.email) + '" onclick="event.stopPropagation()">' + VAC_ICONS.mail + 'Email to apply</a>';
+      actions += '<a class="vac-apply" href="mailto:' + escapeHtml(v.email) + '" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.mail + 'Email to apply</a>';
     }
     if (v.phone) {
-      actions += '<a class="vac-apply' + (v.email ? ' vac-apply-secondary' : '') + '" href="tel:' + escapeHtml(v.phone.replace(/\s/g,'')) + '" onclick="event.stopPropagation()">' + VAC_ICONS.phone + 'Call to apply</a>';
+      actions += '<a class="vac-apply' + (v.email ? ' vac-apply-secondary' : '') + '" href="tel:' + escapeHtml(v.phone.replace(/\s/g,'')) + '" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.phone + 'Call to apply</a>';
     }
   } else if (isEmployerPost && (employer.contact || employer.email || employer.website)) {
     var ecta = employer.website ? escapeHtml(employer.website) : '#';
-    actions += '<a class="vac-apply" href="' + ecta + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Contact employer</a>';
+    actions += '<a class="vac-apply" href="' + ecta + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + 'Contact employer</a>';
   } else if (!isGeneral && !isEmployerPost && agency && (agency.contact || agency.email || agency.website)) {
     var cta = agency.website ? escapeHtml(agency.website) : '#';
-    actions += '<a class="vac-apply" href="' + cta + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + VAC_ICONS.apply + 'Contact agency</a>';
+    actions += '<a class="vac-apply" href="' + cta + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + 'Contact agency</a>';
   } else {
-    actions += '<button class="vac-apply" onclick="event.stopPropagation();showToast(\'Contact the agency or company directly to apply.\')">' + VAC_ICONS.apply + 'Contact to apply</button>';
+    actions += '<button class="vac-apply" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId);showToast(\'Contact the agency or company directly to apply.\')">' + VAC_ICONS.apply + 'Contact to apply</button>';
   }
-  actions += '<a class="vac-apply vac-apply-secondary" href="/vacancy/' + slugify(v.title) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation()">View public listing ↗</a>';
+  actions += '<a class="vac-apply vac-apply-secondary" href="/vacancy/' + slugify(v.title) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">View public listing ↗</a>';
   actions += '<button class="vac-close-btn" onclick="event.stopPropagation();closeVac(this)">Close</button></div>';
 
   /* Admin actions (general vacancies + employer vacancies, when admin) */
@@ -1236,7 +1245,7 @@ function vacancyCard(v, agency) {
   }
 
   return '' +
-  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + '" id="vc-' + key + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
+  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
     '<div class="vac-card-main">' +
       logo +
       '<div class="vac-body">' +
@@ -1323,7 +1332,11 @@ var VAC_ICONS = {
 /* Toggle expand/collapse of a vacancy card */
 window.toggleVac = function(target) {
   var c = target && target.closest ? target.closest('.vac-card') : document.getElementById('vc-' + target);
-  if (c) c.classList.toggle('open');
+  if (c) {
+    var opening = !c.classList.contains('open');
+    c.classList.toggle('open');
+    if (opening && c.dataset.vacancyId) trackEvent('vacancy_view', 'vacancy', c.dataset.vacancyId);
+  }
 };
 window.closeVac = function(target) {
   var c = target && target.closest ? target.closest('.vac-card') : document.getElementById('vc-' + target);
@@ -2242,6 +2255,7 @@ async function submitPoolRegistration() {
   if (btn) { btn.disabled = false; btn.textContent = 'Submit registration'; }
   rememberTalentPoolIdentity(phone, email);
   verifyTalentPoolMembership(phone, email, true);
+  trackEvent('candidate_registration_submitted', 'candidate', null, { alert_opt_in: alertOptIn });
   closeSheet('pool-register-overlay');
   showToast('Registration received — you\'ll go live once payment is confirmed.');
 }
