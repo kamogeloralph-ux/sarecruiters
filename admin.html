@@ -258,6 +258,16 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .admin-shell .section-head h2{color:var(--section-color)}
 .admin-shell .analytics-card{border-top:3px solid var(--admin-analytics)}
 .admin-shell .analytics-card h3{color:var(--admin-analytics)}
+.poster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.poster-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.poster-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--card-2)}
+.poster-card .poster-info{padding:12px}
+.poster-card .poster-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--text-2);margin-bottom:5px}
+.poster-card .poster-title{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poster-card .poster-subtitle{font-size:12px;color:var(--text-2);margin-top:3px;min-height:18px}
+.poster-card .poster-actions{display:flex;gap:8px;margin-top:11px}
+.poster-card .poster-actions .minibtn{flex:1;justify-content:center}
+.poster-card.is-inactive{opacity:.62}
 .admin-shell .section-head .back-btn:hover,.admin-shell .section-head .section-close-btn:hover{color:var(--section-color);border-color:var(--section-color);background:color-mix(in srgb,var(--section-color) 10%,var(--card))}
 @supports not (color:color-mix(in srgb, black, white)){
   .admin-shell .section-head{background:var(--card-2)}
@@ -409,11 +419,27 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Content</h2><div class="spacer"></div><button class="minibtn" onclick="restoreDefaults()">Restore defaults</button></div>
         <div class="muted" style="margin-bottom:14px">Edit the FAQ, CV guides, interview tips, rights, learning hub and support articles that appear in the public app.</div>
         <div id="content-list"></div>
+            </div>
+      <!-- POSTERS -->
+      <div class="section section-content" id="sec-posters">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Posters</h2><div class="spacer"></div><button class="minibtn" onclick="loadPostersForAdmin()">Refresh</button></div>
+        <div class="card card-pad" style="margin-bottom:14px">
+          <div style="font-weight:700;font-size:15px;margin-bottom:4px">Manage home campaign posters</div>
+          <div class="muted" style="margin-bottom:14px">Upload separate artwork for the For Candidates and For Employers panels. The existing panels stay in place; active posters appear inside them.</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end">
+            <div class="field" style="margin:0"><label>Audience</label><select id="poster-audience"><option value="candidates">For Candidates</option><option value="employers">For Employers</option></select></div>
+            <div class="field" style="margin:0"><label>Title (optional)</label><input id="poster-title" maxlength="120" placeholder="Campaign title"></div>
+            <div class="field" style="margin:0"><label>Subtitle (optional)</label><input id="poster-subtitle" maxlength="180" placeholder="Short supporting line"></div>
+            <div class="field" style="margin:0"><label>Order</label><input id="poster-order" type="number" min="0" step="1" value="0"></div>
+            <div class="field" style="margin:0"><label>Image file</label><input id="poster-file" type="file" accept="image/png,image/jpeg,image/webp"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:8px;font-size:13px"><input id="poster-active" type="checkbox" checked> Active on public app</label><button class="btn" style="width:auto;padding:10px 16px" onclick="uploadPoster()">Upload poster</button><span id="poster-upload-note" class="muted"></span></div>
+        </div>
+        <div id="posters-list"></div>
       </div>
     </main>
   </div>
 </div>
-
 <!-- ============ AGENCY SHEET ============ -->
 <div class="scrim" id="agency-overlay">
   <div class="sheet">
@@ -598,7 +624,7 @@ var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KE
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], employers: [], reports: [], suggestions: [], tracks: [], poolCandidates: [] };
+var cache = { agencies: [], branches: [], vacancies: [], employers: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], posters: [] };
 var editing = { agency: null, branch: null, vacancy: null, employer: null, article: null, articleSection: null };
 var pendingPhoto = null;
 var subTab = 'reports';
@@ -659,7 +685,7 @@ async function doLogout(){
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
-  cache = { agencies:[], branches:[], vacancies:[], employers:[], reports:[], suggestions:[], tracks:[], poolCandidates:[] };
+  cache = { agencies:[], branches:[], vacancies:[], employers:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], posters:[] };
 }
 async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
@@ -706,6 +732,14 @@ async function getSuggestions(){
 async function getPoolCandidates(){ var { data, error } = await supabaseClient.from('pool_candidates').select('id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,created_at').order('created_at', { ascending: false }); if(error){ console.error('pool load', error); return []; } return data || []; }
 async function upsertPoolCandidate(p){ var { error } = await supabaseClient.from('pool_candidates').upsert(p); if(error){ console.error('pool save', error); alert('Could not save: '+error.message); } }
 async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); }
+async function getPosters(){
+  try {
+    var { data, error } = await supabaseClient.from('posters').select('id,audience,title,subtitle,image_path,image_url,sort_order,is_active,created_at,updated_at').order('audience',{ascending:true}).order('sort_order',{ascending:true}).order('created_at',{ascending:false});
+    if(!error) return data || [];
+    console.warn('posters', error);
+  } catch(e){ console.warn('posters', e); }
+  return [];
+}
 async function getTracks(){
   try { var { data, error } = await supabaseClient.from('daily_tracks').select('id,title,artist,file_path,track_date,created_at').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
@@ -817,7 +851,7 @@ async function saveEmployerManagerToken(employerId, token){ try{ await supabaseC
 async function loadAll(){
   var results = await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(),
-    getReports(), getSuggestions(), getTracks(), getPoolCandidates()
+    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters()
   ]);
   cache.agencies = results[0] || [];
   cache.branches = results[1] || [];
@@ -827,6 +861,7 @@ async function loadAll(){
   cache.suggestions = results[5] || [];
   cache.tracks = results[6] || [];
   cache.poolCandidates = results[7] || [];
+  cache.posters = results[8] || [];
 
   var settings = await Promise.all([
     getAppSetting('public_vacancy_posting','false'),
@@ -864,7 +899,8 @@ var NAV = [
   { id:'poolcandidates', label:'Talent Pool', tile:'hc-tile-blue', sub:'Job seeker registrations & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
   { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
   { id:'dailytrack', label:'Daily Track', tile:'hc-tile-pink', sub:'Track of the Day music', icon:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
-  { id:'content', label:'Content', tile:'hc-tile-teal', sub:'FAQ, guides & articles', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' }
+  { id:'content', label:'Content', tile:'hc-tile-teal', sub:'FAQ, guides & articles', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' },
+  { id:'posters', label:'Posters', tile:'hc-tile-teal', sub:'Employer & candidate campaign posters', icon:'<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m4 16 4-4 3 3 2-2 7 6"/>' }
 ];
 function renderNav(){
   var el = document.getElementById('sidebar');
@@ -877,7 +913,8 @@ function renderNav(){
     if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; badge = '<span class="nav-badge">'+c+'</span>'; }
     if(n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
-    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
+    if(n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
+    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack','posters'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
     return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
@@ -888,6 +925,7 @@ function navBadge(id){
   if(id==='employers') return cache.employers.length;
   if(id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; return c; }
   if(id==='dailytrack') return cache.tracks.length;
+  if(id==='posters') return cache.posters.length;
   if(id==='poolcandidates'){ return cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; }
   return null;
 }
@@ -901,6 +939,7 @@ function goSection(id){
   if(id==='employers') renderEmployers();
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
+  if(id==='posters') renderPosters();
   if(id==='dailytrack') renderDailyTracks();
   if(id==='settings'){ updatePostingUI(); updateEmployerRegUI(); loadPoolBankingDetails(); }
   if(id==='poolcandidates') renderPoolCandidates();
@@ -933,7 +972,7 @@ function renderDashboard(){
     // Group: Manage
     var manageItems = ['agencies','branches','vacancies','employers'];
     var reviewItems = ['submissions','poolcandidates'];
-    var mediaItems = ['dailytrack','content'];
+    var mediaItems = ['dailytrack','content','posters'];
     var configItems = ['settings'];
     var html = '';
     html += buildHomeGroup('Manage', manageItems);
@@ -1750,6 +1789,72 @@ function fmtTrackDate(d){
   return dt.toLocaleDateString('en-ZA', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
 }
 
+function posterAudienceLabel(a){ return a==='employers' ? 'For Employers' : 'For Candidates'; }
+async function loadPostersForAdmin(){
+  var el=document.getElementById('posters-list');
+  if(el) el.innerHTML='<div class="card card-pad muted">Loading posters…</div>';
+  cache.posters=await getPosters();
+  renderNav();
+  renderPosters();
+}
+function renderPosters(){
+  var el=document.getElementById('posters-list');
+  if(!el) return;
+  var posters=cache.posters||[];
+  if(!posters.length){ el.innerHTML=emptyState('No managed posters yet','Upload your first candidate or employer campaign poster above.'); return; }
+  var groups=['candidates','employers'];
+  el.innerHTML=groups.map(function(a){
+    var rows=posters.filter(function(p){return p.audience===a;});
+    return '<div style="margin:18px 0 8px;font-size:12px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em">'+posterAudienceLabel(a)+' <span style="font-weight:500">('+rows.length+')</span></div>'+
+      (rows.length?'<div class="poster-grid">'+rows.map(function(p){
+        return '<article class="poster-card '+(p.is_active?'':'is-inactive')+'">'+
+          '<img loading="lazy" src="'+escapeHtml(p.image_url)+'" alt="'+escapeHtml(p.title||posterAudienceLabel(p.audience)+' poster')+'" onerror="this.style.display=\'none\'">'+
+          '<div class="poster-info"><div class="poster-meta"><span>'+escapeHtml(p.is_active?'Active':'Hidden')+'</span><span>Order '+escapeHtml(p.sort_order)+'</span></div>'+
+          '<div class="poster-title">'+escapeHtml(p.title||'Untitled poster')+'</div><div class="poster-subtitle">'+escapeHtml(p.subtitle||'')+'</div>'+
+          '<div class="poster-actions"><button class="minibtn" onclick="togglePosterActive(\''+p.id+'\','+(p.is_active?'false':'true')+')">'+(p.is_active?'Hide':'Show')+'</button><button class="minibtn danger" onclick="deletePoster(\''+p.id+'\')">Delete</button></div></div></article>';
+      }).join('')+'</div>':'<div class="card card-pad muted">No '+a+' posters uploaded.</div>');
+  }).join('');
+}
+async function uploadPoster(){
+  var fileEl=document.getElementById('poster-file'), file=fileEl && fileEl.files && fileEl.files[0];
+  var note=document.getElementById('poster-upload-note');
+  if(!file){ if(note) note.textContent='Choose an image first.'; return; }
+  if(!/^image\/(png|jpeg|webp)$/.test(file.type)){ if(note) note.textContent='Use PNG, JPG, or WebP.'; return; }
+  if(file.size>8*1024*1024){ if(note) note.textContent='Maximum file size is 8 MB.'; return; }
+  var audience=document.getElementById('poster-audience').value;
+  var safeName=(file.name||'poster').toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'poster';
+  var path=audience+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'-'+safeName;
+  var btn=document.querySelector('#sec-posters .btn');
+  if(btn) {btn.disabled=true;btn.textContent='Uploading…';}
+  if(note) note.textContent='Uploading image…';
+  try{
+    var up=await supabaseClient.storage.from('poster-assets').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'31536000'});
+    if(up.error) throw up.error;
+    var url=supabaseClient.storage.from('poster-assets').getPublicUrl(path).data.publicUrl;
+    var row={audience:audience,title:(document.getElementById('poster-title').value||'').trim(),subtitle:(document.getElementById('poster-subtitle').value||'').trim(),image_path:path,image_url:url,sort_order:parseInt(document.getElementById('poster-order').value,10)||0,is_active:document.getElementById('poster-active').checked};
+    var ins=await supabaseClient.from('posters').insert(row);
+    if(ins.error) {try{await supabaseClient.storage.from('poster-assets').remove([path]);}catch(cleanErr){} throw ins.error;}
+    document.getElementById('poster-title').value=''; document.getElementById('poster-subtitle').value=''; document.getElementById('poster-order').value='0'; document.getElementById('poster-file').value='';
+    if(note) note.textContent='Poster uploaded.';
+    await loadPostersForAdmin();
+    showToast('Poster uploaded');
+  }catch(e){ console.error('poster upload',e); if(note) note.textContent='Upload failed: '+(e.message||'check Supabase migration and permissions'); }
+  finally{ if(btn){btn.disabled=false;btn.textContent='Upload poster';} }
+}
+async function togglePosterActive(id,active){
+  var res=await supabaseClient.from('posters').update({is_active:!!active}).eq('id',id);
+  if(res.error){showToast('Could not update poster');return;}
+  await loadPostersForAdmin();
+}
+async function deletePoster(id){
+  var p=(cache.posters||[]).find(function(x){return x.id===id;});
+  if(!p || !confirm('Delete this poster?')) return;
+  var res=await supabaseClient.from('posters').delete().eq('id',id);
+  if(res.error){showToast('Could not delete poster');return;}
+  try{await supabaseClient.storage.from('poster-assets').remove([p.image_path]);}catch(e){console.warn('poster asset delete',e);}
+  await loadPostersForAdmin();
+  showToast('Poster deleted');
+}
 function renderDailyTracks(){
   var el = document.getElementById('track-list');
   if(!el) return;
