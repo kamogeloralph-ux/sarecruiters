@@ -275,6 +275,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <div class="section active" id="sec-dashboard">
         <div class="section-head"><h2>Dashboard</h2></div>
         <div class="stats-grid" id="stats-grid"></div>
+        <div class="card analytics-card" style="margin-top:14px"><div class="card-pad"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0;font-size:16px">Usage analytics</h3><p style="margin:3px 0 0;color:var(--text-2);font-size:12px">Last 30 days · anonymous events</p></div><button class="minibtn" onclick="loadAnalyticsSummary()">Refresh</button></div><div id="analytics-summary" style="margin-top:14px"><div style="color:var(--text-2);font-size:13px">Loading analytics…</div></div></div></div>
         <div id="home-cards" style="margin-top:8px"></div>
       </div>
 
@@ -636,6 +637,7 @@ async function enterConsole(user){
   await cleanupOldTracks();
   renderNav();
   renderDashboard();
+  loadAnalyticsSummary();
 }
 // Restore session on reload
 (async function checkSession(){
@@ -905,6 +907,26 @@ function renderDashboard(){
     html += buildHomeGroup('Content & Media', mediaItems);
     html += buildHomeGroup('Configuration', configItems);
     homeEl.innerHTML = html;
+  }
+}
+async function loadAnalyticsSummary(){
+  var el = document.getElementById('analytics-summary');
+  if (!el) return;
+  var since = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+  try {
+    var res = await supabaseClient.from('analytics_events').select('event_name,session_id').gte('created_at', since).limit(10000);
+    if (res.error) throw res.error;
+    var rows = res.data || [], counts = {}, sessions = {};
+    rows.forEach(function(r){ counts[r.event_name] = (counts[r.event_name]||0) + 1; if(r.session_id) sessions[r.session_id] = true; });
+    var items = [
+      ['candidate_registration_submitted','Candidate registrations'],
+      ['employer_view','Employer profile views'],
+      ['vacancy_view','Vacancy views'],
+      ['vacancy_click','Vacancy clicks']
+    ];
+    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">' + items.map(function(item){ return '<div style="background:var(--card-2);border-radius:10px;padding:10px 11px"><div style="font-size:21px;font-weight:800">'+(counts[item[0]]||0)+'</div><div style="font-size:11.5px;color:var(--text-2)">'+item[1]+'</div></div>'; }).join('') + '</div><div style="margin-top:10px;color:var(--text-2);font-size:11.5px">'+Object.keys(sessions).length+' unique sessions recorded from '+rows.length+' events.</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--text-2);font-size:13px;line-height:1.5">Analytics is not available yet. Run <strong>CREATE_ANALYTICS.sql</strong> in Supabase, then tap Refresh.</div>';
   }
 }
 function buildHomeGroup(label, itemIds){
