@@ -233,7 +233,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
-<body>
+<body class="admin-shell">
 
 <!-- ============ LOGIN SCREEN ============ -->
 <div id="login-screen">
@@ -272,36 +272,36 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <nav class="sidebar" id="sidebar"></nav>
     <main class="main">
       <!-- DASHBOARD -->
-      <div class="section active" id="sec-dashboard">
+      <div class="section section-dashboard active" id="sec-dashboard">
         <div class="section-head"><h2>Dashboard</h2></div>
         <div class="stats-grid" id="stats-grid"></div>
-        <div class="card analytics-card" style="margin-top:14px"><div class="card-pad"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0;font-size:16px">Usage analytics</h3><p style="margin:3px 0 0;color:var(--text-2);font-size:12px">Last 30 days · anonymous events</p></div><button class="minibtn" onclick="loadAnalyticsSummary()">Refresh</button></div><div id="analytics-summary" style="margin-top:14px"><div style="color:var(--text-2);font-size:13px">Loading analytics…</div></div></div></div>
+        <div class="card analytics-card section-analytics-card" style="margin-top:14px"><div class="card-pad"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0;font-size:16px">Usage analytics</h3><p style="margin:3px 0 0;color:var(--text-2);font-size:12px">Last 30 days · anonymous events</p></div><button class="minibtn" onclick="loadAnalyticsSummary()">Refresh</button></div><div id="analytics-summary" style="margin-top:14px"><div style="color:var(--text-2);font-size:13px">Loading analytics…</div></div></div></div>
         <div id="home-cards" style="margin-top:8px"></div>
       </div>
 
       <!-- AGENCIES -->
-      <div class="section" id="sec-agencies">
+      <div class="section section-manage" id="sec-agencies">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Agencies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
         <input class="search" id="ag-search" placeholder="Search name, location, trades, companies..." oninput="renderAgencies()">
         <div id="ag-list"></div>
       </div>
 
       <!-- BRANCHES -->
-      <div class="section" id="sec-branches">
+      <div class="section section-manage" id="sec-branches">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Branches</h2><div class="spacer"></div><button class="minibtn ok" onclick="openBranchSheet()">+ Add branch</button></div>
         <input class="search" id="br-search" placeholder="Search branch, location, agency..." oninput="renderBranches()">
         <div id="br-list"></div>
       </div>
 
       <!-- VACANCIES -->
-      <div class="section" id="sec-vacancies">
+      <div class="section section-manage" id="sec-vacancies">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
         <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="renderVacancies()">
         <div id="va-list"></div>
       </div>
 
       <!-- EMPLOYERS -->
-      <div class="section" id="sec-employers">
+      <div class="section section-manage" id="sec-employers">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Employers</h2><div class="spacer"></div><button class="minibtn ok" onclick="openEmployerSheet()">+ Register employer</button></div>
         <div class="muted" style="margin-bottom:14px">Companies that post their own vacancies directly (separate from the agency directory). Their jobs also show up in the Vacancies list once posted.</div>
         <input class="search" id="emp-search" placeholder="Search name, industry, location..." oninput="renderEmployers()">
@@ -309,7 +309,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       </div>
 
       <!-- SUBMISSIONS -->
-      <div class="section" id="sec-submissions">
+      <div class="section section-review" id="sec-submissions">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Submissions</h2></div>
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="minibtn" id="sub-tab-reports" onclick="switchSubTab('reports')">Reports <span class="nav-badge" id="sub-badge-reports"></span></button>
@@ -319,7 +319,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       </div>
 
       <!-- TALENT POOL -->
-      <div class="section" id="sec-poolcandidates">
+      <div class="section section-review" id="sec-poolcandidates">
         <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>Talent Pool</h2></div>
         <div class="muted" style="margin-bottom:14px">New registrations land here as <strong>Pending</strong>. Check the EFT reference against your bank statement, then Approve to make the candidate visible in the public Talent Pool for one year (paid-until date is set automatically, editable).</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -332,7 +332,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       </div>
 
       <!-- SETTINGS -->
-      <div class="section" id="sec-settings">
+      <div class="section section-settings" id="sec-settings">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Settings</h2></div>
         <div class="toggle-row">
           <div><div class="t-label">Public vacancy posting</div><div class="t-sub" id="posting-sub">Loading…</div></div>
@@ -372,7 +372,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       </div>
 
       <!-- CONTENT -->
-      <div class="section" id="sec-content">
+      <div class="section section-content" id="sec-content">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Content</h2><div class="spacer"></div><button class="minibtn" onclick="restoreDefaults()">Restore defaults</button></div>
         <div class="muted" style="margin-bottom:14px">Edit the FAQ, CV guides, interview tips, rights, learning hub and support articles that appear in the public app.</div>
         <div id="content-list"></div>
@@ -844,7 +844,8 @@ function renderNav(){
     if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; badge = '<span class="nav-badge">'+c+'</span>'; }
     if(n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
-    return '<div class="nav-item" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
+    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
+    return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
 function navBadge(id){
