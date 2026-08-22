@@ -665,6 +665,8 @@ function updateStats() {
   document.getElementById('stat-vacancies').textContent = vacanciesCache.length;
   var statEmployers = document.getElementById('stat-employers');
   if (statEmployers) statEmployers.textContent = employersCache.length;
+  var statPool = document.getElementById('stat-pool');
+  if (statPool) statPool.textContent = poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length;
 }
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
@@ -1996,11 +1998,10 @@ async function loadPoolCandidates() {
     var current = sel.value;
     var sectors = Array.from(new Set(poolCache.map(function(c){ return (c.sector||'').trim(); }).filter(Boolean))).sort();
     sel.innerHTML = '<option value="">All sectors</option>' + sectors.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
-    sel.value = sectors.indexOf(current) !== -1 ? current : '';
-  }
+    sel.value = sectors.indexOf(current) !== -1 ? current : '';  }
+  updateStats();
   renderPoolList();
 }
-
 function renderPoolList() {
   var listEl = document.getElementById('pool-list');
   if (!listEl) return;
