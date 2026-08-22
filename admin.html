@@ -37,6 +37,16 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .field input,.field select,.field textarea{width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14.5px;color:var(--text);font-family:inherit}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .field textarea{min-height:80px;resize:vertical}
+.banking-accordion{margin-top:26px;border-top:1px solid var(--border);padding-top:14px}
+.banking-accordion summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 2px;border-radius:10px;cursor:pointer;user-select:none}
+.banking-accordion summary::-webkit-details-marker{display:none}
+.banking-accordion summary:focus-visible{outline:3px solid var(--accent-soft);outline-offset:3px}
+.banking-summary-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.banking-summary-copy .t-label{display:block}.banking-summary-copy .muted{font-size:12px}
+.banking-summary-chevron{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:21px;line-height:1;transform:rotate(0deg);transition:transform .18s ease}
+.banking-accordion[open] .banking-summary-chevron{transform:rotate(180deg)}
+.banking-accordion-body{padding:8px 0 2px}
+.banking-help{margin:0 0 12px}
+
 .btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;transition:transform .08s}
 .btn:active{transform:scale(.98)}
 .btn.secondary{background:var(--card-2);color:var(--text);border:1px solid var(--border)}
@@ -395,15 +405,20 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         </div>
         <div style="margin-top:14px" class="muted">When ON, everyone can browse employers and their vacancies. When OFF, only users who have registered for the Talent Pool can open the Employer Directory and employer vacancies.</div>
 
-        <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border)">
-          <div class="t-label" style="margin-bottom:2px">Talent Pool banking details</div>
-          <div class="muted" style="margin-bottom:12px">Shown to job seekers on the public "Join the Talent Pool" registration form so they know where to pay their R20/year.</div>
-          <div class="field"><label>Account name</label><input id="bank-account-name" placeholder="e.g. SA Recruiters"></div>
-          <div class="field"><label>Bank</label><input id="bank-name" placeholder="e.g. Capitec Business"></div>
-          <div class="field"><label>Account number</label><input id="bank-account-number" placeholder="e.g. 1234567890"></div>
-          <div class="field"><label>Branch code</label><input id="bank-branch-code" placeholder="e.g. 470010"></div>
-          <button class="btn" onclick="savePoolBankingDetails()">Save banking details</button>
-        </div>
+        <details class="banking-accordion">
+          <summary>
+            <span class="banking-summary-copy"><span class="t-label">Talent Pool banking details</span><span class="muted">Tap to view or edit payment information</span></span>
+            <span class="banking-summary-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="banking-accordion-body">
+            <div class="muted banking-help">Shown to job seekers on the public "Join the Talent Pool" registration form so they know where to pay their R20/year.</div>
+            <div class="field"><label>Account name</label><input id="bank-account-name" placeholder="e.g. SA Recruiters"></div>
+            <div class="field"><label>Bank</label><input id="bank-name" placeholder="e.g. Capitec Business"></div>
+            <div class="field"><label>Account number</label><input id="bank-account-number" placeholder="e.g. 1234567890"></div>
+            <div class="field"><label>Branch code</label><input id="bank-branch-code" placeholder="e.g. 470010"></div>
+            <button class="btn" onclick="savePoolBankingDetails()">Save banking details</button>
+          </div>
+        </details>
       </div>
 
       <!-- DAILY TRACK -->
