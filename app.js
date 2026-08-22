@@ -3137,21 +3137,16 @@ if ('serviceWorker' in navigator) {
         if (!newWorker) return;
         newWorker.addEventListener('statechange', function() {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New content available — show banner + notify SW to take over
+            // New content is available. Do not take over or reload automatically:
+            // an idle update must never interrupt the section the user is viewing.
+            // The existing update banner lets the user choose when to reload.
             var banner = document.getElementById('update-banner');
             if (banner) banner.classList.add('show');
-            newWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
       });
-      // Auto-update when controller changes
-      var refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', function() {
-        if (refreshing) return;
-        refreshing = true;
-        window.location.reload();
-      });
-      // Aggressively check for updates on every load + every 60s
+      // Check for new content without automatically reloading the current page.
+      // This preserves the user’s current section after the app has been idle.
       reg.update();
       setInterval(function() { reg.update(); }, 60000);
     }).catch(function(err) {
