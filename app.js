@@ -740,7 +740,7 @@ function hubCard(a) {
     '</button>' +
     '<div class="hub-panel" id="hub-panel-' + a.id + '">' +
       '<div class="hub-panel-inner">' +
-        '<a href="/agency/' + slugify(a.name) + '/" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;color:var(--accent);margin-bottom:8px;text-decoration:none;" onclick="event.stopPropagation()">View public listing page ↗</a>' +
+        '<a href="agency/' + slugify(a.name) + '/" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;color:var(--accent);margin-bottom:8px;text-decoration:none;" onclick="event.stopPropagation()">View public listing page ↗</a>' +
         '<div class="hub-tabs">' +
           '<button class="hub-tab active" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'vacancies\')">Vacancies</button>' +
           '<button class="hub-tab" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'branches\')">Branches</button>' +
@@ -1266,7 +1266,7 @@ function vacancyCard(v, agency) {
   } else {
     actions += '<button class="vac-apply" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId);showToast(\'Contact the agency or company directly to apply.\')">' + VAC_ICONS.apply + 'Contact to apply</button>';
   }
-  actions += '<a class="vac-apply vac-apply-secondary" href="/vacancy/' + slugify(v.title) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">View public listing ↗</a>';
+  actions += '<a class="vac-apply vac-apply-secondary" href="vacancy/' + slugify(v.title) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">View public listing ↗</a>';
   actions += '<button class="vac-close-btn" onclick="event.stopPropagation();closeVac(this)">Close</button></div>';
 
   /* Admin actions (general vacancies + employer vacancies, when admin) */
