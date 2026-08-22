@@ -1973,8 +1973,9 @@ async function submitSuggestion() {
 // ===== TALENT POOL (public browse + self-registration) =====
 var poolCache = [];
 var poolLoaded = false;
-
-function goPool() {
+var poolReturnScreen = 'home';
+function goPool(returnScreen) {
+  poolReturnScreen = returnScreen === 'profile' ? 'profile' : 'home';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-pool').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -2223,6 +2224,10 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
     document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
     window.scrollTo({ top: 0 });
     if (btn.dataset.tab === 'saved') renderSaved();
+    if (btn.dataset.tab === 'home') {
+      showToast('Refreshing…');
+      loadAll();
+    }
   });
 });
 
@@ -2313,6 +2318,10 @@ function goSubmissions() {
   switchSubTab('reports');
 }
 
+function goBackFromPool() {
+  if (poolReturnScreen === 'profile') goBackToProfile();
+  else goBackToHome();
+}
 function goBackToProfile() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-profile').classList.add('active');
