@@ -352,7 +352,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .pool-feature-tags{display:flex;gap:7px;margin-top:10px;position:relative;z-index:1;flex-wrap:wrap}
 .pool-feature-tag{font-size:10.5px;font-weight:700;color:var(--text-2);background:var(--card-2);border:1px solid var(--border);padding:5px 9px;border-radius:var(--radius-pill)}
 .pool-feature-chev{display:none}
-.pool-feature-card:active{transform:scale(.985);background:var(--card-2)}
+.pool-feature-card{background:linear-gradient(135deg,#5b4fe8,#714de0);border-color:transparent;color:#fff;box-shadow:0 10px 26px -14px rgba(91,79,232,.75)}.pool-feature-card .pool-feature-icon{color:#fff}.pool-feature-card .pool-feature-star{color:rgba(255,255,255,.9)}.pool-feature-card .pool-feature-title{color:#fff}.pool-feature-card .pool-feature-sub{color:rgba(255,255,255,.88)}.pool-feature-card .pool-feature-tag{color:#5b4fe8;background:#fff;border-color:rgba(255,255,255,.75)}.pool-feature-card:active{transform:scale(.985);background:linear-gradient(135deg,#5145db,#6742d3)}
 
 /* Monochrome iOS-style profile menu icons: no colored tiles, just light outline glyphs. */
 .profile-menu-item .mi-icon{font-size:18px;width:34px;height:34px;border-radius:0;background:transparent!important;color:var(--text-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
