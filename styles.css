@@ -134,7 +134,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .star-btn svg,.save-btn svg,.track-play svg,.badge svg,.verified-check svg{fill:currentColor;stroke:none}
 
 
-.employer-cta{margin:16px 0 22px;background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--accent) 7%,var(--card)));border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
+.cta-carousel{display:flex;gap:14px;margin:0 -1px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;padding:0 1px 4px}.cta-carousel::-webkit-scrollbar{display:none}.cta-slide{flex:0 0 100%;min-width:0;scroll-snap-align:start}.employer-cta{margin:16px 0 22px;background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--accent) 7%,var(--card)));border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}.candidate-cta{background:linear-gradient(145deg,var(--card),color-mix(in srgb,#0a84ff 7%,var(--card)));border-color:color-mix(in srgb,#0a84ff 22%,var(--border))}.candidate-cta .employer-cta-kicker,.candidate-cta .employer-cta-icon{color:#0a84ff}.candidate-cta .employer-cta-icon{background:rgba(10,132,255,.12)}
 .employer-cta-heading{padding:18px 16px 12px}
 .employer-cta-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--accent);margin-bottom:5px}
 .employer-cta-heading h2{margin:0;font-size:18px;letter-spacing:-.02em;color:var(--text)}
