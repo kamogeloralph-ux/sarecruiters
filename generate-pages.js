@@ -52,6 +52,22 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+function buildPublicSlugMap(records, getName) {
+  const counts = new Map();
+  records.forEach((record) => {
+    const base = slugify(getName(record));
+    counts.set(base, (counts.get(base) || 0) + 1);
+  });
+
+  const result = new Map();
+  records.forEach((record) => {
+    const base = slugify(getName(record));
+    const id = String(record.id);
+    result.set(id, counts.get(base) > 1 ? `${base}-${id.slice(0, 6)}` : base);
+  });
+  return result;
+}
+
 function pageShell({ title, description, canonical, bodyHtml, jsonLd }) {
   return `<!DOCTYPE html>
 <html lang="en-ZA">
@@ -124,7 +140,7 @@ async function fetchAll() {
 
 // ---------- page builders ----------
 
-function buildAgencyPage(agency, agencyBranches, agencyVacancies, slug) {
+function buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancySlugById) {
   const canonical = `${SITE_URL}/agency/${slug}/`;
   const title = `${agency.name} — SA Recruiters Directory`;
   const description = `${agency.name} is a recruitment agency listed on SA Recruiters${
@@ -145,7 +161,7 @@ function buildAgencyPage(agency, agencyBranches, agencyVacancies, slug) {
   const vacanciesHtml = agencyVacancies.length
     ? `<h2>Current Vacancies</h2><ul>${agencyVacancies
         .map((v) => {
-          const vSlug = slugify(v.title + '-' + v.id);
+          const vSlug = vacancySlugById.get(String(v.id)) || slugify(v.title);
           return `<li><a href="/vacancy/${vSlug}/">${escapeHtml(v.title)}</a>${
             v.location ? ` — ${escapeHtml(v.location)}` : ''
           }</li>`;
@@ -240,23 +256,21 @@ async function main() {
   console.log(`Fetched ${agencies.length} agencies, ${branches.length} branches, ${vacancies.length} vacancies.`);
 
   const sitemapUrls = [`${SITE_URL}/`];
+  const agencySlugById = buildPublicSlugMap(agencies, (a) => a.name);
+  const vacancySlugById = buildPublicSlugMap(vacancies, (v) => v.title);
 
   // Agencies
   const agencyDir = path.join(OUT_DIR, 'agency');
   ensureDir(agencyDir);
-  const usedAgencySlugs = new Set();
-
   agencies.forEach((agency) => {
-    let slug = slugify(agency.name);
-    if (usedAgencySlugs.has(slug)) slug = `${slug}-${agency.id.slice(0, 6)}`;
-    usedAgencySlugs.add(slug);
+    const slug = agencySlugById.get(String(agency.id)) || slugify(agency.name);
 
     const agencyBranches = branches.filter((b) => b.agency_id === agency.id);
     const agencyVacancies = vacancies.filter((v) => v.agency_id === agency.id);
 
     const dir = path.join(agencyDir, slug);
     ensureDir(dir);
-    fs.writeFileSync(path.join(dir, 'index.html'), buildAgencyPage(agency, agencyBranches, agencyVacancies, slug));
+    fs.writeFileSync(path.join(dir, 'index.html'), buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancySlugById));
     sitemapUrls.push(`${SITE_URL}/agency/${slug}/`);
 
     // stash slug on the agency object so vacancy pages can link back correctly
@@ -266,12 +280,8 @@ async function main() {
   // Vacancies
   const vacancyDir = path.join(OUT_DIR, 'vacancy');
   ensureDir(vacancyDir);
-  const usedVacancySlugs = new Set();
-
   vacancies.forEach((vacancy) => {
-    let slug = slugify(vacancy.title);
-    if (usedVacancySlugs.has(slug)) slug = `${slug}-${vacancy.id.toString().slice(0, 6)}`;
-    usedVacancySlugs.add(slug);
+    const slug = vacancySlugById.get(String(vacancy.id)) || slugify(vacancy.title);
 
     const agency = agencies.find((a) => a.id === vacancy.agency_id);
 

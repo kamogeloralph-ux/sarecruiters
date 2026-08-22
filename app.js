@@ -17,6 +17,10 @@ var agenciesCache = [];
 var branchesCache = [];
 var vacanciesCache = [];
 var employersCache = [];
+// Public static listing URLs are generated from the same deterministic maps
+// used by generate-pages.js. This keeps links correct when names repeat.
+var publicAgencySlugs = Object.create(null);
+var publicVacancySlugs = Object.create(null);
 var isAdmin = false;
 var publicVacancyPostingOpen = false;
 var publicEmployerRegistrationOpen = false;
@@ -180,6 +184,41 @@ function slugify(str) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
     .slice(0, 80) || 'listing';
+}
+
+function rebuildPublicListingSlugs() {
+  publicAgencySlugs = Object.create(null);
+  publicVacancySlugs = Object.create(null);
+
+  var agencyCounts = Object.create(null);
+  agenciesCache.forEach(function(a) {
+    var base = slugify(a.name);
+    agencyCounts[base] = (agencyCounts[base] || 0) + 1;
+  });
+  agenciesCache.forEach(function(a) {
+    var base = slugify(a.name);
+    publicAgencySlugs[a.id] = agencyCounts[base] > 1
+      ? base + '-' + String(a.id).slice(0, 6)
+      : base;
+  });
+
+  var vacancyCounts = Object.create(null);
+  vacanciesCache.forEach(function(v) {
+    var base = slugify(v.title);
+    vacancyCounts[base] = (vacancyCounts[base] || 0) + 1;
+  });
+  vacanciesCache.forEach(function(v) {
+    var base = slugify(v.title);
+    publicVacancySlugs[v.id] = vacancyCounts[base] > 1
+      ? base + '-' + String(v.id).slice(0, 6)
+      : base;
+  });
+}
+function publicAgencySlug(a) {
+  return publicAgencySlugs[a && a.id] || slugify(a && a.name);
+}
+function publicVacancySlug(v) {
+  return publicVacancySlugs[v && v.id] || slugify(v && v.title);
 }
 
 function escapeHtml(s) {
@@ -688,6 +727,7 @@ async function loadAll() {
   };
   if (window.requestIdleCallback) requestIdleCallback(runBackfill, { timeout: 2500 });
   else setTimeout(runBackfill, 1200);
+  rebuildPublicListingSlugs();
   updateStats();
   filterAndRenderCached();
   // Poster artwork is non-critical; fetch it after the first useful home render.
@@ -755,7 +795,7 @@ function hubCard(a) {
     '</button>' +
     '<div class="hub-panel" id="hub-panel-' + a.id + '">' +
       '<div class="hub-panel-inner">' +
-        '<a href="agency/' + slugify(a.name) + '/" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;color:var(--accent);margin-bottom:8px;text-decoration:none;" onclick="event.stopPropagation()">View public listing page ↗</a>' +
+        '<a href="agency/' + publicAgencySlug(a) + '/" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;color:var(--accent);margin-bottom:8px;text-decoration:none;" onclick="event.stopPropagation()">View public listing page ↗</a>' +
         '<div class="hub-tabs">' +
           '<button class="hub-tab active" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'vacancies\')">Vacancies</button>' +
           '<button class="hub-tab" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'branches\')">Branches</button>' +
@@ -1281,7 +1321,7 @@ function vacancyCard(v, agency) {
   } else {
     actions += '<button class="vac-apply" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId);showToast(\'Contact the agency or company directly to apply.\')">' + VAC_ICONS.apply + 'Contact to apply</button>';
   }
-  actions += '<a class="vac-apply vac-apply-secondary" href="vacancy/' + slugify(v.title) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">View public listing ↗</a>';
+  actions += '<a class="vac-apply vac-apply-secondary" href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">View public listing ↗</a>';
   actions += '<button class="vac-close-btn" onclick="event.stopPropagation();closeVac(this)">Close</button></div>';
 
   /* Admin actions (general vacancies + employer vacancies, when admin) */
