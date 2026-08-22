@@ -247,6 +247,30 @@ async function getEmployers() {
   } catch(err){}
   return readLocal('employers');
 }
+async function getManagedPosters() {
+  try {
+    var { data, error } = await supabaseClient.from('posters').select('id,audience,title,subtitle,image_url,sort_order').eq('is_active', true).order('audience', { ascending: true }).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
+    if (!error) return data || [];
+    console.warn('managed posters load', error);
+  } catch (e) { console.warn('managed posters load', e); }
+  return [];
+}
+function renderManagedPoster(poster, targetId) {
+  var target = document.getElementById(targetId);
+  if (!target) return;
+  if (!poster || !poster.image_url) { target.hidden = true; target.innerHTML = ''; return; }
+  target.hidden = false;
+  target.innerHTML = '<img loading="lazy" src="'+escapeHtml(poster.image_url)+'" alt="'+escapeHtml(poster.title || '')+'" onerror="this.closest(\'.managed-poster\').hidden=true">' +
+    ((poster.title || poster.subtitle) ? '<div class="managed-poster-copy">'+(poster.title?'<strong>'+escapeHtml(poster.title)+'</strong>':'')+(poster.subtitle?'<span>'+escapeHtml(poster.subtitle)+'</span>':'')+'</div>' : '');
+}
+function renderManagedPosters(posters) {
+  posters = posters || [];
+  var candidates = posters.filter(function(p){ return p.audience === 'candidates'; })[0];
+  var employers = posters.filter(function(p){ return p.audience === 'employers'; })[0];
+  renderManagedPoster(employers, 'employer-managed-poster');
+  renderManagedPoster(candidates, 'candidate-managed-poster');
+}
+
 async function upsertEmployer(e) {
   try {
     var { error } = await supabaseClient.from('employers').upsert(e);
@@ -643,6 +667,8 @@ async function loadAll() {
   else setTimeout(runBackfill, 1200);
   updateStats();
   filterAndRenderCached();
+  // Poster artwork is non-critical; fetch it after the first useful home render.
+  getManagedPosters().then(renderManagedPosters);
   saveDataCache();
   updatePostingToggleUI();
   updateEmployerRegUI();
