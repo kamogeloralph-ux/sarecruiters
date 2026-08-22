@@ -101,15 +101,19 @@
     </div>
 
     <div class="screen-scroll">
-    <div class="stats">
+    <div class="stats-wrap">
+      <button class="stats-scroll-btn stats-scroll-prev" type="button" data-ripple onclick="scrollStats(-1)" aria-label="Show previous statistics">‹</button>
+      <div class="stats" id="home-stats">
       <div class="stat-card stat-card-agencies" data-ripple onclick="showAllAgencies()" role="button" tabindex="0" aria-label="View all agencies"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span><div class="stat-value" id="stat-agencies">0</div><div class="stat-label">Agencies</div></div>
       <div class="stat-card stat-card-branches" data-ripple onclick="showAllBranches()" role="button" tabindex="0" aria-label="View all branches"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div class="stat-value" id="stat-branches">0</div><div class="stat-label">Branches</div></div>
       <div class="stat-card stat-card-vacancies" data-ripple onclick="showAllVacancies()" role="button" tabindex="0" aria-label="View all vacancies"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div class="stat-value" id="stat-vacancies">0</div><div class="stat-label">Vacancies</div></div>
       <div class="stat-card stat-card-employers" data-ripple onclick="showAllEmployers()" role="button" tabindex="0" aria-label="View all employers"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/></svg></span><div class="stat-value" id="stat-employers">0</div><div class="stat-label">Employers</div></div>
       <div class="stat-card stat-card-pool" data-ripple onclick="goPool('home')" role="button" tabindex="0" aria-label="View Pool Candidates"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M16 11a3 3 0 1 0 0-6M17 15c2.4.4 3.7 2 4 5"/></svg></span><div class="stat-value" id="stat-pool">0</div><div class="stat-label">Pool Candidates</div></div>
+      </div>
+      <button class="stats-scroll-btn stats-scroll-next" type="button" data-ripple onclick="scrollStats(1)" aria-label="Show next statistics">›</button>
     </div>
 
-    <div class="cta-carousel" aria-label="SA Recruiters services">
+    <div class="cta-carousel" id="cta-carousel" aria-label="SA Recruiters services">
       <section class="employer-cta cta-slide" aria-labelledby="employer-cta-title">
         <div class="employer-cta-heading">
           <div class="employer-cta-kicker">For employers</div>
@@ -159,8 +163,10 @@
         </div>
       </section>
     </div>
-    <div class="cta-swipe-hint" aria-label="Swipe left or right to view more services">
-      <span class="cta-swipe-arrow" aria-hidden="true">‹</span><span>Swipe left or right for more</span><span class="cta-swipe-dots" aria-hidden="true"><i class="active"></i><i></i></span><span class="cta-swipe-arrow" aria-hidden="true">›</span>
+    <div class="cta-swipe-hint" aria-label="Choose employer or candidate services">
+      <button type="button" class="cta-swipe-arrow" data-ripple onclick="scrollCtaPanel(-1)" aria-label="Show employer services">‹</button>
+      <span class="cta-swipe-dots" role="tablist" aria-label="Service panels"><button type="button" class="active" data-ripple onclick="setCtaPanel(0)" role="tab" aria-label="Employer services"></button><button type="button" data-ripple onclick="setCtaPanel(1)" role="tab" aria-label="Candidate services"></button></span>
+      <button type="button" class="cta-swipe-arrow" data-ripple onclick="scrollCtaPanel(1)" aria-label="Show candidate services">›</button>
     </div>
 
     <div class="section-head">

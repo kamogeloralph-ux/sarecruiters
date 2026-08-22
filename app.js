@@ -2312,6 +2312,41 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
     if (btn.dataset.tab === 'saved') renderSaved();
   });
 });
+
+// ===== Home horizontal navigation =====
+function scrollStats(direction) {
+  var row = document.getElementById('home-stats');
+  if (!row) return;
+  var card = row.querySelector('.stat-card');
+  var amount = card ? card.getBoundingClientRect().width + 8 : row.clientWidth * 0.8;
+  row.scrollBy({ left: direction * amount, behavior: 'smooth' });
+}
+function updateCtaDots() {
+  var carousel = document.getElementById('cta-carousel');
+  var dots = document.querySelectorAll('.cta-swipe-dots button');
+  if (!carousel || !dots.length) return;
+  var index = carousel.scrollLeft > carousel.clientWidth * 0.45 ? 1 : 0;
+  dots.forEach(function(dot, i) {
+    dot.classList.toggle('active', i === index);
+    dot.setAttribute('aria-selected', i === index ? 'true' : 'false');
+  });
+}
+function scrollCtaPanel(direction) {
+  var carousel = document.getElementById('cta-carousel');
+  if (!carousel) return;
+  carousel.scrollBy({ left: direction * carousel.clientWidth, behavior: 'smooth' });
+  setTimeout(updateCtaDots, 220);
+}
+function setCtaPanel(index) {
+  var carousel = document.getElementById('cta-carousel');
+  if (!carousel) return;
+  carousel.scrollTo({ left: Math.max(0, Math.min(1, index)) * carousel.clientWidth, behavior: 'smooth' });
+  setTimeout(updateCtaDots, 220);
+}
+(function initHomeHorizontalNavigation() {
+  var carousel = document.getElementById('cta-carousel');
+  if (carousel) carousel.addEventListener('scroll', updateCtaDots, { passive: true });
+})();
 function refreshHome() {
   var home = document.getElementById('screen-home');
   if (home) home.classList.add('active');
