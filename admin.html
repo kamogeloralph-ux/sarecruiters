@@ -230,6 +230,39 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .copy-link input{flex:1;background:none;border:none;color:var(--text);font-size:12.5px;font-family:monospace;outline:none;min-width:0}
 .copy-link button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
 .divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ===== Admin section color identities ===== */
+:root{
+  --admin-dashboard:#2563eb;
+  --admin-analytics:#0f766e;
+  --admin-manage:#7c3aed;
+  --admin-review:#d97706;
+  --admin-content:#db2777;
+  --admin-settings:#475569;
+}
+.admin-shell .nav-item{border-left:3px solid transparent;transition:background .2s ease,color .2s ease,border-color .2s ease}
+.admin-shell .nav-dashboard{--nav-color:var(--admin-dashboard)}
+.admin-shell .nav-manage{--nav-color:var(--admin-manage)}
+.admin-shell .nav-review{--nav-color:var(--admin-review)}
+.admin-shell .nav-content{--nav-color:var(--admin-content)}
+.admin-shell .nav-settings{--nav-color:var(--admin-settings)}
+.admin-shell .nav-item:hover{border-left-color:var(--nav-color);color:var(--nav-color);background:color-mix(in srgb,var(--nav-color) 8%,var(--card))}
+.admin-shell .nav-item.active{border-left-color:var(--nav-color);color:var(--nav-color);background:color-mix(in srgb,var(--nav-color) 12%,var(--card))}
+.admin-shell .nav-item.active .nav-badge{background:var(--nav-color);color:#fff}
+.admin-shell .section-head{padding:10px 12px;border-radius:14px;border-left:4px solid var(--section-color);background:color-mix(in srgb,var(--section-color) 7%,var(--card));margin-bottom:16px}
+.admin-shell .section-dashboard{--section-color:var(--admin-dashboard)}
+.admin-shell .section-manage{--section-color:var(--admin-manage)}
+.admin-shell .section-review{--section-color:var(--admin-review)}
+.admin-shell .section-content{--section-color:var(--admin-content)}
+.admin-shell .section-settings{--section-color:var(--admin-settings)}
+.admin-shell .section-head h2{color:var(--section-color)}
+.admin-shell .analytics-card{border-top:3px solid var(--admin-analytics)}
+.admin-shell .analytics-card h3{color:var(--admin-analytics)}
+.admin-shell .section-head .back-btn:hover,.admin-shell .section-head .section-close-btn:hover{color:var(--section-color);border-color:var(--section-color);background:color-mix(in srgb,var(--section-color) 10%,var(--card))}
+@supports not (color:color-mix(in srgb, black, white)){
+  .admin-shell .section-head{background:var(--card-2)}
+  .admin-shell .nav-item:hover,.admin-shell .nav-item.active{background:var(--card-2)}
+}
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
