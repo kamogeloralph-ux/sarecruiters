@@ -264,11 +264,18 @@ function renderManagedPoster(poster, targetId) {
     ((poster.title || poster.subtitle) ? '<div class="managed-poster-copy">'+(poster.title?'<strong>'+escapeHtml(poster.title)+'</strong>':'')+(poster.subtitle?'<span>'+escapeHtml(poster.subtitle)+'</span>':'')+'</div>' : '');
 }
 function renderManagedPosters(posters) {
-  posters = posters || [];
-  var candidates = posters.filter(function(p){ return p.audience === 'candidates'; })[0];
-  var employers = posters.filter(function(p){ return p.audience === 'employers'; })[0];
-  renderManagedPoster(employers, 'employer-managed-poster');
-  renderManagedPoster(candidates, 'candidate-managed-poster');
+  var target = document.getElementById('poster-managed-poster');
+  if (!target) return;
+  posters = (posters || []).filter(function(p){ return p && p.image_url; });
+  if (!posters.length) {
+    target.innerHTML = '<div class="poster-empty">Campaign posters will appear here soon.</div>';
+    return;
+  }
+  target.innerHTML = posters.map(function(p){
+    var label = p.audience === 'employers' ? 'For Employers' : 'For Candidates';
+    return '<article class="managed-poster poster-page-card"><img loading="lazy" src="'+escapeHtml(p.image_url)+'" alt="'+escapeHtml(p.title || label+' campaign poster')+'" onerror="this.closest(\'.poster-page-card\').remove()">'+
+      '<div class="managed-poster-copy"><strong>'+escapeHtml(p.title || label)+'</strong>'+(p.subtitle?'<span>'+escapeHtml(p.subtitle)+'</span>':'')+'</div></article>';
+  }).join('');
 }
 
 async function upsertEmployer(e) {
@@ -2351,7 +2358,8 @@ function updateCtaDots() {
   var carousel = document.getElementById('cta-carousel');
   var dots = document.querySelectorAll('.cta-swipe-dots button');
   if (!carousel || !dots.length) return;
-  var index = carousel.scrollLeft > carousel.clientWidth * 0.45 ? 1 : 0;
+  var index = Math.round(carousel.scrollLeft / Math.max(1, carousel.clientWidth));
+  index = Math.max(0, Math.min(dots.length - 1, index));
   dots.forEach(function(dot, i) {
     dot.classList.toggle('active', i === index);
     dot.setAttribute('aria-selected', i === index ? 'true' : 'false');
@@ -2366,7 +2374,7 @@ function scrollCtaPanel(direction) {
 function setCtaPanel(index) {
   var carousel = document.getElementById('cta-carousel');
   if (!carousel) return;
-  carousel.scrollTo({ left: Math.max(0, Math.min(1, index)) * carousel.clientWidth, behavior: 'smooth' });
+  carousel.scrollTo({ left: Math.max(0, Math.min(2, index)) * carousel.clientWidth, behavior: 'smooth' });
   setTimeout(updateCtaDots, 220);
 }
 (function initHomeHorizontalNavigation() {
