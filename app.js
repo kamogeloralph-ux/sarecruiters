@@ -3198,6 +3198,30 @@ processAlertUnsubscribe();
 // included in loadAll, while the optional daily track loads just after paint.
 setTimeout(loadTodayTrack, 250);
 
+// ===== Refresh data when the app comes back from being idle =====
+// A PWA that's been backgrounded (screen locked, app switched away from)
+// doesn't reload — the page just sits frozen with whatever it last had in
+// memory. Without this, reopening after a while shows stale counts/listings
+// until the user manually pulls to refresh. Re-fetch quietly once the tab
+// has been hidden for more than a couple of minutes and becomes visible again.
+(function initIdleResumeRefresh() {
+  var hiddenAt = null;
+  var MIN_HIDDEN_MS = 2 * 60 * 1000; // only refetch if it's been idle a while
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      hiddenAt = Date.now();
+    } else if (hiddenAt && (Date.now() - hiddenAt) > MIN_HIDDEN_MS) {
+      hiddenAt = null;
+      loadAll();
+    }
+  });
+  // Covers the back/forward-cache restore case (Safari/iOS in particular),
+  // which visibilitychange doesn't always catch.
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) loadAll();
+  });
+})();
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('sw.js', { scope: '/', updateViaCache: 'none' }).then(function(reg) {
