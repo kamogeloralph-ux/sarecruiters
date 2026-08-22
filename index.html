@@ -184,11 +184,13 @@
   <!-- ============ MENU ============ -->
   <div class="screen" id="screen-profile">
     <div class="screen-scroll menu-scroll">
-    <header>
-      <div class="logo-text">Menu</div>
-      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button>
+    <header class="menu-header">
+      <div class="menu-header-actions">
+        <button class="menu-more-btn" data-ripple onclick="openNotesSheet()" aria-label="Open Notes" title="Notes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></button>
+        <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+        </button>
+      </div>
     </header>
     <div class="profile-card-ios">
       <div class="profile-avatar-ios" id="profile-avatar"><img src="icons/icon-512.png" alt="SA Recruiters" onerror="this.onerror=null;this.src='sa-recruiters-512-rounded.png'"></div>
@@ -874,6 +876,19 @@
   </div>
 </div>
 
+<!-- ============ NOTES SHEET ============ -->
+<div class="sheet-scrim" id="notes-overlay">
+  <div class="sheet notes-sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('notes-overlay')" aria-label="Close Notes" title="Close Notes">×</button>
+    <h3>Notes</h3>
+    <p class="notes-intro">Keep private reminders while you browse vacancies, agencies, employers, and candidates. Notes are stored on this device.</p>
+    <input type="hidden" id="note-edit-id" value="">
+    <div class="field"><label for="note-title">Title</label><input id="note-title" maxlength="80" placeholder="e.g. Follow up with employer"></div>
+    <div class="field"><label for="note-body">Note</label><textarea id="note-body" maxlength="2000" placeholder="Write your note here…" style="min-height:120px"></textarea></div>
+    <div class="notes-form-actions"><button class="sheet-cancel" data-ripple onclick="resetNoteForm()">Clear</button><button class="sheet-submit" data-ripple onclick="saveNote()">Save note</button></div>
+    <div id="notes-list" class="notes-list"></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="content.js" defer></script>
