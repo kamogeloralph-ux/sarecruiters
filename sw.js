@@ -10,7 +10,7 @@
             sync, periodicsync, beforeevicted, controllerchange-friendly skipWaiting
    ========================================================================== */
 
-const VERSION = 'sa-recruiters-v128';
+const VERSION = 'sa-recruiters-v129';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -113,8 +113,33 @@ function navigationShellFor(request) {
     return response || caches.match('./offline.html');
   });
 }
+// Wraps fetch() with a timeout so a slow-to-wake connection (e.g. right
+// after the phone/PWA comes back from idle or the radio is reconnecting)
+// gets a real chance to respond instead of being treated as "offline"
+// the instant the promise is slow. Also retries once on outright failure
+// before giving up — most idle-resume failures are a single transient
+// blip, not a genuine offline state.
+function fetchWithTimeout(request, ms) {
+  return new Promise(function(resolve, reject) {
+    var timer = setTimeout(function() { reject(new Error('timeout')); }, ms);
+    fetch(request.clone ? request.clone() : request).then(function(res) {
+      clearTimeout(timer);
+      resolve(res);
+    }, function(err) {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+
 function networkFirstWithFallback(request) {
-  return fetch(request).then(function(response) {
+  return fetchWithTimeout(request, 8000).catch(function() {
+    // One short retry — covers the common case of the connection still
+    // waking up after the device/app was idle.
+    return new Promise(function(res) { setTimeout(res, 700); }).then(function() {
+      return fetchWithTimeout(request, 8000);
+    });
+  }).then(function(response) {
     if (response && response.status === 200 && response.type === 'basic') {
       var copy = response.clone();
       caches.open(RUNTIME_CACHE).then(function(cache) { cache.put(request, copy); });
@@ -123,7 +148,8 @@ function networkFirstWithFallback(request) {
   }).catch(function() {
     // Never serve a previously cached navigation URL here: that can reopen
     // an old public/manager page after refresh. Always use the shell matching
-    // the requested pathname.
+    // the requested pathname. This is a last resort after a real failure
+    // and one retry, not the first sign of trouble.
     return navigationShellFor(request);
   });
 }
