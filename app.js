@@ -1757,6 +1757,78 @@ async function deleteGeneralVacancy(id) {
 // ===== Sheets / misc =====
 function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
 function openSupportSheet() { document.getElementById('support-overlay').classList.add('open'); }
+// ===== Private device Notes =====
+var NOTES_KEY = 'sa_recruiters_private_notes_v1';
+function readNotes() {
+  try { var notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]'); return Array.isArray(notes) ? notes : []; } catch(e) { return []; }
+}
+function writeNotes(notes) {
+  try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch(e) { showToast('Could not save note'); }
+}
+function openNotesSheet() {
+  resetNoteForm();
+  renderNotes();
+  var overlay = document.getElementById('notes-overlay');
+  if (overlay) overlay.classList.add('open');
+}
+function resetNoteForm() {
+  var id = document.getElementById('note-edit-id');
+  var title = document.getElementById('note-title');
+  var body = document.getElementById('note-body');
+  if (id) id.value = '';
+  if (title) title.value = '';
+  if (body) body.value = '';
+  var save = document.querySelector('#notes-overlay .sheet-submit');
+  if (save) save.textContent = 'Save note';
+}
+function renderNotes() {
+  var list = document.getElementById('notes-list');
+  if (!list) return;
+  var notes = readNotes();
+  if (!notes.length) { list.innerHTML = '<div class="notes-empty">No notes yet. Add a reminder above.</div>'; return; }
+  list.innerHTML = notes.map(function(n) {
+    var title = escapeHtml(n.title || 'Untitled note');
+    var body = escapeHtml(n.body || '');
+    var date = n.updatedAt ? new Date(n.updatedAt).toLocaleString() : '';
+    var id = escapeHtml(n.id);
+    return '<article class="note-item"><div class="note-item-title">' + title + '</div><div class="note-item-body">' + body + '</div><div class="note-item-meta">Updated ' + escapeHtml(date) + '</div><div class="note-item-actions"><button data-ripple onclick="editNote(\'' + id + '\')">Edit</button><button data-ripple onclick="deleteNote(\'' + id + '\')">Delete</button></div></article>';
+  }).join('');
+}
+function saveNote() {
+  var titleEl = document.getElementById('note-title');
+  var bodyEl = document.getElementById('note-body');
+  var editEl = document.getElementById('note-edit-id');
+  var title = (titleEl ? titleEl.value : '').trim();
+  var body = (bodyEl ? bodyEl.value : '').trim();
+  if (!title && !body) { showToast('Write something first'); return; }
+  var notes = readNotes();
+  var id = editEl ? editEl.value : '';
+  var now = new Date().toISOString();
+  if (id) {
+    notes = notes.map(function(n) { return n.id === id ? { id:n.id, title:title || 'Untitled note', body:body, updatedAt:now } : n; });
+    showToast('Note updated');
+  } else {
+    notes.unshift({ id:'note_' + Date.now() + '_' + Math.random().toString(36).slice(2,8), title:title || 'Untitled note', body:body, updatedAt:now });
+    showToast('Note saved');
+  }
+  writeNotes(notes); resetNoteForm(); renderNotes();
+}
+function editNote(id) {
+  var note = readNotes().find(function(n){ return n.id === id; });
+  if (!note) return;
+  document.getElementById('note-edit-id').value = note.id;
+  document.getElementById('note-title').value = note.title || '';
+  document.getElementById('note-body').value = note.body || '';
+  var save = document.querySelector('#notes-overlay .sheet-submit');
+  if (save) save.textContent = 'Update note';
+  document.getElementById('note-title').focus();
+}
+function deleteNote(id) {
+  var notes = readNotes();
+  writeNotes(notes.filter(function(n){ return n.id !== id; }));
+  renderNotes();
+  showToast('Note deleted');
+}
 
 // ===== Report a problem =====
 // ===== WHATSAPP AUTO-SEND HELPER =====
