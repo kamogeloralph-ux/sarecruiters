@@ -2578,6 +2578,16 @@ function goBackToProfile() {
 }
 
 function goBackToHome() {
+  // If we're leaving a manager/manager-status screen, restore the normal app
+  // chrome (bottom nav + admin FAB) that those screens hide on entry.
+  if (managerMode) { try { exitManagerMode(); return; } catch(e){} }
+  if (employerManagerMode) { try { exitEmployerManagerMode(); return; } catch(e){} }
+  // Also covers the manager-link STATUS screen (loading/invalid), which hides
+  // the nav but doesn't set managerMode/employerManagerMode.
+  var nav = document.querySelector('.bottom-nav');
+  if (nav && nav.style.display === 'none') nav.style.display = '';
+  var fabAdmin = document.getElementById('fab-admin');
+  if (fabAdmin && fabAdmin.style.display === 'none') fabAdmin.style.display = isAdmin ? 'flex' : 'none';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   var home = document.getElementById('screen-home');
   if (home) home.classList.add('active');
@@ -3082,24 +3092,73 @@ function openManagerLink(agencyId) {
 
 // ===== MANAGER MODE (agency self-service, add-only) =====
 var managerTokenRetries = 0;
+var MANAGER_TOKEN_MAX_RETRIES = 12;   // ~30s of patient retries while data loads
+var managerTokenKind = null;          // 'agency' | 'employer' (for the status screen)
+var managerStatusWatchdog = null;     // safety timeout that flips loading -> error
+
+// Show the dedicated manager-link status screen so a token URL never silently
+// drops the visitor onto the normal home screen while it is still resolving.
+function showManagerStatus(state, heading, body) {
+  var screen = document.getElementById('screen-manager-status');
+  if (!screen) return;
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  screen.classList.add('active');
+  var nav = document.querySelector('.bottom-nav');
+  if (nav) nav.style.display = 'none';
+  var fabAdmin = document.getElementById('fab-admin');
+  if (fabAdmin) fabAdmin.style.display = 'none';
+  var spinner = document.getElementById('manager-status-spinner');
+  var h = document.getElementById('manager-status-heading');
+  var p = document.getElementById('manager-status-body');
+  var retry = document.getElementById('manager-status-retry');
+  var home = document.getElementById('manager-status-home');
+  var ctx = document.querySelector('#screen-manager-status .screen-context');
+  if (spinner) spinner.style.display = (state === 'loading') ? '' : 'none';
+  if (h) h.textContent = heading || '';
+  if (p) p.textContent = body || '';
+  if (ctx) ctx.textContent = (state === 'loading') ? 'Please wait' : 'Link problem';
+  if (retry) retry.style.display = (state === 'error') ? '' : 'none';
+  if (home) home.style.display = (state === 'error') ? '' : 'none';
+}
+function retryManagerTokenFromStatus() {
+  // Re-trigger resolution for whichever token kind is pending.
+  if (managerPendingToken) { enterManagerMode(managerPendingToken); return; }
+  if (employerManagerPendingToken) { enterEmployerManagerMode(employerManagerPendingToken); return; }
+  goBackToHome();
+}
 function enterManagerMode(token) {
+  // Always surface the status screen first so the visitor sees that their
+  // manager link is being opened, not the generic directory home screen.
+  if (!managerMode) showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
   var agencyId = agencyIdFromToken(token);
   if (!agencyId) {
-    if (agenciesCache.length === 0 && managerTokenRetries < 3) {
-      // Agencies genuinely haven't loaded yet (e.g. a slow connection) —
-      // retry shortly instead of silently giving up and showing the home screen.
+    // Data hasn't arrived yet (cold start, slow/flaky connection, or Supabase
+    // is momentarily unreachable). Keep the token pending and keep retrying
+    // loadAll() for a generous window instead of giving up after 3 attempts,
+    // which is what previously dumped people back onto the home screen.
+    if (agenciesCache.length === 0 && managerTokenRetries < MANAGER_TOKEN_MAX_RETRIES) {
       managerTokenRetries++;
       managerPendingToken = token;
-      setTimeout(function(){ if (managerPendingToken) loadAll(); }, 1200);
+      managerTokenKind = 'agency';
+      var backoff = Math.min(1200 + (managerTokenRetries * 300), 3000);
+      setTimeout(function(){ if (managerPendingToken) loadAll(); }, backoff);
       return false;
     }
     // Data has loaded and the token still doesn't match any agency — the
-    // link is genuinely invalid/expired. Say so instead of quietly falling
-    // through to the normal home screen, which just looks like a dead link.
+    // link is genuinely invalid/expired. Show a clear, dedicated invalid-link
+    // state (with a retry + back-to-directory option) rather than silently
+    // landing on the home screen, which just looks like a dead link.
     managerPendingToken = null;
-    showToast('This management link is invalid or has expired. Please contact SA Recruiters for a new one.');
+    managerTokenKind = null;
+    showManagerStatus('error',
+      'This management link is invalid or expired',
+      'We couldn\'t find an agency for this link. It may have expired or been replaced. Please request a new link from SA Recruiters, or try again in case the connection was interrupted.');
     return false;
   }
+  managerTokenRetries = 0;
+  managerPendingToken = null;
+  managerTokenKind = null;
+  clearTimeout(managerStatusWatchdog);
   managerMode = true;
   managerAgency = agenciesCache.find(function(a){ return a.id === agencyId; });
   if (!managerAgency) { managerMode = false; return false; }
@@ -3193,21 +3252,33 @@ function managerAddVacancy() {
 // themselves here; everything else (contact details, verification) stays
 // admin-controlled. Once saved, a vacancy is read-only from this screen.
 var employerManagerTokenRetries = 0;
+var EMPLOYER_MANAGER_TOKEN_MAX_RETRIES = 12;
 function enterEmployerManagerMode(token) {
+  if (!employerManagerMode) showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
   var employerId = employerIdFromToken(token);
   if (!employerId) {
-    if (employersCache.length === 0 && employerManagerTokenRetries < 3) {
-      // Employers genuinely haven't loaded yet — retry shortly instead of
-      // silently giving up and showing the home screen.
+    // Employers genuinely haven't loaded yet (cold start / slow connection) —
+    // keep retrying for a generous window instead of giving up after 3 tries,
+    // which previously dropped the visitor back onto the home screen.
+    if (employersCache.length === 0 && employerManagerTokenRetries < EMPLOYER_MANAGER_TOKEN_MAX_RETRIES) {
       employerManagerTokenRetries++;
       employerManagerPendingToken = token;
-      setTimeout(function(){ if (employerManagerPendingToken) loadAll(); }, 1200);
+      managerTokenKind = 'employer';
+      var backoff = Math.min(1200 + (employerManagerTokenRetries * 300), 3000);
+      setTimeout(function(){ if (employerManagerPendingToken) loadAll(); }, backoff);
       return false;
     }
     employerManagerPendingToken = null;
-    showToast('This management link is invalid or has expired. Please contact SA Recruiters for a new one.');
+    managerTokenKind = null;
+    showManagerStatus('error',
+      'This management link is invalid or expired',
+      'We couldn\'t find a company for this link. It may have expired or been replaced. Please request a new link from SA Recruiters, or try again in case the connection was interrupted.');
     return false;
   }
+  employerManagerTokenRetries = 0;
+  employerManagerPendingToken = null;
+  managerTokenKind = null;
+  clearTimeout(managerStatusWatchdog);
   employerManagerMode = true;
   managerEmployer = employersCache.find(function(e){ return e.id === employerId; });
   if (!managerEmployer) { employerManagerMode = false; return false; }
@@ -3275,14 +3346,36 @@ async function processAlertUnsubscribe() {
 (function detectManagerMode() {
   var params = new URLSearchParams(window.location.search);
   var token = params.get('manage');
+  var empToken = params.get('manage_employer');
   if (token) {
     // Agencies aren't loaded yet; set pending token — loadAll() will enter manager mode
     managerPendingToken = token;
+    managerTokenKind = 'agency';
   }
-  var empToken = params.get('manage_employer');
   if (empToken) {
     // Employers aren't loaded yet; set pending token — loadAll() will enter employer manager mode
     employerManagerPendingToken = empToken;
+    managerTokenKind = 'employer';
+  }
+  // If a manager token is present in the URL, immediately take over the
+  // screen with the manager-link status view. This prevents the normal home
+  // screen from flashing up (and looking like the link "redirected back to
+  // the app") while the data required to resolve the token is still loading.
+  if (token || empToken) {
+    showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
+    // Safety watchdog: if the token still hasn't been resolved ~20s after the
+    // link was opened (e.g. the data backend is unreachable and loadAll() is
+    // hung waiting on it), switch from the indefinite "loading" spinner to an
+    // actionable "couldn't load / try again" state instead of leaving the
+    // visitor staring at a spinner forever.
+    clearTimeout(managerStatusWatchdog);
+    managerStatusWatchdog = setTimeout(function() {
+      if (managerPendingToken || employerManagerPendingToken) {
+        showManagerStatus('error',
+          'Couldn\'t load your manager link',
+          'We weren\'t able to reach SA Recruiters. Please check your connection and try again.');
+      }
+    }, 20000);
   }
 })();
 
