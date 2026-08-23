@@ -258,11 +258,14 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .contact-link:active{opacity:.6}
 .hub-contact-preferred{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;padding:5px 11px;border-radius:var(--radius-pill);vertical-align:middle}
 .hub-contact-preferred svg{width:12px;height:12px}
-/* Compact "Label: value" contact rows — same neat, low-space layout as admin.html */
-.det-plain{padding:2px 2px 6px;font-size:13.5px;line-height:1.85}
-.det-row{word-break:break-word;overflow-wrap:break-word;color:var(--text)}
+/* Compact "Label: value" contact rows — same neat, low-space layout as admin.html.
+   Standardized app-wide: bold black label (the question), grey value (the answer) —
+   used by agency/branch/employer contact rows (.det-plain) and Talent Pool cards (.pool-mini-details). */
+.det-plain{padding:2px 2px 6px;font-size:13px;line-height:1.6}
+.det-row{word-break:break-word;overflow-wrap:break-word;color:var(--text-2);margin-bottom:5px}
+.det-row:last-child{margin-bottom:0}
 .det-row.muted{color:var(--text-2);font-style:italic}
-.det-label{color:var(--text-2);font-weight:600;margin-right:3px}
+.det-label{color:var(--text);font-weight:600;margin-right:3px}
 .company-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .company-chip{font-size:11px;font-weight:600;color:var(--text);background:var(--card-3);border:1px solid var(--border);border-radius:var(--radius-pill);padding:5px 11px}
 .hub-admin-row{display:flex;gap:8px;margin-top:14px}
@@ -716,11 +719,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .pool-mini-card .row-chevron{position:absolute;right:14px;top:16px;color:var(--text-2)}
 .pool-mini-card .row-chevron svg{width:18px;height:18px;transition:transform .2s var(--ease)}
 .pool-mini-card.open .row-chevron svg{transform:rotate(180deg)}
-.pool-mini-details{margin-top:10px;font-size:13px;line-height:1.6;color:var(--text-2)}
-/* Match admin.html's neat "Label: value" convention — bold black question, grey answer */
-.pool-mini-details .det-row{margin-bottom:5px;color:var(--text-2)}
-.pool-mini-details .det-row:last-child{margin-bottom:0}
-.pool-mini-details .det-label{color:var(--text);font-weight:600}
+.pool-mini-details{margin-top:10px;font-size:13px;line-height:1.6}
 .mini-cv-pitch{background:var(--accent-soft);border-radius:10px;padding:9px 10px;margin-top:5px}
 .pool-mini-card .manager-item-sub{padding-right:8px}
 @media (max-width:520px){.pool-mini-card{padding-right:38px}.pool-mini-card .row-chevron{right:12px}}
