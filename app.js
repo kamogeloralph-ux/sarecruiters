@@ -3133,15 +3133,22 @@ function enterManagerMode(token) {
   var agencyId = agencyIdFromToken(token);
   if (!agencyId) {
     // Data hasn't arrived yet (cold start, slow/flaky connection, or Supabase
-    // is momentarily unreachable). Keep the token pending and keep retrying
-    // loadAll() for a generous window instead of giving up after 3 attempts,
-    // which is what previously dumped people back onto the home screen.
+    // is momentarily unreachable — e.g. a paused free-tier project waking up,
+    // which can easily take 15-20s+ on the very first query). Keep the token
+    // pending and keep retrying for a generous window instead of giving up
+    // after 3 attempts, which is what previously dumped people back onto the
+    // home screen.
     if (agenciesCache.length === 0 && managerTokenRetries < MANAGER_TOKEN_MAX_RETRIES) {
       managerTokenRetries++;
       managerPendingToken = token;
       managerTokenKind = 'agency';
       var backoff = Math.min(1200 + (managerTokenRetries * 300), 3000);
-      setTimeout(function(){ if (managerPendingToken) loadAll(); }, backoff);
+      // Push the watchdog out so it never fires mid-retry — see bumpManagerWatchdog().
+      bumpManagerWatchdog(backoff + 8000);
+      // Use the lightweight single-table fetch instead of the full loadAll()
+      // bundle — a manager link only needs `agencies` to resolve, so retries
+      // shouldn't wait on branches/vacancies/employers/settings too.
+      setTimeout(function(){ if (managerPendingToken) fastResolveManagerToken(); }, backoff);
       return false;
     }
     // Data has loaded and the token still doesn't match any agency — the
@@ -3265,7 +3272,8 @@ function enterEmployerManagerMode(token) {
       employerManagerPendingToken = token;
       managerTokenKind = 'employer';
       var backoff = Math.min(1200 + (employerManagerTokenRetries * 300), 3000);
-      setTimeout(function(){ if (employerManagerPendingToken) loadAll(); }, backoff);
+      bumpManagerWatchdog(backoff + 8000);
+      setTimeout(function(){ if (employerManagerPendingToken) fastResolveManagerToken(); }, backoff);
       return false;
     }
     employerManagerPendingToken = null;
@@ -3342,6 +3350,49 @@ async function processAlertUnsubscribe() {
   } catch (e) { showToast('Could not update email alerts — please try again'); }
 }
 
+// Safety watchdog: if the token still hasn't resolved a while after the link
+// was opened (or after the most recent retry attempt), switch from the
+// indefinite "loading" spinner to an actionable "couldn't load / try again"
+// state instead of leaving the visitor staring at a spinner forever.
+//
+// This is intentionally a "bump" rather than a single fixed timer set once on
+// page load: token resolution retries for up to ~30s in the background (see
+// MANAGER_TOKEN_MAX_RETRIES), most commonly because a paused free-tier
+// Supabase project needs 10-20s+ to wake up on its first query. A flat 20s
+// timer fired WHILE those retries were still legitimately in progress, so
+// the error screen showed up before the app had even finished trying — which
+// is why "Try again" kept appearing on slow connections. Every retry now
+// pushes this watchdog forward instead of racing it.
+function bumpManagerWatchdog(delayMs) {
+  clearTimeout(managerStatusWatchdog);
+  managerStatusWatchdog = setTimeout(function() {
+    if (managerPendingToken || employerManagerPendingToken) {
+      showManagerStatus('error',
+        'Couldn\'t load your manager link',
+        'We weren\'t able to reach SA Recruiters. Please check your connection and try again.');
+    }
+  }, delayMs);
+}
+
+// Fast-path token resolution: a manager link only needs ONE table (agencies,
+// or employers) to resolve the token — it doesn't need the other six queries
+// loadAll() fires (branches, vacancies, employers/agencies, and three
+// app_settings lookups). Resolving the token from a single lightweight query
+// means the link stops waiting on unrelated data. loadAll() still runs
+// separately to load everything else the app needs.
+async function fastResolveManagerToken() {
+  if (managerPendingToken && agenciesCache.length === 0) {
+    var agencies = await getAgencies();
+    if (!agencies.__loadError) agenciesCache = agencies;
+    if (managerPendingToken) enterManagerMode(managerPendingToken);
+  }
+  if (employerManagerPendingToken && employersCache.length === 0) {
+    var employers = await getEmployers();
+    if (!employers.__loadError) employersCache = employers;
+    if (employerManagerPendingToken) enterEmployerManagerMode(employerManagerPendingToken);
+  }
+}
+
 // ===== Detect manager mode from URL (?manage=TOKEN or ?manage_employer=TOKEN) =====
 (function detectManagerMode() {
   var params = new URLSearchParams(window.location.search);
@@ -3363,19 +3414,10 @@ async function processAlertUnsubscribe() {
   // the app") while the data required to resolve the token is still loading.
   if (token || empToken) {
     showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
-    // Safety watchdog: if the token still hasn't been resolved ~20s after the
-    // link was opened (e.g. the data backend is unreachable and loadAll() is
-    // hung waiting on it), switch from the indefinite "loading" spinner to an
-    // actionable "couldn't load / try again" state instead of leaving the
-    // visitor staring at a spinner forever.
-    clearTimeout(managerStatusWatchdog);
-    managerStatusWatchdog = setTimeout(function() {
-      if (managerPendingToken || employerManagerPendingToken) {
-        showManagerStatus('error',
-          'Couldn\'t load your manager link',
-          'We weren\'t able to reach SA Recruiters. Please check your connection and try again.');
-      }
-    }, 20000);
+    bumpManagerWatchdog(20000);
+    // Kick off the lightweight single-table fetch immediately, in parallel
+    // with loadAll() below — whichever resolves the token first wins.
+    fastResolveManagerToken();
   }
 })();
 
