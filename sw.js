@@ -1,13 +1,25 @@
 /*
  * SA Recruiters service worker
  *
- * Navigation uses the cached app shell first. This is intentional: a browser
- * reload/pull-to-refresh is a navigation request, and the app shell must be
- * available even when the network is slow or temporarily unavailable. The
- * application then refreshes its directory data independently after startup.
+ * Navigation strategy: NETWORK-FIRST with a cached-shell fallback.
+ *   - A reload / pull-to-refresh is a navigation request. When the device is
+ *     online we serve the freshest shell from the network so the app always
+ *     reflects the latest deployed HTML/JS.
+ *   - When the network is slow or unavailable we fall back to the cached app
+ *     shell (index.html / admin.html / privacy.html). The app then refreshes
+ *     its directory data independently after startup.
+ *   - offline.html is only ever shown as an ABSOLUTE last resort, when no
+ *     shell for the route is cached at all. This stops the recurring bug where
+ *     an idle app or a pull-to-refresh "fell back to its offline page" simply
+ *     because the network was momentarily flaky.
+ *
+ * Precaching is NON-ATOMIC: each core asset is cached independently so that a
+ * single 404 (e.g. an icon not yet shipped) can no longer prevent the whole
+ * app shell from installing — which was another cause of the offline page
+ * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v132';
+const VERSION = 'sa-recruiters-v133';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -29,8 +41,13 @@ const CORE_ASSETS = [
   './icons/favicon.ico'
 ];
 
+// Map of "clean" route paths -> the cached shell document that represents them.
+// All SPA routes (home, ?manage=TOKEN, ?manage_employer=TOKEN, ?tab=..., etc.)
+// resolve to the same index.html shell, so a token/manager URL always rehydrates
+// the app rather than being mistaken for a missing page.
 const CORE_SHELLS = {
   '/': './index.html',
+  '/index.html': './index.html',
   '/admin.html': './admin.html',
   '/privacy.html': './privacy.html',
   '/offline.html': './offline.html'
@@ -39,9 +56,17 @@ const CORE_SHELLS = {
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CORE_CACHE)
-      // Keep installation atomic for the app shell. Activating a worker with
-      // a partial shell is what causes an offline page after the next reload.
-      .then(function(cache) { return cache.addAll(CORE_ASSETS); })
+      // Cache each asset independently (non-atomic). A failed addAll leaves
+      // the cache empty and is the root cause of "offline page on reload"
+      // after a partial install; caching item-by-item guarantees we keep
+      // everything that IS available.
+      .then(function(cache) {
+        return Promise.all(CORE_ASSETS.map(function(asset) {
+          return cache.add(asset).catch(function(err) {
+            console.warn('[sw] precache miss:', asset, err && err.message);
+          });
+        }));
+      })
       .then(function() { return self.skipWaiting(); })
   );
 });
@@ -113,6 +138,11 @@ function cacheFirst(request, cacheName) {
   });
 }
 
+// Resolve which cached shell document represents a given navigation URL.
+// The query string (e.g. ?manage=TOKEN) is intentionally ignored: every SPA
+// route is backed by the same index.html shell, and the app reads its own
+// query params on startup. Ignoring the query here is what lets a token URL
+// hit the cached shell instead of falling through to offline.html.
 function shellForNavigation(request) {
   var pathname = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
   return CORE_SHELLS[pathname] || './index.html';
@@ -145,24 +175,39 @@ function publicListingNavigation(request) {
   });
 }
 
+// Return a cached shell for a navigation, ignoring the query string so that
+// SPA routes such as /?manage=TOKEN resolve to the cached index.html.
 function cachedShellResponse(request) {
   var shell = shellForNavigation(request);
-  return caches.match(shell).then(function(response) {
+  return caches.match(shell, { ignoreSearch: true }).then(function(response) {
     if (response) return response;
     // A route-specific shell may be absent in an older installation; the main
     // app shell is still a valid fallback for all application routes.
-    return shell === './index.html' ? undefined : caches.match('./index.html');
+    return shell === './index.html' ? undefined : caches.match('./index.html', { ignoreSearch: true });
   });
 }
 
-function networkNavigationFallback(request) {
+// NETWORK-FIRST navigation with a cached-shell fallback. This is the fix for
+// "every time the app idles or you drag down to refresh it falls back to its
+// offline page": a reload now tries the network, and only falls back to the
+// cached shell (never offline.html) when the network is unavailable.
+function networkFirstNavigation(request) {
   return fetch(request).then(function(response) {
-    // Do not return a server error as a successful navigation response.
-    if (response && response.ok) return response;
+    if (response && response.ok) {
+      // Keep the freshest shell in the core cache for offline use.
+      var shell = shellForNavigation(request);
+      if (shell) {
+        caches.open(CORE_CACHE).then(function(cache) {
+          cache.put(shell, response.clone()).catch(function() {});
+        });
+      }
+      return response;
+    }
     throw new Error('Navigation response was not successful');
   }).catch(function() {
     return cachedShellResponse(request).then(function(shell) {
-      return shell || caches.match('./offline.html');
+      // Only when there is genuinely no cached shell do we show offline.html.
+      return shell || caches.match('./offline.html', { ignoreSearch: true });
     });
   });
 }
@@ -185,14 +230,7 @@ self.addEventListener('fetch', function(event) {
       return;
     }
 
-    event.respondWith(
-      // Cache-first is the key fix for the SPA shell. A pull-to-refresh must
-      // never replace a healthy cached app shell with offline.html merely
-      // because the network request is slow or momentarily unavailable.
-      cachedShellResponse(request).then(function(cached) {
-        return cached || networkNavigationFallback(request);
-      })
-    );
+    event.respondWith(networkFirstNavigation(request));
     return;
   }
 

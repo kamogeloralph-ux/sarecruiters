@@ -388,6 +388,26 @@
     </div>
   </div>
 
+  <!-- ============ MANAGER LINK STATUS (loading / invalid) ============ -->
+  <div class="screen" id="screen-manager-status">
+    <div class="screen-fixed">
+    <header>
+      <div class="screen-title-group"><div class="logo-text" id="manager-status-title">Manager link</div><div class="screen-context">Please wait</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home">×</button>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button></div>
+    </header>
+    </div>
+    <div class="screen-scroll" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:60vh;padding:24px">
+      <div id="manager-status-spinner" class="manager-status-spinner" aria-label="Loading"></div>
+      <h2 id="manager-status-heading" style="font-size:20px;font-weight:800;margin:18px 0 8px">Loading your manager link…</h2>
+      <p id="manager-status-body" style="color:var(--text-2);font-size:15px;line-height:1.55;max-width:420px;margin:0 auto 20px">We're connecting to SA Recruiters. This usually takes a moment.</p>
+      <button id="manager-status-retry" class="manager-add-btn" data-ripple onclick="retryManagerTokenFromStatus()" style="display:none"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span> Try again</button>
+      <button id="manager-status-home" class="sm-share-btn" data-ripple onclick="goBackToHome()" style="display:none;margin-top:12px">Back to directory</button>
+    </div>
+  </div>
+
   <!-- ============ MANAGER MODE (agency self-service) ============ -->
   <div class="screen" id="screen-manager">
     <div class="screen-fixed">
