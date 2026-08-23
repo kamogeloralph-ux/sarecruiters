@@ -198,7 +198,7 @@ a{color:var(--accent);text-decoration:none}
 
       <!-- AGENCIES -->
       <div class="section" id="sec-agencies">
-        <div class="section-head"><h2>Agencies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
+        <div class="section-head"><h2>Agencies</h2><div class="spacer"></div><button class="minibtn" onclick="regenerateAllTokens()" title="Use once after running RESET_MANAGE_TOKENS.sql">Regenerate ALL tokens</button><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
         <input class="search" id="ag-search" placeholder="Search name, location, trades, companies..." oninput="renderAgencies()">
         <div id="ag-list"></div>
       </div>
@@ -493,14 +493,50 @@ async function deleteReport(id){ var { error } = await supabaseClient.from('repo
 async function deleteSuggestion(id){ var { error } = await supabaseClient.from('suggestions').delete().eq('id',id); if(error) console.error('sugg del',error); }
 async function getAppSetting(key, fb){ try{ var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key',key).maybeSingle(); if(error||!data) return fb; return data.value; }catch(e){ return fb; } }
 async function setAppSetting(key, value){ try{ var { error } = await supabaseClient.from('app_settings').upsert({key:key,value:value,updated_at:new Date().toISOString()}); return !error; }catch(e){ return false; } }
+// Saves a manager token AND reads the row back to confirm it actually
+// landed — a plain .update() can "succeed" (no error) while writing to
+// a column that silently doesn't exist on some Postgres setups, or the
+// write can be swallowed by an RLS policy that returns 0 rows affected
+// without an error. Returns true only if the database row was verified
+// to hold the token we just tried to save.
 async function saveManagerToken(agencyId, token){
   try{
     var { error } = await supabaseClient.from('agencies').update({manage_token:token}).eq('id',agencyId);
     if(error){
       console.error('manage_token save', error);
-      alert('Could not save the manager token to Supabase (' + error.message + ').\n\nThe link shown here will only work on this device. Run ADD_MANAGE_TOKEN_COLUMN.sql in the Supabase SQL Editor, then try again.');
+      alert('Could not save the manager token to Supabase (' + error.message + ').\n\nRun RESET_MANAGE_TOKENS.sql in the Supabase SQL Editor, then try again.');
+      return false;
     }
-  }catch(e){ console.error('manage_token save', e); }
+    // Verify: re-fetch the row and confirm the token is actually there.
+    var check = await supabaseClient.from('agencies').select('manage_token').eq('id', agencyId).maybeSingle();
+    if (check.error || !check.data || check.data.manage_token !== token) {
+      console.error('manage_token verify failed', check.error, check.data);
+      alert('The manager token save did not stick — Supabase accepted the request but the token isn\'t actually stored (likely a Row Level Security policy blocking the write, or the column is missing). Run RESET_MANAGE_TOKENS.sql, check your RLS policies on agencies, then try again.');
+      return false;
+    }
+    return true;
+  }catch(e){ console.error('manage_token save', e); alert('Could not save the manager token — check your connection and try again.'); return false; }
+}
+
+// Regenerate manager tokens for EVERY agency in one pass — use this once
+// right after running RESET_MANAGE_TOKENS.sql so every agency gets a
+// fresh, verified token instead of clicking "Regenerate" one at a time.
+async function regenerateAllTokens(){
+  if(!confirm('Generate a brand-new Smart Manager link for ALL ' + cache.agencies.length + ' agencies? Every existing link will stop working.')) return;
+  var ok = 0, failed = [];
+  for (var i = 0; i < cache.agencies.length; i++) {
+    var a = cache.agencies[i];
+    var tok = genToken();
+    var success = await saveManagerToken(a.id, tok);
+    if (success) { a.manage_token = tok; ok++; }
+    else failed.push(a.name || a.id);
+  }
+  renderAgencies();
+  if (failed.length) {
+    alert('Regenerated ' + ok + ' of ' + cache.agencies.length + ' tokens.\n\nFailed for: ' + failed.join(', ') + '\n\nSee the alert(s) above for why.');
+  } else {
+    showToast('All ' + ok + ' manager links regenerated');
+  }
 }
 
 async function loadAll(){
@@ -644,8 +680,13 @@ async function saveAgency(){
     photo:pendingPhoto,
     verified:document.getElementById('a-verified').checked
   };
+  var isNew = !editing.agency;
+  if (isNew) payload.manage_token = genToken(); // include token in the initial insert — one write, not two
   await upsertAgency(payload);
-  if(!editing.agency){ var tok=genToken(); await saveManagerToken(id, tok); payload.manage_token = tok; }
+  if (isNew) {
+    var verified = await saveManagerToken(id, payload.manage_token); // confirms it actually stuck
+    if (!verified) payload.manage_token = ''; // don't show a link we can't confirm is real
+  }
   closeSheet('agency-overlay');
   showToast(editing.agency ? 'Agency updated' : 'Agency added');
   editing.agency = null; pendingPhoto = null;
