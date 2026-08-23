@@ -1,97 +1,95 @@
-/*
- * SA Recruiters service worker
- *
- * Navigation uses the cached app shell first. This is intentional: a browser
- * reload/pull-to-refresh is a navigation request, and the app shell must be
- * available even when the network is slow or temporarily unavailable. The
- * application then refreshes its directory data independently after startup.
- */
+/* ==========================================================================
+   SA Recruiters — Service Worker
+   Strategies:
+     - Precache core app shell on install
+     - Cache-first for static assets (icons, screenshots, fonts cache)
+     - Stale-while-revalidate for same-origin JS/CSS/JSON
+     - Network-first for navigation (HTML) with offline fallback
+     - passthrough + cache for cross-origin (CDN/Supabase)
+   Handles: install, activate, fetch, message, push, notificationclick,
+            sync, periodicsync, beforeevicted, controllerchange-friendly skipWaiting
+   ========================================================================== */
 
-const VERSION = 'sa-recruiters-v131';
+const VERSION = 'sa-recruiters-v51';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
 
 const CORE_ASSETS = [
+  './',
   './index.html',
   './admin.html',
-  './privacy.html',
-  './styles.css',
-  './app.js',
-  './icons.svg',
   './offline.html',
   './manifest.json',
   './content.js',
   './content-manager.js',
+  './privacy.html',
+  './icon-192.png',
+  './icon-512.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/Maskable-192.png',
-  './icons/favicon.ico'
+  './icons/maskable-512.png',
+  './icons/favicon.ico',
+  './screenshots/mobile-1.png',
+  './screenshots/desktop-1.png'
 ];
 
-const CORE_SHELLS = {
-  '/': './index.html',
-  '/admin.html': './admin.html',
-  '/privacy.html': './privacy.html',
-  '/offline.html': './offline.html'
-};
-
+// ---------- INSTALL: precache core shell ----------
 self.addEventListener('install', function(event) {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CORE_CACHE)
-      // Keep installation atomic for the app shell. Activating a worker with
-      // a partial shell is what causes an offline page after the next reload.
-      .then(function(cache) { return cache.addAll(CORE_ASSETS); })
-      .then(function() { return self.skipWaiting(); })
+    caches.open(CORE_CACHE).then(function(cache) {
+      // addAll fails atomically if one request fails; use tolerant add
+      return Promise.all(
+        CORE_ASSETS.map(function(url) {
+          return cache.add(new Request(url, { cache: 'reload' })).catch(function() {
+            /* ignore individual failures (e.g. missing optional asset) */
+          });
+        })
+      );
+    }).then(function() {
+      // enable navigation preload if supported
+      if (self.registration.navigationPreload) {
+        return self.registration.navigationPreload.enable();
+      }
+    })
   );
 });
 
+// ---------- ACTIVATE: clean old caches + claim clients ----------
 self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(names) {
-      return Promise.all(names
-        .filter(function(name) {
-          return name.indexOf('sa-recruiters-') === 0 &&
-            name !== CORE_CACHE &&
-            name !== RUNTIME_CACHE &&
-            name !== IMAGE_CACHE;
-        })
-        .map(function(name) { return caches.delete(name); })
+      return Promise.all(
+        names
+          .filter(function(n) { return n.indexOf('sa-recruiters-') === 0 && n !== VERSION + '-core' && n !== VERSION + '-runtime' && n !== VERSION + '-images'; })
+          .map(function(n) { return caches.delete(n); })
       );
     }).then(function() {
-      return self.registration.navigationPreload
-        ? self.registration.navigationPreload.disable().catch(function() {})
-        : undefined;
+      if (self.registration.navigationPreload) {
+        return self.registration.navigationPreload.reset();
+      }
     }).then(function() {
       return self.clients.claim();
     })
   );
 });
 
-function isImageRequest(request) {
-  return request.destination === 'image' ||
-    /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(request.url);
-}
-
-function isCacheableSameOriginResponse(response) {
-  return response && response.status === 200 &&
-    (response.type === 'basic' || response.type === 'cors');
-}
-
-function isCacheableCrossOriginResponse(response) {
-  return response && (response.status === 200 || response.status === 0);
+// ---------- helpers ----------
+function isImageRequest(req) {
+  return req.destination === 'image' || /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(req.url);
 }
 
 function staleWhileRevalidate(request, cacheName) {
   return caches.open(cacheName).then(function(cache) {
     return cache.match(request).then(function(cached) {
-      var network = fetch(request).then(function(response) {
-        if (isCacheableSameOriginResponse(response)) {
+      var fetchPromise = fetch(request).then(function(response) {
+        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
           cache.put(request, response.clone());
         }
         return response;
       }).catch(function() { return cached; });
-      return cached || network;
+      return cached || fetchPromise;
     });
   });
 }
@@ -101,142 +99,109 @@ function cacheFirst(request, cacheName) {
     return cache.match(request).then(function(cached) {
       if (cached) return cached;
       return fetch(request).then(function(response) {
-        if (isCacheableSameOriginResponse(response) ||
-            isCacheableCrossOriginResponse(response)) {
+        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
           cache.put(request, response.clone());
         }
         return response;
-      }).catch(function() {
-        return caches.match('./offline.html');
-      });
+      }).catch(function() { return caches.match('./offline.html'); });
     });
   });
 }
 
-function shellForNavigation(request) {
-  var pathname = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
-  return CORE_SHELLS[pathname] || './index.html';
-}
-
-function isPublicListingNavigation(request) {
-  var pathname = new URL(request.url).pathname;
-  return /^\/(agency|vacancy)(?:\/|$)/i.test(pathname);
-}
-
-function publicListingNavigation(request) {
-  return caches.match(request).then(function(cached) {
-    if (cached) return cached;
-    return fetch(request).then(function(response) {
-      if (!response || !response.ok) {
-        throw new Error('Public listing response was not successful');
-      }
-      caches.open(RUNTIME_CACHE).then(function(cache) {
-        cache.put(request, response.clone());
-      });
-      return response;
-    }).catch(function() {
-      // Never substitute the SPA shell for a public listing URL. If the page
-      // was visited before, an exact runtime-cached copy is valid; otherwise
-      // show the true offline page rather than a misleading empty home screen.
-      return caches.match(request).then(function(exactCached) {
-        return exactCached || caches.match('./offline.html');
-      });
-    });
-  });
-}
-
-function cachedShellResponse(request) {
-  var shell = shellForNavigation(request);
-  return caches.match(shell).then(function(response) {
-    if (response) return response;
-    // A route-specific shell may be absent in an older installation; the main
-    // app shell is still a valid fallback for all application routes.
-    return shell === './index.html' ? undefined : caches.match('./index.html');
-  });
-}
-
-function networkNavigationFallback(request) {
+function networkFirstWithFallback(request) {
   return fetch(request).then(function(response) {
-    // Do not return a server error as a successful navigation response.
-    if (response && response.ok) return response;
-    throw new Error('Navigation response was not successful');
+    if (response && response.status === 200 && response.type === 'basic') {
+      var copy = response.clone();
+      caches.open(RUNTIME_CACHE).then(function(cache) { cache.put(request, copy); });
+    }
+    return response;
   }).catch(function() {
-    return cachedShellResponse(request).then(function(shell) {
-      return shell || caches.match('./offline.html');
+    return caches.match(request).then(function(cached) {
+      return cached || caches.match('./index.html').then(function(idx) {
+        return idx || caches.match('./offline.html');
+      });
     });
   });
 }
 
+// ---------- FETCH ----------
 self.addEventListener('fetch', function(event) {
-  var request = event.request;
+  var req = event.request;
 
-  if (request.method !== 'GET') {
-    if (request.method === 'POST' && request.url.indexOf('action=share') !== -1) {
+  // Only handle GET
+  if (req.method !== 'GET') {
+    // Allow share_target POST to be received offline — store and let app handle
+    if (req.method === 'POST' && req.url.indexOf('action=share') !== -1) {
       event.respondWith(Response.redirect('/?source=pwa&action=share-received', 303));
+      return;
     }
     return;
   }
 
-  var url = new URL(request.url);
+  var url = new URL(req.url);
 
-  if (request.mode === 'navigate') {
-    if (isPublicListingNavigation(request)) {
-      event.respondWith(publicListingNavigation(request));
-      return;
-    }
-
+  // Navigation requests -> network first with offline fallback
+  if (req.mode === 'navigate') {
     event.respondWith(
-      // Cache-first is the key fix for the SPA shell. A pull-to-refresh must
-      // never replace a healthy cached app shell with offline.html merely
-      // because the network request is slow or momentarily unavailable.
-      cachedShellResponse(request).then(function(cached) {
-        return cached || networkNavigationFallback(request);
-      })
+      (function() {
+        var preload = event.preloadResponse;
+        if (preload) {
+          return preload.then(function(resp) {
+            if (resp && resp.ok) {
+              var copy = resp.clone();
+              caches.open(RUNTIME_CACHE).then(function(c) { c.put(req, copy); });
+              return resp;
+            }
+            return networkFirstWithFallback(req);
+          }).catch(function() { return networkFirstWithFallback(req); });
+        }
+        return networkFirstWithFallback(req);
+      })()
     );
     return;
   }
 
-  if (isImageRequest(request)) {
-    event.respondWith(cacheFirst(request, IMAGE_CACHE));
+  // Images -> cache first, then runtime
+  if (isImageRequest(req)) {
+    event.respondWith(cacheFirst(req, IMAGE_CACHE));
     return;
   }
 
+  // Same-origin static assets (js, css, json, fonts) -> stale-while-revalidate
   if (url.origin === self.location.origin) {
-    event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
+    event.respondWith(staleWhileRevalidate(req, RUNTIME_CACHE));
     return;
   }
 
+  // Cross-origin (CDNs / Supabase) -> network, cache good responses, fallback to cache
   event.respondWith(
-    fetch(request).then(function(response) {
-      if (isCacheableCrossOriginResponse(response)) {
-        caches.open(RUNTIME_CACHE).then(function(cache) {
-          cache.put(request, response.clone());
-        });
+    fetch(req).then(function(response) {
+      if (response && (response.status === 200 || response.status === 0)) {
+        var copy = response.clone();
+        caches.open(RUNTIME_CACHE).then(function(cache) { cache.put(req, copy); });
       }
       return response;
     }).catch(function() {
-      return caches.match(request);
+      return caches.match(req);
     })
   );
 });
 
+// ---------- MESSAGE: allow page to trigger update ----------
 self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  if (event.data && event.data.type === 'GET_VERSION' && event.source) {
+  if (event.data && event.data.type === 'GET_VERSION') {
     event.source.postMessage({ type: 'VERSION', version: VERSION });
   }
 });
 
+// ---------- PUSH notifications ----------
 self.addEventListener('push', function(event) {
   var payload = { title: 'SA Recruiters', body: 'You have a new update', data: { url: '/' } };
-  try {
-    if (event.data) payload = Object.assign(payload, event.data.json());
-  } catch (error) {
-    if (event.data) payload.body = event.data.text();
-  }
-  event.waitUntil(self.registration.showNotification(payload.title, {
+  try { if (event.data) payload = Object.assign(payload, event.data.json()); } catch (e) { if (event.data) payload.body = event.data.text(); }
+  var options = {
     body: payload.body,
     icon: 'icons/icon-192.png',
     badge: 'icons/monochrome-192.png',
@@ -244,48 +209,47 @@ self.addEventListener('push', function(event) {
     data: payload.data || { url: '/' },
     tag: payload.tag || 'sa-recruiters',
     renotify: true
-  }));
+  };
+  event.waitUntil(self.registration.showNotification(payload.title, options));
 });
 
+// ---------- NOTIFICATION CLICK ----------
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  var targetUrl = event.notification.data && event.notification.data.url
-    ? event.notification.data.url : '/';
+  var targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clients) {
-      for (var i = 0; i < clients.length; i++) {
-        if ('focus' in clients[i]) {
-          clients[i].focus();
-          clients[i].navigate(targetUrl);
-          return;
-        }
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (var i = 0; i < clientList.length; i++) {
+        var c = clientList[i];
+        if ('focus' in c) { c.focus(); c.navigate(targetUrl); return; }
       }
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
   );
 });
 
+// ---------- BACKGROUND SYNC (resubmit pending reports/suggestions) ----------
 self.addEventListener('sync', function(event) {
   if (event.tag === 'sa-sync-pending') {
     event.waitUntil(
       self.clients.matchAll({ includeUncontrolled: true }).then(function(clients) {
-        clients.forEach(function(client) {
-          client.postMessage({ type: 'SYNC_PENDING' });
-        });
+        clients.forEach(function(c) { c.postMessage({ type: 'SYNC_PENDING' }); });
       })
     );
   }
 });
 
+// ---------- PERIODIC SYNC ----------
 self.addEventListener('periodicsync', function(event) {
   if (event.tag === 'sa-refresh-content') {
     event.waitUntil(
-      fetch('./content.js', { cache: 'reload' }).then(function(response) {
-        if (!response.ok) throw new Error('Content refresh failed');
-        return caches.open(RUNTIME_CACHE).then(function(cache) {
-          return cache.put('./content.js', response);
-        });
+      fetch('./content.js', { cache: 'reload' }).then(function(r) {
+        return caches.open(RUNTIME_CACHE).then(function(c) { return c.put('./content.js', r); });
       }).catch(function() {})
     );
   }
 });
+
+// ---------- EVICTION / clean shutdown ----------
+self.addEventListener('beforeevicted', function() { /* allow cleanup before eviction */ });
+self.addEventListener('evicted', function() { /* SW was evicted */ });
