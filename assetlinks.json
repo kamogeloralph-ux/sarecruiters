@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "za.co.sa_recruiters.twa",
-        "sha256_cert_fingerprints": ["AC:79:74:33:08:CC:9B:C5:77:A3:EC:14:7F:6C:D5:B0:A8:08:42:B5:A8:CD:8A:45:08:79:9E:16:08:86:93:6F"]
-      }
-    }]
