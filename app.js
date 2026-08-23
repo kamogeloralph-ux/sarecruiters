@@ -3073,11 +3073,23 @@ function openManagerLink(agencyId) {
 }
 
 // ===== MANAGER MODE (agency self-service, add-only) =====
+var managerTokenRetries = 0;
 function enterManagerMode(token) {
   var agencyId = agencyIdFromToken(token);
   if (!agencyId) {
-    // Token not found — agencies may not be loaded yet, retry after loadAll
-    managerPendingToken = token;
+    if (agenciesCache.length === 0 && managerTokenRetries < 3) {
+      // Agencies genuinely haven't loaded yet (e.g. a slow connection) —
+      // retry shortly instead of silently giving up and showing the home screen.
+      managerTokenRetries++;
+      managerPendingToken = token;
+      setTimeout(function(){ if (managerPendingToken) loadAll(); }, 1200);
+      return false;
+    }
+    // Data has loaded and the token still doesn't match any agency — the
+    // link is genuinely invalid/expired. Say so instead of quietly falling
+    // through to the normal home screen, which just looks like a dead link.
+    managerPendingToken = null;
+    showToast('This management link is invalid or has expired. Please contact SA Recruiters for a new one.');
     return false;
   }
   managerMode = true;
@@ -3172,11 +3184,20 @@ function managerAddVacancy() {
 // vacancies via ?manage_employer=TOKEN. Employers can add vacancies for
 // themselves here; everything else (contact details, verification) stays
 // admin-controlled. Once saved, a vacancy is read-only from this screen.
+var employerManagerTokenRetries = 0;
 function enterEmployerManagerMode(token) {
   var employerId = employerIdFromToken(token);
   if (!employerId) {
-    // Employers may not be loaded yet — retry after loadAll
-    employerManagerPendingToken = token;
+    if (employersCache.length === 0 && employerManagerTokenRetries < 3) {
+      // Employers genuinely haven't loaded yet — retry shortly instead of
+      // silently giving up and showing the home screen.
+      employerManagerTokenRetries++;
+      employerManagerPendingToken = token;
+      setTimeout(function(){ if (employerManagerPendingToken) loadAll(); }, 1200);
+      return false;
+    }
+    employerManagerPendingToken = null;
+    showToast('This management link is invalid or has expired. Please contact SA Recruiters for a new one.');
     return false;
   }
   employerManagerMode = true;
