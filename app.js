@@ -115,7 +115,10 @@ function setEmployerManagerToken(employerId, token) {
 async function saveEmployerManagerTokenToSupabase(employerId, token) {
   try {
     var { error } = await supabaseClient.from('employers').update({ manage_token: token }).eq('id', employerId);
-    if (error) console.error('employer manage_token save', error);
+    if (error) {
+      console.error('employer manage_token save', error);
+      if (typeof showToast === 'function') showToast('⚠ Manager link not saved to Supabase — run SMART_MANAGER_SETUP.sql.');
+    }
   } catch(e) { console.error('employer manage_token save', e); }
 }
 function employerIdFromToken(token) {
@@ -239,11 +242,16 @@ async function getAgencies() {
   } catch(e) { console.error('agencies load', e); return markLoadError([]); }
 }
 // Persist a SMART MANAGER token to Supabase so any device can resolve it
-// (not just the browser that generated it). See ADD_MANAGE_TOKEN_COLUMN.sql.
+// (not just the browser that generated it). Run SMART_MANAGER_SETUP.sql
+// once so the `manage_token` column exists — without it this save fails
+// silently and the link only "works" in the browser that generated it.
 async function saveManagerTokenToSupabase(agencyId, token) {
   try {
     var { error } = await supabaseClient.from('agencies').update({ manage_token: token }).eq('id', agencyId);
-    if (error) console.error('manage_token save', error);
+    if (error) {
+      console.error('manage_token save', error);
+      if (typeof showToast === 'function') showToast('⚠ Manager link not saved to Supabase — run SMART_MANAGER_SETUP.sql.');
+    }
   } catch(e) { console.error('manage_token save', e); }
 }
 async function upsertAgency(a) {
