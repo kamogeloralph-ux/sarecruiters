@@ -1,16 +1,17 @@
 // ============================================================
 //  SA RECRUITERS — generate-pages.js
 // ============================================================
-//  Runs at Netlify build time (see netlify.toml: command).
+//  Runs via GitHub Actions (see .github/workflows/deploy.yml), on every
+//  push to main and on a 3-hourly schedule.
 //  Queries Supabase for agencies, branches and vacancies, and
 //  writes a static HTML page per agency and per vacancy so
 //  Google (and anyone sharing a link) sees real content instead
 //  of the empty app shell.
 //
 //  Your existing index.html / app is untouched — this just adds
-//  extra static pages alongside it in the publish folder.
+//  extra static pages alongside it in the GitHub Pages output.
 //
-//  Requires: npm install @supabase/supabase-js  (add to package.json)
+//  Requires: npm install @supabase/supabase-js  (already in package.json)
 // ============================================================
 
 const { createClient } = require('@supabase/supabase-js');
