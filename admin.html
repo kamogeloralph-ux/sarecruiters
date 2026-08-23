@@ -10,19 +10,20 @@
 /* ===== Theme tokens ===== */
 :root{
   --bg:#f4f5f7; --card:#ffffff; --card-2:#f0f1f4; --border:#e3e5ea; --border-strong:#cdd0d7;
-  --text:#1c1e22; --text-2:#6b7280; --accent:#2563eb; --accent-soft:rgba(37,99,235,.1);
+  --text:#1c1e22; --text-2:#6b7280; --accent:#5B4FE8; --accent-soft:rgba(91,79,232,.12);
   --danger:#dc2626; --ok:#16a34a; --warn:#d97706; --radius:14px;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
 }
 [data-theme="dark"]{
   --bg:#0e1116; --card:#171b22; --card-2:#1e232c; --border:#262b35; --border-strong:#333a47;
-  --text:#e8eaed; --text-2:#9aa3b2; --accent:#5b8cff; --accent-soft:rgba(91,140,255,.14);
+  --text:#e8eaed; --text-2:#9aa3b2; --accent:#8B7FFF; --accent-soft:rgba(139,127,255,.16);
   --danger:#f87171; --ok:#34d399; --warn:#fbbf24; --shadow:0 1px 3px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden;word-wrap:break-word;overflow-wrap:break-word}
+html{overflow-x:hidden}
 button{font-family:inherit}
-a{color:var(--accent);text-decoration:none}
+a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
 /* ===== Login screen ===== */
 #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -36,6 +37,16 @@ a{color:var(--accent);text-decoration:none}
 .field input,.field select,.field textarea{width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14.5px;color:var(--text);font-family:inherit}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .field textarea{min-height:80px;resize:vertical}
+.banking-accordion{margin-top:26px;border-top:1px solid var(--border);padding-top:14px}
+.banking-accordion summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 2px;border-radius:10px;cursor:pointer;user-select:none}
+.banking-accordion summary::-webkit-details-marker{display:none}
+.banking-accordion summary:focus-visible{outline:3px solid var(--accent-soft);outline-offset:3px}
+.banking-summary-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.banking-summary-copy .t-label{display:block}.banking-summary-copy .muted{font-size:12px}
+.banking-summary-chevron{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:21px;line-height:1;transform:rotate(0deg);transition:transform .18s ease}
+.banking-accordion[open] .banking-summary-chevron{transform:rotate(180deg)}
+.banking-accordion-body{padding:8px 0 2px}
+.banking-help{margin:0 0 12px}
+
 .btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;transition:transform .08s}
 .btn:active{transform:scale(.98)}
 .btn.secondary{background:var(--card-2);color:var(--text);border:1px solid var(--border)}
@@ -48,11 +59,11 @@ a{color:var(--accent);text-decoration:none}
 
 /* ===== App shell ===== */
 #app{display:none}
-.topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 16px}
-.topbar .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px}
+.topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 16px;overflow:hidden}
+.topbar .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;flex-shrink:0}
 .topbar .brand img{width:28px;height:28px;border-radius:7px;object-fit:cover}
-.topbar .spacer{flex:1}
-.topbar .who{font-size:12.5px;color:var(--text-2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .spacer{flex:1;min-width:0}
+.topbar .who{font-size:12.5px;color:var(--text-2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1}
 .iconbtn{background:var(--card-2);border:1px solid var(--border);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-2)}
 .iconbtn svg{width:18px;height:18px}
 .iconbtn:active{transform:scale(.93)}
@@ -69,11 +80,36 @@ a{color:var(--accent);text-decoration:none}
 .nav-item.active .nav-badge{background:var(--accent);color:#fff}
 
 .main{padding:20px;max-width:1100px;width:100%;margin:0 auto}
-@media(max-width:760px){.main{padding:16px}}
+@media(max-width:760px){.main{padding:14px;max-width:100%}}
 .section{display:none}
 .section.active{display:block}
-.section-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .section-head h2{font-size:20px;margin:0}
+/* Mobile: prevent horizontal overflow on all content */
+@media(max-width:760px){
+  .main{overflow-x:hidden;word-wrap:break-word;overflow-wrap:break-word}
+  .section-head{flex-wrap:wrap;gap:8px}
+  .section-head h2{font-size:18px;flex:1;min-width:0}
+  .section-head .spacer{display:none}
+  .section-head .minibtn{font-size:12px;padding:7px 10px}
+  .search{font-size:13px;padding:10px 12px}
+  .card{overflow:hidden}
+  /* Row details: reduce left padding on mobile so content fits */
+  .row-details{padding:0 14px 14px 14px !important;font-size:13px;line-height:1.55;overflow-wrap:break-word;word-break:break-word}
+  .row-details .det-row{overflow-wrap:break-word;word-break:break-word}
+  /* Ensure long URLs and trades lists wrap */
+  .row-details a,.row-details span{overflow-wrap:break-word;word-break:break-all}
+  /* Row items: constrain to viewport */
+  .row-item{padding:12px 14px;max-width:100%;overflow:hidden}
+  .row-main{min-width:0;overflow:hidden}
+  .row-title{white-space:normal;overflow-wrap:break-word}
+  .row-sub{white-space:normal;overflow-wrap:break-word}
+  /* Expanded action buttons stack vertically on narrow screens */
+  .row-expanded-actions{flex-direction:column;gap:8px}
+  .minibtn.full{width:100%;flex:none}
+  /* Muted text wrapping */
+  .muted{overflow-wrap:break-word;word-break:break-word}
+}
 .section-head .spacer{flex:1}
 
 /* ===== Cards & tables ===== */
@@ -81,24 +117,80 @@ a{color:var(--accent);text-decoration:none}
 .card + .card{margin-top:14px}
 .card-pad{padding:16px}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+@media(max-width:760px){.stats-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
 .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+@media(max-width:760px){.stat{padding:12px 10px}}
 .stat .v{font-size:26px;font-weight:800}
+@media(max-width:760px){.stat .v{font-size:20px}}
 .stat .l{font-size:12.5px;color:var(--text-2);margin-top:2px}
+@media(max-width:760px){.stat .l{font-size:11px}}
 
-.row-item{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--border)}
+/* ===== Home card grid (Dashboard hub like Profile section) ===== */
+.home-section-label{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px 2px}
+.home-grouped-list{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.home-nav-card{display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;width:100%;text-align:left;border:none;background:none;font-family:inherit;font-size:15px;font-weight:600;color:var(--text);position:relative}
+.home-nav-card + .home-nav-card::before{content:'';position:absolute;top:0;left:60px;right:0;height:1px;background:var(--border)}
+.home-nav-card:active{background:var(--card-2)}
+.home-nav-card .hc-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent;border:0;color:var(--text-2)}
+.home-nav-card .hc-icon svg{width:21px;height:21px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* Keep the dashboard menu in the same restrained monochrome language as the reference iOS profile menu. */
+.hc-tile-blue,.hc-tile-green,.hc-tile-amber,.hc-tile-purple,.hc-tile-pink,.hc-tile-teal,.hc-tile-red,.hc-tile-gray,.hc-tile-indigo{background:transparent}
+.home-nav-card{min-height:64px}
+.home-nav-card.pool-nav-card{min-height:64px;padding-top:10px;padding-bottom:10px}
+.section-close-btn{width:40px;height:40px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);color:var(--text-2);display:grid;place-items:center;font-size:26px;font-weight:300;line-height:1;cursor:pointer;transition:transform .15s ease,background .2s ease,color .2s ease}
+.section-close-btn:hover{background:var(--accent-soft);color:var(--accent)}
+.section-close-btn:active{transform:scale(.92)}
+.section-close-btn:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.home-nav-card .hc-text{display:flex;flex-direction:column;flex:1;min-width:0}
+.home-nav-card .hc-title{font-size:15px;font-weight:600}
+.home-nav-card .hc-sub{font-size:12px;color:var(--text-2);font-weight:400;margin-top:2px;line-height:1.3}
+.home-nav-card .hc-badge{margin-left:auto;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:700;border-radius:8px;padding:3px 8px;min-width:22px;text-align:center;flex-shrink:0}
+.home-nav-card .hc-chev{width:16px;height:16px;color:var(--text-2);flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+/* Back button shown on sub-sections */
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;margin-right:8px}
+.back-btn svg{width:16px;height:16px}
+.back-btn:active{transform:scale(.95)}
+/* On mobile, hide the horizontal sidebar scroll bar — Dashboard hub is the main nav */
+@media(max-width:760px){
+  .sidebar{display:none !important}
+  .layout{grid-template-columns:1fr !important}
+}
+
+.row-item{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--border);cursor:pointer;position:relative}
 .row-item:first-child{border-top:none}
 .row-item:hover{background:var(--card-2)}
+.row-item.expanded{background:var(--card-2)}
 .row-avatar{width:40px;height:40px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px;overflow:hidden;background:linear-gradient(145deg,#2563eb,#1e40af)}
 .row-avatar img{width:100%;height:100%;object-fit:cover}
 .row-main{flex:1;min-width:0}
 .row-title{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row-sub{font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
-.row-actions{display:flex;gap:6px;flex-shrink:0}
+.row-chevron{flex-shrink:0;color:var(--text-2);transition:transform .2s ease}
+.row-chevron svg{width:18px;height:18px;display:block}
+.row-item.expanded .row-chevron{transform:rotate(180deg)}
+/* Inline action buttons hidden by default; shown when row is expanded (mobile-first tap-to-open) */
+.row-inline-actions{display:none;flex-direction:column;gap:8px;padding:0 16px 14px 16px}
+.row-item.expanded + .row-inline-actions{display:flex}
+@media(min-width:761px){
+  /* On desktop/tablet with sidebar, show actions inline like before but also allow tap-to-expand for details */
+  .row-inline-actions{display:none}
+  .row-item .row-actions-inline{display:flex;gap:6px;flex-shrink:0}
+}
+.row-actions-inline{display:none;gap:6px;flex-shrink:0}
+@media(min-width:761px){.row-actions-inline{display:flex}}
+/* Full details panel shown on expand */
+.row-details{display:none;padding:0 16px 14px 52px;font-size:13px;color:var(--text-2);line-height:1.6}
+.row-item.expanded + .row-details{display:block}
+.row-details .det-row{margin-bottom:3px}
+.row-details .det-label{color:var(--text);font-weight:600;display:inline}
+.row-expanded-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .minibtn{background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:7px 10px;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .minibtn svg{width:14px;height:14px}
 .minibtn:active{transform:scale(.95)}
 .minibtn.danger{color:var(--danger)}
 .minibtn.ok{color:var(--ok)}
+.minibtn.full{flex:1;justify-content:center;padding:10px;font-size:13px}
+.minibtn.full.danger{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.3)}
 .badge{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px}
 .badge.verified{background:rgba(22,163,74,.15);color:var(--ok)}
 .badge.unverified{background:var(--card-2);color:var(--text-2)}
@@ -148,10 +240,53 @@ a{color:var(--accent);text-decoration:none}
 .copy-link input{flex:1;background:none;border:none;color:var(--text);font-size:12.5px;font-family:monospace;outline:none;min-width:0}
 .copy-link button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
 .divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ===== Admin section color identities ===== */
+:root{
+  --admin-dashboard:#2563eb;
+  --admin-analytics:#0f766e;
+  --admin-manage:#7c3aed;
+  --admin-review:#d97706;
+  --admin-content:#db2777;
+  --admin-settings:#475569;
+}
+.admin-shell .nav-item{border-left:3px solid transparent;transition:background .2s ease,color .2s ease,border-color .2s ease}
+.admin-shell .nav-dashboard{--nav-color:var(--admin-dashboard)}
+.admin-shell .nav-manage{--nav-color:var(--admin-manage)}
+.admin-shell .nav-review{--nav-color:var(--admin-review)}
+.admin-shell .nav-content{--nav-color:var(--admin-content)}
+.admin-shell .nav-settings{--nav-color:var(--admin-settings)}
+.admin-shell .nav-item:hover{border-left-color:var(--nav-color);color:var(--nav-color);background:color-mix(in srgb,var(--nav-color) 8%,var(--card))}
+.admin-shell .nav-item.active{border-left-color:var(--nav-color);color:var(--nav-color);background:color-mix(in srgb,var(--nav-color) 12%,var(--card))}
+.admin-shell .nav-item.active .nav-badge{background:var(--nav-color);color:#fff}
+.admin-shell .section-head{padding:10px 12px;border-radius:14px;border-left:4px solid var(--section-color);background:color-mix(in srgb,var(--section-color) 7%,var(--card));margin-bottom:16px}
+.admin-shell .section-dashboard{--section-color:var(--admin-dashboard)}
+.admin-shell .section-manage{--section-color:var(--admin-manage)}
+.admin-shell .section-review{--section-color:var(--admin-review)}
+.admin-shell .section-content{--section-color:var(--admin-content)}
+.admin-shell .section-settings{--section-color:var(--admin-settings)}
+.admin-shell .section-head h2{color:var(--section-color)}
+.admin-shell .analytics-card{border-top:3px solid var(--admin-analytics)}
+.admin-shell .analytics-card h3{color:var(--admin-analytics)}
+.poster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.poster-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.poster-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--card-2)}
+.poster-card .poster-info{padding:12px}
+.poster-card .poster-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--text-2);margin-bottom:5px}
+.poster-card .poster-title{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poster-card .poster-subtitle{font-size:12px;color:var(--text-2);margin-top:3px;min-height:18px}
+.poster-card .poster-actions{display:flex;gap:8px;margin-top:11px}
+.poster-card .poster-actions .minibtn{flex:1;justify-content:center}
+.poster-card.is-inactive{opacity:.62}
+.admin-shell .section-head .back-btn:hover,.admin-shell .section-head .section-close-btn:hover{color:var(--section-color);border-color:var(--section-color);background:color-mix(in srgb,var(--section-color) 10%,var(--card))}
+@supports not (color:color-mix(in srgb, black, white)){
+  .admin-shell .section-head{background:var(--card-2)}
+  .admin-shell .nav-item:hover,.admin-shell .nav-item.active{background:var(--card-2)}
+}
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
-<body>
+<body class="admin-shell">
 
 <!-- ============ LOGIN SCREEN ============ -->
 <div id="login-screen">
@@ -190,36 +325,45 @@ a{color:var(--accent);text-decoration:none}
     <nav class="sidebar" id="sidebar"></nav>
     <main class="main">
       <!-- DASHBOARD -->
-      <div class="section active" id="sec-dashboard">
+      <div class="section section-dashboard active" id="sec-dashboard">
         <div class="section-head"><h2>Dashboard</h2></div>
         <div class="stats-grid" id="stats-grid"></div>
-        <div style="margin-top:18px" class="muted">Use the sidebar to manage agencies, branches, vacancies, submissions, settings and content. Changes here appear instantly in the public app.</div>
+        <div class="card analytics-card section-analytics-card" style="margin-top:14px"><div class="card-pad"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0;font-size:16px">Usage analytics</h3><p style="margin:3px 0 0;color:var(--text-2);font-size:12px">Last 30 days · anonymous events</p></div><button class="minibtn" onclick="loadAnalyticsSummary()">Refresh</button></div><div id="analytics-summary" style="margin-top:14px"><div style="color:var(--text-2);font-size:13px">Loading analytics…</div></div></div></div>
+        <div id="home-cards" style="margin-top:8px"></div>
       </div>
 
       <!-- AGENCIES -->
-      <div class="section" id="sec-agencies">
-        <div class="section-head"><h2>Agencies</h2><div class="spacer"></div><button class="minibtn" onclick="regenerateAllTokens()" title="Use once after running RESET_MANAGE_TOKENS.sql">Regenerate ALL tokens</button><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
+      <div class="section section-manage" id="sec-agencies">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Agencies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
         <input class="search" id="ag-search" placeholder="Search name, location, trades, companies..." oninput="renderAgencies()">
         <div id="ag-list"></div>
       </div>
 
       <!-- BRANCHES -->
-      <div class="section" id="sec-branches">
-        <div class="section-head"><h2>Branches</h2><div class="spacer"></div><button class="minibtn ok" onclick="openBranchSheet()">+ Add branch</button></div>
+      <div class="section section-manage" id="sec-branches">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Branches</h2><div class="spacer"></div><button class="minibtn ok" onclick="openBranchSheet()">+ Add branch</button></div>
         <input class="search" id="br-search" placeholder="Search branch, location, agency..." oninput="renderBranches()">
         <div id="br-list"></div>
       </div>
 
       <!-- VACANCIES -->
-      <div class="section" id="sec-vacancies">
-        <div class="section-head"><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
+      <div class="section section-manage" id="sec-vacancies">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
         <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="renderVacancies()">
         <div id="va-list"></div>
       </div>
 
+      <!-- EMPLOYERS -->
+      <div class="section section-manage" id="sec-employers">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Employers</h2><div class="spacer"></div><button class="minibtn ok" onclick="openEmployerSheet()">+ Register employer</button></div>
+        <div class="muted" style="margin-bottom:14px">Companies that post their own vacancies directly (separate from the agency directory). Their jobs also show up in the Vacancies list once posted.</div>
+        <input class="search" id="emp-search" placeholder="Search name, industry, location..." oninput="renderEmployers()">
+        <div id="emp-list"></div>
+      </div>
+
       <!-- SUBMISSIONS -->
-      <div class="section" id="sec-submissions">
-        <div class="section-head"><h2>Submissions</h2></div>
+      <div class="section section-review" id="sec-submissions">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Submissions</h2></div>
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="minibtn" id="sub-tab-reports" onclick="switchSubTab('reports')">Reports <span class="nav-badge" id="sub-badge-reports"></span></button>
           <button class="minibtn" id="sub-tab-suggestions" onclick="switchSubTab('suggestions')">Suggestions <span class="nav-badge" id="sub-badge-suggestions"></span></button>
@@ -227,34 +371,90 @@ a{color:var(--accent);text-decoration:none}
         <div id="sub-list"></div>
       </div>
 
+      <!-- TALENT POOL -->
+      <div class="section section-review" id="sec-poolcandidates">
+        <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>Talent Pool</h2></div>
+        <div class="muted" style="margin-bottom:14px">New registrations land here as <strong>Pending</strong>. Check the EFT reference against your bank statement, then Approve to make the candidate visible in the public Talent Pool for one year (paid-until date is set automatically, editable).</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="minibtn" id="pool-tab-pending" onclick="switchPoolTab('pending')">Pending <span class="nav-badge" id="pool-badge-pending"></span></button>
+          <button class="minibtn" id="pool-tab-active" onclick="switchPoolTab('active')">Active <span class="nav-badge" id="pool-badge-active"></span></button>
+          <button class="minibtn" id="pool-tab-other" onclick="switchPoolTab('other')">Expired / Rejected <span class="nav-badge" id="pool-badge-other"></span></button>
+        </div>
+        <input class="search" id="pool-admin-search" placeholder="Search name, sector, location..." oninput="renderPoolCandidates()">
+        <div id="pool-admin-list"></div>
+      </div>
+
       <!-- SETTINGS -->
-      <div class="section" id="sec-settings">
-        <div class="section-head"><h2>Settings</h2></div>
+      <div class="section section-settings" id="sec-settings">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Settings</h2></div>
         <div class="toggle-row">
           <div><div class="t-label">Public vacancy posting</div><div class="t-sub" id="posting-sub">Loading…</div></div>
           <label class="switch"><input type="checkbox" id="posting-toggle" onchange="togglePosting(this.checked)"><span class="track"><span class="knob"></span></span></label>
         </div>
         <div style="margin-top:14px" class="muted">When ON, anyone can post a general vacancy from the public app. When OFF, posting is locked and users are asked to message the admin on WhatsApp.</div>
+
+        <div class="toggle-row" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+          <div><div class="t-label">Public employer registration</div><div class="t-sub" id="emp-reg-sub">Loading…</div></div>
+          <label class="switch"><input type="checkbox" id="emp-reg-toggle" onchange="toggleEmployerReg(this.checked)"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div style="margin-top:14px" class="muted">When ON, anyone can register their company from the public app. When OFF, registration is locked and users are asked to message the admin on WhatsApp. Employers never post vacancies directly in the public app — send each one their Smart Manager link (in their employer profile) so they can add vacancies themselves.</div>
+
+        <div class="toggle-row" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+          <div><div class="t-label">Employer Directory access</div><div class="t-sub" id="emp-dir-sub">Loading…</div></div>
+          <label class="switch"><input type="checkbox" id="emp-dir-toggle" onchange="toggleEmployerDirectory(this.checked)"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div style="margin-top:14px" class="muted">When ON, everyone can browse employers and their vacancies. When OFF, only users who have registered for the Talent Pool can open the Employer Directory and employer vacancies.</div>
+
+        <details class="banking-accordion">
+          <summary>
+            <span class="banking-summary-copy"><span class="t-label">Talent Pool banking details</span><span class="muted">Tap to view or edit payment information</span></span>
+            <span class="banking-summary-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="banking-accordion-body">
+            <div class="muted banking-help">Shown to job seekers on the public "Join the Talent Pool" registration form so they know where to pay their R20/year.</div>
+            <div class="field"><label>Account name</label><input id="bank-account-name" placeholder="e.g. SA Recruiters"></div>
+            <div class="field"><label>Bank</label><input id="bank-name" placeholder="e.g. Capitec Business"></div>
+            <div class="field"><label>Account number</label><input id="bank-account-number" placeholder="e.g. 1234567890"></div>
+            <div class="field"><label>Branch code</label><input id="bank-branch-code" placeholder="e.g. 470010"></div>
+            <button class="btn" onclick="savePoolBankingDetails()">Save banking details</button>
+          </div>
+        </details>
       </div>
 
       <!-- DAILY TRACK -->
       <div class="section" id="sec-dailytrack">
-        <div class="section-head"><h2>Daily Track</h2><div class="spacer"></div><button class="minibtn" onclick="openTrackSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Upload track</button></div>
-        <div class="muted" style="margin-bottom:14px">Upload an MP3 to feature as "Track of the Day" in the public app. Set the date to control which day each track plays. The newest track for a given date is shown.</div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Daily Track</h2><div class="spacer"></div><button class="minibtn" onclick="openTrackSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Upload track</button></div>
+        <div class="muted" style="margin-bottom:14px">Upload an MP3 to feature as "Track of the Day" in the public app. Set the date to control which day each track plays. The newest track for a given date is shown. <strong>Tracks are kept for 7 days</strong> and automatically deleted after one week.</div>
         <div id="track-setup-warn" class="card card-pad" style="margin-bottom:14px;display:none;border-color:var(--danger);color:var(--danger);font-size:13px;line-height:1.5"></div>
         <div id="track-list"></div>
       </div>
 
       <!-- CONTENT -->
-      <div class="section" id="sec-content">
-        <div class="section-head"><h2>Content</h2><div class="spacer"></div><button class="minibtn" onclick="restoreDefaults()">Restore defaults</button></div>
+      <div class="section section-content" id="sec-content">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Content</h2><div class="spacer"></div><button class="minibtn" onclick="restoreDefaults()">Restore defaults</button></div>
         <div class="muted" style="margin-bottom:14px">Edit the FAQ, CV guides, interview tips, rights, learning hub and support articles that appear in the public app.</div>
         <div id="content-list"></div>
+            </div>
+      <!-- POSTERS -->
+      <div class="section section-content" id="sec-posters">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Posters</h2><div class="spacer"></div><button class="minibtn" onclick="loadPostersForAdmin()">Refresh</button></div>
+        <div class="card card-pad" style="margin-bottom:14px">
+          <div style="font-weight:700;font-size:15px;margin-bottom:4px">Manage home campaign posters</div>
+          <div class="muted" style="margin-bottom:14px">Upload separate artwork for the For Candidates and For Employers panels. The existing panels stay in place; active posters appear inside them.</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end">
+            <div class="field" style="margin:0"><label>Audience</label><select id="poster-audience"><option value="candidates">For Candidates</option><option value="employers">For Employers</option></select></div>
+            <div class="field" style="margin:0"><label>Title (optional)</label><input id="poster-title" maxlength="120" placeholder="Campaign title"></div>
+            <div class="field" style="margin:0"><label>Subtitle (optional)</label><input id="poster-subtitle" maxlength="180" placeholder="Short supporting line"></div>
+            <div class="field" style="margin:0"><label>Order</label><input id="poster-order" type="number" min="0" step="1" value="0"></div>
+            <div class="field" style="margin:0"><label>Image file</label><input id="poster-file" type="file" accept="image/png,image/jpeg,image/webp"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:8px;font-size:13px"><input id="poster-active" type="checkbox" checked> Active on public app</label><button class="btn" style="width:auto;padding:10px 16px" onclick="uploadPoster()">Upload poster</button><span id="poster-upload-note" class="muted"></span></div>
+        </div>
+        <div id="posters-list"></div>
       </div>
     </main>
   </div>
 </div>
-
 <!-- ============ AGENCY SHEET ============ -->
 <div class="scrim" id="agency-overlay">
   <div class="sheet">
@@ -306,7 +506,9 @@ a{color:var(--accent);text-decoration:none}
     <div class="field"><label>Job title *</label><input id="v-title" placeholder="e.g. Forklift Driver"></div>
     <div class="field"><label>Company</label><input id="v-company" placeholder="e.g. ABC Logistics"></div>
     <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Durban, KZN"></div>
+    <div class="field"><label>Work arrangement</label><select id="v-remote"><option value="">— Not specified —</option><option value="On-site">On-site</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option></select></div>
     <div class="field"><label>Employment type</label><input id="v-etype" placeholder="Full-time / Part-time / Contract"></div>
+    <div class="field"><label>Experience level</label><select id="v-exp"><option value="">— Not specified —</option><option value="Entry-level">Entry-level</option><option value="Mid-level">Mid-level</option><option value="Senior">Senior</option><option value="Executive">Executive</option></select></div>
     <div class="field"><label>Contract type</label><input id="v-contract" placeholder="Permanent / Fixed-term / Casual"></div>
     <div class="field"><label>Salary</label><input id="v-salary" placeholder="e.g. R18,000 pm or TBC"></div>
     <div class="field"><label>Hours</label><input id="v-hours" placeholder="e.g. 45 hours/week"></div>
@@ -315,9 +517,72 @@ a{color:var(--accent);text-decoration:none}
     <div class="field"><label>Closing date</label><input id="v-closing" placeholder="e.g. 30 Sep 2026"></div>
     <div class="field"><label>Notes / description</label><textarea id="v-notes" placeholder="Job description, requirements…"></textarea></div>
     <div class="field"><label>Apply link</label><input id="v-link" placeholder="https://…"></div>
+    <div class="field"><label>Contact email (if no link)</label><input id="v-email" type="email" placeholder="e.g. hr@company.co.za"></div>
+    <div class="field"><label>Contact phone (if no link)</label><input id="v-phone" type="tel" placeholder="e.g. 011 123 4567"></div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('vacancy-overlay')">Cancel</button>
       <button class="btn" onclick="saveVacancy()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EMPLOYER SHEET ============ -->
+<div class="scrim" id="employer-overlay">
+  <div class="sheet">
+    <h3 id="employer-sheet-title">Register employer</h3>
+    <div class="field"><label>Company name *</label><input id="emp-name" placeholder="e.g. Shoprite Checkers"></div>
+    <div class="field"><label>Industry</label><input id="emp-industry" placeholder="e.g. Retail, Manufacturing, Logistics"></div>
+    <div class="field"><label>Website</label><input id="emp-website" placeholder="https://…"></div>
+    <div class="field"><label>Contact person / phone</label><input id="emp-contact" placeholder="e.g. HR Dept, 082 000 0000"></div>
+    <div class="field"><label>Email</label><input id="emp-email" type="email" placeholder="careers@company.co.za"></div>
+    <div class="field"><label>Location</label><input id="emp-location" placeholder="e.g. Sandton, Johannesburg"></div>
+    <div class="field"><label>Address</label><input id="emp-address" placeholder="Street address"></div>
+    <div class="field"><label>Company logo</label><input type="file" id="emp-photo" accept="image/*" onchange="handleEmployerPhoto(event)"></div>
+    <div id="emp-photo-preview" style="display:none;margin-bottom:12px"><img id="emp-photo-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></div>
+    <div class="toggle-row" style="margin-bottom:16px">
+      <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified employers show a badge and rank higher</div></div>
+      <label class="switch"><input type="checkbox" id="emp-verified" checked><span class="track"><span class="knob"></span></span></label>
+    </div>
+    <div id="emp-manager-box" style="display:none"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('employer-overlay')">Cancel</button>
+      <button class="btn" onclick="saveEmployer()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TALENT POOL CANDIDATE SHEET ============ -->
+<div class="scrim" id="pool-overlay">
+  <div class="sheet">
+    <h3 id="pool-sheet-title">Candidate</h3>
+    <div class="field"><label>Full name *</label><input id="pc-name"></div>
+    <div class="field"><label>Phone</label><input id="pc-phone" type="tel"></div>
+    <div class="field"><label>Email</label><input id="pc-email" type="email"></div>
+    <div class="field"><label>Sector / industry</label><input id="pc-sector"></div>
+    <div class="field"><label>Position</label><input id="pc-position"></div>
+    <div class="field"><label>Location</label><input id="pc-location"></div>
+    <div class="field"><label>Gender</label><select id="pc-gender"><option value="">— Not set —</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
+    <div class="field"><label>Grade 12 / Matric?</label><select id="pc-grade12"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Do you have a criminal record?</label><select id="pc-criminal"><option value="">— Not set —</option><option value="Clear">Clear</option><option value="Yes">Yes</option></select></div>
+    <div class="field"><label>Years of experience</label><select id="pc-experience"><option value="">— Not set —</option><option value="0">0 years</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
+    <div class="mini-cv-heading">Mini CV questions</div>
+    <div class="field"><label>Highest qualification</label><input id="pc-qualification"></div>
+    <div class="field"><label>Driver’s licence</label><select id="pc-drivers-license"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Reliable transport</label><select id="pc-transport"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Willing to relocate</label><select id="pc-relocate"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option><option value="Negotiable">Negotiable</option></select></div>
+    <div class="field"><label>Availability</label><input id="pc-availability"></div>
+    <div class="field"><label>Preferred employment</label><select id="pc-employment"><option value="">— Not set —</option><option value="Permanent">Permanent</option><option value="Contract">Contract</option><option value="Temporary">Temporary</option><option value="Part-time">Part-time</option><option value="Any">Any suitable opportunity</option></select></div>
+    <div class="field"><label>Salary expectation</label><input id="pc-salary"></div>
+    <div class="field"><label>Eligible to work in South Africa</label><select id="pc-work-authorized"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div class="field"><label>Sell yourself / Tell us about yourself <span class="field-optional">150 characters</span></label><textarea id="pc-about" maxlength="150"></textarea><small class="char-counter" data-for="pc-about">0 / 150</small></div>
+    <div class="field"><label>CV link</label><input id="pc-cv" type="url"></div>
+    <div class="field"><label>EFT payment reference</label><input id="pc-payref"></div>
+    <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
+    <div class="field"><label>Paid until</label><input id="pc-paiduntil" type="date"></div>
+    <div class="field"><label>Admin notes (internal only)</label><textarea id="pc-notes" placeholder="e.g. EFT confirmed 12 Aug, matches ref"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('pool-overlay')">Cancel</button>
+      <button class="btn" onclick="savePoolCandidate()">Save</button>
     </div>
   </div>
 </div>
@@ -341,7 +606,7 @@ a{color:var(--accent);text-decoration:none}
     <h3 id="track-sheet-title">Upload track</h3>
     <div class="field"><label>Track title *</label><input id="t-title" placeholder="e.g. Motivation Monday Mix"></div>
     <div class="field"><label>Artist / subtitle</label><input id="t-artist" placeholder="e.g. DJ Sbu or Inspirational Talk"></div>
-    <div class="field"><label>Date (which day this plays) *</label><input id="t-date" type="date"></div>
+    <div class="field"><label>Date (which day this plays) *</label><input id="t-date" type="date"><small style="display:block;margin-top:5px;color:var(--text-2)">Tracks remain available to visitors for 7 days from this date.</small></div>
     <div class="field">
       <label>MP3 file *<span id="t-file-hint" style="font-weight:400;color:var(--text-2)"></span></label>
       <input id="t-file" type="file" accept="audio/mpeg,audio/mp3,.mp3" style="padding:9px 13px">
@@ -374,11 +639,13 @@ var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KE
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], reports: [], suggestions: [], tracks: [] };
-var editing = { agency: null, branch: null, vacancy: null, article: null, articleSection: null };
+var cache = { agencies: [], branches: [], vacancies: [], employers: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], posters: [] };
+var editing = { agency: null, branch: null, vacancy: null, employer: null, article: null, articleSection: null };
 var pendingPhoto = null;
 var subTab = 'reports';
 var publicVacancyPostingOpen = false;
+var publicEmployerRegistrationOpen = false;
+var employerDirectoryOpen = true;
 
 // ===== Theme =====
 function applyTheme(t){
@@ -433,7 +700,7 @@ async function doLogout(){
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
-  cache = { agencies:[], branches:[], vacancies:[], reports:[], suggestions:[] };
+  cache = { agencies:[], branches:[], vacancies:[], employers:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], posters:[] };
 }
 async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
@@ -441,8 +708,10 @@ async function enterConsole(user){
   document.getElementById('who-am-i').textContent = user.email || 'admin';
   await loadAll();
   await checkTracksTable();
+  await cleanupOldTracks();
   renderNav();
   renderDashboard();
+  loadAnalyticsSummary();
 }
 // Restore session on reload
 (async function checkSession(){
@@ -454,29 +723,40 @@ async function enterConsole(user){
 
 // ===== Data access =====
 async function getAgencies(){
-  var { data, error } = await supabaseClient.from('agencies').select('*').order('created_at',{ascending:false});
+  var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token').order('created_at',{ascending:false});
   if (error){ console.error('agencies',error); return []; }
   return data;
 }
 async function getBranches(){
-  var { data, error } = await supabaseClient.from('branches').select('*').order('created_at',{ascending:true});
+  var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email').order('name',{ascending:true});
   if (error){ console.error('branches',error); return []; }
   return data || [];
 }
 async function getVacancies(){
-  try { var { data, error } = await supabaseClient.from('vacancies').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('vacancies').select('id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function getReports(){
-  try { var { data, error } = await supabaseClient.from('reports').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('reports').select('id,agency_name,reason,details,status,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function getSuggestions(){
-  try { var { data, error } = await supabaseClient.from('suggestions').select('*').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('suggestions').select('id,type,agency_name,details,contact,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  return [];
+}
+async function getPoolCandidates(){ var { data, error } = await supabaseClient.from('pool_candidates').select('id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,created_at').order('created_at', { ascending: false }); if(error){ console.error('pool load', error); return []; } return data || []; }
+async function upsertPoolCandidate(p){ var { error } = await supabaseClient.from('pool_candidates').upsert(p); if(error){ console.error('pool save', error); alert('Could not save: '+error.message); } }
+async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); }
+async function getPosters(){
+  try {
+    var { data, error } = await supabaseClient.from('posters').select('id,audience,title,subtitle,image_path,image_url,sort_order,is_active,created_at,updated_at').order('audience',{ascending:true}).order('sort_order',{ascending:true}).order('created_at',{ascending:false});
+    if(!error) return data || [];
+    console.warn('posters', error);
+  } catch(e){ console.warn('posters', e); }
   return [];
 }
 async function getTracks(){
-  try { var { data, error } = await supabaseClient.from('daily_tracks').select('*').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('daily_tracks').select('id,title,artist,file_path,track_date,created_at').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function upsertAgency(a){
@@ -484,84 +764,158 @@ async function upsertAgency(a){
   if(error){ var msg=(error.message||'')+' '+(error.hint||''); if(/trades/i.test(msg)){ var s2=Object.assign({},a); delete s2.trades; var r2=await supabaseClient.from('agencies').upsert(s2); if(r2.error){ console.error('agency save',r2.error); alert('Could not save agency: '+r2.error.message); } else { console.warn('Saved agency without trades — add the trades column (ADD_TRADES_COLUMN.sql)'); } return; } console.error('agency save',error); alert('Could not save agency: '+error.message); }
 }
 async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } }
+async function getEmployers(){
+  try { var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified,manage_token').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  return [];
+}
+async function upsertEmployer(e){ var { error } = await supabaseClient.from('employers').upsert(e); if(error){ console.error('employer save',error); alert('Could not save employer: '+error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } }
+async function removeEmployer(id){ var { error } = await supabaseClient.from('employers').delete().eq('id',id); if(error){ console.error('employer del',error); alert('Could not delete: '+error.message); } }
 async function upsertBranch(b){ var { error } = await supabaseClient.from('branches').upsert(b); if(error){ console.error('branch save',error); alert('Could not save branch: '+error.message); } }
 async function removeBranch(id){ var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error) console.error('branch del',error); }
-async function upsertVacancy(v){ var { error } = await supabaseClient.from('vacancies').upsert(v); if(error){ console.error('vacancy save',error); alert('Could not save vacancy: '+error.message); } }
+async function upsertVacancy(v){
+  var { error } = await supabaseClient.from('vacancies').upsert(v);
+  if(error){
+    // If the error is about a missing column, retry with only the
+    // columns that are guaranteed to exist in the original schema.
+    if(error.message && error.message.indexOf('column') > -1){
+      var safe = {
+        id:v.id, agency_id:v.agency_id||'general', title:v.title||'',
+        company:v.company||'', location:v.location||'',
+        closing_date:v.closing_date||'', notes:v.notes||'',
+        link:v.link||'', email:v.email||'', phone:v.phone||''
+      };
+      var { error:err2 } = await supabaseClient.from('vacancies').upsert(safe);
+      if(err2){ console.error('vacancy save (retry)',err2); alert('Could not save vacancy: '+err2.message+'\n\nPlease run UPDATE_VACANCIES_SCHEMA.sql in Supabase to add the missing columns.'); }
+    } else {
+      console.error('vacancy save',error); alert('Could not save vacancy: '+error.message);
+    }
+  }
+}
 async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); }
 async function updateReportStatus(id, status){ var { error } = await supabaseClient.from('reports').update({status:status}).eq('id',id); if(error) console.error('report upd',error); }
 async function deleteReport(id){ var { error } = await supabaseClient.from('reports').delete().eq('id',id); if(error) console.error('report del',error); }
 async function deleteSuggestion(id){ var { error } = await supabaseClient.from('suggestions').delete().eq('id',id); if(error) console.error('sugg del',error); }
+var alertEmailJsLoader = null;
+var ALERT_EMAIL_CONFIG = { serviceId: 'service_aqzditg', templateId: 'template_edvys4b', publicKey: 'oqqjLLXpmji_dmmQP' };
+function loadAlertEmailJS(){
+  if (window.emailjs) return Promise.resolve(window.emailjs);
+  if (alertEmailJsLoader) return alertEmailJsLoader;
+  alertEmailJsLoader = new Promise(function(resolve,reject){
+    var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js'; s.async=true;
+    s.onload=function(){resolve(window.emailjs)}; s.onerror=reject; document.head.appendChild(s);
+  });
+  return alertEmailJsLoader;
+}
+function alertMatchesVacancy(candidate, vacancy){
+  var sectorPref=(candidate.alert_sectors||candidate.sector||'').toLowerCase().trim();
+  var locationPref=(candidate.alert_locations||candidate.location||'').toLowerCase().trim();
+  var vacancyHay=[vacancy.title,vacancy.company,vacancy.notes,vacancy.employment_type,vacancy.position].filter(Boolean).join(' ').toLowerCase();
+  var vacancyLocation=(vacancy.location||'').toLowerCase();
+  var vacancySector=(vacancy.sector||vacancy.category||'').toLowerCase().trim();
+  // Vacancies currently have no required sector field. Do not reject a valid
+  // location match merely because a sector cannot be inferred from the title.
+  var sectorMatch=!sectorPref || !vacancySector || sectorPref.split(/[,;|]/).some(function(x){x=x.trim();return x && (vacancySector.indexOf(x)!==-1 || vacancyHay.indexOf(x)!==-1);});
+  var locationMatch=!locationPref || !vacancyLocation || locationPref.split(/[,;|]/).some(function(x){x=x.trim();return x && vacancyLocation.indexOf(x)!==-1;});
+  return sectorMatch && locationMatch;
+}
+async function queueAndSendVacancyAlerts(vacancy){
+  try{
+    var result=await supabaseClient.from('pool_candidates').select('id,full_name,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status').in('status',['pending','active']).eq('email_alert_opt_in',true);
+    if(result.error){ console.warn('Talent Pool alert candidate query failed',result.error); showToast('Alert setup error: run CREATE_EMAIL_ALERTS.sql in Supabase.'); return {sent:0,reason:'candidate-query'}; }
+    if(!result.data || !result.data.length){ showToast('No Talent Pool members are opted in for email alerts.'); return {sent:0,reason:'no-opt-ins'}; }
+    var matches=result.data.filter(function(c){return c.contact_email && alertMatchesVacancy(c,vacancy);});
+    if(!matches.length){ showToast('No opted-in members matched this vacancy location.'); return {sent:0,reason:'no-match'}; }
+    var rows=matches.map(function(c){return {vacancy_id:vacancy.id,candidate_id:c.id,recipient_email:c.contact_email,status:'queued'};});
+    var queueResult=await supabaseClient.from('vacancy_alert_queue').upsert(rows,{onConflict:'vacancy_id,candidate_id'});
+    if(queueResult.error) console.warn('vacancy alert queue unavailable',queueResult.error);
+    var client=await loadAlertEmailJS();
+    if(!client){ showToast('Email alert service could not load.'); return {sent:0,reason:'emailjs-load'}; }
+    if(!client._initialized){client.init({publicKey:ALERT_EMAIL_CONFIG.publicKey});client._initialized=true;}
+    var sent=0;
+    for(var i=0;i<matches.length;i++){
+      var c=matches[i];
+      try{
+        await client.send(ALERT_EMAIL_CONFIG.serviceId,ALERT_EMAIL_CONFIG.templateId,{
+          to_email:c.contact_email,
+          email_subject:'SA Recruiters | New vacancy: '+(vacancy.title||'Opportunity'),
+          notification_type:'VACANCY ALERT',
+          notification_title:'New vacancy opportunity',
+          notification_intro:'A new vacancy matching your Talent Pool preferences has been posted.',
+          notification_body:'Role: '+(vacancy.title||'-')+'\nCompany: '+(vacancy.company||'-')+'\nLocation: '+(vacancy.location||'-')+'\nEmployment type: '+(vacancy.employment_type||'-')+'\nClosing date: '+(vacancy.closing_date||'-')+'\nApply: '+(vacancy.link||vacancy.email||vacancy.phone||'-'),
+          to_name:c.full_name||'Talent Pool member',
+          vacancy_title:vacancy.title||'New vacancy',company:vacancy.company||'',location:vacancy.location||'',apply_link:vacancy.link||'',unsubscribe_token:c.alert_unsubscribe_token||'',
+          submitted_via:'SA Recruiters'
+        });
+        sent++;
+        await supabaseClient.from('vacancy_alert_queue').update({status:'sent',sent_at:new Date().toISOString(),error_message:null}).eq('vacancy_id',vacancy.id).eq('candidate_id',c.id);
+      }catch(sendErr){
+        console.warn('alert email failed',sendErr);
+        await supabaseClient.from('vacancy_alert_queue').update({status:'failed',error_message:String(sendErr && (sendErr.text||sendErr.message||sendErr))}).eq('vacancy_id',vacancy.id).eq('candidate_id',c.id);
+      }
+    }
+    if(sent) showToast(sent+' vacancy alert'+(sent===1?'':'s')+' sent');
+    else showToast('The alert matched members but EmailJS rejected the send. Check the EmailJS service/template settings.');
+    return {sent:sent,matched:matches.length};
+  }catch(e){ console.warn('vacancy alerts unavailable',e); showToast('Vacancy saved, but the email alert could not be sent.'); return {sent:0,reason:'unexpected'}; }
+}
 async function getAppSetting(key, fb){ try{ var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key',key).maybeSingle(); if(error||!data) return fb; return data.value; }catch(e){ return fb; } }
 async function setAppSetting(key, value){ try{ var { error } = await supabaseClient.from('app_settings').upsert({key:key,value:value,updated_at:new Date().toISOString()}); return !error; }catch(e){ return false; } }
-// Saves a manager token AND reads the row back to confirm it actually
-// landed — a plain .update() can "succeed" (no error) while writing to
-// a column that silently doesn't exist on some Postgres setups, or the
-// write can be swallowed by an RLS policy that returns 0 rows affected
-// without an error. Returns true only if the database row was verified
-// to hold the token we just tried to save.
-async function saveManagerToken(agencyId, token){
-  try{
-    var { error } = await supabaseClient.from('agencies').update({manage_token:token}).eq('id',agencyId);
-    if(error){
-      console.error('manage_token save', error);
-      alert('Could not save the manager token to Supabase (' + error.message + ').\n\nRun RESET_MANAGE_TOKENS.sql in the Supabase SQL Editor, then try again.');
-      return false;
-    }
-    // Verify: re-fetch the row and confirm the token is actually there.
-    var check = await supabaseClient.from('agencies').select('manage_token').eq('id', agencyId).maybeSingle();
-    if (check.error || !check.data || check.data.manage_token !== token) {
-      console.error('manage_token verify failed', check.error, check.data);
-      alert('The manager token save did not stick — Supabase accepted the request but the token isn\'t actually stored (likely a Row Level Security policy blocking the write, or the column is missing). Run RESET_MANAGE_TOKENS.sql, check your RLS policies on agencies, then try again.');
-      return false;
-    }
-    return true;
-  }catch(e){ console.error('manage_token save', e); alert('Could not save the manager token — check your connection and try again.'); return false; }
-}
-
-// Regenerate manager tokens for EVERY agency in one pass — use this once
-// right after running RESET_MANAGE_TOKENS.sql so every agency gets a
-// fresh, verified token instead of clicking "Regenerate" one at a time.
-async function regenerateAllTokens(){
-  if(!confirm('Generate a brand-new Smart Manager link for ALL ' + cache.agencies.length + ' agencies? Every existing link will stop working.')) return;
-  var ok = 0, failed = [];
-  for (var i = 0; i < cache.agencies.length; i++) {
-    var a = cache.agencies[i];
-    var tok = genToken();
-    var success = await saveManagerToken(a.id, tok);
-    if (success) { a.manage_token = tok; ok++; }
-    else failed.push(a.name || a.id);
-  }
-  renderAgencies();
-  if (failed.length) {
-    alert('Regenerated ' + ok + ' of ' + cache.agencies.length + ' tokens.\n\nFailed for: ' + failed.join(', ') + '\n\nSee the alert(s) above for why.');
-  } else {
-    showToast('All ' + ok + ' manager links regenerated');
-  }
-}
+async function saveManagerToken(agencyId, token){ try{ await supabaseClient.from('agencies').update({manage_token:token}).eq('id',agencyId); }catch(e){} }
+async function saveEmployerManagerToken(employerId, token){ try{ await supabaseClient.from('employers').update({manage_token:token}).eq('id',employerId); }catch(e){} }
 
 async function loadAll(){
-  cache.agencies = await getAgencies();
-  cache.branches = await getBranches();
-  cache.vacancies = await getVacancies();
-  cache.reports = await getReports();
-  cache.suggestions = await getSuggestions();
-  cache.tracks = await getTracks();
-  var pv = await getAppSetting('public_vacancy_posting','false');
-  publicVacancyPostingOpen = (pv===true||pv==='true');
+  var results = await Promise.all([
+    getAgencies(), getBranches(), getVacancies(), getEmployers(),
+    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters()
+  ]);
+  cache.agencies = results[0] || [];
+  cache.branches = results[1] || [];
+  cache.vacancies = results[2] || [];
+  cache.employers = results[3] || [];
+  cache.reports = results[4] || [];
+  cache.suggestions = results[5] || [];
+  cache.tracks = results[6] || [];
+  cache.poolCandidates = results[7] || [];
+  cache.posters = results[8] || [];
+
+  var settings = await Promise.all([
+    getAppSetting('public_vacancy_posting','false'),
+    getAppSetting('public_employer_registration','false'),
+    getAppSetting('public_employer_directory','true')
+  ]);
+  publicVacancyPostingOpen = (settings[0]===true||settings[0]==='true');
+  publicEmployerRegistrationOpen = (settings[1]===true||settings[1]==='true');
+  employerDirectoryOpen = (settings[2]===true||settings[2]==='true');
   updatePostingUI();
+  updateEmployerRegUI();
+  updateEmployerDirectoryUI();
   fillAgencySelects();
 }
 
+// ===== Tap-to-open row toggle (mobile-friendly) =====
+function toggleRow(rowEl){
+  // Close any other expanded rows in the same container
+  var container = rowEl.parentNode;
+  container.querySelectorAll('.row-item.expanded').forEach(function(r){
+    if(r !== rowEl) r.classList.remove('expanded');
+  });
+  rowEl.classList.toggle('expanded');
+}
+function stopProp(e){ if(e && e.stopPropagation) e.stopPropagation(); }
+
 // ===== Navigation =====
 var NAV = [
-  { id:'dashboard', label:'Dashboard', icon:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
-  { id:'agencies', label:'Agencies', icon:'<path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/>' },
-  { id:'branches', label:'Branches', icon:'<path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
-  { id:'vacancies', label:'Vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
-  { id:'submissions', label:'Submissions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
-  { id:'settings', label:'Settings', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
-  { id:'dailytrack', label:'Daily Track', icon:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
-  { id:'content', label:'Content', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' }
+  { id:'dashboard', label:'Dashboard', tile:'hc-tile-blue', sub:'Overview & quick stats', icon:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
+  { id:'agencies', label:'Agencies', tile:'hc-tile-blue', sub:'Manage recruitment agencies', icon:'<path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/>' },
+  { id:'branches', label:'Branches', tile:'hc-tile-green', sub:'Agency branch locations', icon:'<path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
+  { id:'vacancies', label:'Vacancies', tile:'hc-tile-amber', sub:'Job postings & vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
+  { id:'employers', label:'Employers', tile:'hc-tile-indigo', sub:'Companies posting their own vacancies', icon:'<path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/>' },
+  { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
+  { id:'poolcandidates', label:'Talent Pool', tile:'hc-tile-blue', sub:'Job seeker registrations & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
+  { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+  { id:'dailytrack', label:'Daily Track', tile:'hc-tile-pink', sub:'Track of the Day music', icon:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
+  { id:'content', label:'Content', tile:'hc-tile-teal', sub:'FAQ, guides & articles', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' },
+  { id:'posters', label:'Posters', tile:'hc-tile-teal', sub:'Employer & candidate campaign posters', icon:'<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m4 16 4-4 3 3 2-2 7 6"/>' }
 ];
 function renderNav(){
   var el = document.getElementById('sidebar');
@@ -570,10 +924,25 @@ function renderNav(){
     if(n.id==='agencies') badge = '<span class="nav-badge">'+cache.agencies.length+'</span>';
     if(n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
     if(n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
+    if(n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
     if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; badge = '<span class="nav-badge">'+c+'</span>'; }
+    if(n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
-    return '<div class="nav-item" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
+    if(n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
+    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack','posters'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
+    return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
+}
+function navBadge(id){
+  if(id==='agencies') return cache.agencies.length;
+  if(id==='branches') return cache.branches.length;
+  if(id==='vacancies') return cache.vacancies.length;
+  if(id==='employers') return cache.employers.length;
+  if(id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; return c; }
+  if(id==='dailytrack') return cache.tracks.length;
+  if(id==='posters') return cache.posters.length;
+  if(id==='poolcandidates'){ return cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; }
+  return null;
 }
 function goSection(id){
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
@@ -582,27 +951,86 @@ function goSection(id){
   if(id==='agencies') renderAgencies();
   if(id==='branches') renderBranches();
   if(id==='vacancies') renderVacancies();
+  if(id==='employers') renderEmployers();
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
+  if(id==='posters') renderPosters();
   if(id==='dailytrack') renderDailyTracks();
-  if(id==='settings') updatePostingUI();
+  if(id==='settings'){ updatePostingUI(); updateEmployerRegUI(); loadPoolBankingDetails(); }
+  if(id==='poolcandidates') renderPoolCandidates();
   window.scrollTo(0,0);
+}
+function goHome(){
+  goSection('dashboard');
 }
 
 // ===== Dashboard =====
 function renderDashboard(){
   var openReports = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length;
+  var poolPending = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length;
   var stats = [
     { v:cache.agencies.length, l:'Agencies' },
     { v:cache.branches.length, l:'Branches' },
     { v:cache.vacancies.length, l:'Vacancies' },
+    { v:cache.employers.length, l:'Employers' },
     { v:cache.reports.length, l:'Reports ('+openReports+' open)' },
     { v:cache.suggestions.length, l:'Suggestions' },
-    { v:cache.tracks.length, l:'Daily Tracks' }
+    { v:cache.tracks.length, l:'Daily Tracks' },
+    { v:cache.poolCandidates.length, l:'Talent Pool ('+poolPending+' pending)' }
   ];
   document.getElementById('stats-grid').innerHTML = stats.map(function(s){
     return '<div class="stat"><div class="v">'+s.v+'</div><div class="l">'+s.l+'</div></div>';
   }).join('');
+  // Build the home card grid (grouped like Profile section)
+  var homeEl = document.getElementById('home-cards');
+  if(homeEl){
+    // Group: Manage
+    var manageItems = ['agencies','branches','vacancies','employers'];
+    var reviewItems = ['submissions','poolcandidates'];
+    var mediaItems = ['dailytrack','content','posters'];
+    var configItems = ['settings'];
+    var html = '';
+    html += buildHomeGroup('Manage', manageItems);
+    html += buildHomeGroup('Review', reviewItems);
+    html += buildHomeGroup('Content & Media', mediaItems);
+    html += buildHomeGroup('Configuration', configItems);
+    homeEl.innerHTML = html;
+  }
+}
+async function loadAnalyticsSummary(){
+  var el = document.getElementById('analytics-summary');
+  if (!el) return;
+  var since = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+  try {
+    var res = await supabaseClient.from('analytics_events').select('event_name,session_id').gte('created_at', since).limit(10000);
+    if (res.error) throw res.error;
+    var rows = res.data || [], counts = {}, sessions = {};
+    rows.forEach(function(r){ counts[r.event_name] = (counts[r.event_name]||0) + 1; if(r.session_id) sessions[r.session_id] = true; });
+    var items = [
+      ['candidate_registration_submitted','Candidate registrations'],
+      ['employer_view','Employer profile views'],
+      ['vacancy_view','Vacancy views'],
+      ['vacancy_click','Vacancy clicks']
+    ];
+    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">' + items.map(function(item){ return '<div style="background:var(--card-2);border-radius:10px;padding:10px 11px"><div style="font-size:21px;font-weight:800">'+(counts[item[0]]||0)+'</div><div style="font-size:11.5px;color:var(--text-2)">'+item[1]+'</div></div>'; }).join('') + '</div><div style="margin-top:10px;color:var(--text-2);font-size:11.5px">'+Object.keys(sessions).length+' unique sessions recorded from '+rows.length+' events.</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--text-2);font-size:13px;line-height:1.5">Analytics is not available yet. Run <strong>CREATE_ANALYTICS.sql</strong> in Supabase, then tap Refresh.</div>';
+  }
+}
+function buildHomeGroup(label, itemIds){
+  var cards = itemIds.map(function(id){
+    var n = NAV.find(function(x){ return x.id===id; });
+    if(!n) return '';
+    var b = navBadge(id);
+    var badgeHtml = (b!==null) ? '<span class="hc-badge">'+b+'</span>' : '';
+    return '<button class="home-nav-card '+(id==='poolcandidates'?'pool-nav-card':'')+'" onclick="goSection(\''+id+'\')">'+
+      '<span class="hc-icon '+n.tile+'"><svg viewBox="0 0 24 24">'+n.icon+'</svg></span>'+
+      '<span class="hc-text"><span class="hc-title">'+n.label+'</span><span class="hc-sub">'+n.sub+'</span></span>'+
+      badgeHtml+
+      '<svg class="hc-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'+
+    '</button>';
+  }).join('');
+  return '<div class="home-section-label">'+label+'</div><div class="home-grouped-list">'+cards+'</div>';
 }
 
 // ===== Agencies =====
@@ -615,14 +1043,31 @@ function renderAgencies(){
   if(!list.length){ el.innerHTML = emptyState('No agencies','Add your first agency or adjust your search.'); return; }
   el.innerHTML = list.map(function(a){
     var sub = [a.location, a.email].filter(Boolean).join(' · ');
-    return '<div class="row-item">'+
+    var details = '';
+    if(a.website) details += '<div class="det-row"><span class="det-label">Website:</span> '+escapeHtml(a.website)+'</div>';
+    if(a.contact) details += '<div class="det-row"><span class="det-label">Contact:</span> '+escapeHtml(a.contact)+'</div>';
+    if(a.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(a.email)+'</div>';
+    if(a.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(a.address)+'</div>';
+    if(a.trades) details += '<div class="det-row"><span class="det-label">Trades:</span> '+escapeHtml(a.trades)+'</div>';
+    if(a.companies) details += '<div class="det-row"><span class="det-label">Companies:</span> '+escapeHtml(a.companies)+'</div>';
+    if(a.cvpref) details += '<div class="det-row"><span class="det-label">CV pref:</span> '+escapeHtml(a.cvpref)+'</div>';
+    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar">'+(a.photo?'<img src="'+a.photo+'">':initials(a.name))+'</div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(a.name||'Unnamed')+' '+(a.verified?'<span class="badge verified">Verified</span>':'<span class="badge unverified">Unverified</span>')+'</div>'+
       '<div class="row-sub">'+escapeHtml(sub||'No details')+'</div></div>'+
-      '<div class="row-actions">'+
-        '<button class="minibtn" onclick="openAgencySheet(\''+a.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
-        '<button class="minibtn danger" onclick="deleteAgency(\''+a.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
-      '</div></div>';
+      '<div class="row-actions-inline">'+
+        '<button class="minibtn" onclick="stopProp(event);openAgencySheet(\''+a.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deleteAgency(\''+a.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openAgencySheet(\''+a.id+'\')">Edit agency</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deleteAgency(\''+a.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
   }).join('');
 }
 function openAgencySheet(id){
@@ -680,13 +1125,8 @@ async function saveAgency(){
     photo:pendingPhoto,
     verified:document.getElementById('a-verified').checked
   };
-  var isNew = !editing.agency;
-  if (isNew) payload.manage_token = genToken(); // include token in the initial insert — one write, not two
   await upsertAgency(payload);
-  if (isNew) {
-    var verified = await saveManagerToken(id, payload.manage_token); // confirms it actually stuck
-    if (!verified) payload.manage_token = ''; // don't show a link we can't confirm is real
-  }
+  if(!editing.agency){ var tok=genToken(); await saveManagerToken(id, tok); payload.manage_token = tok; }
   closeSheet('agency-overlay');
   showToast(editing.agency ? 'Agency updated' : 'Agency added');
   editing.agency = null; pendingPhoto = null;
@@ -712,12 +1152,135 @@ function copyLink(inputId){
   showToast('Link copied');
 }
 
+// ===== Employers =====
+function employerById(id){ return cache.employers.find(function(e){return e.id===id;}); }
+function renderEmployers(){
+  var q = (document.getElementById('emp-search').value||'').trim().toLowerCase();
+  var list = cache.employers.slice();
+  if(q){ list = list.filter(function(e){ var hay=((e.name||'')+' '+(e.industry||'')+' '+(e.location||'')+' '+(e.email||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  list.sort(function(a,b){ if((a.verified?1:0)!==(b.verified?1:0)) return (b.verified?1:0)-(a.verified?1:0); return (a.name||'').localeCompare(b.name||''); });
+  var el = document.getElementById('emp-list');
+  if(!list.length){ el.innerHTML = emptyState('No employers','Register an employer or adjust your search.'); return; }
+  el.innerHTML = list.map(function(e){
+    var jobCount = cache.vacancies.filter(function(v){ return v.employer_id===e.id; }).length;
+    var sub = [e.industry, e.location, jobCount ? (jobCount+' vacanc'+(jobCount===1?'y':'ies')) : null].filter(Boolean).join(' · ');
+    var details = '';
+    if(e.website) details += '<div class="det-row"><span class="det-label">Website:</span> '+escapeHtml(e.website)+'</div>';
+    if(e.contact) details += '<div class="det-row"><span class="det-label">Contact:</span> '+escapeHtml(e.contact)+'</div>';
+    if(e.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(e.email)+'</div>';
+    if(e.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(e.address)+'</div>';
+    if(e.industry) details += '<div class="det-row"><span class="det-label">Industry:</span> '+escapeHtml(e.industry)+'</div>';
+    details += '<div class="det-row"><span class="det-label">Vacancies posted:</span> '+jobCount+'</div>';
+    var employerVacancies = cache.vacancies.filter(function(v){ return v.employer_id===e.id; });
+    if (employerVacancies.length) {
+      details += '<div class="det-row" style="margin-top:10px"><span class="det-label">Employer vacancies:</span></div>';
+      details += employerVacancies.map(function(v){
+        return '<div class="det-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(v.title||'Untitled vacancy')+'</span><span style="display:flex;gap:5px;flex-shrink:0"><button class="minibtn" onclick="stopProp(event);openVacancySheet(\''+v.id+'\')" title="Edit vacancy">Edit</button><button class="minibtn danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')" title="Delete vacancy">Delete</button></span></div>';
+      }).join('');
+    }
+    return '<div class="row-item" onclick="toggleRow(this)">'+
+      '<div class="row-avatar">'+(e.photo?'<img src="'+e.photo+'">':initials(e.name))+'</div>'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(e.name||'Unnamed')+' '+(e.verified?'<span class="badge verified">Verified</span>':'<span class="badge unverified">Unverified</span>')+'</div>'+
+      '<div class="row-sub">'+escapeHtml(sub||'No details')+'</div></div>'+
+      '<div class="row-actions-inline">'+
+        '<button class="minibtn" onclick="stopProp(event);openEmployerSheet(\''+e.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deleteEmployer(\''+e.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openVacancySheet(null,\''+e.id+'\')">+ Post vacancy for this employer</button>'+
+          '<button class="minibtn full" onclick="stopProp(event);openEmployerSheet(\''+e.id+'\')">Edit employer</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deleteEmployer(\''+e.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
+  }).join('');
+}
+var pendingEmployerPhoto = null;
+function openEmployerSheet(id){
+  editing.employer = id || null;
+  var e = id ? employerById(id) : null;
+  document.getElementById('employer-sheet-title').textContent = id ? 'Edit employer' : 'Register employer';
+  document.getElementById('emp-name').value = e ? (e.name||'') : '';
+  document.getElementById('emp-industry').value = e ? (e.industry||'') : '';
+  document.getElementById('emp-website').value = e ? (e.website||'') : '';
+  document.getElementById('emp-contact').value = e ? (e.contact||'') : '';
+  document.getElementById('emp-email').value = e ? (e.email||'') : '';
+  document.getElementById('emp-location').value = e ? (e.location||'') : '';
+  document.getElementById('emp-address').value = e ? (e.address||'') : '';
+  document.getElementById('emp-verified').checked = e ? !!e.verified : true;
+  pendingEmployerPhoto = e ? (e.photo||null) : null;
+  var prev = document.getElementById('emp-photo-preview');
+  if(pendingEmployerPhoto){ document.getElementById('emp-photo-img').src = pendingEmployerPhoto; prev.style.display='block'; } else { prev.style.display='none'; }
+  document.getElementById('emp-photo').value = '';
+  // Manager link box (edit only) — lets the employer post their own vacancies
+  var mbox = document.getElementById('emp-manager-box');
+  if(e){
+    var tok = e.manage_token || '';
+    var link = tok ? (location.origin + location.pathname.replace(/admin\.html.*/,'index.html') + '?manage_employer=' + tok) : '';
+    mbox.innerHTML = '<div class="divider"></div><div class="t-label" style="margin-bottom:6px">Smart Manager link</div>'+
+      (tok ? '<div class="copy-link"><input id="emp-mgr-link" value="'+escapeHtml(link)+'" readonly><button onclick="copyLink(\'emp-mgr-link\')">Copy</button></div>'+
+            '<button class="minibtn" style="margin-top:8px" onclick="regenEmployerToken(\''+e.id+'\')">Regenerate token</button>'+
+            '<div class="muted" style="margin-top:6px">Send this link to the employer so they can post their own vacancies (no edit/delete). Employers cannot post vacancies from the public app directly.</div>'
+           : '<div class="muted">No manager token yet. <button class="minibtn" onclick="regenEmployerToken(\''+e.id+'\')" style="margin-left:6px">Generate</button></div>');
+    mbox.style.display = 'block';
+  } else { mbox.style.display = 'none'; mbox.innerHTML = ''; }
+  openSheet('employer-overlay');
+}
+function handleEmployerPhoto(evt){
+  var file = evt.target.files[0]; if(!file) return;
+  var reader = new FileReader(); var img = new Image();
+  reader.onload = function(e){ img.onload = function(){ var c=document.createElement('canvas'); var max=480; var sc=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingEmployerPhoto=c.toDataURL('image/jpeg',0.75); document.getElementById('emp-photo-img').src=pendingEmployerPhoto; document.getElementById('emp-photo-preview').style.display='block'; }; img.src=e.target.result; };
+  reader.readAsDataURL(file);
+}
+async function saveEmployer(){
+  var name = document.getElementById('emp-name').value.trim();
+  if(!name){ alert('Add at least the company name.'); return; }
+  var id = editing.employer || newId();
+  var payload = {
+    id:id, name:name,
+    industry:document.getElementById('emp-industry').value.trim(),
+    website:document.getElementById('emp-website').value.trim(),
+    contact:document.getElementById('emp-contact').value.trim(),
+    email:document.getElementById('emp-email').value.trim(),
+    location:document.getElementById('emp-location').value.trim(),
+    address:document.getElementById('emp-address').value.trim(),
+    photo:pendingEmployerPhoto,
+    verified:document.getElementById('emp-verified').checked
+  };
+  await upsertEmployer(payload);
+  if(!editing.employer){ var tok=genToken(); await saveEmployerManagerToken(id, tok); payload.manage_token = tok; }
+  closeSheet('employer-overlay');
+  showToast(editing.employer ? 'Employer updated' : 'Employer registered');
+  editing.employer = null; pendingEmployerPhoto = null;
+  await loadAll(); renderNav(); renderEmployers(); renderDashboard();
+}
+async function regenEmployerToken(id){
+  if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
+  var tok = genToken(); await saveEmployerManagerToken(id, tok);
+  var e = employerById(id); if(e) e.manage_token = tok;
+  openEmployerSheet(id);
+  showToast('New manager link generated');
+}
+async function deleteEmployer(id){
+  var e = employerById(id);
+  var linkedVacancies = cache.vacancies.filter(function(v){ return v.employer_id===id; });
+  if(!confirm('Delete "'+(e?e.name:'this employer')+'"? '+(linkedVacancies.length ? linkedVacancies.length+' linked vacancy/ies will remain in the Vacancies section and can be deleted separately. ' : '')+'This cannot be undone.')) return;
+  await removeEmployer(id);
+  showToast('Employer deleted');
+  await loadAll(); renderNav(); renderEmployers(); renderDashboard();
+}
+
 // ===== Branches =====
 function fillAgencySelects(){
   var opts = cache.agencies.map(function(a){ return '<option value="'+a.id+'">'+escapeHtml(a.name||'Unnamed')+'</option>'; }).join('');
   document.getElementById('b-agency').innerHTML = opts || '<option value="">— no agencies yet —</option>';
+  var empOpts = cache.employers.map(function(e){ return '<option value="employer:'+e.id+'">'+escapeHtml(e.name||'Unnamed')+'</option>'; }).join('');
   var v = document.getElementById('v-agency');
-  v.innerHTML = '<option value="general">— General (no agency) —</option>' + opts;
+  v.innerHTML = '<option value="general">— General (no agency) —</option>' +
+    (opts ? '<optgroup label="Agencies">'+opts+'</optgroup>' : '') +
+    (empOpts ? '<optgroup label="Employers">'+empOpts+'</optgroup>' : '');
 }
 function renderBranches(){
   var q = (document.getElementById('br-search').value||'').trim().toLowerCase();
@@ -728,13 +1291,27 @@ function renderBranches(){
   if(!list.length){ el.innerHTML = emptyState('No branches','Add a branch or adjust your search.'); return; }
   el.innerHTML = list.map(function(b){
     var sub = [b.location, b.phone, b.email].filter(Boolean).join(' · ');
-    return '<div class="row-item">'+
+    var details = '';
+    if(b._ag && b._ag.name) details += '<div class="det-row"><span class="det-label">Agency:</span> '+escapeHtml(b._ag.name)+'</div>';
+    if(b.location) details += '<div class="det-row"><span class="det-label">Location:</span> '+escapeHtml(b.location)+'</div>';
+    if(b.phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(b.phone)+'</div>';
+    if(b.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(b.email)+'</div>';
+    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#16a34a,#15803d)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(b.name||'Branch')+'</div><div class="row-sub">'+escapeHtml((b._ag&&b._ag.name)||'Unknown agency')+' · '+escapeHtml(sub||'no details')+'</div></div>'+
-      '<div class="row-actions">'+
-        '<button class="minibtn" onclick="openBranchSheet(\''+b.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
-        '<button class="minibtn danger" onclick="deleteBranch(\''+b.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
-      '</div></div>';
+      '<div class="row-actions-inline">'+
+        '<button class="minibtn" onclick="stopProp(event);openBranchSheet(\''+b.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deleteBranch(\''+b.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openBranchSheet(\''+b.id+'\')">Edit branch</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deleteBranch(\''+b.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
   }).join('');
 }
 function openBranchSheet(id){
@@ -771,30 +1348,67 @@ async function deleteBranch(id){
 // ===== Vacancies =====
 function renderVacancies(){
   var q = (document.getElementById('va-search').value||'').trim().toLowerCase();
-  var list = cache.vacancies.slice().map(function(v){ v._ag = agencyById(v.agency_id); return v; });
-  if(q){ list = list.filter(function(v){ var hay=((v.title||'')+' '+(v.company||'')+' '+(v.location||'')+' '+(v.notes||'')+((v._ag&&v._ag.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  var list = cache.vacancies.slice().map(function(v){ v._ag = agencyById(v.agency_id); v._emp = v.employer_id ? employerById(v.employer_id) : null; return v; });
+  if(q){ list = list.filter(function(v){ var hay=((v.title||'')+' '+(v.company||'')+' '+(v.location||'')+' '+(v.notes||'')+((v._ag&&v._ag.name)||'')+((v._emp&&v._emp.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   var el = document.getElementById('va-list');
   if(!list.length){ el.innerHTML = emptyState('No vacancies','Add a vacancy or adjust your search.'); return; }
   el.innerHTML = list.map(function(v){
-    var sub = [v.location, v.company, (v._ag&&v._ag.name), v.closing_date?('closes '+v.closing_date):null].filter(Boolean).join(' · ');
-    return '<div class="row-item">'+
+    var sub = [v.location, v.company, (v._ag&&v._ag.name), (v._emp&&v._emp.name?v._emp.name+' (Employer)':null), v.closing_date?('closes '+v.closing_date):null].filter(Boolean).join(' · ');
+    var details = '';
+    if(v._ag && v._ag.name) details += '<div class="det-row"><span class="det-label">Agency:</span> '+escapeHtml(v._ag.name)+'</div>';
+    if(v._emp && v._emp.name) details += '<div class="det-row"><span class="det-label">Employer:</span> '+escapeHtml(v._emp.name)+(v._emp.verified?' ✓ Verified':'')+'</div>';
+    if(v.company) details += '<div class="det-row"><span class="det-label">Company:</span> '+escapeHtml(v.company)+'</div>';
+    if(v.location) details += '<div class="det-row"><span class="det-label">Location:</span> '+escapeHtml(v.location)+'</div>';
+    if(v.remote) details += '<div class="det-row"><span class="det-label">Work arrangement:</span> '+escapeHtml(v.remote)+'</div>';
+    if(v.employment_type) details += '<div class="det-row"><span class="det-label">Type:</span> '+escapeHtml(v.employment_type)+'</div>';
+    if(v.experience_level) details += '<div class="det-row"><span class="det-label">Experience:</span> '+escapeHtml(v.experience_level)+'</div>';
+    if(v.contract_type) details += '<div class="det-row"><span class="det-label">Contract:</span> '+escapeHtml(v.contract_type)+'</div>';
+    if(v.salary) details += '<div class="det-row"><span class="det-label">Salary:</span> '+escapeHtml(v.salary)+'</div>';
+    if(v.hours) details += '<div class="det-row"><span class="det-label">Hours:</span> '+escapeHtml(v.hours)+'</div>';
+    if(v.work_schedule) details += '<div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(v.work_schedule)+'</div>';
+    if(v.start_date) details += '<div class="det-row"><span class="det-label">Start:</span> '+escapeHtml(v.start_date)+'</div>';
+    if(v.closing_date) details += '<div class="det-row"><span class="det-label">Closing:</span> '+escapeHtml(v.closing_date)+'</div>';
+    if(v.notes) details += '<div class="det-row"><span class="det-label">Notes:</span> '+escapeHtml((v.notes||'').replace(/<[^>]+>/g,'').slice(0,200))+'</div>';
+    if(v.link) details += '<div class="det-row"><span class="det-label">Link:</span> '+escapeHtml(v.link)+'</div>';
+    if(v.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(v.email)+'</div>';
+    if(v.phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(v.phone)+'</div>';
+    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#d97706,#b45309)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(v.title||'Untitled role')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+'</div></div>'+
-      '<div class="row-actions">'+
-        '<button class="minibtn" onclick="openVacancySheet(\''+v.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
-        '<button class="minibtn danger" onclick="deleteVacancy(\''+v.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
-      '</div></div>';
+      '<div class="row-actions-inline">'+
+        '<button class="minibtn" onclick="stopProp(event);openVacancySheet(\''+v.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openVacancySheet(\''+v.id+'\')">Edit vacancy</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
   }).join('');
 }
-function openVacancySheet(id){
+function openVacancySheet(id, employerId){
   editing.vacancy = id || null;
   var v = id ? cache.vacancies.find(function(x){return x.id===id;}) : null;
   document.getElementById('vacancy-sheet-title').textContent = id ? 'Edit vacancy' : 'Add vacancy';
-  document.getElementById('v-agency').value = v ? (v.agency_id||'general') : 'general';
+  fillAgencySelects();
+  if (v && v.employer_id) {
+    document.getElementById('v-agency').value = 'employer:'+v.employer_id;
+  } else if (employerId) {
+    document.getElementById('v-agency').value = 'employer:'+employerId;
+  } else {
+    document.getElementById('v-agency').value = v ? (v.agency_id||'general') : 'general';
+  }
   document.getElementById('v-title').value = v ? (v.title||'') : '';
-  document.getElementById('v-company').value = v ? (v.company||'') : '';
-  document.getElementById('v-location').value = v ? (v.location||'') : '';
+  var emp = employerId ? employerById(employerId) : (v && v.employer_id ? employerById(v.employer_id) : null);
+  document.getElementById('v-company').value = v ? (v.company||'') : (emp ? emp.name : '');
+  document.getElementById('v-location').value = v ? (v.location||'') : (emp ? (emp.location||'') : '');
+  document.getElementById('v-remote').value = v ? (v.remote||'') : '';
   document.getElementById('v-etype').value = v ? (v.employment_type||'') : '';
+  document.getElementById('v-exp').value = v ? (v.experience_level||'') : '';
   document.getElementById('v-contract').value = v ? (v.contract_type||'') : '';
   document.getElementById('v-salary').value = v ? (v.salary||'') : '';
   document.getElementById('v-hours').value = v ? (v.hours||'') : '';
@@ -803,17 +1417,25 @@ function openVacancySheet(id){
   document.getElementById('v-closing').value = v ? (v.closing_date||'') : '';
   document.getElementById('v-notes').value = v ? (v.notes||'') : '';
   document.getElementById('v-link').value = v ? (v.link||'') : '';
+  document.getElementById('v-email').value = v ? (v.email||'') : (emp ? (emp.email||'') : '');
+  document.getElementById('v-phone').value = v ? (v.phone||'') : (emp ? (emp.contact||'') : '');
   openSheet('vacancy-overlay');
 }
 async function saveVacancy(){
   var title = document.getElementById('v-title').value.trim();
   if(!title){ alert('Add a job title.'); return; }
   var id = editing.vacancy || newId();
-  await upsertVacancy({
-    id:id, agency_id:document.getElementById('v-agency').value, title:title,
+  var selVal = document.getElementById('v-agency').value;
+  var agencyId, employerId = null;
+  if (selVal.indexOf('employer:') === 0) { agencyId = 'employer'; employerId = selVal.slice(9); }
+  else { agencyId = selVal; }
+  var payload = {
+    id:id, agency_id:agencyId, employer_id:employerId, title:title,
     company:document.getElementById('v-company').value.trim(),
     location:document.getElementById('v-location').value.trim(),
+    remote:document.getElementById('v-remote').value,
     employment_type:document.getElementById('v-etype').value.trim(),
+    experience_level:document.getElementById('v-exp').value,
     contract_type:document.getElementById('v-contract').value.trim(),
     salary:document.getElementById('v-salary').value.trim(),
     hours:document.getElementById('v-hours').value.trim(),
@@ -821,12 +1443,18 @@ async function saveVacancy(){
     start_date:document.getElementById('v-start').value.trim(),
     closing_date:document.getElementById('v-closing').value.trim(),
     notes:document.getElementById('v-notes').value.trim(),
-    link:document.getElementById('v-link').value.trim()
-  });
+    link:document.getElementById('v-link').value.trim(),
+    email:document.getElementById('v-email').value.trim(),
+    phone:document.getElementById('v-phone').value.trim()
+  };
+  await upsertVacancy(payload);
+  var isNewVacancy = !editing.vacancy;
   closeSheet('vacancy-overlay');
   showToast(editing.vacancy ? 'Vacancy updated' : 'Vacancy added');
+  if (isNewVacancy) await queueAndSendVacancyAlerts(payload);
   editing.vacancy = null;
   await loadAll(); renderNav(); renderVacancies(); renderDashboard();
+  if (document.getElementById('sec-employers').classList.contains('active')) renderEmployers();
 }
 async function deleteVacancy(id){
   var v = cache.vacancies.find(function(x){return x.id===id;});
@@ -834,6 +1462,175 @@ async function deleteVacancy(id){
   await removeVacancy(id);
   showToast('Vacancy deleted');
   await loadAll(); renderNav(); renderVacancies(); renderDashboard();
+  if (document.getElementById('sec-employers').classList.contains('active')) renderEmployers();
+}
+
+// ===== Talent Pool =====
+var poolTab = 'pending';
+var editingPool = null;
+function poolCandidateById(id){ return cache.poolCandidates.find(function(p){return p.id===id;}); }
+function switchPoolTab(tab){
+  poolTab = tab;
+  ['pending','active','other'].forEach(function(t){ document.getElementById('pool-tab-'+t).classList.toggle('active', t===tab); });
+  renderPoolCandidates();
+}
+function renderPoolCandidates(){
+  var pendingCount = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length;
+  var activeCount = cache.poolCandidates.filter(function(p){return p.status==='active';}).length;
+  var otherCount = cache.poolCandidates.filter(function(p){return p.status==='expired'||p.status==='rejected';}).length;
+  document.getElementById('pool-badge-pending').textContent = pendingCount;
+  document.getElementById('pool-badge-active').textContent = activeCount;
+  document.getElementById('pool-badge-other').textContent = otherCount;
+  var q = (document.getElementById('pool-admin-search').value||'').trim().toLowerCase();
+  var list = cache.poolCandidates.slice();
+  if(poolTab==='pending') list = list.filter(function(p){return (p.status||'pending')==='pending';});
+  else if(poolTab==='active') list = list.filter(function(p){return p.status==='active';});
+  else list = list.filter(function(p){return p.status==='expired'||p.status==='rejected';});
+  if(q){ list = list.filter(function(p){ var hay=((p.full_name||'')+' '+(p.sector||'')+' '+(p.position||'')+' '+(p.location||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  var el = document.getElementById('pool-admin-list');
+  if(!list.length){ el.innerHTML = emptyState('Nothing here','No candidates in this view.'); return; }
+  el.innerHTML = list.map(function(p){
+    var sub = [p.position, p.sector, p.location].filter(Boolean).join(' · ');
+    var details = '';
+    if(p.contact_phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(p.contact_phone)+'</div>';
+    if(p.contact_email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(p.contact_email)+'</div>';
+    var screenBits = [];
+    if(p.gender) screenBits.push(escapeHtml(p.gender));
+    if(p.grade12) screenBits.push('Grade 12: '+escapeHtml(p.grade12));
+    if(p.criminal_record) screenBits.push('Criminal record: '+escapeHtml(p.criminal_record));
+    if(p.experience_years !== null && p.experience_years !== undefined) screenBits.push((p.experience_years>=10?'10+':p.experience_years)+' yrs experience');
+    if(screenBits.length) details += '<div class="det-row"><span class="det-label">Screening:</span> '+screenBits.join(', ')+'</div>';
+    if(p.qualification) details += '<div class="det-row"><span class="det-label">Highest qualification:</span> '+escapeHtml(p.qualification)+'</div>';
+    if(p.drivers_license) details += '<div class="det-row"><span class="det-label">Driver’s licence:</span> '+escapeHtml(p.drivers_license)+'</div>';
+    if(p.reliable_transport) details += '<div class="det-row"><span class="det-label">Reliable transport:</span> '+escapeHtml(p.reliable_transport)+'</div>';
+    if(p.willing_relocate) details += '<div class="det-row"><span class="det-label">Willing to relocate:</span> '+escapeHtml(p.willing_relocate)+'</div>';
+    if(p.availability) details += '<div class="det-row"><span class="det-label">Availability:</span> '+escapeHtml(p.availability)+'</div>';
+    if(p.preferred_employment) details += '<div class="det-row"><span class="det-label">Preferred employment:</span> '+escapeHtml(p.preferred_employment)+'</div>';
+    if(p.salary_expectation) details += '<div class="det-row"><span class="det-label">Salary expectation:</span> '+escapeHtml(p.salary_expectation)+'</div>';
+    if(p.work_authorized) details += '<div class="det-row"><span class="det-label">Eligible to work in South Africa:</span> '+escapeHtml(p.work_authorized)+'</div>';
+    if(p.about_you) details += '<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(p.about_you)+'</div>';
+    if(p.cv_link) details += '<div class="det-row"><span class="det-label">CV:</span> '+escapeHtml(p.cv_link)+'</div>';
+    if(p.payment_ref) details += '<div class="det-row"><span class="det-label">EFT ref:</span> '+escapeHtml(p.payment_ref)+'</div>';
+    if(p.paid_until) details += '<div class="det-row"><span class="det-label">Paid until:</span> '+fmtDate(p.paid_until)+'</div>';
+    if(p.admin_notes) details += '<div class="det-row"><span class="det-label">Notes:</span> '+escapeHtml(p.admin_notes)+'</div>';
+    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    var quickActions = '';
+    if((p.status||'pending')==='pending'){
+      quickActions = '<button class="minibtn ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Approve</button>' +
+        '<button class="minibtn danger" onclick="stopProp(event);rejectPoolCandidate(\''+p.id+'\')">Reject</button>';
+    } else if(p.status==='active'){
+      quickActions = '<button class="minibtn" onclick="stopProp(event);expirePoolCandidate(\''+p.id+'\')">Mark expired</button>';
+    }
+    return '<div class="row-item" onclick="toggleRow(this)">'+
+      '<div class="row-avatar" style="background:linear-gradient(145deg,#5E5CE6,#3D3AB8)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg></div>'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(p.full_name||'Candidate')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div></div>'+
+      '<div class="row-actions-inline">'+quickActions+
+        '<button class="minibtn" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div>'+
+      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '</div>'+
+      '<div class="row-details">'+details+
+        '<div class="row-expanded-actions">'+
+          '<button class="minibtn full" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')">Edit</button>'+
+          '<button class="minibtn full danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')">Delete</button>'+
+        '</div>'+
+      '</div>';
+  }).join('');
+}
+function openPoolSheet(id){
+  editingPool = id || null;
+  var p = id ? poolCandidateById(id) : null;
+  document.getElementById('pool-sheet-title').textContent = id ? 'Edit candidate' : 'Add candidate';
+  document.getElementById('pc-name').value = p ? (p.full_name||'') : '';
+  document.getElementById('pc-phone').value = p ? (p.contact_phone||'') : '';
+  document.getElementById('pc-email').value = p ? (p.contact_email||'') : '';
+  document.getElementById('pc-sector').value = p ? (p.sector||'') : '';
+  document.getElementById('pc-position').value = p ? (p.position||'') : '';
+  document.getElementById('pc-location').value = p ? (p.location||'') : '';
+  document.getElementById('pc-gender').value = p ? (p.gender||'') : '';
+  document.getElementById('pc-grade12').value = p ? (p.grade12||'') : '';
+  document.getElementById('pc-criminal').value = p ? (p.criminal_record||'') : '';
+  document.getElementById('pc-experience').value = p && (p.experience_years !== null && p.experience_years !== undefined) ? String(p.experience_years) : '';
+  document.getElementById('pc-qualification').value = p ? (p.qualification||'') : '';
+  document.getElementById('pc-drivers-license').value = p ? (p.drivers_license||'') : '';
+  document.getElementById('pc-transport').value = p ? (p.reliable_transport||'') : '';
+  document.getElementById('pc-relocate').value = p ? (p.willing_relocate||'') : '';
+  document.getElementById('pc-availability').value = p ? (p.availability||'') : '';
+  document.getElementById('pc-employment').value = p ? (p.preferred_employment||'') : '';
+  document.getElementById('pc-salary').value = p ? (p.salary_expectation||'') : '';
+  document.getElementById('pc-work-authorized').value = p ? (p.work_authorized||'') : '';
+  document.getElementById('pc-about').value = p ? (p.about_you||'') : '';
+  document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
+  document.getElementById('pc-payref').value = p ? (p.payment_ref||'') : '';
+  document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
+  document.getElementById('pc-paiduntil').value = p && p.paid_until ? String(p.paid_until).slice(0,10) : '';
+  document.getElementById('pc-notes').value = p ? (p.admin_notes||'') : '';
+  openSheet('pool-overlay');
+}
+async function savePoolCandidate(){
+  var name = document.getElementById('pc-name').value.trim();
+  if(!name){ alert('Add the candidate\'s full name.'); return; }
+  var id = editingPool || newId();
+  var paidUntil = document.getElementById('pc-paiduntil').value;
+  await upsertPoolCandidate({
+    id:id,
+    full_name:name,
+    contact_phone:document.getElementById('pc-phone').value.trim(),
+    contact_email:document.getElementById('pc-email').value.trim(),
+    sector:document.getElementById('pc-sector').value.trim(),
+    position:document.getElementById('pc-position').value.trim(),
+    location:document.getElementById('pc-location').value.trim(),
+    gender:document.getElementById('pc-gender').value,
+    grade12:document.getElementById('pc-grade12').value,
+    criminal_record:document.getElementById('pc-criminal').value,
+    experience_years: document.getElementById('pc-experience').value === '' ? null : parseInt(document.getElementById('pc-experience').value, 10),
+    qualification:document.getElementById('pc-qualification').value.trim(),
+    drivers_license:document.getElementById('pc-drivers-license').value,
+    reliable_transport:document.getElementById('pc-transport').value,
+    willing_relocate:document.getElementById('pc-relocate').value,
+    availability:document.getElementById('pc-availability').value.trim(),
+    preferred_employment:document.getElementById('pc-employment').value,
+    salary_expectation:document.getElementById('pc-salary').value.trim(),
+    work_authorized:document.getElementById('pc-work-authorized').value,
+    about_you:document.getElementById('pc-about').value.trim().slice(0,150),
+    cv_link:document.getElementById('pc-cv').value.trim(),
+    payment_ref:document.getElementById('pc-payref').value.trim(),
+    status:document.getElementById('pc-status').value,
+    paid_until: paidUntil ? new Date(paidUntil).toISOString() : null,
+    admin_notes:document.getElementById('pc-notes').value.trim()
+  });
+  closeSheet('pool-overlay');
+  showToast(editingPool ? 'Candidate updated' : 'Candidate added');
+  editingPool = null;
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function approvePoolCandidate(id){
+  var p = poolCandidateById(id);
+  if(!p) return;
+  var oneYear = new Date(); oneYear.setFullYear(oneYear.getFullYear()+1);
+  await upsertPoolCandidate({ id:id, status:'active', paid_until: oneYear.toISOString() });
+  showToast('Approved — now live in the public Talent Pool');
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function rejectPoolCandidate(id){
+  if(!confirm('Reject this registration? It will not appear publicly.')) return;
+  await upsertPoolCandidate({ id:id, status:'rejected' });
+  showToast('Registration rejected');
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function expirePoolCandidate(id){
+  if(!confirm('Mark this candidate as expired? They will be removed from the public Talent Pool.')) return;
+  await upsertPoolCandidate({ id:id, status:'expired' });
+  showToast('Marked expired');
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function deletePoolCandidate(id){
+  var p = poolCandidateById(id);
+  if(!confirm('Delete "'+(p?p.full_name:'this candidate')+'" permanently?')) return;
+  await removePoolCandidate(id);
+  showToast('Candidate deleted');
+  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 
 // ===== Submissions =====
@@ -875,6 +1672,26 @@ async function delReport(id){ if(!confirm('Delete this report?')) return; await 
 async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 
 // ===== Settings =====
+async function loadPoolBankingDetails(){
+  var raw = await getAppSetting('pool_banking_details','');
+  var d = { account_name:'SA Recruiters', bank:'', account_number:'', branch_code:'' };
+  if(raw){ try{ Object.assign(d, JSON.parse(raw)); }catch(e){} }
+  document.getElementById('bank-account-name').value = d.account_name || '';
+  document.getElementById('bank-name').value = d.bank || '';
+  document.getElementById('bank-account-number').value = d.account_number || '';
+  document.getElementById('bank-branch-code').value = d.branch_code || '';
+}
+async function savePoolBankingDetails(){
+  var d = {
+    account_name: document.getElementById('bank-account-name').value.trim() || 'SA Recruiters',
+    bank: document.getElementById('bank-name').value.trim(),
+    account_number: document.getElementById('bank-account-number').value.trim(),
+    branch_code: document.getElementById('bank-branch-code').value.trim()
+  };
+  var ok = await setAppSetting('pool_banking_details', JSON.stringify(d));
+  if(ok) showToast('Banking details saved');
+  else alert('Could not save banking details. Check your Supabase app_settings table.');
+}
 function updatePostingUI(){
   var t = document.getElementById('posting-toggle'); if(t) t.checked = !!publicVacancyPostingOpen;
   var sub = document.getElementById('posting-sub'); if(sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
@@ -883,6 +1700,24 @@ async function togglePosting(checked){
   var ok = await setAppSetting('public_vacancy_posting', checked?'true':'false');
   if(ok){ publicVacancyPostingOpen = checked; updatePostingUI(); showToast(checked?'Vacancy posting opened':'Vacancy posting locked'); }
   else { updatePostingUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
+}
+function updateEmployerRegUI(){
+  var t = document.getElementById('emp-reg-toggle'); if(t) t.checked = !!publicEmployerRegistrationOpen;
+  var sub = document.getElementById('emp-reg-sub'); if(sub) sub.textContent = publicEmployerRegistrationOpen ? 'Open — anyone can register a company right now' : 'Closed — spam protected';
+}
+async function toggleEmployerReg(checked){
+  var ok = await setAppSetting('public_employer_registration', checked?'true':'false');
+  if(ok){ publicEmployerRegistrationOpen = checked; updateEmployerRegUI(); showToast(checked?'Employer registration opened':'Employer registration locked'); }
+  else { updateEmployerRegUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
+}
+function updateEmployerDirectoryUI(){
+  var t = document.getElementById('emp-dir-toggle'); if(t) t.checked = !!employerDirectoryOpen;
+  var sub = document.getElementById('emp-dir-sub'); if(sub) sub.textContent = employerDirectoryOpen ? 'Open — all users can browse employers and employer vacancies' : 'Closed — Talent Pool registration required';
+}
+async function toggleEmployerDirectory(checked){
+  var ok = await setAppSetting('public_employer_directory', checked?'true':'false');
+  if(ok){ employerDirectoryOpen = checked; updateEmployerDirectoryUI(); showToast(checked?'Employer Directory opened':'Employer Directory locked to Talent Pool members'); }
+  else { updateEmployerDirectoryUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
 }
 
 // ===== Content =====
@@ -900,11 +1735,20 @@ function renderContent(){
   el.innerHTML = keys.map(function(key){
     var articles = CM.getSection(key);
     var titleText = (meta[key]&&meta[key].title) ? meta[key].title.replace(/<[^>]+>/g,'') : key;
+    var artCount = articles.length;
     var arts = articles.map(function(a){
-      return '<div class="row-item"><div class="row-main"><div class="row-title">'+escapeHtml(a.title||'Untitled')+'</div><div class="row-sub">'+escapeHtml((a.body||'').replace(/<[^>]+>/g,'').slice(0,90))+'</div></div>'+
-        '<div class="row-actions"><button class="minibtn" onclick="openArticleSheet(\''+key+'\',\''+a.id+'\')">Edit</button><button class="minibtn danger" onclick="delArticle(\''+key+'\',\''+a.id+'\')">Delete</button></div></div>';
+      var preview = (a.body||'').replace(/<[^>]+>/g,'').slice(0,100);
+      var fullBody = (a.body||'').replace(/<[^>]+>/g,'');
+      var details = '<div class="det-row"><span class="det-label">Body preview:</span> '+escapeHtml(fullBody.slice(0,300))+(fullBody.length>300?'…':'')+'</div>';
+      if(!fullBody) details = '<div class="det-row muted">No body content</div>';
+      return '<div class="row-item" onclick="toggleRow(this)"><div class="row-main"><div class="row-title">'+escapeHtml(a.title||'Untitled')+'</div><div class="row-sub">'+escapeHtml(preview||'No content')+'</div></div>'+
+        '<div class="row-actions-inline"><button class="minibtn" onclick="stopProp(event);openArticleSheet(\''+key+'\',\''+a.id+'\')">Edit</button><button class="minibtn danger" onclick="stopProp(event);delArticle(\''+key+'\',\''+a.id+'\')">Delete</button></div>'+
+        '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>'+
+        '<div class="row-details">'+details+
+          '<div class="row-expanded-actions"><button class="minibtn full" onclick="stopProp(event);openArticleSheet(\''+key+'\',\''+a.id+'\')">Edit article</button><button class="minibtn full danger" onclick="stopProp(event);delArticle(\''+key+'\',\''+a.id+'\')">Delete</button></div>'+
+        '</div>';
     }).join('') || '<div class="muted" style="padding:10px 16px">No articles.</div>';
-    return '<div class="card"><div class="card-pad" style="display:flex;align-items:center;justify-content:space-between"><strong>'+escapeHtml(titleText)+'</strong><button class="minibtn ok" onclick="openArticleSheet(\''+key+'\')">+ Add</button></div>'+arts+'</div>';
+    return '<div class="card"><div class="card-pad" style="display:flex;align-items:center;justify-content:space-between"><strong>'+escapeHtml(titleText)+'</strong><span style="display:flex;align-items:center;gap:8px"><span class="nav-badge">'+artCount+'</span><button class="minibtn ok" onclick="openArticleSheet(\''+key+'\')">+ Add</button></span></div>'+arts+'</div>';
   }).join('');
   // Fill the section select in the sheet
   document.getElementById('c-section').innerHTML = keys.map(function(k){ var t=(meta[k]&&meta[k].title)?meta[k].title.replace(/<[^>]+>/g,''):k; return '<option value="'+k+'">'+escapeHtml(t)+'</option>'; }).join('');
@@ -949,6 +1793,7 @@ function restoreDefaults(){
 
 // ===== Daily Track management =====
 var BUCKET = 'daily-tracks';
+var TRACK_RETENTION_DAYS = 7;
 var editingTrackId = null;
 var trackFileChosen = null;   // File object chosen in the sheet
 
@@ -959,6 +1804,72 @@ function fmtTrackDate(d){
   return dt.toLocaleDateString('en-ZA', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
 }
 
+function posterAudienceLabel(a){ return a==='employers' ? 'For Employers' : 'For Candidates'; }
+async function loadPostersForAdmin(){
+  var el=document.getElementById('posters-list');
+  if(el) el.innerHTML='<div class="card card-pad muted">Loading posters…</div>';
+  cache.posters=await getPosters();
+  renderNav();
+  renderPosters();
+}
+function renderPosters(){
+  var el=document.getElementById('posters-list');
+  if(!el) return;
+  var posters=cache.posters||[];
+  if(!posters.length){ el.innerHTML=emptyState('No managed posters yet','Upload your first candidate or employer campaign poster above.'); return; }
+  var groups=['candidates','employers'];
+  el.innerHTML=groups.map(function(a){
+    var rows=posters.filter(function(p){return p.audience===a;});
+    return '<div style="margin:18px 0 8px;font-size:12px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em">'+posterAudienceLabel(a)+' <span style="font-weight:500">('+rows.length+')</span></div>'+
+      (rows.length?'<div class="poster-grid">'+rows.map(function(p){
+        return '<article class="poster-card '+(p.is_active?'':'is-inactive')+'">'+
+          '<img loading="lazy" src="'+escapeHtml(p.image_url)+'" alt="'+escapeHtml(p.title||posterAudienceLabel(p.audience)+' poster')+'" onerror="this.style.display=\'none\'">'+
+          '<div class="poster-info"><div class="poster-meta"><span>'+escapeHtml(p.is_active?'Active':'Hidden')+'</span><span>Order '+escapeHtml(p.sort_order)+'</span></div>'+
+          '<div class="poster-title">'+escapeHtml(p.title||'Untitled poster')+'</div><div class="poster-subtitle">'+escapeHtml(p.subtitle||'')+'</div>'+
+          '<div class="poster-actions"><button class="minibtn" onclick="togglePosterActive(\''+p.id+'\','+(p.is_active?'false':'true')+')">'+(p.is_active?'Hide':'Show')+'</button><button class="minibtn danger" onclick="deletePoster(\''+p.id+'\')">Delete</button></div></div></article>';
+      }).join('')+'</div>':'<div class="card card-pad muted">No '+a+' posters uploaded.</div>');
+  }).join('');
+}
+async function uploadPoster(){
+  var fileEl=document.getElementById('poster-file'), file=fileEl && fileEl.files && fileEl.files[0];
+  var note=document.getElementById('poster-upload-note');
+  if(!file){ if(note) note.textContent='Choose an image first.'; return; }
+  if(!/^image\/(png|jpeg|webp)$/.test(file.type)){ if(note) note.textContent='Use PNG, JPG, or WebP.'; return; }
+  if(file.size>8*1024*1024){ if(note) note.textContent='Maximum file size is 8 MB.'; return; }
+  var audience=document.getElementById('poster-audience').value;
+  var safeName=(file.name||'poster').toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'poster';
+  var path=audience+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'-'+safeName;
+  var btn=document.querySelector('#sec-posters .btn');
+  if(btn) {btn.disabled=true;btn.textContent='Uploading…';}
+  if(note) note.textContent='Uploading image…';
+  try{
+    var up=await supabaseClient.storage.from('poster-assets').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'31536000'});
+    if(up.error) throw up.error;
+    var url=supabaseClient.storage.from('poster-assets').getPublicUrl(path).data.publicUrl;
+    var row={audience:audience,title:(document.getElementById('poster-title').value||'').trim(),subtitle:(document.getElementById('poster-subtitle').value||'').trim(),image_path:path,image_url:url,sort_order:parseInt(document.getElementById('poster-order').value,10)||0,is_active:document.getElementById('poster-active').checked};
+    var ins=await supabaseClient.from('posters').insert(row);
+    if(ins.error) {try{await supabaseClient.storage.from('poster-assets').remove([path]);}catch(cleanErr){} throw ins.error;}
+    document.getElementById('poster-title').value=''; document.getElementById('poster-subtitle').value=''; document.getElementById('poster-order').value='0'; document.getElementById('poster-file').value='';
+    if(note) note.textContent='Poster uploaded.';
+    await loadPostersForAdmin();
+    showToast('Poster uploaded');
+  }catch(e){ console.error('poster upload',e); if(note) note.textContent='Upload failed: '+(e.message||'check Supabase migration and permissions'); }
+  finally{ if(btn){btn.disabled=false;btn.textContent='Upload poster';} }
+}
+async function togglePosterActive(id,active){
+  var res=await supabaseClient.from('posters').update({is_active:!!active}).eq('id',id);
+  if(res.error){showToast('Could not update poster');return;}
+  await loadPostersForAdmin();
+}
+async function deletePoster(id){
+  var p=(cache.posters||[]).find(function(x){return x.id===id;});
+  if(!p || !confirm('Delete this poster?')) return;
+  var res=await supabaseClient.from('posters').delete().eq('id',id);
+  if(res.error){showToast('Could not delete poster');return;}
+  try{await supabaseClient.storage.from('poster-assets').remove([p.image_path]);}catch(e){console.warn('poster asset delete',e);}
+  await loadPostersForAdmin();
+  showToast('Poster deleted');
+}
 function renderDailyTracks(){
   var el = document.getElementById('track-list');
   if(!el) return;
@@ -980,13 +1891,26 @@ function renderDailyTracks(){
   el.innerHTML = cache.tracks.map(function(t){
     var isToday = (t.track_date === todayStr());
     var badge = isToday ? ' <span class="nav-badge" style="background:var(--accent);color:#fff">Today</span>' : '';
-    return '<div class="card"><div class="row-item">'
+    var ageDays = trackAgeDays(t.track_date);
+    var ageLabel = ageDays===0 ? 'Today' : (ageDays===1 ? '1 day old' : ageDays+' days old');
+    var ageBadge = ageDays>=7 ? ' <span class="nav-badge" style="background:rgba(220,38,38,.15);color:var(--danger)">Expires soon</span>' : (ageDays>=5 ? ' <span class="nav-badge" style="background:rgba(217,119,6,.15);color:var(--warn)">'+ageLabel+'</span>' : '');
+    var details = '<div class="det-row"><span class="det-label">Artist:</span> '+escapeHtml(t.artist||'No artist')+'</div>'+
+      '<div class="det-row"><span class="det-label">Date:</span> '+fmtTrackDate(t.track_date)+'</div>'+
+      '<div class="det-row"><span class="det-label">Age:</span> '+ageLabel+ageBadge+'</div>';
+    return '<div class="card"><div class="row-item" onclick="toggleRow(this)">'
       + '<div class="row-avatar" style="background:linear-gradient(145deg,#0A84FF,#0051D5)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'
       + '<div class="row-main"><div class="row-title">'+escapeHtml(t.title||'Untitled')+badge+'</div>'
-      + '<div class="row-sub">'+escapeHtml(t.artist||'No artist')+' &middot; '+fmtTrackDate(t.track_date)+'</div></div>'
-      + '<div class="row-actions">'
-      + '<button class="minibtn" onclick="editTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Edit</button>'
-      + '<button class="minibtn danger" onclick="deleteTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</button>'
+      + '<div class="row-sub">'+escapeHtml(t.artist||'No artist')+' · '+fmtTrackDate(t.track_date)+'</div></div>'
+      + '<div class="row-actions-inline">'
+      + '<button class="minibtn" onclick="stopProp(event);editTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>'
+      + '<button class="minibtn danger" onclick="stopProp(event);deleteTrack(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'
+      + '</div>'
+      + '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'
+      + '</div>'
+      + '<div class="row-details">'+details
+      + '<div class="row-expanded-actions">'
+      + '<button class="minibtn full" onclick="stopProp(event);editTrack(\''+t.id+'\')">Edit track</button>'
+      + '<button class="minibtn full danger" onclick="stopProp(event);deleteTrack(\''+t.id+'\')">Delete</button>'
       + '</div></div></div>';
   }).join('');
 }
@@ -994,6 +1918,44 @@ function renderDailyTracks(){
 function todayStr(){
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+/* Calculate how many days old a track is (based on track_date) */
+function trackAgeDays(trackDate){
+  if(!trackDate) return 0;
+  var d = new Date(trackDate + 'T00:00:00');
+  if(isNaN(d)) return 0;
+  var now = new Date();
+  now.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return Math.floor((now - d) / (1000 * 60 * 60 * 24));
+}
+
+/* Automatic weekly cleanup: delete tracks older than TRACK_RETENTION_DAYS.
+   Tracks are retained for a full week (7 days) before deletion.
+   Called after loading tracks and after saving a track. */
+async function cleanupOldTracks(){
+  if(!cache.tracks || !cache.tracks.length) return;
+  var toDelete = [];
+  cache.tracks.forEach(function(t){
+    if(trackAgeDays(t.track_date) > TRACK_RETENTION_DAYS){
+      toDelete.push(t);
+    }
+  });
+  if(!toDelete.length) return;
+  for(var i=0; i<toDelete.length; i++){
+    var t = toDelete[i];
+    // Delete file from storage
+    if(t.file_path){
+      try { await supabaseClient.storage.from(BUCKET).remove([t.file_path]); } catch(e){}
+    }
+    // Delete row
+    try { await supabaseClient.from('daily_tracks').delete().eq('id', t.id); } catch(e){}
+  }
+  console.log('Track cleanup: removed '+toDelete.length+' track(s) older than '+TRACK_RETENTION_DAYS+' days');
+  // Refresh cache after cleanup
+  cache.tracks = await getTracks();
+  renderNav();
 }
 
 function openTrackSheet(){
@@ -1154,3 +2116,18 @@ document.getElementById('login-email').addEventListener('keydown', function(e){ 
 </script>
 </body>
 </html>
+
+<script>
+(function initPoolPitchCounter(){
+  function update(el){
+    var counter=document.querySelector('.char-counter[data-for="'+el.id+'"]');
+    if(counter) counter.textContent=String(el.value.length)+' / 150';
+  }
+  document.addEventListener('input',function(e){
+    if(e.target && e.target.id==='pc-about') update(e.target);
+  });
+  document.addEventListener('focusin',function(e){
+    if(e.target && e.target.id==='pc-about') update(e.target);
+  });
+})();
+</script>
