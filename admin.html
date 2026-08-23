@@ -474,7 +474,6 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified agencies show a badge and rank higher</div></div>
       <label class="switch"><input type="checkbox" id="a-verified"><span class="track"><span class="knob"></span></span></label>
     </div>
-    <div id="a-manager-box" style="display:none"></div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('agency-overlay')">Cancel</button>
       <button class="btn" onclick="saveAgency()">Save</button>
@@ -1099,6 +1098,14 @@ function renderAgencies(){
     if(a.contact) details += '<div class="det-row"><span class="det-label">Contact:</span> '+escapeHtml(a.contact)+'</div>';
     if(a.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(a.email)+'</div>';
     if(a.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(a.address)+'</div>';
+    var mgrTok = a.manage_token || '';
+    var mgrLink = mgrTok ? (location.origin + location.pathname.replace(/admin\.html.*/,'index.html') + '?manage=' + mgrTok) : '';
+    details += '<div class="det-row det-manager-link"><span class="det-label">Manager link:</span> '+
+      (mgrTok
+        ? '<div class="copy-link" style="margin-top:6px"><input id="mgr-link-'+a.id+'" value="'+escapeHtml(mgrLink)+'" readonly><button onclick="stopProp(event);copyLink(\'mgr-link-'+a.id+'\')">Copy</button></div>'+
+          '<button class="minibtn" style="margin-top:8px" onclick="stopProp(event);regenToken(\''+a.id+'\')">Regenerate token</button>'
+        : '<button class="minibtn" style="margin-left:6px" onclick="stopProp(event);regenToken(\''+a.id+'\')">Generate</button>')+
+      '</div>';
     if(a.trades) details += '<div class="det-row"><span class="det-label">Trades:</span> '+escapeHtml(a.trades)+'</div>';
     if(a.companies) details += '<div class="det-row"><span class="det-label">Companies:</span> '+escapeHtml(a.companies)+'</div>';
     if(a.cvpref) details += '<div class="det-row"><span class="det-label">CV pref:</span> '+escapeHtml(a.cvpref)+'</div>';
@@ -1139,18 +1146,6 @@ function openAgencySheet(id){
   var prev = document.getElementById('a-photo-preview');
   if(pendingPhoto){ document.getElementById('a-photo-img').src = pendingPhoto; prev.style.display='block'; } else { prev.style.display='none'; }
   document.getElementById('a-photo').value = '';
-  // Manager link box (edit only)
-  var mbox = document.getElementById('a-manager-box');
-  if(a){
-    var tok = a.manage_token || '';
-    var link = tok ? (location.origin + location.pathname.replace(/admin\.html.*/,'index.html') + '?manage=' + tok) : '';
-    mbox.innerHTML = '<div class="divider"></div><div class="t-label" style="margin-bottom:6px">Smart Manager link</div>'+
-      (tok ? '<div class="copy-link"><input id="mgr-link" value="'+escapeHtml(link)+'" readonly><button onclick="copyLink(\'mgr-link\')">Copy</button></div>'+
-            '<button class="minibtn" style="margin-top:8px" onclick="regenToken(\''+a.id+'\')">Regenerate token</button>'+
-            '<div class="muted" style="margin-top:6px">Send this link to the agency so they can add their own branches & vacancies (no edit/delete).</div>'
-           : '<div class="muted">No manager token yet. <button class="minibtn" onclick="regenToken(\''+a.id+'\')" style="margin-left:6px">Generate</button></div>');
-    mbox.style.display = 'block';
-  } else { mbox.style.display = 'none'; mbox.innerHTML = ''; }
   openSheet('agency-overlay');
 }
 function handlePhoto(evt){
@@ -1196,7 +1191,7 @@ async function regenToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
   var tok = genToken(); await saveManagerToken(id, tok);
   var a = agencyById(id); if(a) a.manage_token = tok;
-  openAgencySheet(id);
+  renderAgencies();
   showToast('New manager link generated');
 }
 function copyLink(inputId){
