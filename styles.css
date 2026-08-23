@@ -716,7 +716,11 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .pool-mini-card .row-chevron{position:absolute;right:14px;top:16px;color:var(--text-2)}
 .pool-mini-card .row-chevron svg{width:18px;height:18px;transition:transform .2s var(--ease)}
 .pool-mini-card.open .row-chevron svg{transform:rotate(180deg)}
-.pool-mini-details{margin-top:10px}
+.pool-mini-details{margin-top:10px;font-size:13px;line-height:1.6;color:var(--text-2)}
+/* Match admin.html's neat "Label: value" convention — bold black question, grey answer */
+.pool-mini-details .det-row{margin-bottom:5px;color:var(--text-2)}
+.pool-mini-details .det-row:last-child{margin-bottom:0}
+.pool-mini-details .det-label{color:var(--text);font-weight:600}
 .mini-cv-pitch{background:var(--accent-soft);border-radius:10px;padding:9px 10px;margin-top:5px}
 .pool-mini-card .manager-item-sub{padding-right:8px}
 @media (max-width:520px){.pool-mini-card{padding-right:38px}.pool-mini-card .row-chevron{right:12px}}
