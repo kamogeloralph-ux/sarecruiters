@@ -334,7 +334,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
       <!-- AGENCIES -->
       <div class="section section-manage" id="sec-agencies">
-        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Agencies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Agencies</h2><div class="spacer"></div><button class="minibtn" onclick="regenerateAllAgencyTokens()" title="Use once after running SMART_MANAGER_SETUP.sql">Regenerate ALL tokens</button><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
         <input class="search" id="ag-search" placeholder="Search name, location, trades, companies..." oninput="renderAgencies()">
         <div id="ag-list"></div>
       </div>
@@ -355,7 +355,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
       <!-- EMPLOYERS -->
       <div class="section section-manage" id="sec-employers">
-        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Employers</h2><div class="spacer"></div><button class="minibtn ok" onclick="openEmployerSheet()">+ Register employer</button></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Employers</h2><div class="spacer"></div><button class="minibtn" onclick="regenerateAllEmployerTokens()" title="Use once after running SMART_MANAGER_SETUP.sql">Regenerate ALL tokens</button><button class="minibtn ok" onclick="openEmployerSheet()">+ Register employer</button></div>
         <div class="muted" style="margin-bottom:14px">Companies that post their own vacancies directly (separate from the agency directory). Their jobs also show up in the Vacancies list once posted.</div>
         <input class="search" id="emp-search" placeholder="Search name, industry, location..." oninput="renderEmployers()">
         <div id="emp-list"></div>
@@ -860,8 +860,59 @@ async function queueAndSendVacancyAlerts(vacancy){
 }
 async function getAppSetting(key, fb){ try{ var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key',key).maybeSingle(); if(error||!data) return fb; return data.value; }catch(e){ return fb; } }
 async function setAppSetting(key, value){ try{ var { error } = await supabaseClient.from('app_settings').upsert({key:key,value:value,updated_at:new Date().toISOString()}); return !error; }catch(e){ return false; } }
-async function saveManagerToken(agencyId, token){ try{ await supabaseClient.from('agencies').update({manage_token:token}).eq('id',agencyId); }catch(e){} }
-async function saveEmployerManagerToken(employerId, token){ try{ await supabaseClient.from('employers').update({manage_token:token}).eq('id',employerId); }catch(e){} }
+// Both save functions verify the write by reading the row back — a plain
+// .update() can report "no error" while the write didn't actually stick
+// (missing column, an RLS policy matching 0 rows, etc). Returns true only
+// once the database is confirmed to hold the token we just tried to save.
+async function saveManagerToken(agencyId, token){
+  try{
+    var { error } = await supabaseClient.from('agencies').update({manage_token:token}).eq('id',agencyId);
+    if(error){ console.error('manage_token save', error); alert('Could not save the agency manager token (' + error.message + ').\n\nRun SMART_MANAGER_SETUP.sql, then try again.'); return false; }
+    var check = await supabaseClient.from('agencies').select('manage_token').eq('id',agencyId).maybeSingle();
+    if (check.error || !check.data || check.data.manage_token !== token) {
+      alert('The agency token save did not stick — likely a Row Level Security policy on agencies, or the column is missing. Run SMART_MANAGER_SETUP.sql and check RLS policies.');
+      return false;
+    }
+    return true;
+  }catch(e){ console.error('manage_token save', e); alert('Could not save the manager token — check your connection.'); return false; }
+}
+async function saveEmployerManagerToken(employerId, token){
+  try{
+    var { error } = await supabaseClient.from('employers').update({manage_token:token}).eq('id',employerId);
+    if(error){ console.error('employer manage_token save', error); alert('Could not save the employer manager token (' + error.message + ').\n\nRun SMART_MANAGER_SETUP.sql — this usually means the `employers` table doesn\'t exist yet.'); return false; }
+    var check = await supabaseClient.from('employers').select('manage_token').eq('id',employerId).maybeSingle();
+    if (check.error || !check.data || check.data.manage_token !== token) {
+      alert('The employer token save did not stick — likely a Row Level Security policy on employers, or the column is missing. Run SMART_MANAGER_SETUP.sql and check RLS policies.');
+      return false;
+    }
+    return true;
+  }catch(e){ console.error('employer manage_token save', e); alert('Could not save the manager token — check your connection.'); return false; }
+}
+// Regenerate every agency's / every employer's token in one pass — use
+// once right after SMART_MANAGER_SETUP.sql so nothing needs regenerating
+// one at a time.
+async function regenerateAllAgencyTokens(){
+  if(!confirm('Generate a brand-new Smart Manager link for ALL ' + cache.agencies.length + ' agencies? Every existing agency link will stop working.')) return;
+  var ok=0, failed=[];
+  for (var i=0;i<cache.agencies.length;i++){
+    var a=cache.agencies[i]; var tok=genToken();
+    if (await saveManagerToken(a.id, tok)) { a.manage_token=tok; ok++; } else failed.push(a.name||a.id);
+  }
+  renderAgencies();
+  if(failed.length) alert('Regenerated '+ok+' of '+cache.agencies.length+'.\n\nFailed: '+failed.join(', '));
+  else showToast('All '+ok+' agency manager links regenerated');
+}
+async function regenerateAllEmployerTokens(){
+  if(!confirm('Generate a brand-new Smart Manager link for ALL ' + cache.employers.length + ' employers? Every existing employer link will stop working.')) return;
+  var ok=0, failed=[];
+  for (var i=0;i<cache.employers.length;i++){
+    var e=cache.employers[i]; var tok=genToken();
+    if (await saveEmployerManagerToken(e.id, tok)) { e.manage_token=tok; ok++; } else failed.push(e.name||e.id);
+  }
+  renderEmployers();
+  if(failed.length) alert('Regenerated '+ok+' of '+cache.employers.length+'.\n\nFailed: '+failed.join(', '));
+  else showToast('All '+ok+' employer manager links regenerated');
+}
 
 async function loadAll(){
   var results = await Promise.all([
@@ -1125,8 +1176,10 @@ async function saveAgency(){
     photo:pendingPhoto,
     verified:document.getElementById('a-verified').checked
   };
+  var isNewAgency = !editing.agency;
+  if (isNewAgency) payload.manage_token = genToken(); // write once, atomically
   await upsertAgency(payload);
-  if(!editing.agency){ var tok=genToken(); await saveManagerToken(id, tok); payload.manage_token = tok; }
+  if (isNewAgency) { var verified = await saveManagerToken(id, payload.manage_token); if (!verified) payload.manage_token = ''; }
   closeSheet('agency-overlay');
   showToast(editing.agency ? 'Agency updated' : 'Agency added');
   editing.agency = null; pendingPhoto = null;
@@ -1249,8 +1302,10 @@ async function saveEmployer(){
     photo:pendingEmployerPhoto,
     verified:document.getElementById('emp-verified').checked
   };
+  var isNewEmployer = !editing.employer;
+  if (isNewEmployer) payload.manage_token = genToken(); // write once, atomically
   await upsertEmployer(payload);
-  if(!editing.employer){ var tok=genToken(); await saveEmployerManagerToken(id, tok); payload.manage_token = tok; }
+  if (isNewEmployer) { var everified = await saveEmployerManagerToken(id, payload.manage_token); if (!everified) payload.manage_token = ''; }
   closeSheet('employer-overlay');
   showToast(editing.employer ? 'Employer updated' : 'Employer registered');
   editing.employer = null; pendingEmployerPhoto = null;
