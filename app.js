@@ -775,8 +775,8 @@ function updateStats() {
 }
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
-function vacanciesFor(agencyId) { return vacanciesCache.filter(function(v){ return v.agency_id === agencyId; }); }
-function vacanciesForEmployer(employerId) { return vacanciesCache.filter(function(v){ return v.employer_id === employerId; }); }
+function vacanciesFor(agencyId) { return sortVacancies(vacanciesCache.filter(function(v){ return v.agency_id === agencyId; })); }
+function vacanciesForEmployer(employerId) { return sortVacancies(vacanciesCache.filter(function(v){ return v.employer_id === employerId; })); }
 
 // Best-effort parse of the free-text closing_date field (e.g. "26 August
 // 2026", "2026-08-26") into a timestamp. Returns null when it can't be
