@@ -3201,6 +3201,7 @@ function exitManagerMode() {
 }
 function renderManagerMode() {
   if (!managerMode || !managerAgency) return;
+  renderManagerAgencyProfile();
   // Branches
   var branches = branchesFor(managerAgency.id);
   var bHtml = '';
@@ -3235,6 +3236,30 @@ function renderManagerMode() {
     vHtml = '<div class="empty-state" style="padding:16px 0"><p style="font-size:13px;color:var(--text-2)">No vacancies added yet.</p></div>';
   }
   document.getElementById('manager-vacancy-list').innerHTML = vHtml;
+}
+// Small profile card shown at the top of the agency self-service screen so
+// the agency can confirm who they're managing — mirrors the admin card's
+// photo + contact details (read-only here; edits go through the admin).
+function renderManagerAgencyProfile() {
+  var el = document.getElementById('manager-agency-profile');
+  if (!el || !managerAgency) return;
+  var a = managerAgency;
+  var ICON_PIN = '<svg viewBox="0 0 24 24"' + IS + ' style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  var ICON_PHONE = '<svg viewBox="0 0 24 24"' + IS + ' style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>';
+  var ICON_MAIL = '<svg viewBox="0 0 24 24"' + IS + ' style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+  var rows = '';
+  if (a.contact) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_PHONE + escapeHtml(a.contact) + '</div>';
+  if (a.email) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_MAIL + escapeHtml(a.email) + '</div>';
+  if (a.address || a.location) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_PIN + escapeHtml(a.address || a.location) + '</div>';
+  if (a.website) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_LINK.replace('<svg ', '<svg style="width:13px;height:13px;vertical-align:-2px;margin-right:4px" ') + escapeHtml(a.website) + '</div>';
+  el.innerHTML =
+    '<div class="sm-card-head">' +
+      '<div class="sm-card-avatar">' + (a.photo ? '<img src="' + a.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : initials(a.name)) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="sm-card-name">' + escapeHtml(a.name || 'Agency') + (a.verified ? ' <span style="color:var(--accent);font-size:11px;font-weight:700">✓ Verified</span>' : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    (rows || '<div class="manager-item-sub">No contact details on file yet.</div>');
 }
 function managerAddBranch() {
   if (!managerAgency) return;
@@ -3318,6 +3343,7 @@ function exitEmployerManagerMode() {
 }
 function renderEmployerManagerMode() {
   if (!employerManagerMode || !managerEmployer) return;
+  renderManagerEmployerProfile();
   var vacancies = vacanciesForEmployer(managerEmployer.id);
   var vHtml = '';
   if (vacancies.length) {
@@ -3334,6 +3360,30 @@ function renderEmployerManagerMode() {
     vHtml = '<div class="empty-state" style="padding:16px 0"><p style="font-size:13px;color:var(--text-2)">No vacancies added yet.</p></div>';
   }
   document.getElementById('manager-employer-vacancy-list').innerHTML = vHtml;
+}
+// Same idea as renderManagerAgencyProfile(), scoped to the employer
+// self-service screen (?manage_employer=TOKEN).
+function renderManagerEmployerProfile() {
+  var el = document.getElementById('manager-employer-profile');
+  if (!el || !managerEmployer) return;
+  var e = managerEmployer;
+  var ICON_PIN = '<svg viewBox="0 0 24 24"' + IS + ' style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  var ICON_PHONE = '<svg viewBox="0 0 24 24"' + IS + ' style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>';
+  var ICON_MAIL = '<svg viewBox="0 0 24 24"' + IS + ' style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+  var rows = '';
+  if (e.contact) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_PHONE + escapeHtml(e.contact) + '</div>';
+  if (e.email) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_MAIL + escapeHtml(e.email) + '</div>';
+  if (e.address || e.location) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_PIN + escapeHtml(e.address || e.location) + '</div>';
+  if (e.website) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_LINK.replace('<svg ', '<svg style="width:13px;height:13px;vertical-align:-2px;margin-right:4px" ') + escapeHtml(e.website) + '</div>';
+  if (e.industry) rows += '<div class="manager-item-sub" style="margin-top:2px">' + escapeHtml(e.industry) + '</div>';
+  el.innerHTML =
+    '<div class="sm-card-head">' +
+      '<div class="sm-card-avatar">' + (e.photo ? '<img src="' + e.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : initials(e.name)) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="sm-card-name">' + escapeHtml(e.name || 'Company') + (e.verified ? ' <span style="color:var(--accent);font-size:11px;font-weight:700">✓ Verified</span>' : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    (rows || '<div class="manager-item-sub">No contact details on file yet.</div>');
 }
 function managerEmployerAddVacancy() {
   if (!managerEmployer) return;
