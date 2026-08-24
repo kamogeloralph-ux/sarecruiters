@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v134';
+const VERSION = 'sa-recruiters-v135';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
