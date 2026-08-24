@@ -542,7 +542,6 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified employers show a badge and rank higher</div></div>
       <label class="switch"><input type="checkbox" id="emp-verified" checked><span class="track"><span class="knob"></span></span></label>
     </div>
-    <div id="emp-manager-box" style="display:none"></div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('employer-overlay')">Cancel</button>
       <button class="btn" onclick="saveEmployer()">Save</button>
@@ -1092,7 +1091,7 @@ function renderAgencies(){
   var el = document.getElementById('ag-list');
   if(!list.length){ el.innerHTML = emptyState('No agencies','Add your first agency or adjust your search.'); return; }
   el.innerHTML = list.map(function(a){
-    var sub = [a.location, a.email].filter(Boolean).join(' · ');
+    var sub = [a.contact, a.location, a.email].filter(Boolean).join(' · ');
     var details = '';
     if(a.website) details += '<div class="det-row"><span class="det-label">Website:</span> '+escapeHtml(a.website)+'</div>';
     if(a.contact) details += '<div class="det-row"><span class="det-label">Contact:</span> '+escapeHtml(a.contact)+'</div>';
@@ -1211,13 +1210,22 @@ function renderEmployers(){
   if(!list.length){ el.innerHTML = emptyState('No employers','Register an employer or adjust your search.'); return; }
   el.innerHTML = list.map(function(e){
     var jobCount = cache.vacancies.filter(function(v){ return v.employer_id===e.id; }).length;
-    var sub = [e.industry, e.location, jobCount ? (jobCount+' vacanc'+(jobCount===1?'y':'ies')) : null].filter(Boolean).join(' · ');
+    var sub = [e.contact, e.industry, e.location, jobCount ? (jobCount+' vacanc'+(jobCount===1?'y':'ies')) : null].filter(Boolean).join(' · ');
     var details = '';
     if(e.website) details += '<div class="det-row"><span class="det-label">Website:</span> '+escapeHtml(e.website)+'</div>';
     if(e.contact) details += '<div class="det-row"><span class="det-label">Contact:</span> '+escapeHtml(e.contact)+'</div>';
     if(e.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(e.email)+'</div>';
     if(e.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(e.address)+'</div>';
     if(e.industry) details += '<div class="det-row"><span class="det-label">Industry:</span> '+escapeHtml(e.industry)+'</div>';
+    var empMgrTok = e.manage_token || '';
+    var empMgrLink = empMgrTok ? (location.origin + location.pathname.replace(/admin\.html.*/,'index.html') + '?manage_employer=' + empMgrTok) : '';
+    details += '<div class="det-row det-manager-link"><span class="det-label">Manager link:</span> '+
+      (empMgrTok
+        ? '<div class="copy-link" style="margin-top:6px"><input id="emp-mgr-link-'+e.id+'" value="'+escapeHtml(empMgrLink)+'" readonly><button onclick="stopProp(event);copyLink(\'emp-mgr-link-'+e.id+'\')">Copy</button></div>'+
+          '<button class="minibtn" style="margin-top:8px" onclick="stopProp(event);regenEmployerToken(\''+e.id+'\')">Regenerate token</button>'+
+          '<div class="muted" style="margin-top:6px">Send this link to the employer so they can post their own vacancies (no edit/delete). Employers cannot post vacancies from the public app directly.</div>'
+        : '<button class="minibtn" style="margin-left:6px" onclick="stopProp(event);regenEmployerToken(\''+e.id+'\')">Generate</button>')+
+      '</div>';
     details += '<div class="det-row"><span class="det-label">Vacancies posted:</span> '+jobCount+'</div>';
     var employerVacancies = cache.vacancies.filter(function(v){ return v.employer_id===e.id; });
     if (employerVacancies.length) {
@@ -1262,18 +1270,6 @@ function openEmployerSheet(id){
   var prev = document.getElementById('emp-photo-preview');
   if(pendingEmployerPhoto){ document.getElementById('emp-photo-img').src = pendingEmployerPhoto; prev.style.display='block'; } else { prev.style.display='none'; }
   document.getElementById('emp-photo').value = '';
-  // Manager link box (edit only) — lets the employer post their own vacancies
-  var mbox = document.getElementById('emp-manager-box');
-  if(e){
-    var tok = e.manage_token || '';
-    var link = tok ? (location.origin + location.pathname.replace(/admin\.html.*/,'index.html') + '?manage_employer=' + tok) : '';
-    mbox.innerHTML = '<div class="divider"></div><div class="t-label" style="margin-bottom:6px">Smart Manager link</div>'+
-      (tok ? '<div class="copy-link"><input id="emp-mgr-link" value="'+escapeHtml(link)+'" readonly><button onclick="copyLink(\'emp-mgr-link\')">Copy</button></div>'+
-            '<button class="minibtn" style="margin-top:8px" onclick="regenEmployerToken(\''+e.id+'\')">Regenerate token</button>'+
-            '<div class="muted" style="margin-top:6px">Send this link to the employer so they can post their own vacancies (no edit/delete). Employers cannot post vacancies from the public app directly.</div>'
-           : '<div class="muted">No manager token yet. <button class="minibtn" onclick="regenEmployerToken(\''+e.id+'\')" style="margin-left:6px">Generate</button></div>');
-    mbox.style.display = 'block';
-  } else { mbox.style.display = 'none'; mbox.innerHTML = ''; }
   openSheet('employer-overlay');
 }
 function handleEmployerPhoto(evt){
@@ -1310,7 +1306,7 @@ async function regenEmployerToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
   var tok = genToken(); await saveEmployerManagerToken(id, tok);
   var e = employerById(id); if(e) e.manage_token = tok;
-  openEmployerSheet(id);
+  renderEmployers();
   showToast('New manager link generated');
 }
 async function deleteEmployer(id){
