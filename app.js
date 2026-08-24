@@ -706,7 +706,7 @@ async function loadAll() {
   var hadLoadError = false;
   if (results[0].__loadError) { hadLoadError = true; } else { agenciesCache = results[0]; }
   if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
-  if (results[2].__loadError) { hadLoadError = true; } else { vacanciesCache = results[2]; }
+  if (results[2].__loadError) { hadLoadError = true; } else { vacanciesCache = sortVacancies(results[2]); }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
   setRetryBanner(hadLoadError);
   publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
@@ -777,6 +777,34 @@ function updateStats() {
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
 function vacanciesFor(agencyId) { return vacanciesCache.filter(function(v){ return v.agency_id === agencyId; }); }
 function vacanciesForEmployer(employerId) { return vacanciesCache.filter(function(v){ return v.employer_id === employerId; }); }
+
+// Best-effort parse of the free-text closing_date field (e.g. "26 August
+// 2026", "2026-08-26") into a timestamp. Returns null when it can't be
+// parsed (blank, "ASAP", etc.) so callers can push those to the end
+// instead of mis-sorting them.
+function parseClosingDate(str) {
+  if (!str) return null;
+  var t = Date.parse(str);
+  return isNaN(t) ? null : t;
+}
+
+// Newest posting first (most recently added), then — for vacancies added
+// in the same batch/moment, where created_at ties — soonest closing date
+// first, so deadlines run in order rather than appearing scrambled.
+// Vacancies with no parseable closing date sort after ones that have one.
+function sortVacancies(list) {
+  return list.slice().sort(function(a, b) {
+    var ca = new Date(a.created_at || 0).getTime();
+    var cb = new Date(b.created_at || 0).getTime();
+    if (cb !== ca) return cb - ca;
+    var da = parseClosingDate(a.closing_date);
+    var db = parseClosingDate(b.closing_date);
+    if (da === null && db === null) return 0;
+    if (da === null) return 1;
+    if (db === null) return -1;
+    return da - db;
+  });
+}
 
 // ===== Hub card (agency) =====
 function avatarHtml(a) {
@@ -2804,7 +2832,7 @@ function renderAllVacanciesList() {
   });
   el.innerHTML = keys.map(function(key){
     var group = groups[key];
-    group.items.sort(function(a,b){ return new Date(b.created_at||0) - new Date(a.created_at||0); });
+    group.items = sortVacancies(group.items);
     var agency = group.agency || {};
     var cards = group.items.map(function(v){ return vacancyCard(v, agency); }).join('');
     return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' +
