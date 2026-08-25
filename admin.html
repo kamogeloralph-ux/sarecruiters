@@ -419,6 +419,21 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
             <button class="btn" onclick="savePoolBankingDetails()">Save banking details</button>
           </div>
         </details>
+
+        <details class="banking-accordion">
+          <summary>
+            <span class="banking-summary-copy"><span class="t-label">Social media links</span><span class="muted">Tap to view or edit the links shown in the app's Notes sheet</span></span>
+            <span class="banking-summary-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="banking-accordion-body">
+            <div class="muted banking-help">Shown as tappable icons in the public app's Notes sheet. Leave a field blank to hide that icon.</div>
+            <div class="field"><label>Facebook URL</label><input id="social-facebook" placeholder="https://facebook.com/yourpage"></div>
+            <div class="field"><label>Instagram URL</label><input id="social-instagram" placeholder="https://instagram.com/yourhandle"></div>
+            <div class="field"><label>WhatsApp link</label><input id="social-whatsapp" placeholder="https://wa.me/27xxxxxxxxx"></div>
+            <div class="field"><label>X (Twitter) URL</label><input id="social-x" placeholder="https://x.com/yourhandle"></div>
+            <button class="btn" onclick="saveSocialLinksSettings()">Save social links</button>
+          </div>
+        </details>
       </div>
 
       <!-- DAILY TRACK -->
@@ -1005,7 +1020,7 @@ function goSection(id){
   if(id==='content') renderContent();
   if(id==='posters') renderPosters();
   if(id==='dailytrack') renderDailyTracks();
-  if(id==='settings'){ updatePostingUI(); updateEmployerRegUI(); loadPoolBankingDetails(); }
+  if(id==='settings'){ updatePostingUI(); updateEmployerRegUI(); loadPoolBankingDetails(); loadSocialLinksSettings(); }
   if(id==='poolcandidates') renderPoolCandidates();
   window.scrollTo(0,0);
 }
@@ -1737,6 +1752,26 @@ async function savePoolBankingDetails(){
   var ok = await setAppSetting('pool_banking_details', JSON.stringify(d));
   if(ok) showToast('Banking details saved');
   else alert('Could not save banking details. Check your Supabase app_settings table.');
+}
+async function loadSocialLinksSettings(){
+  var raw = await getAppSetting('social_links','');
+  var d = { facebook:'', instagram:'', whatsapp:'', x:'' };
+  if(raw){ try{ Object.assign(d, JSON.parse(raw)); }catch(e){} }
+  document.getElementById('social-facebook').value = d.facebook || '';
+  document.getElementById('social-instagram').value = d.instagram || '';
+  document.getElementById('social-whatsapp').value = d.whatsapp || '';
+  document.getElementById('social-x').value = d.x || '';
+}
+async function saveSocialLinksSettings(){
+  var d = {
+    facebook: document.getElementById('social-facebook').value.trim(),
+    instagram: document.getElementById('social-instagram').value.trim(),
+    whatsapp: document.getElementById('social-whatsapp').value.trim(),
+    x: document.getElementById('social-x').value.trim()
+  };
+  var ok = await setAppSetting('social_links', JSON.stringify(d));
+  if(ok) showToast('Social links saved');
+  else alert('Could not save social links. Check your Supabase app_settings table.');
 }
 function updatePostingUI(){
   var t = document.getElementById('posting-toggle'); if(t) t.checked = !!publicVacancyPostingOpen;

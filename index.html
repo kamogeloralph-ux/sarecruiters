@@ -945,12 +945,27 @@
   <div class="sheet notes-sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('notes-overlay')" aria-label="Close Notes" title="Close Notes">×</button>
     <h3>Notes</h3>
-    <p class="notes-intro">Keep private reminders while you browse vacancies, agencies, employers, and candidates. Notes are stored on this device.</p>
-    <input type="hidden" id="note-edit-id" value="">
-    <div class="field"><label for="note-title">Title</label><input id="note-title" maxlength="80" placeholder="e.g. Follow up with employer"></div>
-    <div class="field"><label for="note-body">Note</label><textarea id="note-body" maxlength="2000" placeholder="Write your note here…" style="min-height:120px"></textarea></div>
-    <div class="notes-form-actions"><button class="sheet-cancel" data-ripple onclick="resetNoteForm()">Clear</button><button class="sheet-submit" data-ripple onclick="saveNote()">Save note</button></div>
-    <div id="notes-list" class="notes-list"></div>
+
+    <details class="hub-accordion notes-hub-wrap" id="my-notes-accordion">
+      <summary>
+        <span class="hub-accordion-summary-copy"><span class="t-label">My Notes</span><span class="hub-accordion-sub">Private reminders, stored on this device</span></span>
+        <span class="hub-accordion-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M6 9l6 6 6-6"/></svg></span>
+      </summary>
+      <div class="hub-accordion-body">
+        <input type="hidden" id="note-edit-id" value="">
+        <div class="field"><label for="note-title">Title</label><input id="note-title" maxlength="80" placeholder="e.g. Follow up with employer"></div>
+        <div class="field"><label for="note-body">Note</label><textarea id="note-body" maxlength="2000" placeholder="Write your note here…" style="min-height:120px"></textarea></div>
+        <div class="notes-form-actions"><button class="sheet-cancel" data-ripple onclick="resetNoteForm()">Clear</button><button class="sheet-submit" data-ripple onclick="saveNote()">Save note</button></div>
+        <div id="notes-list" class="notes-list"></div>
+      </div>
+    </details>
+
+    <!-- More features coming soon here -->
+
+    <div class="social-section">
+      <div class="social-section-title">Follow SA Recruiters</div>
+      <div id="social-links-row" class="social-links-row"></div>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
