@@ -2823,7 +2823,7 @@ function renderAllVacanciesList() {
     if (employer) { key='employer:'+employer.id; name=employer.name||'Employer'; type='Employer'; }
     else if (agency) { key='agency:'+agency.id; name=agency.name||'Agency'; type='Agency'; }
     else { key='general'; name='General vacancies'; type='General'; }
-    if (!groups[key]) groups[key] = { name:name, type:type, agency:agency || null, items:[] };
+    if (!groups[key]) groups[key] = { name:name, type:type, agency:agency || null, employer:employer || null, items:[] };
     groups[key].items.push(v);
   });
   var keys = Object.keys(groups).sort(function(a,b){
@@ -2835,8 +2835,10 @@ function renderAllVacanciesList() {
     group.items = sortVacancies(group.items);
     var agency = group.agency || {};
     var cards = group.items.map(function(v){ return vacancyCard(v, agency); }).join('');
+    var groupVerified = (group.type === 'Agency' && group.agency && group.agency.verified) || (group.type === 'Employer' && group.employer && group.employer.verified);
+    var groupVerifiedCheck = groupVerified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
     return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' +
-      '<div class="directory-group-head"><div><div class="directory-group-title">' + escapeHtml(group.name) + '</div><div class="directory-group-sub">' + group.type + ' · ' + group.items.length + ' vacanc' + (group.items.length===1?'y':'ies') + '</div></div></div>' + cards + '</section>';
+      '<div class="directory-group-head"><div><div class="directory-group-title">' + groupVerifiedCheck + escapeHtml(group.name) + '</div><div class="directory-group-sub">' + group.type + ' · ' + group.items.length + ' vacanc' + (group.items.length===1?'y':'ies') + '</div></div></div>' + cards + '</section>';
   }).join('');
 }
 
