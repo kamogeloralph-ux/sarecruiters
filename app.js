@@ -1906,6 +1906,7 @@ function writeNotes(notes) {
 function openNotesSheet() {
   resetNoteForm();
   renderNotes();
+  loadSocialLinks();
   var overlay = document.getElementById('notes-overlay');
   if (overlay) overlay.classList.add('open');
 }
@@ -1966,6 +1967,36 @@ function deleteNote(id) {
   writeNotes(notes.filter(function(n){ return n.id !== id; }));
   renderNotes();
   showToast('Note deleted');
+}
+
+// ===== Social media links (admin-editable, stored in app_settings) =====
+var SOCIAL_ICONS = {
+  facebook: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.51 1.49-3.9 3.77-3.9 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.88h2.78l-.44 2.91h-2.34V22c4.78-.76 8.44-4.92 8.44-9.94z"/></svg>',
+  instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><path d="M17.5 6.5h.01"/></svg>',
+  whatsapp: '<svg class="wa-glyph"><use href="icons.svg#i7ebf0f"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.75h3.05l-6.67 7.63 7.85 10.87h-6.14l-4.8-6.65-5.5 6.65H2.17l7.14-8.16L1.75 2.75h6.3l4.35 6.08zm-1.07 16.7h1.7L7.03 4.4H5.2z"/></svg>'
+};
+var SOCIAL_LABELS = { facebook: 'Facebook', instagram: 'Instagram', whatsapp: 'WhatsApp', x: 'X' };
+var SOCIAL_LINKS_KEY = 'social_links';
+async function loadSocialLinks() {
+  var container = document.getElementById('social-links-row');
+  if (!container) return;
+  var raw = await getAppSetting(SOCIAL_LINKS_KEY, '');
+  var links = {};
+  if (raw) { try { links = JSON.parse(raw) || {}; } catch(e) { links = {}; } }
+  renderSocialLinks(links);
+}
+function renderSocialLinks(links) {
+  var container = document.getElementById('social-links-row');
+  if (!container) return;
+  links = links || {};
+  var html = Object.keys(SOCIAL_ICONS).map(function(key) {
+    var url = (links[key] || '').trim();
+    if (!url) return '';
+    var label = SOCIAL_LABELS[key];
+    return '<a class="social-link-btn social-' + key + '" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" data-ripple aria-label="' + label + '" title="' + label + '">' + SOCIAL_ICONS[key] + '</a>';
+  }).join('');
+  container.innerHTML = html || '<div class="social-links-empty">Social links coming soon.</div>';
 }
 
 // ===== Report a problem =====
@@ -3515,6 +3546,7 @@ processAlertUnsubscribe();
 // The shell and cached directory paint first; secondary settings are already
 // included in loadAll, while the optional daily track loads just after paint.
 setTimeout(loadTodayTrack, 250);
+loadSocialLinks();
 
 // ===== Refresh data when the app comes back from being idle =====
 // A PWA that's been backgrounded (screen locked, app switched away from)
