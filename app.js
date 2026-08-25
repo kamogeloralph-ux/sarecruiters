@@ -708,7 +708,11 @@ async function loadAll() {
   if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
   if (results[2].__loadError) { hadLoadError = true; } else { vacanciesCache = sortVacancies(results[2]); }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
-  setRetryBanner(hadLoadError);
+  // Offline is expected and not actionable — don't nag about it. Only show
+  // the retry banner when we're online and the refresh still genuinely
+  // failed (a real backend/network issue worth surfacing). While offline,
+  // the app just quietly keeps showing the last-good cached data above.
+  setRetryBanner(hadLoadError && navigator.onLine !== false);
   publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
   publicEmployerRegistrationOpen = (results[5] === true || results[5] === 'true');
   employerDirectoryOpen = (results[6] === true || results[6] === 'true');
@@ -3538,6 +3542,16 @@ setTimeout(loadTodayTrack, 250);
   });
 })();
 
+// True once an update has actually been found while offline, so we can
+// surface it the moment connectivity returns instead of losing it.
+var pendingUpdateBanner = false;
+function showUpdateBannerIfOnline() {
+  if (navigator.onLine === false) { pendingUpdateBanner = true; return; }
+  pendingUpdateBanner = false;
+  var banner = document.getElementById('update-banner');
+  if (banner) banner.classList.add('show');
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('sw.js', { scope: '/', updateViaCache: 'none' }).then(function(reg) {
@@ -3549,21 +3563,36 @@ if ('serviceWorker' in navigator) {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             // New content is available. Do not take over or reload automatically:
             // an idle update must never interrupt the section the user is viewing.
-            // The existing update banner lets the user choose when to reload.
-            var banner = document.getElementById('update-banner');
-            if (banner) banner.classList.add('show');
+            // While offline this is also not actionable (reloading won't help
+            // fetch anything new) and just adds noise — hold it and show it
+            // once the 'online' listener below fires.
+            showUpdateBannerIfOnline();
           }
         });
       });
       // Check for new content without automatically reloading the current page.
       // This preserves the user’s current section after the app has been idle.
-      reg.update();
-      setInterval(function() { reg.update(); }, 60000);
+      // Skip the check entirely while offline — it can only fail, and failed
+      // update checks have no useful UI of their own.
+      if (navigator.onLine !== false) reg.update();
+      setInterval(function() { if (navigator.onLine !== false) reg.update(); }, 60000);
     }).catch(function(err) {
       console.warn('Service worker registration failed:', err);
     });
   });
 }
+
+// While offline: hide both banners immediately, since neither is actionable
+// without a connection. On reconnect: silently retry the data refresh
+// (no banner, no interruption — it just quietly catches up), and surface
+// the update banner if one was waiting.
+window.addEventListener('offline', function() {
+  setRetryBanner(false);
+});
+window.addEventListener('online', function() {
+  loadAll();
+  if (pendingUpdateBanner) showUpdateBannerIfOnline();
+});
 
 // ===== PWA Shortcut / share_target param handling =====
 (function handlePwaParams() {

@@ -41,7 +41,7 @@
  *   can keep running an old worker indefinitely.
  */
 
-const VERSION = 'sa-recruiters-v138';
+const VERSION = 'sa-recruiters-v139';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -177,6 +177,17 @@ self.addEventListener('activate', function(event) {
 function isImageRequest(request) {
   return request.destination === 'image' ||
     /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(request.url);
+}
+
+// icons.svg is the app's icon SPRITE (referenced everywhere via <use>), not
+// a photo — it's precached into CORE_CACHE alongside the rest of the shell
+// at install. isImageRequest() above would otherwise route it into
+// IMAGE_CACHE instead, where it was never stored, guaranteeing a cache miss
+// on every single icon lookup. That miss then falls to the network, and
+// when offline, falls further to offline.html's markup being handed back
+// for an SVG request — which is what rendered as solid black icon shapes.
+function isSpriteAsset(request) {
+  return /\/icons\.svg(?:$|\?)/i.test(request.url);
 }
 
 function isCacheableSameOriginResponse(response) {
@@ -379,6 +390,11 @@ self.addEventListener('fetch', function(event) {
     }
 
     event.respondWith(cacheFirstNavigation(request, event));
+    return;
+  }
+
+  if (isSpriteAsset(request)) {
+    event.respondWith(cacheFirst(request, CORE_CACHE));
     return;
   }
 
