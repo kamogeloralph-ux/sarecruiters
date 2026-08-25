@@ -1,28 +1,55 @@
 /*
  * SA Recruiters service worker
  *
- * Navigation strategy: NETWORK-FIRST with a cached-shell fallback.
- *   - A reload / pull-to-refresh is a navigation request. When the device is
- *     online we serve the freshest shell from the network so the app always
- *     reflects the latest deployed HTML/JS.
- *   - When the network is slow or unavailable we fall back to the cached app
- *     shell (index.html / admin.html / privacy.html). The app then refreshes
- *     its directory data independently after startup.
- *   - offline.html is only ever shown as an ABSOLUTE last resort, when no
- *     shell for the route is cached at all. This stops the recurring bug where
- *     an idle app or a pull-to-refresh "fell back to its offline page" simply
- *     because the network was momentarily flaky.
+ * Navigation strategy: CACHE-FIRST with background revalidation.
+ *   - A reload / pull-to-refresh / app-resume-from-idle is a navigation
+ *     request. We now answer it INSTANTLY from the cached app shell
+ *     (index.html / admin.html / privacy.html) whenever one is cached —
+ *     no network round trip gates the paint at all. The app already
+ *     refreshes its own directory data client-side after startup, so the
+ *     HTML shell itself rarely needs to be network-fresh on every load.
+ *   - Immediately after serving the cached shell, we kick off a SILENT
+ *     background fetch to refresh that shell in the cache for next time,
+ *     and tell any open clients a new version is available (see the
+ *     SW_UPDATE_AVAILABLE postMessage below) so the app can offer a
+ *     "refresh to update" prompt on its own terms, instead of the
+ *     service worker deciding when to interrupt the user.
+ *   - Only when NOTHING is cached for the route do we touch the network
+ *     on the critical path — and even then, with a hard timeout, so a
+ *     stalled connection (very common right after a device wakes up)
+ *     can't hang the navigation indefinitely.
+ *   - offline.html is only ever shown as an ABSOLUTE last resort: no
+ *     cached shell for the route AND the network fetch failed/timed out.
  *
- * Precaching is NON-ATOMIC: each core asset is cached independently so that a
- * single 404 (e.g. an icon not yet shipped) can no longer prevent the whole
- * app shell from installing — which was another cause of the offline page
- * appearing after the next reload.
+ * WHY THE PREVIOUS NETWORK-FIRST FIX DIDN'T FULLY WORK:
+ *   Network-first still gated every navigation on a real fetch resolving
+ *   in a reasonable time. On mobile, resuming from backgrounded/idle
+ *   often leaves the connection in a slow-to-fail limbo rather than a
+ *   clean, fast error — the fetch just hangs. Cache-first removes the
+ *   network from the critical path entirely for the common case, and the
+ *   timeout below bounds the worst case when there's truly no cache yet.
+ *
+ * IMPORTANT DEPLOYMENT NOTE:
+ *   Browsers only pick up a new service worker when this file's BYTES
+ *   change, and only after actually re-fetching it — so sw.js must be
+ *   served with Cache-Control: no-cache (or equivalent) at your CDN/host.
+ *   If sw.js itself is being cached upstream, devices can keep running an
+ *   old worker indefinitely regardless of what ships here.
+ *
+ * Precaching is NON-ATOMIC: each core asset is cached independently so a
+ * single 404 (e.g. an icon not yet shipped) can't prevent the whole app
+ * shell from installing.
  */
 
-const VERSION = 'sa-recruiters-v136';
+const VERSION = 'sa-recruiters-v137';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
+
+// How long we'll wait on the network when there is NO cached shell to fall
+// back to. Keep this short: the goal is a bounded worst case, not a fully
+// reliable fetch — cachedShellResponse()/offline.html already back it up.
+const NAVIGATION_NETWORK_TIMEOUT_MS = 4000;
 
 const CORE_ASSETS = [
   './index.html',
@@ -84,8 +111,12 @@ self.addEventListener('activate', function(event) {
         .map(function(name) { return caches.delete(name); })
       );
     }).then(function() {
+      // Navigation preload is RE-ENABLED (previous version disabled it).
+      // With cache-first navigations, preload mainly helps the background
+      // revalidation fetch start a beat earlier, and helps the cache-miss
+      // fallback path resolve faster too.
       return self.registration.navigationPreload
-        ? self.registration.navigationPreload.disable().catch(function() {})
+        ? self.registration.navigationPreload.enable().catch(function() {})
         : undefined;
     }).then(function() {
       return self.clients.claim();
@@ -187,27 +218,104 @@ function cachedShellResponse(request) {
   });
 }
 
-// NETWORK-FIRST navigation with a cached-shell fallback. This is the fix for
-// "every time the app idles or you drag down to refresh it falls back to its
-// offline page": a reload now tries the network, and only falls back to the
-// cached shell (never offline.html) when the network is unavailable.
-function networkFirstNavigation(request) {
-  return fetch(request).then(function(response) {
-    if (response && response.ok) {
-      // Keep the freshest shell in the core cache for offline use.
-      var shell = shellForNavigation(request);
-      if (shell) {
+// Race a promise against a timeout. Used only for the cache-MISS network
+// leg below, so a stalled connection can never hang a navigation.
+function withTimeout(promise, ms) {
+  return new Promise(function(resolve, reject) {
+    var timer = setTimeout(function() {
+      reject(new Error('Navigation network timeout'));
+    }, ms);
+    promise.then(function(value) {
+      clearTimeout(timer);
+      resolve(value);
+    }, function(err) {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+
+// Tell any open clients a fresher shell has been cached, so the app can
+// decide when (and whether) to prompt the user to refresh. We never force
+// a reload from the service worker itself — that decision belongs to the
+// UI, which knows if the user is mid-action.
+function notifyClientsOfUpdate(shellPath) {
+  return self.clients.matchAll({ includeUncontrolled: true }).then(function(clients) {
+    clients.forEach(function(client) {
+      client.postMessage({ type: 'SW_UPDATE_AVAILABLE', shell: shellPath, version: VERSION });
+    });
+  });
+}
+
+// Silently refresh a shell in the background. Never throws, never blocks
+// the navigation that triggered it — this is fire-and-forget.
+function revalidateShellInBackground(request, preloadResponsePromise) {
+  var shell = shellForNavigation(request);
+  Promise.resolve(preloadResponsePromise)
+    .then(function(preloaded) {
+      return preloaded || fetch(request);
+    })
+    .then(function(response) {
+      if (!response || !response.ok) return;
+      return caches.open(CORE_CACHE).then(function(cache) {
+        return cache.match(shell).then(function(previous) {
+          return cache.put(shell, response.clone()).then(function() {
+            // Only nag the UI if the shell actually changed; comparing
+            // Content-Length is a cheap, good-enough heuristic here.
+            var prevLen = previous && previous.headers.get('content-length');
+            var nextLen = response.headers.get('content-length');
+            if (!previous || prevLen !== nextLen) {
+              return notifyClientsOfUpdate(shell);
+            }
+          });
+        });
+      });
+    })
+    .catch(function() {
+      // Offline or flaky network during background revalidation is
+      // expected and totally fine — the cached shell already served.
+    });
+}
+
+// CACHE-FIRST navigation with background revalidation. This is the fix for
+// "every time the app idles or you drag down to refresh it falls back to
+// its offline page": a cached shell now answers instantly, with no network
+// round trip on the critical path. The network is only ever load-bearing
+// when there is genuinely no cached shell yet (e.g. first install), and
+// even then it's bounded by NAVIGATION_NETWORK_TIMEOUT_MS.
+function cacheFirstNavigation(request, event) {
+  return cachedShellResponse(request).then(function(cached) {
+    if (cached) {
+      // Serve instantly, refresh in the background, never block on it.
+      var preload = event && event.preloadResponse;
+      event && event.waitUntil && event.waitUntil(
+        revalidateShellInBackground(request, preload)
+      );
+      return cached;
+    }
+
+    // No cached shell at all (e.g. very first load before install ran, or
+    // a brand-new route). Fall back to a time-boxed network fetch.
+    var networkPromise = (event && event.preloadResponse
+      ? event.preloadResponse.then(function(preloaded) { return preloaded || fetch(request); })
+      : fetch(request)
+    ).then(function(response) {
+      if (response && response.ok) {
+        var shell = shellForNavigation(request);
         caches.open(CORE_CACHE).then(function(cache) {
           cache.put(shell, response.clone()).catch(function() {});
         });
+        return response;
       }
-      return response;
-    }
-    throw new Error('Navigation response was not successful');
-  }).catch(function() {
-    return cachedShellResponse(request).then(function(shell) {
-      // Only when there is genuinely no cached shell do we show offline.html.
-      return shell || caches.match('./offline.html', { ignoreSearch: true });
+      throw new Error('Navigation response was not successful');
+    });
+
+    return withTimeout(networkPromise, NAVIGATION_NETWORK_TIMEOUT_MS).catch(function() {
+      // Re-check the cache in case another in-flight request populated it
+      // while we were waiting, then fall back to the true offline page.
+      return cachedShellResponse(request).then(function(shell) {
+        return shell || caches.match('./offline.html', { ignoreSearch: true });
+      });
     });
   });
 }
@@ -230,7 +338,7 @@ self.addEventListener('fetch', function(event) {
       return;
     }
 
-    event.respondWith(networkFirstNavigation(request));
+    event.respondWith(cacheFirstNavigation(request, event));
     return;
   }
 
