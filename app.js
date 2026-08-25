@@ -708,11 +708,7 @@ async function loadAll() {
   if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
   if (results[2].__loadError) { hadLoadError = true; } else { vacanciesCache = sortVacancies(results[2]); }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
-  // Offline is expected and not actionable — don't nag about it. Only show
-  // the retry banner when we're online and the refresh still genuinely
-  // failed (a real backend/network issue worth surfacing). While offline,
-  // the app just quietly keeps showing the last-good cached data above.
-  setRetryBanner(hadLoadError && navigator.onLine !== false);
+  setRetryBanner(hadLoadError);
   publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
   publicEmployerRegistrationOpen = (results[5] === true || results[5] === 'true');
   employerDirectoryOpen = (results[6] === true || results[6] === 'true');
@@ -1303,7 +1299,7 @@ function vacancyCard(v, agency) {
   var employerAccessLocked = isEmployerPost && !employerDirectoryOpen && !hasTalentPoolAccess();
   var orgName = isEmployerPost ? (employer.name || 'Employer') : (isGeneral ? (v.company || 'General Vacancy') : (agency.name || ''));
   var title = escapeHtml(v.title || 'Untitled role');
-  var verifiedCheck = (isEmployerPost && employer.verified) ? '<span class="verified-check" title="Verified employer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
+  var verifiedCheck = ((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '<span class="verified-check" title="' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
 
   /* Logo tile: employer/agency photo -> img; else company/agency initials on a gradient */
   var logo;
@@ -1333,7 +1329,7 @@ function vacancyCard(v, agency) {
   if (v.work_schedule) detail += vacDetRow(VAC_ICONS.calendar, 'Work Schedule', escapeHtml(v.work_schedule));
   if (v.start_date) detail += vacDetRow(VAC_ICONS.calendar, 'Start Date', escapeHtml(v.start_date));
   if (v.closing_date) detail += vacDetRow(VAC_ICONS.calendar, 'Closing Date', escapeHtml(v.closing_date));
-  if (orgName) detail += vacDetRow(VAC_ICONS.building, isEmployerPost ? 'Employer' + (employer.verified ? ' \u2713 Verified' : '') : (isGeneral ? 'Company' : 'Agency'), escapeHtml(orgName));
+  if (orgName) detail += vacDetRow(VAC_ICONS.building, isEmployerPost ? 'Employer' + (employer.verified ? ' \u2713 Verified' : '') : (isGeneral ? 'Company' : 'Agency' + ((agency && agency.verified) ? ' \u2713 Verified' : '')), escapeHtml(orgName));
   /* Email and phone detail rows with clickable links */
   if (v.email) detail += vacDetRow(VAC_ICONS.mail, 'Contact Email', mailLink(v.email));
   if (v.phone) detail += vacDetRow(VAC_ICONS.phone, 'Contact Phone', telLink(v.phone));
@@ -3542,16 +3538,6 @@ setTimeout(loadTodayTrack, 250);
   });
 })();
 
-// True once an update has actually been found while offline, so we can
-// surface it the moment connectivity returns instead of losing it.
-var pendingUpdateBanner = false;
-function showUpdateBannerIfOnline() {
-  if (navigator.onLine === false) { pendingUpdateBanner = true; return; }
-  pendingUpdateBanner = false;
-  var banner = document.getElementById('update-banner');
-  if (banner) banner.classList.add('show');
-}
-
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('sw.js', { scope: '/', updateViaCache: 'none' }).then(function(reg) {
@@ -3563,36 +3549,21 @@ if ('serviceWorker' in navigator) {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             // New content is available. Do not take over or reload automatically:
             // an idle update must never interrupt the section the user is viewing.
-            // While offline this is also not actionable (reloading won't help
-            // fetch anything new) and just adds noise — hold it and show it
-            // once the 'online' listener below fires.
-            showUpdateBannerIfOnline();
+            // The existing update banner lets the user choose when to reload.
+            var banner = document.getElementById('update-banner');
+            if (banner) banner.classList.add('show');
           }
         });
       });
       // Check for new content without automatically reloading the current page.
       // This preserves the user’s current section after the app has been idle.
-      // Skip the check entirely while offline — it can only fail, and failed
-      // update checks have no useful UI of their own.
-      if (navigator.onLine !== false) reg.update();
-      setInterval(function() { if (navigator.onLine !== false) reg.update(); }, 60000);
+      reg.update();
+      setInterval(function() { reg.update(); }, 60000);
     }).catch(function(err) {
       console.warn('Service worker registration failed:', err);
     });
   });
 }
-
-// While offline: hide both banners immediately, since neither is actionable
-// without a connection. On reconnect: silently retry the data refresh
-// (no banner, no interruption — it just quietly catches up), and surface
-// the update banner if one was waiting.
-window.addEventListener('offline', function() {
-  setRetryBanner(false);
-});
-window.addEventListener('online', function() {
-  loadAll();
-  if (pendingUpdateBanner) showUpdateBannerIfOnline();
-});
 
 // ===== PWA Shortcut / share_target param handling =====
 (function handlePwaParams() {
