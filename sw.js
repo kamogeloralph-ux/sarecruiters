@@ -3,52 +3,52 @@
  *
  * Navigation strategy: CACHE-FIRST with background revalidation.
  *   - A reload / pull-to-refresh / app-resume-from-idle is a navigation
- *     request. We now answer it INSTANTLY from the cached app shell
+ *     request. We answer it INSTANTLY from the cached app shell
  *     (index.html / admin.html / privacy.html) whenever one is cached —
- *     no network round trip gates the paint at all. The app already
- *     refreshes its own directory data client-side after startup, so the
- *     HTML shell itself rarely needs to be network-fresh on every load.
+ *     no network round trip gates the paint at all.
  *   - Immediately after serving the cached shell, we kick off a SILENT
  *     background fetch to refresh that shell in the cache for next time,
  *     and tell any open clients a new version is available (see the
- *     SW_UPDATE_AVAILABLE postMessage below) so the app can offer a
- *     "refresh to update" prompt on its own terms, instead of the
- *     service worker deciding when to interrupt the user.
+ *     SW_UPDATE_AVAILABLE postMessage below).
  *   - Only when NOTHING is cached for the route do we touch the network
- *     on the critical path — and even then, with a hard timeout, so a
- *     stalled connection (very common right after a device wakes up)
- *     can't hang the navigation indefinitely.
+ *     on the critical path — and even then, with a hard timeout.
  *   - offline.html is only ever shown as an ABSOLUTE last resort: no
  *     cached shell for the route AND the network fetch failed/timed out.
  *
- * WHY THE PREVIOUS NETWORK-FIRST FIX DIDN'T FULLY WORK:
- *   Network-first still gated every navigation on a real fetch resolving
- *   in a reasonable time. On mobile, resuming from backgrounded/idle
- *   often leaves the connection in a slow-to-fail limbo rather than a
- *   clean, fast error — the fetch just hangs. Cache-first removes the
- *   network from the critical path entirely for the common case, and the
- *   timeout below bounds the worst case when there's truly no cache yet.
+ * WHY IT CAN STILL HAPPEN EVEN WITH CACHE-FIRST:
+ *   Every write into Cache Storage can THROW instead of succeeding — most
+ *   commonly because the response carries a `Vary: *` header (or another
+ *   header combination the Cache Storage spec forbids storing). Earlier
+ *   versions of this file wrapped those cache.put() calls in a bare
+ *   .catch(() => {}), which means a shell could silently, permanently fail
+ *   to ever get cached — with nothing in the console to say so. From the
+ *   outside that looks identical to "cache-first isn't working": there's
+ *   simply nothing in the cache to be first with, so every idle/resume
+ *   navigation falls through to a live network fetch, and mobile networks
+ *   right after resume are exactly when that's likely to fail or hang.
+ *
+ *   This version (a) logs every cache-write failure loudly instead of
+ *   swallowing it, (b) records precache/runtime cache failures into a
+ *   queryable diagnostics entry, and (c) automatically retries a failed
+ *   shell write with the problematic response headers stripped, so a
+ *   Vary:* (or similar) response from your server no longer permanently
+ *   blocks the shell from ever being cached.
  *
  * IMPORTANT DEPLOYMENT NOTE:
  *   Browsers only pick up a new service worker when this file's BYTES
- *   change, and only after actually re-fetching it — so sw.js must be
- *   served with Cache-Control: no-cache (or equivalent) at your CDN/host.
- *   If sw.js itself is being cached upstream, devices can keep running an
- *   old worker indefinitely regardless of what ships here.
- *
- * Precaching is NON-ATOMIC: each core asset is cached independently so a
- * single 404 (e.g. an icon not yet shipped) can't prevent the whole app
- * shell from installing.
+ *   change, and only after re-fetching it — sw.js must be served with
+ *   Cache-Control: no-cache (or equivalent) at your CDN/host, or devices
+ *   can keep running an old worker indefinitely.
  */
 
-const VERSION = 'sa-recruiters-v137';
+const VERSION = 'sa-recruiters-v138';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
+const DIAGNOSTICS_KEY = './__sw-diagnostics.json';
 
 // How long we'll wait on the network when there is NO cached shell to fall
-// back to. Keep this short: the goal is a bounded worst case, not a fully
-// reliable fetch — cachedShellResponse()/offline.html already back it up.
+// back to.
 const NAVIGATION_NETWORK_TIMEOUT_MS = 4000;
 
 const CORE_ASSETS = [
@@ -69,9 +69,6 @@ const CORE_ASSETS = [
 ];
 
 // Map of "clean" route paths -> the cached shell document that represents them.
-// All SPA routes (home, ?manage=TOKEN, ?manage_employer=TOKEN, ?tab=..., etc.)
-// resolve to the same index.html shell, so a token/manager URL always rehydrates
-// the app rather than being mistaken for a missing page.
 const CORE_SHELLS = {
   '/': './index.html',
   '/index.html': './index.html',
@@ -80,17 +77,74 @@ const CORE_SHELLS = {
   '/offline.html': './offline.html'
 };
 
+// --- Diagnostics -----------------------------------------------------------
+// Cache-write failures used to be swallowed silently. We now record them
+// here (fetchable at runtime as GET /__sw-diagnostics.json against the SW's
+// own scope via caches, or by the app calling navigator.serviceWorker to ask)
+// so a repeat of "shell never actually got cached" is visible, not a guess.
+var diagnosticsLog = [];
+
+function recordDiagnostic(entry) {
+  entry.time = new Date().toISOString();
+  diagnosticsLog.push(entry);
+  if (diagnosticsLog.length > 50) diagnosticsLog.shift();
+  console.error('[sw diagnostics]', entry);
+  return caches.open(RUNTIME_CACHE).then(function(cache) {
+    return cache.put(
+      DIAGNOSTICS_KEY,
+      new Response(JSON.stringify({ version: VERSION, log: diagnosticsLog }, null, 2), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+  }).catch(function() {
+    // If even this fails, there's nothing further we can safely do —
+    // but the console.error above still got the info out.
+  });
+}
+
+// Cache Storage rejects writes for responses with certain header
+// combinations — most commonly `Vary: *`. Try the write as-is first; if it
+// throws, retry with a clean Response that drops the problematic headers so
+// legitimate content isn't lost just because of response headers we don't
+// actually need for a cached shell.
+function safeCachePut(cache, key, response) {
+  return cache.put(key, response.clone()).catch(function(err) {
+    return response.clone().blob().then(function(body) {
+      var cleanHeaders = new Headers();
+      response.headers.forEach(function(value, name) {
+        var lower = name.toLowerCase();
+        if (lower === 'vary' || lower === 'set-cookie') return;
+        cleanHeaders.set(name, value);
+      });
+      var cleaned = new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: cleanHeaders
+      });
+      return cache.put(key, cleaned).catch(function(err2) {
+        return recordDiagnostic({
+          type: 'cache-put-failed',
+          key: key,
+          firstError: String(err && err.message || err),
+          retryError: String(err2 && err2.message || err2)
+        });
+      });
+    });
+  });
+}
+
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CORE_CACHE)
-      // Cache each asset independently (non-atomic). A failed addAll leaves
-      // the cache empty and is the root cause of "offline page on reload"
-      // after a partial install; caching item-by-item guarantees we keep
-      // everything that IS available.
       .then(function(cache) {
         return Promise.all(CORE_ASSETS.map(function(asset) {
-          return cache.add(asset).catch(function(err) {
-            console.warn('[sw] precache miss:', asset, err && err.message);
+          return fetch(asset).then(function(response) {
+            if (!response || !response.ok) {
+              return recordDiagnostic({ type: 'precache-bad-response', asset: asset, status: response && response.status });
+            }
+            return safeCachePut(cache, asset, response);
+          }).catch(function(err) {
+            return recordDiagnostic({ type: 'precache-fetch-failed', asset: asset, error: String(err && err.message || err) });
           });
         }));
       })
@@ -111,10 +165,6 @@ self.addEventListener('activate', function(event) {
         .map(function(name) { return caches.delete(name); })
       );
     }).then(function() {
-      // Navigation preload is RE-ENABLED (previous version disabled it).
-      // With cache-first navigations, preload mainly helps the background
-      // revalidation fetch start a beat earlier, and helps the cache-miss
-      // fallback path resolve faster too.
       return self.registration.navigationPreload
         ? self.registration.navigationPreload.enable().catch(function() {})
         : undefined;
@@ -143,7 +193,7 @@ function staleWhileRevalidate(request, cacheName) {
     return cache.match(request).then(function(cached) {
       var network = fetch(request).then(function(response) {
         if (isCacheableSameOriginResponse(response)) {
-          cache.put(request, response.clone());
+          safeCachePut(cache, request, response.clone());
         }
         return response;
       }).catch(function() { return cached; });
@@ -159,7 +209,7 @@ function cacheFirst(request, cacheName) {
       return fetch(request).then(function(response) {
         if (isCacheableSameOriginResponse(response) ||
             isCacheableCrossOriginResponse(response)) {
-          cache.put(request, response.clone());
+          safeCachePut(cache, request, response.clone());
         }
         return response;
       }).catch(function() {
@@ -169,11 +219,6 @@ function cacheFirst(request, cacheName) {
   });
 }
 
-// Resolve which cached shell document represents a given navigation URL.
-// The query string (e.g. ?manage=TOKEN) is intentionally ignored: every SPA
-// route is backed by the same index.html shell, and the app reads its own
-// query params on startup. Ignoring the query here is what lets a token URL
-// hit the cached shell instead of falling through to offline.html.
 function shellForNavigation(request) {
   var pathname = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
   return CORE_SHELLS[pathname] || './index.html';
@@ -192,13 +237,10 @@ function publicListingNavigation(request) {
         throw new Error('Public listing response was not successful');
       }
       caches.open(RUNTIME_CACHE).then(function(cache) {
-        cache.put(request, response.clone());
+        safeCachePut(cache, request, response.clone());
       });
       return response;
     }).catch(function() {
-      // Never substitute the SPA shell for a public listing URL. If the page
-      // was visited before, an exact runtime-cached copy is valid; otherwise
-      // show the true offline page rather than a misleading empty home screen.
       return caches.match(request).then(function(exactCached) {
         return exactCached || caches.match('./offline.html');
       });
@@ -206,20 +248,14 @@ function publicListingNavigation(request) {
   });
 }
 
-// Return a cached shell for a navigation, ignoring the query string so that
-// SPA routes such as /?manage=TOKEN resolve to the cached index.html.
 function cachedShellResponse(request) {
   var shell = shellForNavigation(request);
   return caches.match(shell, { ignoreSearch: true }).then(function(response) {
     if (response) return response;
-    // A route-specific shell may be absent in an older installation; the main
-    // app shell is still a valid fallback for all application routes.
     return shell === './index.html' ? undefined : caches.match('./index.html', { ignoreSearch: true });
   });
 }
 
-// Race a promise against a timeout. Used only for the cache-MISS network
-// leg below, so a stalled connection can never hang a navigation.
 function withTimeout(promise, ms) {
   return new Promise(function(resolve, reject) {
     var timer = setTimeout(function() {
@@ -235,10 +271,6 @@ function withTimeout(promise, ms) {
   });
 }
 
-// Tell any open clients a fresher shell has been cached, so the app can
-// decide when (and whether) to prompt the user to refresh. We never force
-// a reload from the service worker itself — that decision belongs to the
-// UI, which knows if the user is mid-action.
 function notifyClientsOfUpdate(shellPath) {
   return self.clients.matchAll({ includeUncontrolled: true }).then(function(clients) {
     clients.forEach(function(client) {
@@ -247,21 +279,19 @@ function notifyClientsOfUpdate(shellPath) {
   });
 }
 
-// Silently refresh a shell in the background. Never throws, never blocks
-// the navigation that triggered it — this is fire-and-forget.
 function revalidateShellInBackground(request, preloadResponsePromise) {
   var shell = shellForNavigation(request);
-  Promise.resolve(preloadResponsePromise)
+  return Promise.resolve(preloadResponsePromise)
     .then(function(preloaded) {
       return preloaded || fetch(request);
     })
     .then(function(response) {
-      if (!response || !response.ok) return;
+      if (!response || !response.ok) {
+        return recordDiagnostic({ type: 'revalidate-bad-response', shell: shell, status: response && response.status });
+      }
       return caches.open(CORE_CACHE).then(function(cache) {
         return cache.match(shell).then(function(previous) {
-          return cache.put(shell, response.clone()).then(function() {
-            // Only nag the UI if the shell actually changed; comparing
-            // Content-Length is a cheap, good-enough heuristic here.
+          return safeCachePut(cache, shell, response.clone()).then(function() {
             var prevLen = previous && previous.headers.get('content-length');
             var nextLen = response.headers.get('content-length');
             if (!previous || prevLen !== nextLen) {
@@ -271,22 +301,14 @@ function revalidateShellInBackground(request, preloadResponsePromise) {
         });
       });
     })
-    .catch(function() {
-      // Offline or flaky network during background revalidation is
-      // expected and totally fine — the cached shell already served.
+    .catch(function(err) {
+      return recordDiagnostic({ type: 'revalidate-fetch-failed', shell: shell, error: String(err && err.message || err) });
     });
 }
 
-// CACHE-FIRST navigation with background revalidation. This is the fix for
-// "every time the app idles or you drag down to refresh it falls back to
-// its offline page": a cached shell now answers instantly, with no network
-// round trip on the critical path. The network is only ever load-bearing
-// when there is genuinely no cached shell yet (e.g. first install), and
-// even then it's bounded by NAVIGATION_NETWORK_TIMEOUT_MS.
 function cacheFirstNavigation(request, event) {
   return cachedShellResponse(request).then(function(cached) {
     if (cached) {
-      // Serve instantly, refresh in the background, never block on it.
       var preload = event && event.preloadResponse;
       event && event.waitUntil && event.waitUntil(
         revalidateShellInBackground(request, preload)
@@ -294,8 +316,6 @@ function cacheFirstNavigation(request, event) {
       return cached;
     }
 
-    // No cached shell at all (e.g. very first load before install ran, or
-    // a brand-new route). Fall back to a time-boxed network fetch.
     var networkPromise = (event && event.preloadResponse
       ? event.preloadResponse.then(function(preloaded) { return preloaded || fetch(request); })
       : fetch(request)
@@ -303,18 +323,23 @@ function cacheFirstNavigation(request, event) {
       if (response && response.ok) {
         var shell = shellForNavigation(request);
         caches.open(CORE_CACHE).then(function(cache) {
-          cache.put(shell, response.clone()).catch(function() {});
+          safeCachePut(cache, shell, response.clone());
         });
         return response;
       }
       throw new Error('Navigation response was not successful');
     });
 
-    return withTimeout(networkPromise, NAVIGATION_NETWORK_TIMEOUT_MS).catch(function() {
-      // Re-check the cache in case another in-flight request populated it
-      // while we were waiting, then fall back to the true offline page.
+    return withTimeout(networkPromise, NAVIGATION_NETWORK_TIMEOUT_MS).catch(function(err) {
       return cachedShellResponse(request).then(function(shell) {
-        return shell || caches.match('./offline.html', { ignoreSearch: true });
+        if (shell) return shell;
+        return recordDiagnostic({
+          type: 'navigation-fell-back-to-offline',
+          url: request.url,
+          error: String(err && err.message || err)
+        }).then(function() {
+          return caches.match('./offline.html', { ignoreSearch: true });
+        });
       });
     });
   });
@@ -331,6 +356,21 @@ self.addEventListener('fetch', function(event) {
   }
 
   var url = new URL(request.url);
+
+  // Lets the app fetch its own diagnostics on demand, e.g.
+  // fetch('./__sw-diagnostics.json').then(r => r.json())
+  if (url.pathname.endsWith('/__sw-diagnostics.json')) {
+    event.respondWith(
+      caches.open(RUNTIME_CACHE).then(function(cache) {
+        return cache.match(DIAGNOSTICS_KEY).then(function(response) {
+          return response || new Response(JSON.stringify({ version: VERSION, log: [] }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        });
+      })
+    );
+    return;
+  }
 
   if (request.mode === 'navigate') {
     if (isPublicListingNavigation(request)) {
@@ -356,7 +396,7 @@ self.addEventListener('fetch', function(event) {
     fetch(request).then(function(response) {
       if (isCacheableCrossOriginResponse(response)) {
         caches.open(RUNTIME_CACHE).then(function(cache) {
-          cache.put(request, response.clone());
+          safeCachePut(cache, request, response.clone());
         });
       }
       return response;
@@ -429,7 +469,7 @@ self.addEventListener('periodicsync', function(event) {
       fetch('./content.js', { cache: 'reload' }).then(function(response) {
         if (!response.ok) throw new Error('Content refresh failed');
         return caches.open(RUNTIME_CACHE).then(function(cache) {
-          return cache.put('./content.js', response);
+          return safeCachePut(cache, './content.js', response);
         });
       }).catch(function() {})
     );
