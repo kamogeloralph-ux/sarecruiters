@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v139';
+const VERSION = 'sa-recruiters-v140';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -38,7 +38,8 @@ const CORE_ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/Maskable-192.png',
-  './icons/favicon.ico'
+  './icons/favicon.ico',
+  './favicon.ico'
 ];
 
 // Map of "clean" route paths -> the cached shell document that represents them.
