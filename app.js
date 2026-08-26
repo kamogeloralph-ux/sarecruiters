@@ -2906,9 +2906,14 @@ function renderAllVacanciesList() {
     if (!groups[key]) groups[key] = { name:name, type:type, agency:agency || null, employer:employer || null, items:[] };
     groups[key].items.push(v);
   });
+  // Vacancies are shown newest to oldest: each group is sorted by date
+  // internally (via sortVacancies below), and the groups themselves are
+  // ordered by their single most recent vacancy, so the freshest postings
+  // always surface first regardless of which company they belong to.
   var keys = Object.keys(groups).sort(function(a,b){
-    if (groups[a].type !== groups[b].type) return groups[a].type.localeCompare(groups[b].type);
-    return groups[a].name.localeCompare(groups[b].name);
+    var newestA = Math.max.apply(null, groups[a].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
+    var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
+    return newestB - newestA;
   });
   el.innerHTML = keys.map(function(key){
     var group = groups[key];
