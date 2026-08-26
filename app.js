@@ -145,6 +145,32 @@ function buildEmployerManagerLink(token) {
   return base + '?manage_employer=' + token;
 }
 
+/* ── First-paint splash: hide the raw shell until CSS + first data are
+   ready, then fade it out. Prevents the "flash of unstyled zeroed shell"
+   on load, hard refresh, and relaunch after being idle. ───────────────── */
+var __saDataReady = false;
+window.__saTryReveal = function () {
+  if (!__saDataReady || !window.__saCssReady) return;
+  document.body.classList.add('app-ready');
+  var splash = document.getElementById('app-splash');
+  if (splash) {
+    splash.classList.add('hide');
+    setTimeout(function () {
+      if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+    }, 300);
+  }
+};
+function markAppDataReady() {
+  __saDataReady = true;
+  window.__saTryReveal();
+}
+// Safety net: never leave the splash up more than 4s even if the
+// stylesheet load event is somehow missed (slow network, browser quirk).
+setTimeout(function () {
+  window.__saCssReady = true;
+  markAppDataReady();
+}, 4000);
+
 /* ── Theme (day / night) ───────────────────────────── */
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -3539,9 +3565,10 @@ async function fastResolveManagerToken() {
 if (loadDataCache()) {
   updateStats();
   filterAndRenderCached();
+  markAppDataReady();
 }
 
-loadAll();
+loadAll().then(markAppDataReady);
 processAlertUnsubscribe();
 // The shell and cached directory paint first; secondary settings are already
 // included in loadAll, while the optional daily track loads just after paint.

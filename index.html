@@ -3,6 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<!-- Set the theme attribute BEFORE anything paints, so a saved dark-mode
+     preference never flashes light first. Must stay first/synchronous. -->
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('saTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch(e) {}
+})();
+</script>
+
+<!-- Critical shell CSS + first-paint splash, inline so it applies before
+     styles.css (loaded async below) has a chance to arrive. This is what
+     stops the raw unstyled shell (zeroed stat cards, plain-text banners)
+     from ever being visible on load / refresh / relaunch from idle. -->
+<style id="critical-shell-css">
+  html,body{margin:0;min-height:100%}
+  [data-theme="light"] body{background:#F2F2F7}
+  [data-theme="dark"] body{background:#000000}
+  #app-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
+  [data-theme="light"] #app-splash{background:#F2F2F7}
+  [data-theme="dark"] #app-splash{background:#000000}
+  #app-splash img{width:76px;height:76px;border-radius:20px;box-shadow:0 10px 40px -12px rgba(10,132,255,.5);animation:sa-splash-pulse 1.4s ease-in-out infinite}
+  @keyframes sa-splash-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.94);opacity:.85}}
+  #app-splash.hide{opacity:0;pointer-events:none}
+  body:not(.app-ready) .app{visibility:hidden}
+</style>
+
 <title>SA Recruiters — South African Recruitment Agencies Directory</title>
 <meta name="description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies, branches and vacancies.">
 
@@ -55,10 +84,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
 <link rel="preload" as="style" href="styles.css">
-<link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <noscript><link rel="stylesheet" href="styles.css"></noscript>
 </head>
 <body>
+
+<div id="app-splash" aria-hidden="true"><img src="icons/icon-192.png" alt=""></div>
 
 <div class="update-banner" id="update-banner">A new version is available. <button onclick="forceUpdateReload()">Reload now</button></div>
 <div class="retry-banner" id="retry-banner">Couldn't refresh the latest listings. <button onclick="retryLoadAll()">Retry</button></div>
