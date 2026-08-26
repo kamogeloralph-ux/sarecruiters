@@ -1586,6 +1586,49 @@ function handlePhoto(evt) {
   };
   reader.readAsDataURL(file);
 }
+// Talent Pool candidate photos go into Supabase Storage (not the DB row)
+// so thousands of registrations don't eat into the 500MB database cap —
+// only a short URL is stored on the candidate record.
+function handlePoolPhoto(evt) {
+  var file = evt.target.files[0];
+  if (!file) return;
+  var preview = document.getElementById('pool-photo-preview');
+  var fallback = document.getElementById('pool-photo-fallback');
+  var img = new Image();
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxDim = 480;
+      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob) {
+        window.pendingPoolPhotoBlob = blob;
+        var url = URL.createObjectURL(blob);
+        if (preview) { preview.src = url; preview.style.display = 'block'; }
+        if (fallback) fallback.style.display = 'none';
+      }, 'image/jpeg', 0.75);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+// Uploads the compressed pool photo (if one was chosen) to the
+// candidate-photos bucket and returns its public URL, or null if no
+// photo was selected or the bucket/policies haven't been set up yet
+// (registration still succeeds without a photo either way).
+async function uploadPoolPhotoIfAny() {
+  if (!window.pendingPoolPhotoBlob) return null;
+  try {
+    var path = Date.now().toString(36) + Math.random().toString(36).slice(2) + '.jpg';
+    var upload = await supabaseClient.storage.from('candidate-photos').upload(path, window.pendingPoolPhotoBlob, { contentType: 'image/jpeg', upsert: false });
+    if (upload.error) { console.error('pool photo upload', upload.error); return null; }
+    var pub = supabaseClient.storage.from('candidate-photos').getPublicUrl(path);
+    return (pub && pub.data && pub.data.publicUrl) || null;
+  } catch(e) { console.error('pool photo upload', e); return null; }
+}
 async function saveAgency() {
   var name = document.getElementById('f-name').value.trim();
   if (!name) { alert('Add at least the agency name.'); return; }
@@ -2331,7 +2374,8 @@ function renderPoolList() {
     if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
     if (c.cv_link) detailBits.push('<div class="det-row pool-cv-row"><a class="pool-cv-link" href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">View CV</a></div>');
     if (contactBits.length) detailBits.push('<div class="det-row"><span class="det-label">Contact:</span> '+contactBits.join(' &nbsp;·&nbsp; ')+'</div>');
-    return '<div class="manager-item pool-mini-card" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
+    return '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
+      (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'"></div>' : '') +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+'</div>' +
       '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : 'Profile details available')+'</div>' +
       '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
@@ -2342,6 +2386,11 @@ function renderPoolList() {
 
 function openPoolRegisterSheet() {
   document.getElementById('pool-name').value = '';
+  window.pendingPoolPhotoBlob = null;
+  var poolPreview = document.getElementById('pool-photo-preview');
+  var poolFallback = document.getElementById('pool-photo-fallback');
+  if (poolPreview) { poolPreview.style.display = 'none'; poolPreview.src = ''; }
+  if (poolFallback) poolFallback.style.display = 'flex';
   document.getElementById('pool-phone').value = '';
   document.getElementById('pool-email').value = '';
   document.getElementById('pool-sector').value = '';
@@ -2432,8 +2481,16 @@ async function submitPoolRegistration() {
   };
   var btn = document.getElementById('pool-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  var photoUrl = await uploadPoolPhotoIfAny();
+  if (photoUrl) payload.photo_url = photoUrl;
   try {
     var result = await supabaseClient.from('pool_candidates').insert([payload]);
+    if (result.error && photoUrl && /column|schema cache/i.test(result.error.message || '')) {
+      // photo_url column not added yet (CREATE_POOL_PHOTOS.sql not run) —
+      // retry without it so registration still succeeds.
+      delete payload.photo_url;
+      result = await supabaseClient.from('pool_candidates').insert([payload]);
+    }
     if (result.error && /column|schema cache/i.test(result.error.message || '')) {
       // Keep registration working on older databases until CREATE_EMAIL_ALERTS.sql
       // has been run; alert consent becomes active after the schema is updated.
