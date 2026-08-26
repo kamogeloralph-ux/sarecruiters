@@ -597,6 +597,10 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>CV link</label><input id="pc-cv" type="url"></div>
     <div class="field"><label>EFT payment reference</label><input id="pc-payref"></div>
     <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
+    <div class="toggle-row" style="margin-bottom:16px">
+      <div><div class="t-label">Screened &amp; Verified</div><div class="t-sub">Confirms this candidate has passed screening and their information checks out — shows a badge publicly</div></div>
+      <label class="switch"><input type="checkbox" id="pc-verified"><span class="track"><span class="knob"></span></span></label>
+    </div>
     <div class="field"><label>Paid until</label><input id="pc-paiduntil" type="date"></div>
     <div class="field"><label>Admin notes (internal only)</label><textarea id="pc-notes" placeholder="e.g. EFT confirmed 12 Aug, matches ref"></textarea></div>
     <div class="sheet-actions">
@@ -764,28 +768,34 @@ async function getSuggestions(){
   return [];
 }
 async function getPoolCandidates(){
-  var cols = 'id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,photo_url,created_at';
+  var cols = 'id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,photo_url,verified,created_at';
+  var optional = ['photo_url','verified'];
   var { data, error } = await supabaseClient.from('pool_candidates').select(cols).order('created_at', { ascending: false });
-  if(error && /column|schema cache/i.test(error.message||'')){
-    // photo_url not added yet (CREATE_POOL_PHOTOS.sql not run) — retry without it.
-    var fallback = cols.replace(',photo_url','');
-    var retry = await supabaseClient.from('pool_candidates').select(fallback).order('created_at', { ascending: false });
+  // If photo_url and/or verified haven't been added yet (CREATE_POOL_PHOTOS.sql /
+  // CREATE_POOL_VERIFIED.sql not run), drop them one at a time and retry so
+  // the list still loads.
+  while(error && /column|schema cache/i.test(error.message||'') && optional.length){
+    var col = optional.shift();
+    cols = cols.split(',').filter(function(c){ return c !== col; }).join(',');
+    var retry = await supabaseClient.from('pool_candidates').select(cols).order('created_at', { ascending: false });
     data = retry.data; error = retry.error;
   }
   if(error){ console.error('pool load', error); return []; }
   return data || [];
 }
 async function upsertPoolCandidate(p){
-  var { error } = await supabaseClient.from('pool_candidates').upsert(p);
-  if(error && /photo_url/i.test(error.message||'') && /column|schema cache/i.test(error.message||'')){
-    // photo_url not added yet (CREATE_POOL_PHOTOS.sql not run) — retry without it.
-    var fallback = Object.assign({}, p); delete fallback.photo_url;
-    var retry = await supabaseClient.from('pool_candidates').upsert(fallback);
-    if(retry.error){ console.error('pool save', retry.error); alert('Could not save: '+retry.error.message); }
-    else alert('Saved — but the photo needs CREATE_POOL_PHOTOS.sql run in Supabase first before it can be stored.');
-    return;
+  var payload = Object.assign({}, p);
+  var optional = ['photo_url','verified'];
+  var droppedAny = false;
+  var { error } = await supabaseClient.from('pool_candidates').upsert(payload);
+  while(error && /column|schema cache/i.test(error.message||'') && optional.length){
+    var col = optional.shift();
+    if(col in payload){ delete payload[col]; droppedAny = true; }
+    var retry = await supabaseClient.from('pool_candidates').upsert(payload);
+    error = retry.error;
   }
-  if(error){ console.error('pool save', error); alert('Could not save: '+error.message); }
+  if(error){ console.error('pool save', error); alert('Could not save: '+error.message); return; }
+  if(droppedAny) alert('Saved — but run CREATE_POOL_PHOTOS.sql / CREATE_POOL_VERIFIED.sql in Supabase to store the photo and verified badge.');
 }
 async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); }
 async function getPosters(){
@@ -1684,7 +1694,7 @@ function renderPoolCandidates(){
     }
     return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#5E5CE6,#3D3AB8)">'+(p.photo_url ? '<img src="'+escapeHtml(p.photo_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg>')+'</div>'+
-      '<div class="row-main"><div class="row-title">'+escapeHtml(p.full_name||'Candidate')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div></div>'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(p.full_name||'Candidate')+(p.verified?' <span class="badge verified">Screened &amp; Verified</span>':'')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div></div>'+
       '<div class="row-actions-inline">'+quickActions+
         '<button class="minibtn" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
         '<button class="minibtn danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
@@ -1733,6 +1743,7 @@ function openPoolSheet(id){
   document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
   document.getElementById('pc-payref').value = p ? (p.payment_ref||'') : '';
   document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
+  document.getElementById('pc-verified').checked = p ? !!p.verified : false;
   document.getElementById('pc-paiduntil').value = p && p.paid_until ? String(p.paid_until).slice(0,10) : '';
   document.getElementById('pc-notes').value = p ? (p.admin_notes||'') : '';
   openSheet('pool-overlay');
@@ -1768,6 +1779,7 @@ async function savePoolCandidate(){
     cv_link:document.getElementById('pc-cv').value.trim(),
     payment_ref:document.getElementById('pc-payref').value.trim(),
     status:document.getElementById('pc-status').value,
+    verified:document.getElementById('pc-verified').checked,
     paid_until: paidUntil ? new Date(paidUntil).toISOString() : null,
     admin_notes:document.getElementById('pc-notes').value.trim()
   });
