@@ -653,6 +653,25 @@ async function removeVacancy(id) {
   writeLocal('vacancies', arr);
 }
 
+// Vacancies are removed automatically 60 days after they were posted.
+// A daily Supabase scheduled job (see AUTO_DELETE_OLD_VACANCIES.sql) is the
+// real cleanup; this is a client-side safety net so a vacancy never shows
+// publicly past its 60 days even on a visit before that job next runs.
+var VACANCY_TTL_DAYS = 60;
+function isVacancyExpired(v) {
+  if (!v || !v.created_at) return false;
+  var posted = new Date(v.created_at).getTime();
+  if (isNaN(posted)) return false;
+  return (Date.now() - posted) / 86400000 >= VACANCY_TTL_DAYS;
+}
+async function purgeExpiredVacancies(list) {
+  var expired = (list || []).filter(isVacancyExpired);
+  if (!expired.length) return list;
+  var ids = expired.map(function(v){ return v.id; });
+  try { await supabaseClient.from('vacancies').delete().in('id', ids); } catch(e){}
+  return (list || []).filter(function(v){ return ids.indexOf(v.id) === -1; });
+}
+
 /* ── Data: REPORTS ───────────────────────────────────
    `reports` table exists but RLS blocks anonymous inserts. We try the
    live insert first; if RLS blocks it we store locally AND offer to send
@@ -732,7 +751,11 @@ async function loadAll() {
   var hadLoadError = false;
   if (results[0].__loadError) { hadLoadError = true; } else { agenciesCache = results[0]; }
   if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
-  if (results[2].__loadError) { hadLoadError = true; } else { vacanciesCache = sortVacancies(results[2]); }
+  if (results[2].__loadError) { hadLoadError = true; } else {
+    vacanciesCache = sortVacancies(results[2].filter(function(v){ return !isVacancyExpired(v); }));
+    // Best-effort background delete of the expired ones we just filtered out.
+    purgeExpiredVacancies(results[2]);
+  }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
   setRetryBanner(hadLoadError);
   publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
