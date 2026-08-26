@@ -779,6 +779,13 @@
       Reference: use your full name
     </div>
     <div class="field"><label>Full name *</label><input id="pool-name" placeholder="e.g. Thabo Nkosi"></div>
+    <div class="photo-row">
+      <div class="avatar" style="width:56px;height:56px;">
+        <img id="pool-photo-preview" style="display:none;">
+        <span id="pool-photo-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
+      </div>
+      <label>Add photo <span class="field-optional">optional</span><input type="file" accept="image/*" onchange="handlePoolPhoto(event)"></label>
+    </div>
     <div class="field"><label>Phone *</label><input id="pool-phone" type="tel" placeholder="e.g. 082 123 4567"></div>
     <div class="field"><label>Email address <span class="field-optional">for vacancy alerts</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"></div>
     <div class="alert-optin-card">
