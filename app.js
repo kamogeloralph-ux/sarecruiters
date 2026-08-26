@@ -2323,7 +2323,7 @@ async function loadPoolCandidates() {
     // RLS only returns status = 'active' rows to anonymous visitors
     var { data, error } = await supabaseClient.from('pool_candidates').select('*').order('created_at', { ascending: false });
     if (error) { console.error('pool load', error); poolCache = []; }
-    else poolCache = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
+    else poolCache = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){ return (b.verified?1:0) - (a.verified?1:0); });
   } catch(e) { console.error('pool load', e); poolCache = []; }
   poolLoaded = true;
   // Populate sector filter options from whatever is currently listed
@@ -2366,6 +2366,7 @@ function renderPoolList() {
     if (c.gender) frontBits.push(escapeHtml(c.gender));
     var detailBits = [];
     function detail(label, value){ if(value !== null && value !== undefined && String(value).trim() !== '') detailBits.push('<div class="det-row"><span class="det-label">'+label+':</span> '+escapeHtml(value)+'</div>'); }
+    if (c.verified) detailBits.push('<div class="det-row mini-cv-pitch"><span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Screened &amp; Verified — information confirmed by SA Recruiters</div>');
     detail('Sector', c.sector); detail('Location', c.location);
     detail('Driver’s licence', c.drivers_license); detail('Reliable transport', c.reliable_transport); detail('Willing to relocate', c.willing_relocate);
     detail('Availability', c.availability); detail('Preferred employment', c.preferred_employment); detail('Salary expectation', c.salary_expectation);
@@ -2376,7 +2377,7 @@ function renderPoolList() {
     if (contactBits.length) detailBits.push('<div class="det-row"><span class="det-label">Contact:</span> '+contactBits.join(' &nbsp;·&nbsp; ')+'</div>');
     return '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
       (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'"></div>' : '') +
-      '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+'</div>' +
+      '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</div>' +
       '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : 'Profile details available')+'</div>' +
       '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
       '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
