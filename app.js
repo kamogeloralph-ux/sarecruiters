@@ -354,6 +354,48 @@ function renderManagedPosters(posters) {
     '<div class="managed-poster-copy"><strong>'+escapeHtml(p.title || label)+'</strong>'+(p.subtitle?'<span>'+escapeHtml(p.subtitle)+'</span>':'')+'</div></article>';
 }
 
+// ===== HOME SCREEN CANDIDATE SPOTLIGHT =====
+// Advertises real Talent Pool candidates on the home CTA carousel: their
+// square profile photo, name, and position/experience heading. Pulled
+// straight from pool_candidates (no separate admin upload needed) —
+// tapping a card sends the visitor to the full Talent Pool for the
+// complete Mini-CV. RLS only ever returns status = 'active' rows to
+// anonymous visitors, but the status filter below is defense-in-depth.
+async function loadCandidateSpotlight() {
+  var target = document.getElementById('candidate-spotlight-deck');
+  if (!target) return;
+  var list = [];
+  try {
+    var { data, error } = await supabaseClient.from('pool_candidates')
+      .select('id,full_name,position,experience_years,photo_url,verified,status,created_at')
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (error) throw error;
+    list = (data || []).filter(function(c){ return (c.status || 'pending') === 'active' && c.photo_url; });
+  } catch (e) { console.warn('candidate spotlight load', e); list = []; }
+  // Verified candidates first, then most recently joined; cap the deck at 10 cards.
+  list.sort(function(a, b) { return (b.verified?1:0) - (a.verified?1:0); });
+  renderCandidateSpotlight(list.slice(0, 10));
+}
+function renderCandidateSpotlight(list) {
+  var target = document.getElementById('candidate-spotlight-deck');
+  if (!target) return;
+  if (!list.length) {
+    target.innerHTML = '<div class="poster-empty">Candidate photos will appear here as people join the Talent Pool.</div>';
+    return;
+  }
+  target.innerHTML = list.map(function(c) {
+    var expText = (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '')
+      ? (c.experience_years >= 10 ? '10+ yrs exp' : c.experience_years + ' yrs exp')
+      : '';
+    var subtitle = [c.position, expText].filter(Boolean).join(' · ') || 'Looking for opportunities';
+    return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'home\')">' +
+      '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' +
+      '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</strong>' +
+      '<span>'+escapeHtml(subtitle)+'</span></span></button>';
+  }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'home\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
+}
+
 async function upsertEmployer(e) {
   try {
     var { error } = await supabaseClient.from('employers').upsert(e);
@@ -787,8 +829,8 @@ async function loadAll() {
   rebuildPublicListingSlugs();
   updateStats();
   filterAndRenderCached();
-  // Poster artwork is non-critical; fetch it after the first useful home render.
-  getManagedPosters().then(renderManagedPosters);
+  // Candidate spotlight is non-critical; fetch it after the first useful home render.
+  loadCandidateSpotlight();
   saveDataCache();
   updatePostingToggleUI();
   updateEmployerRegUI();
@@ -1589,6 +1631,9 @@ function handlePhoto(evt) {
 // Talent Pool candidate photos go into Supabase Storage (not the DB row)
 // so thousands of registrations don't eat into the 500MB database cap —
 // only a short URL is stored on the candidate record.
+// Photos are centre-cropped to a fixed 512x512 square so every candidate's
+// photo is a consistent, predictable size wherever it's used — the pool
+// list avatar, their expanded card, and the home screen candidate spotlight.
 function handlePoolPhoto(evt) {
   var file = evt.target.files[0];
   if (!file) return;
@@ -1598,18 +1643,20 @@ function handlePoolPhoto(evt) {
   var reader = new FileReader();
   reader.onload = function(e) {
     img.onload = function() {
+      var SIZE = 512;
+      var side = Math.min(img.width, img.height);
+      var sx = (img.width - side) / 2;
+      var sy = (img.height - side) / 2;
       var canvas = document.createElement('canvas');
-      var maxDim = 480;
-      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
       canvas.toBlob(function(blob) {
         window.pendingPoolPhotoBlob = blob;
         var url = URL.createObjectURL(blob);
         if (preview) { preview.src = url; preview.style.display = 'block'; }
         if (fallback) fallback.style.display = 'none';
-      }, 'image/jpeg', 0.75);
+      }, 'image/jpeg', 0.85);
     };
     img.src = e.target.result;
   };
@@ -2917,15 +2964,16 @@ function renderAllVacanciesList() {
   var expFilter = ((document.getElementById('allvacancies-exp')||{}).value || '');
   var industryFilter = ((document.getElementById('allvacancies-industry')||{}).value || '');
   var el = document.getElementById('allvacancies-list');
-  var list = vacanciesCache.slice();
+  // Employer-posted vacancies are exclusive to their employer's own hub card
+  // (see employerHubVacancies) and are gated behind Talent Pool verification
+  // there — they never appear in this general/public vacancies list.
+  var list = vacanciesCache.filter(function(v){ return !v.employer_id; });
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
     var industries = new Set();
-    vacanciesCache.forEach(function(v){
+    list.forEach(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
-      var employer = v.employer_id ? employersCache.find(function(e){ return e.id === v.employer_id; }) : null;
       if (agency && agency.trades) agency.trades.split(',').forEach(function(t){ t=t.trim(); if(t) industries.add(t); });
-      if (employer && employer.industry) employer.industry.split(',').forEach(function(t){ t=t.trim(); if(t) industries.add(t); });
     });
     var sortedIndustries = Array.from(industries).sort();
     var current = industrySel.value;
@@ -2938,16 +2986,14 @@ function renderAllVacanciesList() {
   if (industryFilter) {
     list = list.filter(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
-      var employer = v.employer_id ? employersCache.find(function(e){ return e.id === v.employer_id; }) : null;
-      var hay = ((agency && agency.trades)||'') + ' ' + ((employer && employer.industry)||'');
+      var hay = (agency && agency.trades) || '';
       return hay.toLowerCase().indexOf(industryFilter.toLowerCase()) !== -1;
     });
   }
   if (q) {
     list = list.filter(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
-      var employer = v.employer_id ? employersCache.find(function(e){ return e.id === v.employer_id; }) : null;
-      var hay = ((v.title||'')+' '+(v.notes||'')+' '+(v.location||'')+' '+(v.company||'')+' '+(agency?(agency.name||''):'')+' '+(agency?(agency.trades||''):'')+' '+(employer?(employer.name||''):'')+' '+(employer?(employer.industry||''):'')).toLowerCase();
+      var hay = ((v.title||'')+' '+(v.notes||'')+' '+(v.location||'')+' '+(v.company||'')+' '+(agency?(agency.name||''):'')+' '+(agency?(agency.trades||''):'')).toLowerCase();
       return hay.indexOf(q) !== -1;
     });
   }
@@ -2955,13 +3001,11 @@ function renderAllVacanciesList() {
 
   var groups = {};
   list.forEach(function(v){
-    var employer = v.employer_id ? employersCache.find(function(e){ return e.id === v.employer_id; }) : null;
     var agency = v.agency_id && v.agency_id !== 'general' ? agenciesCache.find(function(a){ return a.id === v.agency_id; }) : null;
     var key, name, type;
-    if (employer) { key='employer:'+employer.id; name=employer.name||'Employer'; type='Employer'; }
-    else if (agency) { key='agency:'+agency.id; name=agency.name||'Agency'; type='Agency'; }
+    if (agency) { key='agency:'+agency.id; name=agency.name||'Agency'; type='Agency'; }
     else { key='general'; name='General vacancies'; type='General'; }
-    if (!groups[key]) groups[key] = { name:name, type:type, agency:agency || null, employer:employer || null, items:[] };
+    if (!groups[key]) groups[key] = { name:name, type:type, agency:agency || null, items:[] };
     groups[key].items.push(v);
   });
   // Vacancies are shown newest to oldest: each group is sorted by date
@@ -2978,7 +3022,7 @@ function renderAllVacanciesList() {
     group.items = sortVacancies(group.items);
     var agency = group.agency || {};
     var cards = group.items.map(function(v){ return vacancyCard(v, agency); }).join('');
-    var groupVerified = (group.type === 'Agency' && group.agency && group.agency.verified) || (group.type === 'Employer' && group.employer && group.employer.verified);
+    var groupVerified = group.type === 'Agency' && group.agency && group.agency.verified;
     var groupVerifiedCheck = groupVerified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
     return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' +
       '<div class="directory-group-head"><div><div class="directory-group-title">' + groupVerifiedCheck + escapeHtml(group.name) + '</div><div class="directory-group-sub">' + group.type + ' · ' + group.items.length + ' vacanc' + (group.items.length===1?'y':'ies') + '</div></div></div>' + cards + '</section>';
