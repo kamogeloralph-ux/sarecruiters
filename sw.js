@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v140';
+const VERSION = 'sa-recruiters-v141-wallpaper';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -29,6 +29,7 @@ const CORE_ASSETS = [
   './admin.html',
   './privacy.html',
   './styles.css',
+  './assets/sa-recruiters-signature-wallpaper.png',
   './app.js',
   './icons.svg',
   './offline.html',
