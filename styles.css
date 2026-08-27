@@ -56,7 +56,10 @@ button{font-family:inherit;cursor:pointer;color:inherit}
 input,select,textarea{font-family:inherit}
 a{color:inherit;text-decoration:none}
 
-.app{max-width:520px;margin:0 auto;position:relative;min-height:100vh;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.app{max-width:520px;margin:0 auto;position:relative;min-height:100vh;display:flex;flex-direction:column;height:100vh;overflow:hidden;background:var(--bg);isolation:isolate}
+.app::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(4,13,34,.82),rgba(4,13,34,.88)),url("assets/sa-recruiters-signature-wallpaper.png");background-size:cover;background-position:center;background-repeat:no-repeat}
+.app>*{position:relative;z-index:1}
+[data-theme="light"] .app::before{background-image:linear-gradient(rgba(242,242,247,.86),rgba(242,242,247,.91)),url("assets/sa-recruiters-signature-wallpaper.png")}
 @media (min-width:900px){ body{background:var(--bg-edge)} .app{box-shadow:var(--shadow-lg)} }
 
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
