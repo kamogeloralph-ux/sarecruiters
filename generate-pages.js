@@ -82,20 +82,20 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd }) {
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
-<meta property="og:image" content="${SITE_URL}/icons/icon-512.png">
+<meta property="og:image" content="${SITE_URL}/icons/v2-icon-512.png">
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="${SITE_URL}/icons/icon-512.png">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="twitter:image" content="${SITE_URL}/icons/v2-icon-512.png">
+<link rel="icon" href="/favicon-v2.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/v2-favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/v2-icon-192.png">
+<link rel="apple-touch-icon" href="/icons/v2-icon-192.png">
 <link rel="stylesheet" href="/static-pages.css">
 ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : ''}
 </head>
 <body>
-<header class="sp-header"><a href="/">← Back to SA Recruiters</a></header>
+<header class="sp-header"><a href="/"><img src="/icons/v2-icon-192.png" alt="SA Recruiters logo" width="36" height="36"> <span>Back to SA Recruiters</span></a></header>
 <main class="sp-main">
 ${bodyHtml}
 </main>
@@ -310,7 +310,8 @@ ${sitemapUrls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
   // Minimal stylesheet for the static pages (kept separate from the app's own styling)
   const css = `body{font-family:Inter,system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;line-height:1.6;color:#111}
 .sp-header,.sp-footer{padding:12px 0}
-.sp-header a,.sp-footer a{color:#0a66c2;text-decoration:none}
+.sp-header a,.sp-footer a{color:#0a66c2;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.sp-header img{border-radius:9px;display:block}
 h1{font-size:1.6rem;margin-bottom:.5rem}
 h2{font-size:1.2rem;margin-top:1.5rem}`;
   fs.writeFileSync(path.join(OUT_DIR, 'static-pages.css'), css);
