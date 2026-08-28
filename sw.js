@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v141-wallpaper';
+const VERSION = 'sa-recruiters-v142-brand-cache-bust';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -36,11 +36,11 @@ const CORE_ASSETS = [
   './manifest.json',
   './content.js',
   './content-manager.js',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/Maskable-192.png',
-  './icons/favicon.ico',
-  './favicon.ico'
+  './icons/v2-icon-192.png',
+  './icons/v2-icon-512.png',
+  './icons/v2-Maskable-192.png',
+  './icons/v2-favicon.ico',
+  './favicon-v2.ico'
 ];
 
 // Map of "clean" route paths -> the cached shell document that represents them.
@@ -278,8 +278,8 @@ self.addEventListener('push', function(event) {
   }
   event.waitUntil(self.registration.showNotification(payload.title, {
     body: payload.body,
-    icon: 'icons/icon-192.png',
-    badge: 'icons/monochrome-192.png',
+    icon: 'icons/v2-icon-192.png',
+    badge: 'icons/v2-monochrome-192.png',
     vibrate: [80, 40, 80],
     data: payload.data || { url: '/' },
     tag: payload.tag || 'sa-recruiters',
