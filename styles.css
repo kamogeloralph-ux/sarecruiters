@@ -323,6 +323,31 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vacancy-directory-group .vac-card{border-left:0;border-right:0;border-radius:0;margin:0;padding:16px 2px;box-shadow:none}
 .vacancy-directory-group .vac-card:last-child{border-bottom:0}
 
+/* ===== COMBINED VACANCY OVERVIEW ===== */
+#screen-allvacancies .vacancies-screen-fixed{padding-top:12px;padding-bottom:6px}
+#screen-allvacancies .search-mini{margin-top:8px}
+#screen-allvacancies .vac-filter-row{margin-bottom:0!important;padding-top:7px}
+#screen-allvacancies .vac-filter-select{height:36px}
+#screen-allvacancies .vac-folder-backbar{margin-bottom:4px}
+.vacancy-overview-section{background:var(--card);border:1px solid var(--border);border-radius:16px;margin:10px 0 12px;padding:0 12px 6px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.vacancy-overview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 2px 8px;border-bottom:1px solid var(--separator)}
+.vacancy-overview-title{font-size:15px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+.vacancy-overview-sub{font-size:11px;color:var(--text-2);margin-top:3px}
+.vacancy-overview-mark{flex-shrink:0;border-radius:999px;padding:5px 8px;background:var(--accent-soft);color:var(--accent);font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.vacancy-overview-section .vac-card{border-left:0;border-right:0;border-radius:0;padding:0 2px;box-shadow:none}
+.vacancy-overview-section .vac-card:last-of-type{border-bottom:0}
+.vacancy-overview-section .vac-card-main{gap:10px;padding:10px 0}
+.vacancy-overview-section .vac-logo{width:40px;height:40px;border-radius:11px;font-size:13px}
+.vacancy-overview-section .vac-title{font-size:14px;line-height:1.25}
+.vacancy-overview-section .vac-company,.vacancy-overview-section .vac-loc-line{font-size:11.5px}
+.vacancy-overview-section .vac-posted{font-size:10.5px;margin-top:4px}
+.vacancy-overview-section .vac-card-side{gap:4px}
+.vacancy-overview-section .vac-save{width:29px;height:29px}
+.vacancy-overview-section .vac-save svg{width:16px;height:16px}
+.vacancy-section-more{display:flex;align-items:center;justify-content:space-between;width:100%;margin:3px 0 0;padding:9px 2px 8px;background:transparent;border:0;border-top:1px solid var(--separator);color:var(--accent);font-size:12px;font-weight:750;text-align:left}
+.vacancy-section-more:active{opacity:.65}
+.vacancy-overview-empty{padding:14px 2px 16px;color:var(--text-2);font-size:12.5px;line-height:1.45}
+
 .vac-folder-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 16px 16px}
 .vac-folder-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px 16px;text-align:left;cursor:pointer;box-shadow:var(--shadow-sm);transition:border-color .2s,transform .15s,box-shadow .2s}
 .vac-folder-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px -8px rgba(0,0,0,.25)}
@@ -334,7 +359,8 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-folder-backbar{margin:0 16px 10px}
 .vac-folder-back-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:none;padding:4px 0;font-size:14.5px;font-weight:650;color:var(--accent);cursor:pointer}
 .vac-folder-back-btn svg{width:18px;height:18px}
-@media(max-width:420px){.vac-folder-grid{gap:10px}.vac-folder-card{padding:18px 13px}}
+@media(max-width:420px){.vac-folder-grid{gap:10px}.vac-folder-card{padding:18px 13px}#screen-allvacancies .vac-filter-row{gap:6px!important}.vacancy-overview-section{margin-top:8px;padding-left:10px;padding-right:10px}.vacancy-overview-head{padding-top:10px}.vacancy-overview-section .vac-card-main{gap:8px}.vacancy-overview-section .vac-logo{width:38px;height:38px}}
+@media(min-width:620px){.vacancy-overview-section{max-width:680px;margin-left:auto;margin-right:auto}}
 .branch-block{border-bottom:1px solid var(--separator)}
 .branch-block:last-child{border-bottom:none}
 .branch-block-head{display:flex;align-items:center;gap:12px;padding:14px 2px;position:relative;cursor:pointer}
