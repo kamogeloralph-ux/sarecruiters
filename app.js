@@ -2964,10 +2964,8 @@ async function deleteBranchAllList(id) {
 var allVacanciesFolder = null;
 function openVacancyFolder(type) {
   allVacanciesFolder = type;
-  var s = document.getElementById('allvacancies-search'); if (s) s.value = '';
-  var r = document.getElementById('allvacancies-remote'); if (r) r.value = '';
-  var x = document.getElementById('allvacancies-exp'); if (x) x.value = '';
-  var i = document.getElementById('allvacancies-industry'); if (i) i.value = '';
+  // Filters are shared by the folder picker and its listing view, so a user
+  // can narrow the category before opening it and keep that context.
   renderAllVacanciesList();
   resetActiveScreenScroll('screen-allvacancies');
 }
@@ -3031,26 +3029,27 @@ function renderAllVacanciesList() {
     });
   }
   if (!allVacanciesFolder) {
-    var agencyPreview = sortVacancies(list.filter(function(v){ return v.agency_id && v.agency_id !== 'general'; }));
-    var generalPreview = sortVacancies(list.filter(function(v){ return !v.agency_id || v.agency_id === 'general'; }));
-    var renderOverviewSection = function(title, type, items) {
-      var shown = items.slice(0, 3);
-      var cards = shown.map(function(v) {
-        var agency = type === 'agency' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
-        return vacancyCard(v, agency);
-      }).join('');
-      var countLabel = items.length + ' vacanc' + (items.length === 1 ? 'y' : 'ies');
-      var more = items.length > shown.length
-        ? '<button class="vacancy-section-more" data-ripple onclick="openVacancyFolder(\'' + type + '\')">View all ' + countLabel + ' <span aria-hidden="true">→</span></button>'
-        : '';
-      var empty = '<div class="vacancy-overview-empty">No ' + (type === 'agency' ? 'agency' : 'general') + ' vacancies match the current search or filters.</div>';
-      return '<section class="vacancy-overview-section" aria-label="' + title + '">' +
-        '<div class="vacancy-overview-head"><div><div class="vacancy-overview-title">' + title + '</div><div class="vacancy-overview-sub">' + countLabel + ' · Showing the latest ' + Math.min(shown.length, 3) + '</div></div>' +
-        (items.length ? '<span class="vacancy-overview-mark" aria-hidden="true">' + (type === 'agency' ? 'Agency' : 'General') + '</span>' : '') + '</div>' +
-        (cards || empty) + more +
-      '</section>';
+    // Keep the overview as a folder picker so new vacancy categories can be
+    // added later without changing the listing screen. Counts still respond
+    // to the shared search and filters above.
+    var agencyCount = list.filter(function(v){ return v.agency_id && v.agency_id !== 'general'; }).length;
+    var generalCount = list.filter(function(v){ return !v.agency_id || v.agency_id === 'general'; }).length;
+    var folderCountLabel = function(count) {
+      return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
-    el.innerHTML = renderOverviewSection('Agency Vacancies', 'agency', agencyPreview) + renderOverviewSection('General Vacancies', 'general', generalPreview);
+    el.innerHTML =
+      '<div class="vac-folder-grid" aria-label="Vacancy categories">' +
+        '<button class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'agency\')" aria-label="Open agency vacancies">' +
+          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>' +
+          '<span class="vac-folder-copy"><span class="vac-folder-title">Agency Vacancies</span><span class="vac-folder-count">' + folderCountLabel(agencyCount) + '</span></span>' +
+          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+        '</button>' +
+        '<button class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'general\')" aria-label="Open general vacancies">' +
+          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>' +
+          '<span class="vac-folder-copy"><span class="vac-folder-title">General Vacancies</span><span class="vac-folder-count">' + folderCountLabel(generalCount) + '</span></span>' +
+          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+        '</button>' +
+      '</div>';
     return;
   }
   if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No vacancies found</h3><p>Try a different search or adjust your filters.</p></div>'; return; }
