@@ -326,8 +326,9 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 /* ===== COMBINED VACANCY OVERVIEW ===== */
 #screen-allvacancies .vacancies-screen-fixed{padding-top:12px;padding-bottom:6px}
 #screen-allvacancies .search-mini{margin-top:8px}
-#screen-allvacancies .vac-filter-row{margin-bottom:0!important;padding-top:7px}
-#screen-allvacancies .vac-filter-select{height:36px}
+#screen-allvacancies .vac-filter-row{display:flex;flex-wrap:nowrap!important;gap:6px!important;overflow-x:auto;overflow-y:hidden;margin-bottom:0!important;padding-top:7px;padding-bottom:1px;scrollbar-width:none}
+#screen-allvacancies .vac-filter-row::-webkit-scrollbar{display:none}
+#screen-allvacancies .vac-filter-select{height:36px;min-width:0;width:0;flex:1 1 0;padding-left:7px;padding-right:7px;font-size:10.5px;white-space:nowrap;text-overflow:ellipsis}
 #screen-allvacancies .vac-folder-backbar{margin-bottom:4px}
 .vacancy-overview-section{background:var(--card);border:1px solid var(--border);border-radius:16px;margin:10px 0 12px;padding:0 12px 6px;overflow:hidden;box-shadow:var(--shadow-sm)}
 .vacancy-overview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 2px 8px;border-bottom:1px solid var(--separator)}
@@ -348,8 +349,14 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vacancy-section-more:active{opacity:.65}
 .vacancy-overview-empty{padding:14px 2px 16px;color:var(--text-2);font-size:12.5px;line-height:1.45}
 
-.vac-folder-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 16px 16px}
-.vac-folder-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px 16px;text-align:left;cursor:pointer;box-shadow:var(--shadow-sm);transition:border-color .2s,transform .15s,box-shadow .2s}
+.vac-folder-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 10px}
+.vac-folder-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 10px;text-align:left;cursor:pointer;box-shadow:var(--shadow-sm);transition:border-color .2s,transform .15s,box-shadow .2s}
+.vac-folder-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.vac-folder-chevron{display:flex;align-items:center;color:var(--text-2)}
+.vac-folder-chevron svg{width:16px;height:16px}
+.vac-folder-card .vac-folder-icon{width:34px;height:34px;margin:0;border-radius:10px}
+.vac-folder-card .vac-folder-title{font-size:12.5px;line-height:1.2;margin:0;white-space:normal}
+.vac-folder-card .vac-folder-count{font-size:10.5px;line-height:1.2}
 .vac-folder-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px -8px rgba(0,0,0,.25)}
 .vac-folder-card:active{transform:translateY(0)}
 .vac-folder-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(10,132,255,.12);color:var(--accent);margin-bottom:14px}
@@ -359,7 +366,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-folder-backbar{margin:0 16px 10px}
 .vac-folder-back-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:none;padding:4px 0;font-size:14.5px;font-weight:650;color:var(--accent);cursor:pointer}
 .vac-folder-back-btn svg{width:18px;height:18px}
-@media(max-width:420px){.vac-folder-grid{gap:10px}.vac-folder-card{padding:18px 13px}#screen-allvacancies .vac-filter-row{gap:6px!important}.vacancy-overview-section{margin-top:8px;padding-left:10px;padding-right:10px}.vacancy-overview-head{padding-top:10px}.vacancy-overview-section .vac-card-main{gap:8px}.vacancy-overview-section .vac-logo{width:38px;height:38px}}
+@media(max-width:420px){.vac-folder-grid{gap:6px}.vac-folder-card{padding:11px 8px;gap:6px}.vac-folder-card .vac-folder-icon{width:30px;height:30px}.vac-folder-card .vac-folder-title{font-size:11.5px}.vac-folder-card .vac-folder-count{font-size:10px}.vac-folder-chevron svg{width:14px;height:14px}#screen-allvacancies .vac-filter-row{gap:4px!important}.vacancy-overview-section{margin-top:8px;padding-left:10px;padding-right:10px}.vacancy-overview-head{padding-top:10px}.vacancy-overview-section .vac-card-main{gap:8px}.vacancy-overview-section .vac-logo{width:38px;height:38px}}
 @media(min-width:620px){.vacancy-overview-section{max-width:680px;margin-left:auto;margin-right:auto}}
 .branch-block{border-bottom:1px solid var(--separator)}
 .branch-block:last-child{border-bottom:none}
