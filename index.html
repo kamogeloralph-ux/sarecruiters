@@ -226,17 +226,6 @@
     </div>
     <audio id="track-audio" preload="metadata" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>
 
-    <!-- ===== Talent Pool — Featured ===== -->
-    <button class="pool-feature-card" data-ripple onclick="goPool('profile')">
-      <div class="pool-feature-top">
-        <span class="pool-feature-icon"><svg><use href="icons.svg#ief3ce7"/></svg></span>
-        <span class="pool-feature-star">★ Featured</span>
-      </div>
-      <div class="pool-feature-title">Talent Pool</div>
-      <div class="pool-feature-sub">Browse job seekers for free, or list yourself so employers can find you</div>
-      <div class="pool-feature-tags"><span class="pool-feature-tag">Browse free</span><span class="pool-feature-tag">List for R20/year</span></div>
-    </button>
-
     <div class="cta-carousel" id="cta-carousel" aria-label="SA Recruiters services">
       <section class="employer-cta cta-slide" aria-labelledby="employer-cta-title">
         <div class="employer-cta-heading">
@@ -298,6 +287,17 @@
     <div class="cta-swipe-hint" aria-label="Choose employer, candidate, or poster services">
       <span class="cta-swipe-dots" role="tablist" aria-label="Service panels"><button type="button" class="active" data-ripple onclick="setCtaPanel(0)" role="tab" aria-label="Employer services"></button><button type="button" data-ripple onclick="setCtaPanel(1)" role="tab" aria-label="Candidate services"></button><button type="button" data-ripple onclick="setCtaPanel(2)" role="tab" aria-label="Candidate spotlight"></button></span>
     </div>
+
+    <!-- ===== Talent Pool — Featured ===== -->
+    <button class="pool-feature-card" data-ripple onclick="goPool('profile')">
+      <div class="pool-feature-top">
+        <span class="pool-feature-icon"><svg><use href="icons.svg#ief3ce7"/></svg></span>
+        <span class="pool-feature-star">★ Featured</span>
+      </div>
+      <div class="pool-feature-title">Talent Pool</div>
+      <div class="pool-feature-sub">Browse job seekers for free, or list yourself so employers can find you</div>
+      <div class="pool-feature-tags"><span class="pool-feature-tag">Browse free</span><span class="pool-feature-tag">List for R20/year</span></div>
+    </button>
 
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
