@@ -2866,9 +2866,9 @@ function showAllVacancies() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allvacancies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
-  window.scrollTo({ top: 0 });
   allVacanciesFolder = null;
   renderAllVacanciesList();
+  resetActiveScreenScroll('screen-allvacancies');
 }
 
 function renderAllAgenciesList() {
@@ -2959,8 +2959,8 @@ async function deleteBranchAllList(id) {
   renderAllBranchesList();
 }
 
-// Two-folder view: null shows the Agency/General picker cards; 'agency' or
-// 'general' shows that category's filtered, grouped vacancy list.
+// Combined overview: null shows compact Agency and General sections together;
+// 'agency' or 'general' shows that category's complete filtered list.
 var allVacanciesFolder = null;
 function openVacancyFolder(type) {
   allVacanciesFolder = type;
@@ -2969,19 +2969,21 @@ function openVacancyFolder(type) {
   var x = document.getElementById('allvacancies-exp'); if (x) x.value = '';
   var i = document.getElementById('allvacancies-industry'); if (i) i.value = '';
   renderAllVacanciesList();
-  window.scrollTo({ top: 0 });
+  resetActiveScreenScroll('screen-allvacancies');
 }
 function closeVacancyFolder() {
   allVacanciesFolder = null;
   renderAllVacanciesList();
-  window.scrollTo({ top: 0 });
+  resetActiveScreenScroll('screen-allvacancies');
 }
 function renderAllVacanciesList() {
   var searchRow = document.getElementById('allvacancies-search-row');
   var filterRow = document.getElementById('allvacancies-filter-row');
   var backBar = document.getElementById('allvacancies-backbar');
-  if (searchRow) searchRow.style.display = allVacanciesFolder ? '' : 'none';
-  if (filterRow) filterRow.style.display = allVacanciesFolder ? '' : 'none';
+  // Search and filters remain available in the combined overview; the back bar
+  // is only needed after opening a full category list.
+  if (searchRow) searchRow.style.display = '';
+  if (filterRow) filterRow.style.display = '';
   if (backBar) backBar.style.display = allVacanciesFolder ? 'flex' : 'none';
 
   var el = document.getElementById('allvacancies-list');
@@ -2990,32 +2992,15 @@ function renderAllVacanciesList() {
   // there — they never appear in this general/public vacancies list.
   var visible = vacanciesCache.filter(function(v){ return !v.employer_id; });
 
-  if (!allVacanciesFolder) {
-    var agencyCount = visible.filter(function(v){ return v.agency_id && v.agency_id !== 'general'; }).length;
-    var generalCount = visible.length - agencyCount;
-    el.innerHTML =
-      '<div class="vac-folder-grid">' +
-        '<div class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'agency\')" role="button" tabindex="0" aria-label="View agency vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>' +
-          '<div class="vac-folder-title">Agency Vacancies</div>' +
-          '<div class="vac-folder-count">' + agencyCount + ' vacanc' + (agencyCount===1?'y':'ies') + '</div>' +
-        '</div>' +
-        '<div class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'general\')" role="button" tabindex="0" aria-label="View general vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>' +
-          '<div class="vac-folder-title">General Vacancies</div>' +
-          '<div class="vac-folder-count">' + generalCount + ' vacanc' + (generalCount===1?'y':'ies') + '</div>' +
-        '</div>' +
-      '</div>';
-    return;
-  }
-
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
   var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
   var expFilter = ((document.getElementById('allvacancies-exp')||{}).value || '');
   var industryFilter = ((document.getElementById('allvacancies-industry')||{}).value || '');
   var list = allVacanciesFolder === 'agency'
     ? visible.filter(function(v){ return v.agency_id && v.agency_id !== 'general'; })
-    : visible.filter(function(v){ return !v.agency_id || v.agency_id === 'general'; });
+    : allVacanciesFolder === 'general'
+      ? visible.filter(function(v){ return !v.agency_id || v.agency_id === 'general'; })
+      : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
     var industries = new Set();
@@ -3044,6 +3029,29 @@ function renderAllVacanciesList() {
       var hay = ((v.title||'')+' '+(v.notes||'')+' '+(v.location||'')+' '+(v.company||'')+' '+(agency?(agency.name||''):'')+' '+(agency?(agency.trades||''):'')).toLowerCase();
       return hay.indexOf(q) !== -1;
     });
+  }
+  if (!allVacanciesFolder) {
+    var agencyPreview = sortVacancies(list.filter(function(v){ return v.agency_id && v.agency_id !== 'general'; }));
+    var generalPreview = sortVacancies(list.filter(function(v){ return !v.agency_id || v.agency_id === 'general'; }));
+    var renderOverviewSection = function(title, type, items) {
+      var shown = items.slice(0, 3);
+      var cards = shown.map(function(v) {
+        var agency = type === 'agency' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
+        return vacancyCard(v, agency);
+      }).join('');
+      var countLabel = items.length + ' vacanc' + (items.length === 1 ? 'y' : 'ies');
+      var more = items.length > shown.length
+        ? '<button class="vacancy-section-more" data-ripple onclick="openVacancyFolder(\'' + type + '\')">View all ' + countLabel + ' <span aria-hidden="true">→</span></button>'
+        : '';
+      var empty = '<div class="vacancy-overview-empty">No ' + (type === 'agency' ? 'agency' : 'general') + ' vacancies match the current search or filters.</div>';
+      return '<section class="vacancy-overview-section" aria-label="' + title + '">' +
+        '<div class="vacancy-overview-head"><div><div class="vacancy-overview-title">' + title + '</div><div class="vacancy-overview-sub">' + countLabel + ' · Showing the latest ' + Math.min(shown.length, 3) + '</div></div>' +
+        (items.length ? '<span class="vacancy-overview-mark" aria-hidden="true">' + (type === 'agency' ? 'Agency' : 'General') + '</span>' : '') + '</div>' +
+        (cards || empty) + more +
+      '</section>';
+    };
+    el.innerHTML = renderOverviewSection('Agency Vacancies', 'agency', agencyPreview) + renderOverviewSection('General Vacancies', 'general', generalPreview);
+    return;
   }
   if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No vacancies found</h3><p>Try a different search or adjust your filters.</p></div>'; return; }
 
