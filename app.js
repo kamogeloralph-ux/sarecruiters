@@ -3008,16 +3008,17 @@ function renderAllVacanciesList() {
     if (!groups[key]) groups[key] = { name:name, type:type, agency:agency || null, items:[] };
     groups[key].items.push(v);
   });
-  // Vacancies are shown newest to oldest: each group is sorted by date
-  // internally (via sortVacancies below), and the groups themselves are
-  // ordered by their single most recent vacancy, so the freshest postings
-  // always surface first regardless of which company they belong to.
-  var keys = Object.keys(groups).sort(function(a,b){
+  // Two top-level sections — Agency vacancies and General vacancies — shown
+  // separately rather than interleaved together by date. Agencies are still
+  // sorted amongst themselves by their most recent posting.
+  var agencyKeys = Object.keys(groups).filter(function(k){ return groups[k].type === 'Agency'; });
+  var generalKey = Object.keys(groups).filter(function(k){ return groups[k].type === 'General'; })[0];
+  agencyKeys.sort(function(a,b){
     var newestA = Math.max.apply(null, groups[a].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  el.innerHTML = keys.map(function(key){
+  function renderVacancyGroup(key) {
     var group = groups[key];
     group.items = sortVacancies(group.items);
     var agency = group.agency || {};
@@ -3026,7 +3027,15 @@ function renderAllVacanciesList() {
     var groupVerifiedCheck = groupVerified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
     return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' +
       '<div class="directory-group-head"><div><div class="directory-group-title">' + groupVerifiedCheck + escapeHtml(group.name) + '</div><div class="directory-group-sub">' + group.type + ' · ' + group.items.length + ' vacanc' + (group.items.length===1?'y':'ies') + '</div></div></div>' + cards + '</section>';
-  }).join('');
+  }
+  var html = '';
+  if (agencyKeys.length) {
+    html += '<div class="pgroup-label">Agency Vacancies</div>' + agencyKeys.map(renderVacancyGroup).join('');
+  }
+  if (generalKey) {
+    html += '<div class="pgroup-label">General Vacancies</div>' + renderVacancyGroup(generalKey);
+  }
+  el.innerHTML = html;
 }
 
 function switchSubTab(tab) {
