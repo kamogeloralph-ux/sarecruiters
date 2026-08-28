@@ -322,6 +322,19 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vacancy-directory-group .directory-group-head{margin-bottom:4px}
 .vacancy-directory-group .vac-card{border-left:0;border-right:0;border-radius:0;margin:0;padding:16px 2px;box-shadow:none}
 .vacancy-directory-group .vac-card:last-child{border-bottom:0}
+
+.vac-folder-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 16px 16px}
+.vac-folder-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px 16px;text-align:left;cursor:pointer;box-shadow:var(--shadow-sm);transition:border-color .2s,transform .15s,box-shadow .2s}
+.vac-folder-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px -8px rgba(0,0,0,.25)}
+.vac-folder-card:active{transform:translateY(0)}
+.vac-folder-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(10,132,255,.12);color:var(--accent);margin-bottom:14px}
+.vac-folder-icon svg{width:20px;height:20px}
+.vac-folder-title{font-size:15px;font-weight:750;color:var(--text);letter-spacing:-.01em;margin-bottom:3px}
+.vac-folder-count{font-size:12.5px;color:var(--text-2)}
+.vac-folder-backbar{margin:0 16px 10px}
+.vac-folder-back-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:none;padding:4px 0;font-size:14.5px;font-weight:650;color:var(--accent);cursor:pointer}
+.vac-folder-back-btn svg{width:18px;height:18px}
+@media(max-width:420px){.vac-folder-grid{gap:10px}.vac-folder-card{padding:18px 13px}}
 .branch-block{border-bottom:1px solid var(--separator)}
 .branch-block:last-child{border-bottom:none}
 .branch-block-head{display:flex;align-items:center;gap:12px;padding:14px 2px;position:relative;cursor:pointer}

@@ -2867,6 +2867,7 @@ function showAllVacancies() {
   document.getElementById('screen-allvacancies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
   window.scrollTo({ top: 0 });
+  allVacanciesFolder = null;
   renderAllVacanciesList();
 }
 
@@ -2958,16 +2959,63 @@ async function deleteBranchAllList(id) {
   renderAllBranchesList();
 }
 
+// Two-folder view: null shows the Agency/General picker cards; 'agency' or
+// 'general' shows that category's filtered, grouped vacancy list.
+var allVacanciesFolder = null;
+function openVacancyFolder(type) {
+  allVacanciesFolder = type;
+  var s = document.getElementById('allvacancies-search'); if (s) s.value = '';
+  var r = document.getElementById('allvacancies-remote'); if (r) r.value = '';
+  var x = document.getElementById('allvacancies-exp'); if (x) x.value = '';
+  var i = document.getElementById('allvacancies-industry'); if (i) i.value = '';
+  renderAllVacanciesList();
+  window.scrollTo({ top: 0 });
+}
+function closeVacancyFolder() {
+  allVacanciesFolder = null;
+  renderAllVacanciesList();
+  window.scrollTo({ top: 0 });
+}
 function renderAllVacanciesList() {
-  var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
-  var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
-  var expFilter = ((document.getElementById('allvacancies-exp')||{}).value || '');
-  var industryFilter = ((document.getElementById('allvacancies-industry')||{}).value || '');
+  var searchRow = document.getElementById('allvacancies-search-row');
+  var filterRow = document.getElementById('allvacancies-filter-row');
+  var backBar = document.getElementById('allvacancies-backbar');
+  if (searchRow) searchRow.style.display = allVacanciesFolder ? '' : 'none';
+  if (filterRow) filterRow.style.display = allVacanciesFolder ? '' : 'none';
+  if (backBar) backBar.style.display = allVacanciesFolder ? 'flex' : 'none';
+
   var el = document.getElementById('allvacancies-list');
   // Employer-posted vacancies are exclusive to their employer's own hub card
   // (see employerHubVacancies) and are gated behind Talent Pool verification
   // there — they never appear in this general/public vacancies list.
-  var list = vacanciesCache.filter(function(v){ return !v.employer_id; });
+  var visible = vacanciesCache.filter(function(v){ return !v.employer_id; });
+
+  if (!allVacanciesFolder) {
+    var agencyCount = visible.filter(function(v){ return v.agency_id && v.agency_id !== 'general'; }).length;
+    var generalCount = visible.length - agencyCount;
+    el.innerHTML =
+      '<div class="vac-folder-grid">' +
+        '<div class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'agency\')" role="button" tabindex="0" aria-label="View agency vacancies">' +
+          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>' +
+          '<div class="vac-folder-title">Agency Vacancies</div>' +
+          '<div class="vac-folder-count">' + agencyCount + ' vacanc' + (agencyCount===1?'y':'ies') + '</div>' +
+        '</div>' +
+        '<div class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'general\')" role="button" tabindex="0" aria-label="View general vacancies">' +
+          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>' +
+          '<div class="vac-folder-title">General Vacancies</div>' +
+          '<div class="vac-folder-count">' + generalCount + ' vacanc' + (generalCount===1?'y':'ies') + '</div>' +
+        '</div>' +
+      '</div>';
+    return;
+  }
+
+  var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
+  var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
+  var expFilter = ((document.getElementById('allvacancies-exp')||{}).value || '');
+  var industryFilter = ((document.getElementById('allvacancies-industry')||{}).value || '');
+  var list = allVacanciesFolder === 'agency'
+    ? visible.filter(function(v){ return v.agency_id && v.agency_id !== 'general'; })
+    : visible.filter(function(v){ return !v.agency_id || v.agency_id === 'general'; });
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
     var industries = new Set();
@@ -3008,17 +3056,16 @@ function renderAllVacanciesList() {
     if (!groups[key]) groups[key] = { name:name, type:type, agency:agency || null, items:[] };
     groups[key].items.push(v);
   });
-  // Two top-level sections — Agency vacancies and General vacancies — shown
-  // separately rather than interleaved together by date. Agencies are still
-  // sorted amongst themselves by their most recent posting.
-  var agencyKeys = Object.keys(groups).filter(function(k){ return groups[k].type === 'Agency'; });
-  var generalKey = Object.keys(groups).filter(function(k){ return groups[k].type === 'General'; })[0];
-  agencyKeys.sort(function(a,b){
+  // Already scoped to one folder (agency-only or general-only) by the
+  // filter above, so groups here are either several agencies (sorted by
+  // most recent posting) or the single general group.
+  var keys = Object.keys(groups).sort(function(a,b){
     var newestA = Math.max.apply(null, groups[a].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  function renderVacancyGroup(key) {
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : 'General Vacancies';
+  el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);
     var agency = group.agency || {};
@@ -3027,15 +3074,7 @@ function renderAllVacanciesList() {
     var groupVerifiedCheck = groupVerified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
     return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' +
       '<div class="directory-group-head"><div><div class="directory-group-title">' + groupVerifiedCheck + escapeHtml(group.name) + '</div><div class="directory-group-sub">' + group.type + ' · ' + group.items.length + ' vacanc' + (group.items.length===1?'y':'ies') + '</div></div></div>' + cards + '</section>';
-  }
-  var html = '';
-  if (agencyKeys.length) {
-    html += '<div class="pgroup-label">Agency Vacancies</div>' + agencyKeys.map(renderVacancyGroup).join('');
-  }
-  if (generalKey) {
-    html += '<div class="pgroup-label">General Vacancies</div>' + renderVacancyGroup(generalKey);
-  }
-  el.innerHTML = html;
+  }).join('');
 }
 
 function switchSubTab(tab) {

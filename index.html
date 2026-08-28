@@ -539,14 +539,20 @@
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
     </header>
-    <div class="search search-mini" style="margin:0 16px 12px">
+    <div id="allvacancies-backbar" class="vac-folder-backbar" style="display:none">
+      <button class="vac-folder-back-btn" data-ripple onclick="closeVacancyFolder()" aria-label="Back to vacancy folders">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Vacancies
+      </button>
+    </div>
+    <div id="allvacancies-search-row" class="search search-mini" style="margin:0 16px 12px;display:none">
       <div class="search-inner">
         <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="allvacancies-search" class="sr-only">Search vacancies</label>
         <input id="allvacancies-search" type="search" placeholder="Search job title, role, location..." oninput="renderAllVacanciesList()">
       </div>
     </div>
-    <div class="vac-filter-row" style="display:flex;gap:8px;margin:0 16px 12px;flex-wrap:wrap">
+    <div id="allvacancies-filter-row" class="vac-filter-row" style="display:none;gap:8px;margin:0 16px 12px;flex-wrap:wrap">
       <select id="allvacancies-remote" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any work arrangement</option><option value="On-site">On-site</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option></select>
       <select id="allvacancies-exp" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any experience level</option><option value="Entry-level">Entry-level</option><option value="Mid-level">Mid-level</option><option value="Senior">Senior</option><option value="Executive">Executive</option></select>
       <select id="allvacancies-industry" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any industry</option></select>
