@@ -1837,6 +1837,43 @@ async function deleteBranch(id, agencyId) {
 }
 
 // ===== Vacancy form =====
+var MANAGER_TERMS_VERSION = '1.1';
+var MANAGER_TERMS_PDF = 'terms/vacancy-posting-terms.pdf';
+function resetVacancyTermsAcceptance() {
+  ['vacancy-terms-accept', 'general-vacancy-terms-accept'].forEach(function(id) {
+    var input = document.getElementById(id);
+    if (input) input.checked = false;
+  });
+}
+function requireVacancyTermsAcceptance(inputId) {
+  var input = document.getElementById(inputId);
+  if (!input || !input.checked) {
+    alert('Please read the SA Recruiters Vacancy Posting Terms & Conditions and tick the agreement box before publishing.');
+    if (input) input.focus();
+    return false;
+  }
+  return true;
+}
+function currentTermsManagerType() {
+  if (managerMode) return 'agency';
+  if (employerManagerMode) return 'employer';
+  return 'public';
+}
+async function recordVacancyTermsAcceptance(vacancyId, agencyId, employerId) {
+  try {
+    var result = await supabaseClient.from('manager_terms_acceptances').insert({
+      manager_type: currentTermsManagerType(),
+      agency_id: agencyId || null,
+      employer_id: employerId || null,
+      vacancy_id: vacancyId || null,
+      terms_version: MANAGER_TERMS_VERSION,
+      accepted_at: new Date().toISOString(),
+      user_agent: navigator.userAgent || null
+    });
+    if (result.error) { console.warn('terms acceptance record unavailable', result.error); return false; }
+    return true;
+  } catch (e) { console.warn('terms acceptance record failed', e); return false; }
+}
 var pendingVacancyAgency = null;
 function openVacancySheet(agencyId) {
   pendingVacancyAgency = agencyId;
@@ -1851,11 +1888,13 @@ function openVacancySheet(agencyId) {
   document.getElementById('v-closing').value = '';
   document.getElementById('v-notes').value = '';
   document.getElementById('v-link').value = '';
+  resetVacancyTermsAcceptance();
   document.getElementById('vacancy-overlay').classList.add('open');
 }
 async function saveVacancy() {
   var title = document.getElementById('v-title').value.trim();
   if (!title) { alert('Add a role/title.'); return; }
+  if (!isAdmin && !requireVacancyTermsAcceptance('vacancy-terms-accept')) return;
   var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
   var live = await upsertVacancy({
     id: id, agency_id: pendingVacancyAgency, title: title,
@@ -1870,8 +1909,9 @@ async function saveVacancy() {
     notes: document.getElementById('v-notes').value.trim(),
     link: document.getElementById('v-link').value.trim()
   });
+  var termsRecorded = live ? await recordVacancyTermsAcceptance(id, managerMode && managerAgency ? managerAgency.id : pendingVacancyAgency, null) : false;
   closeSheet('vacancy-overlay');
-  showToast(live ? 'Vacancy published' : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
+  showToast(live ? (termsRecorded ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
   await loadAll();
   if (managerMode) { renderManagerMode(); return; }
   var card = document.getElementById('hub-' + pendingVacancyAgency);
@@ -1910,6 +1950,7 @@ function openGeneralVacancySheet() {
   document.getElementById('gv-link').value = '';
   document.getElementById('gv-email').value = '';
   document.getElementById('gv-phone').value = '';
+  resetVacancyTermsAcceptance();
   document.getElementById('general-vacancy-overlay').classList.add('open');
 }
 // Post a vacancy as a specific registered employer — same form, but the
@@ -1941,6 +1982,7 @@ function openEmployerVacancySheet(employerId) {
   document.getElementById('gv-link').value = '';
   document.getElementById('gv-email').value = emp.email || '';
   document.getElementById('gv-phone').value = emp.contact || '';
+  resetVacancyTermsAcceptance();
   document.getElementById('general-vacancy-overlay').classList.add('open');
 }
 function openEditGeneralVacancySheet(id) {
@@ -1966,11 +2008,13 @@ function openEditGeneralVacancySheet(id) {
   document.getElementById('gv-link').value = v.link || '';
   document.getElementById('gv-email').value = v.email || '';
   document.getElementById('gv-phone').value = v.phone || '';
+  resetVacancyTermsAcceptance();
   document.getElementById('general-vacancy-overlay').classList.add('open');
 }
 async function saveGeneralVacancy() {
   var title = document.getElementById('gv-role').value.trim();
   if (!title) { alert('Add a role/title.'); return; }
+  if (!isAdmin && !requireVacancyTermsAcceptance('general-vacancy-terms-accept')) return;
   var data = {
     title: title,
     company: document.getElementById('gv-company').value.trim(),
@@ -1993,16 +2037,19 @@ async function saveGeneralVacancy() {
   if (pendingVacancyEmployer) data.employer_id = pendingVacancyEmployer;
   var wasEmployerPost = !!pendingVacancyEmployer;
   var employerIdForRefresh = pendingVacancyEmployer;
+  var termsRecordedGeneral = false;
   if (editingGeneralVacancyId) {
     data.id = editingGeneralVacancyId;
     var live2 = await upsertVacancy(data);
+    termsRecordedGeneral = live2 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
     closeSheet('general-vacancy-overlay');
-    showToast(live2 ? 'Vacancy updated' : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
+    showToast(live2 ? (termsRecordedGeneral ? 'Vacancy updated' : 'Vacancy updated — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
   } else {
     data.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
     var live3 = await upsertVacancy(data);
+    termsRecordedGeneral = live3 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
     closeSheet('general-vacancy-overlay');
-    showToast(live3 ? 'Vacancy published' : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
+    showToast(live3 ? (termsRecordedGeneral ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
   }
   editingGeneralVacancyId = null;
   pendingVacancyEmployer = null;

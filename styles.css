@@ -866,3 +866,13 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
   .admin-shell .section-head{background:var(--card-2)}
   .admin-shell .nav-item:hover,.admin-shell .nav-item.active{background:var(--card-2)}
 }
+
+/* Manager vacancy terms acceptance */
+.manager-banner a{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.terms-accept-row{display:flex;align-items:flex-start;gap:10px;margin:14px 0 16px;padding:12px 13px;border:1px solid color-mix(in srgb,var(--accent) 32%,var(--border));border-radius:14px;background:var(--accent-soft);color:var(--text);font-size:13px;line-height:1.35;cursor:pointer}
+.terms-accept-row input{width:18px;height:18px;accent-color:var(--accent);margin:1px 0 0;flex:none}
+.terms-accept-row span{display:flex;flex-direction:column;gap:4px}
+.terms-accept-row strong{font-weight:700}
+.terms-accept-row small{font-size:11.5px;color:var(--text-2);line-height:1.45}
+.terms-accept-row a{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+@supports not (color:color-mix(in srgb, black, white)){.terms-accept-row{border-color:var(--border-strong)}}
