@@ -1,6 +1,11 @@
 body{font-family:Inter,system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;line-height:1.6;color:#111}
 .sp-header,.sp-footer{padding:12px 0}
 .sp-header a,.sp-footer a{color:#0a66c2;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.sp-contact{margin-top:6px;font-size:.95rem}
 .sp-header img{border-radius:9px;display:block}
 h1{font-size:1.6rem;margin-bottom:.5rem}
 h2{font-size:1.2rem;margin-top:1.5rem}
+.hub-list{padding-left:1.25rem}
+.hub-list li{margin:.55rem 0}
+.muted{color:#667085}
+.hub-note{border-top:1px solid #e5e7eb;margin-top:2rem;padding-top:1rem}
