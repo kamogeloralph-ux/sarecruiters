@@ -99,7 +99,10 @@ ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script
 <main class="sp-main">
 ${bodyHtml}
 </main>
-<footer class="sp-footer"><a href="/">SA Recruiters — South African Recruitment Agencies Directory</a></footer>
+<footer class="sp-footer">
+<a href="/">SA Recruiters — South African Recruitment Agencies Directory</a>
+<div class="sp-contact"><a href="tel:+27715531005">071 553 1005</a><span aria-hidden="true"> · </span><a href="https://g.page/r/CbL3q0tBfGAsEBI" target="_blank" rel="noopener noreferrer">Find us on Google</a></div>
+</footer>
 </body>
 </html>`;
 }
@@ -350,6 +353,90 @@ ${
   return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
 }
 
+// ---------- location hub pages ----------
+
+function isOpenVacancy(vacancy) {
+  if (!vacancy.closing_date) return true;
+  const closing = new Date(vacancy.closing_date);
+  // Keep unparseable free-text dates visible for manual review rather than
+  // accidentally hiding a legitimate opportunity.
+  return Number.isNaN(closing.getTime()) || closing >= new Date();
+}
+
+function locationContains(value, locationName) {
+  return String(value || '').toLowerCase().includes(locationName.toLowerCase());
+}
+
+function buildLocationHubPage({ locationName, slug, vacancies, agencies, branches }) {
+  const currentVacancies = vacancies
+    .filter((vacancy) => isOpenVacancy(vacancy))
+    .filter((vacancy) => locationContains(vacancy.location, locationName));
+
+  const matchingAgencyIds = new Set(
+    agencies
+      .filter((agency) => locationContains(agency.location, locationName))
+      .map((agency) => String(agency.id))
+  );
+
+  branches
+    .filter((branch) => locationContains(branch.location, locationName))
+    .forEach((branch) => matchingAgencyIds.add(String(branch.agency_id)));
+
+  const matchingAgencies = agencies.filter((agency) => matchingAgencyIds.has(String(agency.id)));
+
+  // Do not publish a thin, empty hub. The caller should also omit this URL
+  // from the sitemap when the function returns null.
+  if (currentVacancies.length === 0 && matchingAgencies.length === 0) return null;
+
+  const canonical = `${SITE_URL}/jobs/${slug}/`;
+  const title = `${locationName} Jobs & Vacancies — SA Recruiters`;
+  const description = `Find current job vacancies and recruitment agencies in ${locationName}, South Africa. Browse roles by employer, agency and job type on SA Recruiters.`;
+
+  const vacancyList = currentVacancies.length
+    ? `<h2>Current ${escapeHtml(locationName)} vacancies</h2>
+       <ul class="hub-list">${currentVacancies.slice(0, 50).map((vacancy) => {
+         return `<li><strong>${escapeHtml(vacancy.title || 'Untitled vacancy')}</strong>${vacancy.company ? ` — ${escapeHtml(vacancy.company)}` : ''}${vacancy.location ? ` <span class="muted">(${escapeHtml(vacancy.location)})</span>` : ''}</li>`;
+       }).join('')}</ul>`
+    : `<p>No current ${escapeHtml(locationName)} vacancies are available in the directory at this time. Check back soon or browse the agencies below.</p>`;
+
+  const agencyList = matchingAgencies.length
+    ? `<h2>Recruitment agencies in ${escapeHtml(locationName)}</h2>
+       <ul class="hub-list">${matchingAgencies.slice(0, 50).map((agency) => {
+         return `<li><strong>${escapeHtml(agency.name || 'Recruitment agency')}</strong>${agency.trades ? ` — ${escapeHtml(agency.trades)}` : ''}${agency.location ? ` <span class="muted">(${escapeHtml(agency.location)})</span>` : ''}</li>`;
+       }).join('')}</ul>`
+    : '';
+
+  const itemList = currentVacancies.slice(0, 50).map((vacancy, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: vacancy.title || 'Vacancy',
+  }));
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: title,
+    description,
+    url: canonical,
+    isPartOf: { '@type': 'WebSite', name: 'SA Recruiters', url: `${SITE_URL}/` },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: itemList.length,
+      itemListElement: itemList,
+    },
+  };
+
+  const body = `
+<h1>${escapeHtml(locationName)} jobs and vacancies</h1>
+<p>Explore current job opportunities and recruitment agencies serving ${escapeHtml(locationName)}, South Africa. Select a vacancy for the full job description and application details.</p>
+${vacancyList}
+${agencyList}
+<p class="hub-note"><a href="/">Return to the SA Recruiters directory</a> to browse all agencies and vacancies.</p>
+`;
+
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
+}
+
 // ---------- main ----------
 
 async function main() {
@@ -358,40 +445,33 @@ async function main() {
   console.log(`Fetched ${agencies.length} agencies, ${branches.length} branches, ${vacancies.length} vacancies.`);
 
   const sitemapUrls = [`${SITE_URL}/`];
-  const agencySlugById = buildPublicSlugMap(agencies, (a) => a.name);
-  const vacancySlugById = buildPublicSlugMap(vacancies, (v) => v.title);
 
-  // Agencies
-  const agencyDir = path.join(OUT_DIR, 'agency');
-  ensureDir(agencyDir);
-  agencies.forEach((agency) => {
-    const slug = agencySlugById.get(String(agency.id)) || slugify(agency.name);
-
-    const agencyBranches = branches.filter((b) => b.agency_id === agency.id);
-    const agencyVacancies = vacancies.filter((v) => v.agency_id === agency.id);
-
-    const dir = path.join(agencyDir, slug);
+  // Location hubs: generate only curated, useful landing pages.
+  const locationHubs = [
+    { name: 'Gauteng', slug: 'gauteng' },
+  ];
+  const jobsDir = path.join(OUT_DIR, 'jobs');
+  ensureDir(jobsDir);
+  locationHubs.forEach(({ name, slug }) => {
+    const html = buildLocationHubPage({
+      locationName: name,
+      slug,
+      vacancies,
+      agencies,
+      branches,
+    });
+    // No useful inventory means no page and no sitemap entry.
+    if (!html) return;
+    const dir = path.join(jobsDir, slug);
     ensureDir(dir);
-    fs.writeFileSync(path.join(dir, 'index.html'), buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancySlugById));
-    sitemapUrls.push(`${SITE_URL}/agency/${slug}/`);
-
-    // stash slug on the agency object so vacancy pages can link back correctly
-    agency._slug = slug;
+    fs.writeFileSync(path.join(dir, 'index.html'), html);
+    sitemapUrls.push(`${SITE_URL}/jobs/${slug}/`);
   });
 
-  // Vacancies
-  const vacancyDir = path.join(OUT_DIR, 'vacancy');
-  ensureDir(vacancyDir);
-  vacancies.forEach((vacancy) => {
-    const slug = vacancySlugById.get(String(vacancy.id)) || slugify(vacancy.title);
+    // No /agency/ or /vacancy/ directories are generated by this deployment.
+  // The hub contains a crawlable summary while the app remains the source
+  // for the full directory and vacancy experience.
 
-    const agency = agencies.find((a) => a.id === vacancy.agency_id);
-
-    const dir = path.join(vacancyDir, slug);
-    ensureDir(dir);
-    fs.writeFileSync(path.join(dir, 'index.html'), buildVacancyPage(vacancy, agency, slug));
-    sitemapUrls.push(`${SITE_URL}/vacancy/${slug}/`);
-  });
 
   // Sitemap
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -404,12 +484,17 @@ ${sitemapUrls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
   const css = `body{font-family:Inter,system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;line-height:1.6;color:#111}
 .sp-header,.sp-footer{padding:12px 0}
 .sp-header a,.sp-footer a{color:#0a66c2;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.sp-contact{margin-top:6px;font-size:.95rem}
 .sp-header img{border-radius:9px;display:block}
 h1{font-size:1.6rem;margin-bottom:.5rem}
-h2{font-size:1.2rem;margin-top:1.5rem}`;
+h2{font-size:1.2rem;margin-top:1.5rem}
+.hub-list{padding-left:1.25rem}
+.hub-list li{margin:.55rem 0}
+.muted{color:#667085}
+.hub-note{border-top:1px solid #e5e7eb;margin-top:2rem;padding-top:1rem}`;
   fs.writeFileSync(path.join(OUT_DIR, 'static-pages.css'), css);
 
-  console.log(`Done. Wrote ${agencies.length} agency pages, ${vacancies.length} vacancy pages, and sitemap.xml.`);
+  console.log(`Done. Wrote ${locationHubs.length} configured location hub(s) when non-empty, and sitemap.xml.`);
 }
 
 main().catch((err) => {
