@@ -195,6 +195,114 @@ ${vacanciesHtml}
   return pageShell({ title, description, canonical, bodyHtml: body });
 }
 
+// South African province names we can recognise inside a free-text
+// `location` string, so jobLocation.address.addressRegion can be filled
+// in without needing a separate structured field in the database.
+const SA_PROVINCES = [
+  'Gauteng',
+  'Western Cape',
+  'Eastern Cape',
+  'KwaZulu-Natal',
+  'Kwazulu Natal',
+  'Kwazulu-Natal',
+  'Free State',
+  'Limpopo',
+  'Mpumalanga',
+  'North West',
+  'Northern Cape',
+];
+
+function inferAddressRegion(locationText) {
+  if (!locationText) return undefined;
+  const match = SA_PROVINCES.find((p) =>
+    locationText.toLowerCase().includes(p.toLowerCase())
+  );
+  return match ? (match.startsWith('Kwazulu') ? 'KwaZulu-Natal' : match) : undefined;
+}
+
+// Google requires every JobPosting to have EITHER a jobLocation with at
+// least addressCountry, OR jobLocationType: 'TELECOMMUTE' for fully
+// remote roles. Previously this was `undefined` whenever vacancy.location
+// was empty, which silently dropped the field and caused the "Missing
+// field 'jobLocation'" critical error. We now always emit a location -
+// falling back to a country-level address as a last resort, which is
+// enough to satisfy the requirement even when we don't have city-level
+// data. addressRegion is filled in opportunistically from the free-text
+// location field where we can recognise a province name; streetAddress
+// and postalCode remain genuinely unavailable for most listings sourced
+// from third-party job boards, since none of those sources expose a
+// street-level address - that gap is a real data limitation, not a bug.
+function buildJobLocationFields(vacancy) {
+  if (vacancy.remote === 'Remote') {
+    return { jobLocationType: 'TELECOMMUTE' };
+  }
+
+  return {
+    jobLocation: {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: vacancy.location || undefined,
+        addressRegion: inferAddressRegion(vacancy.location),
+        addressCountry: 'ZA',
+      },
+    },
+  };
+}
+
+// validThrough is only "recommended", not required, but leaving it out
+// makes Google treat the posting as having no defined expiry, and many
+// of our listings (sourced from job boards that don't expose a real
+// closing date) had this dropped entirely. Where we have a genuine
+// closing_date we use it; otherwise we fall back to 60 days after the
+// post date, which is a conservative, commonly-used default for job
+// boards and keeps the listing from looking permanently open.
+function resolveValidThrough(vacancy) {
+  if (vacancy.closing_date) return vacancy.closing_date;
+  if (!vacancy.created_at) return undefined;
+  const posted = new Date(vacancy.created_at);
+  if (Number.isNaN(posted.getTime())) return undefined;
+  const fallback = new Date(posted.getTime() + 60 * 24 * 60 * 60 * 1000);
+  return fallback.toISOString().slice(0, 10);
+}
+
+// schema.org expects baseSalary.value.value to be a NUMBER, and
+// baseSalary.value.unitText (YEAR/MONTH/WEEK/HOUR) to be present.
+// The previous code put the raw salary string (e.g. "R17,000/month CTC")
+// directly into `value`, which is invalid regardless of the unitText gap
+// Search Console flagged. We now try to actually parse a number and a
+// unit out of the free-text salary field; if we can't confidently parse
+// both, we omit baseSalary entirely rather than emit malformed data -
+// vague values like "Market Related" or "Negotiable" have no numeric
+// salary to report, so leaving the field out is the correct outcome for
+// those, not a bug to fix.
+function buildBaseSalary(vacancy) {
+  if (!vacancy.salary) return undefined;
+
+  const amountMatch = vacancy.salary.replace(/,/g, '').match(/(\d+(?:\.\d+)?)/);
+  if (!amountMatch) return undefined;
+  const value = parseFloat(amountMatch[1]);
+  if (Number.isNaN(value)) return undefined;
+
+  const lower = vacancy.salary.toLowerCase();
+  let unitText;
+  if (lower.includes('hour')) unitText = 'HOUR';
+  else if (lower.includes('week')) unitText = 'WEEK';
+  else if (lower.includes('month')) unitText = 'MONTH';
+  else if (lower.includes('annum') || lower.includes('year')) unitText = 'YEAR';
+  else return undefined; // can't confidently determine the pay period
+
+  return {
+    '@type': 'MonetaryAmount',
+    currency: 'ZAR',
+    value: {
+      '@type': 'QuantitativeValue',
+      value,
+      unitText,
+    },
+  };
+}
+
 function buildVacancyPage(vacancy, agency, slug) {
   const canonical = `${SITE_URL}/vacancy/${slug}/`;
   const companyName = vacancy.company || (agency && agency.name) || 'A South African employer';
@@ -209,29 +317,14 @@ function buildVacancyPage(vacancy, agency, slug) {
     title: vacancy.title,
     description: vacancy.notes || description,
     datePosted: vacancy.created_at,
-    validThrough: vacancy.closing_date || undefined,
+    validThrough: resolveValidThrough(vacancy),
     employmentType: vacancy.employment_type || undefined,
     hiringOrganization: {
       '@type': 'Organization',
       name: companyName,
     },
-    jobLocation: vacancy.location
-      ? {
-          '@type': 'Place',
-          address: {
-            '@type': 'PostalAddress',
-            addressLocality: vacancy.location,
-            addressCountry: 'ZA',
-          },
-        }
-      : undefined,
-    baseSalary: vacancy.salary
-      ? {
-          '@type': 'MonetaryAmount',
-          currency: 'ZAR',
-          value: { '@type': 'QuantitativeValue', value: vacancy.salary },
-        }
-      : undefined,
+    ...buildJobLocationFields(vacancy),
+    baseSalary: buildBaseSalary(vacancy),
   };
 
   const body = `
