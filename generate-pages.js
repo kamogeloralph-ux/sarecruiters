@@ -99,7 +99,10 @@ ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script
 <main class="sp-main">
 ${bodyHtml}
 </main>
-<footer class="sp-footer"><a href="/">SA Recruiters — South African Recruitment Agencies Directory</a></footer>
+<footer class="sp-footer">
+<a href="/">SA Recruiters — South African Recruitment Agencies Directory</a>
+<div class="sp-contact"><a href="tel:+27715531005">071 553 1005</a><span aria-hidden="true"> · </span><a href="https://g.page/r/CbL3q0tBfGAsEBI" target="_blank" rel="noopener noreferrer">Find us on Google</a></div>
+</footer>
 </body>
 </html>`;
 }
@@ -190,248 +193,6 @@ ${agency.trades ? `<strong>Trades / Industries:</strong> ${escapeHtml(agency.tra
 ${agency.companies ? `<strong>Companies:</strong> ${escapeHtml(agency.companies)}<br>` : ''}</p>
 ${branchesHtml}
 ${vacanciesHtml}
-`;
-
-  return pageShell({ title, description, canonical, bodyHtml: body });
-}
-
-// ---------- location hub pages (SEO) ----------
-//
-// WHY THIS EXISTS: "paste a list of keywords on the site" is keyword
-// stuffing and Google actively penalises it. What actually works is real
-// content structured around the terms people search - a genuine page per
-// location, listing genuine current vacancies, that a person would
-// actually want to click through to. This also fixes a real bug: every
-// vacancy with agency_id 'general' (the majority of listings - sourced
-// from Indeed/Pnet/government portals rather than a registered agency)
-// had ZERO internal links pointing to its page anywhere on the site. It
-// only ever existed in sitemap.xml, which is very likely why Search
-// Console was reporting a growing pile of "Discovered - currently not
-// indexed" pages: Google found the URL but had no signal it was worth
-// crawling. These hub pages are real internal links to every one of
-// those pages, grouped by the thing people actually search for.
-//
-// Known Gauteng towns/areas we recognise inside the free-text `location`
-// field on each vacancy. Order matters: more specific names are matched
-// before the generic 'Gauteng' fallback catches everything else.
-const GAUTENG_LOCATIONS = [
-  'Sandton',
-  'Randburg',
-  'Roodepoort',
-  'Midrand',
-  'Centurion',
-  'Pretoria',
-  'Boksburg',
-  'Kempton Park',
-  'Krugersdorp',
-  'Vanderbijlpark',
-  'Alberton',
-  'Germiston',
-  'Benoni',
-  'Springs',
-  'Edenvale',
-  'Johannesburg',
-];
-
-// Buckets a vacancy's free-text location into one recognised Gauteng town,
-// or 'Gauteng' generically if none match / the listing isn't in Gauteng at
-// all (kept in a catch-all rather than silently dropped, so nothing goes
-// unlinked).
-function resolveLocationBucket(locationText) {
-  if (!locationText) return null;
-  const match = GAUTENG_LOCATIONS.find((town) =>
-    locationText.toLowerCase().includes(town.toLowerCase())
-  );
-  if (match) return match;
-  if (locationText.toLowerCase().includes('gauteng')) return 'Gauteng';
-  return null; // not a Gauteng listing at all (e.g. Cape Town, Eastern Cape) - no Gauteng hub page for it
-}
-
-function buildLocationHubPage(bucketName, bucketVacancies, agencies, vacancySlugById) {
-  const slug = `jobs-in-${slugify(bucketName)}`;
-  const canonical = `${SITE_URL}/${slug}/`;
-  const count = bucketVacancies.length;
-  const title = `${count} Jobs in ${bucketName}, Gauteng — Current Vacancies | SA Recruiters`;
-  const description = `Browse ${count} current job vacancies in ${bucketName}, Gauteng. Updated listings from recruitment agencies, employers and public job boards across South Africa.`;
-
-  // Sort newest first so the page itself stays genuinely useful, not just
-  // a keyword target - real freshness is also a ranking signal.
-  const sorted = [...bucketVacancies].sort(
-    (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
-  );
-
-  const listHtml = sorted
-    .map((v) => {
-      const vSlug = vacancySlugById.get(String(v.id)) || slugify(v.title);
-      const agency = agencies.find((a) => a.id === v.agency_id);
-      const companyName = v.company || (agency && agency.name) || '';
-      return `<li><a href="/vacancy/${vSlug}/">${escapeHtml(v.title)}</a>${
-        companyName ? ` — ${escapeHtml(companyName)}` : ''
-      }${v.location ? ` — ${escapeHtml(v.location)}` : ''}${
-        v.closing_date ? ` (closes ${escapeHtml(v.closing_date)})` : ''
-      }</li>`;
-    })
-    .join('');
-
-  const body = `
-<h1>Jobs in ${escapeHtml(bucketName)}, Gauteng</h1>
-<p>${count} current vacanc${count === 1 ? 'y' : 'ies'} in ${escapeHtml(
-    bucketName
-  )} and the surrounding area, sourced from recruitment agencies, direct employers and public job boards. Updated regularly — check back for the latest ${escapeHtml(
-    bucketName
-  )} job opportunities.</p>
-<h2>Current Vacancies</h2>
-<ul>${listHtml}</ul>
-<p><a href="/jobs/">Browse jobs in other Gauteng locations →</a> · <a href="/job-categories/">Browse by category →</a></p>
-`;
-
-  return { slug, html: pageShell({ title, description, canonical, bodyHtml: body }) };
-}
-
-function buildJobsIndexPage(buckets) {
-  const canonical = `${SITE_URL}/jobs/`;
-  const title = 'Jobs in Gauteng by Location — SA Recruiters';
-  const description =
-    'Browse current job vacancies across Gauteng by location, including Johannesburg, Pretoria, Centurion, Sandton, Midrand and more.';
-
-  const listHtml = buckets
-    .map(
-      ({ name, count }) =>
-        `<li><a href="/jobs-in-${slugify(name)}/">Jobs in ${escapeHtml(name)}</a> (${count})</li>`
-    )
-    .join('');
-
-  const body = `
-<h1>Jobs in Gauteng by Location</h1>
-<p>Browse current vacancies across Gauteng, grouped by town and city.</p>
-<ul>${listHtml}</ul>
-<p><a href="/job-categories/">Browse jobs by category instead →</a></p>
-`;
-
-  return pageShell({ title, description, canonical, bodyHtml: body });
-}
-
-// ---------- job category hub pages (SEO) ----------
-//
-// Same real-content, real-links approach as the location hubs above -
-// this time grouping by the type of role rather than where it is, which
-// targets a different (and often higher-intent) set of real search terms
-// like "retail jobs Gauteng" or "warehouse jobs Gauteng". Matching is done
-// by keyword against the vacancy TITLE only (not notes/description), kept
-// deliberately conservative: a title has to clearly say what kind of role
-// it is before we categorise it. Vacancies that don't clearly match any
-// category simply don't get a category page - they're still fully
-// reachable via their location hub page, so nothing is orphaned by this
-// not being exhaustive.
-const JOB_CATEGORIES = [
-  {
-    name: 'Healthcare & Nursing',
-    keywords: ['nurse', 'nursing', 'medical', 'clinical', 'pharmac', 'dental', 'psychiat', 'physiotherap', 'radiograph'],
-  },
-  {
-    name: 'Security',
-    keywords: ['security', 'cctv', 'guard'],
-  },
-  {
-    name: 'Warehouse & Logistics',
-    keywords: ['warehouse', 'logistics', 'forklift', 'dispatch', 'courier', 'driver', 'stock control', 'inventory'],
-  },
-  {
-    name: 'Finance & Accounting',
-    keywords: ['accountant', 'bookkeep', 'finance', 'payroll', 'creditors', 'debtors', 'tax'],
-  },
-  {
-    name: 'Engineering & Technical',
-    keywords: ['engineer', 'technician', 'electrician', 'millwright', 'artisan', 'mechanic'],
-  },
-  {
-    name: 'Customer Service & Call Centre',
-    keywords: ['call cent', 'customer service', 'customer care', 'customer compl'],
-  },
-  {
-    name: 'Hospitality & Food Service',
-    keywords: ['chef', 'waiter', 'hotel', 'hospitality', 'front desk', 'guest relations'],
-  },
-  {
-    name: 'Sales & Business Development',
-    keywords: ['sales rep', 'sales exec', 'sales consultant', 'business development', 'account manager'],
-  },
-  {
-    name: 'Admin & Clerical',
-    keywords: ['admin', 'clerk', 'receptionist', 'secretary', 'data captur', 'personal assistant'],
-  },
-  {
-    name: 'Retail',
-    keywords: ['shop assistant', 'cashier', 'merchandis', 'retail', 'store ', 'stock assistant'],
-  },
-];
-
-// Order matters: this list is checked top-to-bottom and the FIRST match
-// wins, so more specific categories (e.g. "Customer Service" catching
-// "Customer Compliance & Service Officer") are listed before broader ones
-// that might otherwise catch the same title for the wrong reason.
-function resolveJobCategory(title) {
-  if (!title) return null;
-  const lower = title.toLowerCase();
-  const match = JOB_CATEGORIES.find((cat) => cat.keywords.some((kw) => lower.includes(kw)));
-  return match ? match.name : null;
-}
-
-function buildCategoryHubPage(categoryName, categoryVacancies, agencies, vacancySlugById) {
-  const slug = `${slugify(categoryName)}-jobs-gauteng`;
-  const canonical = `${SITE_URL}/${slug}/`;
-  const count = categoryVacancies.length;
-  const title = `${count} ${categoryName} Jobs in Gauteng — Current Vacancies | SA Recruiters`;
-  const description = `Browse ${count} current ${categoryName.toLowerCase()} job vacancies across Gauteng. Updated listings from recruitment agencies, employers and public job boards.`;
-
-  const sorted = [...categoryVacancies].sort(
-    (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
-  );
-
-  const listHtml = sorted
-    .map((v) => {
-      const vSlug = vacancySlugById.get(String(v.id)) || slugify(v.title);
-      const agency = agencies.find((a) => a.id === v.agency_id);
-      const companyName = v.company || (agency && agency.name) || '';
-      return `<li><a href="/vacancy/${vSlug}/">${escapeHtml(v.title)}</a>${
-        companyName ? ` — ${escapeHtml(companyName)}` : ''
-      }${v.location ? ` — ${escapeHtml(v.location)}` : ''}${
-        v.closing_date ? ` (closes ${escapeHtml(v.closing_date)})` : ''
-      }</li>`;
-    })
-    .join('');
-
-  const body = `
-<h1>${escapeHtml(categoryName)} Jobs in Gauteng</h1>
-<p>${count} current ${escapeHtml(categoryName.toLowerCase())} vacanc${
-    count === 1 ? 'y' : 'ies'
-  } across Gauteng, sourced from recruitment agencies, direct employers and public job boards. Updated regularly.</p>
-<h2>Current Vacancies</h2>
-<ul>${listHtml}</ul>
-<p><a href="/job-categories/">Browse other job categories →</a></p>
-`;
-
-  return { slug, html: pageShell({ title, description, canonical, bodyHtml: body }) };
-}
-
-function buildJobCategoriesIndexPage(categories) {
-  const canonical = `${SITE_URL}/job-categories/`;
-  const title = 'Jobs in Gauteng by Category — SA Recruiters';
-  const description =
-    'Browse current job vacancies across Gauteng by category, including retail, admin, warehouse, sales, engineering, healthcare and more.';
-
-  const listHtml = categories
-    .map(
-      ({ name, count }) =>
-        `<li><a href="/${slugify(name)}-jobs-gauteng/">${escapeHtml(name)} Jobs</a> (${count})</li>`
-    )
-    .join('');
-
-  const body = `
-<h1>Jobs in Gauteng by Category</h1>
-<p>Browse current vacancies across Gauteng, grouped by job category.</p>
-<ul>${listHtml}</ul>
-<p><a href="/jobs/">Browse jobs by location instead →</a></p>
 `;
 
   return pageShell({ title, description, canonical, bodyHtml: body });
@@ -592,6 +353,90 @@ ${
   return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
 }
 
+// ---------- location hub pages ----------
+
+function isOpenVacancy(vacancy) {
+  if (!vacancy.closing_date) return true;
+  const closing = new Date(vacancy.closing_date);
+  // Keep unparseable free-text dates visible for manual review rather than
+  // accidentally hiding a legitimate opportunity.
+  return Number.isNaN(closing.getTime()) || closing >= new Date();
+}
+
+function locationContains(value, locationName) {
+  return String(value || '').toLowerCase().includes(locationName.toLowerCase());
+}
+
+function buildLocationHubPage({ locationName, slug, vacancies, agencies, branches }) {
+  const currentVacancies = vacancies
+    .filter((vacancy) => isOpenVacancy(vacancy))
+    .filter((vacancy) => locationContains(vacancy.location, locationName));
+
+  const matchingAgencyIds = new Set(
+    agencies
+      .filter((agency) => locationContains(agency.location, locationName))
+      .map((agency) => String(agency.id))
+  );
+
+  branches
+    .filter((branch) => locationContains(branch.location, locationName))
+    .forEach((branch) => matchingAgencyIds.add(String(branch.agency_id)));
+
+  const matchingAgencies = agencies.filter((agency) => matchingAgencyIds.has(String(agency.id)));
+
+  // Do not publish a thin, empty hub. The caller should also omit this URL
+  // from the sitemap when the function returns null.
+  if (currentVacancies.length === 0 && matchingAgencies.length === 0) return null;
+
+  const canonical = `${SITE_URL}/jobs/${slug}/`;
+  const title = `${locationName} Jobs & Vacancies — SA Recruiters`;
+  const description = `Find current job vacancies and recruitment agencies in ${locationName}, South Africa. Browse roles by employer, agency and job type on SA Recruiters.`;
+
+  const vacancyList = currentVacancies.length
+    ? `<h2>Current ${escapeHtml(locationName)} vacancies</h2>
+       <ul class="hub-list">${currentVacancies.slice(0, 50).map((vacancy) => {
+         return `<li><strong>${escapeHtml(vacancy.title || 'Untitled vacancy')}</strong>${vacancy.company ? ` — ${escapeHtml(vacancy.company)}` : ''}${vacancy.location ? ` <span class="muted">(${escapeHtml(vacancy.location)})</span>` : ''}</li>`;
+       }).join('')}</ul>`
+    : `<p>No current ${escapeHtml(locationName)} vacancies are available in the directory at this time. Check back soon or browse the agencies below.</p>`;
+
+  const agencyList = matchingAgencies.length
+    ? `<h2>Recruitment agencies in ${escapeHtml(locationName)}</h2>
+       <ul class="hub-list">${matchingAgencies.slice(0, 50).map((agency) => {
+         return `<li><strong>${escapeHtml(agency.name || 'Recruitment agency')}</strong>${agency.trades ? ` — ${escapeHtml(agency.trades)}` : ''}${agency.location ? ` <span class="muted">(${escapeHtml(agency.location)})</span>` : ''}</li>`;
+       }).join('')}</ul>`
+    : '';
+
+  const itemList = currentVacancies.slice(0, 50).map((vacancy, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: vacancy.title || 'Vacancy',
+  }));
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: title,
+    description,
+    url: canonical,
+    isPartOf: { '@type': 'WebSite', name: 'SA Recruiters', url: `${SITE_URL}/` },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: itemList.length,
+      itemListElement: itemList,
+    },
+  };
+
+  const body = `
+<h1>${escapeHtml(locationName)} jobs and vacancies</h1>
+<p>Explore current job opportunities and recruitment agencies serving ${escapeHtml(locationName)}, South Africa. Select a vacancy for the full job description and application details.</p>
+${vacancyList}
+${agencyList}
+<p class="hub-note"><a href="/">Return to the SA Recruiters directory</a> to browse all agencies and vacancies.</p>
+`;
+
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
+}
+
 // ---------- main ----------
 
 async function main() {
@@ -600,110 +445,33 @@ async function main() {
   console.log(`Fetched ${agencies.length} agencies, ${branches.length} branches, ${vacancies.length} vacancies.`);
 
   const sitemapUrls = [`${SITE_URL}/`];
-  const agencySlugById = buildPublicSlugMap(agencies, (a) => a.name);
-  const vacancySlugById = buildPublicSlugMap(vacancies, (v) => v.title);
 
-  // Agencies
-  const agencyDir = path.join(OUT_DIR, 'agency');
-  ensureDir(agencyDir);
-  agencies.forEach((agency) => {
-    const slug = agencySlugById.get(String(agency.id)) || slugify(agency.name);
-
-    const agencyBranches = branches.filter((b) => b.agency_id === agency.id);
-    const agencyVacancies = vacancies.filter((v) => v.agency_id === agency.id);
-
-    const dir = path.join(agencyDir, slug);
-    ensureDir(dir);
-    fs.writeFileSync(path.join(dir, 'index.html'), buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancySlugById));
-    sitemapUrls.push(`${SITE_URL}/agency/${slug}/`);
-
-    // stash slug on the agency object so vacancy pages can link back correctly
-    agency._slug = slug;
-  });
-
-  // Vacancies
-  const vacancyDir = path.join(OUT_DIR, 'vacancy');
-  ensureDir(vacancyDir);
-  vacancies.forEach((vacancy) => {
-    const slug = vacancySlugById.get(String(vacancy.id)) || slugify(vacancy.title);
-
-    const agency = agencies.find((a) => a.id === vacancy.agency_id);
-
-    const dir = path.join(vacancyDir, slug);
-    ensureDir(dir);
-    fs.writeFileSync(path.join(dir, 'index.html'), buildVacancyPage(vacancy, agency, slug));
-    sitemapUrls.push(`${SITE_URL}/vacancy/${slug}/`);
-  });
-
-  // Location hub pages (SEO) — real, keyword-targeted landing pages that
-  // also give every 'general' (non-agency) vacancy its first real
-  // internal link on the site. Only build a hub for locations with at
-  // least 2 vacancies — a 1-listing page is too thin to be a useful page
-  // for anyone, and thin pages are themselves a cause of non-indexing.
-  const bucketed = new Map();
-  vacancies.forEach((v) => {
-    const bucket = resolveLocationBucket(v.location);
-    if (!bucket) return;
-    if (!bucketed.has(bucket)) bucketed.set(bucket, []);
-    bucketed.get(bucket).push(v);
-  });
-
-  const hubBuckets = [...bucketed.entries()]
-    .filter(([, list]) => list.length >= 2)
-    .map(([name, list]) => ({ name, count: list.length, vacancies: list }));
-
-  hubBuckets.forEach(({ name, vacancies: bucketVacancies }) => {
-    const { slug, html } = buildLocationHubPage(name, bucketVacancies, agencies, vacancySlugById);
-    const dir = path.join(OUT_DIR, slug);
+  // Location hubs: generate only curated, useful landing pages.
+  const locationHubs = [
+    { name: 'Gauteng', slug: 'gauteng' },
+  ];
+  const jobsDir = path.join(OUT_DIR, 'jobs');
+  ensureDir(jobsDir);
+  locationHubs.forEach(({ name, slug }) => {
+    const html = buildLocationHubPage({
+      locationName: name,
+      slug,
+      vacancies,
+      agencies,
+      branches,
+    });
+    // No useful inventory means no page and no sitemap entry.
+    if (!html) return;
+    const dir = path.join(jobsDir, slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), html);
-    sitemapUrls.push(`${SITE_URL}/${slug}/`);
+    sitemapUrls.push(`${SITE_URL}/jobs/${slug}/`);
   });
 
-  if (hubBuckets.length) {
-    const jobsIndexDir = path.join(OUT_DIR, 'jobs');
-    ensureDir(jobsIndexDir);
-    fs.writeFileSync(
-      path.join(jobsIndexDir, 'index.html'),
-      buildJobsIndexPage(hubBuckets.map(({ name, count }) => ({ name, count })))
-    );
-    sitemapUrls.push(`${SITE_URL}/jobs/`);
-  }
+    // No /agency/ or /vacancy/ directories are generated by this deployment.
+  // The hub contains a crawlable summary while the app remains the source
+  // for the full directory and vacancy experience.
 
-  // Job category hub pages (SEO) — same pattern as location hubs, scoped
-  // to Gauteng vacancies only (consistent with the rest of the static
-  // site's Gauteng focus). Only categories with at least 2 matches get a
-  // page, for the same thin-content reason as above.
-  const categorised = new Map();
-  vacancies.forEach((v) => {
-    if (!resolveLocationBucket(v.location)) return; // Gauteng-only, same test as location hubs
-    const category = resolveJobCategory(v.title);
-    if (!category) return;
-    if (!categorised.has(category)) categorised.set(category, []);
-    categorised.get(category).push(v);
-  });
-
-  const categoryBuckets = [...categorised.entries()]
-    .filter(([, list]) => list.length >= 2)
-    .map(([name, list]) => ({ name, count: list.length, vacancies: list }));
-
-  categoryBuckets.forEach(({ name, vacancies: categoryVacancies }) => {
-    const { slug, html } = buildCategoryHubPage(name, categoryVacancies, agencies, vacancySlugById);
-    const dir = path.join(OUT_DIR, slug);
-    ensureDir(dir);
-    fs.writeFileSync(path.join(dir, 'index.html'), html);
-    sitemapUrls.push(`${SITE_URL}/${slug}/`);
-  });
-
-  if (categoryBuckets.length) {
-    const categoriesIndexDir = path.join(OUT_DIR, 'job-categories');
-    ensureDir(categoriesIndexDir);
-    fs.writeFileSync(
-      path.join(categoriesIndexDir, 'index.html'),
-      buildJobCategoriesIndexPage(categoryBuckets.map(({ name, count }) => ({ name, count })))
-    );
-    sitemapUrls.push(`${SITE_URL}/job-categories/`);
-  }
 
   // Sitemap
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -716,12 +484,17 @@ ${sitemapUrls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
   const css = `body{font-family:Inter,system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;line-height:1.6;color:#111}
 .sp-header,.sp-footer{padding:12px 0}
 .sp-header a,.sp-footer a{color:#0a66c2;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.sp-contact{margin-top:6px;font-size:.95rem}
 .sp-header img{border-radius:9px;display:block}
 h1{font-size:1.6rem;margin-bottom:.5rem}
-h2{font-size:1.2rem;margin-top:1.5rem}`;
+h2{font-size:1.2rem;margin-top:1.5rem}
+.hub-list{padding-left:1.25rem}
+.hub-list li{margin:.55rem 0}
+.muted{color:#667085}
+.hub-note{border-top:1px solid #e5e7eb;margin-top:2rem;padding-top:1rem}`;
   fs.writeFileSync(path.join(OUT_DIR, 'static-pages.css'), css);
 
-  console.log(`Done. Wrote ${agencies.length} agency pages, ${vacancies.length} vacancy pages, ${hubBuckets.length} location hub pages, ${categoryBuckets.length} category hub pages, and sitemap.xml.`);
+  console.log(`Done. Wrote ${locationHubs.length} configured location hub(s) when non-empty, and sitemap.xml.`);
 }
 
 main().catch((err) => {
