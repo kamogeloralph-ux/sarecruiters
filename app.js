@@ -1471,6 +1471,7 @@ function vacancyCard(v, agency) {
         postedLine +
       '</div>' +
       '<div class="vac-card-side">' +
+        '<button class="vac-share" onclick="event.stopPropagation();shareVacancy(\'' + key + '\')" aria-label="Share vacancy">' + SHARE_SVG + '</button>' +
         '<button class="vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + key + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button>' +
         '<span class="chevron">' + ICON_CHEVRON + '</span>' +
       '</div>' +
@@ -1544,6 +1545,9 @@ var VAC_ICONS = {
   edit:'<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
 };
+
+/* Share icon for the vacancy card's share button (node network glyph, matches vac-save sizing) */
+var SHARE_SVG = '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg>';
 
 /* Toggle expand/collapse of a vacancy card */
 window.toggleVac = function(target) {
@@ -3401,6 +3405,26 @@ function shareManagerLink(agencyId) {
   } else {
     copyText(link, null);
     showToast('Link copied — paste it into a message to the agency');
+  }
+}
+/* Share a vacancy via the OS share sheet (WhatsApp, Messages, Gmail, etc.),
+   pointing at its static public listing page (see generate-pages.js) so the
+   link works and looks right (title/description/og:image) when opened by
+   someone without the app. Falls back to copy-link where navigator.share
+   isn't available (desktop browsers). */
+function shareVacancy(vacancyId) {
+  var v = vacanciesCache.find(function(x){ return x.id === vacancyId; });
+  if (!v) { showToast('Vacancy not found'); return; }
+  var agency = v.agency_id ? agenciesCache.find(function(a){ return a.id === v.agency_id; }) : null;
+  var link = window.location.origin + '/vacancy/' + publicVacancySlug(v) + '/';
+  var orgName = (agency && agency.name) || v.company || '';
+  var shareText = v.title + (orgName ? ' — ' + orgName : '') + (v.location ? ' (' + v.location + ')' : '');
+  trackEvent('vacancy_share', 'vacancy', vacancyId);
+  if (navigator.share) {
+    navigator.share({ title: v.title + ' — SA Recruiters', text: shareText, url: link }).catch(function(){});
+  } else {
+    copyText(link, null);
+    showToast('Link copied — paste it into a message');
   }
 }
 function openManagerLink(agencyId) {
