@@ -558,8 +558,8 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-save.saved svg{fill:var(--accent);stroke:var(--accent);opacity:1}
 .vac-card-side .chevron{margin:0;width:16px;height:16px}
 .vac-card.open .vac-card-side .chevron{transform:rotate(180deg)}
-.vac-detail{max-height:0;overflow:hidden;transition:max-height .35s var(--ease)}
-.vac-card.open .vac-detail{max-height:1500px}
+.vac-detail{max-height:0;overflow:hidden;transition:max-height .5s var(--ease)}
+.vac-card.open .vac-detail{max-height:20000px}
 .vac-detail-inner{padding:0 2px 14px;border-top:1px solid var(--separator)}
 .vac-detail-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--separator)}
 .vac-detail-row:last-of-type{border-bottom:none}
