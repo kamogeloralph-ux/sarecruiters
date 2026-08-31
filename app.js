@@ -3587,12 +3587,8 @@ function renderManagerMode() {
   var vHtml = '';
   if (vacancies.length) {
     vacancies.forEach(function(v) {
-      vHtml += '<div class="manager-item">' +
+      vHtml += '<div class="manager-item manager-item-compact">' +
         '<div class="manager-item-title">' + escapeHtml(v.title || '') + '</div>' +
-        (v.location ? '<div class="manager-item-sub">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + escapeHtml(v.location) + '</div>' : '') +
-        (v.closing_date ? '<div class="manager-item-meta">Closes: ' + escapeHtml(v.closing_date) + '</div>' : '') +
-        (v.notes ? '<div class="manager-item-sub" style="margin-top:6px">' + escapeHtml(v.notes) + '</div>' : '') +
-        '<span class="manager-read-only-tag">Saved — contact admin to edit</span>' +
       '</div>';
     });
   } else {
@@ -3711,12 +3707,8 @@ function renderEmployerManagerMode() {
   var vHtml = '';
   if (vacancies.length) {
     vacancies.forEach(function(v) {
-      vHtml += '<div class="manager-item">' +
+      vHtml += '<div class="manager-item manager-item-compact">' +
         '<div class="manager-item-title">' + escapeHtml(v.title || '') + '</div>' +
-        (v.location ? '<div class="manager-item-sub">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>' + escapeHtml(v.location) + '</div>' : '') +
-        (v.closing_date ? '<div class="manager-item-meta">Closes: ' + escapeHtml(v.closing_date) + '</div>' : '') +
-        (v.notes ? '<div class="manager-item-sub" style="margin-top:6px">' + escapeHtml(v.notes) + '</div>' : '') +
-        '<span class="manager-read-only-tag">Saved — contact admin to edit</span>' +
       '</div>';
     });
   } else {

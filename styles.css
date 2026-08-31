@@ -685,6 +685,8 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .manager-add-btn .mi-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;flex-shrink:0}
 .manager-add-btn .mi-icon svg{width:19px;height:19px;display:block}
 .manager-item{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.manager-item-compact{padding:10px 14px;margin-bottom:6px}
+.manager-item-compact .manager-item-title{margin-bottom:0}
 .manager-item-title{font-size:13.5px;font-weight:600;margin-bottom:2px}
 .manager-item-sub{font-size:11.5px;color:var(--text-2);line-height:1.4}
 .manager-item-meta{font-size:11px;color:var(--accent);margin-top:4px;font-weight:600}
