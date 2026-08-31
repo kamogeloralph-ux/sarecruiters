@@ -146,6 +146,8 @@
     </div>
     <p style="margin:0 0 14px;font-size:14px;"><a href="/jobs/gauteng/" style="color:var(--accent,#0a84ff);text-decoration:none;font-weight:600;">Browse Gauteng jobs →</a></p>
 
+    <div class="sponsor-slot"></div>
+
     <div id="hub-list"></div>
     <div class="empty" id="empty-msg" style="display:none;">
       <div class="empty-state"><h3>No agencies yet</h3><p>Tap + to add the first one.</p></div>
@@ -1011,5 +1013,31 @@
 <script src="content.js" defer></script>
 <script src="content-manager.js" defer></script>
 <script src="app.js" defer></script>
+<script src="sponsor-widget.js" defer></script>
+<script>
+  // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,
+  // but app.js may still be creating its Supabase client asynchronously),
+  // so this fires after both are ready.
+  document.addEventListener('DOMContentLoaded', function () {
+    SponsorWidget.init({
+      rotateSeconds: 8,
+      // If app.js exposes its Supabase client on a global (e.g. window.sb or
+      // window.supabaseClient), pass it here to log impressions/clicks to
+      // your sponsor_events table instead of the visitor's browser:
+      // supabaseClient: window.sb,
+      items: [
+        // Add sponsored entries here, e.g.:
+        // {
+        //   id: "example-agency",
+        //   image: "https://sa-recruiters.co.za/assets/sponsors/example.jpg",
+        //   link: "https://example.co.za",
+        //   title: "Example Recruitment Agency",
+        //   subtext: "Featured agency · Gauteng",
+        //   weight: 1
+        // }
+      ]
+    });
+  });
+</script>
 </body>
 </html>

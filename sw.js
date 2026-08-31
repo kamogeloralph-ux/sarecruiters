@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v145-manager-vac-titles-desc-fix';
+const VERSION = 'sa-recruiters-v146-sponsor-widget';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -36,6 +36,7 @@ const CORE_ASSETS = [
   './manifest.json',
   './content.js',
   './content-manager.js',
+  './sponsor-widget.js',
   './icons/v2-icon-192.png',
   './icons/v2-icon-512.png',
   './icons/v2-Maskable-192.png',
