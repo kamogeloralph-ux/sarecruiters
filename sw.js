@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v147-donation-banner';
+const VERSION = 'sa-recruiters-v148-remove-donation-banner';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -37,7 +37,6 @@ const CORE_ASSETS = [
   './content.js',
   './content-manager.js',
   './sponsor-widget.js',
-  './donation-banner.js',
   './icons/v2-icon-192.png',
   './icons/v2-icon-512.png',
   './icons/v2-Maskable-192.png',
