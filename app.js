@@ -922,7 +922,10 @@ function hubCard(a) {
     '</button>' +
     '<div class="hub-panel" id="hub-panel-' + a.id + '">' +
       '<div class="hub-panel-inner">' +
-        '<a href="agency/' + publicAgencySlug(a) + '/" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;color:var(--accent);margin-bottom:8px;text-decoration:none;" onclick="event.stopPropagation()">View public listing page ↗</a>' +
+        '<div class="hub-listing-row">' +
+          '<a href="agency/' + publicAgencySlug(a) + '/" target="_blank" rel="noopener" class="hub-listing-link" onclick="event.stopPropagation()">View public listing page ↗</a>' +
+          '<button class="hub-share-btn" onclick="event.stopPropagation();shareAgency(\'' + a.id + '\')" aria-label="Share agency">' + SHARE_SVG + '<span>Share</span></button>' +
+        '</div>' +
         '<div class="hub-tabs">' +
           '<button class="hub-tab active" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'vacancies\')">Vacancies</button>' +
           '<button class="hub-tab" data-ripple onclick="switchHubTab(this,\'' + a.id + '\',\'branches\')">Branches</button>' +
@@ -3412,6 +3415,23 @@ function shareManagerLink(agencyId) {
    link works and looks right (title/description/og:image) when opened by
    someone without the app. Falls back to copy-link where navigator.share
    isn't available (desktop browsers). */
+/* Share an agency via the OS share sheet, pointing at its static public
+   listing page (see generate-pages.js). Falls back to copy-link where
+   navigator.share isn't available (desktop browsers). */
+function shareAgency(agencyId) {
+  var a = agenciesCache.find(function(x){ return x.id === agencyId; });
+  if (!a) { showToast('Agency not found'); return; }
+  var link = window.location.origin + '/agency/' + publicAgencySlug(a) + '/';
+  var loc = (a.location || a.address || '').trim();
+  var shareText = (a.name || 'Recruitment agency') + (loc ? ' — ' + loc : '');
+  trackEvent('agency_share', 'agency', agencyId);
+  if (navigator.share) {
+    navigator.share({ title: (a.name || 'Agency') + ' — SA Recruiters', text: shareText, url: link }).catch(function(){});
+  } else {
+    copyText(link, null);
+    showToast('Link copied — paste it into a message');
+  }
+}
 function shareVacancy(vacancyId) {
   var v = vacanciesCache.find(function(x){ return x.id === vacancyId; });
   if (!v) { showToast('Vacancy not found'); return; }
