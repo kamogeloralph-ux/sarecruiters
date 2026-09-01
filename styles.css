@@ -457,6 +457,14 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .pool-feature-chev{display:none}
 .pool-feature-card{background:linear-gradient(135deg,#5b4fe8,#714de0);border-color:transparent;color:#fff;box-shadow:0 10px 26px -14px rgba(91,79,232,.75)}.pool-feature-card .pool-feature-icon{color:#fff}.pool-feature-card .pool-feature-star{color:rgba(255,255,255,.9)}.pool-feature-card .pool-feature-title{color:#fff}.pool-feature-card .pool-feature-sub{color:rgba(255,255,255,.88)}.pool-feature-card .pool-feature-tag{color:#5b4fe8;background:#fff;border-color:rgba(255,255,255,.75)}.pool-feature-card:active{transform:scale(.985);background:linear-gradient(135deg,#5145db,#6742d3)}
 
+/* ===== Support ticker (small horizontal auto-scrolling donation banner) ===== */
+.support-ticker{position:relative;display:block;width:100%;overflow:hidden;margin:10px 0 2px;padding:9px 0;border-radius:var(--radius-pill);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);cursor:pointer;-webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
+.support-ticker-track{display:flex;width:max-content;white-space:nowrap;animation:supportTickerScroll 16s linear infinite}
+.support-ticker:active .support-ticker-track{animation-play-state:paused}
+.support-ticker-item{display:inline-flex;align-items:center;font-size:12px;font-weight:600;color:var(--accent);padding:0 26px;letter-spacing:-.01em}
+@keyframes supportTickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion: reduce){.support-ticker-track{animation:none}}
+
 /* Monochrome iOS-style profile menu icons: no colored tiles, just light outline glyphs. */
 .profile-menu-item .mi-icon{font-size:18px;width:34px;height:34px;border-radius:0;background:transparent!important;color:var(--text-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .profile-menu-item .mi-icon svg{width:21px;height:21px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

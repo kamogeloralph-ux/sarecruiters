@@ -2512,27 +2512,9 @@ function openPoolRegisterSheet() {
   document.getElementById('pool-work-authorized').value = '';
   document.getElementById('pool-about').value = '';
   document.getElementById('pool-cv').value = '';
-  document.getElementById('pool-payref').value = '';
   var alertOptIn = document.getElementById('pool-email-alerts');
   if (alertOptIn) alertOptIn.checked = false;
   document.getElementById('pool-register-overlay').classList.add('open');
-  loadPoolBankingDetails();
-}
-
-// ----- Talent Pool banking details (admin-editable, stored in app_settings) -----
-async function loadPoolBankingDetails() {
-  var boxes = document.querySelectorAll('.pool-banking-box');
-  if (!boxes.length) return;
-  var raw = await getAppSetting('pool_banking_details', '');
-  var d = { account_name: 'SA Recruiters', bank: '', account_number: '', branch_code: '' };
-  if (raw) { try { Object.assign(d, JSON.parse(raw)); } catch(e) {} }
-  var html = '<strong>Banking details</strong><br>' +
-    'Account name: ' + escapeHtml(d.account_name || 'SA Recruiters') + '<br>' +
-    'Bank: ' + escapeHtml(d.bank || '[add bank name]') + '<br>' +
-    'Account number: ' + escapeHtml(d.account_number || '[add account number]') + '<br>' +
-    'Branch code: ' + escapeHtml(d.branch_code || '[add branch code]') + '<br>' +
-    'Reference: use your full name';
-  boxes.forEach(function(box){ box.innerHTML = html; });
 }
 
 async function submitPoolRegistration() {
@@ -2544,13 +2526,11 @@ async function submitPoolRegistration() {
   var grade12 = document.getElementById('pool-grade12').value;
   var criminal = document.getElementById('pool-criminal').value;
   var experience = document.getElementById('pool-experience').value;
-  var payref = document.getElementById('pool-payref').value.trim();
   var email = document.getElementById('pool-email').value.trim();
   var alertOptIn = !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked);
   if (!name || !phone || !email || !sector || !location) { showToast('Please fill in name, email, phone, sector and location. Email is used for cross-device Talent Pool verification.'); return; }
   if (alertOptIn && !email) { showToast('Add your email address to receive vacancy alerts.'); return; }
   if (!gender || !grade12 || !criminal || experience === '') { showToast('Please answer gender, Grade 12, criminal record and experience.'); return; }
-  if (!payref) { showToast('Add the reference you used on your EFT so we can match your payment.'); return; }
   var payload = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2),
     full_name: name,
@@ -2578,7 +2558,6 @@ async function submitPoolRegistration() {
     work_authorized: document.getElementById('pool-work-authorized').value,
     about_you: document.getElementById('pool-about').value.trim().slice(0, 150),
     cv_link: document.getElementById('pool-cv').value.trim(),
-    payment_ref: payref,
     status: 'pending'
   };
   var btn = document.getElementById('pool-submit-btn');
@@ -2621,7 +2600,7 @@ async function submitPoolRegistration() {
   verifyTalentPoolMembership(phone, email, true);
   trackEvent('candidate_registration_submitted', 'candidate', null, { alert_opt_in: alertOptIn });
   closeSheet('pool-register-overlay');
-  showToast('Registration received — you\'ll go live once payment is confirmed.');
+  showToast('Registration received — you\'ll go live once it\'s reviewed.');
 }
 
 function copyText(text, el) {
