@@ -92,7 +92,8 @@
 <div id="app-splash" aria-hidden="true"><img src="icons/v2-icon-192.png" alt=""></div>
 
 <div class="update-banner" id="update-banner">A new version is available. <button onclick="forceUpdateReload()">Reload now</button></div>
-<div class="retry-banner" id="retry-banner">Couldn't refresh the latest listings. <button onclick="retryLoadAll()">Retry</button></div>
+<div class="retry-banner" id="retry-banner" role="status" aria-live="polite">Couldn't refresh the latest listings. <button onclick="retryLoadAll()">Retry</button></div>
+<div class="connection-status" id="connection-status" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <svg width="0" height="0" style="position:absolute">
   <defs><linearGradient id="navgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0A84FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs>
@@ -1013,13 +1014,14 @@
 <script src="content.js" defer></script>
 <script src="content-manager.js" defer></script>
 <script src="app.js" defer></script>
-<script src="sponsor-widget.js" defer></script>
+<!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,
   // but app.js may still be creating its Supabase client asynchronously),
   // so this fires after both are ready.
   document.addEventListener('DOMContentLoaded', function () {
-    SponsorWidget.init({
+    if (!window.SponsorWidget || typeof window.SponsorWidget.init !== 'function') return;
+    window.SponsorWidget.init({
       rotateSeconds: 8,
       // If app.js exposes its Supabase client on a global (e.g. window.sb or
       // window.supabaseClient), pass it here to log impressions/clicks to

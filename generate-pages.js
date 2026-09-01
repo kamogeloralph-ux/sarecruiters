@@ -53,6 +53,14 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+function recordMapKey(record, index) {
+  if (!record.__staticSlugKey) {
+    const rawId = record.id === undefined || record.id === null || record.id === '' ? `row-${index}` : String(record.id);
+    record.__staticSlugKey = `${rawId}__${index}`;
+  }
+  return record.__staticSlugKey;
+}
+
 function buildPublicSlugMap(records, getName) {
   const counts = new Map();
   records.forEach((record) => {
@@ -61,10 +69,17 @@ function buildPublicSlugMap(records, getName) {
   });
 
   const result = new Map();
-  records.forEach((record) => {
+  const usedSlugs = new Set();
+  records.forEach((record, index) => {
     const base = slugify(getName(record));
-    const id = String(record.id);
-    result.set(id, counts.get(base) > 1 ? `${base}-${id.slice(0, 6)}` : base);
+    const key = recordMapKey(record, index);
+    const hasStableId = record.id !== undefined && record.id !== null && record.id !== '';
+    const suffix = counts.get(base) > 1 && hasStableId ? `-${String(record.id).slice(0, 6)}` : '';
+    const fallbackSuffix = hasStableId ? '' : `-row-${index}`;
+    let slug = `${base}${suffix || fallbackSuffix}`;
+    if (usedSlugs.has(slug)) slug = `${slug}-row-${index}`;
+    usedSlugs.add(slug);
+    result.set(key, slug);
   });
   return result;
 }
@@ -173,7 +188,7 @@ function buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancyS
   const vacanciesHtml = agencyVacancies.length
     ? `<h2>Current Vacancies</h2><ul>${agencyVacancies
         .map((v) => {
-          const vSlug = vacancySlugById.get(String(v.id)) || slugify(v.title);
+          const vSlug = vacancySlugById.get(v.__staticSlugKey) || slugify(v.title);
           return `<li><a href="/vacancy/${vSlug}/">${escapeHtml(v.title)}</a>${
             v.location ? ` — ${escapeHtml(v.location)}` : ''
           }</li>`;
@@ -479,7 +494,7 @@ async function main() {
   const agencyDir = path.join(OUT_DIR, 'agency');
   ensureDir(agencyDir);
   agencies.forEach((agency) => {
-    const slug = agencySlugById.get(String(agency.id));
+    const slug = agencySlugById.get(recordMapKey(agency, agencies.indexOf(agency)));
     const agencyBranches = branches.filter((b) => String(b.agency_id) === String(agency.id));
     const agencyVacancies = vacancies.filter((v) => String(v.agency_id) === String(agency.id));
     const html = buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancySlugById);
@@ -492,7 +507,7 @@ async function main() {
   const vacancyDir = path.join(OUT_DIR, 'vacancy');
   ensureDir(vacancyDir);
   vacancies.forEach((vacancy) => {
-    const slug = vacancySlugById.get(String(vacancy.id));
+    const slug = vacancySlugById.get(recordMapKey(vacancy, vacancies.indexOf(vacancy)));
     const agency = agencies.find((a) => String(a.id) === String(vacancy.agency_id));
     const html = buildVacancyPage(vacancy, agency, slug);
     const dir = path.join(vacancyDir, slug);
