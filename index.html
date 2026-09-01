@@ -231,6 +231,14 @@
     </div>
     <audio id="track-audio" preload="metadata" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>
 
+    <!-- ===== Support ticker ===== -->
+    <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory — view donation details">
+      <div class="support-ticker-track">
+        <span class="support-ticker-item">💙 Support the Directory to keep it running — Acc: 2573389037 (SA Recruiters)</span>
+        <span class="support-ticker-item" aria-hidden="true">💙 Support the Directory to keep it running — Acc: 2573389037 (SA Recruiters)</span>
+      </div>
+    </div>
+
     <div class="cta-carousel" id="cta-carousel" aria-label="SA Recruiters services">
       <section class="employer-cta cta-slide" aria-labelledby="employer-cta-title">
         <div class="employer-cta-heading">
@@ -265,7 +273,7 @@
         <div class="employer-cta-actions">
           <button class="employer-cta-action" data-ripple onclick="openPoolRegisterSheet()">
             <span class="employer-cta-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span>
-            <span class="employer-cta-copy"><strong>Join the Talent Pool</strong><small>List your Mini-CV for R20/year</small></span>
+            <span class="employer-cta-copy"><strong>Join the Talent Pool</strong><small>Submit your CV — free for now</small></span>
             <svg class="employer-cta-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
           </button>
           <button class="employer-cta-action" data-ripple onclick="showAllVacancies()">
@@ -300,8 +308,8 @@
         <span class="pool-feature-star">★ Featured</span>
       </div>
       <div class="pool-feature-title">Talent Pool</div>
-      <div class="pool-feature-sub">Browse job seekers for free, or list yourself so employers can find you</div>
-      <div class="pool-feature-tags"><span class="pool-feature-tag">Browse free</span><span class="pool-feature-tag">List for R20/year</span></div>
+      <div class="pool-feature-sub">Browse job seekers for free, or submit your CV so employers can find you — free while we grow the Talent Pool</div>
+      <div class="pool-feature-tags"><span class="pool-feature-tag">Browse free</span><span class="pool-feature-tag">List for free</span></div>
     </button>
 
     <div class="pgroup-label">Community</div>
@@ -621,7 +629,7 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <button class="manager-add-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:0 16px 16px;width:calc(100% - 32px)"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span> Join the Talent Pool — R20/year</button>
+    <button class="manager-add-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:0 16px 16px;width:calc(100% - 32px)"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span> Join the Talent Pool — Free</button>
     <div class="screen-intro">
       <p>Browse job seekers who've joined the Talent Pool — open profiles, contact them directly. Employers of any sector are welcome to browse for free.</p>
     </div>
@@ -778,15 +786,7 @@
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3>Join the Talent Pool</h3>
     <div class="manager-banner" style="padding:0 0 12px">
-      <p>R20/year lists your profile so employers across all sectors can browse and contact you directly. Payment is by manual EFT — pay first, then submit this form with your reference so we can confirm it.</p>
-    </div>
-    <div class="sm-link-box pool-banking-box" style="margin-bottom:14px">
-      <strong>Banking details</strong><br>
-      Account name: SA Recruiters<br>
-      Bank: [add bank name]<br>
-      Account number: [add account number]<br>
-      Branch code: [add branch code]<br>
-      Reference: use your full name
+      <p>It's free to join — submit your details and CV below and we'll list your Mini-CV so employers across all sectors can browse and contact you directly.</p>
     </div>
     <div class="field"><label>Full name *</label><input id="pool-name" placeholder="e.g. Thabo Nkosi"></div>
     <div class="photo-row">
@@ -820,7 +820,6 @@
     <div class="field"><label>Legally eligible to work in South Africa?</label><select id="pool-work-authorized"><option value="">— Select —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
     <div class="field"><label>Sell yourself to employers / Tell us about yourself <span class="field-optional">150 characters</span></label><textarea id="pool-about" maxlength="150" placeholder="A short statement about your strengths, experience, and what you can offer..."></textarea><small class="char-counter" data-for="pool-about">0 / 150</small></div>
     <div class="field"><label>CV link</label><input id="pool-cv" type="url" placeholder="Google Drive / Dropbox share link"></div>
-    <div class="field"><label>EFT payment reference *</label><input id="pool-payref" placeholder="The reference you used on your EFT"></div>
     <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Submit registration</button>
   </div>
 </div>
