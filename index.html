@@ -506,10 +506,7 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="screen-intro">
-      <p>Browse every listed recruitment agency — search by name, trade or industry, then open a profile to see branches, contacts and vacancies.</p>
-    </div>
-    <div class="precise-location-chip" id="allagencies-geo-chip" data-ripple onclick="usePreciseLocationAgencies()" role="button" tabindex="0" aria-label="Filter agencies near your precise location">
+    <div class="precise-location-chip" id="allagencies-geo-chip" data-ripple onclick="usePreciseLocation('allagencies')" role="button" tabindex="0" aria-label="Filter agencies near your precise location">
       <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
       <span class="pl-text" id="allagencies-geo-text">Use precise location</span>
     </div>
@@ -536,8 +533,9 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="screen-intro">
-      <p>Search agency branches by name, location or parent agency. Tap a branch for contact details and linked vacancies.</p>
+    <div class="precise-location-chip" id="allbranches-geo-chip" data-ripple onclick="usePreciseLocation('allbranches')" role="button" tabindex="0" aria-label="Filter branches near your precise location">
+      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <span class="pl-text" id="allbranches-geo-text">Use precise location</span>
     </div>
     <div id="allbranches-list"></div>
     </div>
@@ -596,8 +594,9 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="screen-intro">
-      <p>Companies that post their own vacancies directly. Verified employers post here — their jobs also show up in All Vacancies.</p>
+    <div class="precise-location-chip" id="allemployers-geo-chip" data-ripple onclick="usePreciseLocation('allemployers')" role="button" tabindex="0" aria-label="Filter employers near your precise location">
+      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <span class="pl-text" id="allemployers-geo-text">Use precise location</span>
     </div>
     <div class="hub-admin-row" style="margin:0 16px 14px;">
       <button class="hub-add-btn" data-ripple onclick="openEmployerForm()">+ Register your company</button>
@@ -631,8 +630,9 @@
     </div>
     <div class="screen-scroll">
     <button class="manager-add-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:0 16px 16px;width:calc(100% - 32px)"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span> Join the Talent Pool — Free</button>
-    <div class="screen-intro">
-      <p>Browse job seekers who've joined the Talent Pool — open profiles, contact them directly. Employers of any sector are welcome to browse for free.</p>
+    <div class="precise-location-chip" id="pool-geo-chip" data-ripple onclick="usePreciseLocation('pool')" role="button" tabindex="0" aria-label="Filter talent pool near your precise location">
+      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <span class="pl-text" id="pool-geo-text">Use precise location</span>
     </div>
     <div id="pool-list"></div>
     </div>

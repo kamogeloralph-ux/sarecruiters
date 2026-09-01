@@ -1197,6 +1197,7 @@ function showAllEmployers() {
 
 function renderAllEmployersList() {
   var q = ((document.getElementById('allemployers-search')||{}).value || '').trim().toLowerCase();
+  syncPreciseLocationChip('allemployers', q);
   var el = document.getElementById('allemployers-list');
   var list = employersCache.slice();
   if (q) {
@@ -2461,6 +2462,7 @@ function renderPoolList() {
   var listEl = document.getElementById('pool-list');
   if (!listEl) return;
   var q = ((document.getElementById('pool-search')||{}).value || '').trim().toLowerCase();
+  syncPreciseLocationChip('pool', q);
   var sector = ((document.getElementById('pool-sector-filter')||{}).value || '');
   // Defense-in-depth: only approved/active candidates may ever be rendered publicly.
   var list = poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice();
@@ -2924,35 +2926,51 @@ function showAllVacancies() {
   resetActiveScreenScroll('screen-allvacancies');
 }
 
-// ---- Precise-location filter (All Agencies) ----
-// Agencies only carry a free-text location (e.g. "Durban, KZN"), not GPS
-// coordinates, so real distance sorting isn't possible without a backend
-// change. This detects the device's area via the browser's geolocation +
-// a no-key reverse-geocode lookup, then drives the same text search the
-// agencies list already filters on — same result as typing the area in.
-var allAgenciesGeoActive = false;
-var allAgenciesGeoQuery = '';
+// ---- Precise-location filter (Agencies / Branches / Employers / Pool) ----
+// None of these records carry GPS coordinates, only a free-text location
+// (e.g. "Durban, KZN"), so real distance sorting isn't possible without a
+// backend change. This detects the device's area via the browser's
+// geolocation + a no-key reverse-geocode lookup, then drives the same text
+// search each list already filters on — same result as typing the area in.
+var PRECISE_LOCATION_SCREENS = {
+  allagencies: { search: 'allagencies-search', chip: 'allagencies-geo-chip', text: 'allagencies-geo-text', render: function(){ renderAllAgenciesList(); } },
+  allbranches: { search: 'allbranches-search', chip: 'allbranches-geo-chip', text: 'allbranches-geo-text', render: function(){ renderAllBranchesList(); } },
+  allemployers: { search: 'allemployers-search', chip: 'allemployers-geo-chip', text: 'allemployers-geo-text', render: function(){ renderAllEmployersList(); } },
+  pool: { search: 'pool-search', chip: 'pool-geo-chip', text: 'pool-geo-text', render: function(){ renderPoolList(); } }
+};
+var preciseLocationState = {};
 
-function resetPreciseLocationChipVisual() {
-  var chip = document.getElementById('allagencies-geo-chip');
-  var label = document.getElementById('allagencies-geo-text');
+function resetPreciseLocationChipVisual(key) {
+  var cfg = PRECISE_LOCATION_SCREENS[key];
+  if (!cfg) return;
+  var chip = document.getElementById(cfg.chip);
+  var label = document.getElementById(cfg.text);
   if (chip) { chip.classList.remove('pl-loading'); chip.classList.remove('pl-active'); }
   if (label) label.textContent = 'Use precise location';
-  allAgenciesGeoActive = false;
-  allAgenciesGeoQuery = '';
+  preciseLocationState[key] = { active: false, query: '' };
 }
 
-function usePreciseLocationAgencies() {
-  var chip = document.getElementById('allagencies-geo-chip');
-  var label = document.getElementById('allagencies-geo-text');
+// Called from each list's render function so the chip auto-reverts to idle
+// if the person edits the search box by hand after applying a location.
+function syncPreciseLocationChip(key, currentQueryLower) {
+  var state = preciseLocationState[key];
+  if (state && state.active && currentQueryLower !== state.query) resetPreciseLocationChipVisual(key);
+}
+
+function usePreciseLocation(key) {
+  var cfg = PRECISE_LOCATION_SCREENS[key];
+  if (!cfg) return;
+  var chip = document.getElementById(cfg.chip);
+  var label = document.getElementById(cfg.text);
   if (!chip || !label) return;
+  var state = preciseLocationState[key] || {};
 
   // Tapping again while a location filter is applied clears it.
-  if (allAgenciesGeoActive) {
-    var input = document.getElementById('allagencies-search');
+  if (state.active) {
+    var input = document.getElementById(cfg.search);
     if (input) input.value = '';
-    resetPreciseLocationChipVisual();
-    renderAllAgenciesList();
+    resetPreciseLocationChipVisual(key);
+    cfg.render();
     return;
   }
 
@@ -2965,9 +2983,9 @@ function usePreciseLocationAgencies() {
   label.textContent = 'Locating…';
 
   navigator.geolocation.getCurrentPosition(function(pos) {
-    reverseGeocodeAgencyArea(pos.coords.latitude, pos.coords.longitude);
+    reverseGeocodeArea(key, pos.coords.latitude, pos.coords.longitude);
   }, function(err) {
-    resetPreciseLocationChipVisual();
+    resetPreciseLocationChipVisual(key);
     var msg = "Couldn't get your location";
     if (err && err.code === err.PERMISSION_DENIED) msg = 'Location permission denied';
     else if (err && err.code === err.TIMEOUT) msg = 'Location request timed out';
@@ -2975,7 +2993,7 @@ function usePreciseLocationAgencies() {
   }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 });
 }
 
-function reverseGeocodeAgencyArea(lat, lon) {
+function reverseGeocodeArea(key, lat, lon) {
   fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en')
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -2983,33 +3001,31 @@ function reverseGeocodeAgencyArea(lat, lon) {
       var region = (data && data.principalSubdivision) || '';
       var query = [area, region].filter(Boolean).join(', ');
       if (!query) throw new Error('No area found');
-      applyPreciseLocationAgencies(query);
+      applyPreciseLocation(key, query);
     })
     .catch(function() {
-      resetPreciseLocationChipVisual();
+      resetPreciseLocationChipVisual(key);
       showToast("Couldn't detect your area — try searching manually");
     });
 }
 
-function applyPreciseLocationAgencies(query) {
-  var chip = document.getElementById('allagencies-geo-chip');
-  var label = document.getElementById('allagencies-geo-text');
-  var input = document.getElementById('allagencies-search');
+function applyPreciseLocation(key, query) {
+  var cfg = PRECISE_LOCATION_SCREENS[key];
+  if (!cfg) return;
+  var chip = document.getElementById(cfg.chip);
+  var label = document.getElementById(cfg.text);
+  var input = document.getElementById(cfg.search);
   if (input) input.value = query;
-  allAgenciesGeoActive = true;
-  allAgenciesGeoQuery = query.toLowerCase();
+  preciseLocationState[key] = { active: true, query: query.toLowerCase() };
   if (chip) { chip.classList.remove('pl-loading'); chip.classList.add('pl-active'); }
   if (label) label.textContent = 'Near: ' + query;
-  renderAllAgenciesList();
-  showToast('Showing agencies near ' + query);
+  cfg.render();
+  showToast('Showing results near ' + query);
 }
 
 function renderAllAgenciesList() {
   var q = ((document.getElementById('allagencies-search')||{}).value || '').trim().toLowerCase();
-  // If the location filter is active but the user has since edited the
-  // search box by hand, the chip reverts to its idle state (the search
-  // itself keeps working normally either way).
-  if (allAgenciesGeoActive && q !== allAgenciesGeoQuery) resetPreciseLocationChipVisual();
+  syncPreciseLocationChip('allagencies', q);
   var el = document.getElementById('allagencies-list');
   var list = agenciesCache.slice();
   if (q) {
@@ -3029,6 +3045,7 @@ function renderAllAgenciesList() {
 
 function renderAllBranchesList() {
   var q = ((document.getElementById('allbranches-search')||{}).value || '').trim().toLowerCase();
+  syncPreciseLocationChip('allbranches', q);
   var el = document.getElementById('allbranches-list');
   var list = branchesCache.slice().map(function(b){
     var agency = agenciesCache.find(function(a){ return a.id === b.agency_id; });

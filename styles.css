@@ -465,7 +465,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 @media (prefers-reduced-motion: reduce){.support-ticker-item{animation:none;position:static;padding-left:14px}}
 
 /* ===== Precise-location filter chip (All Agencies) ===== */
-.precise-location-chip{position:relative;display:flex;align-items:center;gap:8px;width:100%;min-height:34px;margin:0 0 12px;padding:0 14px;border-radius:var(--radius-pill);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);cursor:pointer;color:var(--accent);transition:background .15s var(--ease),color .15s var(--ease)}
+.precise-location-chip{position:relative;display:flex;align-items:center;gap:8px;width:100%;min-height:34px;margin:14px 0 12px;padding:0 14px;border-radius:var(--radius-pill);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);cursor:pointer;color:var(--accent);transition:background .15s var(--ease),color .15s var(--ease)}
 .precise-location-chip:active{transform:scale(.985)}
 .precise-location-chip .pl-icon{display:flex;flex-shrink:0}
 .precise-location-chip .pl-icon svg{width:15px;height:15px;display:block}
