@@ -2924,8 +2924,92 @@ function showAllVacancies() {
   resetActiveScreenScroll('screen-allvacancies');
 }
 
+// ---- Precise-location filter (All Agencies) ----
+// Agencies only carry a free-text location (e.g. "Durban, KZN"), not GPS
+// coordinates, so real distance sorting isn't possible without a backend
+// change. This detects the device's area via the browser's geolocation +
+// a no-key reverse-geocode lookup, then drives the same text search the
+// agencies list already filters on — same result as typing the area in.
+var allAgenciesGeoActive = false;
+var allAgenciesGeoQuery = '';
+
+function resetPreciseLocationChipVisual() {
+  var chip = document.getElementById('allagencies-geo-chip');
+  var label = document.getElementById('allagencies-geo-text');
+  if (chip) { chip.classList.remove('pl-loading'); chip.classList.remove('pl-active'); }
+  if (label) label.textContent = 'Use precise location';
+  allAgenciesGeoActive = false;
+  allAgenciesGeoQuery = '';
+}
+
+function usePreciseLocationAgencies() {
+  var chip = document.getElementById('allagencies-geo-chip');
+  var label = document.getElementById('allagencies-geo-text');
+  if (!chip || !label) return;
+
+  // Tapping again while a location filter is applied clears it.
+  if (allAgenciesGeoActive) {
+    var input = document.getElementById('allagencies-search');
+    if (input) input.value = '';
+    resetPreciseLocationChipVisual();
+    renderAllAgenciesList();
+    return;
+  }
+
+  if (!('geolocation' in navigator)) {
+    showToast("Location isn't available on this device");
+    return;
+  }
+
+  chip.classList.add('pl-loading');
+  label.textContent = 'Locating…';
+
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    reverseGeocodeAgencyArea(pos.coords.latitude, pos.coords.longitude);
+  }, function(err) {
+    resetPreciseLocationChipVisual();
+    var msg = "Couldn't get your location";
+    if (err && err.code === err.PERMISSION_DENIED) msg = 'Location permission denied';
+    else if (err && err.code === err.TIMEOUT) msg = 'Location request timed out';
+    showToast(msg);
+  }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 });
+}
+
+function reverseGeocodeAgencyArea(lat, lon) {
+  fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var area = (data && (data.locality || data.city)) || '';
+      var region = (data && data.principalSubdivision) || '';
+      var query = [area, region].filter(Boolean).join(', ');
+      if (!query) throw new Error('No area found');
+      applyPreciseLocationAgencies(query);
+    })
+    .catch(function() {
+      resetPreciseLocationChipVisual();
+      showToast("Couldn't detect your area — try searching manually");
+    });
+}
+
+function applyPreciseLocationAgencies(query) {
+  var chip = document.getElementById('allagencies-geo-chip');
+  var label = document.getElementById('allagencies-geo-text');
+  var input = document.getElementById('allagencies-search');
+  if (input) input.value = query;
+  allAgenciesGeoActive = true;
+  allAgenciesGeoQuery = query.toLowerCase();
+  if (chip) { chip.classList.remove('pl-loading'); chip.classList.add('pl-active'); }
+  if (label) label.textContent = 'Near: ' + query;
+  renderAllAgenciesList();
+  showToast('Showing agencies near ' + query);
+}
+
 function renderAllAgenciesList() {
   var q = ((document.getElementById('allagencies-search')||{}).value || '').trim().toLowerCase();
+  // If the location filter is active but the user has since edited the
+  // search box by hand, the chip reverts to its idle state (the search
+  // itself keeps working normally either way).
+  if (allAgenciesGeoActive && q !== allAgenciesGeoQuery) resetPreciseLocationChipVisual();
   var el = document.getElementById('allagencies-list');
   var list = agenciesCache.slice();
   if (q) {

@@ -464,6 +464,16 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 @keyframes supportTickerScroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 @media (prefers-reduced-motion: reduce){.support-ticker-item{animation:none;position:static;padding-left:14px}}
 
+/* ===== Precise-location filter chip (All Agencies) ===== */
+.precise-location-chip{position:relative;display:flex;align-items:center;gap:8px;width:100%;min-height:34px;margin:0 0 12px;padding:0 14px;border-radius:var(--radius-pill);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);cursor:pointer;color:var(--accent);transition:background .15s var(--ease),color .15s var(--ease)}
+.precise-location-chip:active{transform:scale(.985)}
+.precise-location-chip .pl-icon{display:flex;flex-shrink:0}
+.precise-location-chip .pl-icon svg{width:15px;height:15px;display:block}
+.precise-location-chip .pl-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;letter-spacing:-.01em}
+.precise-location-chip.pl-loading .pl-icon svg{animation:plSpin 1s linear infinite}
+.precise-location-chip.pl-active{background:var(--accent);color:#fff}
+@keyframes plSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
 /* Monochrome iOS-style profile menu icons: no colored tiles, just light outline glyphs. */
 .profile-menu-item .mi-icon{font-size:18px;width:34px;height:34px;border-radius:0;background:transparent!important;color:var(--text-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .profile-menu-item .mi-icon svg{width:21px;height:21px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
