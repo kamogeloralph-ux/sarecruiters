@@ -57,9 +57,9 @@ input,select,textarea{font-family:inherit}
 a{color:inherit;text-decoration:none}
 
 .app{max-width:520px;margin:0 auto;position:relative;min-height:100vh;display:flex;flex-direction:column;height:100vh;overflow:hidden;background:var(--bg);isolation:isolate}
-.app::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(4,13,34,.82),rgba(4,13,34,.88)),url("assets/sa-recruiters-signature-wallpaper.png");background-size:cover;background-position:center;background-repeat:no-repeat}
+.app::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(4,13,34,.82),rgba(4,13,34,.88)),url("/manus-storage/sa-recruiters-signature-wallpaper_244594a1.png");background-size:cover;background-position:center;background-repeat:no-repeat}
 .app>*{position:relative;z-index:1}
-[data-theme="light"] .app::before{background-image:linear-gradient(rgba(242,242,247,.86),rgba(242,242,247,.91)),url("assets/sa-recruiters-signature-wallpaper.png")}
+[data-theme="light"] .app::before{background-image:linear-gradient(rgba(242,242,247,.86),rgba(242,242,247,.91)),url("/manus-storage/sa-recruiters-signature-wallpaper_244594a1.png")}
 @media (min-width:900px){ body{background:var(--bg-edge)} .app{box-shadow:var(--shadow-lg)} }
 
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
@@ -900,3 +900,20 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .terms-accept-row small{font-size:11.5px;color:var(--text-2);line-height:1.45}
 .terms-accept-row a{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:2px}
 @supports not (color:color-mix(in srgb, black, white)){.terms-accept-row{border-color:var(--border-strong)}}
+
+/* ===== Connection state: quiet, explicit, and accessible ===== */
+.connection-status{display:none;position:fixed;left:16px;right:16px;bottom:16px;z-index:9998;padding:9px 14px;border:1px solid var(--border-strong);border-radius:14px;background:color-mix(in srgb,var(--card) 94%,transparent);color:var(--text-2);font-size:11.5px;font-weight:600;letter-spacing:.01em;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.12);backdrop-filter:blur(12px);pointer-events:none}
+.connection-status.show{display:block}
+.connection-status[data-state="live"]{color:var(--success);border-color:color-mix(in srgb,var(--success) 24%,var(--border))}
+.connection-status[data-state="loading"]{color:var(--accent)}
+.connection-status[data-state="offline"],.connection-status[data-state="error"]{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 24%,var(--border))}
+@media (min-width:900px){.connection-status{left:calc(50% - 244px);right:calc(50% - 244px)}}
+@media (prefers-reduced-motion:reduce){.connection-status{backdrop-filter:none}}
+
+/* ===== Screen-level vacancy states ===== */
+.screen-state-host{min-height:52px}
+.screen-state{margin:14px 0;padding:24px 18px;border:1px dashed var(--border-strong);border-radius:16px;background:color-mix(in srgb,var(--card) 74%,transparent);color:var(--text-2);font-size:13px;line-height:1.5;text-align:center}
+.screen-state-loading{color:var(--accent)}
+.screen-state-host[data-state="error"] .screen-state{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 24%,var(--border))}
+@media (prefers-reduced-motion:no-preference){.screen-state-loading::after{content:"";display:inline-block;width:8px;height:8px;margin-left:8px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:sa-state-spin .8s linear infinite}}
+@keyframes sa-state-spin{to{transform:rotate(360deg)}}

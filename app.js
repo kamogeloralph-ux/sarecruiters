@@ -2,7 +2,21 @@
 // ===== Supabase config =====
 var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
-var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+if (!supabaseClient) console.warn('[SA Recruiters] Supabase client unavailable; using local read-only fallback until the connection is restored.');
+
+// The public PWA does not include the admin-only settings controls. Keep the
+// shared loader safe when the admin page's UI helper is not present.
+if (typeof window.updateEmployerRegUI !== 'function') {
+  window.updateEmployerRegUI = function() {
+    var toggle = document.getElementById('emp-reg-toggle');
+    var sub = document.getElementById('emp-reg-sub');
+    if (toggle) toggle.checked = !!publicEmployerRegistrationOpen;
+    if (sub) sub.textContent = publicEmployerRegistrationOpen ? 'Open — anyone can register a company right now' : 'Closed — spam protected';
+  };
+}
 // First-party analytics: no IP address, user-agent, name, phone, or email is stored.
 var analyticsSessionId = (function(){ try { var k='sa_analytics_session'; var v=localStorage.getItem(k); if(!v){ v='s_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10); localStorage.setItem(k,v); } return v; } catch(e){ return 's_'+Date.now().toString(36); } })();
 function trackEvent(eventName, entityType, entityId, metadata) {
@@ -21,6 +35,7 @@ var employersCache = [];
 // used by generate-pages.js. This keeps links correct when names repeat.
 var publicAgencySlugs = Object.create(null);
 var publicVacancySlugs = Object.create(null);
+var publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMap() : null;
 var isAdmin = false;
 var publicVacancyPostingOpen = false;
 var publicEmployerRegistrationOpen = false;
@@ -164,12 +179,12 @@ function markAppDataReady() {
   __saDataReady = true;
   window.__saTryReveal();
 }
-// Safety net: never leave the splash up more than 4s even if the
+// Safety net: never leave the splash up more than 2.5s even if the
 // stylesheet load event is somehow missed (slow network, browser quirk).
 setTimeout(function () {
   window.__saCssReady = true;
   markAppDataReady();
-}, 4000);
+}, 2500);
 
 /* ── Theme (day / night) ───────────────────────────── */
 function applyTheme(theme) {
@@ -218,6 +233,7 @@ function slugify(str) {
 function rebuildPublicListingSlugs() {
   publicAgencySlugs = Object.create(null);
   publicVacancySlugs = Object.create(null);
+  publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMap() : null;
 
   var agencyCounts = Object.create(null);
   agenciesCache.forEach(function(a) {
@@ -232,22 +248,28 @@ function rebuildPublicListingSlugs() {
   });
 
   var vacancyCounts = Object.create(null);
+  var usedVacancySlugs = Object.create(null);
   vacanciesCache.forEach(function(v) {
     var base = slugify(v.title);
     vacancyCounts[base] = (vacancyCounts[base] || 0) + 1;
   });
-  vacanciesCache.forEach(function(v) {
+  vacanciesCache.forEach(function(v, index) {
     var base = slugify(v.title);
-    publicVacancySlugs[v.id] = vacancyCounts[base] > 1
+    var hasStableId = v.id !== undefined && v.id !== null && v.id !== '';
+    var slug = vacancyCounts[base] > 1 && hasStableId
       ? base + '-' + String(v.id).slice(0, 6)
-      : base;
+      : (hasStableId ? base : base + '-row-' + index);
+    if (usedVacancySlugs[slug]) slug = slug + '-row-' + index;
+    usedVacancySlugs[slug] = true;
+    if (hasStableId) publicVacancySlugs[v.id] = slug;
+    if (publicVacancyRecordSlugs) publicVacancyRecordSlugs.set(v, slug);
   });
 }
 function publicAgencySlug(a) {
   return publicAgencySlugs[a && a.id] || slugify(a && a.name);
 }
 function publicVacancySlug(v) {
-  return publicVacancySlugs[v && v.id] || slugify(v && v.title);
+  return (v && publicVacancyRecordSlugs && publicVacancyRecordSlugs.get(v)) || publicVacancySlugs[v && v.id] || slugify(v && v.title);
 }
 
 function escapeHtml(s) {
@@ -751,6 +773,56 @@ function markLoadError(arr) { try { arr.__loadError = true; } catch(e) {} return
 // successful load while fresh data streams in behind the scenes, instead
 // of showing a blank screen every time while Supabase responds. -----
 var DATA_CACHE_KEY = 'sa_data_cache_v1';
+var lastDataRefreshAt = null;
+function formatDataAge(timestamp) {
+  if (!timestamp) return '';
+  var age = Math.max(0, Date.now() - timestamp);
+  if (age < 60000) return 'just now';
+  var minutes = Math.floor(age / 60000);
+  if (minutes < 60) return minutes + ' min ago';
+  var hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours + ' hr ago';
+  return Math.floor(hours / 24) + ' days ago';
+}
+function vacancyScreenStateMarkup(screen, hasRows, hasQuery) {
+  if (hasRows) return '';
+  var message = 'New listings will appear here once they are posted.';
+  if (screen === 'search') message = hasQuery ? 'Try a different agency name, trade, role, or location.' : 'Find agencies, vacancies, trades, or locations.';
+  else if (screen === 'saved') message = 'Use the star on a vacancy card to keep it here for later.';
+  else if (screen === 'employer') message = 'New employer listings will appear here after they are saved.';
+  else if (screen === 'manager') message = 'No vacancies added yet.';
+  else if (screen === 'all') message = hasQuery ? 'Try a different search or adjust your filters.' : message;
+  return '<div class="screen-state" data-screen="' + screen + '" data-vacancy-state="empty">' + message + '</div>';
+}
+
+function connectionStatusLabel(state, timestamp, isOnline) {
+  var isOffline = state === 'offline' || !isOnline;
+  if (state === 'loading') return 'Updating listings…';
+  if (isOffline) return timestamp ? 'Offline · showing saved listings from ' + formatDataAge(timestamp) : 'Offline · saved listings only';
+  if (state === 'cached') return timestamp ? 'Saved listings · last checked ' + formatDataAge(timestamp) : 'Saved listings · waiting for connection';
+  if (state === 'error') return timestamp ? 'Could not refresh · showing listings from ' + formatDataAge(timestamp) : 'Could not refresh the latest listings';
+  if (state === 'live') return 'Live listings · updated ' + formatDataAge(timestamp || Date.now());
+  return '';
+}
+function setConnectionStatus(state, timestamp) {
+  var el = document.getElementById('connection-status');
+  if (!el) return;
+  var isOffline = state === 'offline' || !navigator.onLine;
+  var label = connectionStatusLabel(state, timestamp, navigator.onLine);
+  el.textContent = label;
+  el.dataset.state = state;
+  el.classList.toggle('show', !!label);
+  el.title = timestamp ? 'Last successful listing refresh: ' + new Date(timestamp).toLocaleString() : '';
+}
+
+function initConnectionStatus() {
+  window.addEventListener('offline', function() { setConnectionStatus('offline', lastDataRefreshAt); });
+  window.addEventListener('online', function() {
+    setConnectionStatus('loading', lastDataRefreshAt);
+    loadAll();
+  });
+  setConnectionStatus(navigator.onLine ? (lastDataRefreshAt ? 'cached' : 'loading') : 'offline', lastDataRefreshAt);
+}
 function saveDataCache() {
   try {
     localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({
@@ -774,11 +846,13 @@ function loadDataCache() {
     vacanciesCache = d.vacancies || [];
     employersCache = d.employers || [];
     poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
+    lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
     return true;
   } catch(e) { return false; }
 }
 
 async function loadAll() {
+  setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
   // Fetch all startup data and the two public settings concurrently. The
   // home screen can render from the fastest useful response instead of
   // waiting for a chain of independent requests.
@@ -803,6 +877,8 @@ async function loadAll() {
   }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
   setRetryBanner(hadLoadError);
+  if (!hadLoadError) lastDataRefreshAt = Date.now();
+  setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
   publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
   publicEmployerRegistrationOpen = (results[5] === true || results[5] === 'true');
   employerDirectoryOpen = (results[6] === true || results[6] === 'true');
@@ -1065,9 +1141,9 @@ function employerHubCard(e) {
 
 function employerHubVacancies(e) {
   var list = vacanciesForEmployer(e.id);
-  var html = '<div class="hub-list" style="padding:4px 0;">';
+  var html = '<div class="hub-list" data-vacancy-state="' + (list.length ? 'ready' : 'empty') + '" style="padding:4px 0;">';
   if (!list.length) {
-    html += '<div style="font-size:12.5px;color:var(--text-2);padding:8px 2px;">No vacancies posted yet.</div>';
+    html += vacancyScreenStateMarkup('employer', false, false);
   } else {
     list.forEach(function(v) {
       html += vacancyCard(v, {});
@@ -1210,7 +1286,8 @@ function renderAllEmployersList() {
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
     return (a.name||'').localeCompare(b.name||'');
   });
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No employers yet</h3><p>Be the first company to register and post a vacancy.</p></div>'; return; }
+  if (!list.length) { el.dataset.state = 'empty'; el.innerHTML = '<div class="empty-state"><h3>No employers yet</h3><p>Be the first company to register and post a vacancy.</p></div>'; return; }
+  el.dataset.state = 'ready';
   el.innerHTML = list.map(employerHubCard).join('');
 }
 
@@ -1328,7 +1405,14 @@ function filterAndRenderCached() {
       return hay.indexOf(q) !== -1 || branchMatchIds[a.id] || vacancyMatchIds[a.id];
     });
   }
-  document.getElementById('empty-msg').style.display = list.length ? 'none' : 'block';
+  var empty = document.getElementById('empty-msg');
+  if (empty) {
+    empty.style.display = list.length ? 'none' : 'block';
+    var emptyTitle = empty.querySelector('h3');
+    var emptyCopy = empty.querySelector('p');
+    if (emptyTitle) emptyTitle.textContent = q ? 'No agencies match that search' : 'No agencies yet';
+    if (emptyCopy) emptyCopy.textContent = q ? 'Try a different agency, job, or location.' : 'Tap + to add the first one.';
+  }
   document.getElementById('hub-list').innerHTML = list.map(hubCard).join('');
 }
 
@@ -1345,7 +1429,11 @@ window.toggleSave = function(btn, key) {
 function renderSaved() {
   var list = vacanciesCache.filter(function(v){ return savedSet.has(v.id); });
   var el = document.getElementById('saved-list');
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>Nothing saved yet</h3><p>Tap the star on any vacancy to keep it here.</p></div>'; return; }
+  if (el) el.dataset.state = list.length ? 'ready' : 'empty';
+  if (!list.length) {
+    el.innerHTML = vacancyScreenStateMarkup('saved', false, false);
+    return;
+  }
   el.innerHTML = list.map(function(v) {
     var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
     return vacancyCard(v, agency);
@@ -1356,7 +1444,7 @@ function renderSaved() {
 window.handleSearchScreen = function(val) {
   var q = val.trim().toLowerCase();
   var el = document.getElementById('search-results');
-  if (!q) { el.innerHTML = '<div class="empty-state"><h3>Search the directory</h3><p>Find agencies, vacancies, trades, or locations.</p></div>'; return; }
+  if (!q) { el.dataset.state = 'empty'; el.innerHTML = vacancyScreenStateMarkup('search', false, false); return; }
   // Build set of agency IDs whose branches match (name, location, phone, email)
   var branchMatchIds = {};
   branchesCache.forEach(function(b) {
@@ -1379,7 +1467,7 @@ window.handleSearchScreen = function(val) {
     }
     return false;
   });
-  if (!am.length && !vm.length) { el.innerHTML = '<div class="empty-state"><h3>No matches</h3><p>Try a different agency name, trade, role, or location.</p></div>'; return; }
+  if (!am.length && !vm.length) { el.dataset.state = 'empty'; el.innerHTML = vacancyScreenStateMarkup('search', false, true); return; }
   var html = '';
   if (am.length) html += am.map(hubCard).join('');
   if (vm.length) {
@@ -1388,6 +1476,7 @@ window.handleSearchScreen = function(val) {
       html += vacancyCard(v, agency);
     });
   }
+  el.dataset.state = 'ready';
   el.innerHTML = html;
 };
 
@@ -1589,7 +1678,11 @@ window.toggleSave = function(btn, key) {
 function renderSaved() {
   var list = vacanciesCache.filter(function(v){ return savedSet.has(v.id); });
   var el = document.getElementById('saved-list');
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>Nothing saved yet</h3><p>Tap the star on any vacancy to keep it here.</p></div>'; return; }
+  if (el) el.dataset.state = list.length ? 'ready' : 'empty';
+  if (!list.length) {
+    el.innerHTML = vacancyScreenStateMarkup('saved', false, false);
+    return;
+  }
   el.innerHTML = list.map(function(v) {
     var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
     return vacancyCard(v, agency);
@@ -1905,31 +1998,51 @@ function openVacancySheet(agencyId) {
   resetVacancyTermsAcceptance();
   document.getElementById('vacancy-overlay').classList.add('open');
 }
+function normalizeVacancyLink(value) {
+  var link = (value || '').trim();
+  if (!link || /^https?:\/\//i.test(link)) return link;
+  return /^[^\s/]+\.[^\s/]+/.test(link) ? 'https://' + link : link;
+}
+function setVacancySaveBusy(busy) {
+  document.querySelectorAll('#vacancy-overlay .sheet-submit,#general-vacancy-overlay .sheet-submit').forEach(function(btn) {
+    btn.disabled = !!busy;
+    if (busy) btn.setAttribute('aria-busy', 'true'); else btn.removeAttribute('aria-busy');
+  });
+}
+
 async function saveVacancy() {
   var title = document.getElementById('v-title').value.trim();
   if (!title) { alert('Add a role/title.'); return; }
   if (!isAdmin && !requireVacancyTermsAcceptance('vacancy-terms-accept')) return;
-  var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-  var live = await upsertVacancy({
-    id: id, agency_id: pendingVacancyAgency, title: title,
-    location: document.getElementById('v-location').value.trim(),
-    employment_type: document.getElementById('v-etype').value.trim(),
-    contract_type: document.getElementById('v-contract').value.trim(),
-    salary: document.getElementById('v-salary').value.trim(),
-    hours: document.getElementById('v-hours').value.trim(),
-    work_schedule: document.getElementById('v-schedule').value.trim(),
-    start_date: document.getElementById('v-start').value.trim(),
-    closing_date: document.getElementById('v-closing').value.trim(),
-    notes: document.getElementById('v-notes').value.trim(),
-    link: document.getElementById('v-link').value.trim()
-  });
-  var termsRecorded = live ? await recordVacancyTermsAcceptance(id, managerMode && managerAgency ? managerAgency.id : pendingVacancyAgency, null) : false;
-  closeSheet('vacancy-overlay');
-  showToast(live ? (termsRecorded ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
-  await loadAll();
-  if (managerMode) { renderManagerMode(); return; }
-  var card = document.getElementById('hub-' + pendingVacancyAgency);
-  if (card) { card.classList.add('open'); switchHubTab(card.querySelector('.hub-tab'), pendingVacancyAgency, 'vacancies'); }
+  setVacancySaveBusy(true);
+  try {
+    var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    var live = await upsertVacancy({
+      id: id, agency_id: pendingVacancyAgency, title: title,
+      location: document.getElementById('v-location').value.trim(),
+      employment_type: document.getElementById('v-etype').value.trim(),
+      contract_type: document.getElementById('v-contract').value.trim(),
+      salary: document.getElementById('v-salary').value.trim(),
+      hours: document.getElementById('v-hours').value.trim(),
+      work_schedule: document.getElementById('v-schedule').value.trim(),
+      start_date: document.getElementById('v-start').value.trim(),
+      closing_date: document.getElementById('v-closing').value.trim(),
+      notes: document.getElementById('v-notes').value.trim(),
+      link: normalizeVacancyLink(document.getElementById('v-link').value)
+    });
+    var termsRecorded = live ? await recordVacancyTermsAcceptance(id, managerMode && managerAgency ? managerAgency.id : pendingVacancyAgency, null) : false;
+    closeSheet('vacancy-overlay');
+    showToast(live ? (termsRecorded ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
+    await loadAll();
+    if (managerMode) { renderManagerMode(); return; }
+    var card = document.getElementById('hub-' + pendingVacancyAgency);
+    if (card) { card.classList.add('open'); switchHubTab(card.querySelector('.hub-tab'), pendingVacancyAgency, 'vacancies'); }
+  } catch (error) {
+    console.error('[SA Recruiters] Vacancy save failed', error);
+    showToast('Could not save the vacancy. Please try again.');
+  } finally {
+    setVacancySaveBusy(false);
+  }
 }
 async function deleteVacancy(id, agencyId) {
   if (!confirm('Delete this vacancy?')) return;
@@ -2029,54 +2142,58 @@ async function saveGeneralVacancy() {
   var title = document.getElementById('gv-role').value.trim();
   if (!title) { alert('Add a role/title.'); return; }
   if (!isAdmin && !requireVacancyTermsAcceptance('general-vacancy-terms-accept')) return;
-  var data = {
-    title: title,
-    company: document.getElementById('gv-company').value.trim(),
-    location: document.getElementById('gv-location').value.trim(),
-    remote: document.getElementById('gv-remote').value,
-    employment_type: document.getElementById('gv-etype').value.trim(),
-    experience_level: document.getElementById('gv-exp').value,
-    contract_type: document.getElementById('gv-contract').value.trim(),
-    salary: document.getElementById('gv-salary').value.trim(),
-    hours: document.getElementById('gv-hours').value.trim(),
-    work_schedule: document.getElementById('gv-schedule').value.trim(),
-    start_date: document.getElementById('gv-start').value.trim(),
-    closing_date: document.getElementById('gv-closing').value.trim(),
-    notes: document.getElementById('gv-notes').value.trim(),
-    link: document.getElementById('gv-link').value.trim(),
-    email: document.getElementById('gv-email').value.trim(),
-    phone: document.getElementById('gv-phone').value.trim(),
-    agency_id: pendingVacancyEmployer ? 'employer' : 'general'
-  };
-  if (pendingVacancyEmployer) data.employer_id = pendingVacancyEmployer;
-  var wasEmployerPost = !!pendingVacancyEmployer;
-  var employerIdForRefresh = pendingVacancyEmployer;
-  var termsRecordedGeneral = false;
-  if (editingGeneralVacancyId) {
-    data.id = editingGeneralVacancyId;
-    var live2 = await upsertVacancy(data);
-    termsRecordedGeneral = live2 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
-    closeSheet('general-vacancy-overlay');
-    showToast(live2 ? (termsRecordedGeneral ? 'Vacancy updated' : 'Vacancy updated — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
-  } else {
-    data.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    var live3 = await upsertVacancy(data);
-    termsRecordedGeneral = live3 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
-    closeSheet('general-vacancy-overlay');
-    showToast(live3 ? (termsRecordedGeneral ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
-  }
-  editingGeneralVacancyId = null;
-  pendingVacancyEmployer = null;
-  await loadAll();
-  // If the all-vacancies screen is active, re-render it
-  if (document.getElementById('screen-allvacancies').classList.contains('active')) {
-    renderAllVacanciesList();
-  }
-  // If we posted from an employer's profile, re-open that employer's card
-  if (wasEmployerPost && employerIdForRefresh && document.getElementById('screen-allemployers').classList.contains('active')) {
-    renderAllEmployersList();
-    var empCard = document.getElementById('emphub-' + employerIdForRefresh);
-    if (empCard) empCard.classList.add('open');
+  setVacancySaveBusy(true);
+  try {
+    var data = {
+      title: title,
+      company: document.getElementById('gv-company').value.trim(),
+      location: document.getElementById('gv-location').value.trim(),
+      remote: document.getElementById('gv-remote').value,
+      employment_type: document.getElementById('gv-etype').value.trim(),
+      experience_level: document.getElementById('gv-exp').value,
+      contract_type: document.getElementById('gv-contract').value.trim(),
+      salary: document.getElementById('gv-salary').value.trim(),
+      hours: document.getElementById('gv-hours').value.trim(),
+      work_schedule: document.getElementById('gv-schedule').value.trim(),
+      start_date: document.getElementById('gv-start').value.trim(),
+      closing_date: document.getElementById('gv-closing').value.trim(),
+      notes: document.getElementById('gv-notes').value.trim(),
+      link: normalizeVacancyLink(document.getElementById('gv-link').value),
+      email: document.getElementById('gv-email').value.trim(),
+      phone: document.getElementById('gv-phone').value.trim(),
+      agency_id: pendingVacancyEmployer ? 'employer' : 'general'
+    };
+    if (pendingVacancyEmployer) data.employer_id = pendingVacancyEmployer;
+    var wasEmployerPost = !!pendingVacancyEmployer;
+    var employerIdForRefresh = pendingVacancyEmployer;
+    var termsRecordedGeneral = false;
+    if (editingGeneralVacancyId) {
+      data.id = editingGeneralVacancyId;
+      var live2 = await upsertVacancy(data);
+      termsRecordedGeneral = live2 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
+      closeSheet('general-vacancy-overlay');
+      showToast(live2 ? (termsRecordedGeneral ? 'Vacancy updated' : 'Vacancy updated — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
+    } else {
+      data.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+      var live3 = await upsertVacancy(data);
+      termsRecordedGeneral = live3 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
+      closeSheet('general-vacancy-overlay');
+      showToast(live3 ? (termsRecordedGeneral ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
+    }
+    editingGeneralVacancyId = null;
+    pendingVacancyEmployer = null;
+    await loadAll();
+    if (document.getElementById('screen-allvacancies').classList.contains('active')) renderAllVacanciesList();
+    if (wasEmployerPost && employerIdForRefresh && document.getElementById('screen-allemployers').classList.contains('active')) {
+      renderAllEmployersList();
+      var empCard = document.getElementById('emphub-' + employerIdForRefresh);
+      if (empCard) empCard.classList.add('open');
+    }
+  } catch (error) {
+    console.error('[SA Recruiters] General vacancy save failed', error);
+    showToast('Could not save the vacancy. Please try again.');
+  } finally {
+    setVacancySaveBusy(false);
   }
 }
 async function deleteGeneralVacancy(id) {
@@ -3139,6 +3256,7 @@ function renderAllVacanciesList() {
   if (backBar) backBar.style.display = allVacanciesFolder ? 'flex' : 'none';
 
   var el = document.getElementById('allvacancies-list');
+  if (el) el.dataset.state = 'ready';
   // Employer-posted vacancies are exclusive to their employer's own hub card
   // (see employerHubVacancies) and are gated behind Talent Pool verification
   // there — they never appear in this general/public vacancies list.
@@ -3206,7 +3324,12 @@ function renderAllVacanciesList() {
       '</div>';
     return;
   }
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No vacancies found</h3><p>Try a different search or adjust your filters.</p></div>'; return; }
+  if (!list.length) {
+    var hasFilters = !!(q || remoteFilter || expFilter || industryFilter);
+    el.dataset.state = 'empty';
+    el.innerHTML = vacancyScreenStateMarkup('all', false, hasFilters);
+    return;
+  }
 
   var groups = {};
   list.forEach(function(v){
@@ -3692,7 +3815,7 @@ function renderManagerMode() {
       '</div>';
     });
   } else {
-    vHtml = '<div class="empty-state" style="padding:16px 0"><p style="font-size:13px;color:var(--text-2)">No vacancies added yet.</p></div>';
+    vHtml = vacancyScreenStateMarkup('manager', false, false);
   }
   document.getElementById('manager-vacancy-list').innerHTML = vHtml;
 }
@@ -3812,7 +3935,7 @@ function renderEmployerManagerMode() {
       '</div>';
     });
   } else {
-    vHtml = '<div class="empty-state" style="padding:16px 0"><p style="font-size:13px;color:var(--text-2)">No vacancies added yet.</p></div>';
+    vHtml = vacancyScreenStateMarkup('manager', false, false);
   }
   document.getElementById('manager-employer-vacancy-list').innerHTML = vHtml;
 }
@@ -3937,6 +4060,7 @@ if (loadDataCache()) {
 }
 
 loadAll().then(markAppDataReady);
+initConnectionStatus();
 processAlertUnsubscribe();
 // The shell and cached directory paint first; secondary settings are already
 // included in loadAll, while the optional daily track loads just after paint.
