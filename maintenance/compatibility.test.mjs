@@ -55,6 +55,20 @@ describe("imported SA Recruiters PWA compatibility", () => {
     expect(app).toContain('aria-busy');
   });
 
+  it("keeps the connection status above search and away from bottom navigation", async () => {
+    const html = await readProjectFile("client/index.html");
+    const statusIndex = html.indexOf('class="connection-status"');
+    const searchIndex = html.indexOf('<div class="search search-mini">');
+    expect(statusIndex).toBeGreaterThan(-1);
+    expect(statusIndex).toBeLessThan(searchIndex);
+    expect(html.indexOf('<nav class="bottom-nav">')).toBeGreaterThan(statusIndex);
+
+    const css = await readProjectFile("client/public/styles.css");
+    const statusRule = css.match(/\.connection-status\{[^}]+\}/)?.[0] || "";
+    expect(statusRule).toContain("position:relative");
+    expect(statusRule).not.toContain("position:fixed");
+  });
+
   it("keeps deterministic status and employer-vacancy state contracts", async () => {
     const app = await readProjectFile("client/public/app.js");
     expect(app).toContain("function connectionStatusLabel(state, timestamp, isOnline)");

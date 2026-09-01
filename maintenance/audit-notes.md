@@ -59,3 +59,9 @@ The broader create/edit/delete, forced offline, and GitHub Pages regeneration fl
 - The connection-status label logic is now a pure deterministic function used by the live UI. Compatibility tests execute offline, cached, error, and live cases and verify their user-facing labels.
 - The final test run passes 2 test files and 8 tests, and both JavaScript entrypoints pass syntax checks.
 - The generator output is verified at 324 vacancy files, 324 unique vacancy sitemap URLs, zero duplicate vacancy URLs, and 119 agency files.
+
+## Connection-status placement fix
+
+- Moved the connection-status element into the home screen, directly above the search field, in both active and static shells.
+- Replaced fixed bottom-overlay positioning with an in-flow compact notice so it no longer competes with the fixed bottom navigation.
+- Mobile preview at 390×844 shows the status notice above search and the bottom navigation fully clear; loading state was visible during the capture.
