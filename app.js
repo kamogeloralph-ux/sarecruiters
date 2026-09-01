@@ -758,6 +758,7 @@ function saveDataCache() {
       branches: branchesCache,
       vacancies: vacanciesCache,
       employers: employersCache,
+      poolCount: poolCandidateCount,
       savedAt: Date.now()
     }));
   } catch(e) { /* storage full or unavailable — safe to skip */ }
@@ -772,6 +773,7 @@ function loadDataCache() {
     branchesCache = d.branches || [];
     vacanciesCache = d.vacancies || [];
     employersCache = d.employers || [];
+    poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
     return true;
   } catch(e) { return false; }
 }
@@ -784,7 +786,8 @@ async function loadAll() {
     getAgencies(), getBranches(), getVacancies(), getEmployers(),
     getAppSetting('public_vacancy_posting', 'false'),
     getAppSetting('public_employer_registration', 'false'),
-    getAppSetting('public_employer_directory', 'true')
+    getAppSetting('public_employer_directory', 'true'),
+    getPoolCandidateCount()
   ]);
   // If a fetch failed, keep whatever was already on screen (last good cache)
   // instead of wiping it to an empty list — a failed refresh should never
@@ -803,6 +806,9 @@ async function loadAll() {
   publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
   publicEmployerRegistrationOpen = (results[5] === true || results[5] === 'true');
   employerDirectoryOpen = (results[6] === true || results[6] === 'true');
+  // Only overwrite the count if the query succeeded — a failed count fetch
+  // should leave the last-known number on screen rather than dropping to 0.
+  if (typeof results[7] === 'number') poolCandidateCount = results[7];
   // Sort employers: verified first, then alphabetical
   employersCache.sort(function(a,b){
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
@@ -862,7 +868,7 @@ function updateStats() {
   var statEmployers = document.getElementById('stat-employers');
   if (statEmployers) statEmployers.textContent = employersCache.length;
   var statPool = document.getElementById('stat-pool');
-  if (statPool) statPool.textContent = poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length;
+  if (statPool) statPool.textContent = poolLoaded ? poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length : poolCandidateCount;
 }
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
@@ -2407,7 +2413,20 @@ async function submitSuggestion() {
 // ===== TALENT POOL (public browse + self-registration) =====
 var poolCache = [];
 var poolLoaded = false;
+var poolCandidateCount = 0;
 var poolReturnScreen = 'home';
+
+// Lightweight count-only query so the home "Pool Candidates" stat is accurate
+// on first load, without waiting for the full candidate list (which only
+// loads once someone actually opens the Talent Pool screen).
+async function getPoolCandidateCount() {
+  try {
+    var { count, error } = await supabaseClient.from('pool_candidates').select('id', { count: 'exact', head: true });
+    if (error) throw error;
+    return typeof count === 'number' ? count : null;
+  } catch(e) { console.warn('pool count load', e); return null; }
+}
+
 function goPool(returnScreen) {
   poolReturnScreen = returnScreen === 'profile' ? 'profile' : 'home';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -2427,6 +2446,7 @@ async function loadPoolCandidates() {
     else poolCache = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){ return (b.verified?1:0) - (a.verified?1:0); });
   } catch(e) { console.error('pool load', e); poolCache = []; }
   poolLoaded = true;
+  poolCandidateCount = poolCache.length;
   // Populate sector filter options from whatever is currently listed
   var sel = document.getElementById('pool-sector-filter');
   if (sel) {
