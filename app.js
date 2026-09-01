@@ -684,6 +684,9 @@ async function upsertVacancy(v) {
   try {
     var { error } = await supabaseClient.from('vacancies').upsert(v);
     if (!error) return true;
+    // Log every failed save (constraint violations, RLS denials, etc.) so
+    // future issues show up in the console instead of failing silently.
+    console.error('vacancy upsert', error);
     // If the error is about a missing column, retry with only the
     // columns that are guaranteed to exist in the original schema.
     if (error && error.message && error.message.indexOf('column') > -1) {
@@ -2148,7 +2151,11 @@ async function saveGeneralVacancy() {
       title: title,
       company: document.getElementById('gv-company').value.trim(),
       location: document.getElementById('gv-location').value.trim(),
-      remote: document.getElementById('gv-remote').value,
+      // The vacancies table's CHECK constraint only allows NULL, 'On-site',
+      // 'Remote', or 'Hybrid' — an empty string (the dropdown's default
+      // "— Not specified —" option) violates it and silently fails the
+      // whole save. Send null instead whenever it's left unset.
+      remote: document.getElementById('gv-remote').value || null,
       employment_type: document.getElementById('gv-etype').value.trim(),
       experience_level: document.getElementById('gv-exp').value,
       contract_type: document.getElementById('gv-contract').value.trim(),
