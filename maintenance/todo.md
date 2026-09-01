@@ -44,3 +44,5 @@
 - [x] Add a deterministic failed-refresh/offline status contract, verify its behavior with executable tests, and document the observed result.
 - [x] Add executable compatibility tests that exercise all-vacancies, saved, search, and employer-vacancy state render contracts.
 - [x] Capture stronger automated verification for the final employer-vacancy state markup through the shared executable renderer contract.
+- [x] Move the connection-status indicator above the search bar and verify it does not overlap or compete with bottom navigation.
+- [x] Prepare a download-only archive of the latest changed static-app files; do not publish or deploy from this request.
