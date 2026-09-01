@@ -1,11 +1,13 @@
-# SA Recruiters — GitHub deployment package
+# SA Recruiters — changed files only
 
-This ZIP contains the changed static-app files from the compatibility-hardening pass. Copy the files at the ZIP root into the root of the existing SA Recruiters GitHub repository, replacing the matching files. Keep the existing images, icons, `content.js`, `content-manager.js`, `.github/workflows/deploy.yml`, SQL files, and any other unchanged repository files.
+This archive is for download and manual copying into the existing SA Recruiters GitHub repository. It is not a deployment operation.
 
-The `maintenance/` folder contains the compatibility test, audit notes, and project checklist. It is not required by the GitHub Pages runtime.
+Copy the four files at the archive root into the repository root, replacing the matching files:
+- app.js
+- index.html
+- styles.css
+- generate-pages.js
 
-The static generator should be run by the existing workflow from the repository root. It now prevents an empty/partial Supabase result from overwriting the site and ensures duplicate vacancy routes do not overwrite each other. The generator still uses the existing public Supabase URL/anon key configuration.
+Keep all existing unchanged repository files, including images, icons, content.js, content-manager.js, SQL files, and .github/workflows/deploy.yml. The maintenance folder is optional documentation and test coverage. Do not copy node_modules or a local dist folder.
 
-Before pushing, review the generated `agency/`, `vacancy/`, `jobs/`, `sitemap.xml`, and `static-pages.css` outputs according to the repository’s existing workflow. Do not commit `node_modules/` or a local `dist/` directory.
-
-WhatsApp publishing is not included in this package because no provider credentials were configured.
+WhatsApp publishing is not included because no provider credentials were configured.
