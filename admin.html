@@ -632,7 +632,7 @@ var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Cloudflare R2 upload worker (candidate photos, daily tracks) — must match app.js
-var R2_WORKER_URL = 'https://REPLACE-ME.workers.dev';
+var R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
 async function r2AuthHeader() {
   var { data } = await supabaseClient.auth.getSession();
   var token = data && data.session && data.session.access_token;
