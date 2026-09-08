@@ -5,7 +5,7 @@ var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 // ===== Cloudflare R2 upload worker (candidate photos, daily tracks) =====
 // Set this to your deployed Worker URL, e.g.
 // 'https://sarecruiters-uploader.<your-subdomain>.workers.dev'
-var R2_WORKER_URL = 'https://REPLACE-ME.workers.dev';
+var R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
 var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
