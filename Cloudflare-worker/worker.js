@@ -66,6 +66,64 @@ function publicUrlFor(env, key) {
   return `${base}/${key}`;
 }
 
+// One-off: move any pool_candidates.photo_url still pointing at Supabase
+// Storage over to R2, and update the row. Runs entirely server-side using
+// the calling admin's own Supabase session (RLS applies, same as if the
+// admin panel updated the row directly) — no service-role key needed.
+async function migratePhotos(request, env, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+
+  const listRes = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/pool_candidates?select=id,photo_url&photo_url=not.is.null`,
+    { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
+  );
+  if (!listRes.ok) {
+    return json({ error: 'Could not list candidates', detail: await listRes.text() }, 500, origin);
+  }
+  const candidates = await listRes.json();
+
+  const toMigrate = candidates.filter(
+    (c) => typeof c.photo_url === 'string' && c.photo_url.includes('/storage/v1/object/public/candidate-photos/')
+  );
+
+  const results = [];
+  for (const c of toMigrate) {
+    try {
+      const imgRes = await fetch(c.photo_url);
+      if (!imgRes.ok) { results.push({ id: c.id, ok: false, reason: `download ${imgRes.status}` }); continue; }
+      const bytes = await imgRes.arrayBuffer();
+
+      const key = `candidate-photos/${randomKey()}.jpg`;
+      await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: 'image/jpeg' } });
+      const newUrl = publicUrlFor(env, key);
+
+      const patchRes = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?id=eq.${c.id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ photo_url: newUrl }),
+      });
+      if (!patchRes.ok) { results.push({ id: c.id, ok: false, reason: `db update ${patchRes.status}` }); continue; }
+
+      results.push({ id: c.id, ok: true, url: newUrl });
+    } catch (e) {
+      results.push({ id: c.id, ok: false, reason: e.message });
+    }
+  }
+
+  return json({
+    totalWithPhoto: candidates.length,
+    foundOnSupabase: toMigrate.length,
+    migrated: results.filter((r) => r.ok).length,
+    results,
+  }, 200, origin);
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin');
@@ -109,6 +167,14 @@ export default {
         const key = `daily-tracks/${trackId}.${ext}`;
         await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType } });
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
+      }
+
+      // ---- Admin-only: one-off migration of old Supabase-hosted photos to R2 ----
+      if (path === '/api/migrate-photos' && request.method === 'POST') {
+        if (!(await isAdminRequest(request, env))) {
+          return json({ error: 'Not authorized.' }, 401, origin);
+        }
+        return await migratePhotos(request, env, origin);
       }
 
       // ---- Admin-only: delete an object (photos or tracks) ----
