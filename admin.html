@@ -380,6 +380,12 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
           <button class="minibtn" id="migrate-photos-btn" onclick="migratePhotosToR2()">Migrate old photos to R2</button>
           <span class="muted" style="display:block;margin-top:6px;font-size:12.5px">One-off: moves any candidate photos still hosted on Supabase over to R2. Safe to run more than once.</span>
           <div id="migrate-photos-result" class="muted" style="margin-top:8px;font-size:12.5px;white-space:pre-wrap"></div>
+          <button class="minibtn" id="migrate-agency-logos-btn" onclick="migrateAgencyLogosToR2()" style="margin-top:14px">Migrate agency logos to R2</button>
+          <span class="muted" style="display:block;margin-top:6px;font-size:12.5px">One-off: moves agency logos out of the database (they were stored as embedded images, not files) and onto R2. Safe to run more than once.</span>
+          <div id="migrate-agency-logos-result" class="muted" style="margin-top:8px;font-size:12.5px;white-space:pre-wrap"></div>
+          <button class="minibtn" id="migrate-employer-logos-btn" onclick="migrateEmployerLogosToR2()" style="margin-top:14px">Migrate employer logos to R2</button>
+          <span class="muted" style="display:block;margin-top:6px;font-size:12.5px">Same as above, for employer/company logos. Safe to run more than once.</span>
+          <div id="migrate-employer-logos-result" class="muted" style="margin-top:8px;font-size:12.5px;white-space:pre-wrap"></div>
         </div>
       </div>
 
@@ -643,6 +649,41 @@ async function r2AuthHeader() {
   var token = data && data.session && data.session.access_token;
   return token ? { 'Authorization': 'Bearer ' + token } : {};
 }
+async function runLogoMigration(endpoint, btnId, outId, refreshFn){
+  var btn = document.getElementById(btnId);
+  var out = document.getElementById(outId);
+  btn.disabled = true;
+  var prevText = btn.textContent;
+  btn.textContent = 'Migrating...';
+  out.textContent = '';
+  try{
+    var authHdr = await r2AuthHeader();
+    if(!authHdr.Authorization){ out.textContent = 'You need to be logged in as admin to do this.'; return; }
+    var res = await fetch(R2_WORKER_URL + endpoint, { method:'POST', headers: authHdr });
+    var data = await res.json();
+    if(!res.ok){ out.textContent = 'Error: ' + (data && data.error || res.status); return; }
+    var lines = [];
+    lines.push(data.foundBase64 + ' logo(s) found still embedded in the database, ' + data.migrated + ' migrated to R2.');
+    (data.results||[]).forEach(function(r){
+      if(!r.ok) lines.push('Failed — id ' + r.id + ': ' + r.reason);
+    });
+    out.textContent = lines.join('\n');
+    if(typeof refreshFn === 'function') refreshFn();
+  }catch(e){
+    out.textContent = 'Error: ' + e.message;
+  }finally{
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
+}
+async function migrateAgencyLogosToR2(){
+  await runLogoMigration('/api/migrate-agency-logos', 'migrate-agency-logos-btn', 'migrate-agency-logos-result',
+    function(){ if(typeof renderAgencies === 'function') renderAgencies(); if(typeof loadAll === 'function') loadAll(); });
+}
+async function migrateEmployerLogosToR2(){
+  await runLogoMigration('/api/migrate-employer-logos', 'migrate-employer-logos-btn', 'migrate-employer-logos-result',
+    function(){ if(typeof loadAll === 'function') loadAll(); });
+}
 async function migratePhotosToR2(){
   var btn = document.getElementById('migrate-photos-btn');
   var out = document.getElementById('migrate-photos-result');
@@ -684,6 +725,7 @@ var ADMIN_WHATSAPP = '27715531005';
 var cache = { agencies: [], branches: [], vacancies: [], employers: [], reports: [], suggestions: [], tracks: [], poolCandidates: [] };
 var editing = { agency: null, branch: null, vacancy: null, employer: null, article: null, articleSection: null };
 var pendingPhoto = null;
+var pendingPhotoBlob = null;
 var subTab = 'reports';
 var publicVacancyPostingOpen = false;
 var publicEmployerRegistrationOpen = false;
@@ -1207,6 +1249,7 @@ function openAgencySheet(id){
   document.getElementById('a-cvpref').value = a ? (a.cvpref||'Email') : 'Email';
   document.getElementById('a-verified').checked = a ? !!a.verified : false;
   pendingPhoto = a ? (a.photo||null) : null;
+  pendingPhotoBlob = null;
   var prev = document.getElementById('a-photo-preview');
   if(pendingPhoto){ document.getElementById('a-photo-img').src = pendingPhoto; prev.style.display='block'; } else { prev.style.display='none'; }
   document.getElementById('a-photo').value = '';
@@ -1215,8 +1258,30 @@ function openAgencySheet(id){
 function handlePhoto(evt){
   var file = evt.target.files[0]; if(!file) return;
   var reader = new FileReader(); var img = new Image();
-  reader.onload = function(e){ img.onload = function(){ var c=document.createElement('canvas'); var max=480; var sc=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingPhoto=c.toDataURL('image/jpeg',0.75); document.getElementById('a-photo-img').src=pendingPhoto; document.getElementById('a-photo-preview').style.display='block'; }; img.src=e.target.result; };
+  reader.onload = function(e){ img.onload = function(){
+    var c=document.createElement('canvas'); var max=480; var sc=Math.min(1,max/Math.max(img.width,img.height));
+    c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    c.toBlob(function(blob){
+      pendingPhotoBlob = blob;
+      var url = URL.createObjectURL(blob);
+      document.getElementById('a-photo-img').src = url;
+      document.getElementById('a-photo-preview').style.display = 'block';
+    }, 'image/jpeg', 0.75);
+  }; img.src=e.target.result; };
   reader.readAsDataURL(file);
+}
+async function uploadAgencyPhotoIfAny(){
+  if(!pendingPhotoBlob) return pendingPhoto || null;
+  try{
+    var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-photo?prefix=agency-logos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: pendingPhotoBlob
+    });
+    var data = await res.json();
+    if(!res.ok){ console.error('agency logo upload', data && data.error); alert('Could not upload logo: '+(data && data.error)); return pendingPhoto || null; }
+    return data.url || null;
+  }catch(e){ console.error('agency logo upload', e); return pendingPhoto || null; }
 }
 // Talent Pool candidate photos go into the same Supabase Storage bucket the
 // public registration form uses, so admin-added/edited photos don't eat
@@ -1257,6 +1322,7 @@ async function saveAgency(){
   var name = document.getElementById('a-name').value.trim();
   if(!name){ alert('Add at least the agency name.'); return; }
   var id = editing.agency || newId();
+  var photoUrl = await uploadAgencyPhotoIfAny();
   var payload = {
     id:id, name:name,
     website:document.getElementById('a-website').value.trim(),
@@ -1267,7 +1333,7 @@ async function saveAgency(){
     cvpref:document.getElementById('a-cvpref').value,
     companies:document.getElementById('a-companies').value.trim(),
     trades:document.getElementById('a-trades').value.trim(),
-    photo:pendingPhoto,
+    photo:photoUrl,
     verified:document.getElementById('a-verified').checked
   };
   var isNewAgency = !editing.agency;
@@ -1276,7 +1342,7 @@ async function saveAgency(){
   if (isNewAgency) { var verified = await saveManagerToken(id, payload.manage_token); if (!verified) payload.manage_token = ''; }
   closeSheet('agency-overlay');
   showToast(editing.agency ? 'Agency updated' : 'Agency added');
-  editing.agency = null; pendingPhoto = null;
+  editing.agency = null; pendingPhoto = null; pendingPhotoBlob = null;
   await loadAll(); renderNav(); renderAgencies(); renderDashboard();
 }
 async function deleteAgency(id){
@@ -1354,6 +1420,7 @@ function renderEmployers(){
   }).join('');
 }
 var pendingEmployerPhoto = null;
+var pendingEmployerPhotoBlob = null;
 function openEmployerSheet(id){
   editing.employer = id || null;
   var e = id ? employerById(id) : null;
@@ -1367,6 +1434,7 @@ function openEmployerSheet(id){
   document.getElementById('emp-address').value = e ? (e.address||'') : '';
   document.getElementById('emp-verified').checked = e ? !!e.verified : true;
   pendingEmployerPhoto = e ? (e.photo||null) : null;
+  pendingEmployerPhotoBlob = null;
   var prev = document.getElementById('emp-photo-preview');
   if(pendingEmployerPhoto){ document.getElementById('emp-photo-img').src = pendingEmployerPhoto; prev.style.display='block'; } else { prev.style.display='none'; }
   document.getElementById('emp-photo').value = '';
@@ -1375,13 +1443,36 @@ function openEmployerSheet(id){
 function handleEmployerPhoto(evt){
   var file = evt.target.files[0]; if(!file) return;
   var reader = new FileReader(); var img = new Image();
-  reader.onload = function(e){ img.onload = function(){ var c=document.createElement('canvas'); var max=480; var sc=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingEmployerPhoto=c.toDataURL('image/jpeg',0.75); document.getElementById('emp-photo-img').src=pendingEmployerPhoto; document.getElementById('emp-photo-preview').style.display='block'; }; img.src=e.target.result; };
+  reader.onload = function(e){ img.onload = function(){
+    var c=document.createElement('canvas'); var max=480; var sc=Math.min(1,max/Math.max(img.width,img.height));
+    c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    c.toBlob(function(blob){
+      pendingEmployerPhotoBlob = blob;
+      var url = URL.createObjectURL(blob);
+      document.getElementById('emp-photo-img').src = url;
+      document.getElementById('emp-photo-preview').style.display = 'block';
+    }, 'image/jpeg', 0.75);
+  }; img.src=e.target.result; };
   reader.readAsDataURL(file);
+}
+async function uploadEmployerPhotoIfAny(){
+  if(!pendingEmployerPhotoBlob) return pendingEmployerPhoto || null;
+  try{
+    var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-photo?prefix=employer-logos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: pendingEmployerPhotoBlob
+    });
+    var data = await res.json();
+    if(!res.ok){ console.error('employer logo upload', data && data.error); alert('Could not upload logo: '+(data && data.error)); return pendingEmployerPhoto || null; }
+    return data.url || null;
+  }catch(e){ console.error('employer logo upload', e); return pendingEmployerPhoto || null; }
 }
 async function saveEmployer(){
   var name = document.getElementById('emp-name').value.trim();
   if(!name){ alert('Add at least the company name.'); return; }
   var id = editing.employer || newId();
+  var photoUrl = await uploadEmployerPhotoIfAny();
   var payload = {
     id:id, name:name,
     industry:document.getElementById('emp-industry').value.trim(),
@@ -1390,7 +1481,7 @@ async function saveEmployer(){
     email:document.getElementById('emp-email').value.trim(),
     location:document.getElementById('emp-location').value.trim(),
     address:document.getElementById('emp-address').value.trim(),
-    photo:pendingEmployerPhoto,
+    photo:photoUrl,
     verified:document.getElementById('emp-verified').checked
   };
   var isNewEmployer = !editing.employer;
@@ -1399,7 +1490,7 @@ async function saveEmployer(){
   if (isNewEmployer) { var everified = await saveEmployerManagerToken(id, payload.manage_token); if (!everified) payload.manage_token = ''; }
   closeSheet('employer-overlay');
   showToast(editing.employer ? 'Employer updated' : 'Employer registered');
-  editing.employer = null; pendingEmployerPhoto = null;
+  editing.employer = null; pendingEmployerPhoto = null; pendingEmployerPhotoBlob = null;
   await loadAll(); renderNav(); renderEmployers(); renderDashboard();
 }
 async function regenEmployerToken(id){
