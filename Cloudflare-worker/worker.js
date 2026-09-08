@@ -1,0 +1,130 @@
+/**
+ * SA Recruiters — R2 upload/delete Worker
+ * ----------------------------------------
+ * Replaces Supabase Storage for the two file buckets the site used:
+ *   - candidate-photos  (public upload, from the Talent Pool form + admin)
+ *   - daily-tracks       (admin-only upload, MP3s)
+ *
+ * The Postgres database (agencies, employers, vacancies, candidates, etc.)
+ * STAYS in Supabase — this Worker only moves file bytes, which is what was
+ * eating the Supabase bandwidth/egress quota.
+ *
+ * Files are stored in a single R2 bucket under two prefixes:
+ *   candidate-photos/<key>.jpg
+ *   daily-tracks/<key>.<ext>
+ *
+ * Reads are served directly from R2's public bucket URL (r2.dev or a
+ * custom domain) — this Worker is only involved in writes/deletes so admin
+ * auth (Supabase Auth JWT) can be checked before touching storage.
+ */
+
+const MAX_PHOTO_BYTES = 3 * 1024 * 1024;   // 3MB
+const MAX_TRACK_BYTES = 25 * 1024 * 1024;  // 25MB
+
+function corsHeaders(origin) {
+  return {
+    'Access-Control-Allow-Origin': origin || '*',
+    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+}
+
+function json(data, status, origin) {
+  return new Response(JSON.stringify(data), {
+    status: status || 200,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+  });
+}
+
+// Validate the admin's Supabase session by asking Supabase who this
+// access token belongs to. Keeps auth entirely inside Supabase — this
+// Worker never needs its own admin password to manage.
+async function isAdminRequest(request, env) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  if (!token) return false;
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': env.SUPABASE_ANON_KEY,
+      },
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+function randomKey() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function publicUrlFor(env, key) {
+  const base = (env.R2_PUBLIC_BASE_URL || '').replace(/\/$/, '');
+  return `${base}/${key}`;
+}
+
+export default {
+  async fetch(request, env) {
+    const origin = request.headers.get('Origin');
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders(origin) });
+    }
+
+    try {
+      // ---- Public: candidate photo upload (mirrors old open anon-key behaviour) ----
+      if (path === '/api/upload/candidate-photo' && request.method === 'POST') {
+        const contentType = request.headers.get('Content-Type') || '';
+        if (!contentType.startsWith('image/')) {
+          return json({ error: 'Only image uploads are allowed.' }, 400, origin);
+        }
+        const bytes = await request.arrayBuffer();
+        if (bytes.byteLength === 0) return json({ error: 'Empty file.' }, 400, origin);
+        if (bytes.byteLength > MAX_PHOTO_BYTES) {
+          return json({ error: 'Photo too large (max 3MB).' }, 413, origin);
+        }
+        const key = `candidate-photos/${randomKey()}.jpg`;
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: 'image/jpeg' } });
+        return json({ url: publicUrlFor(env, key), key }, 200, origin);
+      }
+
+      // ---- Admin-only: daily track (MP3) upload ----
+      if (path === '/api/upload/daily-track' && request.method === 'POST') {
+        if (!(await isAdminRequest(request, env))) {
+          return json({ error: 'Not authorized.' }, 401, origin);
+        }
+        const contentType = request.headers.get('Content-Type') || 'audio/mpeg';
+        const trackId = url.searchParams.get('id') || randomKey();
+        const ext = (url.searchParams.get('ext') || 'mp3').replace(/[^a-z0-9]/gi, '');
+        const bytes = await request.arrayBuffer();
+        if (bytes.byteLength === 0) return json({ error: 'Empty file.' }, 400, origin);
+        if (bytes.byteLength > MAX_TRACK_BYTES) {
+          return json({ error: 'Track too large (max 25MB).' }, 413, origin);
+        }
+        const key = `daily-tracks/${trackId}.${ext}`;
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType } });
+        return json({ url: publicUrlFor(env, key), key }, 200, origin);
+      }
+
+      // ---- Admin-only: delete an object (photos or tracks) ----
+      if (path === '/api/delete' && request.method === 'DELETE') {
+        if (!(await isAdminRequest(request, env))) {
+          return json({ error: 'Not authorized.' }, 401, origin);
+        }
+        const key = url.searchParams.get('key');
+        if (!key) return json({ error: 'Missing key.' }, 400, origin);
+        await env.MEDIA_BUCKET.delete(key);
+        return json({ ok: true }, 200, origin);
+      }
+
+      return json({ error: 'Not found.' }, 404, origin);
+    } catch (e) {
+      return json({ error: e.message || 'Server error.' }, 500, origin);
+    }
+  },
+};
