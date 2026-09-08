@@ -376,6 +376,11 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         </div>
         <input class="search" id="pool-admin-search" placeholder="Search name, sector, location..." oninput="renderPoolCandidates()">
         <div id="pool-admin-list"></div>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(127,127,127,.25)">
+          <button class="minibtn" id="migrate-photos-btn" onclick="migratePhotosToR2()">Migrate old photos to R2</button>
+          <span class="muted" style="display:block;margin-top:6px;font-size:12.5px">One-off: moves any candidate photos still hosted on Supabase over to R2. Safe to run more than once.</span>
+          <div id="migrate-photos-result" class="muted" style="margin-top:8px;font-size:12.5px;white-space:pre-wrap"></div>
+        </div>
       </div>
 
       <!-- SETTINGS -->
@@ -637,6 +642,33 @@ async function r2AuthHeader() {
   var { data } = await supabaseClient.auth.getSession();
   var token = data && data.session && data.session.access_token;
   return token ? { 'Authorization': 'Bearer ' + token } : {};
+}
+async function migratePhotosToR2(){
+  var btn = document.getElementById('migrate-photos-btn');
+  var out = document.getElementById('migrate-photos-result');
+  btn.disabled = true;
+  var prevText = btn.textContent;
+  btn.textContent = 'Migrating...';
+  out.textContent = '';
+  try{
+    var authHdr = await r2AuthHeader();
+    if(!authHdr.Authorization){ out.textContent = 'You need to be logged in as admin to do this.'; return; }
+    var res = await fetch(R2_WORKER_URL + '/api/migrate-photos', { method:'POST', headers: authHdr });
+    var data = await res.json();
+    if(!res.ok){ out.textContent = 'Error: ' + (data && data.error || res.status); return; }
+    var lines = [];
+    lines.push(data.foundOnSupabase + ' photo(s) found still on Supabase, ' + data.migrated + ' migrated to R2.');
+    (data.results||[]).forEach(function(r){
+      if(!r.ok) lines.push('Failed — candidate ' + r.id + ': ' + r.reason);
+    });
+    out.textContent = lines.join('\n');
+    if(typeof renderPoolCandidates === 'function') renderPoolCandidates();
+  }catch(e){
+    out.textContent = 'Error: ' + e.message;
+  }finally{
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
 }
 async function deleteR2Object(key) {
   if (!key) return;
