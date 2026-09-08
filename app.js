@@ -1,7 +1,11 @@
 
-// ===== Supabase config =====
+// ===== Supabase config (database only — file storage moved to R2, see below) =====
 var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
+// ===== Cloudflare R2 upload worker (candidate photos, daily tracks) =====
+// Set this to your deployed Worker URL, e.g.
+// 'https://sarecruiters-uploader.<your-subdomain>.workers.dev'
+var R2_WORKER_URL = 'https://REPLACE-ME.workers.dev';
 var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
@@ -1779,11 +1783,14 @@ function handlePoolPhoto(evt) {
 async function uploadPoolPhotoIfAny() {
   if (!window.pendingPoolPhotoBlob) return null;
   try {
-    var path = Date.now().toString(36) + Math.random().toString(36).slice(2) + '.jpg';
-    var upload = await supabaseClient.storage.from('candidate-photos').upload(path, window.pendingPoolPhotoBlob, { contentType: 'image/jpeg', upsert: false });
-    if (upload.error) { console.error('pool photo upload', upload.error); return null; }
-    var pub = supabaseClient.storage.from('candidate-photos').getPublicUrl(path);
-    return (pub && pub.data && pub.data.publicUrl) || null;
+    var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: window.pendingPoolPhotoBlob
+    });
+    var data = await res.json();
+    if (!res.ok) { console.error('pool photo upload', data && data.error); return null; }
+    return data.url || null;
   } catch(e) { console.error('pool photo upload', e); return null; }
 }
 async function saveAgency() {

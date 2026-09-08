@@ -631,6 +631,20 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Cloudflare R2 upload worker (candidate photos, daily tracks) — must match app.js
+var R2_WORKER_URL = 'https://REPLACE-ME.workers.dev';
+async function r2AuthHeader() {
+  var { data } = await supabaseClient.auth.getSession();
+  var token = data && data.session && data.session.access_token;
+  return token ? { 'Authorization': 'Bearer ' + token } : {};
+}
+async function deleteR2Object(key) {
+  if (!key) return;
+  try {
+    var authHdr = await r2AuthHeader();
+    await fetch(R2_WORKER_URL + '/api/delete?key=' + encodeURIComponent(key), { method: 'DELETE', headers: authHdr });
+  } catch (e) { console.error('r2 delete', e); }
+}
 
 var ADMIN_WHATSAPP = '27715531005';
 
@@ -1197,11 +1211,14 @@ function handlePoolPhoto(evt){
 async function uploadPoolAdminPhotoIfAny(){
   if(!pendingPoolAdminPhotoBlob) return window.pendingPoolAdminPhoto || null;
   try{
-    var path = Date.now().toString(36) + Math.random().toString(36).slice(2) + '.jpg';
-    var upload = await supabaseClient.storage.from('candidate-photos').upload(path, pendingPoolAdminPhotoBlob, { contentType:'image/jpeg', upsert:false });
-    if(upload.error){ console.error('pool admin photo upload', upload.error); alert('Could not upload photo: '+upload.error.message); return window.pendingPoolAdminPhoto || null; }
-    var pub = supabaseClient.storage.from('candidate-photos').getPublicUrl(path);
-    return (pub && pub.data && pub.data.publicUrl) || null;
+    var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: pendingPoolAdminPhotoBlob
+    });
+    var data = await res.json();
+    if(!res.ok){ console.error('pool admin photo upload', data && data.error); alert('Could not upload photo: '+(data && data.error)); return window.pendingPoolAdminPhoto || null; }
+    return data.url || null;
   }catch(e){ console.error('pool admin photo upload', e); return window.pendingPoolAdminPhoto || null; }
 }
 async function saveAgency(){
@@ -1955,7 +1972,7 @@ function restoreDefaults(){
 }
 
 // ===== Daily Track management =====
-var BUCKET = 'daily-tracks';
+// var BUCKET = 'daily-tracks'; // no longer used — files now live in R2 under daily-tracks/
 var TRACK_RETENTION_DAYS = 7;
 var editingTrackId = null;
 var trackFileChosen = null;   // File object chosen in the sheet
@@ -2044,7 +2061,7 @@ async function cleanupOldTracks(){
     var t = toDelete[i];
     // Delete file from storage
     if(t.file_path){
-      try { await supabaseClient.storage.from(BUCKET).remove([t.file_path]); } catch(e){}
+      await deleteR2Object(t.file_path);
     }
     // Delete row
     try { await supabaseClient.from('daily_tracks').delete().eq('id', t.id); } catch(e){}
@@ -2119,16 +2136,21 @@ async function saveTrack(){
     // Upload file to storage if a new file was chosen
     if(trackFileChosen){
       var ext = (trackFileChosen.name.match(/\.(\w+)$/) || [,'mp3'])[1];
-      filePath = 'tracks/' + id + '.' + ext;
-      var upRes = await supabaseClient.storage.from(BUCKET).upload(filePath, trackFileChosen, { contentType: 'audio/mpeg', upsert: true });
-      if(upRes.error){
-        // Likely bucket doesn't exist or RLS blocks
+      var authHdr = await r2AuthHeader();
+      var upRes = await fetch(R2_WORKER_URL + '/api/upload/daily-track?id=' + encodeURIComponent(id) + '&ext=' + encodeURIComponent(ext), {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': trackFileChosen.type || 'audio/mpeg' }, authHdr),
+        body: trackFileChosen
+      });
+      var upData = await upRes.json();
+      if(!upRes.ok){
         prog.style.display = 'none';
         saveBtn.disabled = false;
-        alert('Upload failed: ' + (upRes.error.message || 'Could not upload file') + '\n\nMake sure the "daily-tracks" storage bucket exists. Run CREATE_DAILY_TRACKS.sql in Supabase.');
+        alert('Upload failed: ' + (upData && upData.error || 'Could not upload file'));
         return;
       }
-      fileUrl = supabaseClient.storage.from(BUCKET).getPublicUrl(filePath).data.publicUrl;
+      filePath = upData.key;
+      fileUrl = upData.url;
     } else if(isEditing && existing) {
       // Keep existing file
       filePath = existing.file_path || '';
@@ -2159,7 +2181,7 @@ async function saveTrack(){
 
     // If editing and we uploaded a new file, optionally delete the old file
     if(isEditing && existing && existing.file_path && existing.file_path !== filePath){
-      try { await supabaseClient.storage.from(BUCKET).remove([existing.file_path]); } catch(e){}
+      await deleteR2Object(existing.file_path);
     }
 
     // Refresh cache
@@ -2183,7 +2205,7 @@ async function deleteTrack(id){
   if(!confirm('Delete "' + (t.title||'this track') + '"? This removes the file and record permanently.')) return;
   // Delete file from storage
   if(t.file_path){
-    try { await supabaseClient.storage.from(BUCKET).remove([t.file_path]); } catch(e){}
+    await deleteR2Object(t.file_path);
   }
   // Delete row
   var { error } = await supabaseClient.from('daily_tracks').delete().eq('id', id);
