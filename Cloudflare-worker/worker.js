@@ -124,6 +124,64 @@ async function migratePhotos(request, env, origin) {
   }, 200, origin);
 }
 
+// One-off: move any base64-embedded logo (agencies.photo / employers.photo)
+// over to R2, replacing the column value with a URL. These were never
+// Supabase Storage files — they're data: URLs baked straight into the row —
+// so this decodes and re-uploads rather than fetching from Supabase.
+async function migrateBase64Logos(request, env, origin, table, prefix) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+
+  const listRes = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/${table}?select=id,photo&photo=not.is.null`,
+    { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
+  );
+  if (!listRes.ok) {
+    return json({ error: `Could not list ${table}`, detail: await listRes.text() }, 500, origin);
+  }
+  const rows = await listRes.json();
+
+  const toMigrate = rows.filter((r) => typeof r.photo === 'string' && r.photo.startsWith('data:image'));
+
+  const results = [];
+  for (const r of toMigrate) {
+    try {
+      const match = r.photo.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) { results.push({ id: r.id, ok: false, reason: 'not a recognisable data URL' }); continue; }
+      const contentType = match[1];
+      const bytes = Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0));
+
+      const ext = (contentType.split('/')[1] || 'jpg').replace(/[^a-z0-9]/gi, '');
+      const key = `${prefix}/${randomKey()}.${ext}`;
+      await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType } });
+      const newUrl = publicUrlFor(env, key);
+
+      const patchRes = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}?id=eq.${r.id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ photo: newUrl }),
+      });
+      if (!patchRes.ok) { results.push({ id: r.id, ok: false, reason: `db update ${patchRes.status}` }); continue; }
+
+      results.push({ id: r.id, ok: true, url: newUrl });
+    } catch (e) {
+      results.push({ id: r.id, ok: false, reason: e.message });
+    }
+  }
+
+  return json({
+    total: rows.length,
+    foundBase64: toMigrate.length,
+    migrated: results.filter((x) => x.ok).length,
+    results,
+  }, 200, origin);
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin');
@@ -135,7 +193,9 @@ export default {
     }
 
     try {
-      // ---- Public: candidate photo upload (mirrors old open anon-key behaviour) ----
+      // ---- Public: candidate photo / agency logo / employer logo upload ----
+      // (mirrors old open anon-key behaviour — publicly writable, matches
+      // how the site already worked before this migration)
       if (path === '/api/upload/candidate-photo' && request.method === 'POST') {
         const contentType = request.headers.get('Content-Type') || '';
         if (!contentType.startsWith('image/')) {
@@ -146,7 +206,10 @@ export default {
         if (bytes.byteLength > MAX_PHOTO_BYTES) {
           return json({ error: 'Photo too large (max 3MB).' }, 413, origin);
         }
-        const key = `candidate-photos/${randomKey()}.jpg`;
+        const allowedPrefixes = ['candidate-photos', 'agency-logos', 'employer-logos'];
+        const reqPrefix = url.searchParams.get('prefix');
+        const prefix = allowedPrefixes.includes(reqPrefix) ? reqPrefix : 'candidate-photos';
+        const key = `${prefix}/${randomKey()}.jpg`;
         await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: 'image/jpeg' } });
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
       }
@@ -175,6 +238,20 @@ export default {
           return json({ error: 'Not authorized.' }, 401, origin);
         }
         return await migratePhotos(request, env, origin);
+      }
+
+      // ---- Admin-only: migrate base64 agency/employer logos to R2 ----
+      if (path === '/api/migrate-agency-logos' && request.method === 'POST') {
+        if (!(await isAdminRequest(request, env))) {
+          return json({ error: 'Not authorized.' }, 401, origin);
+        }
+        return await migrateBase64Logos(request, env, origin, 'agencies', 'agency-logos');
+      }
+      if (path === '/api/migrate-employer-logos' && request.method === 'POST') {
+        if (!(await isAdminRequest(request, env))) {
+          return json({ error: 'Not authorized.' }, 401, origin);
+        }
+        return await migrateBase64Logos(request, env, origin, 'employers', 'employer-logos');
       }
 
       // ---- Admin-only: delete an object (photos or tracks) ----
