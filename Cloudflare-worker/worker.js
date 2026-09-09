@@ -70,6 +70,9 @@ function publicUrlFor(env, key) {
 // Storage over to R2, and update the row. Runs entirely server-side using
 // the calling admin's own Supabase session (RLS applies, same as if the
 // admin panel updated the row directly) — no service-role key needed.
+// Batched to stay under the Workers per-request subrequest limit.
+const PHOTO_BATCH_SIZE = 20;
+
 async function migratePhotos(request, env, origin) {
   const authHeader = request.headers.get('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '');
@@ -83,12 +86,13 @@ async function migratePhotos(request, env, origin) {
   }
   const candidates = await listRes.json();
 
-  const toMigrate = candidates.filter(
+  const allToMigrate = candidates.filter(
     (c) => typeof c.photo_url === 'string' && c.photo_url.includes('/storage/v1/object/public/candidate-photos/')
   );
+  const batch = allToMigrate.slice(0, PHOTO_BATCH_SIZE);
 
   const results = [];
-  for (const c of toMigrate) {
+  for (const c of batch) {
     try {
       const imgRes = await fetch(c.photo_url);
       if (!imgRes.ok) { results.push({ id: c.id, ok: false, reason: `download ${imgRes.status}` }); continue; }
@@ -118,8 +122,9 @@ async function migratePhotos(request, env, origin) {
 
   return json({
     totalWithPhoto: candidates.length,
-    foundOnSupabase: toMigrate.length,
+    foundOnSupabase: allToMigrate.length,
     migrated: results.filter((r) => r.ok).length,
+    remaining: allToMigrate.length - results.filter((r) => r.ok).length,
     results,
   }, 200, origin);
 }
@@ -128,6 +133,11 @@ async function migratePhotos(request, env, origin) {
 // over to R2, replacing the column value with a URL. These were never
 // Supabase Storage files — they're data: URLs baked straight into the row —
 // so this decodes and re-uploads rather than fetching from Supabase.
+// Processes in batches to stay under the Workers per-request subrequest
+// limit — call repeatedly (the admin button already does this) until
+// remaining reaches 0.
+const LOGO_BATCH_SIZE = 20;
+
 async function migrateBase64Logos(request, env, origin, table, prefix) {
   const authHeader = request.headers.get('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '');
@@ -141,10 +151,11 @@ async function migrateBase64Logos(request, env, origin, table, prefix) {
   }
   const rows = await listRes.json();
 
-  const toMigrate = rows.filter((r) => typeof r.photo === 'string' && r.photo.startsWith('data:image'));
+  const allToMigrate = rows.filter((r) => typeof r.photo === 'string' && r.photo.startsWith('data:image'));
+  const batch = allToMigrate.slice(0, LOGO_BATCH_SIZE);
 
   const results = [];
-  for (const r of toMigrate) {
+  for (const r of batch) {
     try {
       const match = r.photo.match(/^data:([^;]+);base64,(.+)$/);
       if (!match) { results.push({ id: r.id, ok: false, reason: 'not a recognisable data URL' }); continue; }
@@ -174,10 +185,12 @@ async function migrateBase64Logos(request, env, origin, table, prefix) {
     }
   }
 
+  const migratedCount = results.filter((x) => x.ok).length;
   return json({
     total: rows.length,
-    foundBase64: toMigrate.length,
-    migrated: results.filter((x) => x.ok).length,
+    foundBase64: allToMigrate.length,
+    migrated: migratedCount,
+    remaining: allToMigrate.length - migratedCount,
     results,
   }, 200, origin);
 }
