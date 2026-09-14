@@ -1539,7 +1539,7 @@ function vacancyCard(v, agency) {
   /* Platform attribution for vacancies posted by SA Recruiters or its agencies. */
   var saRecruitersAttribution = !isHimalayas && !isAdzuna && (isDpsa || isGeneral || (!isEmployerPost && !isGeneral && agency))
     ? '<div class="sa-recruiters-attribution" aria-label="Jobs by SA Recruiters">' +
-        '<a href="https://sa-recruiters.co.za/" target="_blank" rel="noopener" title="Jobs by SA Recruiters">' +
+        '<a href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" title="Jobs by SA Recruiters" onclick="event.stopPropagation()">' +
           '<img src="/icons/v2-icon-192.png" alt="SA Recruiters logo">' +
           '<span>Jobs by SA Recruiters</span>' +
         '</a>' +
