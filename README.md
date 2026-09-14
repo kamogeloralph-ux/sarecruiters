@@ -64,6 +64,21 @@ Because the results page doesn't expose a repeating card with a known class name
 
 Configure the same `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` secrets as the Pnet scraper (see above) — no new secrets are needed.
 
+## Adzuna vacancy sync
+
+`.github/workflows/sync-adzuna.yml` runs four times a day and calls Adzuna's official `/v1/api/jobs/za/search/{page}` JSON API directly — no HTML scraping, so this source doesn't share the scraping fragility/bot-wall risk the other two do. Vacancies land in the same `vacancies` table under `agency_id = 'general'` with IDs like `adzuna-<id>`.
+
+Configure two more repository Actions secrets, alongside the existing Supabase ones:
+
+| Secret | Value |
+| --- | --- |
+| `ADZUNA_APP_ID` | Application ID from your Adzuna developer account |
+| `ADZUNA_APP_KEY` | Application key from the same account |
+
+**Attribution is a term of Adzuna's API, not optional.** Anywhere the app displays an Adzuna-sourced listing, it must show "Jobs by Adzuna" (at least 116×23px) with "Jobs" linked to adzuna.co.za and the Adzuna logo also linked there. This hasn't been added to the frontend yet — do that before relying on this source in production. `adzuna-<id>` vacancy IDs make Adzuna-sourced rows identifiable if the UI needs to show the badge conditionally.
+
+The free tier allows 25 calls/minute, 250/day. Four scheduled runs of 3 pages each use 12 calls/day, well inside that — raise `ADZUNA_PAGES` (via `workflow_dispatch` or the env var) with the daily cap in mind if you want deeper coverage.
+
 ## Talent Pool
 Job seekers can list themselves (R20/year, paid by manual EFT and approved by an admin) so employers can browse and contact them directly — see `CREATE_POOL_CANDIDATES_TABLE.sql`. Registrations land as `pending` in Admin → Talent Pool; approving sets `status = active` and `paid_until` to one year out, which is what makes a candidate visible in the public app. Before launch, replace the placeholder banking details in the registration sheet in `index.html` (search for "Banking details") with real ones.
 
