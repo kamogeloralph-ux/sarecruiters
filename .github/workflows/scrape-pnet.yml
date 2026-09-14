@@ -1,0 +1,41 @@
+name: Scrape Pnet agency vacancies
+
+on:
+  schedule:
+    # One agency per run; last_scraped_at rotates oldest-first across all configured agencies.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: "Number of agencies to scrape in this run"
+        required: false
+        default: "1"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pnet-scraper
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SCRAPE_BATCH_SIZE: ${{ inputs.batch_size || '1' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Scrape oldest-scraped agencies from fixed Pnet URLs
+        run: npm run scrape:pnet
