@@ -29,7 +29,6 @@ const CORE_ASSETS = [
   './admin.html',
   './privacy.html',
   './styles.css',
-  './assets/sa-recruiters-signature-wallpaper.png',
   './app.js',
   './icons.svg',
   './offline.html',
