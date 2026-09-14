@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v152-folder-ui';
+const VERSION = 'sa-recruiters-v153-dpsa-badge';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
