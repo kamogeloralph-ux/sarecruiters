@@ -54,6 +54,16 @@ SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." \
 
 `--apply` updates only high-confidence mappings at the configured **95% default threshold**, with a required margin over the next-best candidate. It never auto-applies ambiguous matches, and it leaves already mapped agencies untouched unless `--all` is supplied. The threshold is recorded in the JSON report and can be made stricter with `PNET_AUTO_APPLY_THRESHOLD=0.98`. The scheduled workflow in `.github/workflows/map-pnet-agencies.yml` runs this safe mode daily and uploads the full report as a 30-day GitHub Actions artifact; ambiguous matches remain available for later manual review.
 
+## CareerJunction vacancy scraper
+
+`.github/workflows/scrape-careerjunction.yml` runs four times a day (offset from the Pnet schedule so the two jobs never overlap). Each run fetches CareerJunction's public "all jobs" results pages (`https://www.careerjunction.co.za/jobs/results`, paginated) into `agency_id = 'general'`, using the stable `cj-<id>` vacancy ID parsed out of each job's `-job-<id>.aspx` URL.
+
+**There is no per-agency rotation for CareerJunction, unlike Pnet.** CareerJunction's `/companies/<id>/<slug>` pages return a bot-challenge page rather than the company's listings, so a simple server-side fetch can't reach them — only the public results listing loads without a challenge. If that changes (or a paid solving/proxy service is added later), a per-agency `career_junction_url` column and rotation loop could be added the same way `pnet_url` works today.
+
+Because the results page doesn't expose a repeating card with a known class name, the parser locates each job by its stable `-job-<id>.aspx` link, then climbs up the DOM to the nearest ancestor whose text also contains that job's own "Job `<id>`" reference line — this works regardless of the exact wrapper markup, but hasn't been validated against every possible CareerJunction template. Run `npm test` before relying on it, and check the first few scheduled runs' logs (Actions → Scrape CareerJunction vacancies) for parsed/upserted counts that look reasonable; a sudden drop to zero usually means the site's markup changed and the parser needs adjusting.
+
+Configure the same `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` secrets as the Pnet scraper (see above) — no new secrets are needed.
+
 ## Talent Pool
 Job seekers can list themselves (R20/year, paid by manual EFT and approved by an admin) so employers can browse and contact them directly — see `CREATE_POOL_CANDIDATES_TABLE.sql`. Registrations land as `pending` in Admin → Talent Pool; approving sets `status = active` and `paid_until` to one year out, which is what makes a candidate visible in the public app. Before launch, replace the placeholder banking details in the registration sheet in `index.html` (search for "Banking details") with real ones.
 
