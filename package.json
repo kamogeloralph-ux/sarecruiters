@@ -5,6 +5,7 @@
   "scripts": {
     "generate": "node generate-pages.js",
     "scrape:pnet": "node scripts/scrape-pnet.mjs",
+    "map:pnet": "node scripts/map-pnet-agencies.mjs",
     "test": "node --test scripts/*.test.mjs"
   },
   "dependencies": {
