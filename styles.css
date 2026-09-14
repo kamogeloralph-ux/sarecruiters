@@ -363,6 +363,8 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-folder-card .vac-folder-title{font-size:12.5px;line-height:1.2;margin:0;white-space:normal}
 .vac-folder-card .vac-folder-count{font-size:10.5px;line-height:1.2}
 .vac-folder-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px -8px rgba(0,0,0,.25)}
+.vac-folder-card-himalayas .vac-folder-icon{background:rgba(52,199,159,.14);color:#087f68}
+.vac-folder-card-adzuna .vac-folder-icon{background:rgba(255,90,54,.14);color:#d8482a}
 .vac-folder-card:active{transform:translateY(0)}
 .vac-folder-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(10,132,255,.12);color:var(--accent);margin-bottom:14px}
 .vac-folder-icon svg{width:20px;height:20px}
