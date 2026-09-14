@@ -1532,6 +1532,16 @@ function vacancyCard(v, agency) {
   if (v.phone) detail += vacDetRow(VAC_ICONS.phone, 'Contact Phone', telLink(v.phone));
 
   var desc = v.notes ? '<div class="vac-desc-title">Job description</div><div class="vac-desc">' + escapeHtml(v.notes) + '</div>' : '';
+  /* Adzuna requires visible attribution wherever an Adzuna listing is shown. */
+  var adzunaAttribution = String(v.id || '').indexOf('adzuna-') === 0
+    ? '<div class="adzuna-attribution" aria-label="Jobs by Adzuna">' +
+        '<a href="https://www.adzuna.co.za/" target="_blank" rel="noopener" class="adzuna-attribution-jobs">Jobs</a>' +
+        '<span aria-hidden="true"> by </span>' +
+        '<a href="https://www.adzuna.co.za/" target="_blank" rel="noopener" class="adzuna-attribution-logo">' +
+          '<span class="adzuna-mark" aria-hidden="true">A</span><span>Adzuna</span>' +
+        '</a>' +
+      '</div>'
+    : '';
 
   /* Action buttons */
   var actions = '<div class="vac-actions">';
@@ -1583,7 +1593,7 @@ function vacancyCard(v, agency) {
       '</div>' +
     '</div>' +
     '<div class="vac-detail"><div class="vac-detail-inner">' +
-      detail + desc + actions + admin +
+      detail + desc + adzunaAttribution + actions + admin +
     '</div></div>' +
   '</article>';
 }
