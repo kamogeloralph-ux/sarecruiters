@@ -1,8 +1,8 @@
-name: Scrape Pnet agency vacancies
+name: Scrape Pnet vacancies
 
 on:
   schedule:
-    # One agency per run; last_scraped_at rotates oldest-first across all configured agencies.
+    # General vacancies run every time; one agency then rotates oldest-first.
     - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
@@ -37,5 +37,5 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Scrape oldest-scraped agencies from fixed Pnet URLs
+      - name: Scrape general and oldest-scraped agency vacancies from fixed Pnet URLs
         run: npm run scrape:pnet

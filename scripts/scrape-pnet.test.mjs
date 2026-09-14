@@ -19,3 +19,17 @@ test('parses Pnet article cards into vacancy records', () => {
   assert.equal(job.link, 'https://www.pnet.co.za/jobs--Senior-Legal-Advisor-Johannesburg-Michael-Page--4256616-inline.html');
   assert.match(job.notes, /Managing complex legal matters/);
 });
+
+test('parses general Pnet postings without requiring an agency page URL', () => {
+  const html = `
+    <article id="job-item-4260001">
+      <a href="/jobs--Accountant-Stellenbosch-Example-Company--4260001-inline.html">Accountant</a>
+      <div>Example Company</div><div>Stellenbosch</div>
+      <p>General vacancy description.</p>
+    </article>`;
+  const [job] = parsePnetJobs(html, 'https://www.pnet.co.za/jobs');
+  assert.equal(job.id, 'pnet-4260001');
+  assert.equal(job.company, 'Example Company');
+  assert.equal(job.location, 'Stellenbosch');
+  assert.equal(job.link, 'https://www.pnet.co.za/jobs--Accountant-Stellenbosch-Example-Company--4260001-inline.html');
+});

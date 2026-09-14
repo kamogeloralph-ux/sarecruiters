@@ -7,6 +7,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BATCH_SIZE = parsePositiveInt(process.env.SCRAPE_BATCH_SIZE, 1);
 const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SCRAPE_REQUEST_TIMEOUT_MS, 30_000);
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersPnetScraper/1.0 (+https://sa-recruiters.co.za)';
+const GENERAL_PNET_URL = process.env.PNET_GENERAL_URL || 'https://www.pnet.co.za/jobs';
 
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -135,11 +136,7 @@ async function loadAgencies() {
   return data || [];
 }
 
-async function scrapeAgency(agency) {
-  const startedAt = new Date().toISOString();
-  console.log(`[pnet] ${agency.name}: fetching ${agency.pnet_url}`);
-  const html = await fetchPage(agency.pnet_url);
-  const parsedJobs = parsePnetJobs(html, agency.pnet_url);
+async function upsertJobs(parsedJobs, agencyId) {
   const links = parsedJobs.map((job) => job.link);
   const { data: existingJobs, error: existingError } = links.length
     ? await supabase.from('vacancies').select('id,link').in('link', links).limit(500)
@@ -149,13 +146,28 @@ async function scrapeAgency(agency) {
   const jobs = parsedJobs.map((job) => ({
     ...job,
     id: existingByLink.get(job.link) || job.id,
-    agency_id: agency.id,
+    agency_id: agencyId,
   }));
 
   if (jobs.length > 0) {
     const { error } = await supabase.from('vacancies').upsert(jobs, { onConflict: 'id' });
     if (error) throw error;
   }
+  return jobs;
+}
+
+async function scrapeGeneral() {
+  console.log(`[pnet] general vacancies: fetching ${GENERAL_PNET_URL}`);
+  const html = await fetchPage(GENERAL_PNET_URL);
+  const jobs = await upsertJobs(parsePnetJobs(html, GENERAL_PNET_URL), 'general');
+  console.log(`[pnet] general vacancies: parsed ${jobs.length}, upserted ${jobs.length}`);
+}
+
+async function scrapeAgency(agency) {
+  const startedAt = new Date().toISOString();
+  console.log(`[pnet] ${agency.name}: fetching ${agency.pnet_url}`);
+  const html = await fetchPage(agency.pnet_url);
+  const jobs = await upsertJobs(parsePnetJobs(html, agency.pnet_url), agency.id);
 
   const { error: timestampError } = await supabase
     .from('agencies')
@@ -169,12 +181,14 @@ async function scrapeAgency(agency) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const agencies = await loadAgencies();
-  if (agencies.length === 0) {
-    console.log('[pnet] no agencies with a configured pnet_url');
-    process.exit(0);
+  let failures = 0;
+  try {
+    await scrapeGeneral();
+  } catch (error) {
+    failures += 1;
+    console.error(`[pnet] general vacancies: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  let failures = 0;
   for (const agency of agencies) {
     try {
       await scrapeAgency(agency);
@@ -184,5 +198,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     }
   }
 
+  if (agencies.length === 0) console.log('[pnet] no agencies with a configured pnet_url');
   if (failures > 0) process.exitCode = 1;
 }
