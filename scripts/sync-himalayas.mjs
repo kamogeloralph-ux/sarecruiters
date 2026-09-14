@@ -27,6 +27,12 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function errorMessage(error) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object') return JSON.stringify(error);
+  return String(error);
+}
+
 function jobSlug(job) {
   const source = clean(job?.slug) || clean(job?.guid).split('/').filter(Boolean).pop();
   return source ? source.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 160) : '';
@@ -107,12 +113,21 @@ async function upsertJobs(mappedJobs) {
 }
 
 async function syncPage(page) {
-  console.log(`[himalayas] page ${page}: fetching ${HIMALAYAS_COUNTRY}-eligible remote jobs`);
-  const payload = await fetchPage(page);
-  const mapped = mapHimalayasResults(payload);
-  const jobs = await upsertJobs(mapped);
-  console.log(`[himalayas] page ${page}: parsed ${mapped.length}, upserted ${jobs.length}`);
-  return jobs.length;
+  let lastError;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      console.log(`[himalayas] page ${page}: fetching ${HIMALAYAS_COUNTRY}-eligible remote jobs (attempt ${attempt})`);
+      const payload = await fetchPage(page);
+      const mapped = mapHimalayasResults(payload);
+      const jobs = await upsertJobs(mapped);
+      console.log(`[himalayas] page ${page}: parsed ${mapped.length}, upserted ${jobs.length}`);
+      return jobs.length;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) await sleep(3000);
+    }
+  }
+  throw new Error(errorMessage(lastError));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -123,7 +138,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       await syncPage(page);
     } catch (error) {
       failures += 1;
-      console.error(`[himalayas] page ${page}: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`[himalayas] page ${page}: ${errorMessage(error)}`);
     }
     if (page < PAGE_COUNT) await sleep(REQUEST_DELAY_MS);
   }
