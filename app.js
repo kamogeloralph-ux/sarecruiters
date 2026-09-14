@@ -1537,7 +1537,7 @@ function vacancyCard(v, agency) {
 
   var desc = v.notes ? '<div class="vac-desc-title">Job description</div><div class="vac-desc">' + escapeHtml(v.notes) + '</div>' : '';
   /* Platform attribution for vacancies posted by SA Recruiters or its agencies. */
-  var saRecruitersAttribution = !isHimalayas && !isAdzuna && !isDpsa && (isGeneral || (!isEmployerPost && !isGeneral && agency))
+  var saRecruitersAttribution = !isHimalayas && !isAdzuna && (isDpsa || isGeneral || (!isEmployerPost && !isGeneral && agency))
     ? '<div class="sa-recruiters-attribution" aria-label="Jobs by SA Recruiters">' +
         '<a href="https://sa-recruiters.co.za/" target="_blank" rel="noopener" title="Jobs by SA Recruiters">' +
           '<img src="/icons/v2-icon-192.png" alt="SA Recruiters logo">' +
