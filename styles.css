@@ -597,6 +597,10 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .adzuna-attribution-jobs{font-weight:700}
 .adzuna-attribution-logo{display:inline-flex;align-items:center;gap:3px;font-weight:800;letter-spacing:-.02em}
 .adzuna-mark{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#ff5a36;color:#fff;font-size:9px;font-weight:900;line-height:1}
+.sa-recruiters-attribution{display:inline-flex;align-items:center;min-width:116px;min-height:23px;margin-top:14px;padding:3px 8px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));border-radius:5px;background:color-mix(in srgb,var(--accent) 10%,var(--card));font-size:11px;font-weight:700;line-height:1}
+.sa-recruiters-attribution a{display:inline-flex;align-items:center;gap:5px;color:var(--accent);text-decoration:none;white-space:nowrap}
+.sa-recruiters-attribution a:hover,.sa-recruiters-attribution a:focus-visible{text-decoration:underline}
+.sa-recruiters-attribution img{width:20px;height:20px;object-fit:contain;border-radius:4px;flex:0 0 20px}
 .himalayas-attribution{display:inline-flex;align-items:center;min-height:23px;margin-top:14px;padding:3px 8px;border:1px solid color-mix(in srgb,#34C79F 35%,var(--border));border-radius:5px;background:color-mix(in srgb,#34C79F 10%,var(--card));font-size:11px;font-weight:700;line-height:1}
 .himalayas-attribution a{color:#087f68;text-decoration:none}
 .himalayas-attribution a:hover,.himalayas-attribution a:focus-visible{text-decoration:underline}

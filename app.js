@@ -1535,6 +1535,15 @@ function vacancyCard(v, agency) {
   if (v.phone) detail += vacDetRow(VAC_ICONS.phone, 'Contact Phone', telLink(v.phone));
 
   var desc = v.notes ? '<div class="vac-desc-title">Job description</div><div class="vac-desc">' + escapeHtml(v.notes) + '</div>' : '';
+  /* Platform attribution for vacancies posted by SA Recruiters or its agencies. */
+  var saRecruitersAttribution = (isGeneral || (!isEmployerPost && !isGeneral && agency))
+    ? '<div class="sa-recruiters-attribution" aria-label="Jobs by SA Recruiters">' +
+        '<a href="https://sa-recruiters.co.za/" target="_blank" rel="noopener" title="Jobs by SA Recruiters">' +
+          '<img src="/icons/v2-icon-192.png" alt="SA Recruiters logo">' +
+          '<span>Jobs by SA Recruiters</span>' +
+        '</a>' +
+      '</div>'
+    : '';
   /* Adzuna requires visible attribution wherever an Adzuna listing is shown. */
   var adzunaAttribution = isAdzuna
     ? '<div class="adzuna-attribution" aria-label="Jobs by Adzuna">' +
@@ -1601,7 +1610,7 @@ function vacancyCard(v, agency) {
       '</div>' +
     '</div>' +
     '<div class="vac-detail"><div class="vac-detail-inner">' +
-      detail + desc + adzunaAttribution + himalayasAttribution + actions + admin +
+      detail + desc + saRecruitersAttribution + adzunaAttribution + himalayasAttribution + actions + admin +
     '</div></div>' +
   '</article>';
 }
