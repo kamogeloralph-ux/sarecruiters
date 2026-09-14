@@ -562,6 +562,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-title{font-size:15px;font-weight:700;line-height:1.3;letter-spacing:-0.01em}
 .vac-company{font-size:12.5px;color:var(--text-2);margin-top:3px;font-weight:600}
 .vac-company .vac-agency-tag{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:var(--radius-pill);margin-left:6px;vertical-align:1px}
+.vac-source-tag{display:inline-block;font-size:10px;font-weight:700;color:#0a7a62;background:rgba(52,199,159,.14);padding:2px 7px;border-radius:var(--radius-pill);margin-left:6px;vertical-align:1px}
 .vac-loc-line{font-size:12.5px;color:var(--text-2);margin-top:4px;display:flex;align-items:center;gap:5px}
 .vac-loc-line svg{width:12px;height:12px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .vac-posted{font-size:11.5px;color:var(--text-2);margin-top:6px;opacity:.85}
@@ -594,6 +595,9 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .adzuna-attribution-jobs{font-weight:700}
 .adzuna-attribution-logo{display:inline-flex;align-items:center;gap:3px;font-weight:800;letter-spacing:-.02em}
 .adzuna-mark{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#ff5a36;color:#fff;font-size:9px;font-weight:900;line-height:1}
+.himalayas-attribution{display:inline-flex;align-items:center;min-height:23px;margin-top:14px;padding:3px 8px;border:1px solid color-mix(in srgb,#34C79F 35%,var(--border));border-radius:5px;background:color-mix(in srgb,#34C79F 10%,var(--card));font-size:11px;font-weight:700;line-height:1}
+.himalayas-attribution a{color:#087f68;text-decoration:none}
+.himalayas-attribution a:hover,.himalayas-attribution a:focus-visible{text-decoration:underline}
 .vac-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
 .vac-apply{flex:1;background:var(--success);color:#fff;border:none;padding:14px;border-radius:13px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;text-decoration:none;min-width:140px}
 .vac-apply-secondary{background:var(--accent)}

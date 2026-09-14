@@ -79,6 +79,10 @@ Configure two more repository Actions secrets, alongside the existing Supabase o
 
 The free tier allows 25 calls/minute, 250/day. Four scheduled runs of 3 pages each use 12 calls/day, well inside that — raise `ADZUNA_PAGES` (via `workflow_dispatch` or the env var) with the daily cap in mind if you want deeper coverage.
 
+## Himalayas remote vacancy sync
+
+`.github/workflows/sync-himalayas.yml` imports South-Africa-eligible remote roles from Himalayas' public JSON API once per day. It requires only the existing `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` repository secrets; no Himalayas API key is needed. Imported rows use IDs like `himalayas-<slug>`, are stored as `source_type = 'himalayas'`, and are labelled `Remote · Himalayas` in the app. The UI links back to Himalayas in the expanded card, as required by its API guidance. These are remote roles that permit South African applicants, not local in-office vacancies.
+
 ## Talent Pool
 Job seekers can list themselves (R20/year, paid by manual EFT and approved by an admin) so employers can browse and contact them directly — see `CREATE_POOL_CANDIDATES_TABLE.sql`. Registrations land as `pending` in Admin → Talent Pool; approving sets `status = active` and `paid_until` to one year out, which is what makes a candidate visible in the public app. Before launch, replace the placeholder banking details in the registration sheet in `index.html` (search for "Banking details") with real ones.
 

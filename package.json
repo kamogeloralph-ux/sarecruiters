@@ -7,6 +7,7 @@
     "scrape:pnet": "node scripts/scrape-pnet.mjs",
     "scrape:careerjunction": "node scripts/scrape-careerjunction.mjs",
     "sync:adzuna": "node scripts/sync-adzuna.mjs",
+    "sync:himalayas": "node scripts/sync-himalayas.mjs",
     "map:pnet": "node scripts/map-pnet-agencies.mjs",
     "test": "node --test scripts/*.test.mjs"
   },

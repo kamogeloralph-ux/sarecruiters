@@ -678,7 +678,7 @@ function openEmployerLockedSheet() {
 // ----- Vacancies -----
 async function getVacancies() {
   try {
-    var { data, error } = await supabaseClient.from('vacancies').select('id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at').order('created_at', { ascending: false });
+    var { data, error } = await supabaseClient.from('vacancies').select('id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type').order('created_at', { ascending: false });
     if (!error && data) return data;
   } catch(e){}
   return markLoadError(readLocal('vacancies'));
@@ -1495,6 +1495,9 @@ function vacancyCard(v, agency) {
   var isEmployerPost = !!employer;
   var employerAccessLocked = isEmployerPost && !employerDirectoryOpen && !hasTalentPoolAccess();
   var orgName = isEmployerPost ? (employer.name || 'Employer') : (isGeneral ? (v.company || 'General Vacancy') : (agency.name || ''));
+  var isAdzuna = String(v.id || '').indexOf('adzuna-') === 0;
+  var isHimalayas = v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0;
+  var sourceBadge = isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : '';
   var title = escapeHtml(v.title || 'Untitled role');
   var verifiedCheck = ((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '<span class="verified-check" title="' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
 
@@ -1533,7 +1536,7 @@ function vacancyCard(v, agency) {
 
   var desc = v.notes ? '<div class="vac-desc-title">Job description</div><div class="vac-desc">' + escapeHtml(v.notes) + '</div>' : '';
   /* Adzuna requires visible attribution wherever an Adzuna listing is shown. */
-  var adzunaAttribution = String(v.id || '').indexOf('adzuna-') === 0
+  var adzunaAttribution = isAdzuna
     ? '<div class="adzuna-attribution" aria-label="Jobs by Adzuna">' +
         '<a href="https://www.adzuna.co.za/" target="_blank" rel="noopener" class="adzuna-attribution-jobs">Jobs</a>' +
         '<span aria-hidden="true"> by </span>' +
@@ -1544,6 +1547,11 @@ function vacancyCard(v, agency) {
     : '';
 
   /* Action buttons */
+  var himalayasAttribution = isHimalayas
+    ? '<div class="himalayas-attribution" aria-label="Remote job from Himalayas">' +
+        '<a href="https://himalayas.app/" target="_blank" rel="noopener">Remote jobs by Himalayas</a>' +
+      '</div>'
+    : '';
   var actions = '<div class="vac-actions">';
   if (v.link) {
     actions += '<a class="vac-apply" href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + 'Apply here</a>';
@@ -1582,7 +1590,7 @@ function vacancyCard(v, agency) {
       logo +
       '<div class="vac-body">' +
         '<div class="vac-title">' + title + '</div>' +
-        '<div class="vac-company">' + verifiedCheck + escapeHtml(orgName) + '</div>' +
+      '<div class="vac-company">' + verifiedCheck + escapeHtml(orgName) + sourceBadge + '</div>' +
         locLine +
         postedLine +
       '</div>' +
@@ -1593,7 +1601,7 @@ function vacancyCard(v, agency) {
       '</div>' +
     '</div>' +
     '<div class="vac-detail"><div class="vac-detail-inner">' +
-      detail + desc + adzunaAttribution + actions + admin +
+      detail + desc + adzunaAttribution + himalayasAttribution + actions + admin +
     '</div></div>' +
   '</article>';
 }

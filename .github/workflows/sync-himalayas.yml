@@ -1,0 +1,37 @@
+name: Sync Himalayas remote vacancies
+on:
+  schedule:
+    # Himalayas refreshes daily; run once daily at an off-peak minute.
+    - cron: "37 2 * * *"
+  workflow_dispatch:
+    inputs:
+      pages:
+        description: "Number of Himalayas result pages to sync"
+        required: false
+        default: "5"
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: himalayas-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      HIMALAYAS_PAGES: ${{ inputs.pages || '5' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Sync South Africa-eligible remote vacancies
+        run: npm run sync:himalayas
