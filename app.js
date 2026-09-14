@@ -1497,7 +1497,8 @@ function vacancyCard(v, agency) {
   var orgName = isEmployerPost ? (employer.name || 'Employer') : (isGeneral ? (v.company || 'General Vacancy') : (agency.name || ''));
   var isAdzuna = String(v.id || '').indexOf('adzuna-') === 0;
   var isHimalayas = v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0;
-  var sourceBadge = isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : '';
+  var isDpsa = v.source_type === 'dpsa' || String(v.id || '').indexOf('dpsa-') === 0;
+  var sourceBadge = isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isDpsa ? '<span class="vac-source-tag vac-source-tag-dpsa">Government · DPSA</span>' : '';
   var title = escapeHtml(v.title || 'Untitled role');
   var verifiedCheck = ((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '<span class="verified-check" title="' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
 
@@ -3304,7 +3305,8 @@ function renderAllVacanciesList() {
   var visible = vacanciesCache.filter(function(v){ return !v.employer_id; });
   var isHimalayasVacancy = function(v){ return v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0; };
   var isAdzunaVacancy = function(v){ return v.source_type === 'adzuna' || String(v.id || '').indexOf('adzuna-') === 0; };
-  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v); };
+  var isDpsaVacancy = function(v){ return v.source_type === 'dpsa' || String(v.id || '').indexOf('dpsa-') === 0; };
+  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isDpsaVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
   var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
@@ -3318,6 +3320,8 @@ function renderAllVacanciesList() {
         ? visible.filter(isHimalayasVacancy)
         : allVacanciesFolder === 'adzuna'
           ? visible.filter(isAdzunaVacancy)
+          : allVacanciesFolder === 'dpsa'
+            ? visible.filter(isDpsaVacancy)
       : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
@@ -3356,6 +3360,7 @@ function renderAllVacanciesList() {
     var generalCount = list.filter(function(v){ return !isExternalVacancy(v) && (!v.agency_id || v.agency_id === 'general'); }).length;
     var himalayasCount = list.filter(isHimalayasVacancy).length;
     var adzunaCount = list.filter(isAdzunaVacancy).length;
+    var dpsaCount = list.filter(isDpsaVacancy).length;
     var folderCountLabel = function(count) {
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
@@ -3379,6 +3384,11 @@ function renderAllVacanciesList() {
         '<button class="vac-folder-card vac-folder-card-adzuna" data-ripple onclick="openVacancyFolder(\'adzuna\')" aria-label="Open Adzuna vacancies">' +
           '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 10.5 5h3L20 19M7 14h10"/></svg></span>' +
           '<span class="vac-folder-copy"><span class="vac-folder-title">Adzuna Vacancies</span><span class="vac-folder-count">' + folderCountLabel(adzunaCount) + '</span></span>' +
+          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+        '</button>' +
+        '<button class="vac-folder-card vac-folder-card-dpsa" data-ripple onclick="openVacancyFolder(\'dpsa\')" aria-label="Open DPSA circular archive">' +
+          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg></span>' +
+          '<span class="vac-folder-copy"><span class="vac-folder-title">DPSA Circular Archive</span><span class="vac-folder-count">' + folderCountLabel(dpsaCount) + '</span></span>' +
           '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
         '</button>' +
       '</div>';
@@ -3405,6 +3415,12 @@ function renderAllVacanciesList() {
       groups[adzunaKey].items.push(v);
       return;
     }
+    if (isDpsaVacancy(v)) {
+      var dpsaKey = 'dpsa';
+      if (!groups[dpsaKey]) groups[dpsaKey] = { name:'DPSA circular archive', type:'Government circulars', agency:null, items:[] };
+      groups[dpsaKey].items.push(v);
+      return;
+    }
     var agency = v.agency_id && v.agency_id !== 'general' ? agenciesCache.find(function(a){ return a.id === v.agency_id; }) : null;
     var key, name, type;
     if (agency) { key='agency:'+agency.id; name=agency.name||'Agency'; type='Agency'; }
@@ -3420,7 +3436,7 @@ function renderAllVacanciesList() {
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : 'Adzuna Vacancies';
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : 'DPSA Circular Archive';
   el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);

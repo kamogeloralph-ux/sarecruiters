@@ -8,6 +8,7 @@
     "scrape:careerjunction": "node scripts/scrape-careerjunction.mjs",
     "sync:adzuna": "node scripts/sync-adzuna.mjs",
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
+    "sync:dpsa": "node scripts/sync-dpsa.mjs",
     "map:pnet": "node scripts/map-pnet-agencies.mjs",
     "test": "node --test scripts/*.test.mjs"
   },

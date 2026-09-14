@@ -1,0 +1,42 @@
+name: Sync DPSA vacancy circulars
+on:
+  schedule:
+    # DPSA circulars are normally published weekly; run Friday afternoon SAST.
+    - cron: "30 13 * * 5"
+  workflow_dispatch:
+    inputs:
+      years:
+        description: "Comma-separated publication years to scan"
+        required: false
+        default: "2026"
+        type: string
+      max_circular:
+        description: "Highest circular number to inspect per year"
+        required: false
+        default: "60"
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: dpsa-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      DPSA_MAX_CIRCULAR: ${{ inputs.max_circular || '60' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Sync official DPSA circular archive
+        run: DPSA_YEARS="${{ inputs.years || '' }}" npm run sync:dpsa
