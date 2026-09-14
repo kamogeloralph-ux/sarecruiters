@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "generate": "node generate-pages.js"
+    "generate": "node generate-pages.js",
+    "scrape:pnet": "node scripts/scrape-pnet.mjs",
+    "test": "node --test scripts/*.test.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "cheerio": "^1.2.0"
   }
 }

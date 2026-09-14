@@ -21,6 +21,21 @@ No separate build service or webhook is needed — the 3-hourly schedule is what
 ## Backend
 Data (agencies, admin auth) is powered by Supabase — see the Supabase project dashboard for schema and RLS policies.
 
+## Pnet vacancy scraper
+
+`.github/workflows/scrape-pnet.yml` runs every six hours and scrapes one configured agency per run. It selects agencies with a non-null `pnet_url` in `last_scraped_at` ascending order, with never-scraped agencies first. The scraper only fetches those fixed URLs; it does not attempt web search or URL discovery inside GitHub Actions.
+
+The scraper parses Pnet job cards, uses the stable Pnet posting ID as the vacancy ID (`pnet-<id>`), upserts into `vacancies`, and updates `agencies.last_scraped_at` only after that agency's page has been fetched and parsed. A failed agency remains eligible for the next run. Run `npm test` or `SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node --test scripts/scrape-pnet.test.mjs` to validate the parser.
+
+Configure these repository Actions secrets before enabling the workflow:
+
+| Secret | Value |
+| --- | --- |
+| `SUPABASE_URL` | The Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | The Supabase service-role key; keep it server-side and never expose it to the browser |
+
+The migration at `supabase/migrations/20260914072349_add_pnet_scraper_tracking_columns.sql` adds the tracking columns, the rotation index, and the three fixed agency URLs for Michael Page, Network Recruitment, and Communicate Recruitment.
+
 ## Talent Pool
 Job seekers can list themselves (R20/year, paid by manual EFT and approved by an admin) so employers can browse and contact them directly — see `CREATE_POOL_CANDIDATES_TABLE.sql`. Registrations land as `pending` in Admin → Talent Pool; approving sets `status = active` and `paid_until` to one year out, which is what makes a candidate visible in the public app. Before launch, replace the placeholder banking details in the registration sheet in `index.html` (search for "Banking details") with real ones.
 
