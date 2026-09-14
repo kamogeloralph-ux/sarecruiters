@@ -52,7 +52,7 @@ SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." \
   npm run map:pnet -- --output reports/pnet-agency-mapping.json --apply
 ```
 
-`--apply` updates only high-confidence mappings. It never auto-applies ambiguous matches, and it leaves already mapped agencies untouched unless `--all` is supplied. The mapper intentionally runs as a controlled one-time tool rather than a scheduled job because an incorrect employer match would attribute vacancies to the wrong agency.
+`--apply` updates only high-confidence mappings at the configured **95% default threshold**, with a required margin over the next-best candidate. It never auto-applies ambiguous matches, and it leaves already mapped agencies untouched unless `--all` is supplied. The threshold is recorded in the JSON report and can be made stricter with `PNET_AUTO_APPLY_THRESHOLD=0.98`. The scheduled workflow in `.github/workflows/map-pnet-agencies.yml` runs this safe mode daily and uploads the full report as a 30-day GitHub Actions artifact; ambiguous matches remain available for later manual review.
 
 ## Talent Pool
 Job seekers can list themselves (R20/year, paid by manual EFT and approved by an admin) so employers can browse and contact them directly — see `CREATE_POOL_CANDIDATES_TABLE.sql`. Registrations land as `pending` in Admin → Talent Pool; approving sets `status = active` and `paid_until` to one year out, which is what makes a candidate visible in the public app. Before launch, replace the placeholder banking details in the registration sheet in `index.html` (search for "Banking details") with real ones.

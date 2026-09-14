@@ -9,6 +9,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const REQUEST_TIMEOUT_MS = positiveInt(process.env.PNET_MAP_TIMEOUT_MS, 30_000);
 const REQUEST_DELAY_MS = positiveInt(process.env.PNET_MAP_DELAY_MS, 1_500);
+const AUTO_APPLY_THRESHOLD = confidenceThreshold(process.env.PNET_AUTO_APPLY_THRESHOLD, 0.95);
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersPnetMapper/1.0 (+https://sa-recruiters.co.za)';
 
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
@@ -18,6 +19,11 @@ const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
 function positiveInt(value, fallback) {
   const parsed = Number.parseInt(value ?? '', 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function confidenceThreshold(value, fallback) {
+  const parsed = Number.parseFloat(value ?? '');
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : fallback;
 }
 
 function clean(value) {
@@ -110,7 +116,7 @@ function bestCandidate(agency, candidates) {
   const best = ranked[0] || null;
   const second = ranked[1] || null;
   const status = !best ? 'no_match'
-    : best.confidence >= 0.93 && (!second || best.confidence - second.confidence >= 0.08) ? 'high_confidence'
+    : best.confidence >= AUTO_APPLY_THRESHOLD && (!second || best.confidence - second.confidence >= 0.08) ? 'high_confidence'
       : best.confidence >= 0.55 ? 'review' : 'no_match';
   return {
     agency_id: agency.id,
@@ -135,7 +141,11 @@ async function loadAgencies(includeMapped) {
 
 async function writeReport(report, outputPath) {
   await mkdir(dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, `${JSON.stringify({ generated_at: new Date().toISOString(), results: report }, null, 2)}\n`);
+  await writeFile(outputPath, `${JSON.stringify({
+    generated_at: new Date().toISOString(),
+    auto_apply_threshold: AUTO_APPLY_THRESHOLD,
+    results: report,
+  }, null, 2)}\n`);
 }
 
 async function applyHighConfidence(results) {
@@ -192,8 +202,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 
   if (apply) {
     const applied = await applyHighConfidence(results);
-    console.log(`[pnet-map] applied ${applied} high-confidence mappings; review statuses remain unchanged`);
+    console.log(`[pnet-map] applied ${applied} high-confidence mappings (>= ${(AUTO_APPLY_THRESHOLD * 100).toFixed(0)}%); review statuses remain unchanged`);
   } else {
-    console.log('[pnet-map] dry run only; use --apply to write high-confidence mappings to Supabase');
+    console.log(`[pnet-map] dry run only; use --apply to write high-confidence mappings (>= ${(AUTO_APPLY_THRESHOLD * 100).toFixed(0)}%) to Supabase`);
   }
 }
