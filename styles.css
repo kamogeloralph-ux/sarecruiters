@@ -588,6 +588,12 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-detail-value a:active{opacity:.6}
 .vac-desc-title{font-size:13px;font-weight:700;margin:14px 0 6px}
 .vac-desc{font-size:13px;color:var(--text-2);line-height:1.6;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word}
+.adzuna-attribution{display:inline-flex;align-items:center;gap:3px;min-width:116px;min-height:23px;margin-top:14px;padding:3px 7px;border:1px solid #d8dce3;border-radius:4px;background:#fff;color:#28323c;font-size:11px;line-height:1;font-weight:600;box-sizing:border-box}
+.adzuna-attribution a{color:inherit;text-decoration:none}
+.adzuna-attribution a:hover,.adzuna-attribution a:focus-visible{text-decoration:underline}
+.adzuna-attribution-jobs{font-weight:700}
+.adzuna-attribution-logo{display:inline-flex;align-items:center;gap:3px;font-weight:800;letter-spacing:-.02em}
+.adzuna-mark{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#ff5a36;color:#fff;font-size:9px;font-weight:900;line-height:1}
 .vac-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
 .vac-apply{flex:1;background:var(--success);color:#fff;border:none;padding:14px;border-radius:13px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;text-decoration:none;min-width:140px}
 .vac-apply-secondary{background:var(--accent)}
