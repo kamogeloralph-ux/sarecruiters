@@ -934,3 +934,113 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .screen-state-host[data-state="error"] .screen-state{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 24%,var(--border))}
 @media (prefers-reduced-motion:no-preference){.screen-state-loading::after{content:"";display:inline-block;width:8px;height:8px;margin-left:8px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:sa-state-spin .8s linear infinite}}
 @keyframes sa-state-spin{to{transform:rotate(360deg)}}
+
+
+/* ===== 2026 visual refresh: confident, modern, mobile-first ===== */
+:root, [data-theme="dark"]{
+  --bg:#07101f;
+  --bg-edge:#040914;
+  --card:#101b2e;
+  --card-2:#17253b;
+  --card-3:#21324d;
+  --text:#f7fbff;
+  --text-2:#9aabc3;
+  --text-3:#536581;
+  --border:rgba(151,174,214,.16);
+  --border-strong:rgba(151,174,214,.28);
+  --separator:rgba(151,174,214,.12);
+  --accent:#8273ff;
+  --accent-soft:rgba(130,115,255,.18);
+  --success:#31d77b;
+  --shadow-sm:0 8px 24px rgba(0,0,0,.18);
+  --shadow-lg:0 26px 70px rgba(0,0,0,.42);
+}
+[data-theme="light"]{
+  --bg:#f4f7fb;
+  --bg-edge:#e7edf6;
+  --card:#ffffff;
+  --card-2:#f1f5fb;
+  --card-3:#e6edf7;
+  --text:#0d1b2e;
+  --text-2:#687991;
+  --text-3:#a2b0c3;
+  --border:rgba(26,55,93,.11);
+  --border-strong:rgba(26,55,93,.20);
+  --separator:rgba(26,55,93,.09);
+  --accent:#6357e8;
+  --accent-soft:rgba(99,87,232,.12);
+  --success:#16a861;
+  --shadow-sm:0 8px 24px rgba(31,58,94,.08);
+  --shadow-lg:0 26px 70px rgba(31,58,94,.16);
+}
+body{background:var(--bg);letter-spacing:-.01em}
+.app{background:var(--bg);box-shadow:var(--shadow-lg)}
+.app::before{background-image:radial-gradient(circle at 90% 0%,rgba(130,115,255,.16),transparent 33%),radial-gradient(circle at 0% 35%,rgba(20,184,166,.08),transparent 28%),linear-gradient(180deg,rgba(7,16,31,.98),rgba(7,16,31,1))}
+[data-theme="light"] .app::before{background-image:radial-gradient(circle at 90% 0%,rgba(99,87,232,.08),transparent 33%),linear-gradient(180deg,rgba(244,247,251,.92),rgba(244,247,251,.98))}
+header{margin-bottom:18px}
+.logo-svg{width:46px;height:46px;border-radius:15px;box-shadow:0 8px 22px rgba(99,87,232,.28)}
+.logo-text{font-size:20px;letter-spacing:-.035em}
+.logo-slogan{font-size:11px;color:var(--text-2)}
+.theme-toggle,.icon-btn{width:44px;height:44px;border-radius:15px;background:color-mix(in srgb,var(--card) 88%,transparent);border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+.connection-status{border-radius:14px!important;border:1px solid rgba(49,215,123,.32)!important;background:rgba(49,215,123,.10)!important;color:var(--success)!important;font-weight:750!important;letter-spacing:.01em}
+.search{margin-top:16px}
+.search-inner{height:54px;border-radius:17px;background:color-mix(in srgb,var(--card) 88%,transparent);border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+.search-inner:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),var(--shadow-sm)}
+.search input{font-size:14.5px}
+.stat-card{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 94%,white 6%),var(--card));border-color:var(--border);border-radius:17px;box-shadow:var(--shadow-sm)}
+.stat-card:hover{border-color:color-mix(in srgb,var(--accent) 65%,var(--border));box-shadow:0 12px 26px rgba(0,0,0,.18)}
+.stat-value{font-size:18px}
+.screen-intro{padding-top:16px}
+.section-title,.directory-group-title{letter-spacing:-.025em}
+.vac-folder-card{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 95%,white 5%),var(--card));border-color:var(--border-strong);box-shadow:var(--shadow-sm);border-radius:17px;min-height:78px}
+.vac-folder-card:hover{border-color:var(--accent);box-shadow:0 14px 30px rgba(0,0,0,.18)}
+.vac-folder-icon{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+
+/* Vacancy cards read as individual opportunities, not spreadsheet rows. */
+.vac-card{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 96%,white 4%),var(--card));border:1px solid var(--border);border-radius:18px;margin:9px 0;box-shadow:var(--shadow-sm);transition:transform .2s var(--ease),border-color .2s,box-shadow .2s,background .2s}
+.vac-card:last-child{border-bottom:1px solid var(--border)}
+.vac-card:active{background:var(--card-2);transform:scale(.992)}
+.vac-card.open{border-color:color-mix(in srgb,var(--accent) 52%,var(--border));box-shadow:0 14px 32px rgba(0,0,0,.20)}
+.vac-card-main{padding:16px 14px;gap:13px}
+.vac-logo{width:50px;height:50px;border-radius:15px;box-shadow:0 6px 16px rgba(0,0,0,.16)}
+.vac-title{font-size:15.5px;font-weight:780;line-height:1.28}
+.vac-company{font-size:12px;margin-top:5px}
+.vac-loc-line{font-size:12px;margin-top:5px}
+.vac-posted{font-size:11px;margin-top:7px}
+.vac-card-side{gap:8px}
+.vac-save,.vac-share{background:color-mix(in srgb,var(--card-2) 65%,transparent);border:1px solid var(--border);width:31px;height:31px}
+.vac-save:hover,.vac-share:hover{background:var(--accent-soft)}
+.vac-detail-inner{padding:0 14px 16px;border-top:1px solid var(--separator)}
+.vac-detail-row{padding:12px 0}
+.vac-desc{font-size:13px;line-height:1.65;color:var(--text-2)}
+
+/* The three large controls: clear hierarchy, consistent geometry, thumb-friendly targets. */
+.vac-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.vac-apply{min-width:0;min-height:54px;padding:14px 12px;border-radius:15px;background:linear-gradient(135deg,#35e487,#18b966);box-shadow:0 10px 20px rgba(24,185,102,.20);font-size:14px;font-weight:800;letter-spacing:-.01em;transition:transform .18s var(--ease),filter .18s,box-shadow .18s}
+.vac-apply-secondary{background:linear-gradient(135deg,#8273ff,#5c4ee4);box-shadow:0 10px 20px rgba(99,87,232,.24)}
+.vac-apply:hover{filter:brightness(1.07);box-shadow:0 13px 24px rgba(24,185,102,.28)}
+.vac-apply-secondary:hover{box-shadow:0 13px 24px rgba(99,87,232,.32)}
+.vac-apply:focus-visible,.vac-close-btn:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 50%,transparent);outline-offset:2px}
+.vac-apply:active{transform:translateY(2px) scale(.985);filter:brightness(.98)}
+.vac-close-btn{grid-column:1 / -1;min-height:46px;padding:11px 18px;border-radius:14px;background:transparent;color:var(--text-2);border:1px solid var(--border-strong);font-size:13px;font-weight:750;transition:background .18s,color .18s,border-color .18s}
+.vac-close-btn:hover{background:var(--card-2);color:var(--text);border-color:var(--accent)}
+.vac-admin-actions{margin-top:13px;padding-top:13px}
+
+.bottom-nav{height:76px;background:color-mix(in srgb,var(--card) 88%,transparent);border-top-color:var(--border-strong);box-shadow:0 -10px 30px rgba(0,0,0,.14)}
+.navbtn{gap:5px;padding:8px 8px;border-radius:15px;transition:color .2s,background .2s,transform .2s var(--ease)}
+.navbtn.active{background:var(--accent-soft);color:var(--accent)}
+.navbtn.active svg{stroke:var(--accent)}
+.navbtn:active{transform:scale(.94)}
+.navbtn-label{font-size:10px;font-weight:700}
+
+@media(max-width:420px){
+  .vac-actions{gap:8px}
+  .vac-apply{min-height:52px;font-size:13px;padding:13px 9px}
+  .vac-card-main{padding:15px 12px}
+  .vac-detail-inner{padding-left:12px;padding-right:12px}
+}
+
+/* Keep the refreshed cards consistent inside directory and homepage sections. */
+.vacancy-directory-group .vac-card,.vacancy-overview-section .vac-card{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 96%,white 4%),var(--card));border:1px solid var(--border);border-radius:18px;margin:9px 0;box-shadow:var(--shadow-sm)}
+.vacancy-directory-group .vac-card-main,.vacancy-overview-section .vac-card-main{padding:16px 14px}
+.vacancy-directory-group .vac-detail-inner,.vacancy-overview-section .vac-detail-inner{padding-left:14px;padding-right:14px}
