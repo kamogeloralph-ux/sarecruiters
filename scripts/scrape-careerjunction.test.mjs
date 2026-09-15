@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCareerJunctionJobs } from './scrape-careerjunction.mjs';
+import { agencyIdForCompany, parseCareerJunctionJobs } from './scrape-careerjunction.mjs';
 
 // Fixture modeled on the live CareerJunction "All Jobs" listing markup: an
 // <h2> title link, an <h3> company link, a location link, and plain
@@ -57,4 +57,20 @@ test('degrades gracefully when no enclosing card can be found', () => {
   assert.equal(job.title, 'Some Role');
   assert.equal(job.company, '');
   assert.equal(job.location, '');
+});
+
+test('maps confirmed CareerJunction company names to agency records', () => {
+  const agencies = [
+    { id: 'stratogo-id', name: 'Stratogo' },
+    { id: 'obrien-id', name: "O'Brien Recruitment" },
+    { id: 'ultra-id', name: 'Ultra Personnel CC' },
+    { id: 'fusion-id', name: 'Fusion Recruitment' },
+    { id: 'sabenza-id', name: 'Sabenza IT Recruitment' },
+  ];
+  assert.equal(agencyIdForCompany('Stratogo', agencies), 'stratogo-id');
+  assert.equal(agencyIdForCompany("O'Brien Recruitment", agencies), 'obrien-id');
+  assert.equal(agencyIdForCompany('Ultra Personnel cc', agencies), 'ultra-id');
+  assert.equal(agencyIdForCompany('Fusion Personnel', agencies), 'fusion-id');
+  assert.equal(agencyIdForCompany('DCV Sabenza IT and Recruitment', agencies), 'sabenza-id');
+  assert.equal(agencyIdForCompany('Unknown Company', agencies), 'general');
 });

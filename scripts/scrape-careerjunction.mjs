@@ -18,6 +18,7 @@ const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
       auth: { autoRefreshToken: false, persistSession: false },
     })
   : null;
+let agencyDirectoryPromise;
 
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(value ?? '', 10);
@@ -26,6 +27,38 @@ function parsePositiveInt(value, fallback) {
 
 function clean(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeAgencyName(value) {
+  return clean(value).toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9]/g, '');
+}
+
+const AGENCY_ALIASES = new Map([
+  ['fusionpersonnel', 'Fusion Recruitment'],
+  ['dcvsabenzaitandrecruitment', 'Sabenza IT Recruitment'],
+]);
+
+export function agencyIdForCompany(company, agencies) {
+  const normalized = normalizeAgencyName(company);
+  if (!normalized) return 'general';
+  const targetName = AGENCY_ALIASES.get(normalized) || company;
+  const target = normalizeAgencyName(targetName);
+  const match = (agencies || []).find((agency) => normalizeAgencyName(agency.name) === target);
+  return match?.id || 'general';
+}
+
+async function loadAgencyDirectory() {
+  if (!agencyDirectoryPromise) {
+    agencyDirectoryPromise = supabase
+      .from('agencies')
+      .select('id,name')
+      .limit(1000)
+      .then(({ data, error }) => {
+        if (error) throw error;
+        return data || [];
+      });
+  }
+  return agencyDirectoryPromise;
 }
 
 function sleep(ms) {
@@ -171,6 +204,7 @@ function pageUrlFor(page) {
 }
 
 async function upsertJobs(parsedJobs) {
+  const agencies = await loadAgencyDirectory();
   const links = parsedJobs.map((job) => job.link);
   const { data: existingJobs, error: existingError } = links.length
     ? await supabase.from('vacancies').select('id,link').in('link', links).limit(500)
@@ -180,7 +214,7 @@ async function upsertJobs(parsedJobs) {
   const jobs = parsedJobs.map((job) => ({
     ...job,
     id: existingByLink.get(job.link) || job.id,
-    agency_id: 'general',
+    agency_id: agencyIdForCompany(job.company, agencies),
   }));
 
   if (jobs.length > 0) {
