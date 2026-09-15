@@ -1044,3 +1044,6 @@ header{margin-bottom:18px}
 .vacancy-directory-group .vac-card,.vacancy-overview-section .vac-card{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 96%,white 4%),var(--card));border:1px solid var(--border);border-radius:18px;margin:9px 0;box-shadow:var(--shadow-sm)}
 .vacancy-directory-group .vac-card-main,.vacancy-overview-section .vac-card-main{padding:16px 14px}
 .vacancy-directory-group .vac-detail-inner,.vacancy-overview-section .vac-detail-inner{padding-left:14px;padding-right:14px}
+
+/* Put the candidate spotlight first: it is the most welcoming entry point for job seekers. */
+.cta-carousel .poster-cta{order:-1}
