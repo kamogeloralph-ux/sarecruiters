@@ -890,6 +890,7 @@ async function upsertBranch(b){ var { error } = await supabaseClient.from('branc
 async function removeBranch(id){ var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error) console.error('branch del',error); }
 async function upsertVacancy(v){
   var { error } = await supabaseClient.from('vacancies').upsert(v);
+  if(!error) return true;
   if(error){
     // If the error is about a missing column, retry with only the
     // columns that are guaranteed to exist in the original schema.
@@ -901,11 +902,13 @@ async function upsertVacancy(v){
         link:v.link||'', email:v.email||'', phone:v.phone||''
       };
       var { error:err2 } = await supabaseClient.from('vacancies').upsert(safe);
-      if(err2){ console.error('vacancy save (retry)',err2); alert('Could not save vacancy: '+err2.message+'\n\nPlease run UPDATE_VACANCIES_SCHEMA.sql in Supabase to add the missing columns.'); }
+      if(err2){ console.error('vacancy save (retry)',err2); alert('Could not save vacancy: '+err2.message+'\n\nPlease run UPDATE_VACANCIES_SCHEMA.sql in Supabase to add the missing columns.'); return false; }
+      return true;
     } else {
-      console.error('vacancy save',error); alert('Could not save vacancy: '+error.message);
+      console.error('vacancy save',error); alert('Could not save vacancy: '+error.message); return false;
     }
   }
+  return false;
 }
 async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); }
 async function updateReportStatus(id, status){ var { error } = await supabaseClient.from('reports').update({status:status}).eq('id',id); if(error) console.error('report upd',error); }
@@ -1743,6 +1746,8 @@ async function saveVacancy(){
   if(!title){ alert('Add a job title.'); return; }
   var id = editing.vacancy || newId();
   var photoUrl = await uploadVacancyPhotoIfAny();
+  var remoteValue = document.getElementById('v-remote').value;
+  if (['On-site','Remote','Hybrid'].indexOf(remoteValue) === -1) remoteValue = null;
   var selVal = document.getElementById('v-agency').value;
   var agencyId, employerId = null;
   if (selVal.indexOf('employer:') === 0) { agencyId = 'employer'; employerId = selVal.slice(9); }
@@ -1751,7 +1756,7 @@ async function saveVacancy(){
     id:id, agency_id:agencyId, employer_id:employerId, title:title, company_photo:photoUrl,
     company:document.getElementById('v-company').value.trim(),
     location:document.getElementById('v-location').value.trim(),
-    remote:document.getElementById('v-remote').value,
+    remote:remoteValue,
     employment_type:document.getElementById('v-etype').value.trim(),
     experience_level:document.getElementById('v-exp').value,
     contract_type:document.getElementById('v-contract').value.trim(),
@@ -1765,7 +1770,8 @@ async function saveVacancy(){
     email:document.getElementById('v-email').value.trim(),
     phone:document.getElementById('v-phone').value.trim()
   };
-  await upsertVacancy(payload);
+  var saved = await upsertVacancy(payload);
+  if (!saved) return;
   if (payload.company && photoUrl) {
     var shared = await supabaseClient.from('vacancies').update({company_photo:photoUrl}).eq('company', payload.company);
     if (shared.error) console.error('shared company photo update', shared.error);

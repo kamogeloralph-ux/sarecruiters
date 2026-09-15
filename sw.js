@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v157-retail-card';
+const VERSION = 'sa-recruiters-v158-company-photos';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -29,7 +29,7 @@ const CORE_ASSETS = [
   './admin.html',
   './privacy.html',
   './styles.css',
-  './app.js?v=20260915-retail-card',
+  './app.js?v=20260915-company-photos-2',
   './icons.svg',
   './offline.html',
   './manifest.json',
