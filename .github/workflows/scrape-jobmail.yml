@@ -1,24 +1,19 @@
-name: Scrape Pnet vacancies
-
+name: Scrape Job Mail vacancies
 on:
   schedule:
-    # General vacancies run every time; one agency then rotates oldest-first.
     - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
-      batch_size:
-        description: "Number of agencies to scrape in this run"
+      pages:
+        description: "Number of Job Mail result pages to scrape"
         required: false
-        default: "1"
+        default: "3"
         type: string
-
 permissions:
   contents: read
-
 concurrency:
-  group: pnet-scraper
+  group: jobmail-scraper
   cancel-in-progress: false
-
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -26,9 +21,9 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SCRAPE_BATCH_SIZE: ${{ inputs.batch_size || '1' }}
-      SCRAPE_REQUEST_TIMEOUT_MS: "60000"
-      SCRAPE_FETCH_ATTEMPTS: "2"
+      JOBMAIL_PAGES: ${{ inputs.pages || '3' }}
+      JOBMAIL_REQUEST_TIMEOUT_MS: "60000"
+      JOBMAIL_FETCH_ATTEMPTS: "2"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,5 +34,5 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Scrape general and oldest-scraped agency vacancies from fixed Pnet URLs
-        run: npm run scrape:pnet
+      - name: Scrape Job Mail result pages
+        run: npm run scrape:jobmail
