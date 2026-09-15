@@ -9,7 +9,8 @@
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
     "sync:dpsa": "node scripts/sync-dpsa.mjs",
     "test": "node --test scripts/*.test.mjs",
-    "scrape:jobmail": "node scripts/scrape-jobmail.mjs"
+    "scrape:jobmail": "node scripts/scrape-jobmail.mjs",
+    "scrape:retail": "node scripts/scrape-retail.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
