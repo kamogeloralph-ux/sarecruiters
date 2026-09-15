@@ -124,12 +124,24 @@ ${bodyHtml}
 
 // ---------- fetch data ----------
 
+async function fetchAllRows(table) {
+  const pageSize = 1000;
+  const rows = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase.from(table).select('*').range(offset, offset + pageSize - 1);
+    if (error) return { data: null, error };
+    const page = data || [];
+    rows.push(...page);
+    if (page.length < pageSize) return { data: rows, error: null };
+  }
+}
+
 async function fetchAll() {
   const [{ data: agencies, error: aErr }, { data: branches, error: bErr }, { data: vacancies, error: vErr }] =
     await Promise.all([
-      supabase.from('agencies').select('*'),
-      supabase.from('branches').select('*'),
-      supabase.from('vacancies').select('*'),
+      fetchAllRows('agencies'),
+      fetchAllRows('branches'),
+      fetchAllRows('vacancies'),
     ]);
 
   if (aErr) console.error('agencies fetch error:', JSON.stringify(aErr));
