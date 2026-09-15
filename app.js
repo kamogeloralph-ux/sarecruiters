@@ -22,11 +22,35 @@ if (typeof window.updateEmployerRegUI !== 'function') {
   };
 }
 // First-party analytics: no IP address, user-agent, name, phone, or email is stored.
-var analyticsSessionId = (function(){ try { var k='sa_analytics_session'; var v=localStorage.getItem(k); if(!v){ v='s_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10); localStorage.setItem(k,v); } return v; } catch(e){ return 's_'+Date.now().toString(36); } })();
+// visitor_id persists in this browser; session_id is renewed after 30 minutes.
+function analyticsRandomId(prefix) {
+  try { if (window.crypto && crypto.randomUUID) return prefix + crypto.randomUUID(); } catch(e) {}
+  return prefix + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,10);
+}
+var analyticsVisitorId = (function(){ try { var k='sa_analytics_visitor'; var v=localStorage.getItem(k); if(!v){ v=analyticsRandomId('v_'); localStorage.setItem(k,v); } return v; } catch(e){ return analyticsRandomId('v_'); } })();
+var analyticsSessionId = (function(){ try { var k='sa_analytics_session', t='sa_analytics_session_started', now=Date.now(), v=localStorage.getItem(k), started=Number(localStorage.getItem(t)||0); if(!v || !started || now-started >= 30*60*1000){ v=analyticsRandomId('s_'); localStorage.setItem(k,v); localStorage.setItem(t,String(now)); } return v; } catch(e){ return analyticsRandomId('s_'); } })();
+var analyticsPublicTraffic = null;
+async function canTrackPublicTraffic() {
+  if (analyticsPublicTraffic !== null) return analyticsPublicTraffic;
+  try {
+    var auth = await supabaseClient.auth.getSession();
+    var user = auth.data && auth.data.session && auth.data.session.user;
+    if (!user) return (analyticsPublicTraffic = true);
+    var check = await supabaseClient.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
+    analyticsPublicTraffic = !(check.data && check.data.user_id);
+  } catch(e) {
+    // Never count authenticated sessions when admin status cannot be verified.
+    analyticsPublicTraffic = false;
+  }
+  return analyticsPublicTraffic;
+}
 function trackEvent(eventName, entityType, entityId, metadata) {
   try {
-    var row = { event_name:String(eventName||'unknown'), entity_type:entityType ? String(entityType) : null, entity_id:entityId ? String(entityId) : null, session_id:analyticsSessionId, page_path:location.pathname, metadata:metadata || {} };
-    supabaseClient.from('analytics_events').insert([row]).then(function(){}, function(){});
+    canTrackPublicTraffic().then(function(allowed){
+      if (!allowed || !supabaseClient) return;
+      var row = { event_name:String(eventName||'unknown'), entity_type:entityType ? String(entityType) : null, entity_id:entityId ? String(entityId) : null, visitor_id:analyticsVisitorId, session_id:analyticsSessionId, is_admin:false, page_path:location.pathname, metadata:metadata || {} };
+      supabaseClient.from('analytics_events').insert([row]).then(function(){}, function(){});
+    });
   } catch(e) {}
 }
 
@@ -1699,7 +1723,12 @@ window.toggleVac = function(target) {
   if (c) {
     var opening = !c.classList.contains('open');
     c.classList.toggle('open');
-    if (opening && c.dataset.vacancyId) trackEvent('vacancy_view', 'vacancy', c.dataset.vacancyId);
+    if (opening && c.dataset.vacancyId) {
+      var viewKey = 'sa_vacancy_viewed_' + c.dataset.vacancyId + '_' + analyticsSessionId;
+      var alreadyViewed = false;
+      try { alreadyViewed = sessionStorage.getItem(viewKey) === '1'; if (!alreadyViewed) sessionStorage.setItem(viewKey, '1'); } catch(e) {}
+      if (!alreadyViewed) trackEvent('vacancy_view', 'vacancy', c.dataset.vacancyId);
+    }
   }
 };
 window.closeVac = function(target) {

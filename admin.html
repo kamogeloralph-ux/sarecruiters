@@ -1173,17 +1173,17 @@ async function loadAnalyticsSummary(){
   if (!el) return;
   var since = new Date(Date.now() - 30*24*60*60*1000).toISOString();
   try {
-    var res = await supabaseClient.from('analytics_events').select('event_name,session_id').gte('created_at', since).limit(10000);
+    var res = await supabaseClient.from('analytics_events').select('event_name,visitor_id,session_id,is_admin').eq('is_admin',false).gte('created_at', since).limit(10000);
     if (res.error) throw res.error;
-    var rows = res.data || [], counts = {}, sessions = {};
-    rows.forEach(function(r){ counts[r.event_name] = (counts[r.event_name]||0) + 1; if(r.session_id) sessions[r.session_id] = true; });
+    var rows = res.data || [], counts = {}, sessions = {}, visitors = {};
+    rows.forEach(function(r){ counts[r.event_name] = (counts[r.event_name]||0) + 1; if(r.session_id) sessions[r.session_id] = true; if(r.visitor_id) visitors[r.visitor_id] = true; });
     var items = [
       ['candidate_registration_submitted','Candidate registrations'],
       ['employer_view','Employer profile views'],
       ['vacancy_view','Vacancy views'],
       ['vacancy_click','Vacancy clicks']
     ];
-    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">' + items.map(function(item){ return '<div style="background:var(--card-2);border-radius:10px;padding:10px 11px"><div style="font-size:21px;font-weight:800">'+(counts[item[0]]||0)+'</div><div style="font-size:11.5px;color:var(--text-2)">'+item[1]+'</div></div>'; }).join('') + '</div><div style="margin-top:10px;color:var(--text-2);font-size:11.5px">'+Object.keys(sessions).length+' unique sessions recorded from '+rows.length+' events.</div>';
+    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px"><div style="background:var(--card-2);border-radius:10px;padding:10px 11px"><div style="font-size:21px;font-weight:800">'+Object.keys(visitors).length+'</div><div style="font-size:11.5px;color:var(--text-2)">Unique visitors</div></div><div style="background:var(--card-2);border-radius:10px;padding:10px 11px"><div style="font-size:21px;font-weight:800">'+Object.keys(sessions).length+'</div><div style="font-size:11.5px;color:var(--text-2)">Sessions</div></div>' + items.map(function(item){ return '<div style="background:var(--card-2);border-radius:10px;padding:10px 11px"><div style="font-size:21px;font-weight:800">'+(counts[item[0]]||0)+'</div><div style="font-size:11.5px;color:var(--text-2)">'+item[1]+'</div></div>'; }).join('') + '</div><div style="margin-top:10px;color:var(--text-2);font-size:11.5px">'+Object.keys(visitors).length+' unique visitors and '+Object.keys(sessions).length+' sessions recorded from '+rows.length+' public events in the last 30 days.</div>';
   } catch(e) {
     el.innerHTML = '<div style="color:var(--text-2);font-size:13px;line-height:1.5">Analytics is not available yet. Run <strong>CREATE_ANALYTICS.sql</strong> in Supabase, then tap Refresh.</div>';
   }
