@@ -5,7 +5,8 @@ import { pathToFileURL } from 'node:url';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BATCH_SIZE = parsePositiveInt(process.env.SCRAPE_BATCH_SIZE, 1);
-const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SCRAPE_REQUEST_TIMEOUT_MS, 30_000);
+const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SCRAPE_REQUEST_TIMEOUT_MS, 60_000);
+const FETCH_ATTEMPTS = parsePositiveInt(process.env.SCRAPE_FETCH_ATTEMPTS, 2);
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersPnetScraper/1.0 (+https://sa-recruiters.co.za)';
 const GENERAL_PNET_URL = process.env.PNET_GENERAL_URL || 'https://www.pnet.co.za/jobs';
 
@@ -106,21 +107,31 @@ export function parsePnetJobs(html, pageUrl) {
 }
 
 async function fetchPage(url) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        accept: 'text/html,application/xhtml+xml',
-        'user-agent': USER_AGENT,
-      },
-    });
-    if (!response.ok) throw new Error(`Pnet returned HTTP ${response.status}`);
-    return await response.text();
-  } finally {
-    clearTimeout(timeout);
+  let lastError;
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          accept: 'text/html,application/xhtml+xml',
+          'user-agent': USER_AGENT,
+        },
+      });
+      if (!response.ok) throw new Error(`Pnet returned HTTP ${response.status}`);
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+      if (attempt < FETCH_ATTEMPTS) {
+        console.warn(`[pnet] request attempt ${attempt} failed for ${url}: ${error instanceof Error ? error.message : String(error)}; retrying`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  throw lastError;
 }
 
 async function loadAgencies() {
