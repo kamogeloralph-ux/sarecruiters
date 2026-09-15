@@ -3314,7 +3314,8 @@ function renderAllVacanciesList() {
   var isHimalayasVacancy = function(v){ return v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0; };
   var isAdzunaVacancy = function(v){ return v.source_type === 'adzuna' || String(v.id || '').indexOf('adzuna-') === 0; };
   var isDpsaVacancy = function(v){ return v.source_type === 'dpsa' || String(v.id || '').indexOf('dpsa-') === 0; };
-  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isDpsaVacancy(v); };
+  var isRetailVacancy = function(v){ return ['retail','shoprite','picknpay','woolworths','truworths','spar'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/i.test(String(v.id || '')); };
+  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isDpsaVacancy(v) || isRetailVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
   var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
@@ -3328,9 +3329,11 @@ function renderAllVacanciesList() {
         ? visible.filter(isHimalayasVacancy)
         : allVacanciesFolder === 'adzuna'
           ? visible.filter(isAdzunaVacancy)
-          : allVacanciesFolder === 'dpsa'
-            ? visible.filter(isDpsaVacancy)
-      : visible.slice();
+                : allVacanciesFolder === 'dpsa'
+                  ? visible.filter(isDpsaVacancy)
+                  : allVacanciesFolder === 'retail'
+                    ? visible.filter(isRetailVacancy)
+              : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
     var industries = new Set();
@@ -3369,6 +3372,7 @@ function renderAllVacanciesList() {
     var himalayasCount = list.filter(isHimalayasVacancy).length;
     var adzunaCount = list.filter(isAdzunaVacancy).length;
     var dpsaCount = list.filter(isDpsaVacancy).length;
+    var retailCount = list.filter(isRetailVacancy).length;
     var folderCountLabel = function(count) {
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
@@ -3397,6 +3401,11 @@ function renderAllVacanciesList() {
         '<button class="vac-folder-card vac-folder-card-dpsa" data-ripple onclick="openVacancyFolder(\'dpsa\')" aria-label="Open DPSA circular archive">' +
           '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg></span>' +
           '<span class="vac-folder-copy"><span class="vac-folder-title">DPSA Circular Archive</span><span class="vac-folder-count">' + folderCountLabel(dpsaCount) + '</span></span>' +
+          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+        '</button>' +
+        '<button class="vac-folder-card vac-folder-card-retail" data-ripple onclick="openVacancyFolder(\'retail\')" aria-label="Open retail vacancies">' +
+          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16M6 10v9h12v-9M5 10l1-5h12l1 5M9 19v-5h6v5"/><path d="M8 5V3h8v2"/></svg></span>' +
+          '<span class="vac-folder-copy"><span class="vac-folder-title">Retail Vacancies</span><span class="vac-folder-count">' + folderCountLabel(retailCount) + '</span></span>' +
           '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
         '</button>' +
       '</div>';
@@ -3429,6 +3438,12 @@ function renderAllVacanciesList() {
       groups[dpsaKey].items.push(v);
       return;
     }
+    if (isRetailVacancy(v)) {
+      var retailKey = 'retail';
+      if (!groups[retailKey]) groups[retailKey] = { name:'Retail vacancies', type:'Retail', agency:null, items:[] };
+      groups[retailKey].items.push(v);
+      return;
+    }
     var agency = v.agency_id && v.agency_id !== 'general' ? agenciesCache.find(function(a){ return a.id === v.agency_id; }) : null;
     var key, name, type;
     if (agency) { key='agency:'+agency.id; name=agency.name||'Agency'; type='Agency'; }
@@ -3444,7 +3459,7 @@ function renderAllVacanciesList() {
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : 'DPSA Circular Archive';
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'dpsa' ? 'DPSA Circular Archive' : 'Retail Vacancies';
   el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);
