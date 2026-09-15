@@ -7,7 +7,7 @@ on:
       pages:
         description: "Number of Job Mail result pages to scrape"
         required: false
-        default: "3"
+        default: "50"
         type: string
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      JOBMAIL_PAGES: ${{ inputs.pages || '3' }}
+      JOBMAIL_PAGES: ${{ inputs.pages || '50' }}
       JOBMAIL_REQUEST_TIMEOUT_MS: "60000"
       JOBMAIL_FETCH_ATTEMPTS: "2"
     steps:

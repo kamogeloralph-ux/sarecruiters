@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const GENERAL_URL = process.env.JOBMAIL_GENERAL_URL || 'https://www.jobmail.co.za/jobs';
-const PAGE_COUNT = parsePositiveInt(process.env.JOBMAIL_PAGES, 3);
+const PAGE_COUNT = parsePositiveInt(process.env.JOBMAIL_PAGES, 50);
 const REQUEST_DELAY_MS = parsePositiveInt(process.env.JOBMAIL_REQUEST_DELAY_MS, 1_000);
 const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.JOBMAIL_REQUEST_TIMEOUT_MS, 60_000);
 const FETCH_ATTEMPTS = parsePositiveInt(process.env.JOBMAIL_FETCH_ATTEMPTS, 2);

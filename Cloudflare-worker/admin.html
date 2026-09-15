@@ -827,7 +827,18 @@ async function getBranches(){
   return data || [];
 }
 async function getVacancies(){
-  try { var { data, error } = await supabaseClient.from('vacancies').select('id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  var columns = 'id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at';
+  var pageSize = 1000;
+  var rows = [];
+  try {
+    for (var offset = 0; ; offset += pageSize) {
+      var result = await supabaseClient.from('vacancies').select(columns).order('created_at',{ascending:false}).range(offset, offset + pageSize - 1);
+      if (result.error) break;
+      var page = result.data || [];
+      rows = rows.concat(page);
+      if (page.length < pageSize) return rows;
+    }
+  } catch(e){}
   return [];
 }
 async function getReports(){
