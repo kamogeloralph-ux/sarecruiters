@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v156-uncapped-vacancies';
+const VERSION = 'sa-recruiters-v157-retail-card';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -29,7 +29,7 @@ const CORE_ASSETS = [
   './admin.html',
   './privacy.html',
   './styles.css',
-  './app.js?v=20260915-uncapped-vacancies',
+  './app.js?v=20260915-retail-card',
   './icons.svg',
   './offline.html',
   './manifest.json',
