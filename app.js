@@ -677,7 +677,7 @@ function openEmployerLockedSheet() {
 
 // ----- Vacancies -----
 async function getVacancies() {
-  var columns = 'id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
   var pageSize = 1000;
   var rows = [];
   try {
@@ -1514,6 +1514,8 @@ function vacancyCard(v, agency) {
   var logo;
   if (isEmployerPost && employer.photo) {
     logo = '<div class="vac-logo"><img src="' + escapeHtml(employer.photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
+  } else if (isGeneral && v.company_photo) {
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(v.company_photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
   } else if (!isEmployerPost && !isGeneral && agency && agency.photo) {
     logo = '<div class="vac-logo"><img src="' + escapeHtml(agency.photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
   } else {
