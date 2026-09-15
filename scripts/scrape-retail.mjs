@@ -59,7 +59,9 @@ export function parsePickNPayDetail(payload, summary) {
     link: summary.link,
     email: '',
     phone: '',
-    remote: 'No',
+    // Pick n Pay does not expose a work-arrangement field in this payload.
+    // The vacancies table accepts null when the arrangement is unspecified.
+    remote: null,
     experience_level: '',
     employment_type: clean(info.timeType || 'Full time'),
     contract_type: '',

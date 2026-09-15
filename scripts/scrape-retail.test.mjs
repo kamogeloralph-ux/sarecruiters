@@ -18,6 +18,7 @@ test('normalizes Pick n Pay detail data as a retail vacancy', () => {
   assert.equal(job.id, 'retail-pnp-JR123');
   assert.equal(job.company, 'Pick n Pay');
   assert.equal(job.source_type, 'retail');
+  assert.equal(job.remote, null);
   assert.equal(job.notes, 'Keep shelves stocked.');
   assert.equal(job.location, 'Durban - KwaZulu-Natal');
 });
