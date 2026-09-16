@@ -139,7 +139,7 @@ async function loadStartupData(env) {
         limit: '0',
       }, { prefer: 'count=exact' }),
       Promise.all(['public_vacancy_posting', 'public_employer_registration', 'public_employer_directory']
-        .map((key) => supabaseGet(env, 'app_settings', { select: 'key,value', key }))),
+        .map((key) => supabaseGet(env, 'app_settings', { select: 'key,value', key: `eq.${key}` }))),
       supabaseGet(env, 'pool_candidates', { select: 'id', limit: '0' }, { prefer: 'count=exact' }),
     ]);
 
