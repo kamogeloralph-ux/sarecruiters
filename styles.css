@@ -1193,3 +1193,133 @@ header{margin-bottom:18px}
 #screen-profile .menu-hero .support-ticker-item{font-size:11px;color:#fff;font-weight:750}
 [data-theme="dark"] #screen-profile .menu-hero .track-card{background:rgba(1,18,48,.48);border-color:rgba(156,207,255,.2)}
 @media(max-width:380px){#screen-profile .menu-hero .track-card{min-height:62px;padding:8px}#screen-profile .menu-hero .track-art{width:40px;height:40px;flex-basis:40px}#screen-profile .menu-hero .track-play{width:33px;height:33px;flex-basis:33px}}
+
+
+/* ================================================================
+   CARD SYSTEM EXTENSION — carry the current blue hero language
+   through every app section without changing card behaviour.
+   ================================================================ */
+:root{
+  --card-elevated:linear-gradient(145deg,color-mix(in srgb,var(--card) 96%,white 4%),var(--card));
+  --card-border-strong:color-mix(in srgb,var(--accent) 18%,var(--border));
+  --card-shadow:0 8px 22px rgba(10,35,80,.08),0 2px 6px rgba(10,35,80,.04);
+  --card-shadow-hover:0 16px 34px rgba(10,35,80,.14),0 4px 10px rgba(10,35,80,.06);
+}
+[data-theme="dark"]{
+  --card-elevated:linear-gradient(145deg,color-mix(in srgb,var(--card) 92%,#0a84ff 8%),var(--card));
+  --card-shadow:0 10px 26px rgba(0,0,0,.24),0 2px 8px rgba(0,0,0,.14);
+  --card-shadow-hover:0 18px 38px rgba(0,0,0,.34),0 4px 12px rgba(0,0,0,.2);
+}
+
+/* Shared surface language for every generated card/panel. */
+.hub-card,.hub-panel,.hub-list,.profile-card,.profile-card-ios,.contact-card,
+.vac-folder-card,.vac-card,.vacancy-card,.directory-group,.content-article,
+.pool-feature-card,.pool-mini-card,.poster-page-card,.spotlight-card,
+.manager-item,.manager-item-compact,.sub-card,.track-card,.quick-card,.spotlight-mini,
+.employer-cta,.candidate-cta,.alert-optin-card,.hub-contact-item,.hub-accordion{
+  background:var(--card-elevated);
+  border:1px solid var(--border);
+  box-shadow:var(--card-shadow);
+  border-radius:20px;
+}
+.hub-card:hover,.hub-panel:hover,.profile-card:hover,.contact-card:hover,
+.vac-folder-card:hover,.vac-card:hover,.directory-group:hover,.content-article:hover,
+.pool-feature-card:hover,.pool-mini-card:hover,.poster-page-card:hover,
+.spotlight-card:hover,.manager-item:hover,.manager-item-compact:hover,.sub-card:hover,
+.quick-card:hover,.spotlight-mini:hover,.employer-cta:hover,.candidate-cta:hover,
+.hub-contact-item:hover,.hub-accordion:hover{
+  border-color:var(--card-border-strong);
+  box-shadow:var(--card-shadow-hover);
+}
+
+/* Home statistics and directory groups inherit the hero's blue energy. */
+.stat-card{background:var(--card-elevated);border-color:var(--border);box-shadow:var(--card-shadow);border-radius:18px}
+.stat-card:hover{border-color:color-mix(in srgb,var(--accent) 60%,var(--border));box-shadow:var(--card-shadow-hover)}
+.stat-card .stat-icon{filter:saturate(1.1)}
+.directory-group{overflow:hidden;margin:14px 0}
+.directory-group-head{padding:15px 16px;background:linear-gradient(135deg,var(--accent-soft),transparent 72%);border-bottom:1px solid var(--border)}
+.directory-group-title{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.directory-group-sub{font-size:11.5px;color:var(--text-2);margin-top:3px}
+.hub-list{overflow:hidden}
+.hub-row{min-height:74px;padding:14px 16px;border-top-color:var(--separator);transition:background .18s ease,transform .18s var(--ease)}
+.hub-row:hover{background:color-mix(in srgb,var(--accent) 5%,var(--card))}
+.hub-row:active{transform:scale(.995)}
+.hub-row-avatar,.sm-card-avatar,.pool-cv-row img{box-shadow:0 6px 16px rgba(10,35,80,.14)}
+.hub-row-title,.sm-card-name{font-weight:800;letter-spacing:-.015em}
+.hub-row-sub,.manager-item-sub,.sm-card-loc{color:var(--text-2)}
+.hub-row-actions button,.hub-row-edit,.hub-row-del{border-radius:10px}
+
+/* Agency, branch, employer, and pool cards share a clearer hierarchy. */
+.agency-name-row{gap:10px}
+.hub-stat,.hub-stats-row{border-radius:14px;background:color-mix(in srgb,var(--accent-soft) 52%,var(--card));border-color:var(--border)}
+.hub-stat-num{color:var(--accent);font-weight:850}
+.contact-card,.hub-panel-inner{border-radius:18px}
+.contact-card-head,.sm-card-head,.sub-card-head{padding:14px 16px}
+.contact-card-body,.sub-card-body{padding:0 16px 16px}
+.hub-contact-grid{gap:10px}
+.hub-contact-item{min-height:64px;padding:12px 13px;border-radius:16px;box-shadow:none;background:color-mix(in srgb,var(--card) 86%,var(--accent-soft))}
+.hub-contact-icon,.contact-card-icon,.sub-card-icon{background:var(--accent-soft);color:var(--accent);border-radius:13px}
+.manager-item,.manager-item-compact{padding:14px 16px;margin:9px 0}
+.manager-item-title,.sub-card-title{font-weight:800}
+.sub-card{overflow:hidden;margin:10px 0}
+.sub-card-meta,.manager-item-meta{font-size:11px;color:var(--text-2)}
+.sub-status-pill{border-radius:999px;padding:4px 9px;font-weight:750}
+
+/* Vacancy folders and listings retain their existing behaviour, with the same surface. */
+.vac-folder-grid{gap:10px}
+.vac-folder-card{min-height:82px;padding:14px;border-radius:18px}
+.vac-folder-icon{border-radius:14px;background:var(--accent-soft);color:var(--accent)}
+.vac-card{margin:10px 0;border-radius:20px;box-shadow:var(--card-shadow)}
+.vac-card:hover{transform:translateY(-1px);box-shadow:var(--card-shadow-hover)}
+.vac-card.open{border-color:color-mix(in srgb,var(--accent) 62%,var(--border));box-shadow:var(--card-shadow-hover)}
+.vac-card-main{padding:17px 16px}
+.vac-logo{border-radius:16px;box-shadow:0 7px 18px rgba(10,35,80,.16)}
+.vac-save,.vac-share{border-radius:11px;background:color-mix(in srgb,var(--card-2) 72%,transparent)}
+.vac-detail-inner{background:color-mix(in srgb,var(--accent) 2%,var(--card))}
+.vac-detail-row{border-bottom-color:var(--separator)}
+.vac-apply-secondary{background:linear-gradient(135deg,#2f9bff,#0758ad);box-shadow:0 10px 20px rgba(7,88,173,.24)}
+.vac-close-btn{border-radius:14px}
+
+/* Menu, quick access, content and spotlight cards use matching depth. */
+#screen-profile .quick-access-grid{gap:12px}
+.quick-card{border-radius:20px;box-shadow:var(--card-shadow)}
+.quick-card-icon{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 14%,transparent)}
+.spotlight-card,.spotlight-mini,.poster-page-card{overflow:hidden}
+.spotlight-card img,.poster-page-card img{transition:transform .35s var(--ease),filter .35s ease}
+.spotlight-card:hover img,.poster-page-card:hover img{transform:scale(1.025);filter:saturate(1.04)}
+.content-article{padding:17px 17px 15px;margin-bottom:12px}
+.content-article-title{font-size:15.5px;letter-spacing:-.02em}
+.content-article-actions{border-top-color:var(--separator)}
+.content-edit-btn,.content-del-btn{border-radius:11px}
+.track-card{box-shadow:var(--card-shadow)}
+.support-ticker{border-radius:14px;box-shadow:0 6px 16px rgba(10,35,80,.1)}
+.employer-cta,.candidate-cta{border-radius:20px;box-shadow:var(--card-shadow)}
+.employer-cta-action,.quick-card-actions button,.poster-cta button{border-radius:12px}
+.alert-optin-card{padding:14px 15px}
+.alert-optin-row{gap:10px}
+
+/* Cards inside list/detail screens get consistent section framing. */
+.screen-intro{background:color-mix(in srgb,var(--accent-soft) 35%,transparent);border:1px solid color-mix(in srgb,var(--accent) 12%,var(--border));border-radius:18px;margin:10px 0 14px}
+.section-head,.screen-title-group{letter-spacing:-.02em}
+.vac-filter-row{padding:10px;border:1px solid var(--border);border-radius:16px;background:var(--card-elevated);box-shadow:var(--card-shadow)}
+.empty-state{border:1px dashed var(--border-strong);border-radius:20px;background:color-mix(in srgb,var(--card) 72%,var(--accent-soft));padding:30px 20px}
+
+/* Mobile: preserve the app's compact rhythm while keeping every card touchable. */
+@media(max-width:520px){
+  .hub-card,.hub-panel,.profile-card,.profile-card-ios,.contact-card,
+  .vac-folder-card,.vac-card,.vacancy-card,.directory-group,.content-article,
+  .pool-feature-card,.pool-mini-card,.poster-page-card,.spotlight-card,
+  .manager-item,.manager-item-compact,.sub-card,.quick-card,.spotlight-mini,
+  .employer-cta,.candidate-cta,.hub-contact-item,.hub-accordion{border-radius:18px}
+  .hub-row{padding:13px 14px}
+  .directory-group-head{padding:14px}
+  .vac-card-main{padding:15px 14px}
+  .screen-intro{margin-left:0;margin-right:0}
+  .hub-contact-grid{grid-template-columns:1fr 1fr}
+  .hub-contact-item.wide{grid-column:1 / -1}
+}
+@media(max-width:380px){
+  .hub-contact-grid{grid-template-columns:1fr}
+  .hub-contact-item.wide{grid-column:auto}
+  .vac-card{border-radius:17px}
+}
