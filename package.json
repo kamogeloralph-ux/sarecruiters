@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "generate": "node generate-pages.js",
+    "build:bundle": "node scripts/bundle-app.js",
     "scrape:careerjunction": "node scripts/scrape-careerjunction.mjs",
     "sync:adzuna": "node scripts/sync-adzuna.mjs",
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
@@ -15,5 +16,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
   }
 }
