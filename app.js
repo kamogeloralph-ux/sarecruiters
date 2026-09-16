@@ -6,6 +6,7 @@ var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 // Set this to your deployed Worker URL, e.g.
 // 'https://sarecruiters-uploader.<your-subdomain>.workers.dev'
 var R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
+var STARTUP_DATA_URL = R2_WORKER_URL + '/api/startup';
 var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
@@ -988,12 +989,42 @@ function loadDataCache() {
   } catch(e) { return false; }
 }
 
+async function getStartupData() {
+  try {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
+    var response = await fetch(STARTUP_DATA_URL, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+      signal: controller ? controller.signal : undefined
+    });
+    if (timeout) clearTimeout(timeout);
+    if (!response.ok) return null;
+    var payload = await response.json();
+    if (!payload || !Array.isArray(payload.agencies) || !Array.isArray(payload.branches) ||
+        !Array.isArray(payload.vacancies) || !Array.isArray(payload.employers) ||
+        !payload.counts || !payload.settings) return null;
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function loadAll() {
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
-  // Fetch all startup data and the two public settings concurrently. The
-  // home screen can render from the fastest useful response instead of
-  // waiting for a chain of independent requests.
-  var results = await Promise.all([
+  // Prefer the edge-cached aggregate. If it is unavailable, preserve the
+  // original independent Supabase reads so launch remains resilient.
+  var startup = await getStartupData();
+  var results = startup ? [
+    startup.agencies, startup.branches, startup.vacancies, startup.employers,
+    typeof startup.counts.vacancies === 'number'
+      ? Math.max(0, startup.counts.vacancies - startup.vacancies.length) : null,
+    startup.settings.public_vacancy_posting,
+    startup.settings.public_employer_registration,
+    startup.settings.public_employer_directory,
+    typeof startup.counts.candidates === 'number' ? startup.counts.candidates : null
+  ] : await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(), getGeneralVacancyCount(),
     getAppSetting('public_vacancy_posting', 'false'),
     getAppSetting('public_employer_registration', 'false'),
