@@ -59,6 +59,14 @@ var agenciesCache = [];
 var branchesCache = [];
 var vacanciesCache = [];
 var employersCache = [];
+var generalVacancyCount = 0;
+var generalVacancyPageSize = 30;
+var generalVacancyPage = 0;
+var generalVacancyHasMore = false;
+var generalVacancyLoading = false;
+var generalVacancyRows = [];
+var generalVacancyQueryKey = '';
+var generalVacancyRequestId = 0;
 // Public static listing URLs are generated from the same deterministic maps
 // used by generate-pages.js. This keeps links correct when names repeat.
 var publicAgencySlugs = Object.create(null);
@@ -706,7 +714,11 @@ async function getVacancies() {
   var rows = [];
   try {
     for (var offset = 0; ; offset += pageSize) {
-      var result = await supabaseClient.from('vacancies').select(columns).order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
+      // General public vacancies are loaded lazily by the paginated directory
+      // query below. Startup only needs agency/employer records for hub cards.
+      var result = await supabaseClient.from('vacancies').select(columns)
+        .or('agency_id.neq.general,employer_id.not.is.null,source_type.not.is.null')
+        .order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
       if (result.error) break;
       var page = result.data || [];
       rows = rows.concat(page);
@@ -714,6 +726,46 @@ async function getVacancies() {
     }
   } catch(e){}
   return markLoadError(readLocal('vacancies'));
+}
+async function getGeneralVacancyCount() {
+  try {
+    var result = await supabaseClient.from('vacancies')
+      .select('id', { count: 'exact', head: true })
+      .or('agency_id.is.null,agency_id.eq.general')
+      .is('employer_id', null)
+      .or('source_type.is.null,source_type.eq.general');
+    if (result.error) return null;
+    return typeof result.count === 'number' ? result.count : 0;
+  } catch(e) { return null; }
+}
+function generalVacancyQueryState() {
+  return {
+    q: ((document.getElementById('allvacancies-search')||{}).value || '').trim(),
+    remote: ((document.getElementById('allvacancies-remote')||{}).value || ''),
+    exp: ((document.getElementById('allvacancies-exp')||{}).value || '')
+  };
+}
+function generalVacancyQueryKeyFor(state) {
+  return [state.q, state.remote, state.exp].join('|').toLowerCase();
+}
+async function fetchGeneralVacancyPage(state, page) {
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var from = page * generalVacancyPageSize;
+  var query = supabaseClient.from('vacancies').select(columns)
+    .or('agency_id.is.null,agency_id.eq.general')
+    .is('employer_id', null)
+    .or('source_type.is.null,source_type.eq.general')
+    .order('created_at', { ascending: false })
+    .range(from, from + generalVacancyPageSize - 1);
+  if (state.remote) query = query.eq('remote', state.remote);
+  if (state.exp) query = query.eq('experience_level', state.exp);
+  if (state.q) {
+    var safe = state.q.replace(/[(),]/g, ' ').replace(/%/g, '').trim();
+    if (safe) query = query.or('title.ilike.%' + safe + '%,company.ilike.%' + safe + '%,location.ilike.%' + safe + '%,notes.ilike.%' + safe + '%');
+  }
+  var result = await query;
+  if (result.error) throw result.error;
+  return result.data || [];
 }
 async function upsertVacancy(v) {
   // First attempt: send all fields
@@ -868,6 +920,7 @@ function saveDataCache() {
       agencies: agenciesCache,
       branches: branchesCache,
       vacancies: vacanciesCache,
+      generalVacancyCount: generalVacancyCount,
       employers: employersCache,
       poolCount: poolCandidateCount,
       savedAt: Date.now()
@@ -883,6 +936,7 @@ function loadDataCache() {
     agenciesCache = d.agencies || [];
     branchesCache = d.branches || [];
     vacanciesCache = d.vacancies || [];
+    generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
     employersCache = d.employers || [];
     poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
     lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
@@ -896,7 +950,7 @@ async function loadAll() {
   // home screen can render from the fastest useful response instead of
   // waiting for a chain of independent requests.
   var results = await Promise.all([
-    getAgencies(), getBranches(), getVacancies(), getEmployers(),
+    getAgencies(), getBranches(), getVacancies(), getEmployers(), getGeneralVacancyCount(),
     getAppSetting('public_vacancy_posting', 'false'),
     getAppSetting('public_employer_registration', 'false'),
     getAppSetting('public_employer_directory', 'true'),
@@ -910,20 +964,26 @@ async function loadAll() {
   if (results[0].__loadError) { hadLoadError = true; } else { agenciesCache = results[0]; }
   if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
   if (results[2].__loadError) { hadLoadError = true; } else {
-    vacanciesCache = sortVacancies(results[2].filter(function(v){ return !isVacancyExpired(v); }));
+    vacanciesCache = sortVacancies(results[2].filter(function(v){
+      if (isVacancyExpired(v)) return false;
+      var isGeneral = !v.employer_id && (!v.agency_id || v.agency_id === 'general') && (!v.source_type || v.source_type === 'general');
+      return !isGeneral;
+    }));
     // Best-effort background delete of the expired ones we just filtered out.
     purgeExpiredVacancies(results[2]);
   }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
+  if (typeof results[4] === 'number') generalVacancyCount = results[4];
+  else if (results[4] === null) hadLoadError = true;
   setRetryBanner(hadLoadError);
   if (!hadLoadError) lastDataRefreshAt = Date.now();
   setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
-  publicVacancyPostingOpen = (results[4] === true || results[4] === 'true');
-  publicEmployerRegistrationOpen = (results[5] === true || results[5] === 'true');
-  employerDirectoryOpen = (results[6] === true || results[6] === 'true');
+  publicVacancyPostingOpen = (results[5] === true || results[5] === 'true');
+  publicEmployerRegistrationOpen = (results[6] === true || results[6] === 'true');
+  employerDirectoryOpen = (results[7] === true || results[7] === 'true');
   // Only overwrite the count if the query succeeded — a failed count fetch
   // should leave the last-known number on screen rather than dropping to 0.
-  if (typeof results[7] === 'number') poolCandidateCount = results[7];
+  if (typeof results[8] === 'number') poolCandidateCount = results[8];
   // Sort employers: verified first, then alphabetical
   employersCache.sort(function(a,b){
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
@@ -979,7 +1039,7 @@ async function loadAll() {
 function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   document.getElementById('stat-branches').textContent = branchesCache.length;
-  document.getElementById('stat-vacancies').textContent = vacanciesCache.length;
+  document.getElementById('stat-vacancies').textContent = generalVacancyCount + vacanciesCache.length;
   var statEmployers = document.getElementById('stat-employers');
   if (statEmployers) statEmployers.textContent = employersCache.length;
   var statPool = document.getElementById('stat-pool');
@@ -3316,6 +3376,10 @@ async function deleteBranchAllList(id) {
 var allVacanciesFolder = null;
 function openVacancyFolder(type) {
   allVacanciesFolder = type;
+  if (type === 'general') {
+    generalVacancyQueryKey = '__open__';
+    generalVacancyHasMore = true;
+  }
   // Filters are shared by the folder picker and its listing view, so a user
   // can narrow the category before opening it and keep that context.
   renderAllVacanciesList();
@@ -3326,6 +3390,69 @@ function closeVacancyFolder() {
   renderAllVacanciesList();
   resetActiveScreenScroll('screen-allvacancies');
 }
+function renderGeneralVacancyCards(append) {
+  var el = document.getElementById('allvacancies-list');
+  var loadMore = document.getElementById('allvacancies-loadmore');
+  var countLabel = document.getElementById('allvacancies-result-count');
+  if (!el) return;
+  if (generalVacancyLoading && !generalVacancyRows.length) {
+    el.dataset.state = 'loading';
+    el.innerHTML = '<div class="empty-state"><h3>Loading vacancies…</h3><p>Fetching the latest opportunities.</p></div>';
+  } else if (!generalVacancyRows.length) {
+    el.dataset.state = 'empty';
+    el.innerHTML = vacancyScreenStateMarkup('all', false, !!generalVacancyQueryKey);
+  } else {
+    el.dataset.state = 'ready';
+    var cards = generalVacancyRows.map(function(v){ return vacancyCard(v, {}); }).join('');
+    var section = '<section class="directory-group vacancy-directory-group" aria-label="General vacancies">' +
+      '<div class="directory-group-head"><div><div class="directory-group-title">General vacancies</div><div class="directory-group-sub">Public listings · ' + generalVacancyRows.length + ' loaded</div></div></div>' + cards + '</section>';
+    el.innerHTML = '<div class="pgroup-label">General Vacancies</div>' + section;
+  }
+  if (countLabel) countLabel.textContent = generalVacancyCount ? generalVacancyRows.length + ' of ' + generalVacancyCount + ' loaded' : generalVacancyRows.length + ' loaded';
+  if (loadMore) {
+    loadMore.style.display = generalVacancyHasMore ? 'block' : 'none';
+    loadMore.disabled = generalVacancyLoading;
+    loadMore.textContent = generalVacancyLoading ? 'Loading vacancies…' : 'Load more vacancies';
+  }
+}
+async function loadGeneralVacancies(reset) {
+  var state = generalVacancyQueryState();
+  var key = generalVacancyQueryKeyFor(state);
+  var queryChanged = reset || key !== generalVacancyQueryKey;
+  if (queryChanged) {
+    generalVacancyRequestId++;
+    generalVacancyQueryKey = key;
+    generalVacancyPage = 0;
+    generalVacancyRows = [];
+    generalVacancyHasMore = true;
+    generalVacancyLoading = false;
+    var industrySel = document.getElementById('allvacancies-industry');
+    if (industrySel) industrySel.style.display = 'none';
+  }
+  if (generalVacancyLoading || !generalVacancyHasMore) { renderGeneralVacancyCards(false); return; }
+  var requestId = ++generalVacancyRequestId;
+  generalVacancyLoading = true;
+  renderGeneralVacancyCards(false);
+  try {
+    var page = await fetchGeneralVacancyPage(state, generalVacancyPage);
+    if (requestId !== generalVacancyRequestId) return;
+    generalVacancyRows = generalVacancyRows.concat(page).filter(function(v){ return !isVacancyExpired(v); });
+    generalVacancyHasMore = page.length === generalVacancyPageSize;
+    generalVacancyPage += 1;
+    renderGeneralVacancyCards(true);
+  } catch(e) {
+    if (requestId !== generalVacancyRequestId) return;
+    var el = document.getElementById('allvacancies-list');
+    if (el) el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadGeneralVacancies(true)">Try again</button></div>';
+    generalVacancyHasMore = true;
+  } finally {
+    if (requestId === generalVacancyRequestId) {
+      generalVacancyLoading = false;
+      renderGeneralVacancyCards(false);
+    }
+  }
+}
+function loadMoreGeneralVacancies() { loadGeneralVacancies(false); }
 function renderAllVacanciesList() {
   var searchRow = document.getElementById('allvacancies-search-row');
   var filterRow = document.getElementById('allvacancies-filter-row');
@@ -3335,6 +3462,13 @@ function renderAllVacanciesList() {
   if (searchRow) searchRow.style.display = '';
   if (filterRow) filterRow.style.display = '';
   if (backBar) backBar.style.display = allVacanciesFolder ? 'flex' : 'none';
+
+  if (allVacanciesFolder === 'general') {
+    loadGeneralVacancies(false);
+    return;
+  }
+  var generalIndustrySel = document.getElementById('allvacancies-industry');
+  if (generalIndustrySel) generalIndustrySel.style.display = '';
 
   var el = document.getElementById('allvacancies-list');
   if (el) el.dataset.state = 'ready';
@@ -3399,7 +3533,7 @@ function renderAllVacanciesList() {
     // added later without changing the listing screen. Counts still respond
     // to the shared search and filters above.
     var agencyCount = list.filter(function(v){ return !isExternalVacancy(v) && v.agency_id && v.agency_id !== 'general'; }).length;
-    var generalCount = list.filter(function(v){ return !isExternalVacancy(v) && (!v.agency_id || v.agency_id === 'general'); }).length;
+    var generalCount = generalVacancyCount;
     var himalayasCount = list.filter(isHimalayasVacancy).length;
     var adzunaCount = list.filter(isAdzunaVacancy).length;
     var dpsaCount = list.filter(isDpsaVacancy).length;
