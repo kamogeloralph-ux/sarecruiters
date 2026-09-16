@@ -5,7 +5,11 @@
 CREATE INDEX IF NOT EXISTS vacancies_created_at_desc_idx
   ON public.vacancies (created_at DESC);
 
-CREATE INDEX IF NOT EXISTS vacancies_general_created_at_idx
+-- Recreate this index because the predicate changed from only NULL/general
+-- sources to the complete general-folder classification below.
+DROP INDEX IF EXISTS public.vacancies_general_created_at_idx;
+
+CREATE INDEX vacancies_general_created_at_idx
   ON public.vacancies (created_at DESC)
   WHERE (agency_id IS NULL OR agency_id = 'general')
     AND employer_id IS NULL
