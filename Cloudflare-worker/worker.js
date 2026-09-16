@@ -1,96 +1,80 @@
-/**
- * SA Recruiters — R2 upload/delete Worker
- * ----------------------------------------
- * Replaces Supabase Storage for the two file buckets the site used:
- *   - candidate-photos  (public upload, from the Talent Pool form + admin)
- *   - daily-tracks       (admin-only upload, MP3s)
- *
- * The Postgres database (agencies, employers, vacancies, candidates, etc.)
- * STAYS in Supabase — this Worker only moves file bytes, which is what was
- * eating the Supabase bandwidth/egress quota.
- *
- * Files are stored in a single R2 bucket under two prefixes:
- *   candidate-photos/<key>.jpg
- *   daily-tracks/<key>.<ext>
- *
- * Reads are served directly from R2's public bucket URL (r2.dev or a
- * custom domain) — this Worker is only involved in writes/deletes so admin
- * auth (Supabase Auth JWT) can be checked before touching storage.
- */
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-const MAX_PHOTO_BYTES = 3 * 1024 * 1024;   // 3MB
-const MAX_TRACK_BYTES = 25 * 1024 * 1024;  // 25MB
-
+// worker.js
+var MAX_PHOTO_BYTES = 3 * 1024 * 1024;
+var MAX_TRACK_BYTES = 25 * 1024 * 1024;
 function corsHeaders(origin) {
   return {
-    'Access-Control-Allow-Origin': origin || '*',
-    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age': '86400',
+    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400"
   };
 }
-
+__name(corsHeaders, "corsHeaders");
 function json(data, status, origin) {
   return new Response(JSON.stringify(data), {
     status: status || 200,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+    headers: { "Content-Type": "application/json", ...corsHeaders(origin) }
   });
 }
-
-// Validate the admin's Supabase session by asking Supabase who this
-// access token belongs to. Keeps auth entirely inside Supabase — this
-// Worker never needs its own admin password to manage.
+__name(json, "json");
 async function isAdminRequest(request, env) {
-  const authHeader = request.headers.get('Authorization') || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '');
-  if (!token) return false;
+  const authHeader = request.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  if (!token)
+    return false;
   try {
     const res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': env.SUPABASE_ANON_KEY,
-      },
+        "Authorization": `Bearer ${token}`,
+        "apikey": env.SUPABASE_ANON_KEY
+      }
     });
     return res.ok;
   } catch (e) {
     return false;
   }
 }
-
+__name(isAdminRequest, "isAdminRequest");
 function randomKey() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
-
+__name(randomKey, "randomKey");
 function publicUrlFor(env, key) {
-  const base = (env.R2_PUBLIC_BASE_URL || '').replace(/\/$/, '');
+  const base = (env.R2_PUBLIC_BASE_URL || "").replace(/\/$/, "");
   return `${base}/${key}`;
 }
-
-// ---- Public startup data -------------------------------------------------
-// The browser previously made several Supabase requests on launch. This
-// endpoint combines the public startup reads into one edge-cached response.
-// It intentionally excludes manager tokens and other admin-only fields.
-const STARTUP_CACHE_TTL = 60;
-const STARTUP_STALE_TTL = 300;
-const STARTUP_VACANCY_PAGE_SIZE = 1000;
-const STARTUP_DEDICATED_SOURCES = [
-  'himalayas', 'adzuna', 'dpsa', 'retail', 'shoprite', 'picknpay',
-  'woolworths', 'truworths', 'spar',
+__name(publicUrlFor, "publicUrlFor");
+var STARTUP_CACHE_TTL = 60;
+var STARTUP_STALE_TTL = 300;
+var STARTUP_VACANCY_PAGE_SIZE = 1e3;
+var STARTUP_DEDICATED_SOURCES = [
+  "himalayas",
+  "adzuna",
+  "dpsa",
+  "retail",
+  "shoprite",
+  "picknpay",
+  "woolworths",
+  "truworths",
+  "spar"
 ];
-
 function supabaseRestUrl(env, table, params = {}) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
-  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  for (const [key, value] of Object.entries(params))
+    url.searchParams.set(key, value);
   return url;
 }
-
+__name(supabaseRestUrl, "supabaseRestUrl");
 async function supabaseGet(env, table, params = {}, options = {}) {
   const response = await fetch(supabaseRestUrl(env, table, params), {
     headers: {
       apikey: env.SUPABASE_ANON_KEY,
       Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-      ...(options.prefer ? { Prefer: options.prefer } : {}),
-    },
+      ...options.prefer ? { Prefer: options.prefer } : {}
+    }
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
@@ -98,64 +82,78 @@ async function supabaseGet(env, table, params = {}, options = {}) {
   }
   return { body, headers: response.headers };
 }
-
+__name(supabaseGet, "supabaseGet");
 async function loadStartupData(env) {
   const vacancyColumns = [
-    'id', 'agency_id', 'employer_id', 'title', 'company', 'company_photo',
-    'location', 'closing_date', 'notes', 'link', 'email', 'phone', 'remote',
-    'experience_level', 'employment_type', 'contract_type', 'work_schedule',
-    'hours', 'salary', 'start_date', 'created_at', 'source_type',
-  ].join(',');
-  const vacancyFilter = [
-    'agency_id.neq.general', 'employer_id.not.is.null', 'source_type.not.is.null',
-  ].join(',');
-  const dedicatedSources = `(${STARTUP_DEDICATED_SOURCES.join(',')})`;
-
-  const [agencies, branches, vacancies, employers, generalCount, settings, poolCount] =
-    await Promise.all([
-      supabaseGet(env, 'agencies', {
-        select: 'id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified',
-        order: 'created_at.desc',
-      }),
-      supabaseGet(env, 'branches', {
-        select: 'id,agency_id,name,location,phone,email',
-        order: 'name.asc',
-      }),
-      supabaseGet(env, 'vacancies', {
-        select: vacancyColumns,
-        or: vacancyFilter,
-        order: 'created_at.desc',
-        limit: String(STARTUP_VACANCY_PAGE_SIZE),
-      }),
-      supabaseGet(env, 'employers', {
-        select: 'id,name,industry,website,contact,email,location,address,photo,verified',
-        order: 'created_at.desc',
-      }),
-      supabaseGet(env, 'vacancies', {
-        select: 'id',
-        or: 'agency_id.is.null,agency_id.eq.general',
-        employer_id: 'is.null',
-        source_type: `not.in.${dedicatedSources}`,
-        limit: '0',
-      }, { prefer: 'count=exact' }),
-      Promise.all(['public_vacancy_posting', 'public_employer_registration', 'public_employer_directory']
-        .map((key) => supabaseGet(env, 'app_settings', { select: 'key,value', key: `eq.${key}` }))),
-      supabaseGet(env, 'pool_candidates', { select: 'id', limit: '0' }, { prefer: 'count=exact' }),
-    ]);
-
+    "id",
+    "agency_id",
+    "employer_id",
+    "title",
+    "company",
+    "company_photo",
+    "location",
+    "closing_date",
+    "notes",
+    "link",
+    "email",
+    "phone",
+    "remote",
+    "experience_level",
+    "employment_type",
+    "contract_type",
+    "work_schedule",
+    "hours",
+    "salary",
+    "start_date",
+    "created_at",
+    "source_type"
+  ].join(",");
+  const vacancyFilter = `(${[
+    "agency_id.neq.general",
+    "employer_id.not.is.null",
+    "source_type.not.is.null"
+  ].join(",")})`;
+  const dedicatedSources = `(${STARTUP_DEDICATED_SOURCES.join(",")})`;
+  const [agencies, branches, vacancies, employers, generalCount, settings, poolCount] = await Promise.all([
+    supabaseGet(env, "agencies", {
+      select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
+      order: "created_at.desc"
+    }),
+    supabaseGet(env, "branches", {
+      select: "id,agency_id,name,location,phone,email",
+      order: "name.asc"
+    }),
+    supabaseGet(env, "vacancies", {
+      select: vacancyColumns,
+      or: vacancyFilter,
+      order: "created_at.desc",
+      limit: String(STARTUP_VACANCY_PAGE_SIZE)
+    }),
+    supabaseGet(env, "employers", {
+      select: "id,name,industry,website,contact,email,location,address,photo,verified",
+      order: "created_at.desc"
+    }),
+    supabaseGet(env, "vacancies", {
+      select: "id",
+      or: "(agency_id.is.null,agency_id.eq.general)",
+      employer_id: "is.null",
+      source_type: `not.in.${dedicatedSources}`,
+      limit: "0"
+    }, { prefer: "count=exact" }),
+    Promise.all(["public_vacancy_posting", "public_employer_registration", "public_employer_directory"].map((key) => supabaseGet(env, "app_settings", { select: "key,value", key: `eq.${key}` }))),
+    supabaseGet(env, "pool_candidates", { select: "id", limit: "0" }, { prefer: "count=exact" })
+  ]);
   const settingMap = Object.fromEntries(settings.map(({ body }) => {
     const row = Array.isArray(body) ? body[0] : null;
     return [row?.key, row?.value];
   }).filter(([key]) => key));
-
-  const readCount = (headers) => {
-    const range = headers.get('content-range') || '';
+  const readCount = /* @__PURE__ */ __name((headers) => {
+    const range = headers.get("content-range") || "";
     const match = range.match(/\/(\d+)$/);
     return match ? Number(match[1]) : null;
-  };
-
+  }, "readCount");
   return {
-    generated_at: new Date().toISOString(),
+    generated_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: agencies.body || [],
     branches: branches.body || [],
     vacancies: vacancies.body || [],
@@ -165,120 +163,101 @@ async function loadStartupData(env) {
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
       vacancies: (readCount(generalCount.headers) ?? 0) + (Array.isArray(vacancies.body) ? vacancies.body.length : 0),
       employers: Array.isArray(employers.body) ? employers.body.length : 0,
-      candidates: readCount(poolCount.headers) ?? 0,
+      candidates: readCount(poolCount.headers) ?? 0
     },
     settings: {
-      public_vacancy_posting: settingMap.public_vacancy_posting ?? 'false',
-      public_employer_registration: settingMap.public_employer_registration ?? 'false',
-      public_employer_directory: settingMap.public_employer_directory ?? 'true',
-    },
+      public_vacancy_posting: settingMap.public_vacancy_posting ?? "false",
+      public_employer_registration: settingMap.public_employer_registration ?? "false",
+      public_employer_directory: settingMap.public_employer_directory ?? "true"
+    }
   };
 }
-
+__name(loadStartupData, "loadStartupData");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL('/api/startup', request.url), request);
+  const cacheKey = new Request(new URL("/api/startup", request.url), request);
   const cached = await cache.match(cacheKey);
   if (cached) {
-    // Serve the edge-cached response immediately. Refreshing happens when the
-    // cache expires, so a slow Supabase wake-up never blocks a visitor.
     return cached;
   }
-
   try {
     const payload = await loadStartupData(env);
     const response = new Response(JSON.stringify(payload), {
       headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': `public, max-age=${STARTUP_CACHE_TTL}, s-maxage=${STARTUP_CACHE_TTL}, stale-while-revalidate=${STARTUP_STALE_TTL}`,
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": `public, max-age=${STARTUP_CACHE_TTL}, s-maxage=${STARTUP_CACHE_TTL}, stale-while-revalidate=${STARTUP_STALE_TTL}`,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
     });
     ctx.waitUntil(cache.put(cacheKey, response.clone()));
     return response;
   } catch (error) {
-    return json({ error: 'Startup data unavailable', detail: error.message }, 502, origin);
+    return json({ error: "Startup data unavailable", detail: error.message }, 502, origin);
   }
 }
-
-// One-off: move any pool_candidates.photo_url still pointing at Supabase
-// Storage over to R2, and update the row. Runs entirely server-side using
-// the calling admin's own Supabase session (RLS applies, same as if the
-// admin panel updated the row directly) — no service-role key needed.
-// Batched to stay under the Workers per-request subrequest limit.
-const PHOTO_BATCH_SIZE = 20;
-
+__name(startupResponse, "startupResponse");
+var PHOTO_BATCH_SIZE = 20;
 async function migratePhotos(request, env, origin) {
-  const authHeader = request.headers.get('Authorization') || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '');
-
+  const authHeader = request.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
   const listRes = await fetch(
     `${env.SUPABASE_URL}/rest/v1/pool_candidates?select=id,photo_url&photo_url=not.is.null`,
     { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
   );
   if (!listRes.ok) {
-    return json({ error: 'Could not list candidates', detail: await listRes.text() }, 500, origin);
+    return json({ error: "Could not list candidates", detail: await listRes.text() }, 500, origin);
   }
   const candidates = await listRes.json();
-
   const allToMigrate = candidates.filter(
-    (c) => typeof c.photo_url === 'string' && c.photo_url.includes('/storage/v1/object/public/candidate-photos/')
+    (c) => typeof c.photo_url === "string" && c.photo_url.includes("/storage/v1/object/public/candidate-photos/")
   );
   const batch = allToMigrate.slice(0, PHOTO_BATCH_SIZE);
-
   const results = [];
   for (const c of batch) {
     try {
       const imgRes = await fetch(c.photo_url);
-      if (!imgRes.ok) { results.push({ id: c.id, ok: false, reason: `download ${imgRes.status}` }); continue; }
+      if (!imgRes.ok) {
+        results.push({ id: c.id, ok: false, reason: `download ${imgRes.status}` });
+        continue;
+      }
       const bytes = await imgRes.arrayBuffer();
-
       const key = `candidate-photos/${randomKey()}.jpg`;
-      await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: 'image/jpeg' } });
+      await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
       const newUrl = publicUrlFor(env, key);
-
       const patchRes = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?id=eq.${c.id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
           apikey: env.SUPABASE_ANON_KEY,
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal',
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
         },
-        body: JSON.stringify({ photo_url: newUrl }),
+        body: JSON.stringify({ photo_url: newUrl })
       });
-      if (!patchRes.ok) { results.push({ id: c.id, ok: false, reason: `db update ${patchRes.status}` }); continue; }
-
+      if (!patchRes.ok) {
+        results.push({ id: c.id, ok: false, reason: `db update ${patchRes.status}` });
+        continue;
+      }
       results.push({ id: c.id, ok: true, url: newUrl });
     } catch (e) {
       results.push({ id: c.id, ok: false, reason: e.message });
     }
   }
-
   return json({
     totalWithPhoto: candidates.length,
     foundOnSupabase: allToMigrate.length,
     migrated: results.filter((r) => r.ok).length,
     remaining: allToMigrate.length - results.filter((r) => r.ok).length,
-    results,
+    results
   }, 200, origin);
 }
-
-// One-off: move any base64-embedded logo (agencies.photo / employers.photo)
-// over to R2, replacing the column value with a URL. These were never
-// Supabase Storage files — they're data: URLs baked straight into the row —
-// so this decodes and re-uploads rather than fetching from Supabase.
-// Processes in batches to stay under the Workers per-request subrequest
-// limit — call repeatedly (the admin button already does this) until
-// remaining reaches 0.
-const LOGO_BATCH_SIZE = 20;
-
+__name(migratePhotos, "migratePhotos");
+var LOGO_BATCH_SIZE = 20;
 async function migrateBase64Logos(request, env, origin, table, prefix) {
-  const authHeader = request.headers.get('Authorization') || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '');
-
+  const authHeader = request.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
   const listRes = await fetch(
     `${env.SUPABASE_URL}/rest/v1/${table}?select=id,photo&photo=not.is.null`,
     { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
@@ -287,141 +266,132 @@ async function migrateBase64Logos(request, env, origin, table, prefix) {
     return json({ error: `Could not list ${table}`, detail: await listRes.text() }, 500, origin);
   }
   const rows = await listRes.json();
-
-  const allToMigrate = rows.filter((r) => typeof r.photo === 'string' && r.photo.startsWith('data:image'));
+  const allToMigrate = rows.filter((r) => typeof r.photo === "string" && r.photo.startsWith("data:image"));
   const batch = allToMigrate.slice(0, LOGO_BATCH_SIZE);
-
   const results = [];
   for (const r of batch) {
     try {
       const match = r.photo.match(/^data:([^;]+);base64,(.+)$/);
-      if (!match) { results.push({ id: r.id, ok: false, reason: 'not a recognisable data URL' }); continue; }
+      if (!match) {
+        results.push({ id: r.id, ok: false, reason: "not a recognisable data URL" });
+        continue;
+      }
       const contentType = match[1];
       const bytes = Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0));
-
-      const ext = (contentType.split('/')[1] || 'jpg').replace(/[^a-z0-9]/gi, '');
+      const ext = (contentType.split("/")[1] || "jpg").replace(/[^a-z0-9]/gi, "");
       const key = `${prefix}/${randomKey()}.${ext}`;
       await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType } });
       const newUrl = publicUrlFor(env, key);
-
       const patchRes = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}?id=eq.${r.id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
           apikey: env.SUPABASE_ANON_KEY,
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal',
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
         },
-        body: JSON.stringify({ photo: newUrl }),
+        body: JSON.stringify({ photo: newUrl })
       });
-      if (!patchRes.ok) { results.push({ id: r.id, ok: false, reason: `db update ${patchRes.status}` }); continue; }
-
+      if (!patchRes.ok) {
+        results.push({ id: r.id, ok: false, reason: `db update ${patchRes.status}` });
+        continue;
+      }
       results.push({ id: r.id, ok: true, url: newUrl });
     } catch (e) {
       results.push({ id: r.id, ok: false, reason: e.message });
     }
   }
-
   const migratedCount = results.filter((x) => x.ok).length;
   return json({
     total: rows.length,
     foundBase64: allToMigrate.length,
     migrated: migratedCount,
     remaining: allToMigrate.length - migratedCount,
-    results,
+    results
   }, 200, origin);
 }
-
-export default {
+__name(migrateBase64Logos, "migrateBase64Logos");
+var worker_default = {
   async fetch(request, env, ctx) {
-    const origin = request.headers.get('Origin');
+    const origin = request.headers.get("Origin");
     const url = new URL(request.url);
     const path = url.pathname;
-
-    if (request.method === 'OPTIONS') {
+    if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders(origin) });
     }
-
     try {
-      if (path === '/api/startup' && request.method === 'GET') {
+      if (path === "/api/startup" && request.method === "GET") {
         return await startupResponse(request, env, ctx, origin);
       }
-
-      // ---- Public: candidate photo / agency logo / employer logo upload ----
-      // (mirrors old open anon-key behaviour — publicly writable, matches
-      // how the site already worked before this migration)
-      if (path === '/api/upload/candidate-photo' && request.method === 'POST') {
-        const contentType = request.headers.get('Content-Type') || '';
-        if (!contentType.startsWith('image/')) {
-          return json({ error: 'Only image uploads are allowed.' }, 400, origin);
+      if (path === "/api/upload/candidate-photo" && request.method === "POST") {
+        const contentType = request.headers.get("Content-Type") || "";
+        if (!contentType.startsWith("image/")) {
+          return json({ error: "Only image uploads are allowed." }, 400, origin);
         }
         const bytes = await request.arrayBuffer();
-        if (bytes.byteLength === 0) return json({ error: 'Empty file.' }, 400, origin);
+        if (bytes.byteLength === 0)
+          return json({ error: "Empty file." }, 400, origin);
         if (bytes.byteLength > MAX_PHOTO_BYTES) {
-          return json({ error: 'Photo too large (max 3MB).' }, 413, origin);
+          return json({ error: "Photo too large (max 3MB)." }, 413, origin);
         }
-        const allowedPrefixes = ['candidate-photos', 'agency-logos', 'employer-logos'];
-        const reqPrefix = url.searchParams.get('prefix');
-        const prefix = allowedPrefixes.includes(reqPrefix) ? reqPrefix : 'candidate-photos';
+        const allowedPrefixes = ["candidate-photos", "agency-logos", "employer-logos"];
+        const reqPrefix = url.searchParams.get("prefix");
+        const prefix = allowedPrefixes.includes(reqPrefix) ? reqPrefix : "candidate-photos";
         const key = `${prefix}/${randomKey()}.jpg`;
-        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: 'image/jpeg' } });
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
       }
-
-      // ---- Admin-only: daily track (MP3) upload ----
-      if (path === '/api/upload/daily-track' && request.method === 'POST') {
-        if (!(await isAdminRequest(request, env))) {
-          return json({ error: 'Not authorized.' }, 401, origin);
+      if (path === "/api/upload/daily-track" && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Not authorized." }, 401, origin);
         }
-        const contentType = request.headers.get('Content-Type') || 'audio/mpeg';
-        const trackId = url.searchParams.get('id') || randomKey();
-        const ext = (url.searchParams.get('ext') || 'mp3').replace(/[^a-z0-9]/gi, '');
+        const contentType = request.headers.get("Content-Type") || "audio/mpeg";
+        const trackId = url.searchParams.get("id") || randomKey();
+        const ext = (url.searchParams.get("ext") || "mp3").replace(/[^a-z0-9]/gi, "");
         const bytes = await request.arrayBuffer();
-        if (bytes.byteLength === 0) return json({ error: 'Empty file.' }, 400, origin);
+        if (bytes.byteLength === 0)
+          return json({ error: "Empty file." }, 400, origin);
         if (bytes.byteLength > MAX_TRACK_BYTES) {
-          return json({ error: 'Track too large (max 25MB).' }, 413, origin);
+          return json({ error: "Track too large (max 25MB)." }, 413, origin);
         }
         const key = `daily-tracks/${trackId}.${ext}`;
         await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType } });
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
       }
-
-      // ---- Admin-only: one-off migration of old Supabase-hosted photos to R2 ----
-      if (path === '/api/migrate-photos' && request.method === 'POST') {
-        if (!(await isAdminRequest(request, env))) {
-          return json({ error: 'Not authorized.' }, 401, origin);
+      if (path === "/api/migrate-photos" && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Not authorized." }, 401, origin);
         }
         return await migratePhotos(request, env, origin);
       }
-
-      // ---- Admin-only: migrate base64 agency/employer logos to R2 ----
-      if (path === '/api/migrate-agency-logos' && request.method === 'POST') {
-        if (!(await isAdminRequest(request, env))) {
-          return json({ error: 'Not authorized.' }, 401, origin);
+      if (path === "/api/migrate-agency-logos" && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Not authorized." }, 401, origin);
         }
-        return await migrateBase64Logos(request, env, origin, 'agencies', 'agency-logos');
+        return await migrateBase64Logos(request, env, origin, "agencies", "agency-logos");
       }
-      if (path === '/api/migrate-employer-logos' && request.method === 'POST') {
-        if (!(await isAdminRequest(request, env))) {
-          return json({ error: 'Not authorized.' }, 401, origin);
+      if (path === "/api/migrate-employer-logos" && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Not authorized." }, 401, origin);
         }
-        return await migrateBase64Logos(request, env, origin, 'employers', 'employer-logos');
+        return await migrateBase64Logos(request, env, origin, "employers", "employer-logos");
       }
-
-      // ---- Admin-only: delete an object (photos or tracks) ----
-      if (path === '/api/delete' && request.method === 'DELETE') {
-        if (!(await isAdminRequest(request, env))) {
-          return json({ error: 'Not authorized.' }, 401, origin);
+      if (path === "/api/delete" && request.method === "DELETE") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Not authorized." }, 401, origin);
         }
-        const key = url.searchParams.get('key');
-        if (!key) return json({ error: 'Missing key.' }, 400, origin);
+        const key = url.searchParams.get("key");
+        if (!key)
+          return json({ error: "Missing key." }, 400, origin);
         await env.MEDIA_BUCKET.delete(key);
         return json({ ok: true }, 200, origin);
       }
-
-      return json({ error: 'Not found.' }, 404, origin);
+      return json({ error: "Not found." }, 404, origin);
     } catch (e) {
-      return json({ error: e.message || 'Server error.' }, 500, origin);
+      return json({ error: e.message || "Server error." }, 500, origin);
     }
-  },
+  }
+};
+export {
+  worker_default as default
 };
