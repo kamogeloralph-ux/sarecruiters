@@ -3540,7 +3540,10 @@ function renderAllVacanciesList() {
   // Employer-posted vacancies are exclusive to their employer's own hub card
   // (see employerHubVacancies) and are gated behind Talent Pool verification
   // there — they never appear in this general/public vacancies list.
-  var visible = vacanciesCache.filter(function(v){ return !v.employer_id; });
+  // Source folders are independent views: a vacancy may also belong to its
+  // matched agency or employer. Keep source rows visible in Adzuna/Retail
+  // even after they have been assigned to an organization.
+  var visible = vacanciesCache.slice();
   var isHimalayasVacancy = function(v){ return v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0; };
   var isAdzunaVacancy = function(v){ return v.source_type === 'adzuna' || String(v.id || '').indexOf('adzuna-') === 0; };
   var isDpsaVacancy = function(v){ return v.source_type === 'dpsa' || String(v.id || '').indexOf('dpsa-') === 0; };
@@ -3561,13 +3564,13 @@ function renderAllVacanciesList() {
     : allVacanciesFolder === 'general'
       ? visible.filter(isGeneralDirectoryVacancy)
       : allVacanciesFolder === 'himalayas'
-        ? visible.filter(function(v){ return isHimalayasVacancy(v) && !hasAssignedAgency(v); })
+        ? visible.filter(isHimalayasVacancy)
         : allVacanciesFolder === 'adzuna'
-          ? visible.filter(function(v){ return isAdzunaVacancy(v) && !hasAssignedAgency(v); })
+          ? visible.filter(isAdzunaVacancy)
                 : allVacanciesFolder === 'dpsa'
-                  ? visible.filter(function(v){ return isDpsaVacancy(v) && !hasAssignedAgency(v); })
+                  ? visible.filter(isDpsaVacancy)
                   : allVacanciesFolder === 'retail'
-                    ? visible.filter(function(v){ return isRetailVacancy(v) && !hasAssignedAgency(v); })
+                    ? visible.filter(isRetailVacancy)
               : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
@@ -3604,10 +3607,10 @@ function renderAllVacanciesList() {
     // to the shared search and filters above.
     var agencyCount = list.filter(hasAssignedAgency).length;
     var generalCount = generalVacancyCount;
-    var himalayasCount = list.filter(function(v){ return isHimalayasVacancy(v) && !hasAssignedAgency(v); }).length;
-    var adzunaCount = list.filter(function(v){ return isAdzunaVacancy(v) && !hasAssignedAgency(v); }).length;
-    var dpsaCount = list.filter(function(v){ return isDpsaVacancy(v) && !hasAssignedAgency(v); }).length;
-    var retailCount = list.filter(function(v){ return isRetailVacancy(v) && !hasAssignedAgency(v); }).length;
+    var himalayasCount = list.filter(isHimalayasVacancy).length;
+    var adzunaCount = list.filter(isAdzunaVacancy).length;
+    var dpsaCount = list.filter(isDpsaVacancy).length;
+    var retailCount = list.filter(isRetailVacancy).length;
     var folderCountLabel = function(count) {
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
@@ -3668,25 +3671,25 @@ function renderAllVacanciesList() {
 
   var groups = {};
   displayList.forEach(function(v){
-    if (isHimalayasVacancy(v) && !hasAssignedAgency(v)) {
+    if (allVacanciesFolder !== 'agency' && isHimalayasVacancy(v)) {
       var himalayasKey = 'himalayas';
       if (!groups[himalayasKey]) groups[himalayasKey] = { name:'Himalayas remote vacancies', type:'Himalayas Remote', agency:null, items:[] };
       groups[himalayasKey].items.push(v);
       return;
     }
-    if (isAdzunaVacancy(v) && !hasAssignedAgency(v)) {
+    if (allVacanciesFolder !== 'agency' && isAdzunaVacancy(v)) {
       var adzunaKey = 'adzuna';
       if (!groups[adzunaKey]) groups[adzunaKey] = { name:'Adzuna vacancies', type:'Adzuna', agency:null, items:[] };
       groups[adzunaKey].items.push(v);
       return;
     }
-    if (isDpsaVacancy(v) && !hasAssignedAgency(v)) {
+    if (allVacanciesFolder !== 'agency' && isDpsaVacancy(v)) {
       var dpsaKey = 'dpsa';
       if (!groups[dpsaKey]) groups[dpsaKey] = { name:'DPSA circular archive', type:'Government circulars', agency:null, items:[] };
       groups[dpsaKey].items.push(v);
       return;
     }
-    if (isRetailVacancy(v) && !hasAssignedAgency(v)) {
+    if (allVacanciesFolder !== 'agency' && isRetailVacancy(v)) {
       var retailKey = 'retail';
       if (!groups[retailKey]) groups[retailKey] = { name:'Retail vacancies', type:'Retail', agency:null, items:[] };
       groups[retailKey].items.push(v);
