@@ -1047,3 +1047,90 @@ header{margin-bottom:18px}
 
 /* Put the candidate spotlight first: it is the most welcoming entry point for job seekers. */
 .cta-carousel .poster-cta{order:-1}
+
+
+/* ================================================================
+   MOBILE DIRECTORY REDESIGN — blue branded hero + list-first home
+   ================================================================ */
+#screen-home .screen-fixed{
+  padding:18px 16px 18px;
+  margin:0 -0px;
+  border-radius:0 0 30px 30px;
+  color:#fff;
+  background:
+    radial-gradient(ellipse at 82% 8%,rgba(100,194,255,.55),transparent 34%),
+    radial-gradient(ellipse at 18% 78%,rgba(24,103,191,.7),transparent 45%),
+    linear-gradient(150deg,#0a3e86 0%,#0758ad 48%,#063d86 100%);
+  box-shadow:0 16px 32px rgba(4,45,105,.24);
+  overflow:hidden;
+}
+#screen-home .screen-fixed::after{
+  content:"";position:absolute;left:-8%;right:-8%;bottom:-32px;height:106px;pointer-events:none;opacity:.5;
+  background:linear-gradient(160deg,transparent 16%,rgba(3,38,78,.28) 17%,rgba(3,38,78,.28) 29%,transparent 30%),linear-gradient(24deg,transparent 45%,rgba(122,199,238,.23) 46%,rgba(122,199,238,.23) 53%,transparent 54%);
+  clip-path:polygon(0 48%,8% 37%,17% 59%,28% 27%,38% 52%,49% 18%,62% 51%,73% 31%,84% 56%,94% 25%,100% 39%,100% 100%,0 100%);
+}
+#screen-home .screen-fixed>*{position:relative;z-index:1}
+#screen-home header{margin-bottom:14px}
+#screen-home .logo-wrap{gap:10px}
+#screen-home .logo-svg{width:48px;height:48px;border-radius:16px;box-shadow:0 7px 18px rgba(0,15,50,.28)}
+#screen-home .logo-text{font-size:20px;color:#fff}
+#screen-home .logo-slogan{font-size:10.5px;color:rgba(255,255,255,.8);max-width:230px}
+#screen-home .theme-toggle{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.26);color:#fff;box-shadow:none}
+#screen-home .connection-status{display:none!important}
+#screen-home .search{margin:0 0 15px}
+#screen-home .search-inner{height:52px;border:0;border-radius:28px;background:#fff;color:#17365e;box-shadow:0 8px 20px rgba(0,21,63,.2);padding:0 18px}
+#screen-home .search-inner svg{color:#314ed8;opacity:1;width:19px;height:19px}
+#screen-home .search input{color:#17365e;font-size:13.5px}
+#screen-home .search input::placeholder{color:#8491a6}
+#screen-home .stats-wrap{margin:0 -3px;gap:4px}
+#screen-home .stats-wrap .stats{gap:5px;margin:0;padding:0 0 3px}
+#screen-home .stats-scroll-btn{display:none}
+#screen-home .stat-card{flex:1 1 0;min-width:0;padding:11px 3px 10px;border:0;border-radius:13px;background:rgba(2,41,93,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:#fff}
+#screen-home .stat-card:hover{transform:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+#screen-home .stat-card .stat-arrow{display:none}
+#screen-home .stat-icon{width:23px;height:23px;margin-bottom:4px;color:#fff!important;opacity:.95}
+#screen-home .stat-icon svg{width:19px;height:19px}
+#screen-home .stat-value{font-size:17px;color:#fff}
+#screen-home .stat-label{font-size:9px;color:rgba(255,255,255,.78)}
+#screen-home .screen-scroll{padding-top:18px;background:var(--bg)}
+#screen-home .section-head{padding:0 2px;margin-bottom:3px;border:0;background:none}
+#screen-home .section-title{font-size:21px;font-weight:800;color:var(--text)}
+#screen-home .section-head::after{content:'☷';margin-left:auto;color:var(--accent);font-size:23px}
+#screen-home .section-head{display:flex;align-items:center;justify-content:space-between}
+#screen-home .screen-scroll>p{margin:0 0 14px!important;font-size:13px!important}
+#screen-home .screen-scroll>p a{color:var(--accent)!important}
+#screen-home .hub-card{margin:0 0 9px;border-radius:17px;background:var(--card);border:1px solid var(--border);box-shadow:0 4px 13px rgba(22,52,93,.07)}
+#screen-home .hub-summary{min-height:70px;padding:10px 12px;gap:11px}
+#screen-home .hub-summary:active{background:var(--card-2)}
+#screen-home .hub-summary .avatar{width:42px;height:42px;min-width:42px;border-radius:13px;background:var(--card-2);box-shadow:none}
+#screen-home .hub-summary .avatar img{width:42px;height:42px;border-radius:13px;object-fit:cover}
+#screen-home .agency-name{font-size:13.5px;font-weight:780}
+#screen-home .hub-summary-desc{font-size:11px;margin-top:5px;color:var(--text-2)}
+#screen-home .hub-branch-badge{background:transparent;color:var(--text-2);box-shadow:none;font-size:11px;padding:0;min-width:22px}
+#screen-home .hub-branch-badge svg{color:var(--accent)}
+#screen-home .hub-card>.hub-summary>.chevron{color:var(--text-2);width:15px;height:15px}
+#screen-home .hub-panel-inner{padding-left:12px;padding-right:12px}
+#screen-home .bottom-nav{background:var(--nav-bg,#073265);border:0;box-shadow:0 -8px 24px rgba(0,25,65,.2);padding:7px 8px calc(7px + env(safe-area-inset-bottom));height:76px}
+.bottom-nav{background:#073265}
+.bottom-nav .navbtn{color:rgba(255,255,255,.72);opacity:1;border-radius:13px}
+.bottom-nav .navbtn.active{color:#22d66d;background:rgba(255,255,255,.08)}
+.bottom-nav .navbtn.active svg{stroke:#22d66d}
+.bottom-nav .navbtn:not(.active) svg{stroke:rgba(255,255,255,.78)}
+.bottom-nav .navbtn-label{font-size:10px;font-weight:650}
+[data-theme="dark"] #screen-home .screen-scroll{background:#071426}
+[data-theme="dark"] #screen-home .hub-card{background:#10233c;border-color:rgba(143,190,240,.14);box-shadow:0 5px 15px rgba(0,0,0,.24)}
+[data-theme="dark"] #screen-home .section-title{color:#f8fbff}
+[data-theme="dark"] #screen-home .screen-scroll>p a{color:#73a8ff!important}
+[data-theme="dark"] .bottom-nav{background:#041d3d}
+[data-theme="light"] #screen-home .screen-scroll{background:#f7faff}
+[data-theme="light"] #screen-home .hub-card{background:#fff;border-color:#e1e9f3}
+@media(min-width:700px){
+  #screen-home .screen-fixed{border-radius:0 0 36px 36px;padding-left:24px;padding-right:24px}
+  #screen-home .screen-scroll{padding-left:24px;padding-right:24px}
+}
+@media(max-width:380px){
+  #screen-home .logo-text{font-size:18px}
+  #screen-home .logo-slogan{font-size:9.5px}
+  #screen-home .stat-value{font-size:15px}
+  #screen-home .stat-label{font-size:8.3px}
+}
