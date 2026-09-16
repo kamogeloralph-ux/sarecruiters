@@ -1134,3 +1134,46 @@ header{margin-bottom:18px}
   #screen-home .stat-value{font-size:15px}
   #screen-home .stat-label{font-size:8.3px}
 }
+
+
+/* ================================================================
+   COMPACT SERVICE CARDS + SHARED MENU HERO
+   ================================================================ */
+.quick-access{margin:14px 0 12px}
+.quick-access-label{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin:0 2px 8px}
+.quick-access-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.quick-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:13px 13px 11px;box-shadow:0 7px 18px rgba(25,55,95,.08);transition:transform .18s var(--ease),box-shadow .18s,border-color .18s}
+.quick-card:active{transform:scale(.988);box-shadow:0 3px 10px rgba(25,55,95,.08)}
+.quick-card-head{display:flex;align-items:center;gap:10px;min-width:0}
+.quick-card-icon{width:38px;height:38px;display:grid;place-items:center;flex:0 0 38px;border-radius:13px;background:var(--accent-soft);color:var(--accent)}
+.quick-card-icon svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.quick-card-head>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.quick-card-head strong{font-size:15px;font-weight:800;color:var(--text)}
+.quick-card-head small{font-size:11.5px;line-height:1.25;color:var(--text-2)}
+.quick-card-actions{display:flex;gap:8px;margin-top:11px}
+.quick-card-actions button,.spotlight-mini-head>button{min-height:36px;padding:8px 11px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:11px;background:var(--accent-soft);color:var(--accent);font-size:11.5px;font-weight:800;white-space:nowrap;flex:1}
+.quick-card-actions button:last-child{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 5px 12px color-mix(in srgb,var(--accent) 22%,transparent)}
+.quick-card-employers .quick-card-icon{color:#078b64;background:rgba(7,139,100,.12)}
+.quick-card-employers .quick-card-actions button:last-child{background:#078b64;border-color:#078b64;box-shadow:0 5px 12px rgba(7,139,100,.2)}
+.spotlight-mini{margin:15px 0 18px;padding:14px 13px 12px;border-radius:18px;background:var(--card);border:1px solid var(--border);box-shadow:0 7px 18px rgba(25,55,95,.07);overflow:hidden}
+.spotlight-mini-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}
+.spotlight-mini-head .quick-access-label{margin:0 0 3px}
+.spotlight-mini-head h2{font-size:16px;line-height:1.15;color:var(--text);letter-spacing:-.02em}
+.spotlight-mini-head>button{flex:0 0 auto;min-height:32px;padding:6px 9px;background:transparent}
+.spotlight-mini .spotlight-deck{display:flex;gap:8px;overflow-x:auto;padding:1px 1px 3px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.spotlight-mini .spotlight-deck::-webkit-scrollbar{display:none}
+.spotlight-mini .spotlight-deck>*{flex:0 0 122px;min-width:122px}
+/* Menu uses the exact same brand treatment as Home, but keeps its content scrollable. */
+#screen-profile .menu-hero{margin:-8px -14px 14px;padding:17px 14px 15px;border-radius:0 0 27px 27px;color:#fff;background:radial-gradient(ellipse at 85% 10%,rgba(100,194,255,.5),transparent 34%),linear-gradient(150deg,#0a3e86 0%,#0758ad 50%,#063d86 100%);box-shadow:0 14px 28px rgba(4,45,105,.22);position:relative;overflow:hidden}
+#screen-profile .menu-hero::after{content:"";position:absolute;left:-8%;right:-8%;bottom:-28px;height:76px;background:rgba(3,38,78,.24);clip-path:polygon(0 48%,15% 30%,29% 58%,44% 23%,60% 56%,76% 29%,100% 50%,100% 100%,0 100%);pointer-events:none}
+#screen-profile .menu-hero>*{position:relative;z-index:1}
+#screen-profile .menu-header{margin:0}
+#screen-profile .menu-brand-logo{box-shadow:0 7px 18px rgba(0,15,50,.28);background:rgba(255,255,255,.12)}
+#screen-profile .menu-brand-copy .profile-name{color:#fff}
+#screen-profile .menu-brand-copy .profile-slogan,#screen-profile .menu-brand-copy .profile-sub{color:rgba(255,255,255,.8)}
+#screen-profile .menu-more-btn,#screen-profile .menu-hero .theme-toggle{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.26);color:#fff;box-shadow:none}
+[data-theme="dark"] .quick-card,[data-theme="dark"] .spotlight-mini{background:#10233c;border-color:rgba(143,190,240,.14);box-shadow:0 7px 18px rgba(0,0,0,.24)}
+[data-theme="dark"] .quick-card-head strong,[data-theme="dark"] .spotlight-mini-head h2{color:#f8fbff}
+[data-theme="dark"] #screen-profile .menu-hero{background:radial-gradient(ellipse at 85% 10%,rgba(76,149,220,.36),transparent 34%),linear-gradient(150deg,#092d62 0%,#073e80 50%,#052d61 100%)}
+@media(min-width:620px){.quick-access-grid{grid-template-columns:1fr 1fr}.quick-card-actions button{font-size:12px}}
+@media(max-width:380px){.quick-card{padding:11px 10px 10px}.quick-card-head small{font-size:10.5px}.quick-card-actions{gap:5px}.quick-card-actions button{padding-left:7px;padding-right:7px;font-size:10.5px}.spotlight-mini .spotlight-deck>*{flex-basis:112px;min-width:112px}}

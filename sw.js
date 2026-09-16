@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v159-analytics-identifiers';
+const VERSION = 'sa-recruiters-v160-compact-services';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -29,7 +29,7 @@ const CORE_ASSETS = [
   './admin.html',
   './privacy.html',
   './styles.css',
-  './app.js?v=20260915-analytics-identifiers-1',
+  './app.js?v=20260916-compact-services-1',
   './icons.svg',
   './offline.html',
   './manifest.json',
