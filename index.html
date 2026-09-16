@@ -960,18 +960,15 @@
 
 <script src="content.js" defer></script>
 <script src="content-manager.js" defer></script>
-<!-- app.js was split into 8 files for maintainability (2026-09-16 refactor).
-     Order matters: these are classic deferred scripts sharing one global
-     scope, loaded in the same sequence the single app.js file used to
-     execute in. Do not reorder. -->
-<script src="app-core.js?v=20260916-modular-1" defer></script>
-<script src="app-data.js?v=20260916-modular-1" defer></script>
-<script src="app-cards.js?v=20260916-modular-1" defer></script>
-<script src="app-forms.js?v=20260916-modular-1" defer></script>
-<script src="app-sheets.js?v=20260916-modular-1" defer></script>
-<script src="app-ui.js?v=20260916-modular-1" defer></script>
-<script src="app-manager.js?v=20260916-modular-1" defer></script>
-<script src="app-manager-employer.js?v=20260916-modular-1" defer></script>
+<!-- app.js was split into 8 files for maintainability (2026-09-16 refactor):
+     app-core, app-data, app-cards, app-forms, app-sheets, app-ui,
+     app-manager, app-manager-employer. They're concatenated + minified
+     into the single bundle below by scripts/bundle-app.js on every build
+     (see generate-pages.js), in that same order — do not reorder the
+     source files. The ?v= hash is rewritten automatically each build for
+     cache-busting; don't hand-edit it. The 8 source files stay in the repo
+     for editing — only index.html references the built bundle. -->
+<script src="app.bundle.min.js?v=dev" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

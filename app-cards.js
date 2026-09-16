@@ -10,7 +10,7 @@
 
 // ===== Hub card (agency) =====
 function avatarHtml(a) {
-  if (a.photo) return '<div class="avatar"><img src="' + a.photo + '"></div>';
+  if (a.photo) return '<div class="avatar"><img src="' + a.photo + '" alt="" loading="lazy" width="42" height="42"></div>';
   return '<div class="avatar">' + initials(a.name) + '</div>';
 }
 
@@ -533,11 +533,11 @@ function vacancyCard(v, agency) {
   /* Logo tile: employer/agency photo -> img; else company/agency initials on a gradient */
   var logo;
   if (isEmployerPost && employer.photo) {
-    logo = '<div class="vac-logo"><img src="' + escapeHtml(employer.photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(employer.photo) + '" alt="" loading="lazy" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
   } else if (isGeneral && v.company_photo) {
-    logo = '<div class="vac-logo"><img src="' + escapeHtml(v.company_photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(v.company_photo) + '" alt="" loading="lazy" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
   } else if (!isEmployerPost && !isGeneral && agency && agency.photo) {
-    logo = '<div class="vac-logo"><img src="' + escapeHtml(agency.photo) + '" alt="" onerror="this.style.display=\'none\'"></div>';
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(agency.photo) + '" alt="" loading="lazy" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
   } else {
     var grad = vacGradFor(orgName);
     logo = '<div class="vac-logo ' + grad + '">' + escapeHtml(initials(orgName)) + '</div>';
@@ -570,7 +570,7 @@ function vacancyCard(v, agency) {
   var saRecruitersAttribution = !isHimalayas && !isAdzuna && (isDpsa || isGeneral || (!isEmployerPost && !isGeneral && agency))
     ? '<div class="sa-recruiters-attribution" aria-label="Jobs by SA Recruiters">' +
         '<a href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" title="Jobs by SA Recruiters" onclick="event.stopPropagation()">' +
-          '<img src="/icons/v2-icon-192.png" alt="SA Recruiters logo">' +
+          '<img src="/icons/v2-icon-192.png" alt="SA Recruiters logo" loading="lazy" width="20" height="20">' +
           '<span>Jobs by SA Recruiters</span>' +
         '</a>' +
       '</div>'

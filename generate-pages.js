@@ -17,6 +17,14 @@
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
+const { runBundle } = require('./scripts/bundle-app');
+
+// Bundle + minify the 8 app-*.js files into app.bundle.min.js and
+// rewrite index.html's script tag, before anything else runs. Doing
+// this first (and via require, not npm run) means the existing
+// Cloudflare Pages build command — "npm install && node
+// generate-pages.js" — doesn't need to change to pick this up.
+runBundle(__dirname);
 
 // Same public values already used in index.html — safe to reuse,
 // this is the anon/public key, not a secret.
