@@ -66,6 +66,143 @@ function publicUrlFor(env, key) {
   return `${base}/${key}`;
 }
 
+// ---- Public startup data -------------------------------------------------
+// The browser previously made several Supabase requests on launch. This
+// endpoint combines the public startup reads into one edge-cached response.
+// It intentionally excludes manager tokens and other admin-only fields.
+const STARTUP_CACHE_TTL = 60;
+const STARTUP_STALE_TTL = 300;
+const STARTUP_VACANCY_PAGE_SIZE = 1000;
+const STARTUP_DEDICATED_SOURCES = [
+  'himalayas', 'adzuna', 'dpsa', 'retail', 'shoprite', 'picknpay',
+  'woolworths', 'truworths', 'spar',
+];
+
+function supabaseRestUrl(env, table, params = {}) {
+  const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  return url;
+}
+
+async function supabaseGet(env, table, params = {}, options = {}) {
+  const response = await fetch(supabaseRestUrl(env, table, params), {
+    headers: {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      ...(options.prefer ? { Prefer: options.prefer } : {}),
+    },
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(`${table} query failed (${response.status})`);
+  }
+  return { body, headers: response.headers };
+}
+
+async function loadStartupData(env) {
+  const vacancyColumns = [
+    'id', 'agency_id', 'employer_id', 'title', 'company', 'company_photo',
+    'location', 'closing_date', 'notes', 'link', 'email', 'phone', 'remote',
+    'experience_level', 'employment_type', 'contract_type', 'work_schedule',
+    'hours', 'salary', 'start_date', 'created_at', 'source_type',
+  ].join(',');
+  const vacancyFilter = [
+    'agency_id.neq.general', 'employer_id.not.is.null', 'source_type.not.is.null',
+  ].join(',');
+  const dedicatedSources = `(${STARTUP_DEDICATED_SOURCES.join(',')})`;
+
+  const [agencies, branches, vacancies, employers, generalCount, settings, poolCount] =
+    await Promise.all([
+      supabaseGet(env, 'agencies', {
+        select: 'id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified',
+        order: 'created_at.desc',
+      }),
+      supabaseGet(env, 'branches', {
+        select: 'id,agency_id,name,location,phone,email',
+        order: 'name.asc',
+      }),
+      supabaseGet(env, 'vacancies', {
+        select: vacancyColumns,
+        or: vacancyFilter,
+        order: 'created_at.desc',
+        limit: String(STARTUP_VACANCY_PAGE_SIZE),
+      }),
+      supabaseGet(env, 'employers', {
+        select: 'id,name,industry,website,contact,email,location,address,photo,verified',
+        order: 'created_at.desc',
+      }),
+      supabaseGet(env, 'vacancies', {
+        select: 'id',
+        or: 'agency_id.is.null,agency_id.eq.general',
+        employer_id: 'is.null',
+        source_type: `not.in.${dedicatedSources}`,
+        limit: '0',
+      }, { prefer: 'count=exact' }),
+      Promise.all(['public_vacancy_posting', 'public_employer_registration', 'public_employer_directory']
+        .map((key) => supabaseGet(env, 'app_settings', { select: 'key,value', key }))),
+      supabaseGet(env, 'pool_candidates', { select: 'id', limit: '0' }, { prefer: 'count=exact' }),
+    ]);
+
+  const settingMap = Object.fromEntries(settings.map(({ body }) => {
+    const row = Array.isArray(body) ? body[0] : null;
+    return [row?.key, row?.value];
+  }).filter(([key]) => key));
+
+  const readCount = (headers) => {
+    const range = headers.get('content-range') || '';
+    const match = range.match(/\/(\d+)$/);
+    return match ? Number(match[1]) : null;
+  };
+
+  return {
+    generated_at: new Date().toISOString(),
+    agencies: agencies.body || [],
+    branches: branches.body || [],
+    vacancies: vacancies.body || [],
+    employers: employers.body || [],
+    counts: {
+      agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
+      branches: Array.isArray(branches.body) ? branches.body.length : 0,
+      vacancies: (readCount(generalCount.headers) ?? 0) + (Array.isArray(vacancies.body) ? vacancies.body.length : 0),
+      employers: Array.isArray(employers.body) ? employers.body.length : 0,
+      candidates: readCount(poolCount.headers) ?? 0,
+    },
+    settings: {
+      public_vacancy_posting: settingMap.public_vacancy_posting ?? 'false',
+      public_employer_registration: settingMap.public_employer_registration ?? 'false',
+      public_employer_directory: settingMap.public_employer_directory ?? 'true',
+    },
+  };
+}
+
+async function startupResponse(request, env, ctx, origin) {
+  const cache = caches.default;
+  const cacheKey = new Request(new URL('/api/startup', request.url), request);
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    // Serve the edge-cached response immediately. Refreshing happens when the
+    // cache expires, so a slow Supabase wake-up never blocks a visitor.
+    return cached;
+  }
+
+  try {
+    const payload = await loadStartupData(env);
+    const response = new Response(JSON.stringify(payload), {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': `public, max-age=${STARTUP_CACHE_TTL}, s-maxage=${STARTUP_CACHE_TTL}, stale-while-revalidate=${STARTUP_STALE_TTL}`,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+    ctx.waitUntil(cache.put(cacheKey, response.clone()));
+    return response;
+  } catch (error) {
+    return json({ error: 'Startup data unavailable', detail: error.message }, 502, origin);
+  }
+}
+
 // One-off: move any pool_candidates.photo_url still pointing at Supabase
 // Storage over to R2, and update the row. Runs entirely server-side using
 // the calling admin's own Supabase session (RLS applies, same as if the
@@ -196,7 +333,7 @@ async function migrateBase64Logos(request, env, origin, table, prefix) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin');
     const url = new URL(request.url);
     const path = url.pathname;
@@ -206,6 +343,10 @@ export default {
     }
 
     try {
+      if (path === '/api/startup' && request.method === 'GET') {
+        return await startupResponse(request, env, ctx, origin);
+      }
+
       // ---- Public: candidate photo / agency logo / employer logo upload ----
       // (mirrors old open anon-key behaviour — publicly writable, matches
       // how the site already worked before this migration)
