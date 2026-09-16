@@ -1130,7 +1130,7 @@ function hubCard(a) {
   var headOfficeLocation = (a.location || a.address || '').trim();
   var verifiedCheck = a.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
   // Compact notification-style badge showing the agency's branch count.
-  var branchBadge = bCount > 0 ? '<span class="hub-branch-badge" title="' + bCount + ' branch' + (bCount===1?'':'es') + '" aria-label="' + bCount + ' branch' + (bCount===1?'':'es') + '"><span class="hub-branch-pin" aria-hidden="true">' + VAC_ICONS.pin + '</span><span>' + bCount + '</span></span>' : '';
+  var branchBadge = bCount > 0 ? hubCountBadge(VAC_ICONS.pin, bCount, 'branch') : '';
   return '' +
   '<div class="hub-card" id="hub-' + a.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleHub(\'' + a.id + '\')" aria-expanded="false">' +
@@ -1247,6 +1247,11 @@ function hubContact(a) {
   return html;
 }
 
+function hubCountBadge(icon, count, noun) {
+  var label = count + ' ' + noun + (count === 1 ? '' : noun === 'branch' ? 'es' : 's');
+  return '<span class="hub-branch-badge" title="' + label + '" aria-label="' + label + '"><span class="hub-branch-pin" aria-hidden="true">' + icon + '</span><span>' + count + '</span></span>';
+}
+
 // ===== Hub card (employer) =====
 // Same visual structure as the agency hub card, but scoped to employers:
 // employers only ever appear in the Employers section, and posting a
@@ -1255,7 +1260,7 @@ function hubContact(a) {
 function employerHubCard(e) {
   var vCount = vacanciesForEmployer(e.id).length;
   var verifiedCheck = e.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
-  var jobsBadge = vCount > 0 ? '<span class="hub-branch-badge hub-employer-vacancy-badge" title="' + vCount + ' job' + (vCount===1?'':'s') + '" aria-label="' + vCount + ' job' + (vCount===1?'':'s') + '"><span class="hub-branch-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg></span><span>' + vCount + '</span></span>' : '';
+  var jobsBadge = vCount > 0 ? hubCountBadge('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>', vCount, 'job') : '';
   return '' +
   '<div class="hub-card" id="emphub-' + e.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleEmpHub(\'' + e.id + '\')" aria-expanded="false">' +
