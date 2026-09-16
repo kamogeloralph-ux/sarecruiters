@@ -742,6 +742,12 @@ async function getGeneralVacancyCount() {
     return typeof result.count === 'number' ? result.count : 0;
   } catch(e) { return null; }
 }
+function isDedicatedVacancySource(sourceType) {
+  return ['himalayas', 'adzuna', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+}
+function isGeneralDirectoryVacancy(v) {
+  return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
+}
 function generalVacancyQueryState() {
   return {
     q: ((document.getElementById('allvacancies-search')||{}).value || '').trim(),
@@ -973,8 +979,9 @@ async function loadAll() {
   if (results[2].__loadError) { hadLoadError = true; } else {
     vacanciesCache = sortVacancies(results[2].filter(function(v){
       if (isVacancyExpired(v)) return false;
-      var isGeneral = !v.employer_id && (!v.agency_id || v.agency_id === 'general') && (!v.source_type || v.source_type === 'general');
-      return !isGeneral;
+      // General-folder rows are loaded lazily. Do not retain them here or
+      // updateStats() would add them a second time to generalVacancyCount.
+      return !isGeneralDirectoryVacancy(v);
     }));
     // Best-effort background delete of the expired ones we just filtered out.
     purgeExpiredVacancies(results[2]);
