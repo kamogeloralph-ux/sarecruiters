@@ -572,7 +572,7 @@ async function loadTodayTrack() {
     var cutoffISO = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0');
     var { data, error } = await supabaseClient
       .from('daily_tracks')
-      .select('id,title,artist,track_date,file_url')
+      .select('id,title,artist,track_date,file_url,file_path')
       .gte('track_date', cutoffISO)
       .lte('track_date', today)
       .order('track_date', { ascending: false })
