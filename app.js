@@ -583,8 +583,9 @@ async function loadTodayTrack() {
       todayTrack = data[0];
       // Older rows created during the R2 migration may have file_path but no
       // file_url. Derive the public URL so those tracks remain playable.
-      if (!todayTrack.file_url && todayTrack.file_path) {
-        todayTrack.file_url = TRACKS_PUBLIC_BASE_URL + '/' + todayTrack.file_path.replace(/^\/+/, '');
+      if (!todayTrack.file_url) {
+        var trackPath = todayTrack.file_path || ('daily-tracks/' + todayTrack.id + '.mp3');
+        todayTrack.file_url = TRACKS_PUBLIC_BASE_URL + '/' + trackPath.replace(/^\/+/, '');
       }
       renderTrackReady();
     } else {
