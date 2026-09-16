@@ -457,12 +457,21 @@ function matchVacanciesToAgencies(rows, agencies) {
   var directory = agencies || agenciesCache || [];
   var prepared = directory.map(function(a) {
     return { agency: a, name: normalizeAgencyMatchText(a.name) };
-  }).filter(function(x){ return x.name.length >= 4; });
+  }).filter(function(x){ return x.name.length >= 6; });
   list.forEach(function(v) {
     if (!v || v.employer_id || v.agency_id && v.agency_id !== 'general') return;
     var company = normalizeAgencyMatchText(v.company);
-    if (!company || company.length < 4) return;
-    var match = prepared.find(function(x){ return company === x.name || company.indexOf(x.name) !== -1 || x.name.indexOf(company) !== -1; });
+    if (!company || company.length < 6) return;
+    // Only an exact name match, or one name being a clean prefix of the other
+    // (e.g. "ABC Recruitment" vs "ABC Recruitment Pty Ltd"), counts as a match.
+    // A plain "contains anywhere" substring test used to match any agency whose
+    // name merely shared a short generic word (e.g. "Recruitment", "Group",
+    // "Solutions") with the vacancy's company field -- silently re-tagging
+    // unrelated general or scraped vacancies with that agency's agency_id and
+    // pulling them into that agency's page.
+    var match = prepared.find(function(x){
+      return company === x.name || company.indexOf(x.name) === 0 || x.name.indexOf(company) === 0;
+    });
     if (match) {
       v.agency_id = match.agency.id;
       if (match.agency.photo) v.company_photo = match.agency.photo;
