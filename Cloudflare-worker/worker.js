@@ -137,13 +137,19 @@ async function loadStartupData(env) {
       select: "id,agency_id,name,location,phone,email",
       order: "name.asc"
     }),
-    supabaseGet(env, "vacancies", {
+    // Was a single supabaseGet() capped at limit: STARTUP_VACANCY_PAGE_SIZE (1000)
+    // with no pagination -- once total agency/employer vacancies across the whole
+    // platform passed 1000, everything past the most recent 1000 (ordered by
+    // created_at desc) was silently dropped from every visitor's startup payload,
+    // so agencies with older or less-recent postings showed incomplete lists.
+    // supabaseGetAll() pages through all of them, matching how dedicatedVacancies
+    // is already fetched just below.
+    supabaseGetAll(env, "vacancies", {
       select: vacancyColumns,
       or: vacancyFilter,
       source_type: `not.in.${dedicatedSources}`,
-      order: "created_at.desc",
-      limit: String(STARTUP_VACANCY_PAGE_SIZE)
-    }),
+      order: "created_at.desc"
+    }, STARTUP_VACANCY_PAGE_SIZE),
     supabaseGetAll(env, "vacancies", {
       select: vacancyColumns,
       source_type: `in.${dedicatedSources}`,
@@ -176,12 +182,12 @@ async function loadStartupData(env) {
     generated_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: agencies.body || [],
     branches: branches.body || [],
-    vacancies: [...(vacancies.body || []), ...dedicatedVacancies],
+    vacancies: [...vacancies, ...dedicatedVacancies],
     employers: employers.body || [],
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
-      vacancies: (readCount(generalCount.headers) ?? 0) + (Array.isArray(vacancies.body) ? vacancies.body.length : 0) + dedicatedVacancies.length,
+      vacancies: (readCount(generalCount.headers) ?? 0) + vacancies.length + dedicatedVacancies.length,
       employers: Array.isArray(employers.body) ? employers.body.length : 0,
       candidates: readCount(poolCount.headers) ?? 0
     },
