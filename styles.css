@@ -1323,3 +1323,12 @@ header{margin-bottom:18px}
   .hub-contact-item.wide{grid-column:auto}
   .vac-card{border-radius:17px}
 }
+
+
+/* ===== Paginated vacancy directory controls ===== */
+.vac-result-meta{padding:4px 16px 8px;color:var(--text-2);font-size:11px;font-weight:700;letter-spacing:.03em;text-align:right}
+.vac-load-more{display:block;width:calc(100% - 32px);margin:14px 16px 22px;padding:13px 16px;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border));border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:800;cursor:pointer;transition:transform .18s var(--ease),background .18s,border-color .18s}
+.vac-load-more:hover{background:color-mix(in srgb,var(--accent) 18%,var(--card));border-color:var(--accent);transform:translateY(-1px)}
+.vac-load-more:active{transform:scale(.985)}
+.vac-load-more:disabled{opacity:.65;cursor:wait;transform:none}
+@media(max-width:420px){.vac-result-meta{padding-left:12px;padding-right:12px}.vac-load-more{width:calc(100% - 24px);margin-left:12px;margin-right:12px}}
