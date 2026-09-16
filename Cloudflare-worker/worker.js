@@ -83,6 +83,20 @@ async function supabaseGet(env, table, params = {}, options = {}) {
   return { body, headers: response.headers };
 }
 __name(supabaseGet, "supabaseGet");
+async function supabaseGetAll(env, table, params = {}, pageSize = 1000) {
+  const rows = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const result = await supabaseGet(env, table, {
+      ...params,
+      limit: String(pageSize),
+      offset: String(offset)
+    });
+    const page = Array.isArray(result.body) ? result.body : [];
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
+__name(supabaseGetAll, "supabaseGetAll");
 async function loadStartupData(env) {
   const vacancyColumns = [
     "id",
@@ -114,7 +128,7 @@ async function loadStartupData(env) {
     "source_type.not.is.null"
   ].join(",")})`;
   const dedicatedSources = `(${STARTUP_DEDICATED_SOURCES.join(",")})`;
-  const [agencies, branches, vacancies, employers, generalCount, settings, poolCount] = await Promise.all([
+  const [agencies, branches, vacancies, dedicatedVacancies, employers, generalCount, settings, poolCount] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
       order: "created_at.desc"
@@ -126,9 +140,15 @@ async function loadStartupData(env) {
     supabaseGet(env, "vacancies", {
       select: vacancyColumns,
       or: vacancyFilter,
+      source_type: `not.in.${dedicatedSources}`,
       order: "created_at.desc",
       limit: String(STARTUP_VACANCY_PAGE_SIZE)
     }),
+    supabaseGetAll(env, "vacancies", {
+      select: vacancyColumns,
+      source_type: `in.${dedicatedSources}`,
+      order: "created_at.desc"
+    }, STARTUP_VACANCY_PAGE_SIZE),
     supabaseGet(env, "employers", {
       select: "id,name,industry,website,contact,email,location,address,photo,verified",
       order: "created_at.desc"
@@ -156,12 +176,12 @@ async function loadStartupData(env) {
     generated_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: agencies.body || [],
     branches: branches.body || [],
-    vacancies: vacancies.body || [],
+    vacancies: [...(vacancies.body || []), ...dedicatedVacancies],
     employers: employers.body || [],
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
-      vacancies: (readCount(generalCount.headers) ?? 0) + (Array.isArray(vacancies.body) ? vacancies.body.length : 0),
+      vacancies: (readCount(generalCount.headers) ?? 0) + (Array.isArray(vacancies.body) ? vacancies.body.length : 0) + dedicatedVacancies.length,
       employers: Array.isArray(employers.body) ? employers.body.length : 0,
       candidates: readCount(poolCount.headers) ?? 0
     },
