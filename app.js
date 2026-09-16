@@ -439,11 +439,11 @@ function renderCandidateSpotlight(list) {
       ? (c.experience_years >= 10 ? '10+ yrs exp' : c.experience_years + ' yrs exp')
       : '';
     var subtitle = [c.position, expText].filter(Boolean).join(' · ') || 'Looking for opportunities';
-    return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'home\')">' +
+    return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\')">' +
       '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' +
       '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</strong>' +
       '<span>'+escapeHtml(subtitle)+'</span></span></button>';
-  }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'home\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
+  }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
 }
 
 async function upsertEmployer(e) {
@@ -1302,7 +1302,7 @@ function requireEmployerDirectoryAccess() {
 
 function showAllEmployers() {
   if (!requireEmployerDirectoryAccess()) return;
-  directoryReturnScreen = 'home';
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allemployers').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -2627,7 +2627,7 @@ async function getPoolCandidateCount() {
 }
 
 function goPool(returnScreen) {
-  poolReturnScreen = returnScreen === 'profile' ? 'profile' : 'home';
+  poolReturnScreen = returnScreen === 'profile' || (!returnScreen && document.getElementById('screen-profile').classList.contains('active')) ? 'profile' : 'home';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-pool').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -3097,7 +3097,7 @@ function goBackFromDirectory() {
 }
 
 function showAllAgencies() {
-  directoryReturnScreen = 'home';
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allagencies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -3106,7 +3106,7 @@ function showAllAgencies() {
 }
 
 function showAllBranches() {
-  directoryReturnScreen = 'home';
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allbranches').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -3115,7 +3115,7 @@ function showAllBranches() {
 }
 
 function showAllVacancies() {
-  directoryReturnScreen = 'home';
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allvacancies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
