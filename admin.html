@@ -2284,6 +2284,7 @@ function restoreDefaults(){
 // ===== Daily Track management =====
 // var BUCKET = 'daily-tracks'; // no longer used — files now live in R2 under daily-tracks/
 var TRACK_RETENTION_DAYS = 7;
+var TRACKS_PUBLIC_BASE_URL = 'https://pub-911e4cd402674c6f85c747b12212772f.r2.dev';
 var editingTrackId = null;
 var trackFileChosen = null;   // File object chosen in the sheet
 
@@ -2460,7 +2461,7 @@ async function saveTrack(){
         return;
       }
       filePath = upData.key;
-      fileUrl = upData.url;
+      fileUrl = upData.url || (filePath ? TRACKS_PUBLIC_BASE_URL + '/' + filePath.replace(/^\/+/, '') : '');
     } else if(isEditing && existing) {
       // Keep existing file
       filePath = existing.file_path || '';
