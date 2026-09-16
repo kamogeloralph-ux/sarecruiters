@@ -48,8 +48,20 @@ function minify(code) {
   // Lazily require esbuild so a missing/broken install degrades
   // gracefully instead of crashing the entire site build.
   const esbuild = require('esbuild');
+  // IMPORTANT: minifyIdentifiers is deliberately OFF. This bundle is a
+  // concatenation of classic (non-module) scripts that declare top-level
+  // functions/vars referenced by NAME from static onclick="..."/oninput="..."
+  // attributes in index.html (e.g. onclick="retryManagerTokenFromStatus()",
+  // managerAddBranch(), etc. — 50+ of these). esbuild's identifier minifier
+  // has no way to see those HTML-string references, so with it on it
+  // silently renames the functions those attributes call, breaking them at
+  // runtime with no error surfaced anywhere obvious. Whitespace + syntax
+  // minification are both safe (they don't touch top-level names) and still
+  // give most of the size win.
   const result = esbuild.transformSync(code, {
-    minify: true,
+    minifyWhitespace: true,
+    minifySyntax: true,
+    minifyIdentifiers: false,
     target: 'es2018',
     loader: 'js',
   });
