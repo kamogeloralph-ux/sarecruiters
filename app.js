@@ -748,6 +748,30 @@ function isDedicatedVacancySource(sourceType) {
 function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
 }
+function hasAssignedAgency(v) {
+  return !!v && !!v.agency_id && v.agency_id !== 'general';
+}
+function normalizeAgencyMatchText(value) {
+  return String(value || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+}
+function matchVacanciesToAgencies(rows, agencies) {
+  var list = rows || [];
+  var directory = agencies || agenciesCache || [];
+  var prepared = directory.map(function(a) {
+    return { agency: a, name: normalizeAgencyMatchText(a.name) };
+  }).filter(function(x){ return x.name.length >= 4; });
+  list.forEach(function(v) {
+    if (!v || v.employer_id || v.agency_id && v.agency_id !== 'general') return;
+    var company = normalizeAgencyMatchText(v.company);
+    if (!company || company.length < 4) return;
+    var match = prepared.find(function(x){ return company === x.name || company.indexOf(x.name) !== -1 || x.name.indexOf(company) !== -1; });
+    if (match) {
+      v.agency_id = match.agency.id;
+      if (match.agency.photo) v.company_photo = match.agency.photo;
+    }
+  });
+  return list;
+}
 function generalVacancyQueryState() {
   return {
     q: ((document.getElementById('allvacancies-search')||{}).value || '').trim(),
@@ -977,6 +1001,9 @@ async function loadAll() {
   if (results[0].__loadError) { hadLoadError = true; } else { agenciesCache = results[0]; }
   if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
   if (results[2].__loadError) { hadLoadError = true; } else {
+    // Resolve imported/general records against the agency directory before
+    // splitting the startup cache from the lazy General Vacancies feed.
+    matchVacanciesToAgencies(results[2], agenciesCache);
     vacanciesCache = sortVacancies(results[2].filter(function(v){
       if (isVacancyExpired(v)) return false;
       // General-folder rows are loaded lazily. Do not retain them here or
@@ -3423,7 +3450,10 @@ function renderGeneralVacancyCards(append) {
     el.innerHTML = vacancyScreenStateMarkup('all', false, !!generalVacancyQueryKey);
   } else {
     el.dataset.state = 'ready';
-    var cards = generalVacancyRows.map(function(v){ return vacancyCard(v, {}); }).join('');
+    var cards = generalVacancyRows.map(function(v){
+      var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
+      return vacancyCard(v, agency);
+    }).join('');
     el.innerHTML = '<div class="pgroup-label">General Vacancies</div>' + cards;
   }
   if (countLabel) countLabel.textContent = generalVacancyCount ? generalVacancyRows.length + ' of ' + generalVacancyCount + ' loaded' : generalVacancyRows.length + ' loaded';
@@ -3454,7 +3484,12 @@ async function loadGeneralVacancies(reset) {
   try {
     var page = await fetchGeneralVacancyPage(state, generalVacancyPage);
     if (requestId !== generalVacancyRequestId) return;
-    generalVacancyRows = generalVacancyRows.concat(page).filter(function(v){ return !isVacancyExpired(v); });
+    matchVacanciesToAgencies(page, agenciesCache);
+    page.forEach(function(v){
+      if (v.agency_id && v.agency_id !== 'general' && !vacanciesCache.some(function(x){ return x.id === v.id; })) vacanciesCache.push(v);
+    });
+    // A matched record belongs in its agency section, not General Vacancies.
+    generalVacancyRows = generalVacancyRows.concat(page.filter(isGeneralDirectoryVacancy)).filter(function(v){ return !isVacancyExpired(v); });
     generalVacancyHasMore = page.length === generalVacancyPageSize;
     generalVacancyPage += 1;
     renderGeneralVacancyCards(true);
@@ -3516,17 +3551,17 @@ function renderAllVacanciesList() {
     vacancyFolderDisplayLimit = 30;
   }
   var list = allVacanciesFolder === 'agency'
-    ? visible.filter(function(v){ return !isExternalVacancy(v) && v.agency_id && v.agency_id !== 'general'; })
+    ? visible.filter(hasAssignedAgency)
     : allVacanciesFolder === 'general'
-      ? visible.filter(function(v){ return !isExternalVacancy(v) && (!v.agency_id || v.agency_id === 'general'); })
+      ? visible.filter(isGeneralDirectoryVacancy)
       : allVacanciesFolder === 'himalayas'
-        ? visible.filter(isHimalayasVacancy)
+        ? visible.filter(function(v){ return isHimalayasVacancy(v) && !hasAssignedAgency(v); })
         : allVacanciesFolder === 'adzuna'
-          ? visible.filter(isAdzunaVacancy)
+          ? visible.filter(function(v){ return isAdzunaVacancy(v) && !hasAssignedAgency(v); })
                 : allVacanciesFolder === 'dpsa'
-                  ? visible.filter(isDpsaVacancy)
+                  ? visible.filter(function(v){ return isDpsaVacancy(v) && !hasAssignedAgency(v); })
                   : allVacanciesFolder === 'retail'
-                    ? visible.filter(isRetailVacancy)
+                    ? visible.filter(function(v){ return isRetailVacancy(v) && !hasAssignedAgency(v); })
               : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
@@ -3561,12 +3596,12 @@ function renderAllVacanciesList() {
     // Keep the overview as a folder picker so new vacancy categories can be
     // added later without changing the listing screen. Counts still respond
     // to the shared search and filters above.
-    var agencyCount = list.filter(function(v){ return !isExternalVacancy(v) && v.agency_id && v.agency_id !== 'general'; }).length;
+    var agencyCount = list.filter(hasAssignedAgency).length;
     var generalCount = generalVacancyCount;
-    var himalayasCount = list.filter(isHimalayasVacancy).length;
-    var adzunaCount = list.filter(isAdzunaVacancy).length;
-    var dpsaCount = list.filter(isDpsaVacancy).length;
-    var retailCount = list.filter(isRetailVacancy).length;
+    var himalayasCount = list.filter(function(v){ return isHimalayasVacancy(v) && !hasAssignedAgency(v); }).length;
+    var adzunaCount = list.filter(function(v){ return isAdzunaVacancy(v) && !hasAssignedAgency(v); }).length;
+    var dpsaCount = list.filter(function(v){ return isDpsaVacancy(v) && !hasAssignedAgency(v); }).length;
+    var retailCount = list.filter(function(v){ return isRetailVacancy(v) && !hasAssignedAgency(v); }).length;
     var folderCountLabel = function(count) {
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
@@ -3627,25 +3662,25 @@ function renderAllVacanciesList() {
 
   var groups = {};
   displayList.forEach(function(v){
-    if (isHimalayasVacancy(v)) {
+    if (isHimalayasVacancy(v) && !hasAssignedAgency(v)) {
       var himalayasKey = 'himalayas';
       if (!groups[himalayasKey]) groups[himalayasKey] = { name:'Himalayas remote vacancies', type:'Himalayas Remote', agency:null, items:[] };
       groups[himalayasKey].items.push(v);
       return;
     }
-    if (isAdzunaVacancy(v)) {
+    if (isAdzunaVacancy(v) && !hasAssignedAgency(v)) {
       var adzunaKey = 'adzuna';
       if (!groups[adzunaKey]) groups[adzunaKey] = { name:'Adzuna vacancies', type:'Adzuna', agency:null, items:[] };
       groups[adzunaKey].items.push(v);
       return;
     }
-    if (isDpsaVacancy(v)) {
+    if (isDpsaVacancy(v) && !hasAssignedAgency(v)) {
       var dpsaKey = 'dpsa';
       if (!groups[dpsaKey]) groups[dpsaKey] = { name:'DPSA circular archive', type:'Government circulars', agency:null, items:[] };
       groups[dpsaKey].items.push(v);
       return;
     }
-    if (isRetailVacancy(v)) {
+    if (isRetailVacancy(v) && !hasAssignedAgency(v)) {
       var retailKey = 'retail';
       if (!groups[retailKey]) groups[retailKey] = { name:'Retail vacancies', type:'Retail', agency:null, items:[] };
       groups[retailKey].items.push(v);
