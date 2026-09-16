@@ -1332,3 +1332,21 @@ header{margin-bottom:18px}
 .vac-load-more:active{transform:scale(.985)}
 .vac-load-more:disabled{opacity:.65;cursor:wait;transform:none}
 @media(max-width:420px){.vac-result-meta{padding-left:12px;padding-right:12px}.vac-load-more{width:calc(100% - 24px);margin-left:12px;margin-right:12px}}
+
+/* Vacancy cards and their expandable detail rows stay transparent across
+   every folder; the shared page surface provides the visual background. */
+.vac-card,
+.vac-card:active,
+.vac-card.open,
+.vacancy-directory-group .vac-card,
+.vacancy-overview-section .vac-card,
+.vac-detail,
+.vac-detail-inner,
+.vac-detail-row{
+  background:transparent !important;
+}
+.vacancy-directory-group{
+  background:transparent !important;
+  border:0;
+  box-shadow:none;
+}
