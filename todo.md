@@ -35,8 +35,4 @@
 
 ## Verification & delivery
 - [x] Static review & syntax check (app.js, sw.js OK; new HTML elements present, no console errors)
-- [ ] Package fixed project as zip for delivery
-
-## Verification & delivery
-- [ ] Static review of changes
-- [ ] Package fixed project as zip for delivery
+- [x] Package fixed project as zip for delivery
