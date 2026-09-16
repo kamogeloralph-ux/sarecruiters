@@ -71,7 +71,7 @@ export function mapAdzunaResults(payload) {
         location,
         notes,
         link,
-        source_type: 'agency',
+        source_type: 'adzuna',
         source_checked_at: now,
         last_verified_at: now,
       };
