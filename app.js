@@ -1249,7 +1249,8 @@ function hubContact(a) {
 
 function hubCountBadge(icon, count, noun) {
   var label = count + ' ' + noun + (count === 1 ? '' : noun === 'branch' ? 'es' : 's');
-  return '<span class="hub-branch-badge" title="' + label + '" aria-label="' + label + '"><span class="hub-branch-pin" aria-hidden="true">' + icon + '</span><span>' + count + '</span></span>';
+  var employerClass = noun === 'job' ? ' hub-employer-count' : '';
+  return '<span class="hub-branch-badge' + employerClass + '" title="' + label + '" aria-label="' + label + '"><span class="hub-branch-pin" aria-hidden="true">' + icon + '</span><span>' + count + '</span></span>';
 }
 
 // ===== Hub card (employer) =====
