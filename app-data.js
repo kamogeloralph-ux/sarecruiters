@@ -447,7 +447,10 @@ function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
 }
 function hasAssignedAgency(v) {
-  return !!v && !!v.agency_id && v.agency_id !== 'general';
+  // Dedicated external sources (Himalayas, Adzuna, DPSA, retail feeds) must
+  // only ever appear in their own folder, never counted or listed as an
+  // agency vacancy, even if agency_id was ever set on the row.
+  return !!v && !!v.agency_id && v.agency_id !== 'general' && !isDedicatedVacancySource(v.source_type);
 }
 function normalizeAgencyMatchText(value) {
   return String(value || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
@@ -459,7 +462,11 @@ function matchVacanciesToAgencies(rows, agencies) {
     return { agency: a, name: normalizeAgencyMatchText(a.name) };
   }).filter(function(x){ return x.name.length >= 6; });
   list.forEach(function(v) {
-    if (!v || v.employer_id || v.agency_id && v.agency_id !== 'general') return;
+    // Dedicated external sources (Himalayas, Adzuna, DPSA, retail feeds) keep
+    // their own folder as the single source of truth and must never be
+    // re-tagged with an agency_id, or they leak into that agency's hub page
+    // and the Agency Vacancies folder in addition to their own folder.
+    if (!v || v.employer_id || v.agency_id && v.agency_id !== 'general' || isDedicatedVacancySource(v.source_type)) return;
     var company = normalizeAgencyMatchText(v.company);
     if (!company || company.length < 6) return;
     // Only an exact name match, or one name being a clean prefix of the other
@@ -825,7 +832,12 @@ function updateStats() {
 }
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
-function vacanciesFor(agencyId) { return sortVacancies(vacanciesCache.filter(function(v){ return v.agency_id === agencyId; })); }
+function vacanciesFor(agencyId) {
+  // Guard against any dedicated-source (Himalayas/Adzuna/DPSA/retail) row
+  // that already has agency_id stored on it, so an agency's own hub page
+  // can never show a scraped vacancy -- those live only in their own folder.
+  return sortVacancies(vacanciesCache.filter(function(v){ return v.agency_id === agencyId && !isDedicatedVacancySource(v.source_type); }));
+}
 function vacanciesForEmployer(employerId) { return sortVacancies(vacanciesCache.filter(function(v){ return v.employer_id === employerId; })); }
 
 // Best-effort parse of the free-text closing_date field (e.g. "26 August
