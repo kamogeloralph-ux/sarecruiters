@@ -238,8 +238,20 @@
     </div>
     </div>
 
-    <section class="quick-access" aria-label="Quick access">
-      <div class="quick-access-label">Quick access</div>
+    <section class="site-menu-section" aria-labelledby="site-menu-title">
+      <div class="site-menu-heading"><div><div class="site-menu-kicker">Explore SA Recruiters</div><h2 id="site-menu-title">What would you like to do?</h2></div><span class="site-menu-count">6 destinations</span></div>
+      <div class="site-menu-grid">
+        <button class="site-menu-card site-menu-card-blue" data-ripple onclick="showAllAgencies('profile')"><span class="site-menu-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span><span class="site-menu-copy"><strong>Agencies</strong><small>Find recruitment partners</small></span><svg class="site-menu-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="site-menu-card site-menu-card-teal" data-ripple onclick="showAllBranches('profile')"><span class="site-menu-icon"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><span class="site-menu-copy"><strong>Branches</strong><small>Explore offices by location</small></span><svg class="site-menu-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="site-menu-card site-menu-card-amber" data-ripple onclick="showAllVacancies('profile')"><span class="site-menu-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="site-menu-copy"><strong>Vacancies</strong><small>Browse the latest opportunities</small></span><svg class="site-menu-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="site-menu-card site-menu-card-indigo" data-ripple onclick="showAllEmployers('profile')"><span class="site-menu-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/></svg></span><span class="site-menu-copy"><strong>Employers</strong><small>Discover companies hiring</small></span><svg class="site-menu-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="site-menu-card site-menu-card-purple" data-ripple onclick="goPool('profile')"><span class="site-menu-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M16 11a3 3 0 1 0 0-6M17 15c2.4.4 3.7 2 4 5"/></svg></span><span class="site-menu-copy"><strong>Talent Pool</strong><small>Meet candidates and opportunities</small></span><svg class="site-menu-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="site-menu-card site-menu-card-slate" data-ripple onclick="document.querySelector('[data-tab=\"saved\"]').click()"><span class="site-menu-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-3-6 3z"/></svg></span><span class="site-menu-copy"><strong>Saved vacancies</strong><small>Return to jobs you bookmarked</small></span><svg class="site-menu-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
+    </section>
+
+    <section class="quick-access" aria-label="Get started">
+      <div class="quick-access-label">Get started</div>
       <div class="quick-access-grid">
         <div class="quick-card quick-card-candidates">
           <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or join the Talent Pool</small></div></div>
