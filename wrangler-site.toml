@@ -1,0 +1,5 @@
+name = "sarecruiters-site"
+compatibility_date = "2026-09-16"
+
+[assets]
+directory = "."

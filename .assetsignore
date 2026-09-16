@@ -1,0 +1,15 @@
+.git
+.github
+.gitignore
+.assetsignore
+node_modules
+package.json
+package-lock.json
+wrangler-site.toml
+scripts
+supabase
+Cloudflare-worker
+todo.md
+README.md
+SETUP.md
+*.sql
