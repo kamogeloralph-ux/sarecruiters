@@ -281,6 +281,131 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   .admin-shell .section-head{background:var(--card-2)}
   .admin-shell .nav-item:hover,.admin-shell .nav-item.active{background:var(--card-2)}
 }
+
+/* ===== 2027 console refresh ===== */
+:root{
+  --bg:#f5f8fc; --card:#ffffff; --card-2:#f1f5f9; --border:#e2e8f0; --border-strong:#cbd5e1;
+  --text:#122033; --text-2:#64748b; --accent:#0a84ff; --accent-soft:rgba(10,132,255,.12);
+  --radius:18px; --shadow:0 12px 32px rgba(15,39,71,.07),0 2px 7px rgba(15,39,71,.04);
+}
+[data-theme="dark"]{
+  --bg:#07111f; --card:#0e1c2d; --card-2:#14263a; --border:#20364d; --border-strong:#31506d;
+  --text:#f4f8fc; --text-2:#9eb1c5; --accent:#5ca9f5; --accent-soft:rgba(92,169,245,.16);
+  --shadow:0 16px 36px rgba(0,0,0,.24),0 2px 8px rgba(0,0,0,.15);
+}
+.admin-shell{background:radial-gradient(circle at 80% -10%,rgba(10,132,255,.08),transparent 32%),var(--bg);letter-spacing:-.01em}
+.admin-shell button,.admin-shell input,.admin-shell select,.admin-shell textarea{transition:border-color .18s ease,box-shadow .18s ease,background .18s ease,transform .18s ease}
+.admin-shell button:focus-visible,.admin-shell input:focus-visible,.admin-shell select:focus-visible,.admin-shell textarea:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+
+/* Login becomes a calm, product-style access screen. */
+.admin-shell #login-screen{background:radial-gradient(circle at 50% 0%,rgba(10,132,255,.16),transparent 42%),var(--bg);padding:24px}
+.admin-shell .login-card{border:1px solid rgba(10,132,255,.14);border-radius:26px;box-shadow:0 24px 70px rgba(10,61,128,.12);padding:38px 30px 30px;max-width:410px}
+.admin-shell .login-logo{gap:12px;margin-bottom:10px}
+.admin-shell .login-logo img{width:48px;height:48px;border-radius:15px;box-shadow:0 8px 20px rgba(10,132,255,.22)}
+.admin-shell .login-logo span{font-size:20px;letter-spacing:-.03em}
+.admin-shell .login-sub{font-size:13px;margin-bottom:28px}
+.admin-shell .field{margin-bottom:16px}
+.admin-shell .field label{font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.admin-shell .field input,.admin-shell .field select,.admin-shell .field textarea{border-radius:13px;background:var(--card-2);padding:13px 14px}
+.admin-shell .btn{border-radius:13px;padding:13px 16px;box-shadow:0 8px 18px rgba(10,132,255,.2)}
+.admin-shell .btn:hover{transform:translateY(-1px);filter:saturate(1.08)}
+
+/* Product shell: branded topbar, roomy workspace, quieter sidebar. */
+.admin-shell .topbar{min-height:72px;padding:14px 24px;background:radial-gradient(ellipse at 88% 8%,rgba(100,194,255,.48),transparent 36%),linear-gradient(150deg,#0a3e86 0%,#0758ad 52%,#063d86 100%);box-shadow:0 12px 28px rgba(4,45,105,.2)}
+.admin-shell .topbar .brand{font-size:17px;letter-spacing:-.02em}
+.admin-shell .topbar .brand img{width:34px;height:34px;border-radius:11px;box-shadow:0 5px 14px rgba(0,15,50,.24)}
+.admin-shell .topbar .who{font-size:12px;padding:8px 11px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.1)}
+.admin-shell .topbar .iconbtn{width:40px;height:40px;border-radius:13px}
+.admin-shell .layout{grid-template-columns:256px minmax(0,1fr);min-height:calc(100vh - 72px)}
+.admin-shell .sidebar{position:sticky;top:72px;height:calc(100vh - 72px);padding:22px 14px;background:color-mix(in srgb,var(--card) 78%,transparent);border-right:1px solid var(--border);backdrop-filter:blur(18px)}
+.admin-shell .nav-item{gap:12px;padding:12px 14px;border-left-width:3px;border-radius:13px;font-size:13.5px}
+.admin-shell .nav-item svg{width:19px;height:19px}
+.admin-shell .nav-badge{border:1px solid var(--border);background:var(--card-2);border-radius:999px;padding:3px 8px}
+.admin-shell .main{max-width:1320px;padding:32px 36px 56px}
+
+/* Dashboard and section headers use a compact page-heading pattern. */
+.admin-shell .section-dashboard .section-head{margin:0 -36px 24px;padding:28px 36px 30px;border-radius:0 0 30px 30px}
+.admin-shell .section-dashboard .section-head h2{font-size:28px}
+.admin-shell .section-dashboard .section-head h2::after{content:'  /  Command center';font-size:12px;font-weight:600;letter-spacing:.05em;opacity:.7;vertical-align:middle}
+.admin-shell .section:not(.section-dashboard) .section-head{min-height:58px;padding:12px 16px;margin-bottom:20px;border-left-width:4px;border-radius:16px;box-shadow:0 4px 16px rgba(15,39,71,.04)}
+.admin-shell .section:not(.section-dashboard) .section-head h2{font-size:22px;letter-spacing:-.03em}
+.admin-shell .section-head .back-btn,.admin-shell .section-head .section-close-btn{background:var(--card);border-color:var(--border);border-radius:11px}
+
+/* Stats are scannable KPI tiles instead of flat counters. */
+.admin-shell .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.admin-shell .stat{position:relative;min-height:112px;padding:18px 18px 16px;border-radius:18px;background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--accent) 4%,var(--card)));box-shadow:var(--shadow);overflow:hidden}
+.admin-shell .stat::after{content:'';position:absolute;width:72px;height:72px;right:-23px;bottom:-27px;border-radius:50%;background:var(--accent-soft)}
+.admin-shell .stat .v{position:relative;z-index:1;font-size:30px;letter-spacing:-.05em}
+.admin-shell .stat .l{position:relative;z-index:1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--text-2)}
+.admin-shell .card{border-color:var(--border);border-radius:18px;box-shadow:var(--shadow)}
+.admin-shell .card-pad{padding:20px}
+.admin-shell .analytics-card{margin-top:18px!important}
+
+/* Home navigation reads like a modular command center. */
+.admin-shell .home-section-label{margin:24px 0 9px 3px;font-size:10.5px;letter-spacing:.12em;color:var(--text-2)}
+.admin-shell .home-grouped-list{border-radius:18px;box-shadow:var(--shadow)}
+.admin-shell .home-nav-card{min-height:72px;padding:15px 18px;gap:15px}
+.admin-shell .home-nav-card .hc-icon{width:42px;height:42px;border-radius:14px;background:var(--accent-soft);color:var(--accent)}
+.admin-shell .home-nav-card .hc-title{font-size:14px}
+.admin-shell .home-nav-card .hc-sub{font-size:11.5px}
+.admin-shell .home-nav-card .hc-badge{border:1px solid var(--border);border-radius:999px}
+
+/* Records, search and actions share one tactile language. */
+.admin-shell .search{height:46px;margin-bottom:18px;padding:0 15px;border-radius:14px;background:var(--card);box-shadow:0 3px 12px rgba(15,39,71,.04)}
+.admin-shell .search::placeholder{color:var(--text-2)}
+.admin-shell .row-item{min-height:70px;padding:14px 18px;border-color:var(--border)}
+.admin-shell .row-item:hover,.admin-shell .row-item.expanded{background:color-mix(in srgb,var(--accent) 5%,var(--card))}
+.admin-shell .row-avatar{width:44px;height:44px;border-radius:14px;box-shadow:0 5px 12px rgba(15,39,71,.12)}
+.admin-shell .row-title{font-size:14px;font-weight:700}
+.admin-shell .row-sub{font-size:12px}
+.admin-shell .row-details{padding-left:64px}
+.admin-shell .minibtn{min-height:34px;padding:7px 11px;border-radius:10px;background:var(--card);border-color:var(--border);font-size:11.5px}
+.admin-shell .minibtn:hover{transform:translateY(-1px);border-color:var(--accent);color:var(--accent);box-shadow:0 5px 12px rgba(15,39,71,.08)}
+.admin-shell .minibtn.ok{background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
+
+/* Settings and forms become grouped control surfaces. */
+.admin-shell .toggle-row{padding:18px 20px;border-radius:16px;box-shadow:0 4px 14px rgba(15,39,71,.04)}
+.admin-shell .toggle-row .t-label{font-size:14px;font-weight:750}
+.admin-shell .switch{width:50px;height:28px}
+.admin-shell .switch .knob{width:22px;height:22px}
+.admin-shell .switch input:checked + .track .knob{transform:translateX(22px)}
+.admin-shell .banking-accordion{margin-top:24px;padding-top:16px}
+.admin-shell .banking-accordion summary{padding:14px 12px;border:1px solid var(--border);background:var(--card);border-radius:14px}
+.admin-shell .banking-accordion-body{padding:16px 12px 2px}
+.admin-shell .chip{border-radius:999px;padding:5px 10px}
+
+/* Sheets and notifications feel like native, layered surfaces. */
+.admin-shell .scrim{background:rgba(4,17,32,.62);backdrop-filter:blur(8px)}
+.admin-shell .sheet{max-width:620px;border:1px solid var(--border);border-radius:24px 24px 0 0;padding:24px 24px 30px;box-shadow:0 -18px 60px rgba(0,0,0,.2)}
+.admin-shell .sheet h3{font-size:20px;letter-spacing:-.03em}
+.admin-shell .sheet-actions{gap:12px}
+.admin-shell .toast{bottom:30px;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:12px 18px;box-shadow:0 12px 30px rgba(0,0,0,.22)}
+
+@media(max-width:900px){
+  .admin-shell .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .admin-shell .main{padding-left:24px;padding-right:24px}
+  .admin-shell .section-dashboard .section-head{margin-left:-24px;margin-right:-24px;padding-left:24px;padding-right:24px}
+}
+@media(max-width:760px){
+  .admin-shell .topbar{min-height:64px;padding:11px 14px}
+  .admin-shell .topbar .brand{font-size:15px}
+  .admin-shell .topbar .brand img{width:31px;height:31px}
+  .admin-shell .topbar .who{max-width:110px;padding:6px 8px;font-size:10.5px}
+  .admin-shell .layout{min-height:calc(100vh - 64px)}
+  .admin-shell .main{padding:20px 14px 42px}
+  .admin-shell .section-dashboard .section-head{margin-left:-14px;margin-right:-14px;padding:21px 14px 23px;border-radius:0 0 24px 24px}
+  .admin-shell .section-dashboard .section-head h2{font-size:23px}
+  .admin-shell .section-dashboard .section-head h2::after{display:block;margin-top:5px;font-size:10px}
+  .admin-shell .section:not(.section-dashboard) .section-head{padding:10px 12px;margin-bottom:15px}
+  .admin-shell .section:not(.section-dashboard) .section-head h2{font-size:19px}
+  .admin-shell .stats-grid{gap:10px}
+  .admin-shell .stat{min-height:96px;padding:14px 13px}
+  .admin-shell .stat .v{font-size:24px}
+  .admin-shell .stat .l{font-size:9.5px}
+  .admin-shell .home-nav-card{min-height:66px;padding:13px 14px}
+  .admin-shell .home-nav-card .hc-icon{width:38px;height:38px}
+  .admin-shell .sheet{padding:20px 16px 24px}
+}
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
