@@ -51,7 +51,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;transition:background .35s var(--ease),color .35s var(--ease)}
+body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;transition:background .16s var(--ease),color .16s var(--ease)}
 button{font-family:inherit;cursor:pointer;color:inherit}
 input,select,textarea{font-family:inherit}
 a{color:inherit;text-decoration:none}
@@ -100,7 +100,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .social-link-btn.social-x{background:#000}
 [data-theme="light"] .social-link-btn.social-x{background:#111}
 .social-links-empty{font-size:12.5px;color:var(--text-2);padding:6px 0}
-.theme-toggle .sun,.theme-toggle .moon{position:absolute;transition:transform .4s var(--ease),opacity .3s ease}
+.theme-toggle .sun,.theme-toggle .moon{position:absolute;transition:transform .18s var(--ease),opacity .16s ease}
 [data-theme="dark"] .theme-toggle .sun{transform:translateY(0) rotate(0);opacity:1}
 [data-theme="dark"] .theme-toggle .moon{transform:translateY(40px) rotate(-90deg);opacity:0}
 [data-theme="light"] .theme-toggle .sun{transform:translateY(-40px) rotate(90deg);opacity:0}
