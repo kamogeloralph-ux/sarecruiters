@@ -733,7 +733,11 @@ async function getGeneralVacancyCount() {
       .select('id', { count: 'exact', head: true })
       .or('agency_id.is.null,agency_id.eq.general')
       .is('employer_id', null)
-      .or('source_type.is.null,source_type.eq.general');
+      // The general folder historically includes unassigned agency and
+      // government imports. Keep only the dedicated external sources in
+      // their own folders; otherwise the count understates the directory
+      // (e.g. 43 instead of several thousand rows).
+      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar)');
     if (result.error) return null;
     return typeof result.count === 'number' ? result.count : 0;
   } catch(e) { return null; }
@@ -754,7 +758,10 @@ async function fetchGeneralVacancyPage(state, page) {
   var query = supabaseClient.from('vacancies').select(columns)
     .or('agency_id.is.null,agency_id.eq.general')
     .is('employer_id', null)
-    .or('source_type.is.null,source_type.eq.general')
+    // Match the folder classification used by renderAllVacanciesList():
+    // unassigned agency/government imports are general, while Himalayas,
+    // Adzuna, DPSA, and retail feeds have dedicated folders.
+    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar)')
     .order('created_at', { ascending: false })
     .range(from, from + generalVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);

@@ -9,7 +9,13 @@ CREATE INDEX IF NOT EXISTS vacancies_general_created_at_idx
   ON public.vacancies (created_at DESC)
   WHERE (agency_id IS NULL OR agency_id = 'general')
     AND employer_id IS NULL
-    AND (source_type IS NULL OR source_type = 'general');
+    AND (
+      source_type IS NULL
+      OR source_type NOT IN (
+        'himalayas', 'adzuna', 'dpsa', 'retail', 'shoprite',
+        'picknpay', 'woolworths', 'truworths', 'spar'
+      )
+    );
 
 CREATE INDEX IF NOT EXISTS vacancies_agency_created_at_idx
   ON public.vacancies (agency_id, created_at DESC);
