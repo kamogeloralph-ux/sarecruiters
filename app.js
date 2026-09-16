@@ -550,6 +550,7 @@ async function loadEmployerRegSetting() {
    the `daily_tracks` table (Supabase). This keeps an uploaded track available
    to visitors for at least seven days instead of showing it only on its upload
    date. The audio file is served from the `daily-tracks` storage bucket. */
+var TRACKS_PUBLIC_BASE_URL = 'https://pub-911e4cd402674c6f85c747b12212772f.r2.dev';
 var todayTrack = null;       // {id,title,artist,track_date,file_url}
 var trackAudio = null;       // <audio> element
 var trackIsPlaying = false;
@@ -580,6 +581,11 @@ async function loadTodayTrack() {
     if (error) { renderTrackEmpty(); return; }
     if (data && data.length > 0) {
       todayTrack = data[0];
+      // Older rows created during the R2 migration may have file_path but no
+      // file_url. Derive the public URL so those tracks remain playable.
+      if (!todayTrack.file_url && todayTrack.file_path) {
+        todayTrack.file_url = TRACKS_PUBLIC_BASE_URL + '/' + todayTrack.file_path.replace(/^\/+/, '');
+      }
       renderTrackReady();
     } else {
       // No track has been published in the current seven-day window.
