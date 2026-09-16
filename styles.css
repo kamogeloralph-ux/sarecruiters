@@ -1275,7 +1275,7 @@ header{margin-bottom:18px}
 .vac-card-main{padding:17px 16px}
 .vac-logo{border-radius:16px;box-shadow:0 7px 18px rgba(10,35,80,.16)}
 .vac-save,.vac-share{border-radius:11px;background:color-mix(in srgb,var(--card-2) 72%,transparent)}
-.vac-detail-inner{background:color-mix(in srgb,var(--accent) 2%,var(--card))}
+.vac-detail-inner{background:transparent}
 .vac-detail-row{border-bottom-color:var(--separator)}
 .vac-apply-secondary{background:linear-gradient(135deg,#2f9bff,#0758ad);box-shadow:0 10px 20px rgba(7,88,173,.24)}
 .vac-close-btn{border-radius:14px}

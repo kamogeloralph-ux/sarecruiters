@@ -3388,8 +3388,12 @@ async function deleteBranchAllList(id) {
 // Combined overview: null shows source folders; a folder value shows that
 // source's complete filtered list.
 var allVacanciesFolder = null;
+var vacancyFolderDisplayLimit = 30;
+var vacancyFolderDisplayKey = '';
 function openVacancyFolder(type) {
   allVacanciesFolder = type;
+  vacancyFolderDisplayLimit = 30;
+  vacancyFolderDisplayKey = '';
   if (type === 'general') {
     generalVacancyQueryKey = '__open__';
     generalVacancyHasMore = true;
@@ -3401,6 +3405,8 @@ function openVacancyFolder(type) {
 }
 function closeVacancyFolder() {
   allVacanciesFolder = null;
+  vacancyFolderDisplayLimit = 30;
+  vacancyFolderDisplayKey = '';
   renderAllVacanciesList();
   resetActiveScreenScroll('screen-allvacancies');
 }
@@ -3418,9 +3424,7 @@ function renderGeneralVacancyCards(append) {
   } else {
     el.dataset.state = 'ready';
     var cards = generalVacancyRows.map(function(v){ return vacancyCard(v, {}); }).join('');
-    var section = '<section class="directory-group vacancy-directory-group" aria-label="General vacancies">' +
-      '<div class="directory-group-head"><div><div class="directory-group-title">General vacancies</div><div class="directory-group-sub">Public listings · ' + generalVacancyRows.length + ' loaded</div></div></div>' + cards + '</section>';
-    el.innerHTML = '<div class="pgroup-label">General Vacancies</div>' + section;
+    el.innerHTML = '<div class="pgroup-label">General Vacancies</div>' + cards;
   }
   if (countLabel) countLabel.textContent = generalVacancyCount ? generalVacancyRows.length + ' of ' + generalVacancyCount + ' loaded' : generalVacancyRows.length + ' loaded';
   if (loadMore) {
@@ -3466,7 +3470,13 @@ async function loadGeneralVacancies(reset) {
     }
   }
 }
-function loadMoreGeneralVacancies() { loadGeneralVacancies(false); }
+function loadMoreGeneralVacancies() {
+  if (allVacanciesFolder === 'general') loadGeneralVacancies(false);
+  else {
+    vacancyFolderDisplayLimit += 30;
+    renderAllVacanciesList();
+  }
+}
 function renderAllVacanciesList() {
   var searchRow = document.getElementById('allvacancies-search-row');
   var filterRow = document.getElementById('allvacancies-filter-row');
@@ -3500,6 +3510,11 @@ function renderAllVacanciesList() {
   var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
   var expFilter = ((document.getElementById('allvacancies-exp')||{}).value || '');
   var industryFilter = ((document.getElementById('allvacancies-industry')||{}).value || '');
+  var displayKey = [allVacanciesFolder || 'overview', q, remoteFilter, expFilter, industryFilter].join('|').toLowerCase();
+  if (displayKey !== vacancyFolderDisplayKey) {
+    vacancyFolderDisplayKey = displayKey;
+    vacancyFolderDisplayLimit = 30;
+  }
   var list = allVacanciesFolder === 'agency'
     ? visible.filter(function(v){ return !isExternalVacancy(v) && v.agency_id && v.agency_id !== 'general'; })
     : allVacanciesFolder === 'general'
@@ -3594,11 +3609,24 @@ function renderAllVacanciesList() {
     var hasFilters = !!(q || remoteFilter || expFilter || industryFilter);
     el.dataset.state = 'empty';
     el.innerHTML = vacancyScreenStateMarkup('all', false, hasFilters);
+    var emptyLoadMore = document.getElementById('allvacancies-loadmore');
+    if (emptyLoadMore) emptyLoadMore.style.display = 'none';
     return;
   }
 
+  var totalFolderRows = list.length;
+  var displayList = list.slice(0, vacancyFolderDisplayLimit);
+  var resultCount = document.getElementById('allvacancies-result-count');
+  if (resultCount) resultCount.textContent = displayList.length + ' of ' + totalFolderRows + ' loaded';
+  var folderLoadMore = document.getElementById('allvacancies-loadmore');
+  if (folderLoadMore) {
+    folderLoadMore.style.display = displayList.length < totalFolderRows ? 'block' : 'none';
+    folderLoadMore.disabled = false;
+    folderLoadMore.textContent = 'Load more vacancies';
+  }
+
   var groups = {};
-  list.forEach(function(v){
+  displayList.forEach(function(v){
     if (isHimalayasVacancy(v)) {
       var himalayasKey = 'himalayas';
       if (!groups[himalayasKey]) groups[himalayasKey] = { name:'Himalayas remote vacancies', type:'Himalayas Remote', agency:null, items:[] };
@@ -3646,8 +3674,10 @@ function renderAllVacanciesList() {
     var cards = group.items.map(function(v){ return vacancyCard(v, agency); }).join('');
     var groupVerified = group.type === 'Agency' && group.agency && group.agency.verified;
     var groupVerifiedCheck = groupVerified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
-    return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' +
-      '<div class="directory-group-head"><div><div class="directory-group-title">' + groupVerifiedCheck + escapeHtml(group.name) + '</div><div class="directory-group-sub">' + group.type + ' · ' + group.items.length + ' vacanc' + (group.items.length===1?'y':'ies') + '</div></div></div>' + cards + '</section>';
+    var groupHead = allVacanciesFolder === 'agency'
+      ? '<div class="directory-group-head"><div><div class="directory-group-title">' + groupVerifiedCheck + escapeHtml(group.name) + '</div></div></div>'
+      : '';
+    return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' + groupHead + cards + '</section>';
   }).join('');
 }
 
