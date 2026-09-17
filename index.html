@@ -79,6 +79,12 @@
 <meta name="twitter:description" content="Connecting South Africa's Recruitment Community.">
 <meta name="twitter:image" content="https://sa-recruiters.co.za/icons/v2-icon-512.png">
 
+<!-- Warm up connections to the origins the app actually fetches from, so DNS
+     lookup + TLS handshake happen in parallel with page load instead of
+     adding latency to the first real request. -->
+<link rel="preconnect" href="https://sarecruiters-uploader.kamogeloralph.workers.dev">
+<link rel="preconnect" href="https://ythznnktswgymerdcxky.supabase.co">
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
