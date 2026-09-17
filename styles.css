@@ -1108,6 +1108,25 @@ header{margin-bottom:18px}
 #screen-home .hub-branch-badge{background:transparent;color:var(--text-2);box-shadow:none;font-size:11px;padding:0;min-width:22px}
 #screen-home .hub-branch-badge svg{color:var(--accent)}
 #screen-home .hub-card>.hub-summary>.chevron{color:var(--text-2);width:15px;height:15px}
+
+/* Skeleton placeholders shown in #hub-list before any real or cached data
+   has painted (i.e. only on a brand-new install with nothing in IndexedDB
+   yet). filterAndRenderCached() replaces #hub-list's innerHTML wholesale
+   the moment it runs, so these are automatically swapped out for real
+   cards — nothing in JS needs to know these exist. */
+@keyframes hubSkeletonShimmer{0%{background-position:-120% 0}100%{background-position:120% 0}}
+.hub-card-skeleton{margin:0 0 9px;border-radius:17px;background:var(--card);border:1px solid var(--border);box-shadow:0 4px 13px rgba(22,52,93,.07);min-height:70px;padding:10px 12px;display:flex;align-items:center;gap:11px}
+.hub-card-skeleton .sk-avatar{width:42px;height:42px;min-width:42px;border-radius:13px}
+.hub-card-skeleton .sk-lines{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.hub-card-skeleton .sk-line{height:11px;border-radius:6px}
+.hub-card-skeleton .sk-line.sk-title{width:58%;height:13px}
+.hub-card-skeleton .sk-line.sk-sub{width:38%}
+.hub-card-skeleton .sk-avatar,.hub-card-skeleton .sk-line{background:linear-gradient(90deg,var(--card-2) 25%,var(--border) 50%,var(--card-2) 75%);background-size:250% 100%;animation:hubSkeletonShimmer 1.4s ease-in-out infinite}
+.hub-card-skeleton:nth-child(2) .sk-avatar,.hub-card-skeleton:nth-child(2) .sk-line{animation-delay:.08s}
+.hub-card-skeleton:nth-child(3) .sk-avatar,.hub-card-skeleton:nth-child(3) .sk-line{animation-delay:.16s}
+.hub-card-skeleton:nth-child(4) .sk-avatar,.hub-card-skeleton:nth-child(4) .sk-line{animation-delay:.24s}
+.hub-card-skeleton:nth-child(5) .sk-avatar,.hub-card-skeleton:nth-child(5) .sk-line{animation-delay:.32s}
+@media (prefers-reduced-motion: reduce){.hub-card-skeleton .sk-avatar,.hub-card-skeleton .sk-line{animation:none}}
 #screen-home .hub-panel-inner{padding-left:12px;padding-right:12px}
 #screen-home .bottom-nav{background:var(--nav-bg,#073265);border:0;box-shadow:0 -8px 24px rgba(0,25,65,.2);padding:7px 8px calc(7px + env(safe-area-inset-bottom));height:76px}
 .bottom-nav{background:#073265}
