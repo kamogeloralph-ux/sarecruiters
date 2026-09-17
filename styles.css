@@ -1098,6 +1098,7 @@ header{margin-bottom:18px}
 #screen-home .browse-jobs-row::after{content:'☷';margin-left:auto;color:var(--accent);font-size:23px;line-height:1}
 #screen-home .browse-jobs-row a{color:var(--accent)!important;text-decoration:none;font-weight:600}
 #screen-home .hub-card{margin:0 0 9px;border-radius:17px;background:var(--card);border:1px solid var(--border);box-shadow:0 4px 13px rgba(22,52,93,.07)}
+#screen-home #hub-list>.hub-card{content-visibility:auto;contain-intrinsic-size:80px}
 #screen-home .hub-summary{min-height:70px;padding:10px 12px;gap:11px}
 #screen-home .hub-summary:active{background:var(--card-2)}
 #screen-home .hub-summary .avatar{width:42px;height:42px;min-width:42px;border-radius:13px;background:var(--card-2);box-shadow:none}
