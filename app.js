@@ -1012,6 +1012,15 @@ async function getStartupData() {
 }
 
 async function loadAll() {
+  // Cached-first startup should remain instant when the device is offline.
+  // The cached render has already happened below; skip network work here and
+  // leave all data and manager-link resolution untouched until connectivity
+  // returns through the existing online listener.
+  if (!navigator.onLine) {
+    setConnectionStatus('offline', lastDataRefreshAt);
+    setRetryBanner(false);
+    return;
+  }
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
   // original independent Supabase reads so launch remains resilient.
