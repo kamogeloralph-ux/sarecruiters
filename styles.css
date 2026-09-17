@@ -1062,7 +1062,7 @@ header{margin-bottom:18px}
     radial-gradient(ellipse at 82% 8%,rgba(100,194,255,.55),transparent 34%),
     radial-gradient(ellipse at 18% 78%,rgba(24,103,191,.7),transparent 45%),
     linear-gradient(150deg,#0a3e86 0%,#0758ad 48%,#063d86 100%),
-    url("assets/hero-construction.jpg");
+    url("hero-construction.jpg");
   background-size:cover,cover,cover,cover;
   background-position:center,center,center,center;
   background-repeat:no-repeat,no-repeat,no-repeat,no-repeat;
