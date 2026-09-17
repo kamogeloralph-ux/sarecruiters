@@ -32,6 +32,6 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Sync South Africa-eligible remote vacancies
         run: npm run sync:himalayas
