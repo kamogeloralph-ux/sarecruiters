@@ -39,6 +39,23 @@ function absoluteBoxerUrl(externalPath) {
 function idForJob(job) { return `retail-pnp-${job.jobReqId || job.jobPostingId}`; }
 function idForBoxerJob(job) { return `retail-boxer-${job.externalId}`; }
 
+// Employer ids are resolved by name at run time (not hard-coded) so this
+// keeps working even if the employer record is ever recreated with a new id.
+// Cached per run since it never changes mid-scrape.
+const employerIdCache = new Map();
+async function resolveEmployerIdByName(name) {
+  if (employerIdCache.has(name)) return employerIdCache.get(name);
+  let id = null;
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('employers').select('id').ilike('name', name).limit(1);
+      if (!error && data && data[0]) id = data[0].id;
+    } catch (_) { /* Fall back to unassigned below. */ }
+  }
+  employerIdCache.set(name, id);
+  return id;
+}
+
 export function parsePickNPaySearch(payload) {
   if (!payload || !Array.isArray(payload.jobPostings)) return [];
   return payload.jobPostings
@@ -51,14 +68,18 @@ export function parsePickNPaySearch(payload) {
     }));
 }
 
-export function parsePickNPayDetail(payload, summary) {
+export function parsePickNPayDetail(payload, summary, employerId) {
   const info = payload && payload.jobPostingInfo;
   if (!info || !info.title || !summary?.link) return null;
   const jobReqId = clean(info.jobReqId || info.jobPostingId || summary.externalPath.split('_').pop());
   return {
     id: idForJob({ jobReqId, jobPostingId: info.jobPostingId }),
-    agency_id: 'general',
-    employer_id: null,
+    // Pick n Pay has its own employers record -- always file its vacancies
+    // under Employers, not the unassigned "general" bucket, so they show on
+    // its employer hub page. Falls back to unassigned only if that employers
+    // row is ever missing.
+    agency_id: employerId ? 'employer' : 'general',
+    employer_id: employerId || null,
     title: clean(info.title),
     company: 'Pick n Pay',
     location: clean(info.location || summary.location),
@@ -208,12 +229,14 @@ export async function fetchPickNPayJobs() {
 async function fetchDetails(summaries) {
   const jobs = [];
   let cursor = 0;
+  const employerId = await resolveEmployerIdByName('Pick n Pay');
+  if (!employerId) console.error('[retail:pnp] no "Pick n Pay" employers record found -- vacancies will fall back to unassigned');
   async function worker() {
     while (cursor < summaries.length) {
       const summary = summaries[cursor++];
       try {
         const payload = await fetchJson(`${WORKDAY_BASE}/wday/cxs/${WORKDAY_TENANT}/${WORKDAY_SITE}${summary.externalPath}`);
-        const job = parsePickNPayDetail(payload, summary);
+        const job = parsePickNPayDetail(payload, summary, employerId);
         if (job) jobs.push(job);
       } catch (error) {
         console.error(`[retail:pnp] detail failed for ${summary.link}: ${error instanceof Error ? error.message : String(error)}`);
