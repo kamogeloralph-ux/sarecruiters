@@ -19,7 +19,7 @@
  * appearing after the next reload.
  */
 
-const VERSION = 'sa-recruiters-v162-modular-app-js';
+const VERSION = 'sa-recruiters-v163-bundle-precache-fix';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -29,14 +29,7 @@ const CORE_ASSETS = [
   './admin.html',
   './privacy.html',
   './styles.css',
-  './app-core.js?v=20260916-modular-1',
-  './app-data.js?v=20260916-modular-1',
-  './app-cards.js?v=20260916-modular-1',
-  './app-forms.js?v=20260916-modular-1',
-  './app-sheets.js?v=20260916-modular-1',
-  './app-ui.js?v=20260916-modular-1',
-  './app-manager.js?v=20260916-modular-1',
-  './app-manager-employer.js?v=20260916-modular-1',
+  './app.bundle.min.js',
   './icons.svg',
   './offline.html',
   './manifest.json',
