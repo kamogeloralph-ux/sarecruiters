@@ -200,12 +200,18 @@ async function fastResolveManagerToken() {
 // Paint immediately from whatever was cached on the last successful load
 // (if any), then loadAll() below fetches fresh data in the background and
 // silently re-renders once it lands — so repeat visits never show a blank
-// screen while waiting on the network.
-if (loadDataCache()) {
-  updateStats();
-  filterAndRenderCached();
-  markAppDataReady();
-}
+// screen while waiting on the network. loadDataCache() reads from
+// IndexedDB (async, off the main thread) rather than localStorage, but an
+// IndexedDB read is on the order of a few ms — far faster than the
+// loadAll() network round-trip kicked off right after it — so this still
+// reliably wins the race and paints before live data arrives.
+(async function() {
+  if (await loadDataCache()) {
+    updateStats();
+    filterAndRenderCached();
+    markAppDataReady();
+  }
+})();
 
 loadAll().then(markAppDataReady);
 initConnectionStatus();
