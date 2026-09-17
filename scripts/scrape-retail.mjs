@@ -10,6 +10,10 @@ const WORKDAY_TENANT = 'picknpay';
 const WORKDAY_SITE = 'PNP_Careers';
 const WORKDAY_SEARCH = `${WORKDAY_BASE}/wday/cxs/${WORKDAY_TENANT}/${WORKDAY_SITE}/jobs`;
 const WORKDAY_SITE_URL = `${WORKDAY_BASE}/${WORKDAY_SITE}`;
+const BOXER_BASE = 'https://boxer.erecruit.co';
+const BOXER_HOME = `${BOXER_BASE}/`;
+const BOXER_CATEGORY_PREFIX = '/candidateapp/Jobs/Categories/';
+const BOXER_JOB_PREFIX = '/candidateapp/Jobs/View/';
 const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.RETAIL_PAGE_SIZE || '20', 10), 1), 20);
 const DETAIL_CONCURRENCY = Math.min(Math.max(Number.parseInt(process.env.RETAIL_DETAIL_CONCURRENCY || '4', 10), 1), 8);
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.RETAIL_REQUEST_TIMEOUT_MS || '60000', 10);
@@ -29,7 +33,11 @@ function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function absoluteJobUrl(externalPath) {
   return `${WORKDAY_SITE_URL}${externalPath.startsWith('/') ? externalPath : `/${externalPath}`}`;
 }
+function absoluteBoxerUrl(externalPath) {
+  return new URL(externalPath, BOXER_BASE).href;
+}
 function idForJob(job) { return `retail-pnp-${job.jobReqId || job.jobPostingId}`; }
+function idForBoxerJob(job) { return `retail-boxer-${job.externalId}`; }
 
 export function parsePickNPaySearch(payload) {
   if (!payload || !Array.isArray(payload.jobPostings)) return [];
@@ -75,6 +83,54 @@ export function parsePickNPayDetail(payload, summary) {
   };
 }
 
+export function parseBoxerCategoryLinks(html) {
+  const $ = cheerio.load(html || '');
+  return [...new Set($(`a[href*="${BOXER_CATEGORY_PREFIX}"]`).map((_, el) => $(el).attr('href')).get().filter(Boolean).map(absoluteBoxerUrl))];
+}
+
+export function parseBoxerSearch(html) {
+  const $ = cheerio.load(html || '');
+  const jobs = [];
+  $('tr.item[onclick*="/candidateapp/Jobs/View/"]').each((_, row) => {
+    const onclick = $(row).attr('onclick') || '';
+    const match = onclick.match(/\/candidateapp\/Jobs\/View\/([^'"\\/]+)/i);
+    if (!match) return;
+    const cells = $(row).find('td').map((__, cell) => clean($(cell).text())).get();
+    if (!cells[0]) return;
+    const externalId = match[1];
+    jobs.push({ externalId, title: cells[0], location: cells[1] || '', closingDate: cells[2] || '', link: absoluteBoxerUrl(`${BOXER_JOB_PREFIX}${externalId}`) });
+  });
+  return jobs;
+}
+
+function parseJsonLdJob(html) {
+  const $ = cheerio.load(html || '');
+  for (const script of $('script[type="application/ld+json"]').toArray()) {
+    try {
+      const value = JSON.parse($(script).contents().text());
+      if (value && value['@type'] === 'JobPosting') return value;
+    } catch (_) { /* Ignore unrelated or malformed JSON-LD blocks. */ }
+  }
+  return null;
+}
+
+export function parseBoxerDetail(html, summary) {
+  if (!summary?.externalId || !summary?.link) return null;
+  const job = parseJsonLdJob(html);
+  if (!job || !job.title) return null;
+  const address = job.jobLocation?.address || {};
+  const location = clean([address.addressLocality, address.addressRegion].filter(Boolean).join(', ') || summary.location);
+  const identifier = job.identifier?.value || summary.externalId;
+  return {
+    id: idForBoxerJob({ externalId: identifier }), agency_id: 'general', employer_id: null,
+    title: clean(job.title), company: 'Boxer Superstores', location,
+    closing_date: clean(job.validThrough || summary.closingDate), notes: htmlToText(job.description).slice(0, 20_000),
+    link: summary.link, email: '', phone: '', remote: null, experience_level: '',
+    employment_type: clean(job.employmentType || ''), contract_type: '', work_schedule: '', hours: '', salary: '', start_date: '',
+    source_type: 'retail', source_checked_at: new Date().toISOString(), last_verified_at: new Date().toISOString(),
+  };
+}
+
 async function fetchJson(url, options = {}) {
   let lastError;
   for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
@@ -88,6 +144,23 @@ async function fetchJson(url, options = {}) {
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
+    } catch (error) {
+      lastError = error;
+      if (attempt < FETCH_ATTEMPTS) await sleep(1500 * attempt);
+    } finally { clearTimeout(timeout); }
+  }
+  throw lastError;
+}
+
+async function fetchText(url) {
+  let lastError;
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(url, { signal: controller.signal, headers: { accept: 'text/html', 'user-agent': USER_AGENT } });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.text();
     } catch (error) {
       lastError = error;
       if (attempt < FETCH_ATTEMPTS) await sleep(1500 * attempt);
@@ -130,6 +203,32 @@ async function fetchDetails(summaries) {
   return jobs;
 }
 
+async function fetchBoxerJobs() {
+  const categoryLinks = parseBoxerCategoryLinks(await fetchText(BOXER_HOME));
+  const summariesById = new Map();
+  for (const categoryLink of categoryLinks) {
+    const jobs = parseBoxerSearch(await fetchText(categoryLink));
+    jobs.forEach((job) => summariesById.set(job.externalId, job));
+  }
+  const summaries = [...summariesById.values()];
+  const jobs = [];
+  let cursor = 0;
+  async function worker() {
+    while (cursor < summaries.length) {
+      const summary = summaries[cursor++];
+      try {
+        const job = parseBoxerDetail(await fetchText(summary.link), summary);
+        if (job) jobs.push(job);
+      } catch (error) {
+        console.error(`[retail:boxer] detail failed for ${summary.link}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(DETAIL_CONCURRENCY, summaries.length) }, worker));
+  console.log(`[retail:boxer] fetched ${jobs.length} jobs from ${categoryLinks.length} categories`);
+  return jobs;
+}
+
 async function upsertJobs(jobs) {
   if (!jobs.length) return 0;
   const { error } = await supabase.from('vacancies').upsert(jobs, { onConflict: 'id' });
@@ -139,9 +238,10 @@ async function upsertJobs(jobs) {
 
 export async function runRetailGroupScraper() {
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
-  const results = { picknpay: 0, shoprite: 0, spar: 0 };
+  const results = { picknpay: 0, boxer: 0, shoprite: 0, spar: 0 };
   const summaries = await fetchPickNPayJobs();
   results.picknpay = await upsertJobs(await fetchDetails(summaries));
+  results.boxer = await upsertJobs(await fetchBoxerJobs());
   // Shoprite's public store portal is currently a registration/talent-pool flow,
   // not a public vacancy feed. SPAR directs applicants to Pnet; do not duplicate
   // or scrape it here while the Pnet source is being replaced.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePickNPaySearch, parsePickNPayDetail } from './scrape-retail.mjs';
+import { parsePickNPaySearch, parsePickNPayDetail, parseBoxerCategoryLinks, parseBoxerSearch, parseBoxerDetail } from './scrape-retail.mjs';
 
 test('parses Pick n Pay Workday search results into retail summaries', () => {
   const jobs = parsePickNPaySearch({ total: 1, jobPostings: [{ title: 'Cashier', locationsText: 'Cape Town - Western Cape', externalPath: '/job/Cape-Town/Cashier_JR123' }] });
@@ -26,4 +26,23 @@ test('normalizes Pick n Pay detail data as a retail vacancy', () => {
 test('returns no jobs for malformed retailer responses', () => {
   assert.deepEqual(parsePickNPaySearch(null), []);
   assert.equal(parsePickNPayDetail({}, { link: 'https://example.com/job' }), null);
+});
+
+test('parses Boxer eRecruit category links and job rows', () => {
+  const categories = parseBoxerCategoryLinks('<a href="/candidateapp/Jobs/Categories/Stores/abc">Stores</a><a href="/candidateapp/Jobs/Categories/Stores/abc">Stores</a>');
+  assert.deepEqual(categories, ['https://boxer.erecruit.co/candidateapp/Jobs/Categories/Stores/abc']);
+  const jobs = parseBoxerSearch('<table><tr class="item" onclick="window.location=\'/candidateapp/Jobs/View/BOX260910-1\';"><td>HOD: Logistics</td><td>Westville</td><td>2026/09/28</td></tr></table>');
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].externalId, 'BOX260910-1');
+  assert.equal(jobs[0].link, 'https://boxer.erecruit.co/candidateapp/Jobs/View/BOX260910-1');
+});
+
+test('normalizes Boxer JSON-LD detail data as a retail vacancy', () => {
+  const html = '<script type="application/ld+json">{"@type":"JobPosting","title":"HOD: Logistics","description":"<p>Lead logistics.</p>","validThrough":"2026-09-28","identifier":{"value":"BOX260910-1"},"jobLocation":{"address":{"addressLocality":"Westville","addressRegion":"KwaZulu-Natal"}}}</script>';
+  const job = parseBoxerDetail(html, { externalId: 'BOX260910-1', link: 'https://boxer.erecruit.co/candidateapp/Jobs/View/BOX260910-1', location: 'Westville', closingDate: '' });
+  assert.equal(job.id, 'retail-boxer-BOX260910-1');
+  assert.equal(job.company, 'Boxer Superstores');
+  assert.equal(job.location, 'Westville, KwaZulu-Natal');
+  assert.equal(job.closing_date, '2026-09-28');
+  assert.equal(job.notes, 'Lead logistics.');
 });
