@@ -518,43 +518,25 @@ async function fetchGeneralVacancyPage(state, page) {
   if (result.error) throw result.error;
   return result.data || [];
 }
-async function upsertVacancy(v) {
-  // First attempt: send all fields
+async function upsertVacancy(v, manageToken) {
+  // Writes now go through submit_vacancy(), which validates manageToken
+  // server-side against the vacancy's own agency/employer before touching
+  // the row (see the vacancies RLS hardening migrations). The manager-link
+  // token itself is unchanged — this only threads the existing token
+  // through to a safer write path.
   try {
-    var { error } = await supabaseClient.from('vacancies').upsert(v);
+    var { error } = await supabaseClient.rpc('submit_vacancy', { payload: v, p_manage_token: manageToken || null });
     if (!error) return true;
-    // Log every failed save (constraint violations, RLS denials, etc.) so
-    // future issues show up in the console instead of failing silently.
     console.error('vacancy upsert', error);
-    // If the error is about a missing column, retry with only the
-    // columns that are guaranteed to exist in the original schema.
-    if (error && error.message && error.message.indexOf('column') > -1) {
-      var safe = {
-        id: v.id,
-        agency_id: v.agency_id || 'general',
-        title: v.title || '',
-        company: v.company || '',
-        location: v.location || '',
-        closing_date: v.closing_date || '',
-        notes: v.notes || '',
-        link: v.link || '',
-        email: v.email || '',
-        phone: v.phone || ''
-      };
-      try {
-        var { error: err2 } = await supabaseClient.from('vacancies').upsert(safe);
-        if (!err2) return true;
-      } catch(e2){}
-    }
-  } catch(e){}
+  } catch(e){ console.error('vacancy upsert', e); }
   var arr = readLocal('vacancies');
   var i = arr.findIndex(function(x){ return x.id === v.id; });
   if (i >= 0) arr[i] = Object.assign({}, arr[i], v); else arr.push(v);
   writeLocal('vacancies', arr);
   return false;
 }
-async function removeVacancy(id) {
-  try { await supabaseClient.from('vacancies').delete().eq('id', id); } catch(e){}
+async function removeVacancy(id, manageToken) {
+  try { await supabaseClient.rpc('delete_vacancy', { p_id: id, p_manage_token: manageToken || null }); } catch(e){ console.error('vacancy delete', e); }
   var arr = readLocal('vacancies').filter(function(x){ return x.id !== id; });
   writeLocal('vacancies', arr);
 }
@@ -573,9 +555,11 @@ function isVacancyExpired(v) {
 async function purgeExpiredVacancies(list) {
   var expired = (list || []).filter(isVacancyExpired);
   if (!expired.length) return list;
-  var ids = expired.map(function(v){ return v.id; });
-  try { await supabaseClient.from('vacancies').delete().in('id', ids); } catch(e){}
-  return (list || []).filter(function(v){ return ids.indexOf(v.id) === -1; });
+  // Actual deletion is handled server-side (see AUTO_DELETE_OLD_VACANCIES.sql,
+  // a scheduled job with elevated privileges) — the client no longer tries
+  // to delete other people's rows directly here, it only hides
+  // already-expired ones from this view until that job runs.
+  return (list || []).filter(function(v){ return expired.indexOf(v) === -1; });
 }
 
 /* ── Data: REPORTS ───────────────────────────────────

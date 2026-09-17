@@ -339,6 +339,7 @@ async function saveVacancy() {
   setVacancySaveBusy(true);
   try {
     var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    var vacancyManageToken = (managerMode && managerAgency && managerAgency.id === pendingVacancyAgency) ? getManagerToken(pendingVacancyAgency) : null;
     var live = await upsertVacancy({
       id: id, agency_id: pendingVacancyAgency, title: title,
       location: document.getElementById('v-location').value.trim(),
@@ -351,7 +352,7 @@ async function saveVacancy() {
       closing_date: document.getElementById('v-closing').value.trim(),
       notes: document.getElementById('v-notes').value.trim(),
       link: normalizeVacancyLink(document.getElementById('v-link').value)
-    });
+    }, vacancyManageToken);
     var termsRecorded = live ? await recordVacancyTermsAcceptance(id, managerMode && managerAgency ? managerAgency.id : pendingVacancyAgency, null) : false;
     closeSheet('vacancy-overlay');
     showToast(live ? (termsRecorded ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
@@ -368,7 +369,8 @@ async function saveVacancy() {
 }
 async function deleteVacancy(id, agencyId) {
   if (!confirm('Delete this vacancy?')) return;
-  await removeVacancy(id);
+  var vacancyManageToken = (managerMode && managerAgency && managerAgency.id === agencyId) ? getManagerToken(agencyId) : null;
+  await removeVacancy(id, vacancyManageToken);
   await loadAll();
   var card = document.getElementById('hub-' + agencyId);
   if (card) card.classList.add('open');
@@ -492,16 +494,17 @@ async function saveGeneralVacancy() {
     if (pendingVacancyEmployer) data.employer_id = pendingVacancyEmployer;
     var wasEmployerPost = !!pendingVacancyEmployer;
     var employerIdForRefresh = pendingVacancyEmployer;
+    var generalVacancyManageToken = (pendingVacancyEmployer && employerManagerMode && managerEmployer && managerEmployer.id === pendingVacancyEmployer) ? getEmployerManagerToken(pendingVacancyEmployer) : null;
     var termsRecordedGeneral = false;
     if (editingGeneralVacancyId) {
       data.id = editingGeneralVacancyId;
-      var live2 = await upsertVacancy(data);
+      var live2 = await upsertVacancy(data, generalVacancyManageToken);
       termsRecordedGeneral = live2 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
       closeSheet('general-vacancy-overlay');
       showToast(live2 ? (termsRecordedGeneral ? 'Vacancy updated' : 'Vacancy updated — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
     } else {
       data.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-      var live3 = await upsertVacancy(data);
+      var live3 = await upsertVacancy(data, generalVacancyManageToken);
       termsRecordedGeneral = live3 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
       closeSheet('general-vacancy-overlay');
       showToast(live3 ? (termsRecordedGeneral ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
@@ -524,7 +527,9 @@ async function saveGeneralVacancy() {
 }
 async function deleteGeneralVacancy(id) {
   if (!confirm('Delete this vacancy?')) return;
-  await removeVacancy(id);
+  var vac = vacanciesCache.find(function(x){ return x.id === id; });
+  var generalVacancyManageToken = (vac && vac.employer_id && employerManagerMode && managerEmployer && managerEmployer.id === vac.employer_id) ? getEmployerManagerToken(vac.employer_id) : null;
+  await removeVacancy(id, generalVacancyManageToken);
   showToast('Vacancy deleted');
   await loadAll();
   if (document.getElementById('screen-allvacancies').classList.contains('active')) {
