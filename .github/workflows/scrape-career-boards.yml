@@ -1,0 +1,38 @@
+name: Scrape career board vacancies
+on:
+  schedule:
+    # Offset from every other scraper's minute (17/27/37/47/30) so none of
+    # them queue for the same GitHub-hosted runner minute.
+    - cron: "7 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      boards:
+        description: "Override CAREER_BOARDS for this run only (e.g. lever:acme,greenhouse:globex)"
+        required: false
+        default: ""
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: career-boards-scraper
+  cancel-in-progress: false
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CAREER_BOARDS: ${{ inputs.boards || vars.CAREER_BOARDS }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Scrape Lever/Greenhouse career board postings
+        run: npm run scrape:career-boards
