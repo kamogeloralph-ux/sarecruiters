@@ -1222,7 +1222,7 @@ function renderAgencies(){
     if(a.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(a.address)+'</div>';
     var mgrTok = a.manage_token || '';
     // Manager links must always open the public app, never the admin console.
-    var mgrLink = mgrTok ? (location.origin + '/?manage=' + mgrTok) : '';
+    var mgrLink = mgrTok ? (location.origin + '/index.html?manage=' + mgrTok) : '';
     details += '<div class="det-row det-manager-link"><span class="det-label">Manager link:</span> '+
       (mgrTok
         ? '<div class="copy-link" style="margin-top:6px"><input id="mgr-link-'+a.id+'" value="'+escapeHtml(mgrLink)+'" readonly><button onclick="stopProp(event);copyLink(\'mgr-link-'+a.id+'\')">Copy</button></div>'+
@@ -1401,7 +1401,7 @@ function renderEmployers(){
     if(e.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(e.address)+'</div>';
     if(e.industry) details += '<div class="det-row"><span class="det-label">Industry:</span> '+escapeHtml(e.industry)+'</div>';
     var empMgrTok = e.manage_token || '';
-    var empMgrLink = empMgrTok ? (location.origin + '/?manage_employer=' + empMgrTok) : '';
+    var empMgrLink = empMgrTok ? (location.origin + '/index.html?manage_employer=' + empMgrTok) : '';
     details += '<div class="det-row det-manager-link"><span class="det-label">Manager link:</span> '+
       (empMgrTok
         ? '<div class="copy-link" style="margin-top:6px"><input id="emp-mgr-link-'+e.id+'" value="'+escapeHtml(empMgrLink)+'" readonly><button onclick="stopProp(event);copyLink(\'emp-mgr-link-'+e.id+'\')">Copy</button></div>'+
