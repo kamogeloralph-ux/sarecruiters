@@ -367,6 +367,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-folder-card-himalayas .vac-folder-icon{background:rgba(52,199,159,.14);color:#087f68}
 .vac-folder-card-adzuna .vac-folder-icon{background:rgba(255,90,54,.14);color:#d8482a}
 .vac-folder-card-dpsa .vac-folder-icon{background:rgba(10,132,255,.14);color:#0a84ff}
+.vac-folder-card-career .vac-folder-icon{background:rgba(124,77,255,.14);color:#5e35b1}
 .vac-folder-card:active{transform:translateY(0)}
 .vac-folder-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(10,132,255,.12);color:var(--accent);margin-bottom:14px}
 .vac-folder-icon svg{width:20px;height:20px}
@@ -568,6 +569,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-company .vac-agency-tag{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:var(--radius-pill);margin-left:6px;vertical-align:1px}
 .vac-source-tag{display:inline-block;font-size:10px;font-weight:700;color:#0a7a62;background:rgba(52,199,159,.14);padding:2px 7px;border-radius:var(--radius-pill);margin-left:6px;vertical-align:1px}
 .vac-source-tag-dpsa{color:#1769aa;background:rgba(10,132,255,.14)}
+.vac-source-tag-career{color:#5e35b1;background:rgba(124,77,255,.14)}
 .vac-loc-line{font-size:12.5px;color:var(--text-2);margin-top:4px;display:flex;align-items:center;gap:5px}
 .vac-loc-line svg{width:12px;height:12px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .vac-posted{font-size:11.5px;color:var(--text-2);margin-top:6px;opacity:.85}
