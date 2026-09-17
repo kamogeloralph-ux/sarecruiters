@@ -613,8 +613,7 @@ function renderAllVacanciesList() {
   var isAdzunaVacancy = function(v){ return v.source_type === 'adzuna' || String(v.id || '').indexOf('adzuna-') === 0; };
   var isDpsaVacancy = function(v){ return v.source_type === 'dpsa' || String(v.id || '').indexOf('dpsa-') === 0; };
   var isRetailVacancy = function(v){ return ['retail','shoprite','picknpay','woolworths','truworths','spar'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/i.test(String(v.id || '')); };
-  var isCareerBoardVacancy = function(v){ return v.source_type === 'career_board' || String(v.id || '').indexOf('career-') === 0; };
-  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isDpsaVacancy(v) || isRetailVacancy(v) || isCareerBoardVacancy(v); };
+  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isDpsaVacancy(v) || isRetailVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
   var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
@@ -637,8 +636,6 @@ function renderAllVacanciesList() {
                   ? visible.filter(isDpsaVacancy)
                   : allVacanciesFolder === 'retail'
                     ? visible.filter(isRetailVacancy)
-                : allVacanciesFolder === 'career_board'
-                  ? visible.filter(isCareerBoardVacancy)
               : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
@@ -679,7 +676,6 @@ function renderAllVacanciesList() {
     var adzunaCount = list.filter(isAdzunaVacancy).length;
     var dpsaCount = list.filter(isDpsaVacancy).length;
     var retailCount = list.filter(isRetailVacancy).length;
-    var careerBoardCount = list.filter(isCareerBoardVacancy).length;
     var folderCountLabel = function(count) {
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
@@ -713,11 +709,6 @@ function renderAllVacanciesList() {
         '<button class="vac-folder-card vac-folder-card-retail" data-ripple onclick="openVacancyFolder(\'retail\')" aria-label="Open retail vacancies">' +
           '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16M6 10v9h12v-9M5 10l1-5h12l1 5M9 19v-5h6v5"/><path d="M8 5V3h8v2"/></svg></span>' +
           '<span class="vac-folder-copy"><span class="vac-folder-title">Retail Vacancies</span><span class="vac-folder-count">' + folderCountLabel(retailCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-career" data-ripple onclick="openVacancyFolder(\'career_board\')" aria-label="Open career board vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Career Board Vacancies</span><span class="vac-folder-count">' + folderCountLabel(careerBoardCount) + '</span></span>' +
           '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
         '</button>' +
       '</div>';
@@ -769,12 +760,6 @@ function renderAllVacanciesList() {
       groups[retailKey].items.push(v);
       return;
     }
-    if (allVacanciesFolder !== 'agency' && isCareerBoardVacancy(v)) {
-      var careerBoardKey = 'career_board';
-      if (!groups[careerBoardKey]) groups[careerBoardKey] = { name:'Career board vacancies', type:'Career Boards', agency:null, items:[] };
-      groups[careerBoardKey].items.push(v);
-      return;
-    }
     var agency = v.agency_id && v.agency_id !== 'general' ? agenciesCache.find(function(a){ return a.id === v.agency_id; }) : null;
     var key, name, type;
     if (agency) { key='agency:'+agency.id; name=agency.name||'Agency'; type='Agency'; }
@@ -790,7 +775,7 @@ function renderAllVacanciesList() {
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'dpsa' ? 'DPSA Circular Archive' : allVacanciesFolder === 'career_board' ? 'Career Board Vacancies' : 'Retail Vacancies';
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'dpsa' ? 'DPSA Circular Archive' : 'Retail Vacancies';
   el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);
@@ -951,13 +936,30 @@ async function toggleSubStatus(table, id) {
   // Support both real Supabase id and local _localId
   var item = cache.find(function(x){ return (x.id && x.id === id) || (x._localId && x._localId === id); });
   if (!item) return;
+  var previousStatus = item.status;
   var newStatus = (item.status === 'resolved' || item.status === 'closed') ? 'open' : 'resolved';
+
+  // Optimistic UI: apply and paint the change immediately rather than
+  // waiting on the network, then reconcile with Supabase in the
+  // background. If the write actually fails, revert the local state and
+  // re-render so the toggle never silently drifts out of sync with the DB.
   item.status = newStatus;
+  updateSubBadges();
+  renderSubmissionsList();
+  showToast(newStatus === 'resolved' ? 'Marked as resolved' : 'Reopened');
+
   // Only update Supabase if this is a real DB row (has numeric/uuid id, not _localId)
   if (item.id && !String(id).startsWith('local_')) {
     try {
-      await supabaseClient.from(table).update({ status: newStatus }).eq('id', id);
-    } catch(e) { console.error('update status', e); }
+      var res = await supabaseClient.from(table).update({ status: newStatus }).eq('id', id);
+      if (res && res.error) throw res.error;
+    } catch(e) {
+      console.error('update status', e);
+      item.status = previousStatus;
+      updateSubBadges();
+      renderSubmissionsList();
+      showToast('Could not save — reverted');
+    }
   } else {
     // Local-only item: update localStorage backup
     if (table === 'reports') {
@@ -972,9 +974,6 @@ async function toggleSubStatus(table, id) {
       } catch(e2){}
     }
   }
-  updateSubBadges();
-  renderSubmissionsList();
-  showToast(newStatus === 'resolved' ? 'Marked as resolved' : 'Reopened');
 }
 
 async function deleteSubmission(table, id) {
