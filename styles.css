@@ -1094,12 +1094,9 @@ header{margin-bottom:18px}
 #screen-home .stat-value{font-size:17px;color:#fff}
 #screen-home .stat-label{font-size:9px;color:rgba(255,255,255,.78)}
 #screen-home .screen-scroll{padding-top:18px;background:var(--bg)}
-#screen-home .section-head{padding:0 2px;margin-bottom:3px;border:0;background:none}
-#screen-home .section-title{font-size:21px;font-weight:800;color:var(--text)}
-#screen-home .section-head::after{content:'☷';margin-left:auto;color:var(--accent);font-size:23px}
-#screen-home .section-head{display:flex;align-items:center;justify-content:space-between}
-#screen-home .screen-scroll>p{margin:0 0 14px!important;font-size:13px!important}
-#screen-home .screen-scroll>p a{color:var(--accent)!important}
+#screen-home .browse-jobs-row{display:flex;align-items:center;justify-content:space-between;padding:0 2px;margin:0 0 14px!important;min-height:28px;font-size:13px!important}
+#screen-home .browse-jobs-row::after{content:'☷';margin-left:auto;color:var(--accent);font-size:23px;line-height:1}
+#screen-home .browse-jobs-row a{color:var(--accent)!important;text-decoration:none;font-weight:600}
 #screen-home .hub-card{margin:0 0 9px;border-radius:17px;background:var(--card);border:1px solid var(--border);box-shadow:0 4px 13px rgba(22,52,93,.07)}
 #screen-home .hub-summary{min-height:70px;padding:10px 12px;gap:11px}
 #screen-home .hub-summary:active{background:var(--card-2)}
