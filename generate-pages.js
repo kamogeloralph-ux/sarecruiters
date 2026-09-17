@@ -15,6 +15,7 @@
 // ============================================================
 
 const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { runBundle } = require('./scripts/bundle-app');
@@ -25,6 +26,95 @@ const { runBundle } = require('./scripts/bundle-app');
 // Cloudflare Pages build command — "npm install && node
 // generate-pages.js" — doesn't need to change to pick this up.
 runBundle(__dirname);
+
+// ------------------------------------------------------------
+// Freshness: per-deploy cache busting
+// ------------------------------------------------------------
+// 1) Auto-bump the service worker VERSION on every build so the SW
+//    update check sees new bytes on every deploy, installs, calls
+//    skipWaiting() and activates — and the activate handler deletes
+//    every old cache. Returning visitors get the new build on their
+//    next visit with zero manual version bumps.
+//    Hash (not timestamp) so the 3-hourly cron rebuilds with no source
+//    changes keep the same VERSION and don't needlessly wipe caches.
+// 2) Append ?v=<same hash> to every unversioned same-origin asset
+//    (styles.css, content.js, content-manager.js, static-pages.css)
+//    so stale-while-revalidate style caches treat each deploy as a new
+//    resource and can never answer with a stale copy.
+// ------------------------------------------------------------
+const STATIC_ASSETS = [
+  'index.html',
+  'admin.html',
+  'privacy.html',
+  'offline.html',
+  'styles.css',
+  'content.js',
+  'content-manager.js',
+  'sponsor-widget.js',
+  'manifest.json',
+];
+
+function computeDeployVersion() {
+  const hash = crypto.createHash('sha256');
+  for (const f of STATIC_ASSETS) {
+    const p = path.join(__dirname, f);
+    if (!fs.existsSync(p)) {
+      console.warn(`[version] warning: ${f} not found — hashing without it`);
+      continue;
+    }
+    hash.update(fs.readFileSync(p));
+  }
+  return 'sa-recruiters-' + hash.digest('hex').slice(0, 10);
+}
+
+function rewriteAssetUrls(html, version) {
+  // Only same-origin assets that have NO ?v= already get the hash.
+  // The bundle script tag is already rewritten by bundle-app.js.
+  // Handles relative (styles.css), ./relative (./styles.css) and
+  // root-absolute (/static-pages.css) references.
+  return html.replace(
+    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|content\.js|content-manager\.js|static-pages\.css)(\?|")/g,
+    (match, attr, base, file, suffix) =>
+      suffix === '?' ? match : `${attr}${base}${file}?v=${version}${suffix}`,
+  );
+}
+
+function applyDeployVersioning() {
+  const version = computeDeployVersion();
+
+  // --- 1) Bump sw.js VERSION ---
+  const swPath = path.join(__dirname, 'sw.js');
+  const sw = fs.readFileSync(swPath, 'utf8');
+  if (!/const VERSION = 'sa-recruiters-/.test(sw)) {
+    throw new Error(
+      'sw.js: could not find the VERSION constant — refusing to deploy an unbumpable service worker',
+    );
+  }
+  fs.writeFileSync(
+    swPath,
+    sw.replace(
+      /const VERSION = '[^']*';/,
+      `const VERSION = '${version}';`,
+    ),
+  );
+
+  // --- 2) Append ?v=<version> to unversioned same-origin asset URLs ---
+  let rewritten = 0;
+  for (const f of STATIC_ASSETS.filter((f) => f.endsWith('.html'))) {
+    const p = path.join(__dirname, f);
+    if (!fs.existsSync(p)) continue;
+    const original = fs.readFileSync(p, 'utf8');
+    const updated = rewriteAssetUrls(original, version);
+    if (updated !== original) {
+      fs.writeFileSync(p, updated);
+      rewritten++;
+    }
+  }
+  console.log(`[version] deploy version: ${version} (${rewritten} html files updated)`);
+  return version;
+}
+
+const DEPLOY_VERSION = applyDeployVersioning();
 
 // Same public values already used in index.html — safe to reuse,
 // this is the anon/public key, not a secret.
@@ -114,7 +204,7 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd }) {
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/v2-favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/v2-icon-192.png">
 <link rel="apple-touch-icon" href="/icons/v2-icon-192.png">
-<link rel="stylesheet" href="/static-pages.css">
+<link rel="stylesheet" href="/static-pages.css?v=${DEPLOY_VERSION}">
 ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : ''}
 </head>
 <body>
