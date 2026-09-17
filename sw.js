@@ -17,6 +17,28 @@
  * single 404 (e.g. an icon not yet shipped) can no longer prevent the whole
  * app shell from installing — which was another cause of the offline page
  * appearing after the next reload.
+ *
+ * Same-origin ASSETS (styles.css, content.js, content-manager.js, the modular
+ * app-*.js files, …) are NETWORK-FIRST with a 4s timeout and a cached
+ * fallback: an online visitor ALWAYS receives the freshly deployed file, and
+ * the cache is only used when the network is unavailable or too slow. This
+ * replaces the old stale-while-revalidate strategy, which served the cached
+ * copy first and made new deploys invisible until the SECOND visit (the
+ * "changes don't show, but they show in incognito" bug — incognito has no
+ * service worker).
+ *
+ * NOTE: generate-pages.js rewrites VERSION on every build, so each deploy gets
+ * a fresh cache namespace and the activate handler wipes every old one.
+ *
+ * NOTE (2026-09-16 modular refactor): app.js was split into 8 source files
+ * (app-core.js, app-data.js, app-cards.js, app-forms.js, app-sheets.js,
+ * app-ui.js, app-manager.js, app-manager-employer.js). generate-pages.js
+ * calls scripts/bundle-app.js on every build, which bundles+minifies those
+ * 8 files into app.bundle.min.js and rewrites index.html's script tag to
+ * load that single bundle — so app.bundle.min.js below is the real,
+ * actually-deployed file, not stale leftover naming. VERSION further below
+ * is also auto-rewritten by generate-pages.js on every build; the literal
+ * value here is just a placeholder that gets replaced at build time.
  */
 
 const VERSION = 'sa-recruiters-v163-bundle-precache-fix';
@@ -109,16 +131,42 @@ function isCacheableCrossOriginResponse(response) {
   return response && (response.status === 200 || response.status === 0);
 }
 
-function staleWhileRevalidate(request, cacheName) {
+// Race a fetch against a timeout so a hanging connection can't stall an
+// asset request forever; on timeout we fall back to the cached copy.
+function fetchWithTimeout(request, ms) {
+  return new Promise(function(resolve, reject) {
+    var timer = setTimeout(function() {
+      reject(new Error('network timeout'));
+    }, ms);
+    fetch(request).then(function(response) {
+      clearTimeout(timer);
+      resolve(response);
+    }, function(err) {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+
+// NETWORK-FIRST for same-origin assets: fresh from the network whenever
+// possible (within 4s), cached copy only when offline/slow. Every successful
+// response refreshes the cache for the next offline use.
+function networkFirstAsset(request, cacheName) {
   return caches.open(cacheName).then(function(cache) {
-    return cache.match(request).then(function(cached) {
-      var network = fetch(request).then(function(response) {
-        if (isCacheableSameOriginResponse(response)) {
-          cache.put(request, response.clone());
-        }
-        return response;
-      }).catch(function() { return cached; });
-      return cached || network;
+    return fetchWithTimeout(request, 4000).then(function(response) {
+      if (isCacheableSameOriginResponse(response)) {
+        cache.put(request, response.clone()).catch(function() {});
+      }
+      return response;
+    }).catch(function() {
+      return cache.match(request).then(function(cached) {
+        return cached ||
+          // ignoreSearch lets the unhashed precached app.bundle.min.js answer
+          // a request for app.bundle.min.js?v=<hash> when offline.
+          cache.match(request, { ignoreSearch: true }).then(function(loose) {
+            return loose || Response.error();
+          });
+      });
     });
   });
 }
@@ -242,7 +290,7 @@ self.addEventListener('fetch', function(event) {
   }
 
   if (url.origin === self.location.origin) {
-    event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
+    event.respondWith(networkFirstAsset(request, RUNTIME_CACHE));
     return;
   }
 
