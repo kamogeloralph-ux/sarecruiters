@@ -10,17 +10,27 @@ test('parses Pick n Pay Workday search results into retail summaries', () => {
   assert.equal(jobs[0].link, 'https://picknpay.wd3.myworkdayjobs.com/PNP_Careers/job/Cape-Town/Cashier_JR123');
 });
 
-test('normalizes Pick n Pay detail data as a retail vacancy', () => {
+test('normalizes Pick n Pay detail data as a retail vacancy, always assigned to the Pick n Pay employer', () => {
   const job = parsePickNPayDetail({ jobPostingInfo: {
     title: 'Shelfpacker', jobReqId: 'JR123', location: 'Durban - KwaZulu-Natal',
     jobDescription: '<p>Keep shelves stocked.</p>', timeType: 'Full time', startDate: '2026-09-15',
-  } }, { link: 'https://picknpay.wd3.myworkdayjobs.com/PNP_Careers/job/Durban/Shelfpacker_JR123', externalPath: '/job/Durban/Shelfpacker_JR123', location: 'Durban - KwaZulu-Natal' });
+  } }, { link: 'https://picknpay.wd3.myworkdayjobs.com/PNP_Careers/job/Durban/Shelfpacker_JR123', externalPath: '/job/Durban/Shelfpacker_JR123', location: 'Durban - KwaZulu-Natal' }, 'employer-pick-n-pay');
   assert.equal(job.id, 'retail-pnp-JR123');
   assert.equal(job.company, 'Pick n Pay');
   assert.equal(job.source_type, 'retail');
   assert.equal(job.remote, null);
   assert.equal(job.notes, 'Keep shelves stocked.');
   assert.equal(job.location, 'Durban - KwaZulu-Natal');
+  assert.equal(job.employer_id, 'employer-pick-n-pay');
+  assert.equal(job.agency_id, 'employer');
+});
+
+test('falls back to unassigned if the Pick n Pay employers record is missing', () => {
+  const job = parsePickNPayDetail({ jobPostingInfo: {
+    title: 'Shelfpacker', jobReqId: 'JR123', location: 'Durban - KwaZulu-Natal',
+  } }, { link: 'https://picknpay.wd3.myworkdayjobs.com/PNP_Careers/job/Durban/Shelfpacker_JR123', externalPath: '/job/Durban/Shelfpacker_JR123', location: 'Durban - KwaZulu-Natal' }, null);
+  assert.equal(job.employer_id, null);
+  assert.equal(job.agency_id, 'general');
 });
 
 test('returns no jobs for malformed retailer responses', () => {
