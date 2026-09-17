@@ -435,13 +435,13 @@ async function getGeneralVacancyCount() {
       // government imports. Keep only the dedicated external sources in
       // their own folders; otherwise the count understates the directory
       // (e.g. 43 instead of several thousand rows).
-      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board)');
+      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar)');
     if (result.error) return null;
     return typeof result.count === 'number' ? result.count : 0;
   } catch(e) { return null; }
 }
 function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
@@ -505,7 +505,7 @@ async function fetchGeneralVacancyPage(state, page) {
     // Match the folder classification used by renderAllVacanciesList():
     // unassigned agency/government imports are general, while Himalayas,
     // Adzuna, DPSA, and retail feeds have dedicated folders.
-    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board)')
+    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar)')
     .order('created_at', { ascending: false })
     .range(from, from + generalVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);
@@ -614,8 +614,49 @@ function markLoadError(arr) { try { arr.__loadError = true; } catch(e) {} return
 // ----- Local data cache: lets the app paint instantly from the last
 // successful load while fresh data streams in behind the scenes, instead
 // of showing a blank screen every time while Supabase responds. -----
+//
+// This holds the FULL dataset (every agency, branch, vacancy, employer) —
+// easily hundreds of KB of JSON on an active install. localStorage's
+// getItem/setItem are synchronous, so stringifying/parsing a payload that
+// size blocks the main thread and can visibly jank the UI, especially on
+// low-end phones. IndexedDB does the same job asynchronously, off the
+// main thread, so it never blocks a render. We keep a tiny hand-rolled
+// promise wrapper here rather than pulling in idb/Dexie as a dependency,
+// since this is the only place in the app that needs it.
+var DATA_CACHE_DB = 'sa_data_cache_db';
+var DATA_CACHE_STORE = 'kv';
 var DATA_CACHE_KEY = 'sa_data_cache_v1';
 var lastDataRefreshAt = null;
+
+function openDataCacheDB() {
+  return new Promise(function(resolve, reject) {
+    if (!window.indexedDB) { reject(new Error('IndexedDB unavailable')); return; }
+    var req = indexedDB.open(DATA_CACHE_DB, 1);
+    req.onupgradeneeded = function() {
+      if (!req.result.objectStoreNames.contains(DATA_CACHE_STORE)) req.result.createObjectStore(DATA_CACHE_STORE);
+    };
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { reject(req.error); };
+  });
+}
+async function idbGet(key) {
+  var db = await openDataCacheDB();
+  return new Promise(function(resolve, reject) {
+    var req = db.transaction(DATA_CACHE_STORE, 'readonly').objectStore(DATA_CACHE_STORE).get(key);
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { reject(req.error); };
+  });
+}
+async function idbSet(key, value) {
+  var db = await openDataCacheDB();
+  return new Promise(function(resolve, reject) {
+    var tx = db.transaction(DATA_CACHE_STORE, 'readwrite');
+    tx.objectStore(DATA_CACHE_STORE).put(value, key);
+    tx.oncomplete = function() { resolve(); };
+    tx.onerror = function() { reject(tx.error); };
+  });
+}
+
 function formatDataAge(timestamp) {
   if (!timestamp) return '';
   var age = Math.max(0, Date.now() - timestamp);
@@ -665,34 +706,49 @@ function initConnectionStatus() {
   });
   setConnectionStatus(navigator.onLine ? (lastDataRefreshAt ? 'cached' : 'loading') : 'offline', lastDataRefreshAt);
 }
-function saveDataCache() {
+async function saveDataCache() {
+  var payload = {
+    agencies: agenciesCache,
+    branches: branchesCache,
+    vacancies: vacanciesCache,
+    generalVacancyCount: generalVacancyCount,
+    employers: employersCache,
+    poolCount: poolCandidateCount,
+    savedAt: Date.now()
+  };
   try {
-    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({
-      agencies: agenciesCache,
-      branches: branchesCache,
-      vacancies: vacanciesCache,
-      generalVacancyCount: generalVacancyCount,
-      employers: employersCache,
-      poolCount: poolCandidateCount,
-      savedAt: Date.now()
-    }));
-  } catch(e) { /* storage full or unavailable — safe to skip */ }
+    await idbSet(DATA_CACHE_KEY, payload);
+  } catch(e) {
+    // IndexedDB unavailable (private-browsing lockdown, disabled, old
+    // browser) — fall back to localStorage so nothing is lost, same as
+    // the rest of this file's offline-write functions do.
+    try { localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(payload)); } catch(e2) { /* storage full or unavailable — safe to skip */ }
+  }
 }
-function loadDataCache() {
-  try {
-    var raw = localStorage.getItem(DATA_CACHE_KEY);
-    if (!raw) return false;
-    var d = JSON.parse(raw);
-    if (!d || !Array.isArray(d.agencies)) return false;
-    agenciesCache = d.agencies || [];
-    branchesCache = d.branches || [];
-    vacanciesCache = d.vacancies || [];
-    generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
-    employersCache = d.employers || [];
-    poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
-    lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
-    return true;
-  } catch(e) { return false; }
+async function loadDataCache() {
+  var d = null;
+  try { d = await idbGet(DATA_CACHE_KEY); } catch(e) { /* IndexedDB unavailable — fall through */ }
+  if (!d) {
+    // One-time migration: older installs of this app have the cache in
+    // localStorage. Pick it up once, move it into IndexedDB, and stop
+    // touching localStorage for this key from then on.
+    try {
+      var raw = localStorage.getItem(DATA_CACHE_KEY);
+      if (raw) {
+        d = JSON.parse(raw);
+        if (d) { idbSet(DATA_CACHE_KEY, d).catch(function(){}); localStorage.removeItem(DATA_CACHE_KEY); }
+      }
+    } catch(e) {}
+  }
+  if (!d || !Array.isArray(d.agencies)) return false;
+  agenciesCache = d.agencies || [];
+  branchesCache = d.branches || [];
+  vacanciesCache = d.vacancies || [];
+  generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
+  employersCache = d.employers || [];
+  poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
+  lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
+  return true;
 }
 
 async function getStartupData() {
