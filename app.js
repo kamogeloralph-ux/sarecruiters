@@ -1576,7 +1576,27 @@ window.toggleHub = function(id) {
   }
 };
 
+var AGENCY_RENDER_BATCH_SIZE = 20;
+var agencyRenderGeneration = 0;
+
+function renderAgencyBatch(list, generation, offset) {
+  if (generation !== agencyRenderGeneration) return;
+  var target = document.getElementById('hub-list');
+  if (!target) return;
+  var nextOffset = Math.min(offset + AGENCY_RENDER_BATCH_SIZE, list.length);
+  if (nextOffset > offset) {
+    target.insertAdjacentHTML('beforeend', list.slice(offset, nextOffset).map(hubCard).join(''));
+  }
+  if (nextOffset < list.length) {
+    var schedule = window.requestAnimationFrame || function(cb) { setTimeout(cb, 0); };
+    schedule(function() { renderAgencyBatch(list, generation, nextOffset); });
+  } else {
+    target.removeAttribute('aria-busy');
+  }
+}
+
 function filterAndRenderCached() {
+  var generation = ++agencyRenderGeneration;
   var q = (document.getElementById('home-search').value || '').trim().toLowerCase();
   var list = agenciesCache;
   if (q) {
@@ -1606,7 +1626,11 @@ function filterAndRenderCached() {
     if (emptyTitle) emptyTitle.textContent = q ? 'No agencies match that search' : 'No agencies yet';
     if (emptyCopy) emptyCopy.textContent = q ? 'Try a different agency, job, or location.' : 'Tap + to add the first one.';
   }
-  document.getElementById('hub-list').innerHTML = list.map(hubCard).join('');
+  var target = document.getElementById('hub-list');
+  if (!target) return;
+  target.innerHTML = '';
+  target.setAttribute('aria-busy', list.length ? 'true' : 'false');
+  renderAgencyBatch(list, generation, 0);
 }
 
 // ===== Search screen =====
