@@ -114,9 +114,30 @@ function parseJsonLdJob(html) {
   return null;
 }
 
+function parseBoxerTableJob(html, summary) {
+  const $ = cheerio.load(html || '');
+  const fields = {};
+  $('tr.item').each((_, row) => {
+    const label = clean($(row).find('td.label .item-label').first().text()).replace(/\s+/g, ' ');
+    if (label) fields[label] = { text: clean($(row).find('td.value').text()), html: $(row).find('td.value').html() || '' };
+  });
+  const title = fields['Job Title']?.text;
+  if (!title) return null;
+  const town = fields['Location - Town / City']?.text || '';
+  const province = fields['Location - Province']?.text || '';
+  return {
+    title,
+    description: [fields['Job Advert Summary']?.html, fields['Minimum Requirements']?.html, fields['Duties and Responsibilities']?.html].filter(Boolean).join('<br>'),
+    validThrough: fields['Closing Date']?.text || summary.closingDate,
+    identifier: { value: fields['Reference Number']?.text || summary.externalId },
+    jobLocation: { address: { addressLocality: town, addressRegion: province } },
+    employmentType: fields['Job Type']?.text || '',
+  };
+}
+
 export function parseBoxerDetail(html, summary) {
   if (!summary?.externalId || !summary?.link) return null;
-  const job = parseJsonLdJob(html);
+  const job = parseJsonLdJob(html) || parseBoxerTableJob(html, summary);
   if (!job || !job.title) return null;
   const address = job.jobLocation?.address || {};
   const location = clean([address.addressLocality, address.addressRegion].filter(Boolean).join(', ') || summary.location);
