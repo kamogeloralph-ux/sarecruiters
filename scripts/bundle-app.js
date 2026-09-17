@@ -20,6 +20,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { verifyCriticalGlobals } = require('./verify-critical-globals');
 
 const FILES = [
   'app-core.js',
@@ -83,6 +84,13 @@ function runBundle(rootDir) {
     output = concatenated;
     minified = false;
   }
+
+  // Hard safety net: abort the whole build (not just skip minification)
+  // if the result would break a function referenced by name from static
+  // HTML, break the manager-link business flow specifically, or if the
+  // manage_token column has been dropped from the agency/employer
+  // queries. See verify-critical-globals.js for why this exists.
+  verifyCriticalGlobals(rootDir, output);
 
   const outPath = path.join(rootDir, BUNDLE_NAME);
   fs.writeFileSync(outPath, output);
