@@ -1221,6 +1221,7 @@ function renderAgencies(){
     if(a.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(a.email)+'</div>';
     if(a.address) details += '<div class="det-row"><span class="det-label">Address:</span> '+escapeHtml(a.address)+'</div>';
     var mgrTok = a.manage_token || '';
+    // Manager links must always open the public app, never the admin console.
     var mgrLink = mgrTok ? (location.origin + '/?manage=' + mgrTok) : '';
     details += '<div class="det-row det-manager-link"><span class="det-label">Manager link:</span> '+
       (mgrTok
