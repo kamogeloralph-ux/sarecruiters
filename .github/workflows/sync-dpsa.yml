@@ -37,6 +37,6 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Sync official DPSA circular archive
         run: DPSA_YEARS="${{ inputs.years || '' }}" npm run sync:dpsa
