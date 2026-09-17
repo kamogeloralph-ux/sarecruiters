@@ -45,4 +45,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: .
-          command: pages deploy . --project-name ${{ secrets.CLOUDFLARE_PAGES_PROJECT }} --branch main
+          # The Pages project matches the repository/worker name. Keep this
+          # explicit so an unset optional secret cannot produce `--project-name`
+          # with an empty value and stop the deployment before authentication.
+          command: pages deploy . --project-name sarecruiters --branch main
