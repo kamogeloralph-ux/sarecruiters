@@ -328,7 +328,17 @@ async function loadStartupData(env) {
       select: "id",
       or: "(agency_id.is.null,agency_id.eq.general)",
       employer_id: "is.null",
-      source_type: `not.in.${dedicatedSources}`,
+      // Must be source_type IS NULL, not "not in dedicatedSources". The
+      // agency-matched `vacancies` query above includes ANY row with a
+      // non-null source_type (its OR filter has source_type.not.is.null
+      // as one branch), regardless of agency_id. So a general-pool row
+      // scraped by e.g. careerjunction/jobmail/graduates24 (source_type
+      // set, but not one of the 9 "dedicated" sources) was being counted
+      // here AND in `vacancies` above — double-counted in counts.vacancies,
+      // which is why the main app's total ran ~600 higher than the admin
+      // console's raw, unfiltered table count. Requiring source_type IS
+      // NULL here makes this bucket the true complement of the other two.
+      source_type: "is.null",
       limit: "0"
     }, { prefer: "count=exact" }),
     Promise.all(["public_vacancy_posting", "public_employer_registration", "public_employer_directory"].map((key) => supabaseGet(env, "app_settings", { select: "key,value", key: `eq.${key}` }))),
