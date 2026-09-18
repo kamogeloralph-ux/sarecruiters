@@ -293,7 +293,7 @@ async function loadStartupData(env) {
     "source_type.not.is.null"
   ].join(",")})`;
   const dedicatedSources = `(${STARTUP_DEDICATED_SOURCES.join(",")})`;
-  const [agencies, branches, vacancies, dedicatedVacancies, employers, generalCount, settings, poolCount] = await Promise.all([
+  const [agencies, branches, vacancies, dedicatedVacancies, employers, generalCount, generalPoolCount, settings, poolCount] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
       order: "created_at.desc"
@@ -324,21 +324,37 @@ async function loadStartupData(env) {
       select: "id,name,industry,website,contact,email,location,address,photo,verified",
       order: "created_at.desc"
     }),
+    // STRICT general count (source_type IS NULL only). Used ONLY as an addend
+    // in counts.vacancies below, alongside vacancies.length and
+    // dedicatedVacancies.length — those two already include every row that
+    // has ANY source_type set (see vacancyFilter's source_type.not.is.null
+    // branch), so this bucket must be the true, non-overlapping complement:
+    // rows with no source_type at all. Using "not in dedicatedSources" here
+    // instead would double-count every general-pool row scraped by a
+    // non-dedicated source (careerjunction/jobmail/graduates24/etc.) — that
+    // was the original bug behind the admin/app vacancy-count mismatch.
     supabaseGet(env, "vacancies", {
       select: "id",
       or: "(agency_id.is.null,agency_id.eq.general)",
       employer_id: "is.null",
-      // Must be source_type IS NULL, not "not in dedicatedSources". The
-      // agency-matched `vacancies` query above includes ANY row with a
-      // non-null source_type (its OR filter has source_type.not.is.null
-      // as one branch), regardless of agency_id. So a general-pool row
-      // scraped by e.g. careerjunction/jobmail/graduates24 (source_type
-      // set, but not one of the 9 "dedicated" sources) was being counted
-      // here AND in `vacancies` above — double-counted in counts.vacancies,
-      // which is why the main app's total ran ~600 higher than the admin
-      // console's raw, unfiltered table count. Requiring source_type IS
-      // NULL here makes this bucket the true complement of the other two.
       source_type: "is.null",
+      limit: "0"
+    }, { prefer: "count=exact" }),
+    // BROAD general-pool count, second half — matches the filter
+    // fetchGeneralVacancyPage()/getGeneralVacancyCount() use client-side for
+    // the actual "General Vacancies" tab. Postgres's NOT IN excludes NULL
+    // source_type rows (NULL NOT IN (...) is NULL, not true), so this query
+    // alone yields exactly the non-dedicated-source-tagged general rows —
+    // added to generalCount (the NULL-source rows) just below, the sum is
+    // the true general-pool size. Kept as two simple queries rather than one
+    // combined OR expression because supabaseRestUrl() only keeps one value
+    // per query-string key, so a single request can't carry two separate
+    // `or=` filters here.
+    supabaseGet(env, "vacancies", {
+      select: "id",
+      or: "(agency_id.is.null,agency_id.eq.general)",
+      employer_id: "is.null",
+      source_type: `not.in.${dedicatedSources}`,
       limit: "0"
     }, { prefer: "count=exact" }),
     Promise.all(["public_vacancy_posting", "public_employer_registration", "public_employer_directory"].map((key) => supabaseGet(env, "app_settings", { select: "key,value", key: `eq.${key}` }))),
@@ -363,6 +379,13 @@ async function loadStartupData(env) {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
       vacancies: (readCount(generalCount.headers) ?? 0) + vacancies.length + dedicatedVacancies.length,
+      // The true "General Vacancies" tab size: NULL-source rows (generalCount)
+      // plus non-dedicated-source rows (generalPoolCount). The client uses
+      // this directly instead of inferring it from
+      // (counts.vacancies - vacancies.length), which breaks whenever most of
+      // the general pool has a non-null source_type (as it does here) — see
+      // app-data.js loadAll() for the client-side half of this fix.
+      general: (readCount(generalCount.headers) ?? 0) + (readCount(generalPoolCount.headers) ?? 0),
       employers: Array.isArray(employers.body) ? employers.body.length : 0,
       candidates: readCount(poolCount.headers) ?? 0
     },
