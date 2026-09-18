@@ -32,3 +32,9 @@ R2_PUBLIC_BASE_URL = "https://pub-911e4cd402674c6f85c747b12212772f.r2.dev"
 # If TURNSTILE_SECRET_KEY is unset, /api/submit/* fail closed with 503 —
 # set it (or deploy without using the new submit endpoints; the app's
 # legacy fallbacks still work). See ../SECURITY_SETUP.md.
+#
+# The matching PUBLIC site key lives in ../app-sheets.js (TURNSTILE_SITE_KEY)
+# and is also saved as a plain Variable in the dashboard. Secrets set in the
+# dashboard (RESEND_API_KEY, TURNSTILE_SECRET_KEY) are picked up by the next
+# deployment — push any Cloudflare-worker/** change (or re-run the workflow)
+# after rotating them.
