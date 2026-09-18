@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { agencyIdForCompany, companyFromTitle, parseGraduates24Jobs } from './scrape-graduates24.mjs';
+import { companyFromTitle, parseGraduates24Jobs } from './scrape-graduates24.mjs';
 
 test('parses a Graduates24 listing card with a closing date', () => {
   const html = `
@@ -20,7 +20,11 @@ test('parses a Graduates24 listing card with a closing date', () => {
   assert.equal(job.link, 'https://www.graduates24.com/hollard-learnership-programme-2026');
   assert.match(job.notes, /Posted 12 Sep 2026/);
   assert.match(job.notes, /IT Learner/);
-  assert.equal(job.source_type, 'agency');
+  // 'learnerships' is a dedicated source type so every posting lands in its
+  // own Learnerships card, and agency_id stays 'general' (not matched to an
+  // individual agency) so the card displays the scraped company name.
+  assert.equal(job.source_type, 'learnerships');
+  assert.equal(job.agency_id, 'general');
 });
 
 test('handles listings with no closing date shown', () => {
@@ -68,11 +72,4 @@ test('deduplicates a card that has two links to the same slug', () => {
 test('titles without a "Company: Title" pattern have no attributed company', () => {
   assert.equal(companyFromTitle('SA Government Internships 2026 / 2027'), '');
   assert.equal(companyFromTitle('Hollard: Learnership Programme 2026'), 'Hollard');
-});
-
-test('maps known Graduates24 employers to agency records and defaults safely', () => {
-  const agencies = [{ id: 'hollard-id', name: 'Hollard' }];
-  assert.equal(agencyIdForCompany('Hollard', agencies), 'hollard-id');
-  assert.equal(agencyIdForCompany('Unknown Employer', agencies), 'general');
-  assert.equal(agencyIdForCompany('', agencies), 'general');
 });

@@ -27,7 +27,6 @@ const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersGraduates24Scr
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
   : null;
-let agencyDirectoryPromise;
 
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(value ?? '', 10);
@@ -41,12 +40,6 @@ function absoluteUrl(href, baseUrl) {
 function slugFromLink(link) {
   try { return new URL(link).pathname.replace(/^\/+/, '').replace(/\/+$/, ''); }
   catch { return null; }
-}
-function normalizeAgencyName(value) { return clean(value).toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9]/g, ''); }
-export function agencyIdForCompany(company, agencies) {
-  const normalized = normalizeAgencyName(company);
-  if (!normalized) return 'general';
-  return (agencies || []).find((agency) => normalizeAgencyName(agency.name) === normalized)?.id || 'general';
 }
 
 // Titles on this site consistently follow a "Company: Programme name"
@@ -115,7 +108,12 @@ export function parseGraduates24Jobs(html, pageUrl = GENERAL_URL) {
       closing_date: closesMatch ? closesMatch[1] : '',
       notes: (postedMatch ? `Posted ${postedMatch[1]}. ` : '') + description.slice(0, 20_000 - 20),
       link,
-      source_type: 'agency',
+      // 'learnerships' is a dedicated source type (see isDedicatedVacancySource
+      // in app-data.js) so every posting lands in its own Learnerships card
+      // instead of being matched to an individual agency or falling into
+      // General Vacancies — same pattern as government/retail/himalayas/adzuna.
+      agency_id: 'general',
+      source_type: 'learnerships',
       source_checked_at: new Date().toISOString(),
       last_verified_at: new Date().toISOString(),
     });
@@ -144,22 +142,14 @@ async function fetchPage(url) {
   throw lastError;
 }
 function pageUrlFor(page) { return page <= 1 ? GENERAL_URL : `${GENERAL_URL.replace(/\/$/, '')}?page=${page}`; }
-async function loadAgencyDirectory() {
-  if (!agencyDirectoryPromise) {
-    agencyDirectoryPromise = supabase.from('agencies').select('id,name').limit(1000)
-      .then(({ data, error }) => { if (error) throw error; return data || []; });
-  }
-  return agencyDirectoryPromise;
-}
 async function upsertJobs(parsedJobs) {
-  const agencies = await loadAgencyDirectory();
   const links = parsedJobs.map((job) => job.link);
   const { data: existingJobs, error: existingError } = links.length
     ? await supabase.from('vacancies').select('id,link').in('link', links).limit(500)
     : { data: [], error: null };
   if (existingError) throw existingError;
   const existingByLink = new Map((existingJobs || []).map((job) => [job.link, job.id]));
-  const jobs = parsedJobs.map((job) => ({ ...job, id: existingByLink.get(job.link) || job.id, agency_id: agencyIdForCompany(job.company, agencies) }));
+  const jobs = parsedJobs.map((job) => ({ ...job, id: existingByLink.get(job.link) || job.id }));
   if (jobs.length) {
     const { error } = await supabase.from('vacancies').upsert(jobs, { onConflict: 'id' });
     if (error) throw error;
