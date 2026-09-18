@@ -175,11 +175,19 @@ function setEmployerManagerToken(employerId, token) {
   saveEmployerManagerTokenToSupabase(employerId, token);
 }
 async function saveEmployerManagerTokenToSupabase(employerId, token) {
+  // Token writes are privileged (see supabase/migrations/20260918_lock_down_manager_tokens.sql):
+  // signed-in admins go through the admin_set_employer_manager_token RPC; the
+  // direct update below is a fallback for deployments where the authenticated
+  // role still holds the column grant. Anonymous visitors cannot write tokens.
+  try {
+    var rpc = await supabaseClient.rpc('admin_set_employer_manager_token', { p_employer_id: employerId, p_token: token });
+    if (!rpc.error && rpc.data === true) return;
+  } catch(e) { /* fall through to the legacy path */ }
   try {
     var { error } = await supabaseClient.from('employers').update({ manage_token: token }).eq('id', employerId);
     if (error) {
       console.error('employer manage_token save', error);
-      if (typeof showToast === 'function') showToast('⚠ Manager link not saved to Supabase — run SMART_MANAGER_SETUP.sql.');
+      if (typeof showToast === 'function') showToast('⚠ Manager link not saved — generate links from the admin console (Regenerate ALL tokens).');
     }
   } catch(e) { console.error('employer manage_token save', e); }
 }

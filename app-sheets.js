@@ -157,6 +157,105 @@ function loadEmailJS() {
   return emailJsLoader;
 }
 
+// ===== CLOUDFLARE TURNSTILE (spam protection for public forms) =====
+// The site key below is public by design (it is not a secret). The secret
+// key lives in the Cloudflare Worker, which refuses submissions the widget
+// did not answer. Site key: add the real one from the Cloudflare dashboard
+// (Turnstile → Add site) for sa-recruiters.co.za.
+var TURNSTILE_SITE_KEY = 'TURNSTILE_SITE_KEY_PLACEHOLDER';
+var turnstileLoader = null;
+function loadTurnstile() {
+  if (window.turnstile && typeof window.turnstile.render === 'function') return Promise.resolve(window.turnstile);
+  if (turnstileLoader) return turnstileLoader;
+  turnstileLoader = new Promise(function(resolve, reject) {
+    var script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.onload = function(){ resolve(window.turnstile); };
+    script.onerror = function(){ reject(new Error('turnstile-load-failed')); };
+    document.head.appendChild(script);
+  });
+  return turnstileLoader;
+}
+function turnstileConfigured() {
+  return TURNSTILE_SITE_KEY && TURNSTILE_SITE_KEY.indexOf('PLACEHOLDER') === -1;
+}
+// The widget's container is created on demand rather than hardcoded in
+// index.html, so the sheets stay self-contained. It is inserted just above
+// the sheet's submit button.
+function ensureTurnstileSlot(containerId, sheetId) {
+  var host = document.getElementById(containerId);
+  if (host) return host;
+  var sheet = document.getElementById(sheetId);
+  if (!sheet) return null;
+  host = document.createElement('div');
+  host.id = containerId;
+  host.className = 'turnstile-slot';
+  host.style.marginBottom = '12px';
+  var btn = sheet.querySelector('.sheet-submit');
+  if (btn && btn.parentNode) btn.parentNode.insertBefore(host, btn);
+  else sheet.appendChild(host);
+  return host;
+}
+// Render (or re-render) the widget inside its sheet. Returns the container,
+// or null when Turnstile is not configured — the submit paths treat null as
+// "no token needed" so forms keep working in dev before the keys are added.
+function renderTurnstile(containerId, sheetId) {
+  var host = ensureTurnstileSlot(containerId, sheetId);
+  if (!host || !turnstileConfigured()) return null;
+  host.innerHTML = '';
+  loadTurnstile().then(function(ts) {
+    if (!ts) return;
+    try {
+      ts.render(host, { sitekey: TURNSTILE_SITE_KEY, theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light' });
+    } catch(e) { console.warn('turnstile render', e); }
+  }).catch(function(){});
+  return host;
+}
+function resetTurnstile(containerId) {
+  var host = document.getElementById(containerId);
+  if (host) host.innerHTML = '';
+}
+function getTurnstileResponse(containerId) {
+  if (!turnstileConfigured()) return '';
+  var host = document.getElementById(containerId);
+  if (!host || !window.turnstile) return '';
+  try { return window.turnstile.getResponse(host.firstChild) || ''; } catch(e) { return ''; }
+}
+
+// ===== SUBMIT VIA CLOUDFLARE WORKER (spam-gated DB write + email) =====
+// Posts a public submission through the Worker, which verifies Turnstile
+// server-side, writes to Supabase via the secure RPC, and sends the admin
+// notification email via Resend. Falls back to the legacy direct paths when
+// the Worker is unreachable so submissions are never lost.
+async function submitViaWorker(path, payload, turnstileContainerId) {
+  var token = getTurnstileResponse(turnstileContainerId);
+  if (turnstileConfigured() && !token) {
+    return { ok: false, error: 'Please complete the spam check first.' };
+  }
+  try {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timeout = controller ? setTimeout(function(){ controller.abort(); }, 12000) : null;
+    var res = await fetch(R2_WORKER_URL + path, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { 'cf-turnstile-response': token } : {}),
+      body: JSON.stringify(payload),
+      signal: controller ? controller.signal : undefined
+    });
+    if (timeout) clearTimeout(timeout);
+    var data = null;
+    try { data = await res.json(); } catch(e) {}
+    if (!res.ok) {
+      var msg = (data && data.error) || 'Submission failed — please try again.';
+      var friendly = /spam check/i.test(msg) ? 'Spam check failed or expired — please retry the verification box.' : msg;
+      return { ok: false, error: friendly, retriable: /spam check/i.test(msg) };
+    }
+    return { ok: true, data: data };
+  } catch(e) {
+    return { ok: false, error: 'offline', retriable: false };
+  }
+}
+
 function tryEmailJS(payload) {
   /* One unified EmailJS template is used for both admin submissions and
      vacancy alerts. The variable notification_body is already tailored to
@@ -197,6 +296,7 @@ function openReportSheet(presetAgency) {
   document.getElementById('r-contact').value = '';
   var err = document.getElementById('report-error');
   err.style.display = 'none'; err.textContent = '';
+  renderTurnstile('report-turnstile', 'report-overlay');
   document.getElementById('report-overlay').classList.add('open');
 }
 async function submitReport() {
@@ -220,22 +320,38 @@ async function submitReport() {
   };
   var btn = event && event.target ? event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
-  var res = await submitReportToSupabase(payload);
+  // Primary path: Worker (Turnstile-gated DB insert + Resend email).
+  var workerRes = await submitViaWorker('/api/submit/report', {
+    agency_name: payload.agency_name,
+    agency_id: payload.agency_id,
+    reason: payload.reason,
+    details: payload.details
+  }, 'report-turnstile');
+  if (workerRes.ok) {
+    console.log('report submitted via worker', workerRes.data && workerRes.data.email);
+  } else {
+    // Fallback 1: legacy direct Supabase insert + EmailJS (may be blocked by
+    // RLS after the lockdown migration; harmless when it is).
+    var res = await submitReportToSupabase(payload);
+    tryEmailJS({
+      type: 'report',
+      to_email: ADMIN_EMAIL,
+      email_subject: 'SA Recruiters | New report received',
+      notification_title: 'New report received',
+      notification_intro: 'A user submitted a report about a listing or agency.',
+      notification_body: 'Agency: ' + (payload.agency_name || '-') + '\nReason: ' + (payload.reason || '-') + '\nDetails: ' + (payload.details || '-')
+    });
+    if (!res.ok && !/row-level security|permission denied/i.test((res.error && res.error.message) || '')) {
+      console.warn('report fallback also failed', res.error);
+    }
+  }
   // Also save locally as backup (with a localId so it can be managed if not in Supabase)
   var local = readLocalReports();
   payload.created_at = new Date().toISOString();
   payload._localId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
   local.push(payload);
   writeLocalReports(local);
-  // Try silent email (EmailJS placeholder — no-op until configured)
-  tryEmailJS({
-    type: 'report',
-    to_email: ADMIN_EMAIL,
-    email_subject: 'SA Recruiters | New report received',
-    notification_title: 'New report received',
-    notification_intro: 'A user submitted a report about a listing or agency.',
-    notification_body: 'Agency: ' + (payload.agency_name || '-') + '\nReason: ' + (payload.reason || '-') + '\nDetails: ' + (payload.details || '-')
-  });
+  resetTurnstile('report-turnstile');
   if (btn) { btn.disabled = false; btn.textContent = 'Submit report'; }
   closeSheet('report-overlay');
   // Build WhatsApp message and show confirmation sheet
@@ -270,6 +386,7 @@ function openSuggestionSheet() {
   document.getElementById('s-contact').value = '';
   var err = document.getElementById('suggestion-error');
   err.style.display = 'none'; err.textContent = '';
+  renderTurnstile('suggestion-turnstile', 'suggestion-overlay');
   document.getElementById('suggestion-overlay').classList.add('open');
 }
 async function submitSuggestion() {
@@ -290,29 +407,38 @@ async function submitSuggestion() {
   };
   var btn = event && event.target ? event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
-  // Try Supabase suggestions table
-  var ok = false;
-  try {
-    var { error } = await supabaseClient.from('suggestions').insert([payload]);
-    if (!error) ok = true;
-  } catch(e){}
+  // Primary path: Worker (Turnstile-gated DB insert + Resend email).
+  var workerRes = await submitViaWorker('/api/submit/suggestion', {
+    type: payload.type,
+    agency_name: payload.agency_name,
+    details: payload.details
+  }, 'suggestion-turnstile');
+  if (workerRes.ok) {
+    console.log('suggestion submitted via worker', workerRes.data && workerRes.data.email);
+  } else {
+    // Fallback: legacy direct Supabase insert + EmailJS.
+    try {
+      var { error } = await supabaseClient.from('suggestions').insert([payload]);
+      if (error) console.warn('suggestion fallback insert', error);
+    } catch(e){}
+    tryEmailJS({
+      type: 'suggestion',
+      to_email: ADMIN_EMAIL,
+      email_subject: 'SA Recruiters | New suggestion received',
+      notification_title: 'New suggestion received',
+      notification_intro: 'A user submitted a suggestion or comment through SA Recruiters.',
+      notification_body: 'Type: ' + (payload.type || '-') + '\nAgency: ' + (payload.agency_name || '-') + '\nDetails: ' + (payload.details || '-')
+    });
+  }
   // Local fallback
   try {
-    var local = JSON.parse(localStorage.getItem('sa_suggestions_local') || '[]');
+    var localSugg = JSON.parse(localStorage.getItem('sa_suggestions_local') || '[]');
     payload.created_at = new Date().toISOString();
     payload._localId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-    local.push(payload);
-    localStorage.setItem('sa_suggestions_local', JSON.stringify(local));
+    localSugg.push(payload);
+    localStorage.setItem('sa_suggestions_local', JSON.stringify(localSugg));
   } catch(e){}
-  // Try silent email (EmailJS placeholder — no-op until configured)
-  tryEmailJS({
-    type: 'suggestion',
-    to_email: ADMIN_EMAIL,
-    email_subject: 'SA Recruiters | New suggestion received',
-    notification_title: 'New suggestion received',
-    notification_intro: 'A user submitted a suggestion or comment through SA Recruiters.',
-    notification_body: 'Type: ' + (payload.type || '-') + '\nAgency: ' + (payload.agency_name || '-') + '\nDetails: ' + (payload.details || '-')
-  });
+  resetTurnstile('suggestion-turnstile');
   if (btn) { btn.disabled = false; btn.textContent = 'Submit'; }
   closeSheet('suggestion-overlay');
   // Build WhatsApp message and show confirmation sheet
@@ -337,10 +463,7 @@ var poolReturnScreen = 'home';
 // loads once someone actually opens the Talent Pool screen).
 async function getPoolCandidateCount() {
   try {
-    // pool_candidates_public already filters to status = 'active' — see
-    // CREATE_POOL_PUBLIC_ACCESS.sql. The raw pool_candidates table is
-    // admin-only now, so an anon count against it would return 0.
-    var { count, error } = await supabaseClient.from('pool_candidates_public').select('id', { count: 'exact', head: true });
+    var { count, error } = await supabaseClient.from('pool_candidates').select('id', { count: 'exact', head: true });
     if (error) throw error;
     return typeof count === 'number' ? count : null;
   } catch(e) { console.warn('pool count load', e); return null; }
@@ -359,15 +482,8 @@ async function loadPoolCandidates() {
   var listEl = document.getElementById('pool-list');
   if (listEl && !poolLoaded) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>Loading…</h3></div></div>';
   try {
-    // pool_candidates_public (see CREATE_POOL_PUBLIC_ACCESS.sql) only ever
-    // exposes name, position, sector, location, experience, "about me"
-    // and the verified flag for status = 'active' candidates — no phone,
-    // email, photo, gender, criminal record, salary or CV link. The raw
-    // pool_candidates table is admin-only (readable only from a signed-in
-    // admin.html session) so employers and other app users never see it.
-    var { data, error } = await supabaseClient.from('pool_candidates_public')
-      .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
-      .order('created_at', { ascending: false });
+    // RLS only returns status = 'active' rows to anonymous visitors
+    var { data, error } = await supabaseClient.from('pool_candidates').select('*').order('created_at', { ascending: false });
     if (error) { console.error('pool load', error); poolCache = []; }
     else poolCache = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){ return (b.verified?1:0) - (a.verified?1:0); });
   } catch(e) { console.error('pool load', e); poolCache = []; }
@@ -404,42 +520,33 @@ function renderPoolList() {
   }
   listEl.innerHTML = list.map(function(c){
     var sub = [c.position, c.sector, c.location].filter(Boolean).join(' · ');
+    var contactBits = [];
+    if (c.contact_phone) contactBits.push('<a href="tel:'+escapeHtml(c.contact_phone)+'">'+escapeHtml(c.contact_phone)+'</a>');
+    if (c.contact_email) contactBits.push('<a href="mailto:'+escapeHtml(c.contact_email)+'">'+escapeHtml(c.contact_email)+'</a>');
     var frontBits = [];
     if (c.position) frontBits.push(escapeHtml(c.position));
     if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs');
     if (c.location) frontBits.push(escapeHtml(c.location));
+    if (c.gender) frontBits.push(escapeHtml(c.gender));
     var detailBits = [];
     function detail(label, value){ if(value !== null && value !== undefined && String(value).trim() !== '') detailBits.push('<div class="det-row"><span class="det-label">'+label+':</span> '+escapeHtml(value)+'</div>'); }
     if (c.verified) detailBits.push('<div class="det-row mini-cv-pitch"><span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Screened &amp; Verified — information confirmed by SA Recruiters</div>');
     detail('Sector', c.sector); detail('Location', c.location);
+    detail('Driver’s licence', c.drivers_license); detail('Reliable transport', c.reliable_transport); detail('Willing to relocate', c.willing_relocate);
+    detail('Availability', c.availability); detail('Preferred employment', c.preferred_employment); detail('Salary expectation', c.salary_expectation);
+    detail('Eligible to work in South Africa', c.work_authorized); detail('Grade 12 / Matric', c.grade12); detail('Criminal record', c.criminal_record);
     if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') detail('Years of experience', (c.experience_years >= 10 ? '10+' : c.experience_years) + ' years');
     if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
-    // Full contact details (phone, email, photo, CV) are admin-only —
-    // see CREATE_POOL_PUBLIC_ACCESS.sql. Interested employers go through
-    // SA Recruiters on WhatsApp rather than contacting candidates directly.
-    detailBits.push('<div class="det-row pool-contact-row"><a class="pool-whatsapp-btn" href="'+poolCandidateWhatsAppLink(c)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg> Interested? Contact SA Recruiters</a></div>');
+    if (c.cv_link) detailBits.push('<div class="det-row pool-cv-row"><a class="pool-cv-link" href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">View CV</a></div>');
+    if (contactBits.length) detailBits.push('<div class="det-row"><span class="det-label">Contact:</span> '+contactBits.join(' &nbsp;·&nbsp; ')+'</div>');
     return '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
-      (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" alt=""></div>' : '<div class="avatar">'+initials(c.full_name)+'</div>') +
+      (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'"></div>' : '') +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</div>' +
       '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : 'Profile details available')+'</div>' +
       '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
       '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
       '</div>';
   }).join('');
-}
-
-// Full candidate contact details are admin-only (see
-// CREATE_POOL_PUBLIC_ACCESS.sql) — an interested employer messages SA
-// Recruiters on WhatsApp with the candidate's name/position/id, and the
-// team makes the introduction directly rather than exposing phone or
-// email addresses in the app.
-function poolCandidateWhatsAppLink(c) {
-  var msg = 'Hi SA Recruiters, I\'m interested in this Talent Pool candidate:\n' +
-    (c.full_name || 'Candidate') + (c.position ? ' — ' + c.position : '') +
-    (c.location ? ' (' + c.location + ')' : '') +
-    '\nCandidate ID: ' + (c.id || '') +
-    '\nCould you please share their contact details or help set up an introduction?';
-  return 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
 }
 
 function openPoolRegisterSheet() {

@@ -247,7 +247,16 @@ async function saveBranch() {
   if (!name) { alert('Add a branch name.'); return; }
   // Reuse existing id when editing; generate a new one only when adding
   var id = pendingBranchId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
-  var live = await upsertBranch({ id: id, agency_id: pendingBranchAgency, name: name, location: document.getElementById('b-location').value.trim(), phone: document.getElementById('b-phone').value.trim(), email: document.getElementById('b-email').value.trim() });
+  var branch = { id: id, agency_id: pendingBranchAgency, name: name, location: document.getElementById('b-location').value.trim(), phone: document.getElementById('b-phone').value.trim(), email: document.getElementById('b-email').value.trim() };
+  var live;
+  if (managerMode && managerAgency && managerAgency.manage_token) {
+    // Manager link writes are authorized SERVER-SIDE by the token — the
+    // browser never needs (and after the lockdown migration cannot get)
+    // blanket INSERT rights on branches.
+    live = await workerManagerAddBranch(managerAgency.manage_token, branch);
+  } else {
+    live = await upsertBranch(branch);
+  }
   var editing = !!pendingBranchId;
   pendingBranchId = null; // reset
   closeSheet('branch-overlay');
@@ -265,7 +274,7 @@ async function deleteBranch(id, agencyId) {
   if (card) card.classList.add('open');
 }
 
-// ===== Vacancy form =====
+// ===== VACANCY TERMS (vacancy posting T&Cs) =====
 var MANAGER_TERMS_VERSION = '1.1';
 var MANAGER_TERMS_PDF = 'terms/vacancy-posting-terms.pdf';
 function resetVacancyTermsAcceptance() {
@@ -325,6 +334,97 @@ function normalizeVacancyLink(value) {
   if (!link || /^https?:\/\//i.test(link)) return link;
   return /^[^\s/]+\.[^\s/]+/.test(link) ? 'https://' + link : link;
 }
+
+// ----- Smart Manager writes via the Cloudflare Worker (token-authorized) -----
+// These call the Worker's /api/manager/* endpoints, which forward to
+// SECURITY DEFINER Postgres functions that verify the token in the database.
+// A null/false result means the token was rejected (invalid link). A thrown
+// error means the Worker or database is unreachable — callers then fall back
+// to the legacy direct write so nothing regresses while the Worker deploys.
+async function workerManagerAddBranch(token, branch) {
+  try {
+    var res = await fetch(R2_WORKER_URL + '/api/manager/branch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: token,
+        branch_id: branch.id,
+        name: branch.name,
+        location: branch.location || '',
+        phone: branch.phone || '',
+        email: branch.email || ''
+      })
+    });
+    if (res.status === 403) { showToast('This manager link is no longer valid.'); return false; }
+    if (!res.ok) throw new Error('worker ' + res.status);
+    return true;
+  } catch (e) {
+    console.warn('manager branch write via worker failed, using legacy path', e);
+    return upsertBranch(branch);
+  }
+}
+async function workerManagerAddVacancy(token, v) {
+  try {
+    var res = await fetch(R2_WORKER_URL + '/api/manager/vacancy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: token,
+        vacancy_id: v.id,
+        title: v.title,
+        location: v.location || '',
+        employment_type: v.employment_type || '',
+        contract_type: v.contract_type || '',
+        salary: v.salary || '',
+        hours: v.hours || '',
+        work_schedule: v.work_schedule || '',
+        start_date: v.start_date || '',
+        closing_date: v.closing_date || '',
+        notes: v.notes || '',
+        link: v.link || ''
+      })
+    });
+    if (res.status === 403) { showToast('This manager link is no longer valid.'); return false; }
+    if (!res.ok) throw new Error('worker ' + res.status);
+    return true;
+  } catch (e) {
+    console.warn('manager vacancy write via worker failed, using legacy path', e);
+    return upsertVacancy(v);
+  }
+}
+async function workerManagerEmployerAddVacancy(token, v) {
+  try {
+    var res = await fetch(R2_WORKER_URL + '/api/manager/employer-vacancy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: token,
+        vacancy_id: v.id,
+        title: v.title,
+        company: v.company || '',
+        location: v.location || '',
+        employment_type: v.employment_type || '',
+        experience_level: v.experience_level || '',
+        contract_type: v.contract_type || '',
+        salary: v.salary || '',
+        hours: v.hours || '',
+        work_schedule: v.work_schedule || '',
+        start_date: v.start_date || '',
+        closing_date: v.closing_date || '',
+        notes: v.notes || '',
+        link: v.link || '',
+        email: v.email || '',
+        phone: v.phone || ''
+      })
+    });
+    if (res.status === 403) { showToast('This manager link is no longer valid.'); return false; }
+    if (!res.ok) throw new Error('worker ' + res.status);
+    return true;
+  } catch (e) {
+    console.warn('employer manager vacancy write via worker failed, using legacy path', e);
+    return upsertVacancy(v);
+  }
+}
 function setVacancySaveBusy(busy) {
   document.querySelectorAll('#vacancy-overlay .sheet-submit,#general-vacancy-overlay .sheet-submit').forEach(function(btn) {
     btn.disabled = !!busy;
@@ -339,8 +439,7 @@ async function saveVacancy() {
   setVacancySaveBusy(true);
   try {
     var id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    var vacancyManageToken = (managerMode && managerAgency && managerAgency.id === pendingVacancyAgency) ? getManagerToken(pendingVacancyAgency) : null;
-    var live = await upsertVacancy({
+    var vacancy = {
       id: id, agency_id: pendingVacancyAgency, title: title,
       location: document.getElementById('v-location').value.trim(),
       employment_type: document.getElementById('v-etype').value.trim(),
@@ -352,7 +451,14 @@ async function saveVacancy() {
       closing_date: document.getElementById('v-closing').value.trim(),
       notes: document.getElementById('v-notes').value.trim(),
       link: normalizeVacancyLink(document.getElementById('v-link').value)
-    }, vacancyManageToken);
+    };
+    var live;
+    if (managerMode && managerAgency && managerAgency.manage_token) {
+      // Token-authorized write via the Worker — see workerManagerAddVacancy().
+      live = await workerManagerAddVacancy(managerAgency.manage_token, vacancy);
+    } else {
+      live = await upsertVacancy(vacancy);
+    }
     var termsRecorded = live ? await recordVacancyTermsAcceptance(id, managerMode && managerAgency ? managerAgency.id : pendingVacancyAgency, null) : false;
     closeSheet('vacancy-overlay');
     showToast(live ? (termsRecorded ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
@@ -369,8 +475,7 @@ async function saveVacancy() {
 }
 async function deleteVacancy(id, agencyId) {
   if (!confirm('Delete this vacancy?')) return;
-  var vacancyManageToken = (managerMode && managerAgency && managerAgency.id === agencyId) ? getManagerToken(agencyId) : null;
-  await removeVacancy(id, vacancyManageToken);
+  await removeVacancy(id);
   await loadAll();
   var card = document.getElementById('hub-' + agencyId);
   if (card) card.classList.add('open');
@@ -494,17 +599,26 @@ async function saveGeneralVacancy() {
     if (pendingVacancyEmployer) data.employer_id = pendingVacancyEmployer;
     var wasEmployerPost = !!pendingVacancyEmployer;
     var employerIdForRefresh = pendingVacancyEmployer;
-    var generalVacancyManageToken = (pendingVacancyEmployer && employerManagerMode && managerEmployer && managerEmployer.id === pendingVacancyEmployer) ? getEmployerManagerToken(pendingVacancyEmployer) : null;
     var termsRecordedGeneral = false;
-    if (editingGeneralVacancyId) {
+    // Employer self-service posts (via a manager link) are token-authorized
+    // server-side; admin and public posts keep the existing paths.
+    var isEmployerSelfService = employerManagerMode && managerEmployer && managerEmployer.manage_token &&
+      pendingVacancyEmployer === managerEmployer.id;
+    if (isEmployerSelfService) {
+      data.id = data.id || (Date.now().toString(36) + Math.random().toString(36).slice(2));
+      var liveEmp = await workerManagerEmployerAddVacancy(managerEmployer.manage_token, data);
+      termsRecordedGeneral = liveEmp ? await recordVacancyTermsAcceptance(data.id, null, managerEmployer.id) : false;
+      closeSheet('general-vacancy-overlay');
+      showToast(liveEmp ? (termsRecordedGeneral ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it.');
+    } else if (editingGeneralVacancyId) {
       data.id = editingGeneralVacancyId;
-      var live2 = await upsertVacancy(data, generalVacancyManageToken);
+      var live2 = await upsertVacancy(data);
       termsRecordedGeneral = live2 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
       closeSheet('general-vacancy-overlay');
       showToast(live2 ? (termsRecordedGeneral ? 'Vacancy updated' : 'Vacancy updated — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
     } else {
       data.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-      var live3 = await upsertVacancy(data, generalVacancyManageToken);
+      var live3 = await upsertVacancy(data);
       termsRecordedGeneral = live3 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
       closeSheet('general-vacancy-overlay');
       showToast(live3 ? (termsRecordedGeneral ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
@@ -527,9 +641,7 @@ async function saveGeneralVacancy() {
 }
 async function deleteGeneralVacancy(id) {
   if (!confirm('Delete this vacancy?')) return;
-  var vac = vacanciesCache.find(function(x){ return x.id === id; });
-  var generalVacancyManageToken = (vac && vac.employer_id && employerManagerMode && managerEmployer && managerEmployer.id === vac.employer_id) ? getEmployerManagerToken(vac.employer_id) : null;
-  await removeVacancy(id, generalVacancyManageToken);
+  await removeVacancy(id);
   showToast('Vacancy deleted');
   await loadAll();
   if (document.getElementById('screen-allvacancies').classList.contains('active')) {
