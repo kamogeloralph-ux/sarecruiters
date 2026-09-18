@@ -24,6 +24,25 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Sync Worker secrets (RESEND + TURNSTILE) if provided
+        # Keeps the deployed Worker's secrets in step with the repo config.
+        # Add RESEND_API_KEY / TURNSTILE_SECRET_KEY under repo Settings →
+        # Secrets and variables → Actions and they are applied on every
+        # deploy; skipped cleanly when they are not configured.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+        working-directory: Cloudflare-worker
+        run: |
+          if [ -z "$RESEND_API_KEY" ] && [ -z "$TURNSTILE_SECRET_KEY" ]; then
+            echo "No RESEND_API_KEY / TURNSTILE_SECRET_KEY in Actions secrets — skipping."
+            exit 0
+          fi
+          [ -n "$RESEND_API_KEY" ] && echo "$RESEND_API_KEY" | npx wrangler secret put RESEND_API_KEY
+          [ -n "$TURNSTILE_SECRET_KEY" ] && echo "$TURNSTILE_SECRET_KEY" | npx wrangler secret put TURNSTILE_SECRET_KEY
+
       - name: Deploy Worker with Wrangler
         uses: cloudflare/wrangler-action@v3
         with:
