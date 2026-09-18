@@ -50,6 +50,12 @@ const CRITICAL_MANAGER_FUNCTIONS = [
   'retryManagerTokenFromStatus',
   'buildManagerLink',
   'buildEmployerManagerLink',
+  'verifyManagerTokenServer',
+  'openManagerScreen',
+  'openEmployerManagerScreen',
+  'workerManagerAddBranch',
+  'workerManagerAddVacancy',
+  'workerManagerEmployerAddVacancy',
 ];
 
 function extractOnAttrCalledNames(html) {
@@ -88,18 +94,28 @@ function isDeclaredInBundle(name, bundleCode) {
 function verifyManageTokenSelected(rootDir) {
   const dataSrc = fs.readFileSync(path.join(rootDir, 'app-data.js'), 'utf8');
   const problems = [];
-  if (!/getAgencies[\s\S]{0,400}?select\([^)]*manage_token/.test(dataSrc)) {
+  // SECURITY INVARIANT (since the 2026-09 token lockdown):
+  // getAgencies()/getEmployers() must NOT select `manage_token`. The column is
+  // revoked from the anon role in
+  // supabase/migrations/20260918_lock_down_manager_tokens.sql, and public data
+  // must never carry manager-link tokens — they are verified server-side via
+  // the Worker's /api/verify-manager endpoints instead. Re-adding it here
+  // would either fail every agencies/employers query (column revoked) or, if
+  // the grant was ever re-added, leak every Smart Manager link publicly.
+  const agenciesSelect = dataSrc.match(/function\s+getAgencies[\s\S]{0,400}?\.select\('([^']*)'\)/);
+  if (!agenciesSelect || /manage_token/.test(agenciesSelect[1])) {
     problems.push(
-      "getAgencies()'s Supabase .select(...) no longer includes 'manage_token'. " +
-      "Manager links resolve by matching this field — without it, every agency " +
-      "manager link breaks, even though nothing about the tokens themselves changed."
+      "getAgencies()'s Supabase .select(...) must NOT include 'manage_token'. " +
+      "Tokens are resolved server-side via /api/verify-manager (see app-manager.js); " +
+      "selecting the column would break every agencies query under the lockdown " +
+      "migration or leak every manager link if the grant was re-added."
     );
   }
-  if (!/getEmployers[\s\S]{0,400}?select\([^)]*manage_token/.test(dataSrc)) {
+  const employersSelect = dataSrc.match(/function\s+getEmployers[\s\S]{0,400}?\.select\('([^']*)'\)/);
+  if (!employersSelect || /manage_token/.test(employersSelect[1])) {
     problems.push(
-      "getEmployers()'s Supabase .select(...) no longer includes 'manage_token'. " +
-      "Employer manager links resolve by matching this field — without it, every " +
-      "employer manager link breaks, even though nothing about the tokens themselves changed."
+      "getEmployers()'s Supabase .select(...) must NOT include 'manage_token'. " +
+      "Tokens are resolved server-side via /api/verify-employer-manager (see app-manager.js)."
     );
   }
   return problems;
@@ -145,8 +161,16 @@ function verifyCriticalGlobals(rootDir, bundleCode) {
     }
   }
 
-  // 3. The manage_token column itself.
+  // 3. The manage_token column itself (public reads) + the server-side
+  //    verification helper (checked against the actual bundle output).
   problems.push(...verifyManageTokenSelected(rootDir));
+  if (!isDeclaredInBundle('verifyManagerTokenServer', bundleCode)) {
+    problems.push(
+      "verifyManagerTokenServer() is missing from the built bundle. " +
+      "Manager links resolve through it (Worker /api/verify-manager); without it " +
+      "no manager link can open."
+    );
+  }
 
   if (problems.length) {
     throw new Error(
