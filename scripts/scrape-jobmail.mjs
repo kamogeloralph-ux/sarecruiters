@@ -42,6 +42,33 @@ export function parseJobMailJobs(html, pageUrl = GENERAL_URL) {
   const $ = cheerio.load(html);
   const jobs = [];
   const seen = new Set();
+  // Job Mail now prefixes each listing's company/agency name with a
+  // "Recruiter" or "Employer" source-type label (confirmed live on
+  // jobmail.co.za/jobs on every card checked, e.g. "Employer Goldstone
+  // Jewellers" — the exact same employer + location this scraper's own
+  // test fixture was built from, which shows the name rendering alone with
+  // no such label). That label is new since this scraper was last verified
+  // and, whether it lands inside .company's own text or .company stops
+  // matching entirely, either way company ends up not equal to any agency's
+  // stored name, so 100% of jobs fail agencyIdForCompany's exact match and
+  // fall to 'general' — this is what strips it back out.
+  const stripSourceLabel = (text) => clean(text.replace(/^(Recruiter|Employer)\s*:?\s*/i, ''));
+  const extractCompany = (card) => {
+    const raw = clean(card.find('.company').first().text());
+    if (raw) return stripSourceLabel(raw);
+    // .company matched nothing at all — fall back to scanning the card's
+    // own text for that same "Recruiter/Employer <name>" line directly,
+    // the same structural-anchor approach scrape-graduates24.mjs uses when
+    // a class name can't be confirmed ahead of time.
+    let fallback = '';
+    card.find('*').each((_, el) => {
+      if (fallback) return;
+      const text = clean($(el).text());
+      const match = text.length < 140 && text.match(/^(Recruiter|Employer)\s+(.{2,120})$/i);
+      if (match) fallback = clean(match[2]);
+    });
+    return fallback;
+  };
   $('.results-item[id^="results-item-"]').each((_, element) => {
     const card = $(element);
     const anchor = card.find('a[id^="jobDetailUrl-"][href]').first();
@@ -55,7 +82,7 @@ export function parseJobMailJobs(html, pageUrl = GENERAL_URL) {
     jobs.push({
       id: `jobmail-${jobId}`,
       title,
-      company: clean(card.find('.company').first().text()),
+      company: extractCompany(card),
       location: clean(card.find('.job-location').first().text()),
       notes: posted.slice(0, 20_000),
       link,
