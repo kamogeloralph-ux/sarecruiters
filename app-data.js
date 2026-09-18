@@ -127,12 +127,15 @@ async function loadCandidateSpotlight() {
   if (!target) return;
   var list = [];
   try {
-    var { data, error } = await supabaseClient.from('pool_candidates')
+    // pool_candidates_public (see CREATE_POOL_PUBLIC_ACCESS.sql) already
+    // filters to status = 'active' — full candidate details beyond
+    // name/position/experience/photo are admin-only.
+    var { data, error } = await supabaseClient.from('pool_candidates_public')
       .select('id,full_name,position,experience_years,photo_url,verified,status,created_at')
       .order('created_at', { ascending: false })
       .limit(30);
     if (error) throw error;
-    list = (data || []).filter(function(c){ return (c.status || 'pending') === 'active' && c.photo_url; });
+    list = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
   } catch (e) { console.warn('candidate spotlight load', e); list = []; }
   // Verified candidates first, then most recently joined; cap the deck at 10 cards.
   list.sort(function(a, b) { return (b.verified?1:0) - (a.verified?1:0); });
@@ -142,7 +145,7 @@ function renderCandidateSpotlight(list) {
   var target = document.getElementById('candidate-spotlight-deck');
   if (!target) return;
   if (!list.length) {
-    target.innerHTML = '<div class="poster-empty">Candidate photos will appear here as people join the Talent Pool.</div>';
+    target.innerHTML = '<div class="poster-empty">Candidates will appear here as people join the Talent Pool.</div>';
     return;
   }
   target.innerHTML = list.map(function(c) {
@@ -151,7 +154,7 @@ function renderCandidateSpotlight(list) {
       : '';
     var subtitle = [c.position, expText].filter(Boolean).join(' · ') || 'Looking for opportunities';
     return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\')">' +
-      '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' +
+      (c.photo_url ? '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' : '<span class="spotlight-photo spotlight-initials">'+initials(c.full_name)+'</span>') +
       '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</strong>' +
       '<span>'+escapeHtml(subtitle)+'</span></span></button>';
   }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
