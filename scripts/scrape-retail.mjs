@@ -14,6 +14,9 @@ const BOXER_BASE = 'https://boxer.erecruit.co';
 const BOXER_HOME = `${BOXER_BASE}/`;
 const BOXER_CATEGORY_PREFIX = '/candidateapp/Jobs/Categories/';
 const BOXER_JOB_PREFIX = '/candidateapp/Jobs/View/';
+const CASHBUILD_BASE = 'https://careers-page.com';
+const CASHBUILD_SLUG = 'cashbuild-careers';
+const CASHBUILD_SEARCH = `${CASHBUILD_BASE}/api/v1.0/c/${CASHBUILD_SLUG}/jobs/`;
 const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.RETAIL_PAGE_SIZE || '20', 10), 1), 20);
 const DETAIL_CONCURRENCY = Math.min(Math.max(Number.parseInt(process.env.RETAIL_DETAIL_CONCURRENCY || '4', 10), 1), 8);
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.RETAIL_REQUEST_TIMEOUT_MS || '60000', 10);
@@ -36,8 +39,12 @@ function absoluteJobUrl(externalPath) {
 function absoluteBoxerUrl(externalPath) {
   return new URL(externalPath, BOXER_BASE).href;
 }
+function absoluteCashbuildUrl(hash) {
+  return `${CASHBUILD_BASE}/${CASHBUILD_SLUG}/job/${encodeURIComponent(hash)}`;
+}
 function idForJob(job) { return `retail-pnp-${job.jobReqId || job.jobPostingId}`; }
 function idForBoxerJob(job) { return `retail-boxer-${job.externalId}`; }
+function idForCashbuildJob(job) { return `retail-cashbuild-${job.hash}`; }
 
 // Employer ids are resolved by name at run time (not hard-coded) so this
 // keeps working even if the employer record is ever recreated with a new id.
@@ -173,6 +180,22 @@ export function parseBoxerDetail(html, summary) {
   };
 }
 
+export function parseCashbuildSearch(payload, employerId = null) {
+  if (!payload || !Array.isArray(payload.results)) return [];
+  return payload.results.filter((job) => job && job.hash && job.position_name).map((job) => {
+    const location = clean(job.location_display || [job.city, job.state].filter(Boolean).join(', '));
+    const now = new Date().toISOString();
+    return {
+      id: idForCashbuildJob(job), agency_id: employerId ? 'employer' : 'general', employer_id: employerId || null,
+      title: clean(job.position_name), company: 'Cashbuild', location, closing_date: '',
+      notes: htmlToText(job.description).slice(0, 20_000), link: absoluteCashbuildUrl(job.hash),
+      email: '', phone: '', remote: null, experience_level: '', employment_type: '', contract_type: '',
+      work_schedule: '', hours: '', salary: '', start_date: '', source_type: 'retail',
+      source_checked_at: now, last_verified_at: now,
+    };
+  });
+}
+
 async function fetchJson(url, options = {}) {
   let lastError;
   for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
@@ -273,6 +296,20 @@ async function fetchBoxerJobs() {
   return jobs;
 }
 
+async function fetchCashbuildJobs() {
+  const employerId = await resolveEmployerIdByName('Cashbuild');
+  if (!employerId) console.error('[retail:cashbuild] no "Cashbuild" employers record found -- vacancies will fall back to unassigned');
+  const jobs = [];
+  for (let page = 1; ; page += 1) {
+    const payload = await fetchJson(`${CASHBUILD_SEARCH}?page_size=${PAGE_SIZE}&page=${page}`);
+    const pageJobs = parseCashbuildSearch(payload, employerId);
+    jobs.push(...pageJobs);
+    console.log(`[retail:cashbuild] page ${page}: ${pageJobs.length} jobs`);
+    if (!payload.next || !pageJobs.length) break;
+  }
+  return jobs;
+}
+
 async function upsertJobs(jobs) {
   if (!jobs.length) return 0;
   const { error } = await supabase.from('vacancies').upsert(jobs, { onConflict: 'id' });
@@ -282,10 +319,11 @@ async function upsertJobs(jobs) {
 
 export async function runRetailGroupScraper() {
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
-  const results = { picknpay: 0, boxer: 0, shoprite: 0, spar: 0 };
+  const results = { picknpay: 0, boxer: 0, cashbuild: 0, shoprite: 0, spar: 0 };
   const summaries = await fetchPickNPayJobs();
   results.picknpay = await upsertJobs(await fetchDetails(summaries));
   results.boxer = await upsertJobs(await fetchBoxerJobs());
+  results.cashbuild = await upsertJobs(await fetchCashbuildJobs());
   // Shoprite's public store portal is currently a registration/talent-pool flow,
   // not a public vacancy feed. SPAR directs applicants to Pnet; do not duplicate
   // or scrape it here while the Pnet source is being replaced.
