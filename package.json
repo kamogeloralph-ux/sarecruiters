@@ -5,14 +5,15 @@
   "scripts": {
     "generate": "node generate-pages.js",
     "build:bundle": "node scripts/bundle-app.js",
+    "serve": "node scripts/dev-serve.mjs",
+    "scrape:careerjunction": "node scripts/scrape-careerjunction.mjs",
+    "scrape:career-boards": "node scripts/scrape-career-boards.mjs",
     "sync:adzuna": "node scripts/sync-adzuna.mjs",
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
-    "sync:government": "node scripts/sync-dpsa.mjs",
-    "sync:dpsa": "npm run sync:government",
+    "sync:dpsa": "node scripts/sync-dpsa.mjs",
     "test": "node --test scripts/*.test.mjs",
     "scrape:jobmail": "node scripts/scrape-jobmail.mjs",
-    "scrape:retail": "node scripts/scrape-retail.mjs",
-    "scrape:graduates24": "node scripts/scrape-graduates24.mjs"
+    "scrape:retail": "node scripts/scrape-retail.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

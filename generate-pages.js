@@ -223,10 +223,21 @@ ${bodyHtml}
 // ---------- fetch data ----------
 
 async function fetchAllRows(table) {
+  // Explicit column lists (not select('*')): manage_token is revoked from the
+  // anon role (supabase/migrations/20260918_lock_down_manager_tokens.sql) and
+  // static pages must never carry Smart Manager tokens. If a new column is
+  // added to these tables and needs to appear on static pages, add it here
+  // explicitly.
+  const COLUMNS = {
+    agencies: 'id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified',
+    branches: 'id,agency_id,name,location,phone,email',
+    vacancies: 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type',
+  };
   const pageSize = 1000;
   const rows = [];
+  const columns = COLUMNS[table] || '*';
   for (let offset = 0; ; offset += pageSize) {
-    const { data, error } = await supabase.from(table).select('*').range(offset, offset + pageSize - 1);
+    const { data, error } = await supabase.from(table).select(columns).range(offset, offset + pageSize - 1);
     if (error) return { data: null, error };
     const page = data || [];
     rows.push(...page);

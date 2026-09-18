@@ -9,23 +9,34 @@
  */
 
 // ===== Data: AGENCIES (live Supabase table that works) =====
+// SECURITY NOTE: manage_token is intentionally NOT selected here. The column
+// is revoked from the anon role (see
+// supabase/migrations/20260918_lock_down_manager_tokens.sql) so public reads
+// can never leak Smart Manager links. Token resolution happens server-side
+// via the Worker's /api/verify-manager endpoint (see app-manager.js).
 async function getAgencies() {
   try {
-    var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token').order('created_at', { ascending: false });
+    var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified').order('created_at', { ascending: false });
     if (error) { console.error('agencies load', error); return markLoadError([]); }
-    return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, address: a.address, cvpref: a.cvpref, photo: a.photo, companies: a.companies, trades: a.trades, verified: !!a.verified, manage_token: a.manage_token || '' }; });
+    return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, address: a.address, cvpref: a.cvpref, photo: a.photo, companies: a.companies, trades: a.trades, verified: !!a.verified, manage_token: '' }; });
   } catch(e) { console.error('agencies load', e); return markLoadError([]); }
 }
-// Persist a SMART MANAGER token to Supabase so any device can resolve it
-// (not just the browser that generated it). Run SMART_MANAGER_SETUP.sql
-// once so the `manage_token` column exists — without it this save fails
-// silently and the link only "works" in the browser that generated it.
+// Persist a SMART MANAGER token so any device can resolve it (not just the
+// browser that generated it). Token writes are privileged: signed-in admins
+// go through the admin_set_manager_token RPC; the legacy direct update is
+// kept as a fallback for deployments where the authenticated role still has
+// the column grant. Anonymous visitors can no longer write tokens at all —
+// that is the point of the lockdown migration.
 async function saveManagerTokenToSupabase(agencyId, token) {
+  try {
+    var rpc = await supabaseClient.rpc('admin_set_manager_token', { p_agency_id: agencyId, p_token: token });
+    if (!rpc.error && rpc.data === true) return;
+  } catch(e) { /* fall through to the legacy path */ }
   try {
     var { error } = await supabaseClient.from('agencies').update({ manage_token: token }).eq('id', agencyId);
     if (error) {
       console.error('manage_token save', error);
-      if (typeof showToast === 'function') showToast('⚠ Manager link not saved to Supabase — run SMART_MANAGER_SETUP.sql.');
+      if (typeof showToast === 'function') showToast('⚠ Manager link not saved — generate links from the admin console (Regenerate ALL tokens).');
     }
   } catch(e) { console.error('manage_token save', e); }
 }
@@ -65,9 +76,10 @@ async function removeAgency(id) {
    `employers` table + `employer_id` vacancies column are created — run
    CREATE_EMPLOYERS_TABLE.sql in the Supabase SQL Editor to make it live. */
 async function getEmployers() {
+  // manage_token is intentionally not selected — see the note on getAgencies().
   try {
-    var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified,manage_token').order('created_at', { ascending: false });
-    if (!error && data) return data.map(function(e) { return { id: e.id, name: e.name, industry: e.industry, website: e.website, contact: e.contact, email: e.email, location: e.location, address: e.address, photo: e.photo, verified: !!e.verified, manage_token: e.manage_token || '' }; });
+    var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified').order('created_at', { ascending: false });
+    if (!error && data) return data.map(function(e) { return { id: e.id, name: e.name, industry: e.industry, website: e.website, contact: e.contact, email: e.email, location: e.location, address: e.address, photo: e.photo, verified: !!e.verified, manage_token: '' }; });
   } catch(err){}
   return markLoadError(readLocal('employers'));
 }
@@ -115,15 +127,12 @@ async function loadCandidateSpotlight() {
   if (!target) return;
   var list = [];
   try {
-    // pool_candidates_public (see CREATE_POOL_PUBLIC_ACCESS.sql) already
-    // filters to status = 'active' and never includes photo_url — full
-    // candidate details, including photos, are admin-only.
-    var { data, error } = await supabaseClient.from('pool_candidates_public')
+    var { data, error } = await supabaseClient.from('pool_candidates')
       .select('id,full_name,position,experience_years,photo_url,verified,status,created_at')
       .order('created_at', { ascending: false })
       .limit(30);
     if (error) throw error;
-    list = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
+    list = (data || []).filter(function(c){ return (c.status || 'pending') === 'active' && c.photo_url; });
   } catch (e) { console.warn('candidate spotlight load', e); list = []; }
   // Verified candidates first, then most recently joined; cap the deck at 10 cards.
   list.sort(function(a, b) { return (b.verified?1:0) - (a.verified?1:0); });
@@ -133,7 +142,7 @@ function renderCandidateSpotlight(list) {
   var target = document.getElementById('candidate-spotlight-deck');
   if (!target) return;
   if (!list.length) {
-    target.innerHTML = '<div class="poster-empty">Candidates will appear here as people join the Talent Pool.</div>';
+    target.innerHTML = '<div class="poster-empty">Candidate photos will appear here as people join the Talent Pool.</div>';
     return;
   }
   target.innerHTML = list.map(function(c) {
@@ -142,7 +151,7 @@ function renderCandidateSpotlight(list) {
       : '';
     var subtitle = [c.position, expText].filter(Boolean).join(' · ') || 'Looking for opportunities';
     return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\')">' +
-      (c.photo_url ? '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' : '<span class="spotlight-photo spotlight-initials">'+initials(c.full_name)+'</span>') +
+      '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' +
       '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</strong>' +
       '<span>'+escapeHtml(subtitle)+'</span></span></button>';
   }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
@@ -438,13 +447,13 @@ async function getGeneralVacancyCount() {
       // government imports. Keep only the dedicated external sources in
       // their own folders; otherwise the count understates the directory
       // (e.g. 43 instead of several thousand rows).
-      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,learnerships)');
+      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board)');
     if (result.error) return null;
     return typeof result.count === 'number' ? result.count : 0;
   } catch(e) { return null; }
 }
 function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'learnerships'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
@@ -508,7 +517,7 @@ async function fetchGeneralVacancyPage(state, page) {
     // Match the folder classification used by renderAllVacanciesList():
     // unassigned agency/government imports are general, while Himalayas,
     // Adzuna, DPSA, and retail feeds have dedicated folders.
-    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,learnerships)')
+    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board)')
     .order('created_at', { ascending: false })
     .range(from, from + generalVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);
@@ -521,25 +530,43 @@ async function fetchGeneralVacancyPage(state, page) {
   if (result.error) throw result.error;
   return result.data || [];
 }
-async function upsertVacancy(v, manageToken) {
-  // Writes now go through submit_vacancy(), which validates manageToken
-  // server-side against the vacancy's own agency/employer before touching
-  // the row (see the vacancies RLS hardening migrations). The manager-link
-  // token itself is unchanged — this only threads the existing token
-  // through to a safer write path.
+async function upsertVacancy(v) {
+  // First attempt: send all fields
   try {
-    var { error } = await supabaseClient.rpc('submit_vacancy', { payload: v, p_manage_token: manageToken || null });
+    var { error } = await supabaseClient.from('vacancies').upsert(v);
     if (!error) return true;
+    // Log every failed save (constraint violations, RLS denials, etc.) so
+    // future issues show up in the console instead of failing silently.
     console.error('vacancy upsert', error);
-  } catch(e){ console.error('vacancy upsert', e); }
+    // If the error is about a missing column, retry with only the
+    // columns that are guaranteed to exist in the original schema.
+    if (error && error.message && error.message.indexOf('column') > -1) {
+      var safe = {
+        id: v.id,
+        agency_id: v.agency_id || 'general',
+        title: v.title || '',
+        company: v.company || '',
+        location: v.location || '',
+        closing_date: v.closing_date || '',
+        notes: v.notes || '',
+        link: v.link || '',
+        email: v.email || '',
+        phone: v.phone || ''
+      };
+      try {
+        var { error: err2 } = await supabaseClient.from('vacancies').upsert(safe);
+        if (!err2) return true;
+      } catch(e2){}
+    }
+  } catch(e){}
   var arr = readLocal('vacancies');
   var i = arr.findIndex(function(x){ return x.id === v.id; });
   if (i >= 0) arr[i] = Object.assign({}, arr[i], v); else arr.push(v);
   writeLocal('vacancies', arr);
   return false;
 }
-async function removeVacancy(id, manageToken) {
-  try { await supabaseClient.rpc('delete_vacancy', { p_id: id, p_manage_token: manageToken || null }); } catch(e){ console.error('vacancy delete', e); }
+async function removeVacancy(id) {
+  try { await supabaseClient.from('vacancies').delete().eq('id', id); } catch(e){}
   var arr = readLocal('vacancies').filter(function(x){ return x.id !== id; });
   writeLocal('vacancies', arr);
 }
@@ -558,11 +585,9 @@ function isVacancyExpired(v) {
 async function purgeExpiredVacancies(list) {
   var expired = (list || []).filter(isVacancyExpired);
   if (!expired.length) return list;
-  // Actual deletion is handled server-side (see AUTO_DELETE_OLD_VACANCIES.sql,
-  // a scheduled job with elevated privileges) — the client no longer tries
-  // to delete other people's rows directly here, it only hides
-  // already-expired ones from this view until that job runs.
-  return (list || []).filter(function(v){ return expired.indexOf(v) === -1; });
+  var ids = expired.map(function(v){ return v.id; });
+  try { await supabaseClient.from('vacancies').delete().in('id', ids); } catch(e){}
+  return (list || []).filter(function(v){ return ids.indexOf(v.id) === -1; });
 }
 
 /* ── Data: REPORTS ───────────────────────────────────
@@ -823,18 +848,11 @@ async function loadAll() {
     if (av !== bv) return bv - av;            // verified sinks to top
     return (a.name||'').localeCompare(b.name||'');           // alphabetical tie-break
   });
-  // Token backfills are maintenance work, not startup-critical. Defer them
-  // until after the first paint so they never compete with the home screen.
-  var runBackfill = function() {
-    agenciesCache.forEach(function(a) {
-      if (!getManagerToken(a.id)) setManagerToken(a.id, genToken());
-    });
-    employersCache.forEach(function(e) {
-      if (!getEmployerManagerToken(e.id)) setEmployerManagerToken(e.id, genToken());
-    });
-  };
-  if (window.requestIdleCallback) requestIdleCallback(runBackfill, { timeout: 2500 });
-  else setTimeout(runBackfill, 1200);
+  // SECURITY: the old token backfill ("generate a token for every agency
+  // without one") was removed. Anonymous browsers can no longer write
+  // manage_token values, and public reads never see them — new tokens are
+  // generated by the admin console (admin.html → Regenerate ALL tokens),
+  // which uses the authenticated admin_set_manager_token RPC.
   rebuildPublicListingSlugs();
   updateStats();
   filterAndRenderCached();
@@ -910,3 +928,4 @@ function sortVacancies(list) {
     return da - db;
   });
 }
+

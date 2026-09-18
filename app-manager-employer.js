@@ -14,23 +14,33 @@
 // themselves here; everything else (contact details, verification) stays
 // admin-controlled. Once saved, a vacancy is read-only from this screen.
 var employerManagerTokenRetries = 0;
-var EMPLOYER_MANAGER_TOKEN_MAX_RETRIES = 12;
-function enterEmployerManagerMode(token) {
+var EMPLOYER_MANAGER_TOKEN_MAX_RETRIES = 2;
+async function enterEmployerManagerMode(token) {
   if (!employerManagerMode) showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
-  var employerId = employerIdFromToken(token);
-  if (!employerId) {
-    // Employers genuinely haven't loaded yet (cold start / slow connection) —
-    // keep retrying for a generous window instead of giving up after 3 tries,
-    // which previously dropped the visitor back onto the home screen.
-    if (employersCache.length === 0 && employerManagerTokenRetries < EMPLOYER_MANAGER_TOKEN_MAX_RETRIES) {
+  // Fast path: an already-resolved session for this token.
+  if (managerSession.employerId && managerSession.employerToken === token) {
+    var cachedEmployer = employersCache.find(function(e){ return e.id === managerSession.employerId; }) ||
+      { id: managerSession.employerId, name: managerSession.employerName || 'Company', location: managerSession.employerLocation || '', verified: false };
+    return openEmployerManagerScreen(cachedEmployer, token);
+  }
+  // Server-side verification only — see the note in app-manager.js.
+  var record = await verifyManagerTokenServer('employer', token);
+  if (!record) {
+    if (employerManagerTokenRetries < EMPLOYER_MANAGER_TOKEN_MAX_RETRIES) {
       employerManagerTokenRetries++;
       employerManagerPendingToken = token;
       managerTokenKind = 'employer';
-      var backoff = Math.min(1200 + (employerManagerTokenRetries * 300), 3000);
+      var backoff = 1500 + employerManagerTokenRetries * 800;
       bumpManagerWatchdog(backoff + 8000);
-      setTimeout(function(){ if (employerManagerPendingToken) fastResolveManagerToken(); }, backoff);
+      setTimeout(function(){
+        if (employerManagerPendingToken) {
+          employerManagerPendingToken = null;
+          enterEmployerManagerMode(token);
+        }
+      }, backoff);
       return false;
     }
+    employerManagerTokenRetries = 0;
     employerManagerPendingToken = null;
     managerTokenKind = null;
     showManagerStatus('error',
@@ -38,13 +48,23 @@ function enterEmployerManagerMode(token) {
       'We couldn\'t find a company for this link. It may have expired or been replaced. Please request a new link from SA Recruiters, or try again in case the connection was interrupted.');
     return false;
   }
+  managerSession.employerId = record.id;
+  managerSession.employerToken = token;
+  managerSession.employerName = record.name;
+  managerSession.employerLocation = record.location;
   employerManagerTokenRetries = 0;
   employerManagerPendingToken = null;
   managerTokenKind = null;
   clearTimeout(managerStatusWatchdog);
+  var employer = employersCache.find(function(e){ return e.id === record.id; }) ||
+    { id: record.id, name: record.name || 'Company', location: record.location || '', verified: !!record.verified };
+  return openEmployerManagerScreen(employer, token);
+}
+function openEmployerManagerScreen(employer, token) {
   employerManagerMode = true;
-  managerEmployer = employersCache.find(function(e){ return e.id === employerId; });
-  if (!managerEmployer) { employerManagerMode = false; return false; }
+  managerEmployer = employer;
+  // Keep the token on the in-memory record so writes authorize server-side.
+  managerEmployer.manage_token = token;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-manager-employer').classList.add('active');
   var nav = document.querySelector('.bottom-nav');
@@ -59,6 +79,8 @@ function exitEmployerManagerMode() {
   employerManagerMode = false;
   managerEmployer = null;
   employerManagerPendingToken = null;
+  managerSession.employerId = null;
+  managerSession.employerToken = null;
   if (window.history && window.history.replaceState) {
     var clean = window.location.origin + window.location.pathname;
     window.history.replaceState({}, document.title, clean);
@@ -150,24 +172,11 @@ function bumpManagerWatchdog(delayMs) {
   }, delayMs);
 }
 
-// Fast-path token resolution: a manager link only needs ONE table (agencies,
-// or employers) to resolve the token — it doesn't need the other six queries
-// loadAll() fires (branches, vacancies, employers/agencies, and three
-// app_settings lookups). Resolving the token from a single lightweight query
-// means the link stops waiting on unrelated data. loadAll() still runs
-// separately to load everything else the app needs.
-async function fastResolveManagerToken() {
-  if (managerPendingToken && agenciesCache.length === 0) {
-    var agencies = await getAgencies();
-    if (!agencies.__loadError) agenciesCache = agencies;
-    if (managerPendingToken) enterManagerMode(managerPendingToken);
-  }
-  if (employerManagerPendingToken && employersCache.length === 0) {
-    var employers = await getEmployers();
-    if (!employers.__loadError) employersCache = employers;
-    if (employerManagerPendingToken) enterEmployerManagerMode(employerManagerPendingToken);
-  }
-}
+// Fast-path token resolution is now server-side: enterManagerMode /
+// enterEmployerManagerMode call verifyManagerTokenServer() directly, so there
+// is nothing useful to pre-fetch here. Kept as a no-op for compatibility with
+// older retry timers that may still reference it.
+async function fastResolveManagerToken() { /* resolution is server-side now */ }
 
 // ===== Detect manager mode from URL (?manage=TOKEN or ?manage_employer=TOKEN) =====
 (function detectManagerMode() {
@@ -191,9 +200,12 @@ async function fastResolveManagerToken() {
   if (token || empToken) {
     showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
     bumpManagerWatchdog(20000);
-    // Kick off the lightweight single-table fetch immediately, in parallel
-    // with loadAll() below — whichever resolves the token first wins.
-    fastResolveManagerToken();
+    // Resolution is server-side and independent of loadAll(): verify the
+    // token against the Worker immediately, in parallel with the directory
+    // load below (whose tail also re-enters manager mode if the token is
+    // still pending — that path is idempotent).
+    if (token) enterManagerMode(token);
+    if (empToken) enterEmployerManagerMode(empToken);
   }
 })();
 

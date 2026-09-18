@@ -127,6 +127,34 @@ var managerTokenRetries = 0;
 var MANAGER_TOKEN_MAX_RETRIES = 12;   // ~30s of patient retries while data loads
 var managerTokenKind = null;          // 'agency' | 'employer' (for the status screen)
 var managerStatusWatchdog = null;     // safety timeout that flips loading -> error
+// Resolved manager-link identities are cached for the session so repeated
+// renders don't re-hit the verify endpoint.
+var managerSession = { agencyId: null, employerId: null };
+
+// SECURITY: verify a manager token SERVER-SIDE via the Cloudflare Worker,
+// which calls the verify_manager_token Postgres RPC. Tokens are no longer
+// comparable against public data in the browser (they are revoked from the
+// anon role), so this is the only reliable resolution path.
+async function verifyManagerTokenServer(kind, token) {
+  var endpoint = kind === 'employer' ? '/api/verify-employer-manager' : '/api/verify-manager';
+  try {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timeout = controller ? setTimeout(function(){ controller.abort(); }, 10000) : null;
+    var res = await fetch(R2_WORKER_URL + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token }),
+      signal: controller ? controller.signal : undefined
+    });
+    if (timeout) clearTimeout(timeout);
+    if (!res.ok) return null;
+    var data = await res.json();
+    if (!data || !data.valid) return null;
+    return kind === 'employer' ? data.employer : data.agency;
+  } catch (e) {
+    return null;
+  }
+}
 
 // Show the dedicated manager-link status screen so a token URL never silently
 // drops the visitor onto the normal home screen while it is still resolving.
@@ -158,35 +186,37 @@ function retryManagerTokenFromStatus() {
   if (employerManagerPendingToken) { enterEmployerManagerMode(employerManagerPendingToken); return; }
   goBackToHome();
 }
-function enterManagerMode(token) {
+async function enterManagerMode(token) {
   // Always surface the status screen first so the visitor sees that their
   // manager link is being opened, not the generic directory home screen.
   if (!managerMode) showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
-  var agencyId = agencyIdFromToken(token);
-  if (!agencyId) {
-    // Data hasn't arrived yet (cold start, slow/flaky connection, or Supabase
-    // is momentarily unreachable — e.g. a paused free-tier project waking up,
-    // which can easily take 15-20s+ on the very first query). Keep the token
-    // pending and keep retrying for a generous window instead of giving up
-    // after 3 attempts, which is what previously dumped people back onto the
-    // home screen.
-    if (agenciesCache.length === 0 && managerTokenRetries < MANAGER_TOKEN_MAX_RETRIES) {
+  // 1) Fast path: an already-resolved session for this token.
+  if (managerSession.agencyId && managerSession.agencyToken === token) {
+    var cachedAgency = agenciesCache.find(function(a){ return a.id === managerSession.agencyId; }) ||
+      { id: managerSession.agencyId, name: managerSession.agencyName || 'Agency', location: managerSession.agencyLocation || '', verified: false };
+    return openManagerScreen(cachedAgency, token);
+  }
+  // 2) Server-side verification. Token comparisons against public data are
+  //    no longer possible (manage_token is revoked from the anon role), so
+  //    retrying a table scan is pointless — but a cold Worker (rare) or a
+  //    flaky connection deserves a couple of patient retries.
+  var record = await verifyManagerTokenServer('agency', token);
+  if (!record) {
+    if (managerTokenRetries < 2) {
       managerTokenRetries++;
       managerPendingToken = token;
       managerTokenKind = 'agency';
-      var backoff = Math.min(1200 + (managerTokenRetries * 300), 3000);
-      // Push the watchdog out so it never fires mid-retry — see bumpManagerWatchdog().
+      var backoff = 1500 + managerTokenRetries * 800;
       bumpManagerWatchdog(backoff + 8000);
-      // Use the lightweight single-table fetch instead of the full loadAll()
-      // bundle — a manager link only needs `agencies` to resolve, so retries
-      // shouldn't wait on branches/vacancies/employers/settings too.
-      setTimeout(function(){ if (managerPendingToken) fastResolveManagerToken(); }, backoff);
+      setTimeout(function(){
+        if (managerPendingToken) {
+          managerPendingToken = null;
+          enterManagerMode(token);
+        }
+      }, backoff);
       return false;
     }
-    // Data has loaded and the token still doesn't match any agency — the
-    // link is genuinely invalid/expired. Show a clear, dedicated invalid-link
-    // state (with a retry + back-to-directory option) rather than silently
-    // landing on the home screen, which just looks like a dead link.
+    managerTokenRetries = 0;
     managerPendingToken = null;
     managerTokenKind = null;
     showManagerStatus('error',
@@ -194,13 +224,24 @@ function enterManagerMode(token) {
       'We couldn\'t find an agency for this link. It may have expired or been replaced. Please request a new link from SA Recruiters, or try again in case the connection was interrupted.');
     return false;
   }
+  managerSession.agencyId = record.id;
+  managerSession.agencyToken = token;
+  managerSession.agencyName = record.name;
+  managerSession.agencyLocation = record.location;
   managerTokenRetries = 0;
   managerPendingToken = null;
   managerTokenKind = null;
   clearTimeout(managerStatusWatchdog);
+  var agency = agenciesCache.find(function(a){ return a.id === record.id; }) ||
+    { id: record.id, name: record.name || 'Agency', location: record.location || '', verified: !!record.verified };
+  return openManagerScreen(agency, token);
+}
+function openManagerScreen(agency, token) {
   managerMode = true;
-  managerAgency = agenciesCache.find(function(a){ return a.id === agencyId; });
-  if (!managerAgency) { managerMode = false; return false; }
+  managerAgency = agency;
+  // Keep the token on the in-memory record so vacancy/branch writes can
+  // authorize themselves server-side (workerManagerAddBranch etc).
+  managerAgency.manage_token = token;
   // Hide normal app chrome, show manager screen
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-manager').classList.add('active');
@@ -216,6 +257,8 @@ function exitManagerMode() {
   managerMode = false;
   managerAgency = null;
   managerPendingToken = null;
+  managerSession.agencyId = null;
+  managerSession.agencyToken = null;
   // Clean URL
   if (window.history && window.history.replaceState) {
     var clean = window.location.origin + window.location.pathname;
