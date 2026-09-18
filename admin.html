@@ -816,7 +816,7 @@ async function loginWithGoogle(){
     var res = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/admin.html`
+        redirectTo: `${window.location.origin}/admin`
       }
     });
     if (res.error) {
