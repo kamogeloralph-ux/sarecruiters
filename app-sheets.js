@@ -463,7 +463,10 @@ var poolReturnScreen = 'home';
 // loads once someone actually opens the Talent Pool screen).
 async function getPoolCandidateCount() {
   try {
-    var { count, error } = await supabaseClient.from('pool_candidates').select('id', { count: 'exact', head: true });
+    // pool_candidates_public already filters to status = 'active' — see
+    // CREATE_POOL_PUBLIC_ACCESS.sql. The raw pool_candidates table is
+    // admin-only now, so an anon count against it would return 0.
+    var { count, error } = await supabaseClient.from('pool_candidates_public').select('id', { count: 'exact', head: true });
     if (error) throw error;
     return typeof count === 'number' ? count : null;
   } catch(e) { console.warn('pool count load', e); return null; }
@@ -482,8 +485,15 @@ async function loadPoolCandidates() {
   var listEl = document.getElementById('pool-list');
   if (listEl && !poolLoaded) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>Loading…</h3></div></div>';
   try {
-    // RLS only returns status = 'active' rows to anonymous visitors
-    var { data, error } = await supabaseClient.from('pool_candidates').select('*').order('created_at', { ascending: false });
+    // pool_candidates_public (see CREATE_POOL_PUBLIC_ACCESS.sql) only ever
+    // exposes name, position, sector, location, experience, "about me",
+    // photo and the verified flag for status = 'active' candidates — no
+    // phone, email, gender, criminal record, salary or CV link. The raw
+    // pool_candidates table is admin-only (readable only from a signed-in
+    // admin.html session) so employers and other app users never see it.
+    var { data, error } = await supabaseClient.from('pool_candidates_public')
+      .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
+      .order('created_at', { ascending: false });
     if (error) { console.error('pool load', error); poolCache = []; }
     else poolCache = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){ return (b.verified?1:0) - (a.verified?1:0); });
   } catch(e) { console.error('pool load', e); poolCache = []; }
@@ -520,33 +530,42 @@ function renderPoolList() {
   }
   listEl.innerHTML = list.map(function(c){
     var sub = [c.position, c.sector, c.location].filter(Boolean).join(' · ');
-    var contactBits = [];
-    if (c.contact_phone) contactBits.push('<a href="tel:'+escapeHtml(c.contact_phone)+'">'+escapeHtml(c.contact_phone)+'</a>');
-    if (c.contact_email) contactBits.push('<a href="mailto:'+escapeHtml(c.contact_email)+'">'+escapeHtml(c.contact_email)+'</a>');
     var frontBits = [];
     if (c.position) frontBits.push(escapeHtml(c.position));
     if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs');
     if (c.location) frontBits.push(escapeHtml(c.location));
-    if (c.gender) frontBits.push(escapeHtml(c.gender));
     var detailBits = [];
     function detail(label, value){ if(value !== null && value !== undefined && String(value).trim() !== '') detailBits.push('<div class="det-row"><span class="det-label">'+label+':</span> '+escapeHtml(value)+'</div>'); }
     if (c.verified) detailBits.push('<div class="det-row mini-cv-pitch"><span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Screened &amp; Verified — information confirmed by SA Recruiters</div>');
     detail('Sector', c.sector); detail('Location', c.location);
-    detail('Driver’s licence', c.drivers_license); detail('Reliable transport', c.reliable_transport); detail('Willing to relocate', c.willing_relocate);
-    detail('Availability', c.availability); detail('Preferred employment', c.preferred_employment); detail('Salary expectation', c.salary_expectation);
-    detail('Eligible to work in South Africa', c.work_authorized); detail('Grade 12 / Matric', c.grade12); detail('Criminal record', c.criminal_record);
     if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') detail('Years of experience', (c.experience_years >= 10 ? '10+' : c.experience_years) + ' years');
     if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
-    if (c.cv_link) detailBits.push('<div class="det-row pool-cv-row"><a class="pool-cv-link" href="'+escapeHtml(c.cv_link)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">View CV</a></div>');
-    if (contactBits.length) detailBits.push('<div class="det-row"><span class="det-label">Contact:</span> '+contactBits.join(' &nbsp;·&nbsp; ')+'</div>');
+    // Full contact details (phone, email, CV) are admin-only — see
+    // CREATE_POOL_PUBLIC_ACCESS.sql. Interested employers go through
+    // SA Recruiters on WhatsApp rather than contacting candidates directly.
+    detailBits.push('<div class="det-row pool-contact-row"><a class="pool-whatsapp-btn" href="'+poolCandidateWhatsAppLink(c)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg> Interested? Contact SA Recruiters</a></div>');
     return '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
-      (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'"></div>' : '') +
+      (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" alt=""></div>' : '<div class="avatar">'+initials(c.full_name)+'</div>') +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</div>' +
       '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : 'Profile details available')+'</div>' +
       '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
       '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
       '</div>';
   }).join('');
+}
+
+// Full candidate contact details are admin-only (see
+// CREATE_POOL_PUBLIC_ACCESS.sql) — an interested employer messages SA
+// Recruiters on WhatsApp with the candidate's name/position/id, and the
+// team makes the introduction directly rather than exposing phone or
+// email addresses in the app.
+function poolCandidateWhatsAppLink(c) {
+  var msg = 'Hi SA Recruiters, I\'m interested in this Talent Pool candidate:\n' +
+    (c.full_name || 'Candidate') + (c.position ? ' — ' + c.position : '') +
+    (c.location ? ' (' + c.location + ')' : '') +
+    '\nCandidate ID: ' + (c.id || '') +
+    '\nCould you please share their contact details or help set up an introduction?';
+  return 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
 }
 
 function openPoolRegisterSheet() {
