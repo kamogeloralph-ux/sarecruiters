@@ -218,13 +218,16 @@ var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
   "adzuna",
+  "government",
   "dpsa",
   "retail",
   "shoprite",
   "picknpay",
   "woolworths",
   "truworths",
-  "spar"
+  "spar",
+  "career_board",
+  "learnerships"
 ];
 function supabaseRestUrl(env, table, params = {}) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
@@ -358,7 +361,13 @@ async function loadStartupData(env) {
       limit: "0"
     }, { prefer: "count=exact" }),
     Promise.all(["public_vacancy_posting", "public_employer_registration", "public_employer_directory"].map((key) => supabaseGet(env, "app_settings", { select: "key,value", key: `eq.${key}` }))),
-    supabaseGet(env, "pool_candidates", { select: "id", limit: "0" }, { prefer: "count=exact" })
+    // pool_candidates itself is admin-only under RLS now (see
+    // CREATE_POOL_PUBLIC_ACCESS.sql) -- counting it with the anon key here
+    // always returned 0, which is why the home "Candidates" stat showed 0
+    // until someone opened the Talent Pool screen (which queries the public
+    // view directly and got the real number). Count the public view instead,
+    // matching getPoolCandidateCount() on the client.
+    supabaseGet(env, "pool_candidates_public", { select: "id", limit: "0" }, { prefer: "count=exact" })
   ]);
   const settingMap = Object.fromEntries(settings.map(({ body }) => {
     const row = Array.isArray(body) ? body[0] : null;
