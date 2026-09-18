@@ -158,13 +158,23 @@ async function pdfToText(buffer) {
   } finally { await fs.rm(dir, { recursive: true, force: true }); }
 }
 
+async function fetchText(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GOVERNMENT_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { accept: 'text/html' } });
+    if (!response.ok) return null;
+    return await response.text();
+  } finally { clearTimeout(timer); }
+}
+
 export async function discoverCirculars({ years = GOVERNMENT_YEARS, maxCircular = GOVERNMENT_MAX_CIRCULAR } = {}) {
   const found = [];
   for (const year of years) {
     for (let number = maxCircular; number >= 1; number -= 1) {
       const pageUrl = circularPageUrl(number, year);
       try {
-        const html = await fetch(new Request(pageUrl, { headers: { accept: 'text/html' } })).then((response) => response.ok ? response.text() : null);
+        const html = await fetchText(pageUrl);
         if (!html) continue;
         const circular = parseCircularPage(html, pageUrl);
         if (circular) found.push(circular);
