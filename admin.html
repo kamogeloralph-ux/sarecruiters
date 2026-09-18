@@ -779,6 +779,13 @@ function newId(){ return Date.now().toString(36) + Math.random().toString(36).sl
 function fmtDate(s){ if(!s) return '—'; var d=new Date(s); if(isNaN(d)) return s; return d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}); }
 
 // ===== Auth =====
+async function isAuthorizedAdmin(user){
+  if (!user || !user.id) return false;
+  try {
+    var { data, error } = await supabaseClient.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
+    return !error && !!data;
+  } catch(e){ return false; }
+}
 async function doLogin(){
   var email = document.getElementById('login-email').value.trim();
   var password = document.getElementById('login-password').value;
@@ -790,6 +797,11 @@ async function doLogin(){
   try {
     var res = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
     if (res.error) { err.textContent = 'Incorrect email or password.'; btn.disabled=false; btn.textContent='Log in'; return; }
+    if (!await isAuthorizedAdmin(res.data.user)) {
+      await supabaseClient.auth.signOut();
+      err.textContent = 'This account is not authorized for the admin console.';
+      btn.disabled=false; btn.textContent='Log in'; return;
+    }
     await enterConsole(res.data.user);
   } catch(e){ err.textContent = 'Login failed. Check your connection.'; btn.disabled=false; btn.textContent='Log in'; }
 }
@@ -843,8 +855,15 @@ async function initAdminPage(){
     if (error) throw error;
     var session = data && data.session;
     if (session && session.user) {
-      console.log('Authenticated as:', session.user.email);
-      await enterConsole(session.user);
+      if (await isAuthorizedAdmin(session.user)) {
+        console.log('Authenticated as:', session.user.email);
+        await enterConsole(session.user);
+      } else {
+        await supabaseClient.auth.signOut();
+        document.getElementById('login-error').textContent = 'This account is not authorized for the admin console.';
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+      }
     } else {
       console.log('No session found. Display login button.');
       document.getElementById('login-screen').style.display = 'flex';
