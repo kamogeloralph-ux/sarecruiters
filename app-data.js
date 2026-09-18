@@ -153,7 +153,7 @@ function renderCandidateSpotlight(list) {
       ? (c.experience_years >= 10 ? '10+ yrs exp' : c.experience_years + ' yrs exp')
       : '';
     var subtitle = [c.position, expText].filter(Boolean).join(' · ') || 'Looking for opportunities';
-    return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\')">' +
+    return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\',\''+escapeHtml(c.id)+'\')">' +
       (c.photo_url ? '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' : '<span class="spotlight-photo spotlight-initials">'+initials(c.full_name)+'</span>') +
       '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</strong>' +
       '<span>'+escapeHtml(subtitle)+'</span></span></button>';
@@ -450,13 +450,13 @@ async function getGeneralVacancyCount() {
       // government imports. Keep only the dedicated external sources in
       // their own folders; otherwise the count understates the directory
       // (e.g. 43 instead of several thousand rows).
-      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board)');
+      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships)');
     if (result.error) return null;
     return typeof result.count === 'number' ? result.count : 0;
   } catch(e) { return null; }
 }
 function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
@@ -520,7 +520,7 @@ async function fetchGeneralVacancyPage(state, page) {
     // Match the folder classification used by renderAllVacanciesList():
     // unassigned agency/government imports are general, while Himalayas,
     // Adzuna, DPSA, and retail feeds have dedicated folders.
-    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board)')
+    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships)')
     .order('created_at', { ascending: false })
     .range(from, from + generalVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);
