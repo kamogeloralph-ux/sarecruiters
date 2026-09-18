@@ -795,8 +795,24 @@ async function loadAll() {
   var startup = await getStartupData();
   var results = startup ? [
     startup.agencies, startup.branches, startup.vacancies, startup.employers,
-    typeof startup.counts.vacancies === 'number'
-      ? Math.max(0, startup.counts.vacancies - startup.vacancies.length) : null,
+    // Prefer the worker's own counts.general (NULL-source rows + non-dedicated-
+    // source rows, matching exactly what the General Vacancies tab shows).
+    // The old (counts.vacancies - startup.vacancies.length) subtraction
+    // assumed startup.vacancies only ever held "matched" rows, but it
+    // actually also carries general-pool rows tagged with a scraper
+    // source_type (careerjunction/jobmail/graduates24/etc. — anything not in
+    // the worker's small "dedicated" list), which get filtered back out
+    // downstream by isGeneralDirectoryVacancy(). Once the general pool is
+    // mostly made of exactly those rows (as it is here), the subtraction
+    // collapses toward zero and the displayed total undercounts by roughly
+    // the size of the whole general pool. counts.general is computed
+    // directly server-side and isn't subject to that drift. Fall back to the
+    // old subtraction only for an older cached worker response that hasn't
+    // rolled counts.general out yet.
+    typeof startup.counts.general === 'number'
+      ? startup.counts.general
+      : (typeof startup.counts.vacancies === 'number'
+          ? Math.max(0, startup.counts.vacancies - startup.vacancies.length) : null),
     startup.settings.public_vacancy_posting,
     startup.settings.public_employer_registration,
     startup.settings.public_employer_directory,
