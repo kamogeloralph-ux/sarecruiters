@@ -2,6 +2,12 @@ name = "sarecruiters-uploader"
 main = "worker.js"
 compatibility_date = "2026-09-08"
 
+# IMPORTANT: keep dashboard-set Variables/Secrets (RESEND_API_KEY,
+# TURNSTILE_SECRET_KEY, TURNSTILE_SITE_KEY) across CI deploys. Without this,
+# every `wrangler deploy` DELETES bindings that are not declared in this
+# file — which silently wiped the dashboard secrets on every push.
+keep_vars = true
+
 [[r2_buckets]]
 binding = "MEDIA_BUCKET"
 bucket_name = "sarecruiters-media"
