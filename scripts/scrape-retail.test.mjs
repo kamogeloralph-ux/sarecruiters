@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePickNPaySearch, parsePickNPayDetail, parseBoxerCategoryLinks, parseBoxerSearch, parseBoxerDetail } from './scrape-retail.mjs';
+import { parsePickNPaySearch, parsePickNPayDetail, parseBoxerCategoryLinks, parseBoxerSearch, parseBoxerDetail, parseCashbuildSearch } from './scrape-retail.mjs';
 
 test('parses Pick n Pay Workday search results into retail summaries', () => {
   const jobs = parsePickNPaySearch({ total: 1, jobPostings: [{ title: 'Cashier', locationsText: 'Cape Town - Western Cape', externalPath: '/job/Cape-Town/Cashier_JR123' }] });
@@ -55,4 +55,27 @@ test('normalizes Boxer JSON-LD detail data as a retail vacancy', () => {
   assert.equal(job.location, 'Westville, KwaZulu-Natal');
   assert.equal(job.closing_date, '2026-09-28');
   assert.equal(job.notes, 'Lead logistics.');
+});
+
+test('parses Cashbuild API results into retail vacancies', () => {
+  const jobs = parseCashbuildSearch({ results: [{ hash: 'CB123', position_name: 'General Assistant', location_display: 'Soweto, Gauteng', description: '<p>Assist customers.</p>' }] }, 'employer-cashbuild');
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].id, 'retail-cashbuild-CB123');
+  assert.equal(jobs[0].title, 'General Assistant');
+  assert.equal(jobs[0].company, 'Cashbuild');
+  assert.equal(jobs[0].location, 'Soweto, Gauteng');
+  assert.equal(jobs[0].link, 'https://careers-page.com/cashbuild-careers/job/CB123');
+  assert.equal(jobs[0].notes, 'Assist customers.');
+  assert.equal(jobs[0].source_type, 'retail');
+  assert.equal(jobs[0].employer_id, 'employer-cashbuild');
+  assert.equal(jobs[0].agency_id, 'employer');
+});
+
+test('Cashbuild parser falls back to city and state and handles malformed payloads', () => {
+  const jobs = parseCashbuildSearch({ results: [{ hash: 'CB456', position_name: 'Cashier', city: 'Polokwane', state: 'Limpopo' }] });
+  assert.equal(jobs[0].location, 'Polokwane, Limpopo');
+  assert.equal(jobs[0].employer_id, null);
+  assert.equal(jobs[0].agency_id, 'general');
+  assert.deepEqual(parseCashbuildSearch(null), []);
+  assert.deepEqual(parseCashbuildSearch({ results: [{ position_name: 'Missing hash' }] }), []);
 });
