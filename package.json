@@ -5,8 +5,6 @@
   "scripts": {
     "generate": "node generate-pages.js",
     "build:bundle": "node scripts/bundle-app.js",
-    "scrape:careerjunction": "node scripts/scrape-careerjunction.mjs",
-    "scrape:career-boards": "node scripts/scrape-career-boards.mjs",
     "sync:adzuna": "node scripts/sync-adzuna.mjs",
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
     "sync:government": "node scripts/sync-dpsa.mjs",

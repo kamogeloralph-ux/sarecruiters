@@ -43,8 +43,8 @@ function formatSalary(min, max, isPredicted) {
   return predicted ? `${text} (estimated)` : text;
 }
 
-// Maps a raw Adzuna /search response into the same vacancy shape the Pnet
-// and CareerJunction scrapers use, so they all land in the same table.
+// Maps a raw Adzuna /search response into the shared vacancy shape used by
+// the other active vacancy sources.
 export function mapAdzunaResults(payload) {
   const results = Array.isArray(payload?.results) ? payload.results : [];
   const now = new Date().toISOString();

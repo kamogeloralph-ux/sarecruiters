@@ -2,8 +2,8 @@ name: Sync Adzuna vacancies
 
 on:
   schedule:
-    # Offset from Pnet ("17 */6") and CareerJunction ("47 3,9,15,21") so all
-    # three never queue for the same runner minute. Free tier allows 250
+    # Offset from the other vacancy syncs so jobs never queue for the same
+    # runner minute. Free tier allows 250
     # calls/day; 4 runs x 3 pages = 12 calls/day, well inside that.
     - cron: "27 1,7,13,19 * * *"
   workflow_dispatch:
