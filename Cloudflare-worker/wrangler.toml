@@ -13,3 +13,22 @@ SUPABASE_ANON_KEY = "sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH"
 # (R2 -> sarecruiters-media -> Settings -> Public Access), then use that
 # URL here. Already confirmed working:
 R2_PUBLIC_BASE_URL = "https://pub-911e4cd402674c6f85c747b12212772f.r2.dev"
+#
+# OPTIONAL (non-secret) settings — set with `wrangler secret put` if you
+# want to override the defaults in worker.js:
+#   ADMIN_NOTIFY_EMAIL  default: sarecruiters.directory@gmail.com
+#   EMAIL_FROM          default: SA Recruiters <onboarding@resend.dev>
+#
+# SECRET settings (never put real values in this file) — required for the
+# new spam/email/manager-link features. Set each with:
+#   cd Cloudflare-worker && npx wrangler secret put <NAME>
+#
+#   RESEND_API_KEY        Resend API key (re_...) — enables server-side
+#                         admin notification emails (replaces EmailJS).
+#   TURNSTILE_SECRET_KEY  Turnstile secret key (0x4AAA...) — enables spam
+#                         checks on /api/submit/* endpoints. The matching
+#                         SITE key goes in app-sheets.js (TURNSTILE_SITE_KEY).
+#
+# If TURNSTILE_SECRET_KEY is unset, /api/submit/* fail closed with 503 —
+# set it (or deploy without using the new submit endpoints; the app's
+# legacy fallbacks still work). See ../SECURITY_SETUP.md.

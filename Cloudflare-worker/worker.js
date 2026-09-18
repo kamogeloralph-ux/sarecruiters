@@ -42,6 +42,171 @@ function randomKey() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 __name(randomKey, "randomKey");
+
+// ============================================================
+//  Cloudflare Turnstile server-side verification.
+//  The browser widget puts its answer token in a `cf-turnstile-response`
+//  form field; the Worker must confirm it with Cloudflare before trusting
+//  any public submission. If TURNSTILE_SECRET_KEY is not configured we
+//  fail CLOSED for submissions that request enforcement (enforce !== false)
+//  so a missing secret can never silently disable spam protection.
+// ============================================================
+async function verifyTurnstile(request, env, origin, enforce = true) {
+  const token =
+    request.headers.get("cf-turnstile-response") ||
+    (await readTurnstileFromBody(request));
+  if (!env.TURNSTILE_SECRET_KEY) {
+    return enforce
+      ? { ok: false, status: 503, error: "Spam protection is not configured." }
+      : { ok: true };
+  }
+  if (!token) {
+    return { ok: false, status: 400, error: "Spam check missing — please retry the form." };
+  }
+  try {
+    const body = new URLSearchParams({
+      secret: env.TURNSTILE_SECRET_KEY,
+      response: token
+    });
+    if (request.headers.get("CF-Connecting-IP")) {
+      body.set("remoteip", request.headers.get("CF-Connecting-IP"));
+    }
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString()
+    });
+    const data = await res.json();
+    if (data && data.success) return { ok: true };
+    return { ok: false, status: 403, error: "Spam check failed — please retry the form." };
+  } catch (e) {
+    return { ok: false, status: 502, error: "Spam check unavailable — please try again." };
+  }
+}
+__name(verifyTurnstile, "verifyTurnstile");
+// The JSON routes receive a body whose cf-turnstile-response field we must
+// read BEFORE the handler consumes request.json(), so peek non-destructively:
+// clone-free by re-reading the original request is not possible, so callers
+// pass the form-encoded token in the `cf-turnstile-response` HEADER instead.
+// This helper supports the legacy form-data style only.
+async function readTurnstileFromBody(request) {
+  try {
+    const ct = (request.headers.get("Content-Type") || "").toLowerCase();
+    if (ct.includes("application/x-www-form-urlencoded")) {
+      const form = await request.formData();
+      const field = form.get("cf-turnstile-response");
+      return typeof field === "string" ? field : null;
+    }
+  } catch (e) {
+  }
+  return null;
+}
+__name(readTurnstileFromBody, "readTurnstileFromBody");
+
+// ============================================================
+//  Supabase RPC proxy — calls a Postgres function with the anon key.
+//  The authorization logic (token checks, inserts) lives IN the database as
+//  SECURITY DEFINER functions (see supabase/migrations/20260918_lock_down_manager_tokens.sql),
+//  so the Worker never needs the service role and nothing sensitive is decided here.
+// ============================================================
+async function supabaseRpc(env, fnName, args) {
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+    method: "POST",
+    headers: {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(args)
+  });
+  const text = await res.text();
+  let body = text;
+  try {
+    body = JSON.parse(text);
+  } catch (e) {
+  }
+  if (!res.ok) {
+    const err = new Error(`RPC ${fnName} failed (${res.status})`);
+    err.status = res.status;
+    err.detail = typeof body === "string" ? body : JSON.stringify(body);
+    throw err;
+  }
+  return body;
+}
+__name(supabaseRpc, "supabaseRpc");
+
+// ============================================================
+//  Transactional email via Resend (server-side replacement for the old
+//  client-side EmailJS send). RESEND_API_KEY is a wrangler secret; the
+//  browser never sees it. Email is best-effort: a failure is logged and
+//  reported in the response but never blocks the database insert.
+// ============================================================
+const EMAIL_MAX_BODY = 8000;
+function escapeEmailHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[c]);
+}
+__name(escapeEmailHtml, "escapeEmailHtml");
+function notificationEmailHtml(payload) {
+  const title = escapeEmailHtml(payload.notification_title || "Notification");
+  const type = escapeEmailHtml(payload.notification_type || "Submission");
+  const intro = escapeEmailHtml(payload.notification_intro || "A new notification has been received through SA Recruiters.");
+  const body = escapeEmailHtml(payload.notification_body || "-").slice(0, EMAIL_MAX_BODY);
+  const when = escapeEmailHtml(payload.submit_date || new Date().toLocaleString("en-ZA", { dateStyle: "full", timeStyle: "short" }));
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#f3f1f8;font-family:Arial,Helvetica,sans-serif;color:#1f1b2d">
+<div style="padding:28px 12px">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e6e1ef;border-radius:18px;overflow:hidden">
+    <tr><td style="background:#5b2ca0;padding:26px 28px;color:#ffffff">
+      <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;font-weight:700;opacity:.82">SA Recruiters</div>
+      <div style="font-size:25px;line-height:1.25;font-weight:800;margin-top:8px">${title}</div>
+      <div style="font-size:13px;line-height:1.5;margin-top:8px;opacity:.9">${type}</div>
+    </td></tr>
+    <tr><td style="padding:28px">
+      <p style="font-size:16px;line-height:1.55;margin:0 0 20px;color:#312a40">${intro}</p>
+      <div style="background:#faf8fd;border:1px solid #e8e0f4;border-radius:12px;padding:20px;white-space:pre-line;font-size:14px;line-height:1.7;color:#40384e">${body}</div>
+      <p style="margin:22px 0 0;font-size:12px;line-height:1.6;color:#756b83">Received via SA Recruiters<br>${when}</p>
+    </td></tr>
+  </table>
+</div>
+</body></html>`;
+}
+__name(notificationEmailHtml, "notificationEmailHtml");
+async function sendNotificationEmail(env, payload) {
+  if (!env.RESEND_API_KEY) {
+    return { sent: false, reason: "RESEND_API_KEY not configured" };
+  }
+  const from = env.EMAIL_FROM || "SA Recruiters <onboarding@resend.dev>";
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from,
+        to: [payload.to_email],
+        subject: payload.email_subject || "SA Recruiters notification",
+        html: notificationEmailHtml(payload)
+      })
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error("resend send failed", res.status, detail);
+      return { sent: false, reason: `resend ${res.status}` };
+    }
+    return { sent: true };
+  } catch (e) {
+    console.error("resend send error", e);
+    return { sent: false, reason: e.message };
+  }
+}
+__name(sendNotificationEmail, "sendNotificationEmail");
 function publicUrlFor(env, key) {
   const base = (env.R2_PUBLIC_BASE_URL || "").replace(/\/$/, "");
   return `${base}/${key}`;
@@ -348,6 +513,149 @@ var worker_default = {
     try {
       if (path === "/api/startup" && request.method === "GET") {
         return await startupResponse(request, env, ctx, origin);
+      }
+
+      // ---------- Smart Manager: server-side token flows ----------
+      // The browser sends the token it received in the manager link; the
+      // authorization decision happens in the database, not the client.
+      if (path === "/api/verify-manager" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        if (!body.token) return json({ error: "Missing token." }, 400, origin);
+        try {
+          const rows = await supabaseRpc(env, "verify_manager_token", { p_token: String(body.token) });
+          const agency = Array.isArray(rows) ? rows[0] : null;
+          if (!agency) return json({ valid: false }, 200, origin);
+          return json({ valid: true, agency }, 200, origin);
+        } catch (e) {
+          return json({ error: "Token check failed.", detail: e.detail }, 502, origin);
+        }
+      }
+      if (path === "/api/verify-employer-manager" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        if (!body.token) return json({ error: "Missing token." }, 400, origin);
+        try {
+          const rows = await supabaseRpc(env, "verify_employer_manager_token", { p_token: String(body.token) });
+          const employer = Array.isArray(rows) ? rows[0] : null;
+          if (!employer) return json({ valid: false }, 200, origin);
+          return json({ valid: true, employer }, 200, origin);
+        } catch (e) {
+          return json({ error: "Token check failed.", detail: e.detail }, 502, origin);
+        }
+      }
+      if (path === "/api/manager/branch" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        if (!body.token || !body.branch_id || !body.name) {
+          return json({ error: "Missing fields." }, 400, origin);
+        }
+        const result = await supabaseRpc(env, "manager_add_branch", {
+          p_token: String(body.token),
+          p_branch_id: String(body.branch_id),
+          p_name: String(body.name),
+          p_location: String(body.location || ""),
+          p_phone: String(body.phone || ""),
+          p_email: String(body.email || "")
+        });
+        if (!result) return json({ error: "Invalid manager link." }, 403, origin);
+        return json({ ok: true, branch_id: result }, 200, origin);
+      }
+      if (path === "/api/manager/vacancy" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        if (!body.token || !body.vacancy_id || !body.title) {
+          return json({ error: "Missing fields." }, 400, origin);
+        }
+        const result = await supabaseRpc(env, "manager_add_vacancy", {
+          p_token: String(body.token),
+          p_vacancy_id: String(body.vacancy_id),
+          p_title: String(body.title),
+          p_location: String(body.location || ""),
+          p_employment_type: String(body.employment_type || ""),
+          p_contract_type: String(body.contract_type || ""),
+          p_salary: String(body.salary || ""),
+          p_hours: String(body.hours || ""),
+          p_work_schedule: String(body.work_schedule || ""),
+          p_start_date: String(body.start_date || ""),
+          p_closing_date: String(body.closing_date || ""),
+          p_notes: String(body.notes || ""),
+          p_link: String(body.link || "")
+        });
+        if (!result) return json({ error: "Invalid manager link." }, 403, origin);
+        return json({ ok: true, vacancy_id: result }, 200, origin);
+      }
+      if (path === "/api/manager/employer-vacancy" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        if (!body.token || !body.vacancy_id || !body.title) {
+          return json({ error: "Missing fields." }, 400, origin);
+        }
+        const result = await supabaseRpc(env, "manager_employer_add_vacancy", {
+          p_token: String(body.token),
+          p_vacancy_id: String(body.vacancy_id),
+          p_title: String(body.title),
+          p_company: String(body.company || ""),
+          p_location: String(body.location || ""),
+          p_employment_type: String(body.employment_type || ""),
+          p_experience_level: String(body.experience_level || ""),
+          p_contract_type: String(body.contract_type || ""),
+          p_salary: String(body.salary || ""),
+          p_hours: String(body.hours || ""),
+          p_work_schedule: String(body.work_schedule || ""),
+          p_start_date: String(body.start_date || ""),
+          p_closing_date: String(body.closing_date || ""),
+          p_notes: String(body.notes || ""),
+          p_link: String(body.link || ""),
+          p_email: String(body.email || ""),
+          p_phone: String(body.phone || "")
+        });
+        if (!result) return json({ error: "Invalid manager link." }, 403, origin);
+        return json({ ok: true, vacancy_id: result }, 200, origin);
+      }
+
+      // ---------- Public submissions: Turnstile-gated, DB insert + Resend email ----------
+      if (path === "/api/submit/report" && request.method === "POST") {
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const body = await request.json().catch(() => ({}));
+        try {
+          await supabaseRpc(env, "public_submit_report", {
+            p_agency_name: String(body.agency_name || "").slice(0, 200),
+            p_agency_id: body.agency_id ? String(body.agency_id) : null,
+            p_reason: String(body.reason || "").slice(0, 200),
+            p_details: String(body.details || "").slice(0, 4000)
+          });
+        } catch (e) {
+          return json({ error: "Could not save the report.", detail: e.detail }, 502, origin);
+        }
+        const email = await sendNotificationEmail(env, {
+          to_email: env.ADMIN_NOTIFY_EMAIL || "sarecruiters.directory@gmail.com",
+          email_subject: "SA Recruiters | New report received",
+          notification_type: "REPORT",
+          notification_title: "New report received",
+          notification_intro: "A user submitted a report about a listing or agency.",
+          notification_body: "Agency: " + (body.agency_name || "-") + "\nReason: " + (body.reason || "-") + "\nDetails: " + (body.details || "-")
+        });
+        return json({ ok: true, email }, 200, origin);
+      }
+      if (path === "/api/submit/suggestion" && request.method === "POST") {
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const body = await request.json().catch(() => ({}));
+        try {
+          await supabaseRpc(env, "public_submit_suggestion", {
+            p_type: String(body.type || "suggestion").slice(0, 50),
+            p_agency_name: String(body.agency_name || "").slice(0, 200),
+            p_details: String(body.details || "").slice(0, 4000)
+          });
+        } catch (e) {
+          return json({ error: "Could not save the suggestion.", detail: e.detail }, 502, origin);
+        }
+        const email = await sendNotificationEmail(env, {
+          to_email: env.ADMIN_NOTIFY_EMAIL || "sarecruiters.directory@gmail.com",
+          email_subject: "SA Recruiters | New suggestion received",
+          notification_type: "SUGGESTION",
+          notification_title: "New suggestion received",
+          notification_intro: "A user submitted a suggestion or comment through SA Recruiters.",
+          notification_body: "Type: " + (body.type || "-") + "\nAgency: " + (body.agency_name || "-") + "\nDetails: " + (body.details || "-")
+        });
+        return json({ ok: true, email }, 200, origin);
       }
       if (path === "/api/upload/candidate-photo" && request.method === "POST") {
         const contentType = request.headers.get("Content-Type") || "";
