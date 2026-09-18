@@ -457,6 +457,10 @@ var poolCache = [];
 var poolLoaded = false;
 var poolCandidateCount = 0;
 var poolReturnScreen = 'home';
+// Set by a Talent Pool spotlight card so the very next pool render can jump
+// straight to (and expand) that candidate's profile instead of dropping the
+// visitor on the generic, unfiltered Talent Pool list.
+var poolPendingOpenId = null;
 
 // Lightweight count-only query so the home "Pool Candidates" stat is accurate
 // on first load, without waiting for the full candidate list (which only
@@ -472,13 +476,24 @@ async function getPoolCandidateCount() {
   } catch(e) { console.warn('pool count load', e); return null; }
 }
 
-function goPool(returnScreen) {
+function goPool(returnScreen, openCandidateId) {
   poolReturnScreen = returnScreen === 'profile' || (!returnScreen && document.getElementById('screen-profile').classList.contains('active')) ? 'profile' : 'home';
+  poolPendingOpenId = openCandidateId || null;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-pool').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
   window.scrollTo({ top: 0 });
   loadPoolCandidates();
+}
+// Opens (expands) and scrolls to a specific candidate's card in the
+// currently-rendered Talent Pool list, e.g. after tapping a spotlight card.
+function openPoolCandidateCard(id) {
+  if (!id) return;
+  var card = document.querySelector('.pool-mini-card[data-candidate-id="' + CSS.escape(String(id)) + '"]');
+  if (!card) return;
+  card.classList.add('expanded');
+  card.setAttribute('aria-expanded', 'true');
+  setTimeout(function(){ card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 150);
 }
 
 async function loadPoolCandidates() {
@@ -506,8 +521,21 @@ async function loadPoolCandidates() {
     var sectors = Array.from(new Set(poolCache.map(function(c){ return (c.sector||'').trim(); }).filter(Boolean))).sort();
     sel.innerHTML = '<option value="">All sectors</option>' + sectors.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
     sel.value = sectors.indexOf(current) !== -1 ? current : '';  }
+  // A spotlight card asked for a specific candidate -- clear any leftover
+  // search/sector filter from a previous visit so that candidate is
+  // guaranteed to be in the rendered list, then open their card.
+  if (poolPendingOpenId) {
+    var searchEl = document.getElementById('pool-search');
+    if (searchEl) searchEl.value = '';
+    if (sel) sel.value = '';
+  }
   updateStats();
   renderPoolList();
+  if (poolPendingOpenId) {
+    var openId = poolPendingOpenId;
+    poolPendingOpenId = null;
+    openPoolCandidateCard(openId);
+  }
 }
 function renderPoolList() {
   var listEl = document.getElementById('pool-list');
@@ -544,7 +572,7 @@ function renderPoolList() {
     // CREATE_POOL_PUBLIC_ACCESS.sql. Interested employers go through
     // SA Recruiters on WhatsApp rather than contacting candidates directly.
     detailBits.push('<div class="det-row pool-contact-row"><a class="pool-whatsapp-btn" href="'+poolCandidateWhatsAppLink(c)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg> Interested? Contact SA Recruiters</a></div>');
-    return '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
+    return '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" data-candidate-id="'+escapeHtml(c.id)+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
       (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" alt=""></div>' : '<div class="avatar">'+initials(c.full_name)+'</div>') +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</div>' +
       '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : 'Profile details available')+'</div>' +
