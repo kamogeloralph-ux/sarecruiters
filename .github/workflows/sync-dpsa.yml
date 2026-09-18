@@ -39,4 +39,4 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Sync all Government vacancies from DPSA circulars
-        run: GOVERNMENT_YEARS="${{ inputs.years || '' }}" npm run sync:government
+        run: GOVERNMENT_YEARS="${{ inputs.years || '' }}" npm run sync:dpsa
