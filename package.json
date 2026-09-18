@@ -9,7 +9,8 @@
     "scrape:career-boards": "node scripts/scrape-career-boards.mjs",
     "sync:adzuna": "node scripts/sync-adzuna.mjs",
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
-    "sync:dpsa": "node scripts/sync-dpsa.mjs",
+    "sync:government": "node scripts/sync-dpsa.mjs",
+    "sync:dpsa": "npm run sync:government",
     "test": "node --test scripts/*.test.mjs",
     "scrape:jobmail": "node scripts/scrape-jobmail.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs"
