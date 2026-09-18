@@ -11,13 +11,20 @@ This covers the three changes shipped together:
 
 ## 1. Run the database migration (required — do this first)
 
-Open the Supabase SQL Editor and run:
+Open the Supabase SQL Editor and run **both** of these, in order:
 
 ```
 supabase/migrations/20260918_lock_down_manager_tokens.sql
+supabase/migrations/20260918b_fix_column_grants.sql
 ```
 
-It is idempotent (safe to re-run). It:
+The second file is required: the first one's column-level `REVOKE`s are
+no-ops while Supabase's default table-level grants exist (Postgres effective
+privilege = table-level ∪ column-level), so `manage_token` would remain
+readable. Part 2 revokes the table-level grants and re-grants explicit
+column lists that exclude `manage_token`.
+
+Both are idempotent (safe to re-run). Together they:
 
 - Revokes `manage_token` reads/writes from the anon role (agencies + employers).
 - Adds `verify_manager_token` / `verify_employer_manager_token` RPCs used by
@@ -31,6 +38,10 @@ It is idempotent (safe to re-run). It:
   four now go through token-authorized or Turnstile-gated RPCs).
 - Keeps anon INSERT on `pool_candidates` (public Talent Pool self-registration
   is intentional; RLS keeps pending rows invisible).
+- Part 2 keeps anon SELECT/INSERT/UPDATE on every `agencies`/`employers`
+  column EXCEPT `manage_token` (admin = `authenticated` role and the
+  scrapers = service role are unaffected; public employer self-registration
+  still works).
 
 **Rollout order matters:** run this migration BEFORE (or at the same deploy
 as) the new Worker + app code. The new app no longer reads tokens from public
@@ -110,7 +121,11 @@ selects) in addition to the existing manager-link function checks.
 
 ## What changed in the code
 
-- `supabase/migrations/20260918_lock_down_manager_tokens.sql` — new (all DB logic)
+- `supabase/migrations/20260918_lock_down_manager_tokens.sql` — new (all DB
+  logic: RPCs, token-write lockdown, submission RPCs)
+- `supabase/migrations/20260918b_fix_column_grants.sql` — new (fixes the
+  column-grant semantics: table-level revoke + explicit re-grants so
+  `manage_token` is truly hidden)
 - `Cloudflare-worker/worker.js` — Turnstile verify, Resend email,
   `/api/verify-manager*`, `/api/manager/*`, `/api/submit/*` endpoints
 - `app-data.js` / `app-core.js` — public reads drop `manage_token`; token
