@@ -549,7 +549,8 @@ function vacancyCard(v, agency) {
   var isAdzuna = String(v.id || '').indexOf('adzuna-') === 0;
   var isHimalayas = v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0;
   var isGovernment = ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || ''));
-  var sourceBadge = isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : '';
+  var isLearnership = v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0;
+  var sourceBadge = isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : isLearnership ? '<span class="vac-source-tag vac-source-tag-learnership">Learnership</span>' : '';
   var title = escapeHtml(v.title || 'Untitled role');
   var verifiedCheck = ((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '<span class="verified-check" title="' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
 

@@ -435,13 +435,13 @@ async function getGeneralVacancyCount() {
       // government imports. Keep only the dedicated external sources in
       // their own folders; otherwise the count understates the directory
       // (e.g. 43 instead of several thousand rows).
-      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar)');
+      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,learnerships)');
     if (result.error) return null;
     return typeof result.count === 'number' ? result.count : 0;
   } catch(e) { return null; }
 }
 function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'learnerships'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
@@ -505,7 +505,7 @@ async function fetchGeneralVacancyPage(state, page) {
     // Match the folder classification used by renderAllVacanciesList():
     // unassigned agency/government imports are general, while Himalayas,
     // Adzuna, DPSA, and retail feeds have dedicated folders.
-    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar)')
+    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,learnerships)')
     .order('created_at', { ascending: false })
     .range(from, from + generalVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);
