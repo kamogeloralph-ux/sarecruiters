@@ -568,6 +568,111 @@ async function migrateBase64Logos(request, env, origin, table, prefix) {
   }, 200, origin);
 }
 __name(migrateBase64Logos, "migrateBase64Logos");
+// ============================================================
+//  CV Builder (CV Revamp Service) — Gemini-backed CV generation.
+//  Turns raw, unstructured career notes into a structured CV the
+//  frontend can render/print. The Gemini API key never reaches the
+//  browser: the client calls this Worker route, which calls Gemini
+//  server-side with env.GEMINI_API_KEY (set via `wrangler secret put`).
+// ============================================================
+var CV_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    fullName: { type: "STRING" },
+    jobTitle: { type: "STRING", description: "Headline / target job title for the CV." },
+    summary: { type: "STRING", description: "2-4 sentence professional summary." },
+    skills: { type: "ARRAY", items: { type: "STRING" } },
+    experience: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          role: { type: "STRING" },
+          company: { type: "STRING" },
+          duration: { type: "STRING", description: "e.g. 'Jan 2021 - Present'. Leave empty string if not provided." },
+          bulletPoints: { type: "ARRAY", items: { type: "STRING" } }
+        },
+        required: ["role", "company", "bulletPoints"]
+      }
+    },
+    education: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          qualification: { type: "STRING" },
+          institution: { type: "STRING" },
+          year: { type: "STRING" }
+        },
+        required: ["qualification", "institution"]
+      }
+    }
+  },
+  required: ["fullName", "jobTitle", "summary", "skills", "experience", "education"]
+};
+async function generateCvWithGemini(env, { fullName, targetRole, rawInput }) {
+  if (!env.GEMINI_API_KEY) {
+    return { ok: false, status: 503, error: "CV Builder is not configured yet." };
+  }
+  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+  const prompt = [
+    "You are a professional CV/resume writer for the South African job market (SA Recruiters).",
+    "Turn the job seeker's raw notes below into a clean, ATS-friendly CV.",
+    "Rules:",
+    "- Only use facts present in the notes. Never invent employers, dates, qualifications, or numbers that were not given.",
+    "- Use strong action verbs and concise bullet points (no more than ~18 words each).",
+    "- If a field (e.g. education) has no information in the notes, return an empty array for it rather than guessing.",
+    "- Keep the summary to 2-4 sentences.",
+    "",
+    "Candidate name: " + (fullName || "Not provided"),
+    "Target role: " + (targetRole || "Not specified"),
+    "Raw notes from the candidate:",
+    rawInput
+  ].join("\n");
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: CV_SCHEMA,
+            temperature: 0.4
+          }
+        })
+      }
+    );
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error("Gemini CV generation failed", res.status, detail.slice(0, 500));
+      return { ok: false, status: 502, error: "The CV Builder could not reach the AI service. Please try again." };
+    }
+    const data = await res.json();
+    const text = data && data.candidates && data.candidates[0] && data.candidates[0].content &&
+      data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
+      data.candidates[0].content.parts[0].text;
+    if (!text) {
+      return { ok: false, status: 502, error: "The AI did not return a CV. Please try again." };
+    }
+    let cv;
+    try {
+      cv = JSON.parse(text);
+    } catch (e) {
+      return { ok: false, status: 502, error: "Could not read the generated CV. Please try again." };
+    }
+    return { ok: true, cv };
+  } catch (e) {
+    console.error("Gemini CV generation error", e);
+    return { ok: false, status: 502, error: "The CV Builder is temporarily unavailable. Please try again." };
+  }
+}
+__name(generateCvWithGemini, "generateCvWithGemini");
 var worker_default = {
   async fetch(request, env, ctx) {
     const origin = request.headers.get("Origin");
@@ -726,6 +831,28 @@ var worker_default = {
           notification_body: "Type: " + (body.type || "-") + "\nAgency: " + (body.agency_name || "-") + "\nDetails: " + (body.details || "-")
         });
         return json({ ok: true, email }, 200, origin);
+      }
+      if (path === "/api/generate-cv" && request.method === "POST") {
+        // Require a signed-in SA Recruiters user (the app is auth-gated
+        // already) so the Gemini quota isn't open to anonymous scraping.
+        const cvUserId = await verifiedUserId(request, env);
+        if (!cvUserId) {
+          return json({ error: "Please sign in to use the CV Builder." }, 401, origin);
+        }
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const body = await request.json().catch(() => ({}));
+        const rawInput = String(body.rawInput || "").trim().slice(0, 6000);
+        if (!rawInput) {
+          return json({ error: "Please add some details about your experience first." }, 400, origin);
+        }
+        const result = await generateCvWithGemini(env, {
+          fullName: String(body.fullName || "").slice(0, 200),
+          targetRole: String(body.targetRole || "").slice(0, 200),
+          rawInput
+        });
+        if (!result.ok) return json({ error: result.error }, result.status, origin);
+        return json({ ok: true, cv: result.cv }, 200, origin);
       }
       if (path === "/api/upload/candidate-photo" && request.method === "POST") {
         const contentType = request.headers.get("Content-Type") || "";

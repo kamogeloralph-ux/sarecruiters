@@ -37,6 +37,11 @@ R2_PUBLIC_BASE_URL = "https://pub-911e4cd402674c6f85c747b12212772f.r2.dev"
 #   TURNSTILE_SECRET_KEY  Turnstile secret key (0x4AAA...) — enables spam
 #                         checks on /api/submit/* endpoints. The matching
 #                         SITE key goes in app-sheets.js (TURNSTILE_SITE_KEY).
+#   GEMINI_API_KEY        Google Gemini API key — powers the CV Builder
+#                         (/api/generate-cv, in the CV Revamp Service).
+#                         Get one at https://aistudio.google.com/apikey
+#                         Optional: GEMINI_MODEL to override the default
+#                         model (gemini-2.5-flash) as a plain Variable.
 #
 # If TURNSTILE_SECRET_KEY is unset, /api/submit/* fail closed with 503 —
 # set it (or deploy without using the new submit endpoints; the app's
