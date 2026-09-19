@@ -79,7 +79,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'faq-save',
       title: 'Can I save vacancies to apply later?',
-      body: '<p>Yes. Tap the bookmark icon on any vacancy card to save it. Saved vacancies appear under the "Saved" tab in the bottom navigation so you can return to them even when you are offline. Your saved list is stored on your device.</p>'
+      body: '<p>Yes. Tap the bookmark icon on any vacancy card to save it. Saved vacancies appear under the "Saved" tab in the bottom navigation so you can return to them even when you are offline. Because you sign in with Google, your saved list is synced to your account and follows you to any device you sign in on.</p>'
     },
     {
       id: 'faq-report',
@@ -94,7 +94,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'faq-data',
       title: 'How is my data handled?',
-      body: '<p>We only store what is needed to make the directory work. Your saved vacancies are kept on your own device. Agency listings, branches, and vacancies are stored securely. See the Privacy Policy (linked in the app) for full details.</p>'
+      body: '<p>We only store what is needed to make the directory work. Signing in with Google gives us your name, email and profile photo so the app can recognise your account and sync your saved vacancies. Agency listings, branches, and vacancies are stored securely, and notes stay on your device. See the Privacy Policy (linked in the app) for full details.</p>'
     }
   ],
 
@@ -241,27 +241,47 @@ var DEFAULT_CONTENT = {
     {
       id: 'priv-intro',
       title: 'About this policy',
-      body: '<p>SA Recruiters ("the app") is a free, community-maintained directory of South African recruitment agencies. This policy explains what information is collected, how it is used, and your choices.</p><p style="color:var(--text-2);font-size:12px;margin-top:6px">Last updated: 27 July 2026</p>'
+      body: '<p>SA Recruiters ("the app") is a free, community-maintained directory of South African recruitment agencies. Using the app requires signing in with a Google account. This policy explains what information is collected, how it is used, and your choices.</p><p style="color:var(--text-2);font-size:12px;margin-top:6px">Last updated: 19 September 2026</p>'
+    },
+    {
+      id: 'priv-signin',
+      title: 'Google sign-in',
+      body: '<p>You sign in with your Google account, handled by Google together with our database provider, Supabase. We receive your name, email address and profile photo from Google so the app can recognise your account. Your name and photo are shown only to you, in the site menu. We never see your Google password, and you can sign out at any time from the site menu.</p>'
     },
     {
       id: 'priv-collect',
       title: 'What we collect',
-      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Agency directory data</strong> \u2014 agency names, phone numbers, email addresses, physical addresses, websites, and the companies they recruit for. This information is submitted by app users (recruiters, agencies, or members of the public) and is publicly visible to anyone using the app. Do not submit personal information you do not want displayed publicly.</li><li><strong>Admin login</strong> \u2014 a single administrator account (email and password) is used to manage the directory. This is stored securely by our database provider (Supabase) and is not accessible to other users.</li><li><strong>Photos</strong> \u2014 agencies may optionally have a profile photo or logo attached, submitted by users.</li></ul><p>We do not collect location data, device identifiers, analytics, or any information beyond what is voluntarily entered into the app\'s forms.</p>'
+      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Directory data</strong> \u2014 agency, branch and employer details and vacancies, submitted by users, agency managers (via private Smart Manager links) or the admin. This information is publicly visible to anyone using the app. Do not submit personal information you do not want displayed publicly.</li><li><strong>Talent Pool profiles</strong> \u2014 if you join, we store your registration details (name, photo, phone number, email, sector, position, location, experience and mini-CV answers, plus an optional CV link). Only your name, photo, position, location, experience and "about me" are shown publicly; your phone number, email and CV link stay private with our team.</li><li><strong>Saved vacancies</strong> \u2014 synced to your account so your saved list follows you across devices.</li><li><strong>Reports &amp; suggestions</strong> \u2014 including any contact details you optionally provide. You can see your own submissions under "My submissions".</li><li><strong>Notes</strong> \u2014 private reminders you write are stored only on your device.</li><li><strong>Photos</strong> \u2014 profile photos submitted for agencies, employers and Talent Pool candidates, stored by our hosting provider (Cloudflare).</li><li><strong>Admin login</strong> \u2014 administrator accounts (email/password or Google) used to manage the directory. This is stored securely by Supabase and is not accessible to other users.</li></ul>'
+    },
+    {
+      id: 'priv-location',
+      title: 'Location',
+      body: '<p>The "Use precise location" button on directory screens asks for your device location only when you tap it. Your coordinates are turned into an area name in your browser and used as a search filter \u2014 your precise location is never stored or sent to our database.</p>'
+    },
+    {
+      id: 'priv-alerts',
+      title: 'Email vacancy alerts',
+      body: '<p>If you opt in during Talent Pool registration, we use your email address to send alerts about vacancies matching your sector and location. Every alert includes an unsubscribe link, and you can also ask us to remove your profile. We send no other marketing email.</p>'
+    },
+    {
+      id: 'priv-analytics',
+      title: 'Analytics',
+      body: '<p>We use privacy-preserving first-party analytics. The app creates a random anonymous visitor identifier in your browser and a separate session identifier to count unique visitors, visits, vacancy views, and apply-link clicks. These identifiers do not contain your name, email address, phone number, IP address, or precise location. Authenticated administrator activity is excluded from public visitor statistics.</p>'
     },
     {
       id: 'priv-use',
       title: 'How data is used',
-      body: '<p>Submitted agency information is used solely to populate the public directory so job seekers can find recruitment agencies. It is not sold, shared with advertisers, or used for any purpose beyond the directory itself.</p>'
+      body: '<p>Directory data is used to run the public directory; Talent Pool data to connect candidates with employers through our team; account data to sync your saved vacancies; and reports and suggestions to improve listings. Data is not sold and is not shared with advertisers. Anonymous analytics are used to understand aggregate usage and improve the app.</p>'
     },
     {
       id: 'priv-storage',
-      title: 'Data storage',
-      body: '<p>All data is stored using Supabase, a third-party database provider. Data is transmitted over HTTPS. Only the app administrator can edit or delete directory entries; anyone can view the directory and submit new entries.</p>'
+      title: 'Data storage &amp; third parties',
+      body: '<p>Data is stored by our database provider, <strong>Supabase</strong> (accounts, directory, Talent Pool, saved vacancies, analytics), and by <strong>Cloudflare</strong> (hosting, photo storage, spam-protected forms and manager-link changes). <strong>Google</strong> is the sign-in provider, and a location lookup service receives your coordinates only when you tap "Use precise location". Data is transmitted over HTTPS. Smart Manager links are private tokens verified on our server \u2014 agency managers can only add to their own listing, never edit or delete.</p>'
     },
     {
       id: 'priv-choices',
       title: 'Your choices',
-      body: '<p>If you would like an entry corrected or removed, contact us using the details below and we will action it directly, since edits and deletions are admin-only within the app.</p>'
+      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Sign out</strong> \u2014 from the site menu or Menu tab, any time.</li><li><strong>Remove your Talent Pool profile</strong> \u2014 open "My Talent Pool profile" and choose Remove, or contact us.</li><li><strong>Stop email alerts</strong> \u2014 use the unsubscribe link in any alert email.</li><li><strong>Correct or remove a listing</strong> \u2014 contact us using the details below and we\'ll action it directly, since edits and deletions are admin-only within the app.</li></ul>'
     },
     {
       id: 'priv-children',
