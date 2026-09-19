@@ -36,13 +36,20 @@
   .auth-gate-logo{width:86px;height:86px;border-radius:25px;margin:0 auto 22px;box-shadow:0 12px 30px rgba(0,0,0,.24)}
   .auth-gate-card h1{margin:0;font-size:30px;letter-spacing:-.04em}
   .auth-gate-card p{margin:11px auto 26px;max-width:320px;color:rgba(255,255,255,.82);line-height:1.55;font-size:14px}
-  #google-sign-in{width:100%;display:flex;align-items:center;justify-content:center;gap:11px;border:0;border-radius:14px;padding:14px 18px;background:#fff;color:#1f2937;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 9px 22px rgba(0,0,0,.2);transition:transform .2s ease,opacity .2s ease}
-  #google-sign-in:hover{transform:translateY(-1px)}
-  #google-sign-in:disabled{opacity:.65;cursor:wait;transform:none}
-  #google-sign-in svg{width:20px;height:20px}
   #auth-gate-status{min-height:18px;margin:14px 0 0;color:rgba(255,255,255,.76);font-size:12px}
   .auth-gate-privacy{margin-top:24px!important;margin-bottom:0!important;font-size:11px!important;color:rgba(255,255,255,.58)!important}
   @media(max-width:420px){.auth-gate-card{padding:32px 22px 25px;border-radius:24px}.auth-gate-card h1{font-size:27px}}
+  /* ===== Official "Sign in with Google" branded button ===== */
+  .gsi-material-button{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #747775;border-radius:14px;box-sizing:border-box;color:#1f1f1f;cursor:pointer;font-family:'Roboto',arial,sans-serif;font-size:14px;height:44px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 18px;position:relative;text-align:center;transition:background-color .218s,border-color .218s,box-shadow .218s;vertical-align:middle;white-space:nowrap;width:100%;max-width:none}
+  .gsi-material-button .gsi-material-button-icon{height:20px;margin-right:12px;min-width:20px;width:20px}
+  .gsi-material-button .gsi-material-button-content-wrapper{align-items:center;display:flex;flex-direction:row;flex-wrap:nowrap;height:100%;justify-content:center;position:relative;width:100%}
+  .gsi-material-button .gsi-material-button-contents{flex-grow:0;font-family:'Roboto',arial,sans-serif;font-weight:500;overflow:hidden;text-overflow:ellipsis;vertical-align:top}
+  .gsi-material-button .gsi-material-button-state{transition:opacity .218s;bottom:0;left:0;opacity:0;position:absolute;right:0;top:0}
+  .gsi-material-button:disabled{cursor:wait;background-color:#ffffff61;border-color:#1f1f1f1f}
+  .gsi-material-button:disabled .gsi-material-button-contents,.gsi-material-button:disabled .gsi-material-button-icon{opacity:.38}
+  .gsi-material-button:not(:disabled):active .gsi-material-button-state,.gsi-material-button:not(:disabled):focus .gsi-material-button-state{background-color:#303030;opacity:.12}
+  .gsi-material-button:not(:disabled):hover{box-shadow:0 1px 2px 0 rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);transform:translateY(-1px)}
+  .gsi-material-button:not(:disabled):hover .gsi-material-button-state{background-color:#303030;opacity:.08}
 </style>
 
 <title>SA Recruiters — South African Recruitment Agencies Directory</title>
@@ -116,9 +123,20 @@
     <img class="auth-gate-logo" src="icons/v2-icon-192.png" alt="SA Recruiters">
     <h1 id="welcome-title">Welcome to SA Recruiters</h1>
     <p>Find trusted recruitment agencies, branches, employers and opportunities across South Africa.</p>
-    <button id="google-sign-in" type="button" disabled>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.27c0-.72-.06-1.42-.18-2.09H12v3.96h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.69 2.91-4.18 2.91-7.26Z"/><path fill="#34A853" d="M12 21.7c2.63 0 4.84-.87 6.45-2.36l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.54 0-4.7-1.72-5.47-4.03H3.28v2.53A9.74 9.74 0 0 0 12 21.7Z"/><path fill="#FBBC05" d="M6.53 13.78A5.85 5.85 0 0 1 6.22 12c0-.62.11-1.22.31-1.78V7.69H3.28A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.03 4.31l3.25-2.53Z"/><path fill="#EA4335" d="M12 6.19c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.24 14.63 2.3 12 2.3a9.74 9.74 0 0 0-8.72 5.39l3.25 2.53c.77-2.31 2.93-4.03 5.47-4.03Z"/></svg>
-      Continue with Google
+    <button id="google-sign-in" class="gsi-material-button" type="button" disabled>
+      <div class="gsi-material-button-state"></div>
+      <div class="gsi-material-button-content-wrapper">
+        <div class="gsi-material-button-icon">
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:block;">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+            <path fill="none" d="M0 0h48v48H0z"></path>
+          </svg>
+        </div>
+        <span class="gsi-material-button-contents">Sign in with Google</span>
+      </div>
     </button>
     <div id="auth-gate-status" role="status" aria-live="polite">Checking your sign-in…</div>
     <p class="auth-gate-privacy">Sign in is required to access the SA Recruiters app.</p>
