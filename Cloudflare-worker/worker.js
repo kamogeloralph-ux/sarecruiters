@@ -38,6 +38,30 @@ async function isAdminRequest(request, env) {
   }
 }
 __name(isAdminRequest, "isAdminRequest");
+// Resolves the signed-in user's id from a verified Supabase access token, if
+// one was sent. Used to stamp reports/suggestions with their submitter
+// without ever trusting a user_id the client could put in the request body.
+// Returns null (not an error) whenever there's no token, an invalid token,
+// or the auth check fails for any reason — submissions stay optional-owner.
+async function verifiedUserId(request, env) {
+  const authHeader = request.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "apikey": env.SUPABASE_ANON_KEY
+      }
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    return (data && data.id) ? data.id : null;
+  } catch (e) {
+    return null;
+  }
+}
+__name(verifiedUserId, "verifiedUserId");
 function randomKey() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
@@ -656,12 +680,14 @@ var worker_default = {
         const ts = await verifyTurnstile(request, env, origin, true);
         if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
         const body = await request.json().catch(() => ({}));
+        const reportUserId = await verifiedUserId(request, env);
         try {
           await supabaseRpc(env, "public_submit_report", {
             p_agency_name: String(body.agency_name || "").slice(0, 200),
             p_agency_id: body.agency_id ? String(body.agency_id) : null,
             p_reason: String(body.reason || "").slice(0, 200),
-            p_details: String(body.details || "").slice(0, 4000)
+            p_details: String(body.details || "").slice(0, 4000),
+            p_user_id: reportUserId
           });
         } catch (e) {
           return json({ error: "Could not save the report.", detail: e.detail }, 502, origin);
@@ -680,11 +706,13 @@ var worker_default = {
         const ts = await verifyTurnstile(request, env, origin, true);
         if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
         const body = await request.json().catch(() => ({}));
+        const suggestionUserId = await verifiedUserId(request, env);
         try {
           await supabaseRpc(env, "public_submit_suggestion", {
             p_type: String(body.type || "suggestion").slice(0, 50),
             p_agency_name: String(body.agency_name || "").slice(0, 200),
-            p_details: String(body.details || "").slice(0, 4000)
+            p_details: String(body.details || "").slice(0, 4000),
+            p_user_id: suggestionUserId
           });
         } catch (e) {
           return json({ error: "Could not save the suggestion.", detail: e.detail }, 502, origin);
