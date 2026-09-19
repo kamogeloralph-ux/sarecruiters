@@ -13,6 +13,7 @@
     "sync:dpsa": "node scripts/sync-dpsa.mjs",
     "test": "node --test scripts/*.test.mjs",
     "scrape:jobmail": "node scripts/scrape-jobmail.mjs",
+    "verify:jobmail": "node scripts/verify-jobmail.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs",
     "scrape:graduates24": "node scripts/scrape-graduates24.mjs"
   },

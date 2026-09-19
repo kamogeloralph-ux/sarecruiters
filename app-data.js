@@ -574,16 +574,27 @@ async function removeVacancy(id) {
   writeLocal('vacancies', arr);
 }
 
-// Vacancies are removed automatically 60 days after they were posted.
-// A daily Supabase scheduled job (see AUTO_DELETE_OLD_VACANCIES.sql) is the
-// real cleanup; this is a client-side safety net so a vacancy never shows
-// publicly past its 60 days even on a visit before that job next runs.
-var VACANCY_TTL_DAYS = 60;
+// Vacancies are removed automatically after their source-specific TTL.
+// A daily Supabase scheduled job (delete_expired_vacancies(), see
+// supabase/migrations) is the real cleanup; this is a client-side safety
+// net so a vacancy never shows publicly past its TTL even on a visit
+// before that job next runs. Kept in sync with delete_expired_vacancies()
+// — JobMail/learnerships/retail churn faster than a manually-posted
+// agency vacancy in practice, so they get a shorter window instead of one
+// blanket number for everything.
+var VACANCY_TTL_DAYS_DEFAULT = 60;
+var VACANCY_TTL_DAYS_BY_SOURCE = {
+  jobmail: 21,
+  agency: 21, // pre-rename rows not yet re-discovered by a scrape
+  learnerships: 30,
+  retail: 30, shoprite: 30, picknpay: 30, woolworths: 30, truworths: 30, spar: 30,
+};
 function isVacancyExpired(v) {
   if (!v || !v.created_at) return false;
   var posted = new Date(v.created_at).getTime();
   if (isNaN(posted)) return false;
-  return (Date.now() - posted) / 86400000 >= VACANCY_TTL_DAYS;
+  var ttlDays = VACANCY_TTL_DAYS_BY_SOURCE[v.source_type] || VACANCY_TTL_DAYS_DEFAULT;
+  return (Date.now() - posted) / 86400000 >= ttlDays;
 }
 async function purgeExpiredVacancies(list) {
   var expired = (list || []).filter(isVacancyExpired);
