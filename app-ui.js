@@ -37,6 +37,30 @@ function updateAdminUI() {
 // (Supabase session restore + admin console handled in admin.html.)
 
 // ===== Bottom nav =====
+function openSiteMenu() {
+  var drawer = document.getElementById('site-menu-drawer');
+  var backdrop = document.getElementById('site-menu-backdrop');
+  var trigger = document.getElementById('site-menu-trigger');
+  if (!drawer || !backdrop) return;
+  drawer.classList.add('is-open');
+  backdrop.classList.add('is-visible');
+  drawer.setAttribute('aria-hidden', 'false');
+  backdrop.setAttribute('aria-hidden', 'false');
+  if (trigger) trigger.setAttribute('aria-expanded', 'true');
+  document.body.classList.add('site-menu-open');
+}
+function closeSiteMenu() {
+  var drawer = document.getElementById('site-menu-drawer');
+  var backdrop = document.getElementById('site-menu-backdrop');
+  var trigger = document.getElementById('site-menu-trigger');
+  if (drawer) { drawer.classList.remove('is-open'); drawer.setAttribute('aria-hidden', 'true'); }
+  if (backdrop) { backdrop.classList.remove('is-visible'); backdrop.setAttribute('aria-hidden', 'true'); }
+  if (trigger) { trigger.setAttribute('aria-expanded', 'false'); trigger.focus(); }
+  document.body.classList.remove('site-menu-open');
+}
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') closeSiteMenu();
+});
 document.querySelectorAll('.navbtn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     if (!btn.dataset.tab) return; // action buttons (e.g. Feedback) handle their own click

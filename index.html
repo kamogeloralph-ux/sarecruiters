@@ -124,6 +124,29 @@
   </div>
 </section>
 
+<div class="site-menu-backdrop" id="site-menu-backdrop" onclick="closeSiteMenu()" aria-hidden="true"></div>
+<aside class="site-menu-drawer" id="site-menu-drawer" aria-label="Site menu" aria-hidden="true">
+  <div class="site-menu-drawer-head">
+    <div class="site-menu-brand"><img src="icons/v2-icon-192.png" alt="SA Recruiters" width="42" height="42"><div><strong>SA Recruiters</strong><span>Recruitment community</span></div></div>
+    <button class="site-menu-close" type="button" data-ripple onclick="closeSiteMenu()" aria-label="Close site menu">×</button>
+  </div>
+  <div class="site-menu-account">
+    <div class="site-menu-avatar" id="welcome-user-avatar" aria-hidden="true"><span>A</span></div>
+    <div class="site-menu-account-copy"><span>Signed in with Google</span><strong id="welcome-user-name">Google account</strong></div>
+  </div>
+  <nav class="site-menu-nav" aria-label="Site navigation">
+    <button type="button" data-ripple onclick="closeSiteMenu();showAllVacancies('home')"><span class="site-menu-nav-icon">⌕</span><span>Browse vacancies<small>Find your next opportunity</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();showAllAgencies()"><span class="site-menu-nav-icon">⌂</span><span>Recruitment agencies<small>Explore agencies and branches</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();goPool('profile')"><span class="site-menu-nav-icon">♙</span><span>Talent Pool<small>Meet candidates and join</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();openContentSheet('privacy')"><span class="site-menu-nav-icon">◌</span><span>Privacy policy<small>How your data is protected</small></span><b>›</b></button>
+  </nav>
+  <div class="site-menu-section-label">Appearance</div>
+  <button class="site-menu-action" type="button" data-ripple onclick="toggleTheme()"><span class="site-menu-nav-icon">◐</span><span id="site-menu-theme-label">Switch theme</span><b>›</b></button>
+  <div class="site-menu-section-label">Follow SA Recruiters</div>
+  <div id="social-links-row" class="social-links-row site-menu-social"></div>
+  <div class="site-menu-footer"><button class="site-menu-signout" type="button" data-ripple onclick="signOutSaRecruiters()">Sign out of Google</button></div>
+</aside>
+
 <div class="update-banner" id="update-banner">A new version is available. <button onclick="forceUpdateReload()">Reload now</button></div>
 <div class="retry-banner" id="retry-banner" role="status" aria-live="polite">Couldn't refresh the latest listings. <button onclick="retryLoadAll()">Retry</button></div>
 <svg width="0" height="0" style="position:absolute">
@@ -144,10 +167,7 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="theme-toggle" data-ripple id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle day or night theme">
-          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span>
-          <span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-        </button>
+        <button class="site-menu-trigger" data-ripple id="site-menu-trigger" onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     </header>
 
@@ -246,11 +266,6 @@
         </button>
       </div>
     </header>
-    <div class="menu-account-row">
-      <div class="menu-account-avatar" id="welcome-user-avatar" aria-hidden="true"><span>A</span></div>
-      <div class="menu-account-copy"><span class="menu-account-label">Signed in with Google</span><strong id="welcome-user-name">Google account</strong></div>
-      <button class="menu-signout-btn" type="button" data-ripple onclick="signOutSaRecruiters()">Sign out</button>
-    </div>
 
     <!-- ===== Track of the Day ===== -->
     <div class="track-card-wrap">
@@ -996,10 +1011,6 @@
 
     <!-- More features coming soon here -->
 
-    <div class="social-section">
-      <div class="social-section-title">Follow SA Recruiters</div>
-      <div id="social-links-row" class="social-links-row"></div>
-    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -1014,7 +1025,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=ebebd7b4d8" defer></script>
+<script src="app.bundle.min.js?v=7d54d85542" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,
