@@ -478,9 +478,11 @@ function filterAndRenderCached() {
 
 
 window.toggleSave = function(btn, key) {
-  if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); showToast('Removed from saved'); }
-  else { savedSet.add(key); btn.classList.add('saved'); showToast('Saved \u2605'); }
+  var nowSaved;
+  if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); showToast('Removed from saved'); nowSaved = false; }
+  else { savedSet.add(key); btn.classList.add('saved'); showToast('Saved \u2605'); nowSaved = true; }
   localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+  syncSavedVacancy(key, nowSaved);
   renderSaved();
 };
 
@@ -763,9 +765,11 @@ window.toggleBranchBlock = function(id) {
 };
 
 window.toggleSave = function(btn, key) {
-  if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); btn.innerHTML = STAR_SVG; showToast('Removed from saved'); }
-  else { savedSet.add(key); btn.classList.add('saved'); btn.innerHTML = STAR_SVG; showToast('Saved'); }
+  var nowSaved;
+  if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); btn.innerHTML = STAR_SVG; showToast('Removed from saved'); nowSaved = false; }
+  else { savedSet.add(key); btn.classList.add('saved'); btn.innerHTML = STAR_SVG; showToast('Saved'); nowSaved = true; }
   localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+  syncSavedVacancy(key, nowSaved);
   renderSaved();
 };
 

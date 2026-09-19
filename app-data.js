@@ -614,6 +614,7 @@ async function submitReportToSupabase(payload) {
   };
   // Only include agency_id if it's a valid value (avoid FK errors)
   if (payload.agency_id) safePayload.agency_id = payload.agency_id;
+  if (payload.user_id) safePayload.user_id = payload.user_id;
   var { error } = await supabaseClient.from('reports').insert([safePayload]);
   if (error) { console.error('report insert', error); return { ok: false, error: error }; }
   return { ok: true };
