@@ -38,10 +38,8 @@ function isGoogleUser(user) {
 function renderAuthUser(user) {
   var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Account';
   var avatar = user && user.user_metadata && user.user_metadata.avatar_url;
-  var nameEl = document.getElementById('profile-status-name');
-  if (nameEl && user) nameEl.textContent = name;
   var authName = document.getElementById('welcome-user-name');
-  if (authName) authName.textContent = user ? name : '';
+  if (authName) authName.textContent = user ? name : 'Google account';
   var authAvatar = document.getElementById('welcome-user-avatar');
   if (authAvatar) {
     authAvatar.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((name || 'A').charAt(0).toUpperCase()) + '</span>';
