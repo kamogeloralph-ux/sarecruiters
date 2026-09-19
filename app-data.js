@@ -574,35 +574,20 @@ async function removeVacancy(id) {
   writeLocal('vacancies', arr);
 }
 
-// Vacancies are removed automatically after their source-specific TTL.
-// A daily Supabase scheduled job (delete_expired_vacancies(), see
-// supabase/migrations) is the real cleanup; this is a client-side safety
-// net so a vacancy never shows publicly past its TTL even on a visit
-// before that job next runs. Kept in sync with delete_expired_vacancies()
-// — JobMail/learnerships/retail churn faster than a manually-posted
-// agency vacancy in practice, so they get a shorter window instead of one
-// blanket number for everything.
-var VACANCY_TTL_DAYS_DEFAULT = 60;
-var VACANCY_TTL_DAYS_BY_SOURCE = {
-  jobmail: 21,
-  agency: 21, // pre-rename rows not yet re-discovered by a scrape
-  learnerships: 30,
-  retail: 30, shoprite: 30, picknpay: 30, woolworths: 30, truworths: 30, spar: 30,
-};
-function isVacancyExpired(v) {
-  if (!v || !v.created_at) return false;
-  var posted = new Date(v.created_at).getTime();
-  if (isNaN(posted)) return false;
-  var ttlDays = VACANCY_TTL_DAYS_BY_SOURCE[v.source_type] || VACANCY_TTL_DAYS_DEFAULT;
-  return (Date.now() - posted) / 86400000 >= ttlDays;
-}
-async function purgeExpiredVacancies(list) {
-  var expired = (list || []).filter(isVacancyExpired);
-  if (!expired.length) return list;
-  var ids = expired.map(function(v){ return v.id; });
-  try { await supabaseClient.from('vacancies').delete().in('id', ids); } catch(e){}
-  return (list || []).filter(function(v){ return ids.indexOf(v.id) === -1; });
-}
+// Elapsed-time TTL expiry was removed: a vacancy is only ever considered
+// gone once something has actually verified it's gone (currently
+// scripts/verify-jobmail.mjs for Job Mail, which fetches each listing's
+// own link and deletes on a real dead signal — 404/410, a redirect to a
+// generic listing page, or matching "closed/filled/expired" wording).
+// isVacancyExpired()/purgeExpiredVacancies() and the daily
+// delete_expired_vacancies() Postgres job (see supabase/migrations) have
+// both been retired — neither ever checked whether a listing was actually
+// still live, only how old it was, which is exactly the guessing this
+// removes. Sources with no real verification pass yet (manually-posted
+// agency vacancies, Adzuna, Himalayas, DPSA, retail, Graduates24) are
+// currently never auto-removed at all as a result — see the chat reply
+// this shipped with for what that means and the options for closing that
+// gap per source.
 
 /* ── Data: REPORTS ───────────────────────────────────
    `reports` table exists but RLS blocks anonymous inserts. We try the
@@ -848,13 +833,10 @@ async function loadAll() {
     // splitting the startup cache from the lazy General Vacancies feed.
     matchVacanciesToAgencies(results[2], agenciesCache);
     vacanciesCache = sortVacancies(results[2].filter(function(v){
-      if (isVacancyExpired(v)) return false;
       // General-folder rows are loaded lazily. Do not retain them here or
       // updateStats() would add them a second time to generalVacancyCount.
       return !isGeneralDirectoryVacancy(v);
     }));
-    // Best-effort background delete of the expired ones we just filtered out.
-    purgeExpiredVacancies(results[2]);
   }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
   if (typeof results[4] === 'number') generalVacancyCount = results[4];
