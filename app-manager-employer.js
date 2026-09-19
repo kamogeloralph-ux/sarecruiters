@@ -227,6 +227,7 @@ function bootAuthenticatedApp() {
 })();
 
 loadAll().then(markAppDataReady);
+loadSavedVacanciesFromSupabase();
 initConnectionStatus();
 processAlertUnsubscribe();
 // The shell and cached directory paint first; secondary settings are already

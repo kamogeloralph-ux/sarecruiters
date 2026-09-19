@@ -158,6 +158,7 @@
     <button type="button" data-ripple onclick="closeSiteMenu();showAllAgencies()"><span class="site-menu-nav-icon">⌂</span><span>Recruitment agencies<small>Explore agencies and branches</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();goPool('profile')"><span class="site-menu-nav-icon">♙</span><span>Talent Pool<small>Meet candidates and join</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openMyPoolProfile()"><span class="site-menu-nav-icon">☺</span><span>My Talent Pool profile<small>Edit or remove your listing</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();openMySubmissions()"><span class="site-menu-nav-icon">✉</span><span>My submissions<small>Track reports and suggestions you've sent</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openContentSheet('privacy')"><span class="site-menu-nav-icon">◌</span><span>Privacy policy<small>How your data is protected</small></span><b>›</b></button>
   </nav>
   <div class="site-menu-section-label">Appearance</div>
@@ -974,6 +975,16 @@
     <div class="field"><label>Your contact (optional)</label><input id="s-contact" placeholder="Email or phone — so we can follow up"></div>
     <div id="suggestion-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
     <button class="sheet-submit" data-ripple onclick="submitSuggestion()">Submit</button>
+  </div>
+</div>
+
+<!-- ============ MY SUBMISSIONS (read-only: signed-in user's own reports + suggestions) ============ -->
+<div class="sheet-scrim" id="my-submissions-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>My submissions</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Reports and suggestions you've sent, and their current status.</p>
+    <div id="my-submissions-list"></div>
   </div>
 </div>
 

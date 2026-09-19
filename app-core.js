@@ -184,6 +184,43 @@ var publicEmployerRegistrationOpen = false;
 var employerDirectoryOpen = true; // when false, only Supabase-verified Talent Pool registrants may browse employers and employer vacancies
 var talentPoolVerified = false;
 var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
+// ===== Saved vacancies: per-account sync (saved_vacancies table) =====
+// savedSet above still seeds instantly from localStorage so Saved renders
+// with zero lag, but Supabase (RLS: one row per signed-in user) is now the
+// source of truth across devices. loadSavedVacanciesFromSupabase() is called
+// once auth resolves (see startAuthenticatedApp's callback in app-ui.js) and
+// merges in both directions: pulls the account's saved rows into savedSet,
+// and pushes up any vacancies that were only saved locally pre-sign-in so
+// that history isn't lost.
+var savedVacanciesSynced = false;
+async function loadSavedVacanciesFromSupabase() {
+  if (!supabaseClient || !saAuthUser || savedVacanciesSynced) return;
+  savedVacanciesSynced = true;
+  try {
+    var result = await supabaseClient.from('saved_vacancies').select('vacancy_id').eq('user_id', saAuthUser.id);
+    if (result.error) { console.error('load saved_vacancies', result.error); return; }
+    var remoteIds = (result.data || []).map(function(r){ return r.vacancy_id; });
+    var localOnly = Array.from(savedSet).filter(function(id){ return remoteIds.indexOf(id) === -1; });
+    remoteIds.forEach(function(id){ savedSet.add(id); });
+    localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+    if (typeof renderSaved === 'function') renderSaved();
+    // Push up anything saved locally before this account had synced yet.
+    if (localOnly.length) {
+      var rows = localOnly.map(function(id){ return { user_id: saAuthUser.id, vacancy_id: id }; });
+      supabaseClient.from('saved_vacancies').upsert(rows, { onConflict: 'user_id,vacancy_id' }).then(function(){}, function(){});
+    }
+  } catch(e) { console.error('load saved_vacancies', e); }
+}
+function syncSavedVacancy(vacancyId, isSaved) {
+  if (!supabaseClient || !saAuthUser) return;
+  try {
+    if (isSaved) {
+      supabaseClient.from('saved_vacancies').upsert([{ user_id: saAuthUser.id, vacancy_id: vacancyId }], { onConflict: 'user_id,vacancy_id' }).then(function(){}, function(){});
+    } else {
+      supabaseClient.from('saved_vacancies').delete().eq('user_id', saAuthUser.id).eq('vacancy_id', vacancyId).then(function(){}, function(){});
+    }
+  } catch(e) {}
+}
 // ===== SMART MANAGER: agency self-service links =====
 var managerMode = false;   // true when URL has ?manage=TOKEN
 var managerAgency = null;  // the agency object the manager is allowed to update

@@ -233,12 +233,27 @@ async function submitViaWorker(path, payload, turnstileContainerId) {
   if (turnstileConfigured() && !token) {
     return { ok: false, error: 'Please complete the spam check first.' };
   }
+  // Attach the signed-in user's access token (when available) so the Worker
+  // can stamp the submission with a verified user_id server-side — see
+  // verifiedUserId() in worker.js. Never fatal if this can't be fetched;
+  // the submission just goes through without an owner, as before.
+  var authToken = null;
+  try {
+    if (supabaseClient) {
+      var sessionResult = await supabaseClient.auth.getSession();
+      authToken = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+    }
+  } catch(e) {}
   try {
     var controller = typeof AbortController === 'function' ? new AbortController() : null;
     var timeout = controller ? setTimeout(function(){ controller.abort(); }, 12000) : null;
     var res = await fetch(R2_WORKER_URL + path, {
       method: 'POST',
-      headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { 'cf-turnstile-response': token } : {}),
+      headers: Object.assign(
+        { 'Content-Type': 'application/json' },
+        token ? { 'cf-turnstile-response': token } : {},
+        authToken ? { 'Authorization': 'Bearer ' + authToken } : {}
+      ),
       body: JSON.stringify(payload),
       signal: controller ? controller.signal : undefined
     });
@@ -316,7 +331,8 @@ async function submitReport() {
     agency_id: matched ? matched.id : null,
     reason: reason,
     details: (details ? details : '') + (contact ? ' | Reporter contact: ' + contact : ''),
-    status: 'open'
+    status: 'open',
+    user_id: saAuthUser ? saAuthUser.id : null
   };
   var btn = event && event.target ? event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
@@ -365,6 +381,80 @@ async function submitReport() {
     waText: waMsg
   });
 }
+// ===== MY SUBMISSIONS (read-only, signed-in user's own reports + suggestions) =====
+// Mirrors openMyPoolProfile()'s pattern: query by the signed-in user's id and
+// rely on the reports_select_own / suggestions_select_own RLS policies
+// (added alongside user_id ownership — see the 20260919 migration) to scope
+// the rows. Unlike the admin Submissions screen this has no status-toggle or
+// delete controls — it's just visibility into what happened to what you sent.
+async function openMySubmissions() {
+  if (!saAuthUser) { showToast('Please sign in to view your submissions.'); return; }
+  var list = document.getElementById('my-submissions-list');
+  if (list) list.innerHTML = '<div class="empty-state"><h3>Loading your submissions…</h3></div>';
+  document.getElementById('my-submissions-overlay').classList.add('open');
+  var reportsRes, suggestionsRes;
+  try {
+    reportsRes = await supabaseClient.from('reports').select('*').eq('user_id', saAuthUser.id).order('created_at', { ascending: false });
+    suggestionsRes = await supabaseClient.from('suggestions').select('*').eq('user_id', saAuthUser.id).order('created_at', { ascending: false });
+  } catch(e) {
+    console.error('my submissions load', e);
+    if (list) list.innerHTML = '<div class="empty-state"><h3>Could not load your submissions</h3><p>Please try again.</p></div>';
+    return;
+  }
+  var reports = (reportsRes && !reportsRes.error) ? (reportsRes.data || []).map(function(r){ return Object.assign({}, r, { _kind: 'report' }); }) : [];
+  var suggestions = (suggestionsRes && !suggestionsRes.error) ? (suggestionsRes.data || []).map(function(s){ return Object.assign({}, s, { _kind: 'suggestion' }); }) : [];
+  // Local-only backups (this browser's own submissions saved in case the
+  // Supabase insert failed) — same composite-key dedup as the admin panel
+  // (loadReportsFromSupabase/loadSuggestionsFromSupabase), since local
+  // entries never carry the row's real id to compare directly. Only ones
+  // NOT already reflected in the Supabase rows above are shown, flagged
+  // "Pending" rather than silently duplicated or dropped.
+  var seenKeys = {};
+  reports.forEach(function(r){ seenKeys['r|' + (r.agency_name||'') + '|' + (r.reason||'') + '|' + (r.details||'') + '|' + (r.created_at||'')] = true; });
+  suggestions.forEach(function(s){ seenKeys['s|' + (s.agency_name||'') + '|' + (s.type||'') + '|' + (s.details||'') + '|' + (s.created_at||'')] = true; });
+  var localReports = readLocalReports().filter(function(r){
+    var key = 'r|' + (r.agency_name||'') + '|' + (r.reason||'') + '|' + (r.details||'') + '|' + (r.created_at||'');
+    return !seenKeys[key];
+  }).map(function(r){ return Object.assign({}, r, { _kind: 'report', _pending: true }); });
+  var localSuggestions = [];
+  try {
+    localSuggestions = JSON.parse(localStorage.getItem('sa_suggestions_local') || '[]').filter(function(s){
+      var key = 's|' + (s.agency_name||'') + '|' + (s.type||'') + '|' + (s.details||'') + '|' + (s.created_at||'');
+      return !seenKeys[key];
+    }).map(function(s){ return Object.assign({}, s, { _kind: 'suggestion', _pending: true }); });
+  } catch(e){}
+  var all = reports.concat(suggestions, localReports, localSuggestions).sort(function(a, b) {
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  });
+  if (!list) return;
+  if (!all.length) {
+    list.innerHTML = '<div class="empty-state"><h3>No submissions yet</h3><p>Reports and suggestions you send will show up here.</p></div>';
+    return;
+  }
+  list.innerHTML = all.map(function(item) {
+    var isReport = item._kind === 'report';
+    var iconClass = isReport ? 'report' : 'suggestion';
+    var iconEmoji = isReport ? '⚠️' : '💡';
+    var title = isReport ? (item.reason || 'Report') : (item.type || 'Suggestion');
+    var agency = item.agency_name ? escapeHtml(item.agency_name) : '';
+    var details = escapeHtml(item.details || '');
+    var dateStr = item.created_at ? new Date(item.created_at).toLocaleString('en-ZA', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+    var status = item.status || 'open';
+    var statusClass = item._pending ? 'open' : (status === 'resolved' || status === 'closed' ? 'resolved' : 'open');
+    var statusLabel = item._pending ? 'Pending' : (status === 'resolved' ? '✓ Resolved' : (status === 'closed' ? 'Closed' : 'Open'));
+    var metaLine = agency ? 'Agency: ' + agency : '';
+    if (dateStr) metaLine += (metaLine ? ' · ' : '') + dateStr;
+    return '<div class="sub-card">' +
+      '<div class="sub-card-head">' +
+        '<div class="sub-card-icon ' + iconClass + '">' + iconEmoji + '</div>' +
+        '<div class="sub-card-title">' + escapeHtml(title) + (metaLine ? '<div class="sub-card-meta">' + metaLine + '</div>' : '') + '</div>' +
+      '</div>' +
+      (details ? '<div class="sub-card-body">' + details + '</div>' : '') +
+      '<div class="sub-card-actions"><span class="sub-status-pill ' + statusClass + '" style="cursor:default;">' + statusLabel + '</span></div>' +
+    '</div>';
+  }).join('');
+}
+
 function reportWhatsAppLink(p) {
   var msg = 'SA Recruiters report:%0A' +
     'Agency: ' + encodeURIComponent(p.agency_name || '-') + '%0A' +
@@ -403,7 +493,8 @@ async function submitSuggestion() {
     type: type,
     agency_name: agency,
     details: (details ? details : '') + (contact ? ' | Contact: ' + contact : ''),
-    status: 'open'
+    status: 'open',
+    user_id: saAuthUser ? saAuthUser.id : null
   };
   var btn = event && event.target ? event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
