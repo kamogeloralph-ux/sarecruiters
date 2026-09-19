@@ -344,6 +344,7 @@ function applyTheme(theme) {
   // Update menu label/icon
   var mIcon = document.getElementById('theme-menu-icon');
   var mLabel = document.getElementById('theme-menu-label');
+  var siteMenuThemeLabel = document.getElementById('site-menu-theme-label');
   /* Tile icons: CSS .profile-menu-item .mi-icon svg sets stroke:#fff, size, etc. */
   if (mIcon) mIcon.innerHTML = theme === 'light'
     ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>'
@@ -358,6 +359,7 @@ function applyTheme(theme) {
       mLabel.innerHTML = labelText + '<span class="mi-sub">Toggle between light &amp; dark appearance</span>';
     }
   }
+  if (siteMenuThemeLabel) siteMenuThemeLabel.textContent = theme === 'light' ? 'Switch to night mode' : 'Switch to day mode';
 }
 function toggleTheme() {
   var current = document.documentElement.getAttribute('data-theme') || 'light';
