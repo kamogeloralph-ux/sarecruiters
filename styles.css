@@ -344,10 +344,9 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 /* ===== COMBINED VACANCY OVERVIEW ===== */
 #screen-allvacancies .vacancies-screen-fixed{padding-top:12px;padding-bottom:6px}
 #screen-allvacancies .search-mini{margin-top:8px}
-#screen-allvacancies .vac-filter-row{display:flex;flex-wrap:nowrap!important;gap:6px!important;overflow-x:auto;overflow-y:hidden;margin-bottom:0!important;padding-top:7px;padding-bottom:1px;scrollbar-width:none}
-#screen-allvacancies .vac-filter-row::-webkit-scrollbar{display:none}
-#screen-allvacancies .vac-filter-select{height:36px;min-width:0;width:0;flex:1 1 0;padding-left:7px;padding-right:7px;font-size:10.5px;white-space:nowrap;text-overflow:ellipsis}
-#screen-allvacancies .vac-folder-backbar{margin-bottom:4px}
+#screen-allvacancies .vac-simple-header{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+#screen-allvacancies .vac-simple-back{width:40px;height:40px;flex-shrink:0;justify-content:center;padding:0;border-radius:13px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 20%,transparent)}
+#screen-allvacancies .vac-simple-back svg{width:19px;height:19px}
 .vacancy-overview-section{background:var(--card);border:1px solid var(--border);border-radius:16px;margin:10px 0 12px;padding:0 12px 6px;overflow:hidden;box-shadow:var(--shadow-sm)}
 .vacancy-overview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 2px 8px;border-bottom:1px solid var(--separator)}
 .vacancy-overview-title{font-size:15px;font-weight:800;letter-spacing:-.01em;color:var(--text)}

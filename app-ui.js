@@ -517,6 +517,16 @@ async function deleteBranchAllList(id) {
 var allVacanciesFolder = null;
 var vacancyFolderDisplayLimit = 30;
 var vacancyFolderDisplayKey = '';
+function handleVacanciesBack() {
+  if (allVacanciesFolder) closeVacancyFolder();
+  else goBackFromDirectory();
+}
+function updateVacanciesBackButton() {
+  var btn = document.getElementById('allvacancies-back');
+  if (!btn) return;
+  btn.setAttribute('aria-label', allVacanciesFolder ? 'Back to vacancy categories' : 'Back to home menu');
+  btn.title = allVacanciesFolder ? 'Back to vacancy categories' : 'Back to home menu';
+}
 function openVacancyFolder(type) {
   allVacanciesFolder = type;
   vacancyFolderDisplayLimit = 30;
@@ -552,7 +562,7 @@ function renderGeneralVacancyCards(append) {
     el.dataset.state = 'ready';
     var cards = generalVacancyRows.map(function(v){
       var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
-      return vacancyCard(v, agency);
+      return vacancyCard(v, agency, { hideBadges: true });
     }).join('');
     el.innerHTML = '<div class="pgroup-label">General Vacancies</div>' + cards;
   }
@@ -613,21 +623,12 @@ function loadMoreGeneralVacancies() {
   }
 }
 function renderAllVacanciesList() {
-  var searchRow = document.getElementById('allvacancies-search-row');
-  var filterRow = document.getElementById('allvacancies-filter-row');
-  var backBar = document.getElementById('allvacancies-backbar');
-  // Search and filters remain available in the combined overview; the back bar
-  // is only needed after opening a full category list.
-  if (searchRow) searchRow.style.display = '';
-  if (filterRow) filterRow.style.display = '';
-  if (backBar) backBar.style.display = allVacanciesFolder ? 'flex' : 'none';
+  updateVacanciesBackButton();
 
   if (allVacanciesFolder === 'general') {
     loadGeneralVacancies(false);
     return;
   }
-  var generalIndustrySel = document.getElementById('allvacancies-industry');
-  if (generalIndustrySel) generalIndustrySel.style.display = '';
 
   var el = document.getElementById('allvacancies-list');
   if (el) el.dataset.state = 'ready';
@@ -824,13 +825,10 @@ function renderAllVacanciesList() {
     var group = groups[key];
     group.items = sortVacancies(group.items);
     var agency = group.agency || {};
-    var cards = group.items.map(function(v){ return vacancyCard(v, agency); }).join('');
-    var groupVerified = group.type === 'Agency' && group.agency && group.agency.verified;
-    var groupVerifiedCheck = groupVerified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
-    var groupHead = allVacanciesFolder === 'agency'
-      ? '<div class="directory-group-head"><div><div class="directory-group-title">' + groupVerifiedCheck + escapeHtml(group.name) + '</div></div></div>'
-      : '';
-    return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' + groupHead + cards + '</section>';
+    var cards = group.items.map(function(v){ return vacancyCard(v, agency, { hideBadges: true }); }).join('');
+    // Every folder renders as plain cards only — no per-agency group header
+    // bar — so every vacancy card looks identical regardless of source.
+    return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' + cards + '</section>';
   }).join('');
 }
 
