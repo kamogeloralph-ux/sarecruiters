@@ -73,6 +73,12 @@ const CORE_SHELLS = {
   '/': './index.html',
   '/index.html': './index.html',
   '/admin.html': './admin.html',
+  // Cloudflare Pages serves admin.html at the clean URL /admin — which is
+  // exactly where loginWithGoogle()'s redirectTo lands after Google sign-in.
+  // Without this mapping an offline/timeout /admin navigation falls back to
+  // the index.html shell (default in shellForNavigation) and the admin lands
+  // in the public directory with no console and no error.
+  '/admin': './admin.html',
   '/privacy.html': './privacy.html',
   '/offline.html': './offline.html'
 };
