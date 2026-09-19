@@ -10,7 +10,8 @@
     "sync:dpsa": "node scripts/sync-dpsa.mjs",
     "test": "node --test scripts/*.test.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs",
-    "scrape:pnet": "node scripts/scrape-pnet.mjs"
+    "scrape:pnet": "node scripts/scrape-pnet.mjs",
+    "scrape:agency-sites": "node scripts/scrape-agency-sites.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
