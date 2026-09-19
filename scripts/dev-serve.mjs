@@ -43,6 +43,9 @@ const MIME = {
 const server = createServer(async (req, res) => {
   try {
     let pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+    // Pretty URL for the admin console, matching Cloudflare Pages' /admin ->
+    // admin.html behavior (and loginWithGoogle()'s redirectTo: '/admin').
+    if (pathname === '/admin' || pathname === '/admin/') pathname = '/admin.html';
     if (pathname.endsWith('/')) pathname += 'index.html';
     const filePath = resolve(join(ROOT, normalize(pathname)));
     if (filePath !== ROOT && !filePath.startsWith(ROOT + sep)) {

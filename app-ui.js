@@ -46,7 +46,7 @@ function openSiteMenu() {
   backdrop.classList.add('is-visible');
   drawer.setAttribute('aria-hidden', 'false');
   backdrop.setAttribute('aria-hidden', 'false');
-  if (trigger) trigger.setAttribute('aria-expanded', 'true');
+  document.querySelectorAll('.site-menu-trigger').forEach(function(btn) { btn.setAttribute('aria-expanded', 'true'); });
   document.body.classList.add('site-menu-open');
 }
 function closeSiteMenu() {
@@ -55,12 +55,17 @@ function closeSiteMenu() {
   var trigger = document.getElementById('site-menu-trigger');
   if (drawer) { drawer.classList.remove('is-open'); drawer.setAttribute('aria-hidden', 'true'); }
   if (backdrop) { backdrop.classList.remove('is-visible'); backdrop.setAttribute('aria-hidden', 'true'); }
-  if (trigger) { trigger.setAttribute('aria-expanded', 'false'); trigger.focus(); }
+  // The trigger exists in every screen's header (the iOS-style site menu update);
+  // return focus to the one on the screen the user is actually viewing.
+  var activeTrigger = document.querySelector('.screen.active .site-menu-trigger') || trigger;
+  document.querySelectorAll('.site-menu-trigger').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
+  if (activeTrigger) activeTrigger.focus();
   document.body.classList.remove('site-menu-open');
 }
 document.addEventListener('keydown', function(event) {
   if (event.key === 'Escape') closeSiteMenu();
 });
+
 document.querySelectorAll('.navbtn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     if (!btn.dataset.tab) return; // action buttons (e.g. Feedback) handle their own click

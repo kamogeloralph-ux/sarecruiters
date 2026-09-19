@@ -237,9 +237,12 @@
     <div class="screen-fixed">
     <header>
       <div class="logo-text">Search</div>
-      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button>
+      <div class="header-actions">
+        <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+        </button>
+      </div>
     </header>
     <div class="search">
       <div class="search-inner">
@@ -258,9 +261,12 @@
     <div class="screen-fixed">
     <header>
       <div class="logo-text">Saved vacancies</div>
-      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button>
+      <div class="header-actions">
+        <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+        </button>
+      </div>
     </header>
     </div>
     <div class="screen-scroll">
@@ -403,6 +409,7 @@
     <header>
       <div class="screen-title-group"><div class="logo-text">Smart Manager</div><div class="screen-context">Admin tools</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to menu" title="Back to menu">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -429,6 +436,7 @@
     <header>
       <div class="screen-title-group"><div class="logo-text">Submissions</div><div class="screen-context">Admin tools</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to menu" title="Back to menu">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -449,6 +457,7 @@
     <header>
       <div class="screen-title-group"><div class="logo-text" id="manager-status-title">Manager link</div><div class="screen-context">Please wait</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -469,6 +478,7 @@
     <header>
       <div class="screen-title-group"><div class="logo-text" id="manager-agency-name">Agency</div><div class="screen-context">Agency manager</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -495,6 +505,7 @@
     <header>
       <div class="screen-title-group"><div class="logo-text" id="manager-employer-name">Company</div><div class="screen-context">Employer manager</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -517,6 +528,7 @@
     <header>
       <div class="screen-title-group"><div class="directory-title-icon directory-icon-agencies" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></div><div><div class="logo-text">All Agencies</div><div class="screen-context">Directory</div></div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -544,6 +556,7 @@
     <header>
       <div class="screen-title-group"><div class="directory-title-icon directory-icon-branches" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div><div><div class="logo-text">All Branches</div><div class="screen-context">Directory</div></div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -571,6 +584,7 @@
     <header>
       <div class="screen-title-group"><div class="directory-title-icon directory-icon-vacancies" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><div><div class="logo-text">All Vacancies</div><div class="screen-context">Directory</div></div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -607,6 +621,7 @@
     <header>
       <div class="screen-title-group"><div class="directory-title-icon directory-icon-employers" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/></svg></div><div><div class="logo-text">Employers</div><div class="screen-context">Directory</div></div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -637,6 +652,7 @@
     <header>
       <div class="screen-title-group"><div class="logo-text">Talent Pool</div><div class="screen-context">Directory</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="closeTalentPool()" aria-label="Back to previous screen" title="Back to previous screen">×</button>
+      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -1058,7 +1074,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=84344aa93e" defer></script>
+<script src="app.bundle.min.js?v=1d8871fac2" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

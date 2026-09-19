@@ -30,6 +30,9 @@
 .screen:not(#screen-home) .screen-context{color:var(--ios-blue);font-weight:750;}
 .screen:not(#screen-home) .screen-close-btn{border-color:var(--ios-blue-line);background:var(--ios-blue-soft);color:var(--ios-blue);}
 .screen:not(#screen-home) .theme-toggle{border-color:var(--ios-blue-line);background:var(--ios-blue-soft);color:var(--ios-blue);}
+/* Site menu trigger (present in every screen's header) joins the iOS blue system too. */
+.screen:not(#screen-home) .site-menu-trigger{width:42px;height:42px;border-color:var(--ios-blue-line);background:var(--ios-blue-soft);color:var(--ios-blue);box-shadow:0 6px 16px -10px color-mix(in srgb,var(--ios-blue) 65%,transparent);}
+.screen:not(#screen-home) .site-menu-trigger:active{transform:scale(.92);}
 
 /* Search fields are grouped, soft and unmistakably part of the blue system. */
 .screen:not(#screen-home) .search-inner{height:48px;border:1px solid var(--ios-blue-line);border-radius:16px;background:var(--ios-surface);box-shadow:0 5px 16px rgba(10,35,80,.06);}
