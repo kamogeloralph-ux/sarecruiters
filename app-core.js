@@ -53,6 +53,16 @@ function setAuthGateState(state, message) {
   if (button) { button.disabled = state === 'loading' || state === 'redirecting'; button.classList.toggle('loading', button.disabled); }
   if (status) status.textContent = message || '';
 }
+// Brings the sign-in gate back in front of an already-revealed app (session
+// expiry / sign-out without a full reload). No fade-in needed here — the
+// flicker this file fixes is specifically the *reveal* path (overlay to
+// app), not this comparatively rare reappearance.
+function showAuthGate() {
+  var gate = document.getElementById('auth-gate');
+  if (!gate) return;
+  gate.style.display = '';
+  gate.classList.remove('hide');
+}
 async function signInWithGoogle() {
   if (!supabaseClient || saAuthRedirecting) return;
   saAuthRedirecting = true;
@@ -91,13 +101,15 @@ function startAuthenticatedApp(callback) {
     if (saAuthUser && !saAuthStarted) {
       saAuthStarted = true;
       setAuthGateState('authenticated', '');
-      var gate = document.getElementById('auth-gate');
-      if (gate) gate.classList.add('is-hidden');
+      // Don't hide the gate here — it fades out together with the splash,
+      // only once real app content has actually painted. See __saTryReveal.
+      __saAuthReady = true;
+      window.__saTryReveal();
       if (saAuthStartCallback) saAuthStartCallback();
     } else if (!saAuthUser) {
       saAuthStarted = false;
-      var gate = document.getElementById('auth-gate');
-      if (gate) gate.classList.remove('is-hidden');
+      __saAuthReady = false;
+      showAuthGate();
       setAuthGateState('ready', 'Sign in with Google to continue.');
     }
   });
@@ -347,20 +359,69 @@ function buildEmployerManagerLink(token) {
   return base + '?manage_employer=' + token;
 }
 
-/* ── First-paint splash: hide the raw shell until CSS + first data are
-   ready, then fade it out. Prevents the "flash of unstyled zeroed shell"
-   on load, hard refresh, and relaunch after being idle. ───────────────── */
+/* ── First-paint reveal: hides the splash AND the sign-in gate together,
+   but only once CSS has loaded, the user is authenticated, AND real app
+   content (cached or freshly loaded) has actually been rendered — then
+   waits two animation frames so the browser has genuinely painted that
+   content before starting the fade.
+
+   Previously the splash and the sign-in gate hid independently of each
+   other and of real paint completion (the gate in particular used a
+   hard, transition-less display:none, fired the instant auth succeeded
+   — before bootAuthenticatedApp() had rendered anything). That's what
+   produced the visible flicker/jump: an overlay could disappear a frame
+   or two before the content behind it had actually painted, briefly
+   exposing an empty/half-loaded shell that then visibly popped in a
+   moment later as data streamed in. ───────────────────────────────── */
 var __saDataReady = false;
-window.__saTryReveal = function () {
-  if (!__saDataReady || !window.__saCssReady) return;
+var __saAuthReady = false;
+var __saRevealed = false;
+
+function __saHideOverlayNow(el, removeFromDom) {
+  if (!el) return;
+  if (removeFromDom) { if (el.parentNode) el.parentNode.removeChild(el); }
+  else { el.style.display = 'none'; }
+}
+function __saHideOverlayWithFade(el, removeFromDom) {
+  if (!el || el.classList.contains('hide')) return;
+  el.classList.add('hide');
+  setTimeout(function () { __saHideOverlayNow(el, removeFromDom); }, 300);
+}
+function __saApplyReveal(usingViewTransition) {
   document.body.classList.add('app-ready');
   var splash = document.getElementById('app-splash');
-  if (splash) {
-    splash.classList.add('hide');
-    setTimeout(function () {
-      if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
-    }, 300);
+  var gate = document.getElementById('auth-gate');
+  if (usingViewTransition) {
+    // document.startViewTransition() already animates the before/after
+    // states itself (a native cross-fade snapshot-to-snapshot), so the
+    // overlays are removed outright here rather than also running our
+    // own CSS opacity fade, which would otherwise double up the animation.
+    __saHideOverlayNow(splash, true);
+    __saHideOverlayNow(gate, false);
+  } else {
+    __saHideOverlayWithFade(splash, true);
+    __saHideOverlayWithFade(gate, false);
   }
+}
+window.__saTryReveal = function () {
+  if (__saRevealed || !__saDataReady || !window.__saCssReady || !__saAuthReady) return;
+  __saRevealed = true;
+  // Two nested rAFs: the first runs once the browser has processed the
+  // style/layout work from whatever just called this (e.g. the cards a
+  // data load just rendered into the still-hidden .app); the second only
+  // runs after that frame has actually been painted. Only then do we
+  // start hiding the overlays, so neither the CSS fade nor the native
+  // view-transition cross-fade can start before there's real, painted
+  // content underneath them.
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      if (typeof document.startViewTransition === 'function') {
+        document.startViewTransition(function () { __saApplyReveal(true); });
+      } else {
+        __saApplyReveal(false);
+      }
+    });
+  });
 };
 function markAppDataReady() {
   __saDataReady = true;
@@ -368,6 +429,9 @@ function markAppDataReady() {
 }
 // Safety net: never leave the splash up more than 2.5s even if the
 // stylesheet load event is somehow missed (slow network, browser quirk).
+// This can force data-ready before a real load finishes, but that's safe
+// — __saTryReveal above still refuses to reveal anything until auth has
+// also completed, so this can't expose an unauthenticated app shell.
 setTimeout(function () {
   window.__saCssReady = true;
   markAppDataReady();
