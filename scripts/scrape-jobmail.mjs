@@ -86,7 +86,7 @@ export function parseJobMailJobs(html, pageUrl = GENERAL_URL) {
       location: clean(card.find('.job-location').first().text()),
       notes: posted.slice(0, 20_000),
       link,
-      source_type: 'agency',
+      source_type: 'jobmail',
       source_checked_at: new Date().toISOString(),
       last_verified_at: new Date().toISOString(),
     });
