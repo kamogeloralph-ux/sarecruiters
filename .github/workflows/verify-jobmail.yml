@@ -1,0 +1,45 @@
+name: Verify Job Mail vacancy links
+on:
+  schedule:
+    # Offset by 30 minutes from scrape-jobmail.yml's "17 */6 * * *" so the
+    # two never run in the same window against the same rows. Same 6-hourly
+    # cadence: at ~150 links/run this cycles through the ~7.5k stored
+    # JobMail rows roughly every 12-13 days, comfortably ahead of the
+    # 21-day per-source TTL in delete_expired_vacancies().
+    - cron: "47 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: "How many stored links to re-check this run"
+        required: false
+        default: "150"
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: jobmail-link-verifier
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # Worst case (a run of mostly-timing-out third-party sites) is
+    # BATCH_SIZE * (REQUEST_TIMEOUT_MS + REQUEST_DELAY_MS); 25 minutes
+    # gives real headroom over the ~19-minute worst case at the defaults
+    # without being able to run away indefinitely on a bad day.
+    timeout-minutes: 25
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      JOBMAIL_VERIFY_BATCH: ${{ inputs.batch || '150' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Re-check stored Job Mail links
+        run: npm run verify:jobmail
