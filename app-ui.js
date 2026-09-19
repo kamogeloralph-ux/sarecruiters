@@ -589,7 +589,7 @@ async function loadGeneralVacancies(reset) {
       if (v.agency_id && v.agency_id !== 'general' && !vacanciesCache.some(function(x){ return x.id === v.id; })) vacanciesCache.push(v);
     });
     // A matched record belongs in its agency section, not General Vacancies.
-    generalVacancyRows = generalVacancyRows.concat(page.filter(isGeneralDirectoryVacancy)).filter(function(v){ return !isVacancyExpired(v); });
+    generalVacancyRows = generalVacancyRows.concat(page.filter(isGeneralDirectoryVacancy));
     generalVacancyHasMore = page.length === generalVacancyPageSize;
     generalVacancyPage += 1;
     renderGeneralVacancyCards(true);
