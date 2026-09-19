@@ -31,6 +31,16 @@
   #app-splash.hide{opacity:0;pointer-events:none}
   body:not(.app-ready) .app{visibility:hidden}
   #auth-gate{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(145deg,#071d3d 0%,#0a55a5 55%,#0a84ff 100%);color:#fff;overflow:auto;transition:opacity .25s ease}
+  /* Stay invisible while we're still checking for an existing session
+     ("loading"), and for the brief moment right after one's confirmed
+     ("authenticated", before the unified reveal in app-core.js hides it
+     for good) — only the "ready" (genuinely signed out) and "error"
+     states should ever actually show the sign-in card. Without this, the
+     full "Sign in with Google" prompt painted immediately on every load —
+     even for an already-signed-in user on a pull-to-refresh reload —
+     covering the calm splash screen underneath instead of letting it
+     show through during that brief check. */
+  #auth-gate[data-state="loading"],#auth-gate[data-state="authenticated"]{opacity:0;pointer-events:none}
   #auth-gate.hide{opacity:0;pointer-events:none}
   .auth-gate-card{width:min(430px,100%);padding:38px 28px 30px;border:1px solid rgba(255,255,255,.23);border-radius:30px;background:rgba(4,28,66,.72);box-shadow:0 24px 70px rgba(0,14,45,.35);text-align:center;backdrop-filter:blur(16px)}
   .auth-gate-logo{width:86px;height:86px;border-radius:25px;margin:0 auto 22px;box-shadow:0 12px 30px rgba(0,0,0,.24)}
