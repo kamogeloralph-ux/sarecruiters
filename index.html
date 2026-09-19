@@ -246,6 +246,11 @@
         </button>
       </div>
     </header>
+    <div class="menu-account-row">
+      <div class="menu-account-avatar" id="welcome-user-avatar" aria-hidden="true"><span>A</span></div>
+      <div class="menu-account-copy"><span class="menu-account-label">Signed in with Google</span><strong id="welcome-user-name">Google account</strong></div>
+      <button class="menu-signout-btn" type="button" data-ripple onclick="signOutSaRecruiters()">Sign out</button>
+    </div>
 
     <!-- ===== Track of the Day ===== -->
     <div class="track-card-wrap">
@@ -1009,7 +1014,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=bcbda8a45c" defer></script>
+<script src="app.bundle.min.js?v=ebebd7b4d8" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

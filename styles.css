@@ -1204,6 +1204,14 @@ header{margin-bottom:18px}
 #screen-profile .menu-brand-copy .profile-name{color:#fff}
 #screen-profile .menu-brand-copy .profile-slogan,#screen-profile .menu-brand-copy .profile-sub{color:rgba(255,255,255,.8)}
 #screen-profile .menu-more-btn,#screen-profile .menu-hero .theme-toggle{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.26);color:#fff;box-shadow:none}
+.menu-account-row{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:9px 10px;border:1px solid rgba(255,255,255,.2);border-radius:16px;background:rgba(2,35,82,.32)}
+.menu-account-avatar{width:34px;height:34px;display:grid;place-items:center;flex:0 0 34px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.2);color:#fff;font-size:14px;font-weight:800}
+.menu-account-avatar img{width:100%;height:100%;object-fit:cover}
+.menu-account-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}
+.menu-account-label{font-size:9px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.menu-account-copy strong{overflow:hidden;color:#fff;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+.menu-signout-btn{flex:0 0 auto;padding:8px 12px;border:1px solid rgba(255,255,255,.35);border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11px;font-weight:800;cursor:pointer}
+.menu-signout-btn:active{background:rgba(255,255,255,.25)}
 [data-theme="dark"] .quick-card,[data-theme="dark"] .spotlight-mini{background:#10233c;border-color:rgba(143,190,240,.14);box-shadow:0 7px 18px rgba(0,0,0,.24)}
 [data-theme="dark"] .quick-card-head strong,[data-theme="dark"] .spotlight-mini-head h2{color:#f8fbff}
 [data-theme="dark"] #screen-profile .menu-hero{background:radial-gradient(ellipse at 85% 10%,rgba(76,149,220,.36),transparent 34%),linear-gradient(150deg,#092d62 0%,#073e80 50%,#052d61 100%)}
