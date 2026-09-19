@@ -1,0 +1,33 @@
+name: Scrape agency vacancies (direct sites)
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: agency-sites-scraper
+  cancel-in-progress: false
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      AGENCY_SITES_REQUEST_TIMEOUT_MS: "15000"
+      AGENCY_SITES_FETCH_ATTEMPTS: "2"
+      AGENCY_SITES_REQUEST_DELAY_MS: "1500"
+      AGENCY_SITES_CONCURRENCY: "3"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Scrape agency vacancy pages
+        run: npm run scrape:agency-sites
