@@ -1,0 +1,75 @@
+/* ================================================================
+   SA Recruiters — iOS blue visual layer
+   Shared surface language for directory, vacancy, search and saved views.
+   ================================================================ */
+:root{
+  --ios-blue:#0a84ff;
+  --ios-blue-deep:#0758ad;
+  --ios-blue-soft:rgba(10,132,255,.10);
+  --ios-blue-line:rgba(10,132,255,.18);
+  --ios-surface:color-mix(in srgb,var(--card) 94%,#fff 6%);
+}
+
+/* Every secondary screen gets the same calm, blue-backed canvas. */
+.screen:not(#screen-home) .screen-scroll{background:linear-gradient(180deg,color-mix(in srgb,var(--ios-blue-soft) 48%,var(--bg)) 0%,var(--bg) 180px);}
+.screen:not(#screen-home) .screen-fixed{background:color-mix(in srgb,var(--card) 91%,transparent);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);border-bottom:1px solid var(--ios-blue-line);}
+.screen:not(#screen-home) .screen-title-group .logo-text{color:var(--ios-blue-deep);font-weight:850;letter-spacing:-.035em;}
+.screen:not(#screen-home) .screen-context{color:var(--ios-blue);font-weight:750;}
+.screen:not(#screen-home) .screen-close-btn{border-color:var(--ios-blue-line);background:var(--ios-blue-soft);color:var(--ios-blue);}
+.screen:not(#screen-home) .theme-toggle{border-color:var(--ios-blue-line);background:var(--ios-blue-soft);color:var(--ios-blue);}
+
+/* Search fields are grouped, soft and unmistakably part of the blue system. */
+.screen:not(#screen-home) .search-inner{height:48px;border:1px solid var(--ios-blue-line);border-radius:16px;background:var(--ios-surface);box-shadow:0 5px 16px rgba(10,35,80,.06);}
+.screen:not(#screen-home) .search-inner:focus-within{border-color:var(--ios-blue);box-shadow:0 0 0 4px var(--ios-blue-soft),0 5px 16px rgba(10,35,80,.06);}
+
+/* Agency/employer directories: iOS grouped-list card with blue identity accents. */
+#screen-allagencies .hub-list,#screen-allemployers .hub-list{overflow:hidden;border:1px solid var(--ios-blue-line);border-radius:22px;background:var(--ios-surface);box-shadow:0 10px 26px rgba(10,35,80,.07);}
+#screen-allagencies .hub-row,#screen-allemployers .hub-row{min-height:78px;padding:14px 15px;background:transparent;border-top-color:rgba(10,132,255,.11);}
+#screen-allagencies .hub-row:first-child,#screen-allemployers .hub-row:first-child{border-top:0;}
+#screen-allagencies .hub-row:active,#screen-allemployers .hub-row:active{background:var(--ios-blue-soft);transform:none;}
+#screen-allagencies .hub-row-avatar,#screen-allemployers .hub-row-avatar{border:2px solid rgba(10,132,255,.16);box-shadow:0 6px 16px rgba(10,35,80,.14);}
+#screen-allagencies .hub-row-title,#screen-allemployers .hub-row-title{color:var(--text);font-size:14px;}
+#screen-allagencies .hub-row-sub,#screen-allemployers .hub-row-sub{font-size:11px;}
+
+/* Vacancy folders and results become breathing, tappable iOS cards. */
+.vac-folder-grid{gap:11px;}
+.vac-folder-card{border:1px solid var(--ios-blue-line);background:var(--ios-surface);box-shadow:0 7px 19px rgba(10,35,80,.06);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+.vac-folder-card:active{transform:scale(.985);border-color:var(--ios-blue);box-shadow:0 3px 10px rgba(10,132,255,.12);}
+.vac-folder-icon{background:linear-gradient(145deg,rgba(10,132,255,.16),rgba(10,132,255,.06));color:var(--ios-blue);}
+.vacancy-directory-group,.vacancy-overview-section{margin:12px 0 16px;border:1px solid var(--ios-blue-line);border-radius:22px;background:var(--ios-surface);box-shadow:0 10px 26px rgba(10,35,80,.065);overflow:hidden;}
+.vacancy-directory-group .directory-group-head,.vacancy-overview-section .directory-group-head{background:linear-gradient(135deg,rgba(10,132,255,.13),rgba(10,132,255,.025));border-bottom:1px solid var(--ios-blue-line);}
+.vacancy-directory-group .vac-card,.vacancy-overview-section .vac-card{margin:0 10px;border-bottom:1px solid rgba(10,132,255,.11);border-radius:15px;background:transparent!important;}
+.vacancy-directory-group .vac-card:last-child,.vacancy-overview-section .vac-card:last-child{border-bottom:0;}
+.vacancy-directory-group .vac-card:active,.vacancy-overview-section .vac-card:active{background:var(--ios-blue-soft)!important;}
+.vac-card-main{padding:15px 12px;}
+.vac-logo{border:2px solid rgba(10,132,255,.13);box-shadow:0 5px 13px rgba(10,35,80,.1);}
+.vac-title{font-size:14px;font-weight:800;letter-spacing:-.02em;}
+.vac-company{font-size:12px;}
+.vac-save,.vac-share{background:var(--ios-blue-soft);}
+.vac-save.saved{background:rgba(10,132,255,.18);}
+.vac-detail-inner{padding:0 12px 14px;border-top:1px solid rgba(10,132,255,.11);}
+.vac-detail-icon{background:var(--ios-blue-soft);color:var(--ios-blue);}
+.vac-apply{background:linear-gradient(145deg,var(--ios-blue),var(--ios-blue-deep));border-radius:14px;box-shadow:0 7px 16px rgba(10,132,255,.22);}
+.vac-apply-secondary{background:linear-gradient(145deg,#30d158,#168b3b);}
+.vac-close-btn{border-radius:14px;}
+.vac-result-meta{color:var(--ios-blue-deep);}
+.vac-load-more{border-color:var(--ios-blue-line);background:var(--ios-blue-soft);color:var(--ios-blue);border-radius:15px;}
+
+/* Saved and search result lists use the same blue card rhythm. */
+#saved-list .vac-card,#search-results .vac-card{margin:8px 0;border:1px solid var(--ios-blue-line);border-radius:19px;background:var(--ios-surface)!important;box-shadow:0 7px 18px rgba(10,35,80,.055);}
+#saved-list .vac-card-main,#search-results .vac-card-main{padding:15px 14px;}
+#saved-list .vac-card:active,#search-results .vac-card:active{background:var(--ios-blue-soft)!important;}
+
+/* Section labels and empty/loading states feel like native grouped screens. */
+.screen:not(#screen-home) .section-head{color:var(--ios-blue-deep);}
+.screen:not(#screen-home) .screen-intro{border-color:var(--ios-blue-line);background:linear-gradient(135deg,rgba(10,132,255,.11),rgba(10,132,255,.03));}
+.screen:not(#screen-home) .empty-state,.screen:not(#screen-home) .screen-state{border-color:var(--ios-blue-line);background:var(--ios-surface);box-shadow:0 7px 18px rgba(10,35,80,.05);}
+
+[data-theme="dark"] .screen:not(#screen-home) .screen-scroll{background:linear-gradient(180deg,rgba(10,132,255,.10),var(--bg) 230px);}
+[data-theme="dark"] .screen:not(#screen-home) .screen-title-group .logo-text{color:#8fc8ff;}
+[data-theme="dark"] #screen-allagencies .hub-list,[data-theme="dark"] #screen-allemployers .hub-list,[data-theme="dark"] .vacancy-directory-group,[data-theme="dark"] .vacancy-overview-section{background:color-mix(in srgb,var(--card) 94%,#0a84ff 6%);}
+
+@media(max-width:520px){
+  .vacancy-directory-group,.vacancy-overview-section{border-radius:19px;margin-left:0;margin-right:0;}
+  #screen-allagencies .hub-list,#screen-allemployers .hub-list{border-radius:19px;}
+}
