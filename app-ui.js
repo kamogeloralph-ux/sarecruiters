@@ -825,10 +825,10 @@ function renderAllVacanciesList() {
     var group = groups[key];
     group.items = sortVacancies(group.items);
     var agency = group.agency || {};
-    var cards = group.items.map(function(v){ return vacancyCard(v, agency, { hideBadges: true }); }).join('');
-    // Every folder renders as plain cards only — no per-agency group header
-    // bar — so every vacancy card looks identical regardless of source.
-    return '<section class="directory-group vacancy-directory-group" aria-label="' + escapeHtml(group.name) + '">' + cards + '</section>';
+    // Plain cards only, no wrapping <section> — matches the flat General
+    // Vacancies list exactly, so every folder's cards render identically
+    // regardless of source.
+    return group.items.map(function(v){ return vacancyCard(v, agency, { hideBadges: true }); }).join('');
   }).join('');
 }
 
