@@ -15,7 +15,9 @@
     "scrape:jobmail": "node scripts/scrape-jobmail.mjs",
     "verify:jobmail": "node scripts/verify-jobmail.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs",
-    "scrape:graduates24": "node scripts/scrape-graduates24.mjs"
+    "scrape:graduates24": "node scripts/scrape-graduates24.mjs",
+    "purge:stale": "node scripts/purge-stale-vacancies.mjs",
+    "verify:vacancy-links": "node scripts/verify-jobmail.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

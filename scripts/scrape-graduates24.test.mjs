@@ -73,3 +73,37 @@ test('titles without a "Company: Title" pattern have no attributed company', () 
   assert.equal(companyFromTitle('SA Government Internships 2026 / 2027'), '');
   assert.equal(companyFromTitle('Hollard: Learnership Programme 2026'), 'Hollard');
 });
+
+test('skips stale listings: a 2021 learnership must never reach the database', () => {
+  const html = `
+    <div class="card">
+      <a href="/old-learnership-2021"><img src="/logo.png" alt=""></a>
+      <h2>Old Company: Learnership Programme 2021</h2>
+      <p>Posted: 3 Feb 2021  Johannesburg, South Africa  Closes: 28 Feb 2021</p>
+      <p>An exciting opportunity that closed years ago but is still listed on the site.</p>
+      <a href="/old-learnership-2021">Read More</a>
+    </div>
+    <div class="card">
+      <a href="/fresh-learnership"><img src="/logo.png" alt=""></a>
+      <h2>Fresh Company: Learnership Programme 2026</h2>
+      <p>Posted: 15 Sep 2026  Johannesburg, South Africa</p>
+      <p>A currently-open learnership posted a few days ago.</p>
+      <a href="/fresh-learnership">Read More</a>
+    </div>`;
+  const jobs = parseGraduates24Jobs(html, 'https://www.graduates24.com/learnerships');
+  assert.equal(jobs.length, 1, 'only the fresh listing survives');
+  assert.equal(jobs[0].title, 'Fresh Company: Learnership Programme 2026');
+});
+
+test('skips a listing whose closing date has already passed even if recently posted', () => {
+  const html = `
+    <div class="card">
+      <a href="/closed-last-week"><img src="/logo.png" alt=""></a>
+      <h2>Some Company: Programme</h2>
+      <p>Posted: 01 Sep 2026  Durban, South Africa  Closes: 05 Sep 2026</p>
+      <p>Posted recently but already closed.</p>
+      <a href="/closed-last-week">Read More</a>
+    </div>`;
+  const jobs = parseGraduates24Jobs(html, 'https://www.graduates24.com/learnerships');
+  assert.equal(jobs.length, 0, 'closed listing is skipped');
+});

@@ -64,3 +64,13 @@ test('maps known Job Mail employers to agency records and defaults safely', () =
   assert.equal(agencyIdForCompany('Fusion Recruitment', agencies), 'fusion-id');
   assert.equal(agencyIdForCompany('Unknown Company', agencies), 'general');
 });
+
+test('skips listings older than the jobmail max age instead of storing them', () => {
+  const html = `
+    <div class="results-item" id="results-item-100"><div class="job-posted">15 September 2026</div><a id="jobDetailUrl-100" href="/jobs/fresh-role-id-100"><h3>Fresh role</h3></a></div>
+    <div class="results-item" id="results-item-200"><div class="job-posted">01 January 2026</div><a id="jobDetailUrl-200" href="/jobs/stale-role-id-200"><h3>Stale role</h3></a></div>
+    <div class="results-item" id="results-item-300"><div class="job-posted">01 August 2026</div><a id="jobDetailUrl-300" href="/jobs/older-role-id-300"><h3>Older role</h3></a></div>`;
+  const jobs = parseJobMailJobs(html, 'https://www.jobmail.co.za/jobs');
+  assert.equal(jobs.length, 1, 'only the 21-day-fresh listing survives');
+  assert.equal(jobs[0].title, 'Fresh role');
+});

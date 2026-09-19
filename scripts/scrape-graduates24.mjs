@@ -2,6 +2,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 // NOTE ON SELECTOR STRATEGY: this scraper was written against Graduates24's
 // rendered page content (fetched through a browser-side tool), not its raw
@@ -57,6 +58,7 @@ export function parseGraduates24Jobs(html, pageUrl = GENERAL_URL) {
   const $ = cheerio.load(html);
   const jobs = [];
   const seen = new Set();
+  let staleSkipped = 0;
   $('a').each((_, el) => {
     const anchor = $(el);
     if (clean(anchor.text()).toLowerCase() !== 'read more') return;
@@ -85,6 +87,21 @@ export function parseGraduates24Jobs(html, pageUrl = GENERAL_URL) {
     });
     const postedMatch = dateLine.match(/Posted:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})/i);
     const closesMatch = dateLine.match(/Closes:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})/i);
+
+    // DEAD-LISTING GUARD: Graduates24 never removes old posts, so its
+    // listing pages still serve 2021 learnerships years after they closed.
+    // Anything past its closing date or older than the learnerships max
+    // age (scripts/vacancy-freshness.mjs) is skipped before it can reach
+    // the database and be served to users as current.
+    const stale = isStaleVacancy({
+      closing_date: closesMatch ? closesMatch[1] : '',
+      postedText: postedMatch ? postedMatch[1] : '',
+      source_type: 'learnerships',
+    });
+    if (stale.stale) {
+      staleSkipped += 1;
+      return;
+    }
     let location = dateLine;
     if (postedMatch) location = location.slice(location.indexOf(postedMatch[0]) + postedMatch[0].length);
     if (closesMatch) location = location.slice(0, location.indexOf(closesMatch[0]));
@@ -106,6 +123,7 @@ export function parseGraduates24Jobs(html, pageUrl = GENERAL_URL) {
       company: companyFromTitle(title),
       location,
       closing_date: closesMatch ? closesMatch[1] : '',
+      postedText: postedMatch ? postedMatch[1] : '',
       notes: (postedMatch ? `Posted ${postedMatch[1]}. ` : '') + description.slice(0, 20_000 - 20),
       link,
       // 'learnerships' is a dedicated source type (see isDedicatedVacancySource
@@ -118,6 +136,9 @@ export function parseGraduates24Jobs(html, pageUrl = GENERAL_URL) {
       last_verified_at: new Date().toISOString(),
     });
   });
+  if (staleSkipped) {
+    console.log(`[graduates24] skipped ${staleSkipped} stale listing(s) (closed or older than the max age)`);
+  }
   return jobs;
 }
 

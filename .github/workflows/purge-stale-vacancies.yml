@@ -1,0 +1,33 @@
+name: Purge stale vacancies
+on:
+  # One-off cleanup for the expired-listings backlog (2021 learnerships,
+  # closed JobMail postings, etc.). Also safe to dispatch repeatedly —
+  # the purge script is idempotent and reports "nothing to delete" once
+  # the backlog is gone.
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: purge-stale-vacancies
+  cancel-in-progress: false
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Dry run first (report only)
+        run: DRY_RUN=1 npm run purge:stale
+      - name: Purge stale vacancies
+        run: npm run purge:stale

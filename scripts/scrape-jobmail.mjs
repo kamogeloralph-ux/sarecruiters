@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as cheerio from 'cheerio';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -42,6 +43,7 @@ export function parseJobMailJobs(html, pageUrl = GENERAL_URL) {
   const $ = cheerio.load(html);
   const jobs = [];
   const seen = new Set();
+  let staleSkipped = 0;
   // Job Mail now prefixes each listing's company/agency name with a
   // "Recruiter" or "Employer" source-type label (confirmed live on
   // jobmail.co.za/jobs on every card checked, e.g. "Employer Goldstone
@@ -79,6 +81,17 @@ export function parseJobMailJobs(html, pageUrl = GENERAL_URL) {
     if (!jobId || !link || !title || seen.has(jobId)) return;
     seen.add(jobId);
     const posted = clean(card.find('.job-posted').first().text());
+    // STALE-LISTING GUARD: JobMail keeps listings visible for a while after
+    // they've served their purpose, and the employer's own site (where the
+    // link goes) is often already closed. Anything past its posting max age
+    // (21 days for jobmail) or with a parsed past closing date is skipped
+    // before it can be stored — verify-jobmail.mjs covers the ones already
+    // in the database.
+    const stale = isStaleVacancy({ postedText: posted, source_type: 'jobmail' });
+    if (stale.stale) {
+      staleSkipped += 1;
+      return;
+    }
     jobs.push({
       id: `jobmail-${jobId}`,
       title,
@@ -91,6 +104,9 @@ export function parseJobMailJobs(html, pageUrl = GENERAL_URL) {
       last_verified_at: new Date().toISOString(),
     });
   });
+  if (staleSkipped) {
+    console.log(`[jobmail] skipped ${staleSkipped} stale listing(s) (posted over 21 days ago)`);
+  }
   return jobs;
 }
 
