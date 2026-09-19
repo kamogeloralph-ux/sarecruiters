@@ -10,6 +10,19 @@
   --ios-surface:color-mix(in srgb,var(--card) 94%,#fff 6%);
 }
 
+/* Welcome/auth screen: the same blue glass language before sign-in. */
+#auth-gate{background:radial-gradient(ellipse at 15% 8%,rgba(143,227,255,.24),transparent 34%),radial-gradient(ellipse at 90% 88%,rgba(10,132,255,.42),transparent 40%),linear-gradient(155deg,#062d62 0%,#0758ad 52%,#063b78 100%);}
+#auth-gate::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent 38%,rgba(255,255,255,.035));}
+.auth-gate-card{position:relative;width:min(430px,100%);padding:36px 28px 28px;border:1px solid rgba(255,255,255,.24);border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.075));box-shadow:0 24px 70px rgba(0,14,45,.32),inset 0 1px rgba(255,255,255,.18);backdrop-filter:blur(22px) saturate(130%);-webkit-backdrop-filter:blur(22px) saturate(130%);}
+.auth-gate-logo{width:82px;height:82px;border:3px solid rgba(255,255,255,.72);border-radius:24px;margin:0 auto 22px;box-shadow:0 12px 28px rgba(0,14,45,.28),0 0 0 7px rgba(255,255,255,.08);}
+.auth-gate-card h1{font-size:29px;letter-spacing:-.045em;line-height:1.08;}
+.auth-gate-card>p{max-width:310px;margin:12px auto 25px;color:rgba(255,255,255,.78);font-size:13.5px;line-height:1.55;}
+#google-sign-in{min-height:52px;border:1px solid rgba(10,35,80,.08);border-radius:16px;background:#fff;color:#172238;font-size:14px;font-weight:800;box-shadow:0 10px 22px rgba(0,18,58,.2);}
+#google-sign-in:hover{background:#f7fbff;transform:translateY(-1px);box-shadow:0 13px 25px rgba(0,18,58,.25);}
+#auth-gate-status{margin-top:14px;color:rgba(255,255,255,.74);font-size:11.5px;}
+.auth-gate-privacy{margin-top:22px!important;color:rgba(255,255,255,.53)!important;font-size:10.5px!important;}
+@media(max-width:420px){.auth-gate-card{padding:31px 21px 25px;border-radius:25px}.auth-gate-card h1{font-size:27px}.auth-gate-logo{width:76px;height:76px}}
+
 /* Every secondary screen gets the same calm, blue-backed canvas. */
 .screen:not(#screen-home) .screen-scroll{background:linear-gradient(180deg,color-mix(in srgb,var(--ios-blue-soft) 48%,var(--bg)) 0%,var(--bg) 180px);}
 .screen:not(#screen-home) .screen-fixed{background:color-mix(in srgb,var(--card) 91%,transparent);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);border-bottom:1px solid var(--ios-blue-line);}
