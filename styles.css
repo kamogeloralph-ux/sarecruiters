@@ -1407,3 +1407,27 @@ header{margin-bottom:18px}
   border:0;
   box-shadow:none;
 }
+
+/* ===== CV Builder (AI CV Revamp) ===== */
+.cvb-sheet{max-height:88vh;display:flex;flex-direction:column}
+#cvbuilder-result-view{overflow-y:auto}
+.cvb-preview{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 16px;margin-bottom:14px}
+.cvb-header{border-bottom:2px solid var(--text);padding-bottom:10px;margin-bottom:12px}
+.cvb-name{font-size:20px;font-weight:800;color:var(--text)}
+.cvb-role{font-size:13.5px;color:var(--text-2);margin-top:2px}
+.cvb-section{margin-top:16px}
+.cvb-section-title{font-size:11.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.cvb-section p{font-size:13.5px;color:var(--text);line-height:1.6;margin:0}
+.cvb-skills{display:flex;flex-wrap:wrap;gap:6px}
+.cvb-skill{background:var(--accent-soft);color:var(--accent);border-radius:7px;padding:4px 10px;font-size:12px;font-weight:700}
+.cvb-exp-item{margin-bottom:12px}
+.cvb-exp-item:last-child{margin-bottom:0}
+.cvb-exp-head{font-size:13.5px;color:var(--text)}
+.cvb-exp-duration{float:right;color:var(--text-2);font-size:12px}
+.cvb-exp-item ul{margin:6px 0 0 18px;padding:0}
+.cvb-exp-item li{font-size:13px;color:var(--text-2);margin-bottom:3px;line-height:1.5}
+.cvb-edu-item{font-size:13px;color:var(--text);margin-bottom:4px}
+.cvb-action-row{display:flex;flex-wrap:wrap;gap:8px}
+.cvb-action-btn{flex:1;min-width:120px;padding:12px 10px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:800;cursor:pointer;transition:transform .18s var(--ease),background .18s}
+.cvb-action-btn:active{transform:scale(.97)}
+.cvb-action-primary{background:var(--accent);border-color:var(--accent);color:#fff}
