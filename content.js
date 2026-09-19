@@ -130,6 +130,11 @@ var DEFAULT_CONTENT = {
   /* ============ CV REVAMP SERVICE ============ */
   'cv-revamp': [
     {
+      id: 'revamp-build',
+      title: 'Try it now: free AI CV Builder',
+      body: '<p>Not sure where to start? Paste your work history, skills and education in your own words and our AI will turn it into a clean, professionally structured CV in seconds — free, right here in the app.</p><button class="content-add-btn" data-ripple onclick="closeSheet(\'content-overlay\');openCvBuilderSheet()" style="margin-top:2px;">Open CV Builder</button>'
+    },
+    {
       id: 'revamp-what',
       title: 'What is the CV Revamp Service?',
       body: '<p>The CV Revamp Service is a professional CV review and rewriting service offered to job seekers who want to give their CV the best chance of getting shortlisted. Whether your CV is outdated, too long, or simply not getting responses, we help you restructure and rewrite it so that it highlights your strengths and matches what South African recruiters are actually looking for.</p>'

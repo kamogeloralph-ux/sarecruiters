@@ -653,3 +653,164 @@ async function deleteGeneralVacancy(id) {
 }
 
 // ===== Sheets / misc =====
+
+// ===== CV Builder (AI CV Revamp — Gemini via Cloudflare Worker) =====
+function resetCvBuilderForm() {
+  document.getElementById('cvb-name').value = '';
+  document.getElementById('cvb-role').value = '';
+  document.getElementById('cvb-raw').value = '';
+  var err = document.getElementById('cvbuilder-error');
+  err.style.display = 'none';
+  err.textContent = '';
+}
+function showCvBuilderFormView() {
+  document.getElementById('cvbuilder-form-view').style.display = '';
+  document.getElementById('cvbuilder-result-view').style.display = 'none';
+}
+function showCvBuilderResultView() {
+  document.getElementById('cvbuilder-form-view').style.display = 'none';
+  document.getElementById('cvbuilder-result-view').style.display = '';
+}
+function openCvBuilderSheet() {
+  if (!saAuthUser) {
+    showToast('Please sign in to use the CV Builder.');
+    return;
+  }
+  resetCvBuilderForm();
+  showCvBuilderFormView();
+  var nameEl = document.getElementById('cvb-name');
+  if (nameEl && !nameEl.value) {
+    var meta = saAuthUser.user_metadata || {};
+    nameEl.value = meta.full_name || meta.name || '';
+  }
+  renderTurnstile('cvbuilder-turnstile', 'cv-builder-overlay');
+  document.getElementById('cv-builder-overlay').classList.add('open');
+}
+function cvBuilderEditAgain() {
+  showCvBuilderFormView();
+}
+async function generateCv() {
+  var err = document.getElementById('cvbuilder-error');
+  err.style.display = 'none';
+  err.textContent = '';
+  var fullName = document.getElementById('cvb-name').value.trim();
+  var targetRole = document.getElementById('cvb-role').value.trim();
+  var rawInput = document.getElementById('cvb-raw').value.trim();
+  if (!rawInput) {
+    err.textContent = 'Please add some details about your experience first.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!saAuthUser) {
+    showToast('Please sign in to use the CV Builder.');
+    return;
+  }
+  var btn = document.getElementById('cvbuilder-generate-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  var result;
+  try {
+    result = await submitViaWorker('/api/generate-cv', { fullName: fullName, targetRole: targetRole, rawInput: rawInput }, 'cvbuilder-turnstile');
+  } catch (e) {
+    result = { ok: false, error: 'Could not reach the CV Builder — please try again.' };
+  }
+  btn.disabled = false;
+  btn.textContent = 'Generate my CV';
+  if (!result.ok || !result.data || !result.data.cv) {
+    err.textContent = (result && result.error) || 'Could not generate your CV — please try again.';
+    err.style.display = 'block';
+    resetTurnstile('cvbuilder-turnstile');
+    return;
+  }
+  window.__cvBuilderLast = result.data.cv;
+  renderCvBuilderResult(result.data.cv);
+  showCvBuilderResultView();
+}
+function renderCvBuilderResult(cv) {
+  var html = '<div class="cvb-header"><div class="cvb-name">' + escapeHtml(cv.fullName || '') + '</div>' +
+    (cv.jobTitle ? '<div class="cvb-role">' + escapeHtml(cv.jobTitle) + '</div>' : '') + '</div>';
+  if (cv.summary) {
+    html += '<div class="cvb-section"><div class="cvb-section-title">Summary</div><p>' + escapeHtml(cv.summary) + '</p></div>';
+  }
+  if (cv.skills && cv.skills.length) {
+    html += '<div class="cvb-section"><div class="cvb-section-title">Skills</div><div class="cvb-skills">' +
+      cv.skills.map(function (s) { return '<span class="cvb-skill">' + escapeHtml(s) + '</span>'; }).join('') +
+      '</div></div>';
+  }
+  if (cv.experience && cv.experience.length) {
+    html += '<div class="cvb-section"><div class="cvb-section-title">Experience</div>';
+    cv.experience.forEach(function (x) {
+      html += '<div class="cvb-exp-item"><div class="cvb-exp-head"><strong>' + escapeHtml(x.role || '') + '</strong>' +
+        (x.company ? ' — ' + escapeHtml(x.company) : '') +
+        (x.duration ? '<span class="cvb-exp-duration">' + escapeHtml(x.duration) + '</span>' : '') + '</div>' +
+        (x.bulletPoints && x.bulletPoints.length
+          ? '<ul>' + x.bulletPoints.map(function (b) { return '<li>' + escapeHtml(b) + '</li>'; }).join('') + '</ul>'
+          : '') +
+        '</div>';
+    });
+    html += '</div>';
+  }
+  if (cv.education && cv.education.length) {
+    html += '<div class="cvb-section"><div class="cvb-section-title">Education</div>';
+    cv.education.forEach(function (e) {
+      html += '<div class="cvb-edu-item"><strong>' + escapeHtml(e.qualification || '') + '</strong>' +
+        (e.institution ? ' — ' + escapeHtml(e.institution) : '') +
+        (e.year ? ' (' + escapeHtml(e.year) + ')' : '') + '</div>';
+    });
+    html += '</div>';
+  }
+  document.getElementById('cvbuilder-preview').innerHTML = html;
+}
+function cvToPlainText(cv) {
+  var lines = [];
+  lines.push(cv.fullName || '');
+  if (cv.jobTitle) lines.push(cv.jobTitle);
+  lines.push('');
+  if (cv.summary) { lines.push('SUMMARY'); lines.push(cv.summary); lines.push(''); }
+  if (cv.skills && cv.skills.length) { lines.push('SKILLS'); lines.push(cv.skills.join(', ')); lines.push(''); }
+  if (cv.experience && cv.experience.length) {
+    lines.push('EXPERIENCE');
+    cv.experience.forEach(function (x) {
+      lines.push((x.role || '') + (x.company ? ' — ' + x.company : '') + (x.duration ? ' (' + x.duration + ')' : ''));
+      (x.bulletPoints || []).forEach(function (b) { lines.push('- ' + b); });
+      lines.push('');
+    });
+  }
+  if (cv.education && cv.education.length) {
+    lines.push('EDUCATION');
+    cv.education.forEach(function (e) {
+      lines.push((e.qualification || '') + (e.institution ? ' — ' + e.institution : '') + (e.year ? ' (' + e.year + ')' : ''));
+    });
+  }
+  return lines.join('\n').trim();
+}
+function copyCvText() {
+  var cv = window.__cvBuilderLast;
+  if (!cv) return;
+  var text = cvToPlainText(cv);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { showToast('CV copied as text'); }).catch(function () { prompt('Copy this:', text); });
+  } else {
+    prompt('Copy this:', text);
+  }
+}
+function printCvBuilder() {
+  var cv = window.__cvBuilderLast;
+  if (!cv) return;
+  var previewHtml = document.getElementById('cvbuilder-preview').innerHTML;
+  var w = window.open('', '_blank');
+  if (!w) { showToast('Please allow pop-ups to print your CV.'); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escapeHtml(cv.fullName || 'CV') + '</title><style>' +
+    'body{font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;max-width:720px;margin:32px auto;padding:0 24px;line-height:1.5}' +
+    '.cvb-name{font-size:26px;font-weight:800}.cvb-role{font-size:15px;color:#555;margin-top:2px}' +
+    '.cvb-section{margin-top:22px}.cvb-section-title{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#111;border-bottom:2px solid #111;padding-bottom:4px;margin-bottom:8px}' +
+    '.cvb-skills{display:flex;flex-wrap:wrap;gap:6px}.cvb-skill{background:#f0f0f0;border-radius:6px;padding:3px 9px;font-size:12.5px}' +
+    '.cvb-exp-item{margin-bottom:12px}.cvb-exp-head{font-size:14px}.cvb-exp-duration{float:right;color:#555;font-size:12.5px}' +
+    '.cvb-exp-item ul{margin:6px 0 0 18px;padding:0}.cvb-exp-item li{margin-bottom:3px;font-size:13px}' +
+    '.cvb-edu-item{font-size:13px;margin-bottom:4px}' +
+    '@media print{body{margin:0;padding:24px}}' +
+    '</style></head><body>' + previewHtml + '</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(function () { w.print(); }, 300);
+}

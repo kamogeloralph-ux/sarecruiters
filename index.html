@@ -1021,6 +1021,30 @@
   </div>
 </div>
 
+<!-- ============ CV BUILDER SHEET (AI CV Revamp) ============ -->
+<div class="sheet-scrim" id="cv-builder-overlay">
+  <div class="sheet cvb-sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('cv-builder-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>CV Builder</h3>
+    <div id="cvbuilder-form-view">
+      <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Paste your work history, skills and education below in your own words — no need to format it. Our AI will turn it into a clean, ATS-friendly CV you can copy or print.</p>
+      <div class="field"><label>Full name</label><input id="cvb-name" placeholder="e.g. Thandiwe Nkosi"></div>
+      <div class="field"><label>Target role (optional)</label><input id="cvb-role" placeholder="e.g. Warehouse Supervisor"></div>
+      <div class="field"><label>Your experience, skills &amp; education</label><textarea id="cvb-raw" placeholder="e.g. Worked as a cashier at Shoprite for 2 years, good with customers and cash handling. Matric certificate 2019. Can drive, have own transport. Looking for retail or admin work..." style="min-height:160px;font-family:inherit;font-size:13.5px"></textarea></div>
+      <div id="cvbuilder-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+      <button class="sheet-submit" id="cvbuilder-generate-btn" data-ripple onclick="generateCv()">Generate my CV</button>
+    </div>
+    <div id="cvbuilder-result-view" style="display:none;">
+      <div id="cvbuilder-preview" class="cvb-preview"></div>
+      <div class="cvb-action-row">
+        <button class="cvb-action-btn" data-ripple onclick="cvBuilderEditAgain()">← Edit &amp; regenerate</button>
+        <button class="cvb-action-btn" data-ripple onclick="copyCvText()">Copy as text</button>
+        <button class="cvb-action-btn cvb-action-primary" data-ripple onclick="printCvBuilder()">Print / Save as PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ NOTES SHEET ============ -->
 <div class="sheet-scrim" id="notes-overlay">
   <div class="sheet notes-sheet">
