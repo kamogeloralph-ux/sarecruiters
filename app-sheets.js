@@ -343,12 +343,14 @@ async function submitReport() {
     reason: payload.reason,
     details: payload.details
   }, 'report-turnstile');
+  var savedToDatabase = !!workerRes.ok;
   if (workerRes.ok) {
     console.log('report submitted via worker', workerRes.data && workerRes.data.email);
   } else {
     // Fallback 1: legacy direct Supabase insert + EmailJS (may be blocked by
     // RLS after the lockdown migration; harmless when it is).
     var res = await submitReportToSupabase(payload);
+    savedToDatabase = !!res.ok;
     tryEmailJS({
       type: 'report',
       to_email: ADMIN_EMAIL,
@@ -361,12 +363,17 @@ async function submitReport() {
       console.warn('report fallback also failed', res.error);
     }
   }
-  // Also save locally as backup (with a localId so it can be managed if not in Supabase)
-  var local = readLocalReports();
-  payload.created_at = new Date().toISOString();
-  payload._localId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  local.push(payload);
-  writeLocalReports(local);
+  // Local backup only when BOTH paths failed — otherwise the entry would
+  // show up twice in My submissions (the Supabase row with its real status
+  // plus this local copy marked Pending forever, since the created_at of
+  // the DB row never matches this string exactly).
+  if (!savedToDatabase) {
+    var local = readLocalReports();
+    payload.created_at = new Date().toISOString();
+    payload._localId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+    local.push(payload);
+    writeLocalReports(local);
+  }
   resetTurnstile('report-turnstile');
   if (btn) { btn.disabled = false; btn.textContent = 'Submit report'; }
   closeSheet('report-overlay');
@@ -375,9 +382,17 @@ async function submitReport() {
     'Agency: ' + encodeURIComponent(payload.agency_name || '-') + '%0A' +
     'Reason: ' + encodeURIComponent(payload.reason || '-') + '%0A' +
     'Details: ' + encodeURIComponent(payload.details || '-');
-  showWhatsAppConfirm({
+  showWhatsAppConfirm(savedToDatabase ? {
     title: 'Report submitted \u2713',
     message: 'Your report has been saved. Tap below to send it to the admin on WhatsApp so it can be reviewed quickly.',
+    waText: waMsg
+  } : {
+    // Neither the Worker nor the fallback reached the database — say so
+    // instead of pretending it was saved. The copy stays on this device
+    // (marked Pending in My submissions) and is retried automatically on
+    // the next app load, but WhatsApp remains the fastest way through.
+    title: 'Could not reach the admin',
+    message: 'The report was not delivered just now (it stays saved on this device as Pending and will be retried automatically). Tap below to send it to the admin on WhatsApp so it isn\'t lost.',
     waText: waMsg
   });
 }
@@ -504,14 +519,18 @@ async function submitSuggestion() {
     agency_name: payload.agency_name,
     details: payload.details
   }, 'suggestion-turnstile');
+  var savedToDatabase = !!workerRes.ok;
   if (workerRes.ok) {
     console.log('suggestion submitted via worker', workerRes.data && workerRes.data.email);
   } else {
     // Fallback: legacy direct Supabase insert + EmailJS.
+    var suggError = null;
     try {
       var { error } = await supabaseClient.from('suggestions').insert([payload]);
+      suggError = error || null;
       if (error) console.warn('suggestion fallback insert', error);
-    } catch(e){}
+    } catch(e){ suggError = e; }
+    savedToDatabase = !suggError;
     tryEmailJS({
       type: 'suggestion',
       to_email: ADMIN_EMAIL,
@@ -521,14 +540,18 @@ async function submitSuggestion() {
       notification_body: 'Type: ' + (payload.type || '-') + '\nAgency: ' + (payload.agency_name || '-') + '\nDetails: ' + (payload.details || '-')
     });
   }
-  // Local fallback
-  try {
-    var localSugg = JSON.parse(localStorage.getItem('sa_suggestions_local') || '[]');
-    payload.created_at = new Date().toISOString();
-    payload._localId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-    localSugg.push(payload);
-    localStorage.setItem('sa_suggestions_local', JSON.stringify(localSugg));
-  } catch(e){}
+  // Local fallback only when BOTH paths failed (see submitReport) — otherwise
+  // My submissions shows the delivered item twice: the real row plus a local
+  // Pending copy that never resolves.
+  if (!savedToDatabase) {
+    try {
+      var localSugg = JSON.parse(localStorage.getItem('sa_suggestions_local') || '[]');
+      payload.created_at = new Date().toISOString();
+      payload._localId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      localSugg.push(payload);
+      localStorage.setItem('sa_suggestions_local', JSON.stringify(localSugg));
+    } catch(e){}
+  }
   resetTurnstile('suggestion-turnstile');
   if (btn) { btn.disabled = false; btn.textContent = 'Submit'; }
   closeSheet('suggestion-overlay');
@@ -536,9 +559,13 @@ async function submitSuggestion() {
   var waMsg = 'SA Recruiters — ' + (payload.type ? payload.type.toUpperCase() : 'SUGGESTION') + '%0A%0A' +
     'Agency: ' + encodeURIComponent(payload.agency_name || '-') + '%0A' +
     'Details: ' + encodeURIComponent(payload.details || '-');
-  showWhatsAppConfirm({
+  showWhatsAppConfirm(savedToDatabase ? {
     title: 'Sent — thank you!',
     message: 'Your ' + (payload.type || 'suggestion') + ' has been saved. Tap below to send it to the admin on WhatsApp so it can be seen right away.',
+    waText: waMsg
+  } : {
+    title: 'Could not reach the admin',
+    message: 'The ' + (payload.type || 'suggestion') + ' was not delivered just now (it stays saved on this device as Pending and will be retried automatically). Tap below to send it to the admin on WhatsApp so it isn\'t lost.',
     waText: waMsg
   });
 }

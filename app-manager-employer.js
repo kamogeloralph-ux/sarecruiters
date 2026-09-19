@@ -230,6 +230,9 @@ loadAll().then(markAppDataReady);
 loadSavedVacanciesFromSupabase();
 initConnectionStatus();
 processAlertUnsubscribe();
+// Deliver any reports/suggestions that were trapped locally when the
+// database write failed at submit time (see app-pending-submissions.js).
+if (typeof window.retryPendingSubmissions === 'function') window.retryPendingSubmissions();
 // The shell and cached directory paint first; secondary settings are already
 // included in loadAll, while the optional daily track loads just after paint.
 setTimeout(loadTodayTrack, 250);
