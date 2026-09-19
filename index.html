@@ -30,6 +30,19 @@
   @keyframes sa-splash-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.94);opacity:.85}}
   #app-splash.hide{opacity:0;pointer-events:none}
   body:not(.app-ready) .app{visibility:hidden}
+  #auth-gate{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(145deg,#071d3d 0%,#0a55a5 55%,#0a84ff 100%);color:#fff;overflow:auto}
+  #auth-gate.is-hidden{display:none}
+  .auth-gate-card{width:min(430px,100%);padding:38px 28px 30px;border:1px solid rgba(255,255,255,.23);border-radius:30px;background:rgba(4,28,66,.72);box-shadow:0 24px 70px rgba(0,14,45,.35);text-align:center;backdrop-filter:blur(16px)}
+  .auth-gate-logo{width:86px;height:86px;border-radius:25px;margin:0 auto 22px;box-shadow:0 12px 30px rgba(0,0,0,.24)}
+  .auth-gate-card h1{margin:0;font-size:30px;letter-spacing:-.04em}
+  .auth-gate-card p{margin:11px auto 26px;max-width:320px;color:rgba(255,255,255,.82);line-height:1.55;font-size:14px}
+  #google-sign-in{width:100%;display:flex;align-items:center;justify-content:center;gap:11px;border:0;border-radius:14px;padding:14px 18px;background:#fff;color:#1f2937;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 9px 22px rgba(0,0,0,.2);transition:transform .2s ease,opacity .2s ease}
+  #google-sign-in:hover{transform:translateY(-1px)}
+  #google-sign-in:disabled{opacity:.65;cursor:wait;transform:none}
+  #google-sign-in svg{width:20px;height:20px}
+  #auth-gate-status{min-height:18px;margin:14px 0 0;color:rgba(255,255,255,.76);font-size:12px}
+  .auth-gate-privacy{margin-top:24px!important;margin-bottom:0!important;font-size:11px!important;color:rgba(255,255,255,.58)!important}
+  @media(max-width:420px){.auth-gate-card{padding:32px 22px 25px;border-radius:24px}.auth-gate-card h1{font-size:27px}}
 </style>
 
 <title>SA Recruiters — South African Recruitment Agencies Directory</title>
@@ -96,6 +109,20 @@
 <body>
 
 <div id="app-splash" aria-hidden="true"><img src="icons/v2-icon-192.png" alt=""></div>
+
+<section id="auth-gate" data-state="loading" aria-labelledby="welcome-title">
+  <div class="auth-gate-card">
+    <img class="auth-gate-logo" src="icons/v2-icon-192.png" alt="SA Recruiters">
+    <h1 id="welcome-title">Welcome to SA Recruiters</h1>
+    <p>Find trusted recruitment agencies, branches, employers and opportunities across South Africa.</p>
+    <button id="google-sign-in" type="button" disabled>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.27c0-.72-.06-1.42-.18-2.09H12v3.96h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.69 2.91-4.18 2.91-7.26Z"/><path fill="#34A853" d="M12 21.7c2.63 0 4.84-.87 6.45-2.36l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.54 0-4.7-1.72-5.47-4.03H3.28v2.53A9.74 9.74 0 0 0 12 21.7Z"/><path fill="#FBBC05" d="M6.53 13.78A5.85 5.85 0 0 1 6.22 12c0-.62.11-1.22.31-1.78V7.69H3.28A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.03 4.31l3.25-2.53Z"/><path fill="#EA4335" d="M12 6.19c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.24 14.63 2.3 12 2.3a9.74 9.74 0 0 0-8.72 5.39l3.25 2.53c.77-2.31 2.93-4.03 5.47-4.03Z"/></svg>
+      Continue with Google
+    </button>
+    <div id="auth-gate-status" role="status" aria-live="polite">Checking your sign-in…</div>
+    <p class="auth-gate-privacy">Sign in is required to access the SA Recruiters app.</p>
+  </div>
+</section>
 
 <div class="update-banner" id="update-banner">A new version is available. <button onclick="forceUpdateReload()">Reload now</button></div>
 <div class="retry-banner" id="retry-banner" role="status" aria-live="polite">Couldn't refresh the latest listings. <button onclick="retryLoadAll()">Retry</button></div>
@@ -285,6 +312,7 @@
     <div class="pgrouped-list">
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="signOutSaRecruiters()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg></span><span>Sign out<span class="mi-sub">Sign out of your Google account</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
     <!-- ============ CONTACT DETAILS ============ -->
     <div class="contact-section">
@@ -981,7 +1009,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=d582a14e71" defer></script>
+<script src="app.bundle.min.js?v=bcbda8a45c" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

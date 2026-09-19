@@ -209,6 +209,7 @@ async function fastResolveManagerToken() { /* resolution is server-side now */ }
   }
 })();
 
+function bootAuthenticatedApp() {
 // Paint immediately from whatever was cached on the last successful load
 // (if any), then loadAll() below fetches fresh data in the background and
 // silently re-renders once it lands — so repeat visits never show a blank
@@ -232,6 +233,11 @@ processAlertUnsubscribe();
 // included in loadAll, while the optional daily track loads just after paint.
 setTimeout(loadTodayTrack, 250);
 loadSocialLinks();
+}
+
+// No public data query or cached directory render runs until Google sign-in
+// has supplied a Supabase session.
+startAuthenticatedApp(bootAuthenticatedApp);
 
 // ===== Refresh data when the app comes back from being idle =====
 // A PWA that's been backgrounded (screen locked, app switched away from)
@@ -247,13 +253,13 @@ loadSocialLinks();
       hiddenAt = Date.now();
     } else if (hiddenAt && (Date.now() - hiddenAt) > MIN_HIDDEN_MS) {
       hiddenAt = null;
-      loadAll();
+      if (saAuthUser) loadAll();
     }
   });
   // Covers the back/forward-cache restore case (Safari/iOS in particular),
   // which visibilitychange doesn't always catch.
   window.addEventListener('pageshow', function(e) {
-    if (e.persisted) loadAll();
+    if (e.persisted && saAuthUser) loadAll();
   });
 })();
 
