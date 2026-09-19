@@ -591,35 +591,21 @@
   <!-- ============ ALL VACANCIES LIST ============ -->
   <div class="screen" id="screen-allvacancies">
     <div class="screen-fixed vacancies-screen-fixed">
-    <header>
-      <div class="screen-title-group"><div class="directory-title-icon directory-icon-vacancies" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><div><div class="logo-text">All Vacancies</div><div class="screen-context">Directory</div></div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
-      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button></div>
-    </header>
-    <div id="allvacancies-backbar" class="vac-folder-backbar" style="display:none">
-      <button class="vac-folder-back-btn" data-ripple onclick="closeVacancyFolder()" aria-label="Back to vacancy folders">
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back" id="allvacancies-back" data-ripple onclick="handleVacanciesBack()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        Vacancies
       </button>
-    </div>
-    <div id="allvacancies-search-row" class="search search-mini" style="margin:0 16px 12px;display:none">
+      <div class="logo-text">All Vacancies</div>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
         <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="allvacancies-search" class="sr-only">Search vacancies</label>
         <input id="allvacancies-search" type="search" placeholder="Search job title, role, location..." oninput="renderAllVacanciesList()">
       </div>
     </div>
-    <div id="allvacancies-filter-row" class="vac-filter-row" style="display:none;gap:8px;margin:0 16px 12px;flex-wrap:wrap">
-      <select id="allvacancies-remote" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any work arrangement</option><option value="On-site">On-site</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option></select>
-      <select id="allvacancies-exp" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any experience level</option><option value="Entry-level">Entry-level</option><option value="Mid-level">Mid-level</option><option value="Senior">Senior</option><option value="Executive">Executive</option></select>
-      <select id="allvacancies-industry" class="vac-filter-select" onchange="renderAllVacanciesList()"><option value="">Any industry</option></select>
-    </div>
     </div>
     <div class="screen-scroll">
-    <div class="vac-result-meta" id="allvacancies-result-count" aria-live="polite"></div>
     <div id="allvacancies-list"></div>
     <button class="vac-load-more" id="allvacancies-loadmore" type="button" onclick="loadMoreGeneralVacancies()" style="display:none">Load more vacancies</button>
     </div>
