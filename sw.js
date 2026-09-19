@@ -90,9 +90,25 @@ self.addEventListener('install', function(event) {
       // the cache empty and is the root cause of "offline page on reload"
       // after a partial install; caching item-by-item guarantees we keep
       // everything that IS available.
+      //
+      // Each asset is fetched with {cache: 'reload'} instead of via
+      // cache.add(asset) directly. cache.add()/addAll() do a plain fetch()
+      // under the hood, which still consults the browser's/CDN's HTTP cache
+      // for any asset whose URL has no cache-busting query string (styles.css,
+      // content.js, etc. are precached here by their bare path, unversioned —
+      // only the <link>/<script> tags in the HTML get a ?v=hash at build
+      // time). That let a NEW service worker version (a fresh CORE_CACHE
+      // namespace) still precache STALE bytes for those files, so a deploy
+      // could bump VERSION and still not change what the app actually shows
+      // once installed. {cache: 'reload'} forces every precache fetch to hit
+      // the network and ignore any HTTP-layer cache, so a new SW version
+      // always gets genuinely current bytes.
       .then(function(cache) {
         return Promise.all(CORE_ASSETS.map(function(asset) {
-          return cache.add(asset).catch(function(err) {
+          return fetch(asset, { cache: 'reload' }).then(function(response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return cache.put(asset, response);
+          }).catch(function(err) {
             console.warn('[sw] precache miss:', asset, err && err.message);
           });
         }));
