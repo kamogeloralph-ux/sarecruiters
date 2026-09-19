@@ -22,6 +22,103 @@ var supabaseClient = (window.supabase && typeof window.supabase.createClient ===
   : null;
 if (!supabaseClient) console.warn('[SA Recruiters] Supabase client unavailable; using local read-only fallback until the connection is restored.');
 
+// ===== Required Google sign-in for the public app =====
+var saAuthUser = null;
+var saAuthStarted = false;
+var saAuthStartCallback = null;
+var saAuthRedirecting = false;
+function authRedirectUrl() {
+  return window.location.origin + window.location.pathname + window.location.search;
+}
+function isGoogleUser(user) {
+  if (!user) return false;
+  if (user.app_metadata && user.app_metadata.provider === 'google') return true;
+  return Array.isArray(user.identities) && user.identities.some(function(identity) { return identity.provider === 'google'; });
+}
+function renderAuthUser(user) {
+  var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Account';
+  var avatar = user && user.user_metadata && user.user_metadata.avatar_url;
+  var nameEl = document.getElementById('profile-status-name');
+  if (nameEl && user) nameEl.textContent = name;
+  var authName = document.getElementById('welcome-user-name');
+  if (authName) authName.textContent = user ? name : '';
+  var authAvatar = document.getElementById('welcome-user-avatar');
+  if (authAvatar) {
+    authAvatar.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((name || 'A').charAt(0).toUpperCase()) + '</span>';
+  }
+}
+function setAuthGateState(state, message) {
+  var gate = document.getElementById('auth-gate');
+  var button = document.getElementById('google-sign-in');
+  var status = document.getElementById('auth-gate-status');
+  if (gate) gate.dataset.state = state;
+  if (button) { button.disabled = state === 'loading' || state === 'redirecting'; button.classList.toggle('loading', button.disabled); }
+  if (status) status.textContent = message || '';
+}
+async function signInWithGoogle() {
+  if (!supabaseClient || saAuthRedirecting) return;
+  saAuthRedirecting = true;
+  setAuthGateState('redirecting', 'Opening Google sign-in…');
+  var result = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: authRedirectUrl(), queryParams: { access_type: 'offline', prompt: 'select_account' } }
+  });
+  if (result.error) {
+    saAuthRedirecting = false;
+    setAuthGateState('error', 'Google sign-in could not start. Please try again.');
+    console.error('Google sign-in', result.error);
+  }
+}
+async function signOutSaRecruiters() {
+  if (supabaseClient) await supabaseClient.auth.signOut();
+  window.location.reload();
+}
+function startAuthenticatedApp(callback) {
+  saAuthStartCallback = callback;
+  var button = document.getElementById('google-sign-in');
+  if (button) button.addEventListener('click', signInWithGoogle);
+  if (!supabaseClient || !supabaseClient.auth) {
+    setAuthGateState('error', 'Authentication is unavailable. Please refresh and try again.');
+    return;
+  }
+  setAuthGateState('loading', 'Checking your sign-in…');
+  supabaseClient.auth.onAuthStateChange(function(event, session) {
+    saAuthUser = session && session.user ? session.user : null;
+    if (saAuthUser && !isGoogleUser(saAuthUser)) {
+      saAuthUser = null;
+      supabaseClient.auth.signOut();
+      setAuthGateState('error', 'Please continue with Google to access SA Recruiters.');
+    }
+    renderAuthUser(saAuthUser);
+    if (saAuthUser && !saAuthStarted) {
+      saAuthStarted = true;
+      setAuthGateState('authenticated', '');
+      var gate = document.getElementById('auth-gate');
+      if (gate) gate.classList.add('is-hidden');
+      if (saAuthStartCallback) saAuthStartCallback();
+    } else if (!saAuthUser) {
+      saAuthStarted = false;
+      var gate = document.getElementById('auth-gate');
+      if (gate) gate.classList.remove('is-hidden');
+      setAuthGateState('ready', 'Sign in with Google to continue.');
+    }
+  });
+  supabaseClient.auth.getSession().then(async function(result) {
+    if (result.error) throw result.error;
+    var session = result.data && result.data.session;
+    saAuthUser = session && session.user ? session.user : null;
+    if (saAuthUser && !isGoogleUser(saAuthUser)) {
+      await supabaseClient.auth.signOut();
+      saAuthUser = null;
+    }
+    renderAuthUser(saAuthUser);
+    if (!saAuthUser) setAuthGateState('ready', 'Sign in with Google to continue.');
+  }).catch(function(error) {
+    console.error('Supabase auth session', error);
+    setAuthGateState('error', 'We could not check your sign-in. Please refresh and try again.');
+  });
+}
+
 // The public PWA does not include the admin-only settings controls. Keep the
 // shared loader safe when the admin page's UI helper is not present.
 if (typeof window.updateEmployerRegUI !== 'function') {
@@ -335,4 +432,3 @@ function escapeHtml(s) {
 function initials(n) {
   return (n || '?').trim().split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
 }
-
