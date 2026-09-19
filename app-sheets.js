@@ -596,7 +596,23 @@ function poolCandidateWhatsAppLink(c) {
   return 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
 }
 
+// Talent Pool "profile" state for the currently signed-in user. null = the
+// register sheet is being used to create a brand-new candidate; a candidate
+// id = the sheet is editing (and will UPDATE, not INSERT) that owned row.
+var editingPoolCandidateId = null;
+
+function setPoolSheetEditMode(isEdit) {
+  var title = document.getElementById('pool-register-title');
+  if (title) title.textContent = isEdit ? 'My Talent Pool Profile' : 'Join the Talent Pool';
+  var submitBtn = document.getElementById('pool-submit-btn');
+  if (submitBtn) submitBtn.textContent = isEdit ? 'Save changes' : 'Submit registration';
+  var deleteBtn = document.getElementById('pool-delete-btn');
+  if (deleteBtn) deleteBtn.style.display = isEdit ? 'block' : 'none';
+}
+
 function openPoolRegisterSheet() {
+  editingPoolCandidateId = null;
+  setPoolSheetEditMode(false);
   document.getElementById('pool-name').value = '';
   window.pendingPoolPhotoBlob = null;
   var poolPreview = document.getElementById('pool-photo-preview');
@@ -627,6 +643,121 @@ function openPoolRegisterSheet() {
   document.getElementById('pool-register-overlay').classList.add('open');
 }
 
+// Fills the same register-sheet fields from an existing pool_candidates row
+// (used when a signed-in user opens "My Talent Pool Profile").
+function fillPoolFormFromCandidate(c) {
+  document.getElementById('pool-name').value = c.full_name || '';
+  window.pendingPoolPhotoBlob = null;
+  var poolPreview = document.getElementById('pool-photo-preview');
+  var poolFallback = document.getElementById('pool-photo-fallback');
+  if (c.photo_url) {
+    if (poolPreview) { poolPreview.src = c.photo_url; poolPreview.style.display = 'block'; }
+    if (poolFallback) poolFallback.style.display = 'none';
+  } else {
+    if (poolPreview) { poolPreview.style.display = 'none'; poolPreview.src = ''; }
+    if (poolFallback) poolFallback.style.display = 'flex';
+  }
+  document.getElementById('pool-phone').value = c.contact_phone || '';
+  document.getElementById('pool-email').value = c.contact_email || '';
+  document.getElementById('pool-sector').value = c.sector || '';
+  document.getElementById('pool-position').value = c.position || '';
+  document.getElementById('pool-location').value = c.location || '';
+  document.getElementById('pool-gender').value = c.gender || '';
+  document.getElementById('pool-grade12').value = c.grade12 || '';
+  document.getElementById('pool-criminal').value = c.criminal_record || '';
+  document.getElementById('pool-experience').value = (c.experience_years !== null && c.experience_years !== undefined) ? String(c.experience_years) : '';
+  document.getElementById('pool-qualification').value = c.qualification || '';
+  document.getElementById('pool-drivers-license').value = c.drivers_license || '';
+  document.getElementById('pool-transport').value = c.reliable_transport || '';
+  document.getElementById('pool-relocate').value = c.willing_relocate || '';
+  document.getElementById('pool-availability').value = c.availability || '';
+  document.getElementById('pool-employment').value = c.preferred_employment || '';
+  document.getElementById('pool-salary').value = c.salary_expectation || '';
+  document.getElementById('pool-work-authorized').value = c.work_authorized || '';
+  var aboutEl = document.getElementById('pool-about');
+  if (aboutEl) { aboutEl.value = c.about_you || ''; aboutEl.dispatchEvent(new Event('input')); }
+  document.getElementById('pool-cv').value = c.cv_link || '';
+  var alertOptIn = document.getElementById('pool-email-alerts');
+  if (alertOptIn) alertOptIn.checked = !!c.email_alert_opt_in;
+}
+
+// Entry point for "My Talent Pool Profile" (site menu + Talent Pool screen).
+// Loads the row linked to the signed-in user (via pool_candidates.user_id +
+// the pool_select_own RLS policy added alongside candidate self-service) and
+// opens it in the same register sheet, in edit mode. If nothing is linked
+// yet, opens a blank registration pre-filled with the Google name/email —
+// submitting it will auto-link (not duplicate) a matching pre-sign-in
+// registration if the typed email + phone match one (see submitPoolRegistration).
+async function openMyPoolProfile() {
+  if (!saAuthUser) { showToast('Please sign in to manage your Talent Pool profile.'); return; }
+  var result;
+  try {
+    result = await supabaseClient.from('pool_candidates').select('*').eq('user_id', saAuthUser.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  } catch(e) { console.error('my pool profile load', e); showToast('Could not load your profile — please try again.'); return; }
+  if (result.error) { console.error('my pool profile load', result.error); showToast('Could not load your profile — please try again.'); return; }
+  if (result.data) {
+    fillPoolFormFromCandidate(result.data);
+    editingPoolCandidateId = result.data.id;
+    setPoolSheetEditMode(true);
+    document.getElementById('pool-register-overlay').classList.add('open');
+  } else {
+    openPoolRegisterSheet();
+    var nameEl = document.getElementById('pool-name');
+    var emailEl = document.getElementById('pool-email');
+    var meta = saAuthUser.user_metadata || {};
+    if (nameEl && !nameEl.value) nameEl.value = meta.full_name || meta.name || '';
+    if (emailEl && !emailEl.value) emailEl.value = saAuthUser.email || '';
+    showToast('No linked profile yet — already registered before signing in? Enter the same email and phone you used, and it\u2019ll link automatically.');
+  }
+}
+
+async function deleteMyPoolProfile() {
+  if (!editingPoolCandidateId) return;
+  if (!confirm('Remove your Talent Pool profile? This can\u2019t be undone.')) return;
+  var deleteBtn = document.getElementById('pool-delete-btn');
+  if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.textContent = 'Removing…'; }
+  try {
+    var result = await supabaseClient.from('pool_candidates').delete().eq('id', editingPoolCandidateId);
+    if (result.error) { console.error('pool self delete', result.error); showToast('Could not remove your profile — please try again.'); if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = 'Remove my profile'; } return; }
+  } catch(e) { console.error('pool self delete', e); showToast('Could not remove your profile — please try again.'); if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = 'Remove my profile'; } return; }
+  if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = 'Remove my profile'; }
+  editingPoolCandidateId = null;
+  closeSheet('pool-register-overlay');
+  showToast('Your Talent Pool profile has been removed.');
+  poolLoaded = false; // force a fresh load next time the list is viewed
+}
+
+
+
+// Builds the RPC-shaped field object shared by the edit-save path and the
+// claim-and-update path (both push the sheet's current values into an owned
+// row via candidate_update_own_profile, just for a different candidate id).
+function poolFormToProfileFields() {
+  return {
+    p_full_name: document.getElementById('pool-name').value.trim(),
+    p_contact_phone: document.getElementById('pool-phone').value.trim(),
+    p_contact_email: document.getElementById('pool-email').value.trim(),
+    p_sector: document.getElementById('pool-sector').value.trim(),
+    p_position: document.getElementById('pool-position').value.trim(),
+    p_location: document.getElementById('pool-location').value.trim(),
+    p_gender: document.getElementById('pool-gender').value,
+    p_grade12: document.getElementById('pool-grade12').value,
+    p_criminal_record: document.getElementById('pool-criminal').value,
+    p_experience_years: parseInt(document.getElementById('pool-experience').value, 10),
+    p_qualification: document.getElementById('pool-qualification').value.trim(),
+    p_drivers_license: document.getElementById('pool-drivers-license').value,
+    p_reliable_transport: document.getElementById('pool-transport').value,
+    p_willing_relocate: document.getElementById('pool-relocate').value,
+    p_availability: document.getElementById('pool-availability').value.trim(),
+    p_preferred_employment: document.getElementById('pool-employment').value,
+    p_salary_expectation: document.getElementById('pool-salary').value.trim(),
+    p_work_authorized: document.getElementById('pool-work-authorized').value,
+    p_about_you: document.getElementById('pool-about').value.trim().slice(0, 150),
+    p_cv_link: document.getElementById('pool-cv').value.trim(),
+    p_email_alert_opt_in: !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked)
+  };
+}
+
 async function submitPoolRegistration() {
   var name = document.getElementById('pool-name').value.trim();
   var phone = document.getElementById('pool-phone').value.trim();
@@ -641,8 +772,56 @@ async function submitPoolRegistration() {
   if (!name || !phone || !email || !sector || !location) { showToast('Please fill in name, email, phone, sector and location. Email is used for cross-device Talent Pool verification.'); return; }
   if (alertOptIn && !email) { showToast('Add your email address to receive vacancy alerts.'); return; }
   if (!gender || !grade12 || !criminal || experience === '') { showToast('Please answer gender, Grade 12, criminal record and experience.'); return; }
+
+  var btn = document.getElementById('pool-submit-btn');
+  var defaultBtnLabel = editingPoolCandidateId ? 'Save changes' : 'Submit registration';
+
+  // ----- Editing an owned row: update in place via the self-service RPC. -----
+  if (editingPoolCandidateId) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    var editPhotoUrl = await uploadPoolPhotoIfAny();
+    var editFields = poolFormToProfileFields();
+    editFields.p_id = editingPoolCandidateId;
+    editFields.p_photo_url = editPhotoUrl || null;
+    var editResult;
+    try { editResult = await supabaseClient.rpc('candidate_update_own_profile', editFields); }
+    catch(e) { console.error('pool self update', e); showToast('Could not save — please try again.'); if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
+    if (editResult.error || editResult.data !== true) { console.error('pool self update', editResult.error); showToast('Could not save — please try again.'); if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
+    if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
+    closeSheet('pool-register-overlay');
+    showToast('Your Talent Pool profile has been updated.');
+    poolLoaded = false; // force a fresh load next time the list is viewed
+    return;
+  }
+
+  // ----- New registration: first check whether this is really a pre-Google-
+  // sign-in row belonging to this account (matched by email + phone). If so,
+  // link it and save the just-typed values into it instead of inserting a
+  // duplicate candidate. -----
+  if (saAuthUser) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+    try {
+      var claim = await supabaseClient.rpc('candidate_claim_profile', { p_email: email, p_phone: phone });
+      if (!claim.error && claim.data) {
+        var claimPhotoUrl = await uploadPoolPhotoIfAny();
+        var claimFields = poolFormToProfileFields();
+        claimFields.p_id = claim.data;
+        claimFields.p_photo_url = claimPhotoUrl || null;
+        var claimUpdate = await supabaseClient.rpc('candidate_update_own_profile', claimFields);
+        if (claimUpdate.error) console.error('pool claim update', claimUpdate.error);
+        if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
+        rememberTalentPoolIdentity(phone, email);
+        verifyTalentPoolMembership(phone, email, true);
+        closeSheet('pool-register-overlay');
+        showToast('Found your existing registration and linked it to your account.');
+        return;
+      }
+    } catch(e) { console.warn('candidate claim check', e); }
+  }
+
   var payload = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+    user_id: saAuthUser ? saAuthUser.id : null,
     full_name: name,
     contact_phone: phone,
     contact_email: email,
@@ -670,7 +849,6 @@ async function submitPoolRegistration() {
     cv_link: document.getElementById('pool-cv').value.trim(),
     status: 'pending'
   };
-  var btn = document.getElementById('pool-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
   var photoUrl = await uploadPoolPhotoIfAny();
   if (photoUrl) payload.photo_url = photoUrl;
@@ -703,9 +881,9 @@ async function submitPoolRegistration() {
       result = await supabaseClient.from('pool_candidates').insert([legacyPayload]);
       if (!result.error) showToast('Registration received — email alerts activate after the alert setup is completed.');
     }
-    if (result.error) { console.error('pool submit', result.error); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
-  } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent='Submit registration'; } return; }
-  if (btn) { btn.disabled = false; btn.textContent = 'Submit registration'; }
+    if (result.error) { console.error('pool submit', result.error); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent=defaultBtnLabel; } return; }
+  } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent=defaultBtnLabel; } return; }
+  if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
   rememberTalentPoolIdentity(phone, email);
   verifyTalentPoolMembership(phone, email, true);
   trackEvent('candidate_registration_submitted', 'candidate', null, { alert_opt_in: alertOptIn });
