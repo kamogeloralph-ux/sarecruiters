@@ -1,22 +1,24 @@
 // ============================================================
-//  SA RECRUITERS — verify-jobmail.mjs
+//  SA RECRUITERS — verify-jobmail.mjs (generalized link verifier)
 // ============================================================
-//  scrape-jobmail.mjs only ever discovers/refreshes jobs that still
-//  appear somewhere in Job Mail's own paginated listing pages. A vacancy
-//  can drop out of every listing page (which does eventually update its
-//  last_verified_at going stale) OR — the case that actually prompted
-//  this script — still appear in the listings while its OWN detail page
-//  (job.link, which is almost always the employer/agency's own site, not
-//  jobmail.co.za) already says the role is closed. Neither case is caught
-//  by the discovery scraper, since it never visits job.link at all.
+//  The discovery scrapers only ever see jobs that still appear somewhere
+//  in a source's own listing pages, and a source can keep a closed posting
+//  listed for a long time (Graduates24 in particular still lists 2021
+//  learnerships). Neither is caught by discovery, since neither re-checks
+//  the stored link itself.
 //
-//  This script does the other half: pick a batch of already-stored
-//  JobMail rows (oldest last_verified_at first, so the whole table
-//  cycles through over repeated runs), fetch each one's own link
-//  directly, and:
-//    - delete the row if the link is confirmed dead (404/410, or a
-//      redirect away to a generic listing/search page, or the page body
-//      contains a common "closed/filled/expired" phrase)
+//  This script does the other half for EVERY scraped/synced source that
+//  stores a link: pick a batch of stored rows (oldest last_verified_at
+//  first, so the whole table cycles through over repeated runs), then:
+//    - delete rows that are stale by the shared freshness rules
+//      (scripts/vacancy-freshness.mjs) — past closing date or older than
+//      the source's max posting age — even if the URL still resolves,
+//      because a resolving URL for a 2021 learnership is still wrong
+//      information for users.
+//    - otherwise fetch each row's link directly, and delete the row if
+//      the link is confirmed dead (404/410, a redirect away to a generic
+//      listing/search page, or the page body contains a common
+//      "closed/filled/expired" phrase)
 //    - refresh last_verified_at if the link still looks live
 //    - leave last_verified_at untouched on an ambiguous/network-error
 //      result, so it's naturally retried on a later run rather than
@@ -28,12 +30,13 @@
 //  than a stale listing surviving a few extra days.
 //
 //  Requires: npm install @supabase/supabase-js cheerio (already in
-//  package.json, shared with scrape-jobmail.mjs)
+//  package.json, shared with the scrapers)
 // ============================================================
 
 import { pathToFileURL } from 'node:url';
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -123,15 +126,15 @@ async function checkLink(url) {
 }
 
 async function loadBatch() {
-  // Kept to source_type IN ('jobmail','agency') during rollout: rows
-  // scraped before scrape-jobmail.mjs's source_type rename are still
-  // 'agency' until they're next re-discovered by the normal scrape (which
-  // upserts and would overwrite it to 'jobmail' anyway) — this way
-  // verification doesn't have to wait on that to happen first.
+  // Every scraped/synced source is in scope, not just jobmail — the same
+  // "closed posting still listed" failure mode applies to retail career
+  // pages, learnership aggregators and job boards alike. Manually-posted
+  // rows ('agency', employer/agency vacancies) have no meaningful link
+  // column value and are managed by the TTL, so they're excluded here.
   const { data, error } = await supabase
     .from('vacancies')
-    .select('id,title,link,last_verified_at')
-    .in('source_type', ['jobmail', 'agency'])
+    .select('id,title,link,notes,closing_date,source_type,created_at,last_verified_at')
+    .not('source_type', 'in', ['agency', 'employer', 'general'])
     .not('link', 'is', null)
     .order('last_verified_at', { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE);
@@ -143,8 +146,19 @@ async function run() {
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   const batch = await loadBatch();
   console.log(`[verify-jobmail] checking ${batch.length} stored link(s)`);
-  let dead = 0, alive = 0, unknown = 0;
+  let dead = 0, alive = 0, unknown = 0, stale = 0;
   for (const [index, row] of batch.entries()) {
+    // Freshness first: a posting that is past its closing date or older
+    // than its source's max age is deleted without spending a request on
+    // its URL — the information is wrong even while the page still loads.
+    const staleCheck = isStaleVacancy(row);
+    if (staleCheck.stale) {
+      stale += 1;
+      console.log(`[verify-jobmail] STALE "${row.title}" (${staleCheck.reason}) — deleting ${row.id}`);
+      const { error } = await supabase.from('vacancies').delete().eq('id', row.id);
+      if (error) console.error(`[verify-jobmail] delete failed for ${row.id}: ${error.message}`);
+      continue;
+    }
     const result = await checkLink(row.link);
     if (result.status === 'dead') {
       dead += 1;
@@ -161,7 +175,7 @@ async function run() {
     }
     if (index < batch.length - 1) await sleep(REQUEST_DELAY_MS);
   }
-  console.log(`[verify-jobmail] done: ${alive} alive, ${dead} removed, ${unknown} inconclusive`);
+  console.log(`[verify-jobmail] done: ${alive} alive, ${dead} dead-link removed, ${stale} stale removed, ${unknown} inconclusive`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
