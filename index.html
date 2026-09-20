@@ -467,7 +467,6 @@
     <header>
       <div class="screen-title-group"><div class="logo-text" id="manager-status-title">Manager link</div><div class="screen-context">Please wait</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home">×</button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -535,13 +534,11 @@
   <!-- ============ ALL AGENCIES LIST ============ -->
   <div class="screen" id="screen-allagencies">
     <div class="screen-fixed">
-    <header>
-      <div class="screen-title-group"><div class="directory-title-icon directory-icon-agencies" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></div><div><div class="logo-text">All Agencies</div><div class="screen-context">Directory</div></div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
-      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button></div>
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="logo-text">All Agencies</div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -563,13 +560,11 @@
   <!-- ============ ALL BRANCHES LIST ============ -->
   <div class="screen" id="screen-allbranches">
     <div class="screen-fixed">
-    <header>
-      <div class="screen-title-group"><div class="directory-title-icon directory-icon-branches" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div><div><div class="logo-text">All Branches</div><div class="screen-context">Directory</div></div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
-      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button></div>
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="logo-text">All Branches</div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -614,13 +609,11 @@
   <!-- ============ ALL EMPLOYERS LIST ============ -->
   <div class="screen" id="screen-allemployers">
     <div class="screen-fixed">
-    <header>
-      <div class="screen-title-group"><div class="directory-title-icon directory-icon-employers" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/></svg></div><div><div class="logo-text">Employers</div><div class="screen-context">Directory</div></div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back to home menu" title="Back to home menu">×</button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
-      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-      </button></div>
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="logo-text">Employers</div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -1081,7 +1074,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=dff7e1223e" defer></script>
+<script src="app.bundle.min.js?v=b9a48a8087" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,
