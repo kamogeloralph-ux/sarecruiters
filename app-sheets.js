@@ -214,13 +214,21 @@ function renderTurnstile(containerId, sheetId) {
 }
 function resetTurnstile(containerId) {
   var host = document.getElementById(containerId);
-  if (host) host.innerHTML = '';
+  if (!host) return;
+  if (window.turnstile && typeof window.turnstile.reset === 'function') {
+    try { window.turnstile.reset(host); return; } catch (e) {}
+  }
+  host.innerHTML = '';
 }
 function getTurnstileResponse(containerId) {
   if (!turnstileConfigured()) return '';
   var host = document.getElementById(containerId);
   if (!host || !window.turnstile) return '';
-  try { return window.turnstile.getResponse(host.firstChild) || ''; } catch(e) { return ''; }
+  // Turnstile's getResponse() needs the exact container element passed to
+  // render() (or its widget id) — NOT a child node. Passing host.firstChild
+  // (the widget's inner iframe) silently never matches, so it always
+  // returned '' even after the user completed the check. Pass host itself.
+  try { return window.turnstile.getResponse(host) || ''; } catch (e) { return ''; }
 }
 
 // ===== SUBMIT VIA CLOUDFLARE WORKER (spam-gated DB write + email) =====
