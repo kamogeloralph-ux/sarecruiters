@@ -432,7 +432,7 @@ async function getEmployerPosters() {
     var result = await supabaseClient.from('employer_posters').select(columns, { count: 'exact' })
       .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(200);
     if (result.error) { console.error('getEmployerPosters', result.error); return []; }
     // Real total (not capped by the 50-row feed limit) for the home stat card.
     posterTotalCount = typeof result.count === 'number' ? result.count : (result.data || []).length;
