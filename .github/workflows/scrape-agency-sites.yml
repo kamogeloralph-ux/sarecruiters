@@ -19,6 +19,7 @@ jobs:
       AGENCY_SITES_FETCH_ATTEMPTS: "2"
       AGENCY_SITES_REQUEST_DELAY_MS: "1500"
       AGENCY_SITES_CONCURRENCY: "3"
+      AGENCY_SITES_BATCH_SIZE: "40"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
