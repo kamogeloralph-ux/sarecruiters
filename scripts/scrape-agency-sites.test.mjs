@@ -57,3 +57,57 @@ test('returns nothing for a page with no recognizable jobs (e.g. a JS-rendered s
   const html = '<body><div id="app"></div></body>';
   assert.deepEqual(parseAgencySiteJobs(html, site), []);
 });
+
+test('buildCandidateUrls: homepage + common paths, cached URL first', async () => {
+  const { buildCandidateUrls } = await import('./scrape-agency-sites.mjs');
+  const urls = buildCandidateUrls({ website: 'example.co.za', site_vacancy_url: 'https://example.co.za/careers/current' });
+  assert.equal(urls[0], 'https://example.co.za/careers/current');
+  assert.ok(urls.includes('https://example.co.za/'));
+  assert.ok(urls.includes('https://example.co.za/vacancies/'));
+  assert.ok(urls.includes('https://example.co.za/jobs/'));
+});
+
+test('buildCandidateUrls: adds https scheme when website has none', async () => {
+  const { buildCandidateUrls } = await import('./scrape-agency-sites.mjs');
+  const urls = buildCandidateUrls({ website: 'example.co.za' });
+  assert.ok(urls[0].startsWith('https://example.co.za'));
+});
+
+test('buildCandidateUrls: empty for missing/unparseable website', async () => {
+  const { buildCandidateUrls } = await import('./scrape-agency-sites.mjs');
+  assert.deepEqual(buildCandidateUrls({ website: null }), []);
+  assert.deepEqual(buildCandidateUrls({ website: '' }), []);
+});
+
+test('classifySite: all robots-blocked candidates -> skipped_robots', async () => {
+  const { classifySite } = await import('./scrape-agency-sites.mjs');
+  const result = classifySite([
+    { url: 'https://a.co.za/', reason: 'blocked by robots.txt' },
+    { url: 'https://a.co.za/jobs/', reason: 'blocked by robots.txt' },
+  ]);
+  assert.equal(result.status, 'skipped_robots');
+});
+
+test('classifySite: all unreachable candidates -> skipped_unreachable', async () => {
+  const { classifySite } = await import('./scrape-agency-sites.mjs');
+  const result = classifySite([
+    { url: 'https://a.co.za/', reason: 'unreachable (HTTP 404)' },
+    { url: 'https://a.co.za/jobs/', reason: 'unreachable (HTTP 404)' },
+  ]);
+  assert.equal(result.status, 'skipped_unreachable');
+});
+
+test('classifySite: mixed / fetched-but-empty candidates -> skipped_no_jobs', async () => {
+  const { classifySite } = await import('./scrape-agency-sites.mjs');
+  const result = classifySite([
+    { url: 'https://a.co.za/', reason: 'fetched OK but no parseable jobs' },
+    { url: 'https://a.co.za/jobs/', reason: 'unreachable (HTTP 404)' },
+  ]);
+  assert.equal(result.status, 'skipped_no_jobs');
+});
+
+test('classifySite: no candidates at all -> skipped_unreachable', async () => {
+  const { classifySite } = await import('./scrape-agency-sites.mjs');
+  const result = classifySite([]);
+  assert.equal(result.status, 'skipped_unreachable');
+});
