@@ -1447,3 +1447,54 @@ header{margin-bottom:18px}
 .cvb-action-btn{flex:1;min-width:120px;padding:12px 10px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:800;cursor:pointer;transition:transform .18s var(--ease),background .18s}
 .cvb-action-btn:active{transform:scale(.97)}
 .cvb-action-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ============ Employer poster feed (swipeable recruitment posters) ============ */
+.poster-feed{
+  display:flex;
+  gap:12px;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  padding:4px 16px 14px;
+  scrollbar-width:none;
+}
+.poster-feed::-webkit-scrollbar{display:none}
+.poster-feed-empty{
+  padding:24px 16px;
+  color:var(--text-2);
+  font-size:13.5px;
+  text-align:center;
+}
+.poster-card{
+  flex:0 0 78%;
+  scroll-snap-align:center;
+  border-radius:var(--radius-sm);
+  overflow:hidden;
+  background:var(--card);
+  box-shadow:var(--shadow-sm);
+  cursor:pointer;
+}
+.poster-card img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover;background:var(--card-2)}
+.poster-caption{
+  padding:9px 12px;
+  font-size:13px;
+  color:var(--text-2);
+  border-top:1px solid var(--separator);
+}
+
+/* Full-screen lightbox for a tapped poster */
+#poster-lightbox-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.92);
+  display:none;align-items:center;justify-content:center;
+  padding:24px;
+}
+#poster-lightbox-overlay.open{display:flex}
+#poster-lightbox-overlay img{max-width:100%;max-height:90vh;border-radius:var(--radius-sm)}
+.poster-lightbox-close{
+  position:absolute;top:20px;right:20px;
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,.12);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  border:none;
+}

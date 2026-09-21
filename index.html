@@ -348,6 +348,11 @@
       <div class="spotlight-deck" id="candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"></div>
     </section>
 
+    <section class="spotlight-mini" aria-labelledby="poster-feed-title">
+      <div class="spotlight-mini-head"><div><div class="quick-access-label">Employer posters</div><h2 id="poster-feed-title">Vacancy posters</h2></div></div>
+      <div class="poster-feed" id="poster-feed" aria-label="Employer recruitment posters"></div>
+    </section>
+
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -742,6 +747,29 @@
     </div>
     <button class="sheet-submit" data-ripple onclick="saveEmployer()">Save</button>
   </div>
+</div>
+
+<!-- ============ POSTER UPLOAD SHEET (employer) ============ -->
+<div class="sheet-scrim" id="poster-upload-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Upload a vacancy poster</h3>
+    <div class="photo-row">
+      <div class="avatar" style="width:56px;height:80px;border-radius:10px;">
+        <img id="poster-preview" style="display:none;width:100%;height:100%;object-fit:cover;">
+        <span id="poster-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
+      </div>
+      <label>Choose poster image<input type="file" accept="image/*" onchange="handlePosterPhoto(event)"></label>
+    </div>
+    <div class="field"><label>Caption (optional)</label><input id="poster-caption" placeholder="e.g. We're hiring — Kroonstad Pharmacy"></div>
+    <button class="sheet-submit" data-ripple onclick="savePoster()">Publish poster</button>
+  </div>
+</div>
+
+<!-- ============ POSTER LIGHTBOX (full-screen view) ============ -->
+<div class="sheet-scrim" id="poster-lightbox-overlay" style="align-items:center;justify-content:center;">
+  <button class="sheet-close-btn" style="position:fixed;top:20px;right:20px;" data-ripple onclick="closePosterLightbox()" aria-label="Close" title="Close">×</button>
+  <img id="poster-lightbox-img" style="max-width:92vw;max-height:88vh;border-radius:var(--radius-sm);" alt="Vacancy poster">
 </div>
 
 <!-- ============ BRANCH SHEET ============ -->

@@ -420,6 +420,19 @@ function openEmployerLockedSheet() {
   document.getElementById('employer-locked-overlay').classList.add('open');
 }
 
+// ----- Employer posters (swipeable poster feed) -----
+async function getEmployerPosters() {
+  var columns = 'id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at';
+  try {
+    var result = await supabaseClient.from('employer_posters').select(columns)
+      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (result.error) { console.error('getEmployerPosters', result.error); return []; }
+    return result.data || [];
+  } catch(e) { console.error('getEmployerPosters', e); return []; }
+}
+
 // ----- Vacancies -----
 async function getVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
@@ -871,6 +884,8 @@ async function loadAll() {
   filterAndRenderCached();
   // Candidate spotlight is non-critical; fetch it after the first useful home render.
   loadCandidateSpotlight();
+  // Poster feed is likewise non-critical to the first render.
+  if (typeof loadPosterFeed === 'function') loadPosterFeed();
   saveDataCache();
   updatePostingToggleUI();
   updateEmployerRegUI();

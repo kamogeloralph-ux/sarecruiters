@@ -189,7 +189,8 @@ function employerHubVacancies(e) {
   }
   html += '</div>';
   if (isAdmin) {
-    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openEmployerVacancySheet(\'' + e.id + '\')">+ Post vacancy</button></div>';
+    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openEmployerVacancySheet(\'' + e.id + '\')">+ Post vacancy</button>' +
+      '<button class="hub-add-btn" data-ripple onclick="openPosterUploadSheet(\'' + e.id + '\')">+ Upload poster</button></div>';
   }
   return html;
 }
@@ -787,3 +788,50 @@ function renderSaved() {
     return vacancyCard(v, agency);
   }).join('');
 }
+
+// ----- Employer posters (swipeable poster feed) -----
+// A poster is a full recruitment-ad image an employer/agency uploads,
+// distinct from the small company_photo logo shown on a vacancyCard.
+// Multiple posters render as a horizontally swipeable, scroll-snapped
+// strip (see .poster-feed in styles.css).
+var postersCache = [];
+
+function posterCard(p) {
+  var caption = p.caption ? '<div class="poster-caption">' + escapeHtml(p.caption) + '</div>' : '';
+  return '<div class="poster-card" data-poster-id="' + escapeHtml(p.id) + '" ' +
+    'onclick="openPosterLightbox(\'' + escapeHtml(p.image_url) + '\')">' +
+    '<img src="' + escapeHtml(p.image_url) + '" alt="' + escapeHtml(p.caption || 'Vacancy poster') + '" loading="lazy" ' +
+    'onerror="this.closest(\'.poster-card\').remove()">' +
+    caption +
+    '</div>';
+}
+
+function renderPosterFeed(posters) {
+  var container = document.getElementById('poster-feed');
+  if (!container) return;
+  postersCache = posters || [];
+  if (!postersCache.length) {
+    container.innerHTML = '<div class="poster-feed-empty">No posters right now — check back soon.</div>';
+    return;
+  }
+  container.innerHTML = postersCache.map(posterCard).join('');
+}
+
+async function loadPosterFeed() {
+  var posters = await getEmployerPosters();
+  renderPosterFeed(posters);
+}
+
+window.openPosterLightbox = function(imageUrl) {
+  var overlay = document.getElementById('poster-lightbox-overlay');
+  if (!overlay) return;
+  var img = document.getElementById('poster-lightbox-img');
+  if (img) img.src = imageUrl;
+  overlay.classList.add('open');
+  trackEvent('poster_view', 'poster', imageUrl);
+};
+
+window.closePosterLightbox = function() {
+  var overlay = document.getElementById('poster-lightbox-overlay');
+  if (overlay) overlay.classList.remove('open');
+};

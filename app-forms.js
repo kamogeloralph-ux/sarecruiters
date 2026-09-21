@@ -186,6 +186,82 @@ function handleEmployerPhoto(evt) {
   };
   reader.readAsDataURL(file);
 }
+// ----- Employer poster upload (full recruitment-ad image) -----
+// Unlike handleEmployerPhoto, this keeps the original aspect ratio (posters
+// are portrait, like a printed flyer) instead of square-cropping.
+function handlePosterPhoto(evt) {
+  var file = evt.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var maxW = 1080;
+      var scale = Math.min(1, maxW / img.width);
+      var canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob) {
+        window.pendingPosterBlob = blob;
+        var preview = document.getElementById('poster-preview');
+        var fallback = document.getElementById('poster-fallback');
+        if (preview) { preview.src = URL.createObjectURL(blob); preview.style.display = 'block'; }
+        if (fallback) fallback.style.display = 'none';
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadPosterIfAny() {
+  if (!window.pendingPosterBlob) return null;
+  try {
+    var res = await fetch(R2_WORKER_URL + '/api/upload/employer-poster', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: window.pendingPosterBlob
+    });
+    var data = await res.json();
+    if (!res.ok) { console.error('poster upload', data && data.error); showToast(data && data.error || 'Could not upload poster.'); return null; }
+    return data.url || null;
+  } catch(e) { console.error('poster upload', e); showToast('Could not upload poster — check your connection.'); return null; }
+}
+
+function openPosterUploadSheet(employerId) {
+  window.pendingPosterEmployerId = employerId || null;
+  window.pendingPosterBlob = null;
+  var preview = document.getElementById('poster-preview');
+  var fallback = document.getElementById('poster-fallback');
+  var caption = document.getElementById('poster-caption');
+  if (preview) { preview.src = ''; preview.style.display = 'none'; }
+  if (fallback) fallback.style.display = 'flex';
+  if (caption) caption.value = '';
+  var overlay = document.getElementById('poster-upload-overlay');
+  if (overlay) overlay.classList.add('open');
+}
+
+async function savePoster() {
+  if (!window.pendingPosterBlob) { alert('Choose a poster image first.'); return; }
+  var imageUrl = await uploadPosterIfAny();
+  if (!imageUrl) return;
+  var payload = {
+    employer_id: window.pendingPosterEmployerId || null,
+    image_url: imageUrl,
+    caption: (document.getElementById('poster-caption') || {}).value || ''
+  };
+  var result = await supabaseClient.from('employer_posters').insert([payload]);
+  if (result.error) {
+    console.error('poster save', result.error);
+    showToast('Could not save poster. Check ADD_EMPLOYER_POSTERS.sql has been run.');
+    return;
+  }
+  closeSheet('poster-upload-overlay');
+  showToast('Poster published');
+  if (typeof loadPosterFeed === 'function') loadPosterFeed();
+}
+
 async function saveEmployer() {
   var name = document.getElementById('e-name').value.trim();
   if (!name) { alert('Add at least the company name.'); return; }
