@@ -193,21 +193,51 @@ function jobId(siteName, link) {
   return `agency-${crypto.createHash('sha1').update(`${siteName}-${link}`).digest('hex').slice(0, 20)}`;
 }
 
+// A recruitment agency's own site almost always also has a blog ("Top
+// Roles in Admin Recruitment Today", "Why Cape Town is a FinTech
+// Powerhouse"), usually with each post wrapped in a generic <article> tag
+// and linked from URLs containing words like "career" ("/career-advice/...")
+// that a loose vacancy-link regex will happily match. Both of the checks
+// below exist specifically to keep blog/news content out of what's meant to
+// be a vacancies-only scrape:
+//   - BLOG_PATH_RX matches path segments that mean "this is an article",
+//     even on a URL that also happens to contain "job" or "career".
+//   - looksLikeJobTitle() rejects headline-shaped text (starts with "How
+//     to"/"Why"/"Top N"/etc., ends in "?", or is implausibly long for a job
+//     title) that a real vacancy title essentially never looks like.
+// A false negative here (a real vacancy skipped) just shows up as
+// site_scrape_status 'skipped_no_jobs' for manual follow-up; a false
+// positive (a blog post saved as a vacancy) ships wrong data straight into
+// the live listings, so this errs firmly toward skipping.
+const BLOG_PATH_RX = /\/(blog|news|articles?|insights?|resources?|advice|guides?|press|media|about)(\/|-|$)/i;
+const JOB_PATH_RX = /\/(vacanc(y|ies)|jobs?|positions?|openings?|current-vacancies)(\/|-|$)/i;
+function looksLikeJobTitle(title) {
+  if (!title || title.length < 4 || title.length > 90) return false;
+  if (/\?\s*$/.test(title)) return false;
+  if (/^(how|why|what|when|where|top\s+\w|the\s+(difference|complete|ultimate)s?\b|guide\s+to|\d+\s+(tips|ways|reasons|things))/i.test(title)) return false;
+  return true;
+}
+function isLikelyJobLink(href) {
+  return JOB_PATH_RX.test(href) && !BLOG_PATH_RX.test(href);
+}
+
 // Tier A -- structural card scan: try known vacancy-card container
 // selectors first; if none match, fall back to a raw anchor scan for links
-// that look like individual job pages.
+// that look like individual job pages. Deliberately does NOT include a
+// bare "article" selector -- see the blog-vs-vacancy note above.
 function parseTierA(html, site) {
   const $ = cheerio.load(html);
   const jobs = [];
   const seen = new Set();
   function push({ title, location, href }) {
     title = clean(title);
+    if (!looksLikeJobTitle(title)) return;
     const link = absoluteUrl(href, site.url) || site.url;
-    if (!title || title.length < 4 || seen.has(link)) return;
+    if (BLOG_PATH_RX.test(link) || seen.has(link)) return;
     seen.add(link);
     jobs.push({ title, location: clean(location), link });
   }
-  $('.job, .vacancy, .job-item, .job-listing, tr.job_listing, .career-item, article').each((_, el) => {
+  $('.job, .vacancy, .job-item, .job-listing, tr.job_listing, .career-item, .vacancy-item, [class*="job-card"], [class*="vacancy-card"]').each((_, el) => {
     const card = $(el);
     push({
       title: card.find('h1, h2, h3, h4, a.job-title, .title, td.job-title').first().text(),
@@ -218,7 +248,7 @@ function parseTierA(html, site) {
   if (!jobs.length) {
     $('a').each((_, el) => {
       const href = $(el).attr('href') || '';
-      if (!/\/(job|vacan|position|career)/i.test(href)) return;
+      if (!isLikelyJobLink(href)) return;
       const text = clean($(el).text());
       if (text.length >= 6) push({ title: text, location: '', href });
     });
