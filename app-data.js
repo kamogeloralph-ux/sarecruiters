@@ -421,14 +421,22 @@ function openEmployerLockedSheet() {
 }
 
 // ----- Employer posters (swipeable poster feed) -----
+var posterTotalCount = null;
+function updatePosterStat() {
+  var el = document.getElementById('stat-posters');
+  if (el && posterTotalCount !== null) el.textContent = posterTotalCount;
+}
 async function getEmployerPosters() {
   var columns = 'id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at';
   try {
-    var result = await supabaseClient.from('employer_posters').select(columns)
+    var result = await supabaseClient.from('employer_posters').select(columns, { count: 'exact' })
       .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(50);
     if (result.error) { console.error('getEmployerPosters', result.error); return []; }
+    // Real total (not capped by the 50-row feed limit) for the home stat card.
+    posterTotalCount = typeof result.count === 'number' ? result.count : (result.data || []).length;
+    updatePosterStat();
     return result.data || [];
   } catch(e) { console.error('getEmployerPosters', e); return []; }
 }
@@ -912,7 +920,7 @@ async function loadAll() {
 
 function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
-  document.getElementById('stat-branches').textContent = branchesCache.length;
+  updatePosterStat();
   document.getElementById('stat-vacancies').textContent = generalVacancyCount + vacanciesCache.length;
   var statEmployers = document.getElementById('stat-employers');
   if (statEmployers) statEmployers.textContent = employersCache.length;

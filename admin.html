@@ -297,6 +297,16 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   .admin-shell .section-head{background:var(--card-2)}
   .admin-shell .nav-item:hover,.admin-shell .nav-item.active{background:var(--card-2)}
 }
+.pb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 10px}
+.pb-item{display:flex;gap:12px;padding:10px;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card-2)}
+.pb-item img{width:84px;height:112px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border);background:var(--card)}
+.pb-fields{flex:1;min-width:0}
+.pb-fields .field{margin-bottom:8px}
+.pb-fields .pb-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 8px}
+.pb-item.pb-done{opacity:.55}
+.pb-item.pb-failed{border-color:var(--danger)}
+.pb-status{font-size:12px;font-weight:600;margin-top:2px}
+.poster-thumb{width:48px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--card-2)}
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
@@ -389,6 +399,14 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div class="muted" style="margin-bottom:14px">Companies that post their own vacancies directly (separate from the agency directory). Their jobs also show up in the Vacancies list once posted.</div>
         <input class="search" id="emp-search" placeholder="Search name, industry, location..." oninput="renderEmployers()">
         <div id="emp-list"></div>
+      </div>
+
+      <!-- VACANCY POSTERS -->
+      <div class="section section-manage" id="sec-posters">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancy Posters</h2><div class="spacer"></div><button class="minibtn ok" onclick="openPosterUploadSheet()">+ Upload posters</button></div>
+        <div class="muted" style="margin-bottom:14px">Recruitment-ad images shown on the app's All Vacancies page. Upload several at once, then edit each poster's caption, employer, agency and expiry.</div>
+        <input class="search" id="po-search" placeholder="Search caption, employer, agency..." oninput="renderPosters()">
+        <div id="po-list"></div>
       </div>
 
       <!-- SUBMISSIONS -->
@@ -588,16 +606,41 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   </div>
 </div>
 
-<!-- ============ EMPLOYER POSTER SHEET ============ -->
+<!-- ============ VACANCY POSTERS: BULK UPLOAD SHEET ============ -->
 <div class="scrim" id="poster-overlay">
-  <div class="sheet">
-    <h3>Upload a vacancy poster</h3>
-    <div class="field"><label>Poster image *</label><input type="file" id="poster-photo" accept="image/*" onchange="handlePosterPhoto(event)"></div>
-    <div id="poster-photo-preview" style="display:none;margin-bottom:12px"><img id="poster-photo-img" style="width:120px;height:160px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></div>
-    <div class="field"><label>Caption (optional)</label><input id="poster-caption" placeholder="e.g. We're hiring — Kroonstad Pharmacy"></div>
+  <div class="sheet" style="max-width:720px">
+    <h3>Upload vacancy posters</h3>
+    <div class="field"><label>Poster images * (select as many as you like)</label><input type="file" id="poster-files" accept="image/*" multiple onchange="handlePosterFiles(event)"></div>
+    <div id="poster-bulk-defaults" style="display:none">
+      <div class="muted" style="margin-bottom:8px">Apply to every poster below (you can still change each one individually):</div>
+      <div class="pb-grid">
+        <div class="field"><label>Employer</label><select id="pb-all-employer"></select></div>
+        <div class="field"><label>Agency</label><select id="pb-all-agency"></select></div>
+        <div class="field"><label>Expires on</label><input type="date" id="pb-all-expiry"></div>
+      </div>
+      <button class="minibtn" type="button" onclick="applyPosterDefaults()">Apply to all</button>
+    </div>
+    <div id="poster-queue" style="margin-top:14px"></div>
+    <div id="poster-progress" class="muted" style="margin-top:8px"></div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('poster-overlay')">Cancel</button>
-      <button class="btn" onclick="savePoster()">Publish poster</button>
+      <button class="btn" id="poster-publish-btn" onclick="publishPosterQueue()" disabled>Publish posters</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VACANCY POSTERS: EDIT SHEET ============ -->
+<div class="scrim" id="poster-edit-overlay">
+  <div class="sheet">
+    <h3>Edit poster</h3>
+    <div style="margin-bottom:12px"><img id="pe-img" alt="" style="max-width:140px;max-height:200px;border-radius:10px;border:1px solid var(--border);object-fit:contain;background:var(--card-2)"></div>
+    <div class="field"><label>Caption</label><input id="pe-caption" placeholder="e.g. We're hiring — Kroonstad Pharmacy"></div>
+    <div class="field"><label>Employer</label><select id="pe-employer"></select></div>
+    <div class="field"><label>Agency</label><select id="pe-agency"></select></div>
+    <div class="field"><label>Expires on (leave empty for no expiry)</label><input type="date" id="pe-expiry"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('poster-edit-overlay')">Cancel</button>
+      <button class="btn" onclick="savePosterEdit()">Save</button>
     </div>
   </div>
 </div>
@@ -772,7 +815,7 @@ async function deleteR2Object(key) {
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], employers: [], reports: [], suggestions: [], tracks: [], poolCandidates: [] };
+var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [] };
 var editing = { agency: null, branch: null, vacancy: null, employer: null, article: null, articleSection: null };
 var pendingPhoto = null;
 var pendingPhotoBlob = null;
@@ -873,7 +916,7 @@ async function doLogout(){
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
-  cache = { agencies:[], branches:[], vacancies:[], employers:[], reports:[], suggestions:[], tracks:[], poolCandidates:[] };
+  cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[] };
 }
 async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
@@ -996,6 +1039,10 @@ async function upsertAgency(a){
 async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } }
 async function getEmployers(){
   try { var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified,manage_token').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  return [];
+}
+async function getPosters(){
+  try { var { data, error } = await supabaseClient.from('employer_posters').select('id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at').order('created_at',{ascending:false}).limit(500); if(!error) return data||[]; console.error('posters load',error); } catch(e){ console.error('posters load',e); }
   return [];
 }
 async function upsertEmployer(e){ var { error } = await supabaseClient.from('employers').upsert(e); if(error){ console.error('employer save',error); alert('Could not save employer: '+error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } }
@@ -1147,7 +1194,7 @@ async function regenerateAllEmployerTokens(){
 async function loadAll(){
   var results = await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(),
-    getReports(), getSuggestions(), getTracks(), getPoolCandidates()
+    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters()
   ]);
   cache.agencies = results[0] || [];
   cache.branches = results[1] || [];
@@ -1157,6 +1204,7 @@ async function loadAll(){
   cache.suggestions = results[5] || [];
   cache.tracks = results[6] || [];
   cache.poolCandidates = results[7] || [];
+  cache.posters = results[8] || [];
 
   var settings = await Promise.all([
     getAppSetting('public_vacancy_posting','false'),
@@ -1196,6 +1244,7 @@ var NAV = [
   { id:'branches', label:'Branches', tile:'hc-tile-green', sub:'Agency branch locations', icon:'<path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
   { id:'vacancies', label:'Vacancies', tile:'hc-tile-amber', sub:'Job postings & vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
   { id:'employers', label:'Employers', tile:'hc-tile-indigo', sub:'Companies posting their own vacancies', icon:'<path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/>' },
+  { id:'posters', label:'Vacancy Posters', tile:'hc-tile-pink', sub:'Upload & edit recruitment-ad posters', icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
   { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
   { id:'poolcandidates', label:'Talent Pool', tile:'hc-tile-blue', sub:'Job seeker registrations & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
   { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
@@ -1210,10 +1259,11 @@ function renderNav(){
     if(n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
     if(n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
     if(n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
+    if(n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
     if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; badge = '<span class="nav-badge">'+c+'</span>'; }
     if(n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
-    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
+    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
     return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
@@ -1222,6 +1272,7 @@ function navBadge(id){
   if(id==='branches') return cache.branches.length;
   if(id==='vacancies') return cache.vacancies.length;
   if(id==='employers') return cache.employers.length;
+  if(id==='posters') return cache.posters.length;
   if(id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; return c; }
   if(id==='dailytrack') return cache.tracks.length;
   if(id==='poolcandidates'){ return cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; }
@@ -1235,6 +1286,7 @@ function goSection(id){
   if(id==='branches') renderBranches();
   if(id==='vacancies') renderVacancies();
   if(id==='employers') renderEmployers();
+  if(id==='posters') renderPosters();
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
   if(id==='dailytrack') renderDailyTracks();
@@ -1255,6 +1307,7 @@ function renderDashboard(){
     { v:cache.branches.length, l:'Branches' },
     { v:cache.vacancies.length, l:'Vacancies' },
     { v:cache.employers.length, l:'Employers' },
+    { v:cache.posters.length, l:'Vacancy Posters' },
     { v:cache.reports.length, l:'Reports ('+openReports+' open)' },
     { v:cache.suggestions.length, l:'Suggestions' },
     { v:cache.tracks.length, l:'Daily Tracks' },
@@ -1267,7 +1320,7 @@ function renderDashboard(){
   var homeEl = document.getElementById('home-cards');
   if(homeEl){
     // Group: Manage
-    var manageItems = ['agencies','branches','vacancies','employers'];
+    var manageItems = ['agencies','branches','vacancies','employers','posters'];
     var reviewItems = ['submissions','poolcandidates'];
     var mediaItems = ['dailytrack','content'];
     var configItems = ['settings'];
@@ -1621,63 +1674,232 @@ async function saveEmployer(){
   editing.employer = null; pendingEmployerPhoto = null; pendingEmployerPhotoBlob = null;
   await loadAll(); renderNav(); renderEmployers(); renderDashboard();
 }
-// ----- Employer poster upload -----
-var pendingPosterEmployerId = null;
-var pendingPosterBlob = null;
+// ===== Vacancy Posters =====
+var posterQueue = [];      // items waiting to be uploaded: {key, blob, previewUrl, caption, employer_id, agency_id, expires, status, error}
+var posterQueueSeq = 0;
+var editingPosterId = null;
+var posterPublishing = false;
+
+function posterEmployerName(id){ var e = employerById(id); return e ? e.name : ''; }
+function posterAgencyName(id){ var a = agencyById(id); return a ? a.name : ''; }
+function posterOptions(list, selected, blankLabel){
+  return '<option value="">'+blankLabel+'</option>' + list.map(function(x){
+    return '<option value="'+escapeHtml(x.id)+'"'+(x.id===selected?' selected':'')+'>'+escapeHtml(x.name||'Unnamed')+'</option>';
+  }).join('');
+}
+function posterExpiryToInput(iso){ if(!iso) return ''; var d = new Date(iso); return isNaN(d) ? '' : d.toISOString().slice(0,10); }
+function posterInputToExpiry(val){ return val ? new Date(val+'T23:59:59').toISOString() : null; }
+
+function renderPosters(){
+  var q = (document.getElementById('po-search').value||'').trim().toLowerCase();
+  var list = cache.posters.slice();
+  if(q){ list = list.filter(function(p){ return ((p.caption||'')+' '+posterEmployerName(p.employer_id)+' '+posterAgencyName(p.agency_id)).toLowerCase().indexOf(q)!==-1; }); }
+  var el = document.getElementById('po-list');
+  if(!list.length){ el.innerHTML = emptyState('No posters', cache.posters.length ? 'Nothing matches your search.' : 'Upload your first vacancy posters.'); return; }
+  var now = Date.now();
+  el.innerHTML = list.map(function(p){
+    var who = [posterEmployerName(p.employer_id), posterAgencyName(p.agency_id)].filter(Boolean).join(' · ');
+    var badge = '<span class="badge expiry-ok">No expiry</span>';
+    if(p.expires_at){
+      var ms = new Date(p.expires_at).getTime() - now;
+      badge = ms < 0 ? '<span class="badge expiry-gone">Expired</span>'
+        : '<span class="badge '+(ms < 3*86400000 ? 'expiry-soon' : 'expiry-ok')+'">Expires '+escapeHtml(new Date(p.expires_at).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}))+'</span>';
+    }
+    return '<div class="row-item" onclick="openPosterEditSheet(\''+p.id+'\')">'+
+      '<img class="poster-thumb" src="'+escapeHtml(p.image_url)+'" alt="" loading="lazy">'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(p.caption||'Untitled poster')+' '+badge+'</div>'+
+      '<div class="row-sub">'+escapeHtml(who||'No employer or agency linked')+' · '+escapeHtml(fmtDate(p.created_at))+'</div></div>'+
+      '<div class="row-actions-inline">'+
+        '<button class="minibtn" onclick="stopProp(event);openPosterEditSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>'+
+        '<button class="minibtn danger" onclick="stopProp(event);deletePoster(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+      '</div></div>';
+  }).join('');
+}
+
+// ----- Bulk upload -----
+// employerId (optional) pre-selects the employer for every poster in the batch.
 function openPosterUploadSheet(employerId){
-  pendingPosterEmployerId = employerId || null;
-  pendingPosterBlob = null;
-  document.getElementById('poster-photo-preview').style.display = 'none';
-  document.getElementById('poster-photo-img').src = '';
-  document.getElementById('poster-caption').value = '';
+  posterQueue.forEach(function(it){ if(it.previewUrl) URL.revokeObjectURL(it.previewUrl); });
+  posterQueue = []; posterPublishing = false;
+  document.getElementById('poster-files').value = '';
+  document.getElementById('poster-progress').textContent = '';
+  document.getElementById('pb-all-employer').innerHTML = posterOptions(cache.employers, employerId||'', '— None —');
+  document.getElementById('pb-all-agency').innerHTML = posterOptions(cache.agencies, '', '— None —');
+  document.getElementById('pb-all-expiry').value = '';
+  renderPosterQueue();
   openSheet('poster-overlay');
 }
-function handlePosterPhoto(evt){
-  var file = evt.target.files[0]; if(!file) return;
-  var reader = new FileReader(); var img = new Image();
-  reader.onload = function(e){ img.onload = function(){
-    var c=document.createElement('canvas'); var maxW=1080; var sc=Math.min(1,maxW/img.width);
-    c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    c.toBlob(function(blob){
-      pendingPosterBlob = blob;
-      var url = URL.createObjectURL(blob);
-      document.getElementById('poster-photo-img').src = url;
-      document.getElementById('poster-photo-preview').style.display = 'block';
-    }, 'image/jpeg', 0.85);
-  }; img.src=e.target.result; };
-  reader.readAsDataURL(file);
+function resizePosterFile(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onerror = function(){ reject(new Error('read failed')); };
+    reader.onload = function(e){
+      var img = new Image();
+      img.onerror = function(){ reject(new Error('not an image')); };
+      img.onload = function(){
+        var sc = Math.min(1, 1080/img.width);
+        var c = document.createElement('canvas'); c.width = Math.round(img.width*sc); c.height = Math.round(img.height*sc);
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        c.toBlob(function(blob){ blob ? resolve(blob) : reject(new Error('encode failed')); }, 'image/jpeg', 0.85);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
-async function uploadPosterIfAny(){
-  if(!pendingPosterBlob) return null;
-  try{
-    var authHdr = await r2AuthHeader();
-    var res = await fetch(R2_WORKER_URL + '/api/upload/employer-poster', {
-      method: 'POST',
-      headers: Object.assign({ 'Content-Type': 'image/jpeg' }, authHdr),
-      body: pendingPosterBlob
-    });
-    var data = await res.json();
-    if(!res.ok){ console.error('poster upload', data && data.error); alert('Could not upload poster: '+(data && data.error)); return null; }
-    return data.url || null;
-  }catch(e){ console.error('poster upload', e); alert('Could not upload poster — check your connection.'); return null; }
+async function handlePosterFiles(evt){
+  var files = Array.prototype.slice.call(evt.target.files || []);
+  if(!files.length) return;
+  var defEmp = document.getElementById('pb-all-employer').value || null;
+  var defAg = document.getElementById('pb-all-agency').value || null;
+  var defExp = document.getElementById('pb-all-expiry').value || '';
+  var progress = document.getElementById('poster-progress');
+  var skipped = 0;
+  for(var i=0;i<files.length;i++){
+    progress.textContent = 'Preparing image '+(i+1)+' of '+files.length+'…';
+    try{
+      var blob = await resizePosterFile(files[i]);
+      posterQueue.push({ key:'pq'+(++posterQueueSeq), blob:blob, previewUrl:URL.createObjectURL(blob), caption:'', employer_id:defEmp, agency_id:defAg, expires:defExp, status:'ready', error:'' });
+    }catch(e){ skipped++; console.error('poster prepare', files[i].name, e); }
+  }
+  progress.textContent = skipped ? skipped+' file(s) could not be read and were skipped.' : '';
+  evt.target.value = '';
+  renderPosterQueue();
 }
-async function savePoster(){
-  if(!pendingPosterBlob){ alert('Choose a poster image first.'); return; }
-  var imageUrl = await uploadPosterIfAny();
-  if(!imageUrl) return;
-  var payload = {
-    employer_id: pendingPosterEmployerId || null,
-    image_url: imageUrl,
-    caption: document.getElementById('poster-caption').value.trim()
+function posterQueueItem(key){ return posterQueue.find(function(x){ return x.key===key; }); }
+function renderPosterQueue(){
+  var el = document.getElementById('poster-queue');
+  var pending = posterQueue.filter(function(it){ return it.status!=='done'; });
+  document.getElementById('poster-bulk-defaults').style.display = posterQueue.length ? 'block' : 'none';
+  var btn = document.getElementById('poster-publish-btn');
+  btn.disabled = !pending.length || posterPublishing;
+  btn.textContent = pending.length ? 'Publish '+pending.length+' poster'+(pending.length===1?'':'s') : 'Publish posters';
+  if(!posterQueue.length){ el.innerHTML = '<div class="muted">No images selected yet.</div>'; return; }
+  el.innerHTML = posterQueue.map(function(it, idx){
+    var status = it.status==='done' ? '<div class="pb-status" style="color:var(--ok)">Published</div>'
+      : it.status==='failed' ? '<div class="pb-status" style="color:var(--danger)">Failed: '+escapeHtml(it.error||'try again')+'</div>'
+      : it.status==='uploading' ? '<div class="pb-status">Uploading…</div>' : '';
+    var locked = (it.status==='done' || posterPublishing) ? ' disabled' : '';
+    return '<div class="pb-item '+(it.status==='done'?'pb-done':'')+(it.status==='failed'?' pb-failed':'')+'">'+
+      '<img src="'+it.previewUrl+'" alt="Poster '+(idx+1)+'">'+
+      '<div class="pb-fields">'+
+        '<div class="field"><label>Caption #'+(idx+1)+'</label><input value="'+escapeHtml(it.caption)+'" placeholder="e.g. We\'re hiring — Kroonstad Pharmacy" oninput="posterQueueItem(\''+it.key+'\').caption=this.value"'+locked+'></div>'+
+        '<div class="pb-row">'+
+          '<div class="field"><label>Employer</label><select onchange="posterQueueItem(\''+it.key+'\').employer_id=this.value||null"'+locked+'>'+posterOptions(cache.employers, it.employer_id, '— None —')+'</select></div>'+
+          '<div class="field"><label>Agency</label><select onchange="posterQueueItem(\''+it.key+'\').agency_id=this.value||null"'+locked+'>'+posterOptions(cache.agencies, it.agency_id, '— None —')+'</select></div>'+
+          '<div class="field"><label>Expires on</label><input type="date" value="'+escapeHtml(it.expires)+'" onchange="posterQueueItem(\''+it.key+'\').expires=this.value"'+locked+'></div>'+
+        '</div>'+
+        status+
+        (it.status==='done' ? '' : '<button class="minibtn danger" type="button" onclick="removePosterFromQueue(\''+it.key+'\')"'+locked+'>Remove</button>')+
+      '</div></div>';
+  }).join('');
+}
+function removePosterFromQueue(key){
+  var it = posterQueueItem(key); if(!it) return;
+  URL.revokeObjectURL(it.previewUrl);
+  posterQueue = posterQueue.filter(function(x){ return x.key!==key; });
+  renderPosterQueue();
+}
+function applyPosterDefaults(){
+  var emp = document.getElementById('pb-all-employer').value || null;
+  var ag = document.getElementById('pb-all-agency').value || null;
+  var exp = document.getElementById('pb-all-expiry').value || '';
+  posterQueue.forEach(function(it){ if(it.status!=='done'){ it.employer_id = emp; it.agency_id = ag; it.expires = exp; } });
+  renderPosterQueue();
+  showToast('Applied to all posters');
+}
+async function uploadPosterBlob(blob){
+  var authHdr = await r2AuthHeader();
+  var res = await fetch(R2_WORKER_URL + '/api/upload/employer-poster', {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'image/jpeg' }, authHdr),
+    body: blob
+  });
+  var data = {}; try{ data = await res.json(); }catch(e){}
+  if(!res.ok || !data.url) throw new Error((data && data.error) || ('Upload failed ('+res.status+')'));
+  return data.url;
+}
+async function publishPosterQueue(){
+  if(posterPublishing) return;
+  var pending = posterQueue.filter(function(it){ return it.status!=='done'; });
+  if(!pending.length){ alert('Choose at least one poster image first.'); return; }
+  posterPublishing = true; renderPosterQueue();
+  var progress = document.getElementById('poster-progress');
+  var rows = [], rowItems = [];
+  for(var i=0;i<pending.length;i++){
+    var it = pending[i];
+    progress.textContent = 'Uploading '+(i+1)+' of '+pending.length+'…';
+    it.status = 'uploading';
+    try{
+      var url = await uploadPosterBlob(it.blob);
+      rows.push({ employer_id: it.employer_id||null, agency_id: it.agency_id||null, image_url: url, caption: (it.caption||'').trim(), expires_at: posterInputToExpiry(it.expires) });
+      rowItems.push(it);
+    }catch(e){ it.status = 'failed'; it.error = e.message; console.error('poster upload', e); }
+  }
+  var saved = 0;
+  if(rows.length){
+    progress.textContent = 'Saving posters…';
+    var result = await supabaseClient.from('employer_posters').insert(rows);
+    if(result.error){
+      console.error('poster save', result.error);
+      rowItems.forEach(function(it){ it.status = 'failed'; it.error = result.error.message; });
+      alert('Could not save posters: '+result.error.message);
+    } else { rowItems.forEach(function(it){ it.status = 'done'; }); saved = rows.length; }
+  }
+  posterPublishing = false;
+  var failed = posterQueue.filter(function(it){ return it.status==='failed'; }).length;
+  progress.textContent = failed ? saved+' published, '+failed+' failed — fix and press Publish to retry the failed ones.' : '';
+  renderPosterQueue();
+  if(saved){
+    cache.posters = await getPosters();
+    renderNav(); renderPosters(); renderDashboard();
+    showToast(saved+' poster'+(saved===1?'':'s')+' published');
+  }
+  if(!failed && saved) closeSheet('poster-overlay');
+}
+
+// ----- Edit / delete an existing poster -----
+function openPosterEditSheet(id){
+  var p = cache.posters.find(function(x){ return x.id===id; }); if(!p) return;
+  editingPosterId = id;
+  document.getElementById('pe-img').src = p.image_url;
+  document.getElementById('pe-caption').value = p.caption || '';
+  document.getElementById('pe-employer').innerHTML = posterOptions(cache.employers, p.employer_id, '— None —');
+  document.getElementById('pe-agency').innerHTML = posterOptions(cache.agencies, p.agency_id, '— None —');
+  document.getElementById('pe-expiry').value = posterExpiryToInput(p.expires_at);
+  openSheet('poster-edit-overlay');
+}
+async function savePosterEdit(){
+  if(!editingPosterId) return;
+  var patch = {
+    caption: document.getElementById('pe-caption').value.trim(),
+    employer_id: document.getElementById('pe-employer').value || null,
+    agency_id: document.getElementById('pe-agency').value || null,
+    expires_at: posterInputToExpiry(document.getElementById('pe-expiry').value)
   };
-  var result = await supabaseClient.from('employer_posters').insert([payload]);
-  if(result.error){
-    console.error('poster save', result.error);
-    alert('Could not save poster. Make sure ADD_EMPLOYER_POSTERS.sql has been run in Supabase.');
+  var res = await supabaseClient.from('employer_posters').update(patch).eq('id', editingPosterId).select('id');
+  if(res.error || !(res.data && res.data.length)){
+    console.error('poster update', res.error);
+    alert('Could not save changes'+(res.error ? ': '+res.error.message : ' (no permission — run ADD_POSTER_ADMIN_POLICIES.sql in Supabase).'));
     return;
   }
-  closeSheet('poster-overlay');
-  showToast('Poster published');
+  closeSheet('poster-edit-overlay'); editingPosterId = null;
+  showToast('Poster updated');
+  cache.posters = await getPosters();
+  renderNav(); renderPosters(); renderDashboard();
+}
+async function deletePoster(id){
+  var p = cache.posters.find(function(x){ return x.id===id; });
+  if(!confirm('Delete "'+((p && p.caption) || 'this poster')+'"? This cannot be undone.')) return;
+  var res = await supabaseClient.from('employer_posters').delete().eq('id', id).select('id');
+  if(res.error || !(res.data && res.data.length)){
+    console.error('poster delete', res.error);
+    alert('Could not delete poster'+(res.error ? ': '+res.error.message : ' (no permission — run ADD_POSTER_ADMIN_POLICIES.sql in Supabase).'));
+    return;
+  }
+  showToast('Poster deleted');
+  cache.posters = await getPosters();
+  renderNav(); renderPosters(); renderDashboard();
 }
 async function regenEmployerToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;

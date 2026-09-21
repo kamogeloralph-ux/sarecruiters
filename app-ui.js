@@ -325,6 +325,15 @@ function showAllVacancies() {
   resetActiveScreenScroll('screen-allvacancies');
 }
 
+// Opens All Vacancies and brings the swipeable vacancy-poster strip into view.
+function showVacancyPosters() {
+  showAllVacancies();
+  setTimeout(function() {
+    var feed = document.getElementById('poster-feed');
+    if (feed && feed.scrollIntoView) feed.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, 120);
+}
+
 // ---- Precise-location filter (Agencies / Branches / Employers / Pool) ----
 // None of these records carry GPS coordinates, only a free-text location
 // (e.g. "Durban, KZN"), so real distance sorting isn't possible without a
