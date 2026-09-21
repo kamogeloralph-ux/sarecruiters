@@ -30,7 +30,10 @@
   @keyframes sa-splash-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.94);opacity:.85}}
   #app-splash.hide{opacity:0;pointer-events:none}
   body:not(.app-ready) .app{visibility:hidden}
-  #auth-gate{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(145deg,#071d3d 0%,#0a55a5 55%,#0a84ff 100%);color:#fff;overflow:auto;transition:opacity .25s ease}
+  /* Golden-hour brand screen: warm dark backdrop with an amber horizon glow
+     and a soft glass sheen, matching the SA Recruiters marketing look. */
+  #auth-gate{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;color:#F3EADA;overflow:auto;background-color:#14100B;background-image:radial-gradient(120% 90% at 12% 42%,rgba(224,150,62,.34),transparent 55%),radial-gradient(90% 70% at 88% 18%,rgba(255,214,150,.13),transparent 55%),linear-gradient(160deg,#221810 0%,#15100A 46%,#0C0906 100%);transition:opacity .25s ease}
+  #auth-gate::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,rgba(255,236,200,.07),transparent 42%)}
   /* Stay invisible while we're still checking for an existing session
      ("loading"), and for the brief moment right after one's confirmed
      ("authenticated", before the unified reveal in app-core.js hides it
@@ -42,13 +45,34 @@
      show through during that brief check. */
   #auth-gate[data-state="loading"],#auth-gate[data-state="authenticated"]{opacity:0;pointer-events:none}
   #auth-gate.hide{opacity:0;pointer-events:none}
-  .auth-gate-card{width:min(430px,100%);padding:38px 28px 30px;border:1px solid rgba(255,255,255,.23);border-radius:30px;background:rgba(4,28,66,.72);box-shadow:0 24px 70px rgba(0,14,45,.35);text-align:center;backdrop-filter:blur(16px)}
-  .auth-gate-logo{width:86px;height:86px;border-radius:25px;margin:0 auto 22px;box-shadow:0 12px 30px rgba(0,0,0,.24)}
-  .auth-gate-card h1{margin:0;font-size:30px;letter-spacing:-.04em}
-  .auth-gate-card p{margin:11px auto 26px;max-width:320px;color:rgba(255,255,255,.82);line-height:1.55;font-size:14px}
-  #auth-gate-status{min-height:18px;margin:14px 0 0;color:rgba(255,255,255,.76);font-size:12px}
-  .auth-gate-privacy{margin-top:24px!important;margin-bottom:0!important;font-size:11px!important;color:rgba(255,255,255,.58)!important}
-  @media(max-width:420px){.auth-gate-card{padding:32px 22px 25px;border-radius:24px}.auth-gate-card h1{font-size:27px}}
+  /* Top brand bar: serif SA badge + wordmark left, trust pill right. */
+  .gate-brandbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(env(safe-area-inset-top) + 18px) 22px 0}
+  .gate-brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .gate-brand-badge{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;border-radius:14px;background:rgba(20,14,8,.55);border:1px solid rgba(243,234,218,.22);font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:700;letter-spacing:.02em;color:#F3EADA;backdrop-filter:blur(6px)}
+  .gate-brand-name{display:flex;flex-direction:column;line-height:1.14;font-weight:600;font-size:16.5px;letter-spacing:-.01em;color:#F3EADA}
+  .gate-brand-name small{font-size:10.5px;font-weight:600;letter-spacing:.22em;color:rgba(243,234,218,.66)}
+  .gate-trust-pill{flex-shrink:0;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(243,234,218,.82);border:1px solid rgba(243,234,218,.26);border-radius:999px;padding:8px 14px;backdrop-filter:blur(6px)}
+  /* Editorial column pinned to the lower half, like the marketing hero. */
+  .gate-body{display:flex;flex-direction:column;width:min(560px,100%);margin:auto auto 0;padding:30px 22px calc(env(safe-area-inset-bottom) + 18px)}
+  .gate-eyebrow{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#E0A054}
+  #welcome-title{margin:0;font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:600;font-size:clamp(38px,10.5vw,58px);line-height:1.04;letter-spacing:-.015em;color:#F6EDDD}
+  .gate-sub{margin:18px 0 26px;max-width:410px;font-size:15.5px;line-height:1.55;color:rgba(243,234,218,.72)}
+  /* Cream pill Google button (overrides the stock .gsi-material-button). */
+  #google-sign-in{height:56px;border:none;border-radius:999px;background:#EAD9BC;color:#241A10;box-shadow:0 18px 44px -14px rgba(0,0,0,.6)}
+  #google-sign-in .gsi-material-button-contents{font-size:15.5px;font-weight:600}
+  #google-sign-in .gsi-material-button-icon{width:22px;height:22px}
+  #google-sign-in:disabled{background:rgba(234,217,188,.38);border:none;cursor:wait}
+  #google-sign-in:not(:disabled):hover{background:#F2E4C9}
+  #auth-gate-status{min-height:18px;margin:13px 0 0;color:rgba(243,234,218,.6);font-size:12.5px}
+  /* Live network stats strip: hairline dividers, serif figures. */
+  .gate-divider{margin:26px 0 0;border-top:1px solid rgba(243,234,218,.14)}
+  .gate-stats{display:flex;align-items:stretch}
+  .gate-stat{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding:18px 6px 20px;border-left:1px solid rgba(243,234,218,.14)}
+  .gate-stat:first-child{border-left:none}
+  .gate-stat-value{font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-size:29px;font-weight:700;line-height:1;color:#F6EDDD;font-variant-numeric:tabular-nums}
+  .gate-stat-label{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(243,234,218,.6)}
+  .auth-gate-privacy{margin:6px 0 0;color:rgba(243,234,218,.5);font-size:11.5px;line-height:1.5;text-align:center}
+  @media(max-width:420px){.gate-brandbar{padding-left:18px;padding-right:18px}.gate-body{padding-left:18px;padding-right:18px}.gate-stat-value{font-size:25px}}
   /* ===== Official "Sign in with Google" branded button ===== */
   .gsi-material-button{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #747775;border-radius:14px;box-sizing:border-box;color:#1f1f1f;cursor:pointer;font-family:'Roboto',arial,sans-serif;font-size:14px;height:44px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 18px;position:relative;text-align:center;transition:background-color .218s,border-color .218s,box-shadow .218s;vertical-align:middle;white-space:nowrap;width:100%;max-width:none}
   .gsi-material-button .gsi-material-button-icon{height:20px;margin-right:12px;min-width:20px;width:20px}
@@ -119,6 +143,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700&display=swap">
 <link rel="preload" as="style" href="styles.css">
 <link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css">
@@ -129,10 +154,17 @@
 <div id="app-splash" aria-hidden="true"><img src="icons/v2-icon-192.png" alt=""></div>
 
 <section id="auth-gate" data-state="loading" aria-labelledby="welcome-title">
-  <div class="auth-gate-card">
-    <img class="auth-gate-logo" src="icons/v2-icon-192.png" alt="SA Recruiters">
-    <h1 id="welcome-title">Welcome to SA Recruiters</h1>
-    <p>Sign in to explore trusted recruitment agencies, branches, employers and opportunities across South Africa — all in one place.</p>
+  <div class="gate-brandbar">
+    <div class="gate-brand">
+      <span class="gate-brand-badge" aria-hidden="true">SA</span>
+      <span class="gate-brand-name"><small>SOUTH AFRICA</small>Recruiters</span>
+    </div>
+    <span class="gate-trust-pill">Trusted Network</span>
+  </div>
+  <div class="gate-body">
+    <p class="gate-eyebrow">Your next chapter starts here</p>
+    <h1 id="welcome-title">Connecting talent to South Africa's best.</h1>
+    <p class="gate-sub">Find trusted recruitment agencies, local branches, employers, and opportunities across the nation.</p>
     <button id="google-sign-in" class="gsi-material-button" type="button" disabled>
       <div class="gsi-material-button-state"></div>
       <div class="gsi-material-button-content-wrapper">
@@ -149,7 +181,13 @@
       </div>
     </button>
     <div id="auth-gate-status" role="status" aria-live="polite">Checking your sign-in…</div>
-    <p class="auth-gate-privacy">Sign in is required to access the SA Recruiters app.</p>
+    <div class="gate-divider" role="presentation"></div>
+    <div class="gate-stats">
+      <div class="gate-stat"><span class="gate-stat-value" id="gate-stat-agencies">—</span><span class="gate-stat-label">Agencies</span></div>
+      <div class="gate-stat"><span class="gate-stat-value" id="gate-stat-vacancies">—</span><span class="gate-stat-label">Opportunities</span></div>
+      <div class="gate-stat"><span class="gate-stat-value">9</span><span class="gate-stat-label">Provinces</span></div>
+    </div>
+    <p class="auth-gate-privacy">By signing in, you agree to the Terms of Service and Privacy Policy.</p>
   </div>
 </section>
 
@@ -1119,7 +1157,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=b9a48a8087" defer></script>
+<script src="app.bundle.min.js?v=2d05c456a5" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

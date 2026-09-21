@@ -926,7 +926,58 @@ function updateStats() {
   if (statEmployers) statEmployers.textContent = employersCache.length;
   var statPool = document.getElementById('stat-pool');
   if (statPool) statPool.textContent = poolLoaded ? poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length : poolCandidateCount;
+  refreshGateStats();
 }
+
+// ===== Auth gate: live network stats =====
+// The sign-in screen shows real-time totals for the directories. It must
+// work BEFORE sign-in, so it reads the Worker's public /api/startup
+// aggregate directly (same endpoint loadAll() uses once authenticated)
+// instead of waiting for the post-sign-in data pipeline. updateStats()
+// also funnels into refreshGateStats(), so once the app has loaded (and on
+// every later refresh) the strip mirrors the exact same numbers the
+// directory screens show — including cached values painted instantly from
+// IndexedDB on repeat visits.
+function gateVacancyTotal(agencies, vacancies, counts) {
+  // Prefer the Worker's server-side general count (mirrors loadAll()'s
+  // preference for counts.general), falling back to the old subtraction,
+  // and finally to counting non-general-directory rows locally.
+  if (counts && typeof counts.general === 'number') return counts.general;
+  if (counts && typeof counts.vacancies === 'number') return Math.max(0, counts.vacancies - (Array.isArray(vacancies) ? vacancies.length : 0));
+  var list = Array.isArray(vacancies) ? vacancies : [];
+  var total = 0;
+  for (var i = 0; i < list.length; i++) {
+    if (typeof isGeneralDirectoryVacancy === 'function' && !isGeneralDirectoryVacancy(list[i])) total++;
+  }
+  return total;
+}
+function refreshGateStats() {
+  var elA = document.getElementById('gate-stat-agencies');
+  if (!elA) return;
+  elA.textContent = agenciesCache.length;
+  var elV = document.getElementById('gate-stat-vacancies');
+  if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length;
+}
+async function loadGateStats() {
+  try {
+    var url = (typeof R2_WORKER_URL === 'string' && R2_WORKER_URL ? R2_WORKER_URL : '') + '/api/startup';
+    if (!url || url === '/api/startup') return;
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
+    var response = await fetch(url, { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller ? controller.signal : undefined });
+    if (timeout) clearTimeout(timeout);
+    if (!response.ok) return;
+    var payload = await response.json();
+    if (!payload || !Array.isArray(payload.agencies) || !payload.counts) return;
+    var elA = document.getElementById('gate-stat-agencies');
+    if (elA) elA.textContent = payload.agencies.length;
+    var elV = document.getElementById('gate-stat-vacancies');
+    if (elV) elV.textContent = gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
+  } catch (e) { /* leave the em-dash placeholders on failure */ }
+}
+// Fire once immediately: the gate is visible before sign-in, and the
+// fetch is unauthenticated, so there is nothing to wait for.
+loadGateStats();
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
 function vacanciesFor(agencyId) {
