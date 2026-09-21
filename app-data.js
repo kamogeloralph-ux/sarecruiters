@@ -952,11 +952,9 @@ function gateVacancyTotal(agencies, vacancies, counts) {
   return total;
 }
 function refreshGateStats() {
-  var elA = document.getElementById('gate-stat-agencies');
-  if (!elA) return;
-  elA.textContent = agenciesCache.length;
   var elV = document.getElementById('gate-stat-vacancies');
-  if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length;
+  if (!elV) return;
+  elV.textContent = generalVacancyCount + vacanciesCache.length;
 }
 async function loadGateStats() {
   try {
@@ -969,8 +967,6 @@ async function loadGateStats() {
     if (!response.ok) return;
     var payload = await response.json();
     if (!payload || !Array.isArray(payload.agencies) || !payload.counts) return;
-    var elA = document.getElementById('gate-stat-agencies');
-    if (elA) elA.textContent = payload.agencies.length;
     var elV = document.getElementById('gate-stat-vacancies');
     if (elV) elV.textContent = gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
   } catch (e) { /* leave the em-dash placeholders on failure */ }

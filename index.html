@@ -48,7 +48,12 @@
   /* Top brand bar: serif SA badge + wordmark left, trust pill right. */
   .gate-brandbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(env(safe-area-inset-top) + 18px) 22px 0}
   .gate-brand{display:flex;align-items:center;gap:11px;min-width:0}
-  .gate-brand-badge{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;border-radius:14px;background:rgba(20,14,8,.55);border:1px solid rgba(243,234,218,.22);font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:700;letter-spacing:.02em;color:#F3EADA;backdrop-filter:blur(6px)}
+  .gate-brand-badge{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;border-radius:14px;background:rgba(20,14,8,.55);border:1px solid rgba(243,234,218,.22);backdrop-filter:blur(6px);overflow:hidden}
+  .gate-brand-badge img{width:100%;height:100%;object-fit:cover;display:block}
+  .gate-terms-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;margin:14px 0 0;padding:14px 16px;border-radius:14px;border:1px solid rgba(243,234,218,.24);background:rgba(243,234,218,.08);color:#F3EADA;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.01em;backdrop-filter:blur(6px);cursor:pointer}
+  .gate-terms-btn svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .gate-terms-btn:active{transform:scale(.985)}
+  .gate-terms-btn small{font-weight:500;font-size:11px;color:rgba(243,234,218,.62)}
   .gate-brand-name{display:flex;flex-direction:column;line-height:1.14;font-weight:600;font-size:16.5px;letter-spacing:-.01em;color:#F3EADA}
   .gate-brand-name small{font-size:10.5px;font-weight:600;letter-spacing:.22em;color:rgba(243,234,218,.66)}
   .gate-trust-pill{flex-shrink:0;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(243,234,218,.82);border:1px solid rgba(243,234,218,.26);border-radius:999px;padding:8px 14px;backdrop-filter:blur(6px)}
@@ -56,7 +61,7 @@
   .gate-body{display:flex;flex-direction:column;width:min(560px,100%);margin:auto auto 0;padding:30px 22px calc(env(safe-area-inset-bottom) + 18px)}
   .gate-eyebrow{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#E0A054}
   #welcome-title{margin:0;font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:600;font-size:clamp(38px,10.5vw,58px);line-height:1.04;letter-spacing:-.015em;color:#F6EDDD}
-  .gate-sub{margin:18px 0 26px;max-width:410px;font-size:15.5px;line-height:1.55;color:rgba(243,234,218,.72)}
+  .gate-sub{margin:18px 0 24px;max-width:410px;font-size:15.5px;line-height:1.55;color:rgba(243,234,218,.72)}
   /* Cream pill Google button (overrides the stock .gsi-material-button). */
   #google-sign-in{height:56px;border:none;border-radius:999px;background:#EAD9BC;color:#241A10;box-shadow:0 18px 44px -14px rgba(0,0,0,.6)}
   #google-sign-in .gsi-material-button-contents{font-size:15.5px;font-weight:600}
@@ -67,6 +72,8 @@
   /* Live network stats strip: hairline dividers, serif figures. */
   .gate-divider{margin:26px 0 0;border-top:1px solid rgba(243,234,218,.14)}
   .gate-stats{display:flex;align-items:stretch}
+  .gate-stats-solo{justify-content:center}
+  .gate-stats-solo .gate-stat{flex:0 0 auto;border-left:none;padding:18px 34px 20px}
   .gate-stat{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding:18px 6px 20px;border-left:1px solid rgba(243,234,218,.14)}
   .gate-stat:first-child{border-left:none}
   .gate-stat-value{font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-size:29px;font-weight:700;line-height:1;color:#F6EDDD;font-variant-numeric:tabular-nums}
@@ -156,15 +163,19 @@
 <section id="auth-gate" data-state="loading" aria-labelledby="welcome-title">
   <div class="gate-brandbar">
     <div class="gate-brand">
-      <span class="gate-brand-badge" aria-hidden="true">SA</span>
-      <span class="gate-brand-name"><small>SOUTH AFRICA</small>Recruiters</span>
+      <span class="gate-brand-badge" aria-hidden="true"><img src="icons/v2-icon-192.png" alt="" width="44" height="44"></span>
+      <span class="gate-brand-name">SA Recruiters</span>
     </div>
-    <span class="gate-trust-pill">Trusted Network</span>
+    <span class="gate-trust-pill">Trusted Directory</span>
   </div>
   <div class="gate-body">
     <p class="gate-eyebrow">Your next chapter starts here</p>
-    <h1 id="welcome-title">Connecting talent to South Africa's best.</h1>
+    <h1 id="welcome-title">Connecting South Africa's Recruitment Community.</h1>
     <p class="gate-sub">Find trusted recruitment agencies, local branches, employers, and opportunities across the nation.</p>
+    <button type="button" class="gate-terms-btn" onclick="window.open('docs/SA-Recruiters-Terms-and-Conditions.pdf','_blank','noopener')" aria-label="Read the Terms and Conditions (PDF)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 18h4"/></svg>
+      <span>Read the Terms &amp; Conditions <small>(PDF)</small></span>
+    </button>
     <button id="google-sign-in" class="gsi-material-button" type="button" disabled>
       <div class="gsi-material-button-state"></div>
       <div class="gsi-material-button-content-wrapper">
@@ -182,12 +193,10 @@
     </button>
     <div id="auth-gate-status" role="status" aria-live="polite">Checking your sign-in…</div>
     <div class="gate-divider" role="presentation"></div>
-    <div class="gate-stats">
-      <div class="gate-stat"><span class="gate-stat-value" id="gate-stat-agencies">—</span><span class="gate-stat-label">Agencies</span></div>
-      <div class="gate-stat"><span class="gate-stat-value" id="gate-stat-vacancies">—</span><span class="gate-stat-label">Opportunities</span></div>
-      <div class="gate-stat"><span class="gate-stat-value">9</span><span class="gate-stat-label">Provinces</span></div>
+    <div class="gate-stats gate-stats-solo">
+      <div class="gate-stat"><span class="gate-stat-value" id="gate-stat-vacancies">—</span><span class="gate-stat-label">Live Vacancies</span></div>
     </div>
-    <p class="auth-gate-privacy">By signing in, you agree to the Terms of Service and Privacy Policy.</p>
+    <p class="auth-gate-privacy">By signing in, you agree to our Terms &amp; Conditions and Privacy Policy.</p>
   </div>
 </section>
 
@@ -1157,7 +1166,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=2d05c456a5" defer></script>
+<script src="app.bundle.min.js?v=3a4e9a61fd" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,
