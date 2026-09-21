@@ -684,8 +684,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .field .helper-note,.helper-note{display:block;font-size:11.5px;color:var(--text-2);margin-top:6px;line-height:1.5}
 
 /* Auth gate: same type rhythm as every form in the app. */
-.auth-gate-card h1{font-weight:800;letter-spacing:-.03em}
-.auth-gate-card>p{font-size:14px}
+/* Auth gate typography is owned by the inline critical CSS in index.html. */
 .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--card-2);border-radius:14px;padding:13px 15px;margin-bottom:12px}
 .toggle-row span{font-size:13.5px;font-weight:600}
 .switch{position:relative;width:44px;height:26px;flex-shrink:0}
