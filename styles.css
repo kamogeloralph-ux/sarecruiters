@@ -1391,16 +1391,32 @@ header{margin-bottom:18px}
 @media(max-width:420px){.vac-result-meta{padding-left:12px;padding-right:12px}.vac-load-more{width:calc(100% - 24px);margin-left:12px;margin-right:12px}}
 
 /* Vacancy cards and their expandable detail rows stay transparent across
-   every folder; the shared page surface provides the visual background. */
+   every folder; the shared page surface provides the visual background.
+   All four box-forming properties are reset here (not just background),
+   with !important, because earlier .vac-card rules (background, border,
+   border-radius, box-shadow, margin) fight each other across the file and
+   otherwise still leave a borderless-but-outlined "box" behind — background
+   alone wasn't enough to make the card actually flat. */
 .vac-card,
 .vac-card:active,
 .vac-card.open,
 .vacancy-directory-group .vac-card,
-.vacancy-overview-section .vac-card,
+.vacancy-overview-section .vac-card{
+  background:transparent !important;
+  border:none !important;
+  border-bottom:1px solid var(--separator) !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  margin:0 !important;
+}
+.vac-card:last-child{border-bottom:none !important}
 .vac-detail,
 .vac-detail-inner,
 .vac-detail-row{
   background:transparent !important;
+  border:none !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
 }
 .vacancy-directory-group{
   background:transparent !important;
