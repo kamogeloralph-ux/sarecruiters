@@ -588,6 +588,20 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   </div>
 </div>
 
+<!-- ============ EMPLOYER POSTER SHEET ============ -->
+<div class="scrim" id="poster-overlay">
+  <div class="sheet">
+    <h3>Upload a vacancy poster</h3>
+    <div class="field"><label>Poster image *</label><input type="file" id="poster-photo" accept="image/*" onchange="handlePosterPhoto(event)"></div>
+    <div id="poster-photo-preview" style="display:none;margin-bottom:12px"><img id="poster-photo-img" style="width:120px;height:160px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></div>
+    <div class="field"><label>Caption (optional)</label><input id="poster-caption" placeholder="e.g. We're hiring — Kroonstad Pharmacy"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" onclick="closeSheet('poster-overlay')">Cancel</button>
+      <button class="btn" onclick="savePoster()">Publish poster</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ TALENT POOL CANDIDATE SHEET ============ -->
 <div class="scrim" id="pool-overlay">
   <div class="sheet">
@@ -1526,6 +1540,7 @@ function renderEmployers(){
       '<div class="row-details">'+details+
         '<div class="row-expanded-actions">'+
           '<button class="minibtn full" onclick="stopProp(event);openVacancySheet(null,\''+e.id+'\')">+ Post vacancy for this employer</button>'+
+          '<button class="minibtn full" onclick="stopProp(event);openPosterUploadSheet(\''+e.id+'\')">+ Upload poster</button>'+
           '<button class="minibtn full" onclick="stopProp(event);openEmployerSheet(\''+e.id+'\')">Edit employer</button>'+
           '<button class="minibtn full danger" onclick="stopProp(event);deleteEmployer(\''+e.id+'\')">Delete</button>'+
         '</div>'+
@@ -1605,6 +1620,64 @@ async function saveEmployer(){
   showToast(editing.employer ? 'Employer updated' : 'Employer registered');
   editing.employer = null; pendingEmployerPhoto = null; pendingEmployerPhotoBlob = null;
   await loadAll(); renderNav(); renderEmployers(); renderDashboard();
+}
+// ----- Employer poster upload -----
+var pendingPosterEmployerId = null;
+var pendingPosterBlob = null;
+function openPosterUploadSheet(employerId){
+  pendingPosterEmployerId = employerId || null;
+  pendingPosterBlob = null;
+  document.getElementById('poster-photo-preview').style.display = 'none';
+  document.getElementById('poster-photo-img').src = '';
+  document.getElementById('poster-caption').value = '';
+  openSheet('poster-overlay');
+}
+function handlePosterPhoto(evt){
+  var file = evt.target.files[0]; if(!file) return;
+  var reader = new FileReader(); var img = new Image();
+  reader.onload = function(e){ img.onload = function(){
+    var c=document.createElement('canvas'); var maxW=1080; var sc=Math.min(1,maxW/img.width);
+    c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    c.toBlob(function(blob){
+      pendingPosterBlob = blob;
+      var url = URL.createObjectURL(blob);
+      document.getElementById('poster-photo-img').src = url;
+      document.getElementById('poster-photo-preview').style.display = 'block';
+    }, 'image/jpeg', 0.85);
+  }; img.src=e.target.result; };
+  reader.readAsDataURL(file);
+}
+async function uploadPosterIfAny(){
+  if(!pendingPosterBlob) return null;
+  try{
+    var authHdr = await r2AuthHeader();
+    var res = await fetch(R2_WORKER_URL + '/api/upload/employer-poster', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'image/jpeg' }, authHdr),
+      body: pendingPosterBlob
+    });
+    var data = await res.json();
+    if(!res.ok){ console.error('poster upload', data && data.error); alert('Could not upload poster: '+(data && data.error)); return null; }
+    return data.url || null;
+  }catch(e){ console.error('poster upload', e); alert('Could not upload poster — check your connection.'); return null; }
+}
+async function savePoster(){
+  if(!pendingPosterBlob){ alert('Choose a poster image first.'); return; }
+  var imageUrl = await uploadPosterIfAny();
+  if(!imageUrl) return;
+  var payload = {
+    employer_id: pendingPosterEmployerId || null,
+    image_url: imageUrl,
+    caption: document.getElementById('poster-caption').value.trim()
+  };
+  var result = await supabaseClient.from('employer_posters').insert([payload]);
+  if(result.error){
+    console.error('poster save', result.error);
+    alert('Could not save poster. Make sure ADD_EMPLOYER_POSTERS.sql has been run in Supabase.');
+    return;
+  }
+  closeSheet('poster-overlay');
+  showToast('Poster published');
 }
 async function regenEmployerToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
