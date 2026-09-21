@@ -1476,12 +1476,14 @@ header{margin-bottom:18px}
 }
 .poster-card img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover;background:var(--card-2)}
 .poster-caption{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:9px 12px;
   font-size:13px;
   color:var(--text-2);
   border-top:1px solid var(--separator);
 }
 
+.poster-caption-text{flex:1;min-width:0}
 /* Vacancy posters screen: full-width vertical list, poster shown uncropped */
 .poster-list{display:flex;flex-direction:column;gap:14px;padding:4px 0 24px}
 .poster-list .poster-card{flex:none;width:100%}

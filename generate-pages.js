@@ -182,7 +182,8 @@ function buildPublicSlugMap(records, getName) {
   return result;
 }
 
-function pageShell({ title, description, canonical, bodyHtml, jsonLd }) {
+function pageShell({ title, description, canonical, bodyHtml, jsonLd, image }) {
+  const ogImage = image || `${SITE_URL}/icons/v2-icon-512.png`;
   return `<!DOCTYPE html>
 <html lang="en-ZA">
 <head>
@@ -195,11 +196,9 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd }) {
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
-<meta property="og:image" content="${SITE_URL}/icons/v2-icon-512.png">
-<meta property="og:image:width" content="512">
-<meta property="og:image:height" content="512">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="${SITE_URL}/icons/v2-icon-512.png">
+<meta property="og:image" content="${escapeHtml(ogImage)}">
+${image ? '' : '<meta property="og:image:width" content="512">\n<meta property="og:image:height" content="512">\n'}<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}">
+<meta name="twitter:image" content="${escapeHtml(ogImage)}">
 <link rel="icon" href="/favicon-v2.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/v2-favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/v2-icon-192.png">
@@ -489,6 +488,27 @@ ${
   return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
 }
 
+// ---------- vacancy poster pages ----------
+// Must match posterPublicSlug() in app-manager.js so in-app share links resolve.
+function posterSlug(p) {
+  const base = String(p.caption || 'vacancy-poster').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'vacancy-poster';
+  return `${base}-${String(p.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toLowerCase()}`;
+}
+
+function buildPosterPage(poster, slug) {
+  const canonical = `${SITE_URL}/poster/${slug}/`;
+  const heading = poster.caption || 'Vacancy poster';
+  const title = `${heading} | SA Recruiters`;
+  const description = `${heading} — recruitment poster on SA Recruiters, South Africa's recruitment directory.`;
+  const body = `
+<h1>${escapeHtml(heading)}</h1>
+<p><img src="${escapeHtml(poster.image_url)}" alt="${escapeHtml(heading)}" style="max-width:100%;height:auto;border-radius:12px"></p>
+<p class="hub-note"><a href="/">Browse all agencies and vacancies on SA Recruiters →</a></p>
+`;
+  return pageShell({ title, description, canonical, bodyHtml: body, image: poster.image_url });
+}
+
 // ---------- location hub pages ----------
 
 function isOpenVacancy(vacancy) {
@@ -635,6 +655,28 @@ async function main() {
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), html);
     sitemapUrls.push(`${SITE_URL}/vacancy/${slug}/`);
+  });
+
+  // Poster pages: one shareable page per active poster. A failed/missing
+  // poster table must never fail the whole build.
+  let posters = [];
+  try {
+    const { data, error } = await supabase.from('employer_posters')
+      .select('id,image_url,caption,expires_at')
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) console.warn('poster fetch error (skipping poster pages):', JSON.stringify(error));
+    else posters = data || [];
+  } catch (e) { console.warn('poster fetch failed (skipping poster pages):', e.message); }
+  const posterDir = path.join(OUT_DIR, 'poster');
+  ensureDir(posterDir);
+  posters.filter((p) => p.image_url).forEach((poster) => {
+    const slug = posterSlug(poster);
+    const dir = path.join(posterDir, slug);
+    ensureDir(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), buildPosterPage(poster, slug));
+    sitemapUrls.push(`${SITE_URL}/poster/${slug}/`);
   });
 
   // Sitemap
