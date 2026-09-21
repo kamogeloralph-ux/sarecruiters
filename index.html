@@ -56,6 +56,8 @@
   /* Legal link inline with the "By signing in" line at the very bottom. */
   .gate-terms-link{display:inline;background:none;border:none;padding:0;color:#7CB6FF;font:inherit;font-weight:700;font-size:11.5px;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
   .gate-terms-link:active{opacity:.75}
+  .gate-secondary-actions{margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .gate-secondary-actions .gate-terms-link{font-size:13px;font-weight:600}
   /* Editorial column pinned to the lower half, like the marketing hero. */
   .gate-body{display:flex;flex-direction:column;width:min(560px,100%);margin:auto auto 0;padding:30px 22px calc(env(safe-area-inset-bottom) + 18px)}
   .gate-eyebrow{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#6FB1FF}
@@ -183,6 +185,10 @@
       </div>
     </button>
     <div id="auth-gate-status" role="status" aria-live="polite">Checking your sign-in…</div>
+    <div class="gate-secondary-actions">
+      <button type="button" class="gate-terms-link" data-ripple onclick="openPoolRegisterSheet()">Job seeker? Join the Talent Pool first</button>
+      <button type="button" class="gate-terms-link" data-ripple onclick="openEmployerGateSheet()">Employer? Get access without Google sign-in</button>
+    </div>
     <div class="gate-divider" role="presentation"></div>
     <div class="gate-stats">
       <div class="gate-stat"><span class="gate-stat-value" id="gate-stat-agencies">—</span><span class="gate-stat-label">Agencies</span></div>
@@ -933,6 +939,29 @@
   </div>
 </div>
 
+<!-- ============ EMPLOYER GATE (public, no Google sign-in / no profile) ============ -->
+<div class="sheet-scrim" id="employer-gate-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('employer-gate-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Employer access</h3>
+    <div class="manager-banner" style="padding:0 0 12px"><p>Employers manage their listing through a private Manager Link — no Google account and no Talent Pool profile needed.</p></div>
+    <button class="sheet-submit" data-ripple onclick="closeSheet('employer-gate-overlay');openEmployerForm();">Register your company — get a Manager Link</button>
+    <div class="field" style="margin-top:18px"><label>Already registered? Email me my Manager Link</label><input id="employer-resend-email" type="email" placeholder="you@company.co.za" autocomplete="email"></div>
+    <button class="sheet-submit" data-ripple onclick="resendEmployerManagerLink()" id="employer-resend-btn">Email my Manager Link</button>
+  </div>
+</div>
+
+<!-- ============ EMPLOYER MANAGER LINK CONFIRMATION (shown once, post self-registration) ============ -->
+<div class="sheet-scrim" id="employer-manager-link-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('employer-manager-link-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Your Manager Link</h3>
+    <div class="manager-banner" style="padding:0 0 12px"><p id="employer-manager-link-note">Save this link — it's how you manage your listing.</p></div>
+    <div class="field"><label>Manager Link</label><input id="employer-manager-link-body" readonly onclick="this.select()" style="font-size:12.5px"></div>
+    <button class="sheet-submit" data-ripple onclick="copyEmployerManagerLink()">Copy link</button>
+  </div>
+</div>
+
 <!-- ============ VACANCY POSTING LOCKED SHEET (public) ============ -->
 <div class="sheet-scrim" id="vacancy-locked-overlay">
   <div class="sheet">
@@ -1158,7 +1187,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=ca759b7ec6" defer></script>
+<script src="app.bundle.min.js?v=965bdf9f5e" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

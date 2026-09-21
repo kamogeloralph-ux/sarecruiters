@@ -806,6 +806,20 @@ async function getStartupData() {
   }
 }
 
+// The Employer entry point on the sign-in gate (openEmployerGateSheet ->
+// openEmployerForm) is reachable BEFORE Google sign-in, so
+// publicEmployerRegistrationOpen can't wait for the normal loadAll(), which
+// only ever runs after auth resolves (see bootAuthenticatedApp). Fetch just
+// the public settings independently, immediately at page load — this is
+// the same public, edge-cached /api/startup endpoint loadAll() itself uses.
+(function loadPreAuthEmployerRegFlag() {
+  getStartupData().then(function(startup) {
+    if (startup && startup.settings) {
+      publicEmployerRegistrationOpen = (startup.settings.public_employer_registration === true || startup.settings.public_employer_registration === 'true');
+    }
+  }).catch(function(){});
+})();
+
 async function loadAll() {
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
