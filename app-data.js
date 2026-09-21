@@ -940,11 +940,12 @@ function updateStats() {
 // directory screens show — including cached values painted instantly from
 // IndexedDB on repeat visits.
 function gateVacancyTotal(agencies, vacancies, counts) {
-  // Prefer the Worker's server-side general count (mirrors loadAll()'s
-  // preference for counts.general), falling back to the old subtraction,
-  // and finally to counting non-general-directory rows locally.
+  // "Live Vacancies" is the platform-wide total: general pool +
+  // agency-attributed + dedicated-source (DPSA/retail/Adzuna/…) rows.
+  // counts.vacancies is exactly that, computed server-side; fall back to
+  // the general count, then to counting non-general rows locally.
+  if (counts && typeof counts.vacancies === 'number') return counts.vacancies;
   if (counts && typeof counts.general === 'number') return counts.general;
-  if (counts && typeof counts.vacancies === 'number') return Math.max(0, counts.vacancies - (Array.isArray(vacancies) ? vacancies.length : 0));
   var list = Array.isArray(vacancies) ? vacancies : [];
   var total = 0;
   for (var i = 0; i < list.length; i++) {
@@ -957,6 +958,18 @@ function refreshGateStats() {
   if (elA) elA.textContent = agenciesCache.length;
   var elV = document.getElementById('gate-stat-vacancies');
   if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length;
+}
+// Live head-count of every vacancy row in the database — the same table
+// the app reads after sign-in (general pool + agency + employer +
+// dedicated-source rows). Counting directly avoids under-counts from an
+// older deployed Worker aggregate whose counts lag the table.
+async function fetchLiveVacancyTotal() {
+  if (!supabaseClient) return null;
+  try {
+    var result = await supabaseClient.from('vacancies').select('id', { count: 'exact', head: true });
+    if (!result.error && typeof result.count === 'number') return result.count;
+  } catch(e) {}
+  return null;
 }
 async function loadGateStats() {
   try {
@@ -972,39 +985,16 @@ async function loadGateStats() {
     var elA = document.getElementById('gate-stat-agencies');
     if (elA) elA.textContent = payload.agencies.length;
     var elV = document.getElementById('gate-stat-vacancies');
-    if (elV) elV.textContent = gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
+    // Prefer the direct database count; the Worker aggregate is only a
+    // fallback for when Supabase is unreachable from the client.
+    var liveTotal = await fetchLiveVacancyTotal();
+    if (elV) elV.textContent = liveTotal !== null ? liveTotal : gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
   } catch (e) { /* leave the em-dash placeholders on failure */ }
 }
 // Fire once immediately: the gate is visible before sign-in, and the
 // fetch is unauthenticated, so there is nothing to wait for.
 loadGateStats();
 
-// ===== Gate: Talent-Pool-first registration =====
-// "Register for the Talent Pool" on the sign-in screen opens the exact
-// same public registration sheet used in the app (editingPoolCandidateId
-// stays null, so submitPoolRegistration() inserts a new row). The app
-// container is isolated + hidden pre-auth, so body.gate-registering hides
-// the gate and lets the sheet's scrim carry the same blue backdrop; when
-// the sheet closes we restore the gate. On success the sheet flow remembers
-// the identity, and the follow-up Google sign-in auto-links the new row to
-// the account via candidate_claim_profile — one registration, no dupes.
-function registerFromGate() {
-  if (typeof openPoolRegisterSheet !== 'function') return;
-  document.body.classList.add('gate-registering');
-  window.__gateRegistering = true;
-  if (!window.__gateSheetCloseHooked && typeof closeSheet === 'function') {
-    window.__gateSheetCloseHooked = true;
-    var gateCloseSheet = closeSheet;
-    closeSheet = function (id) {
-      gateCloseSheet(id);
-      if (id === 'pool-register-overlay' && window.__gateRegistering) {
-        window.__gateRegistering = false;
-        document.body.classList.remove('gate-registering');
-      }
-    };
-  }
-  openPoolRegisterSheet();
-}
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
 function vacanciesFor(agencyId) {

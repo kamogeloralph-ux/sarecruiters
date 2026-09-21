@@ -62,19 +62,12 @@ function showAuthGate() {
   if (!gate) return;
   gate.style.display = '';
   gate.classList.remove('hide');
+  // Keep the live counts fresh for returning visitors (the numbers on
+  // the gate can be minutes old from the page-load fetch).
+  if (typeof loadGateStats === 'function') loadGateStats();
 }
 async function signInWithGoogle() {
   if (!supabaseClient || saAuthRedirecting) return;
-  // Registration-first: the app account is the Talent Pool registration,
-  // so a brand-new visitor must register before signing in. Returning
-  // users pass via their verified membership (talentPoolVerified) or a
-  // registration still pending account-linking on this device. Manager
-  // token links bypass — those recipients were invited directly.
-  if (!gateSignInExempt() && !talentPoolVerified && !gateRegistrationPending()) {
-    setAuthGateState('ready', 'Please register for the Talent Pool first — it\'s free and takes under a minute.');
-    if (typeof registerFromGate === 'function') registerFromGate();
-    return;
-  }
   saAuthRedirecting = true;
   setAuthGateState('redirecting', 'Opening Google sign-in…');
   var result = await supabaseClient.auth.signInWithOAuth({
@@ -120,7 +113,7 @@ function startAuthenticatedApp(callback) {
       saAuthStarted = false;
       __saAuthReady = false;
       showAuthGate();
-      setAuthGateState('ready', 'Register for the Talent Pool, or sign in with Google.');
+      setAuthGateState('ready', 'Sign in with Google to continue.');
     }
   });
   supabaseClient.auth.getSession().then(async function(result) {
