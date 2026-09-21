@@ -41,7 +41,7 @@
  * value here is just a placeholder that gets replaced at build time.
  */
 
-const VERSION = 'sa-recruiters-v163-bundle-precache-fix';
+const VERSION = 'sa-recruiters-v164-poster-stat';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
