@@ -82,6 +82,15 @@ export function htmlToText(value) {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+// Supabase/PostgREST errors are plain objects ({ message, details, hint, code }),
+// not Error instances, so String(error) would print "[object Object]".
+export function formatError(error) {
+  if (!error) return 'unknown error';
+  if (typeof error === 'string') return error;
+  const parts = [error.message, error.details, error.hint, error.code && `code ${error.code}`].filter(Boolean);
+  if (parts.length) return parts.join(' | ');
+  try { return JSON.stringify(error); } catch (_) { return String(error); }
+}
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 export function idForJob(src, reqId) { return `${src.idPrefix}${reqId}`; }
 export function publicJobUrl(src, reqId) { return `${publicJobBase(src)}/${encodeURIComponent(reqId)}`; }
@@ -223,7 +232,7 @@ async function fetchDetails(src, summaries, employerId) {
         detail = parseDetail(payload);
       } catch (error) {
         detailFailures += 1;
-        console.error(`${tag} detail failed for ${summary.reqId}: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`${tag} detail failed for ${summary.reqId}: ${formatError(error)}`);
       }
       // A failed detail call still yields a usable listing from the search data.
       const job = buildVacancy(src, summary, detail, employerId);
@@ -257,6 +266,27 @@ async function resolveEmployerId(supabase, src) {
 // Removes this source's rows that are no longer in the feed (job closed/filled).
 // Only runs when we clearly got the whole feed, so a partial/failed fetch can
 // never wipe the list.
+// Upserts in small batches. If a batch is rejected, retry its rows one by one
+// so a single bad row is reported (with its id) instead of losing the batch.
+async function upsertJobs(supabase, src, jobs) {
+  const tag = `[oracle:${src.key}]`;
+  const CHUNK = 40;
+  let saved = 0;
+  const failures = [];
+  for (let i = 0; i < jobs.length; i += CHUNK) {
+    const chunk = jobs.slice(i, i + CHUNK);
+    const { error } = await supabase.from('vacancies').upsert(chunk, { onConflict: 'id' });
+    if (!error) { saved += chunk.length; continue; }
+    console.error(`${tag} batch ${i}-${i + chunk.length - 1} rejected: ${formatError(error)} -- retrying row by row`);
+    for (const job of chunk) {
+      const { error: rowError } = await supabase.from('vacancies').upsert(job, { onConflict: 'id' });
+      if (rowError) { failures.push({ id: job.id, error: formatError(rowError) }); if (failures.length <= 5) console.error(`${tag} row ${job.id} failed: ${formatError(rowError)}`); }
+      else saved += 1;
+    }
+  }
+  return { saved, failures };
+}
+
 async function removeClosed(supabase, src, liveIds) {
   const { data, error } = await supabase.from('vacancies').select('id').like('id', `${src.idPrefix}%`);
   if (error) throw error;
@@ -280,14 +310,15 @@ export async function runSource(src, supabase) {
     return { fetched: jobs.length, upserted: 0, removed: 0, dryRun: true };
   }
 
-  const { error } = await supabase.from('vacancies').upsert(jobs, { onConflict: 'id' });
-  if (error) throw error;
+  const { saved, failures } = await upsertJobs(supabase, src, jobs);
+  if (!saved) throw new Error(`no vacancies could be saved (${failures.length} rejected). First error: ${failures[0] ? failures[0].error : 'unknown'}`);
+  if (failures.length) console.warn(`${tag} ${failures.length} vacancies were rejected and skipped`);
 
   let removed = 0;
   const gotWholeFeed = expected > 0 && summaries.length >= Math.floor(expected * 0.9);
   if (gotWholeFeed) removed = await removeClosed(supabase, src, new Set(jobs.map((j) => j.id)));
   else console.warn(`${tag} skipped closed-job cleanup: fetched ${summaries.length} of ${expected} reported`);
-  return { fetched: jobs.length, upserted: jobs.length, removed, detailFailures };
+  return { fetched: jobs.length, upserted: saved, rejected: failures.length, removed, detailFailures };
 }
 
 export function selectSources(only = process.env.ORACLE_ONLY || '') {
@@ -308,7 +339,7 @@ export async function runOracleSync() {
       results[src.key] = await runSource(src, supabase);
     } catch (error) {
       failed += 1;
-      results[src.key] = { error: error instanceof Error ? error.message : String(error) };
+      results[src.key] = { error: formatError(error) };
       console.error(`[oracle:${src.key}] failed: ${results[src.key].error}`);
     }
   }
@@ -321,7 +352,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log(`[oracle] completed: ${JSON.stringify(results)}`);
     if (failed) process.exitCode = 1;
   } catch (error) {
-    console.error(`[oracle] failed: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`[oracle] failed: ${formatError(error)}`);
     process.exitCode = 1;
   }
 }

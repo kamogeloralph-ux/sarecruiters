@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSearchPage, parseDetail, buildVacancy, htmlToText, cleanLocation, toDateOnly, publicJobUrl, idForJob, SOURCES, selectSources } from './sync-oracle.mjs';
+import { parseSearchPage, parseDetail, buildVacancy, htmlToText, cleanLocation, toDateOnly, publicJobUrl, idForJob, SOURCES, selectSources, formatError } from './sync-oracle.mjs';
 
 const MRP = SOURCES.mrprice;
 const TFG = SOURCES.tfg;
@@ -97,4 +97,10 @@ test('selectSources filters by key and rejects unknown names', () => {
   assert.equal(selectSources('').length, Object.keys(SOURCES).length);
   assert.deepEqual(selectSources('tfg').map((s) => s.key), ['tfg']);
   assert.throws(() => selectSources('nope'), /Unknown ORACLE_ONLY/);
+});
+
+test('formatError makes Supabase error objects readable', () => {
+  assert.equal(formatError({ message: 'bad', details: 'col x', code: '23502' }), 'bad | col x | code 23502');
+  assert.equal(formatError(new Error('boom')), 'boom');
+  assert.equal(formatError('plain'), 'plain');
 });
