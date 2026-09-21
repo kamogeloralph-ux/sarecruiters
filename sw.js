@@ -41,7 +41,7 @@
  * value here is just a placeholder that gets replaced at build time.
  */
 
-const VERSION = 'sa-recruiters-v165-posters-screen';
+const VERSION = 'sa-recruiters-v166-poster-share';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -222,7 +222,7 @@ function shellForNavigation(request) {
 
 function isPublicListingNavigation(request) {
   var pathname = new URL(request.url).pathname;
-  return /^\/(agency|vacancy)(?:\/|$)/i.test(pathname);
+  return /^\/(agency|vacancy|poster)(?:\/|$)/i.test(pathname);
 }
 
 function publicListingNavigation(request) {

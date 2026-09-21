@@ -116,6 +116,39 @@ function shareVacancy(vacancyId) {
     showToast('Link copied — paste it into a message');
   }
 }
+/* Share a vacancy poster. Preferred: the poster image itself through the OS
+   share sheet (instant, looks right in WhatsApp) with the public poster page
+   link in the text. Falls back to link-only share, then copy-link. */
+function posterPublicSlug(p) {
+  var base = String(p.caption || 'vacancy-poster').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'vacancy-poster';
+  return base + '-' + String(p.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toLowerCase();
+}
+async function sharePoster(posterId) {
+  var p = (typeof postersCache !== 'undefined' ? postersCache : []).find(function(x){ return String(x.id) === String(posterId); });
+  if (!p) { showToast('Poster not found'); return; }
+  var link = window.location.origin + '/poster/' + posterPublicSlug(p) + '/';
+  var title = (p.caption || 'Vacancy poster') + ' — SA Recruiters';
+  var text = (p.caption || 'Vacancy poster') + ' — see it on SA Recruiters: ' + link;
+  trackEvent('poster_share', 'poster', posterId);
+  if (navigator.share) {
+    try {
+      var res = await fetch(p.image_url);
+      var blob = await res.blob();
+      var file = new File([blob], 'vacancy-poster.jpg', { type: blob.type || 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: title, text: text, files: [file] });
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return; // user closed the share sheet
+    }
+    navigator.share({ title: title, text: text, url: link }).catch(function(){});
+  } else {
+    copyText(link, null);
+    showToast('Link copied — paste it into a message');
+  }
+}
 function openManagerLink(agencyId) {
   var token = getManagerToken(agencyId);
   if (!token) { showToast('Link not ready'); return; }

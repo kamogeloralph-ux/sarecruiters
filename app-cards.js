@@ -797,13 +797,14 @@ function renderSaved() {
 var postersCache = [];
 
 function posterCard(p) {
-  var caption = p.caption ? '<div class="poster-caption">' + escapeHtml(p.caption) + '</div>' : '';
+  var caption = p.caption ? '<div class="poster-caption-text">' + escapeHtml(p.caption) + '</div>' : '<div class="poster-caption-text"></div>';
   return '<div class="poster-card" data-poster-id="' + escapeHtml(p.id) + '" ' +
     'onclick="openPosterLightbox(\'' + escapeHtml(p.image_url) + '\')">' +
     '<img src="' + escapeHtml(p.image_url) + '" alt="' + escapeHtml(p.caption || 'Vacancy poster') + '" loading="lazy" ' +
     'onerror="this.closest(\'.poster-card\').remove()">' +
-    caption +
-    '</div>';
+    '<div class="poster-caption">' + caption +
+    '<button class="vac-share" type="button" onclick="event.stopPropagation();sharePoster(\'' + escapeHtml(p.id) + '\')" aria-label="Share poster">' + SHARE_SVG + '</button>' +
+    '</div></div>';
 }
 
 function renderPosterFeed(posters) {
