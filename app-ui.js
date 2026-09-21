@@ -703,6 +703,8 @@ function renderAllVacanciesList() {
     // Keep the overview as a folder picker so new vacancy categories can be
     // added later without changing the listing screen. Counts still respond
     // to the shared search and filters above.
+    var overviewLoadMore = document.getElementById('allvacancies-loadmore');
+    if (overviewLoadMore) overviewLoadMore.style.display = 'none';
     var agencyCount = list.filter(hasAssignedAgency).length;
     var generalCount = generalVacancyCount;
     var himalayasCount = list.filter(isHimalayasVacancy).length;
