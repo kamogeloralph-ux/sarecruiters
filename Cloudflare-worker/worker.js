@@ -4,6 +4,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 // worker.js
 var MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 var MAX_TRACK_BYTES = 25 * 1024 * 1024;
+var MAX_POSTER_BYTES = 5 * 1024 * 1024;
 function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin || "*",
@@ -869,6 +870,25 @@ var worker_default = {
         const reqPrefix = url.searchParams.get("prefix");
         const prefix = allowedPrefixes.includes(reqPrefix) ? reqPrefix : "candidate-photos";
         const key = `${prefix}/${randomKey()}.jpg`;
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
+        return json({ url: publicUrlFor(env, key), key }, 200, origin);
+      }
+      if (path === "/api/upload/employer-poster" && request.method === "POST") {
+        const posterUserId = await verifiedUserId(request, env);
+        if (!posterUserId) {
+          return json({ error: "Please sign in to upload a poster." }, 401, origin);
+        }
+        const contentType = request.headers.get("Content-Type") || "";
+        if (!contentType.startsWith("image/")) {
+          return json({ error: "Only image uploads are allowed." }, 400, origin);
+        }
+        const bytes = await request.arrayBuffer();
+        if (bytes.byteLength === 0)
+          return json({ error: "Empty file." }, 400, origin);
+        if (bytes.byteLength > MAX_POSTER_BYTES) {
+          return json({ error: "Poster too large (max 5MB)." }, 413, origin);
+        }
+        const key = `employer-posters/${randomKey()}.jpg`;
         await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
       }
