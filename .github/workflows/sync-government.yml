@@ -38,5 +38,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm install
+      - name: Install pdftotext (poppler-utils)
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - name: Sync all Government vacancies from DPSA circulars
         run: GOVERNMENT_YEARS="${{ inputs.years || '' }}" npm run sync:government
