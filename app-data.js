@@ -901,6 +901,7 @@ async function loadAll() {
   if (managerMode) renderManagerMode();
   if (employerManagerMode) renderEmployerManagerMode();
   restoreTalentPoolMembership();
+  if (typeof autoClaimGateRegistration === 'function') autoClaimGateRegistration();
   // If a pending manager token was detected before agencies loaded, enter manager mode now
   if (managerPendingToken) {
     var tok = managerPendingToken;
@@ -952,9 +953,10 @@ function gateVacancyTotal(agencies, vacancies, counts) {
   return total;
 }
 function refreshGateStats() {
+  var elA = document.getElementById('gate-stat-agencies');
+  if (elA) elA.textContent = agenciesCache.length;
   var elV = document.getElementById('gate-stat-vacancies');
-  if (!elV) return;
-  elV.textContent = generalVacancyCount + vacanciesCache.length;
+  if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length;
 }
 async function loadGateStats() {
   try {
@@ -967,6 +969,8 @@ async function loadGateStats() {
     if (!response.ok) return;
     var payload = await response.json();
     if (!payload || !Array.isArray(payload.agencies) || !payload.counts) return;
+    var elA = document.getElementById('gate-stat-agencies');
+    if (elA) elA.textContent = payload.agencies.length;
     var elV = document.getElementById('gate-stat-vacancies');
     if (elV) elV.textContent = gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
   } catch (e) { /* leave the em-dash placeholders on failure */ }
@@ -974,6 +978,33 @@ async function loadGateStats() {
 // Fire once immediately: the gate is visible before sign-in, and the
 // fetch is unauthenticated, so there is nothing to wait for.
 loadGateStats();
+
+// ===== Gate: Talent-Pool-first registration =====
+// "Register for the Talent Pool" on the sign-in screen opens the exact
+// same public registration sheet used in the app (editingPoolCandidateId
+// stays null, so submitPoolRegistration() inserts a new row). The app
+// container is isolated + hidden pre-auth, so body.gate-registering hides
+// the gate and lets the sheet's scrim carry the same blue backdrop; when
+// the sheet closes we restore the gate. On success the sheet flow remembers
+// the identity, and the follow-up Google sign-in auto-links the new row to
+// the account via candidate_claim_profile — one registration, no dupes.
+function registerFromGate() {
+  if (typeof openPoolRegisterSheet !== 'function') return;
+  document.body.classList.add('gate-registering');
+  window.__gateRegistering = true;
+  if (!window.__gateSheetCloseHooked && typeof closeSheet === 'function') {
+    window.__gateSheetCloseHooked = true;
+    var gateCloseSheet = closeSheet;
+    closeSheet = function (id) {
+      gateCloseSheet(id);
+      if (id === 'pool-register-overlay' && window.__gateRegistering) {
+        window.__gateRegistering = false;
+        document.body.classList.remove('gate-registering');
+      }
+    };
+  }
+  openPoolRegisterSheet();
+}
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
 function vacanciesFor(agencyId) {

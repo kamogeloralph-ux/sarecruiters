@@ -290,6 +290,21 @@ async function restoreTalentPoolMembership() {
   var identity = talentPoolIdentityRecord();
   if (identity) await verifyTalentPoolMembership(identity.phone, identity.email, true);
 }
+// Gate registration follow-through: if the visitor registered for the
+// Talent Pool from the sign-in screen (row created pre-auth), link that
+// row to their account on first sign-in via candidate_claim_profile —
+// matching the email + phone they registered with. Quiet on any failure;
+// openMyPoolProfile() remains the manual fallback.
+async function autoClaimGateRegistration() {
+  if (!saAuthUser || !supabaseClient) return;
+  try { if (localStorage.getItem('sa_gate_registration_pending') !== '1') return; } catch(e) { return; }
+  var identity = talentPoolIdentityRecord();
+  if (!identity || !identity.email || !identity.phone) return;
+  try {
+    var claim = await supabaseClient.rpc('candidate_claim_profile', { p_email: identity.email, p_phone: identity.phone });
+    if (!claim.error && claim.data) { try { localStorage.removeItem('sa_gate_registration_pending'); } catch(e){} }
+  } catch(e) { /* manual link via My Talent Pool profile still works */ }
+}
 function openEmployerDirectoryAccessMessage() {
   var sheet = document.getElementById('employer-directory-locked-overlay');
   var identity = talentPoolIdentityRecord();
