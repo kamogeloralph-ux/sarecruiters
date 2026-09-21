@@ -325,13 +325,17 @@ function showAllVacancies() {
   resetActiveScreenScroll('screen-allvacancies');
 }
 
-// Opens All Vacancies and brings the swipeable vacancy-poster strip into view.
+// Vacancy posters live on their own screen, separate from All Vacancies.
 function showVacancyPosters() {
-  showAllVacancies();
-  setTimeout(function() {
-    var feed = document.getElementById('poster-feed');
-    if (feed && feed.scrollIntoView) feed.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  }, 120);
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-allposters').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
+  var search = document.getElementById('allposters-search');
+  if (search) search.value = '';
+  renderPosterFeed(postersCache);
+  if (typeof loadPosterFeed === 'function') loadPosterFeed();
+  resetActiveScreenScroll('screen-allposters');
 }
 
 // ---- Precise-location filter (Agencies / Branches / Employers / Pool) ----

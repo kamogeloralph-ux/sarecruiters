@@ -1482,6 +1482,11 @@ header{margin-bottom:18px}
   border-top:1px solid var(--separator);
 }
 
+/* Vacancy posters screen: full-width vertical list, poster shown uncropped */
+.poster-list{display:flex;flex-direction:column;gap:14px;padding:4px 0 24px}
+.poster-list .poster-card{flex:none;width:100%}
+.poster-list .poster-card img{aspect-ratio:auto;height:auto;object-fit:contain}
+
 /* Full-screen lightbox for a tapped poster */
 #poster-lightbox-overlay{
   position:fixed;inset:0;z-index:200;

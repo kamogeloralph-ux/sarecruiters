@@ -601,9 +601,30 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <div class="poster-feed" id="poster-feed" aria-label="Employer recruitment posters" style="margin:0 -16px 8px"></div>
     <div id="allvacancies-list"></div>
     <button class="vac-load-more" id="allvacancies-loadmore" type="button" onclick="loadMoreGeneralVacancies()" style="display:none">Load more vacancies</button>
+    </div>
+  </div>
+
+  <!-- ============ VACANCY POSTERS (separate from vacancies) ============ -->
+  <div class="screen" id="screen-allposters">
+    <div class="screen-fixed">
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="logo-text">Vacancy Posters</div>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 12px">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="allposters-search" class="sr-only">Search posters</label>
+        <input id="allposters-search" type="search" placeholder="Search posters..." oninput="renderPosterFeed(postersCache)">
+      </div>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="poster-list" id="poster-feed" aria-label="Vacancy posters"></div>
     </div>
   </div>
 
