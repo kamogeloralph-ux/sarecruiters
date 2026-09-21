@@ -138,7 +138,7 @@ function hubContact(a) {
 
 function hubCountBadge(icon, count, noun) {
   var label = count + ' ' + noun + (count === 1 ? '' : noun === 'branch' ? 'es' : 's');
-  var employerClass = noun === 'job' ? ' hub-employer-count' : '';
+  var employerClass = (noun === 'job' || noun === 'poster') ? ' hub-employer-count' : '';
   return '<span class="hub-branch-badge' + employerClass + '" title="' + label + '" aria-label="' + label + '"><span class="hub-branch-pin" aria-hidden="true">' + icon + '</span><span>' + count + '</span></span>';
 }
 
@@ -149,8 +149,10 @@ function hubCountBadge(icon, count, noun) {
 // main Vacancies list/section.
 function employerHubCard(e) {
   var vCount = vacanciesForEmployer(e.id).length;
+  var pCount = postersForEmployer(e.id).length;
   var verifiedCheck = e.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
   var jobsBadge = vCount > 0 ? hubCountBadge('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>', vCount, 'job') : '';
+  var postersBadge = pCount > 0 ? hubCountBadge('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>', pCount, 'poster') : '';
   return '' +
   '<div class="hub-card" id="emphub-' + e.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleEmpHub(\'' + e.id + '\')" aria-expanded="false">' +
@@ -160,12 +162,14 @@ function employerHubCard(e) {
         (e.industry ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Industry:</span> ' + escapeHtml(e.industry) + '</div>' : (e.location ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Location:</span> ' + escapeHtml(e.location) + '</div>' : '')) +
       '</div>' +
       jobsBadge +
+      postersBadge +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</button>' +
     '<div class="hub-panel" id="emphub-panel-' + e.id + '">' +
       '<div class="hub-panel-inner">' +
         '<div class="hub-tabs">' +
           '<button class="hub-tab active" data-ripple onclick="switchEmpHubTab(this,\'' + e.id + '\',\'vacancies\')">Vacancies</button>' +
+          '<button class="hub-tab" data-ripple onclick="switchEmpHubTab(this,\'' + e.id + '\',\'posters\')">Posters' + (pCount ? ' (' + pCount + ')' : '') + '</button>' +
           '<button class="hub-tab" data-ripple onclick="switchEmpHubTab(this,\'' + e.id + '\',\'contact\')">Contact</button>' +
         '</div>' +
         '<div class="hub-tab-content" data-employer="' + e.id + '">' + employerHubVacancies(e) + '</div>' +
@@ -191,6 +195,20 @@ function employerHubVacancies(e) {
   if (isAdmin) {
     html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openEmployerVacancySheet(\'' + e.id + '\')">+ Post vacancy</button>' +
       '<button class="hub-add-btn" data-ripple onclick="openPosterUploadSheet(\'' + e.id + '\')">+ Upload poster</button></div>';
+  }
+  return html;
+}
+
+// Posters are kept apart from vacancies: they have their own tab and never
+// appear in the Vacancies tab above.
+function employerHubPosters(e) {
+  var list = postersForEmployer(e.id);
+  var html = '<div class="poster-list" style="padding:4px 0;">';
+  if (!list.length) html += '<div class="poster-feed-empty">No posters from this employer yet.</div>';
+  else html += list.map(posterCard).join('');
+  html += '</div>';
+  if (isAdmin) {
+    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openPosterUploadSheet(\'' + e.id + '\')">+ Upload poster</button></div>';
   }
   return html;
 }
@@ -240,6 +258,7 @@ window.switchEmpHubTab = function(btn, employerId, tab) {
   var target = card ? card.querySelector('.hub-tab-content') : null;
   if (!target) return;
   if (tab === 'vacancies') target.innerHTML = employerHubVacancies(e);
+  if (tab === 'posters') target.innerHTML = employerHubPosters(e);
   if (tab === 'contact') target.innerHTML = employerHubContact(e);
 };
 
@@ -795,6 +814,9 @@ function renderSaved() {
 // Posters render as a vertical list on their own screen (screen-allposters),
 // separate from vacancies (see .poster-list in styles.css).
 var postersCache = [];
+function postersForEmployer(employerId) {
+  return postersCache.filter(function(p){ return p.employer_id && String(p.employer_id) === String(employerId); });
+}
 
 function posterCard(p) {
   var caption = p.caption ? '<div class="poster-caption-text">' + escapeHtml(p.caption) + '</div>' : '<div class="poster-caption-text"></div>';
@@ -823,6 +845,10 @@ function renderPosterFeed(posters) {
 async function loadPosterFeed() {
   var posters = await getEmployerPosters();
   renderPosterFeed(posters);
+  // Employer cards show a poster count; refresh them once posters arrive
+  // (skipped while a card is expanded so it doesn't collapse under the user).
+  var empScreen = document.getElementById('screen-allemployers');
+  if (empScreen && empScreen.classList.contains('active') && !empScreen.querySelector('.hub-card.open')) renderAllEmployersList();
 }
 
 window.openPosterLightbox = function(imageUrl) {
