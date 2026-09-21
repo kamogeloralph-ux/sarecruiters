@@ -27,6 +27,26 @@ var saAuthUser = null;
 var saAuthStarted = false;
 var saAuthStartCallback = null;
 var saAuthRedirecting = false;
+
+// ===== Employer / agency Smart Manager links bypass Google sign-in AND the
+// Talent Pool profile gate entirely (see detectManagerMode() in
+// app-manager-employer.js, which calls window.__saEnterManagerLinkMode() the
+// moment it sees ?manage=TOKEN or ?manage_employer=TOKEN in the URL — before
+// Google auth has had any chance to resolve). A visitor on one of these
+// links is an employer/agency being taken straight to their manager screen;
+// they must never see the consumer sign-in curtain. =====
+var __saManagerLinkMode = false;
+window.__saEnterManagerLinkMode = function () {
+  if (__saManagerLinkMode) return;
+  __saManagerLinkMode = true;
+  __saAuthReady = true;
+  var gate = document.getElementById('auth-gate');
+  if (gate) gate.style.display = 'none';
+  var splash = document.getElementById('app-splash');
+  if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+  document.body.classList.add('app-ready');
+  __saRevealed = true;
+};
 function authRedirectUrl() {
   return window.location.origin + window.location.pathname + window.location.search;
 }
@@ -109,11 +129,20 @@ function startAuthenticatedApp(callback) {
       __saAuthReady = true;
       window.__saTryReveal();
       if (saAuthStartCallback) saAuthStartCallback();
+      // Enforce the Talent Pool profile requirement: a signed-in user who
+      // has never registered a profile gets it as a mandatory next step
+      // (see enforceTalentPoolProfile in app-sheets.js). Never runs for
+      // employer/agency manager-link visitors — they don't sign in at all.
+      if (typeof enforceTalentPoolProfile === 'function') enforceTalentPoolProfile();
     } else if (!saAuthUser) {
       saAuthStarted = false;
-      __saAuthReady = false;
-      showAuthGate();
-      setAuthGateState('ready', 'Sign in with Google to continue.');
+      // An employer/agency manager-link visitor never has a Google session
+      // and must never be routed back to the sign-in gate.
+      if (!__saManagerLinkMode) {
+        __saAuthReady = false;
+        showAuthGate();
+        setAuthGateState('ready', 'Sign in with Google to continue.');
+      }
     }
   });
   supabaseClient.auth.getSession().then(async function(result) {
@@ -125,7 +154,7 @@ function startAuthenticatedApp(callback) {
       saAuthUser = null;
     }
     renderAuthUser(saAuthUser);
-    if (!saAuthUser) setAuthGateState('ready', 'Sign in with Google to continue.');
+    if (!saAuthUser && !__saManagerLinkMode) setAuthGateState('ready', 'Sign in with Google to continue.');
   }).catch(function(error) {
     console.error('Supabase auth session', error);
     setAuthGateState('error', 'We could not check your sign-in. Please refresh and try again.');
