@@ -11,7 +11,8 @@
     "test": "node --test scripts/*.test.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs",
     "scrape:pnet": "node scripts/scrape-pnet.mjs",
-    "scrape:agency-sites": "node scripts/scrape-agency-sites.mjs"
+    "scrape:agency-sites": "node scripts/scrape-agency-sites.mjs",
+    "scrape:graduates24": "node scripts/scrape-graduates24.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
