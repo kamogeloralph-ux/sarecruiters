@@ -31,6 +31,7 @@ const MIME = {
   '.md': 'text/plain; charset=utf-8',
   '.toml': 'text/plain; charset=utf-8',
   '.zip': 'application/zip',
+  '.pdf': 'application/pdf',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
