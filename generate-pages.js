@@ -480,7 +480,7 @@ ${vacancy.closing_date ? `<strong>Closing date:</strong> ${escapeHtml(vacancy.cl
 ${vacancy.notes ? `<h2>Details</h2><p>${escapeHtml(vacancy.notes).replace(/\n/g, '<br>')}</p>` : ''}
 ${
   vacancy.link
-    ? `<p><a href="${escapeHtml(vacancy.link)}" rel="nofollow">Apply for this role →</a></p>`
+    ? `<p><a class="sp-apply" href="${escapeHtml(vacancy.link)}" rel="nofollow">Apply for this role →</a></p>`
     : '<p>To apply, visit the SA Recruiters app and use the contact details on the agency listing.</p>'
 }
 `;

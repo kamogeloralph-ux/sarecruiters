@@ -17,7 +17,7 @@
 .auth-gate-logo{width:82px;height:82px;border:3px solid rgba(255,255,255,.72);border-radius:24px;margin:0 auto 22px;box-shadow:0 12px 28px rgba(0,14,45,.28),0 0 0 7px rgba(255,255,255,.08);}
 .auth-gate-card h1{font-size:29px;letter-spacing:-.045em;line-height:1.08;}
 .auth-gate-card>p{max-width:310px;margin:12px auto 25px;color:rgba(255,255,255,.78);font-size:13.5px;line-height:1.55;}
-#google-sign-in{min-height:52px;border:1px solid rgba(10,35,80,.08);border-radius:16px;background:#fff;color:#172238;font-size:14px;font-weight:800;box-shadow:0 10px 22px rgba(0,18,58,.2);}
+#google-sign-in{min-height:52px;border:1px solid rgba(10,35,80,.08);border-radius:14px;background:#fff;color:#172238;font-size:14px;font-weight:800;box-shadow:0 10px 22px rgba(0,18,58,.2);}
 #google-sign-in:hover{background:#f7fbff;transform:translateY(-1px);box-shadow:0 13px 25px rgba(0,18,58,.25);}
 #auth-gate-status{margin-top:14px;color:rgba(255,255,255,.74);font-size:11.5px;}
 .auth-gate-privacy{margin-top:22px!important;color:rgba(255,255,255,.53)!important;font-size:10.5px!important;}
@@ -65,8 +65,8 @@
 .vac-save.saved{background:rgba(10,132,255,.18);}
 .vac-detail-inner{padding:0 12px 14px;border-top:1px solid rgba(10,132,255,.11);}
 .vac-detail-icon{background:var(--ios-blue-soft);color:var(--ios-blue);}
-.vac-apply{background:linear-gradient(145deg,var(--ios-blue),var(--ios-blue-deep));border-radius:14px;box-shadow:0 7px 16px rgba(10,132,255,.22);}
-.vac-apply-secondary{background:linear-gradient(145deg,#30d158,#168b3b);}
+.vac-apply{background:linear-gradient(135deg,var(--accent) 0%,color-mix(in srgb,var(--accent) 76%,#000) 100%);border-radius:14px;box-shadow:0 10px 22px -10px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .18s var(--ease),filter .18s;}
+.vac-apply-secondary{background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);box-shadow:none;}
 .vac-close-btn{border-radius:14px;}
 .vac-result-meta{color:var(--ios-blue-deep);}
 .vac-load-more{border-color:var(--ios-blue-line);background:var(--ios-blue-soft);color:var(--ios-blue);border-radius:15px;}
@@ -89,6 +89,16 @@
   .vacancy-directory-group,.vacancy-overview-section{border-radius:19px;margin-left:0;margin-right:0;}
   #screen-allagencies .hub-list,#screen-allemployers .hub-list{border-radius:19px;}
 }
+
+
+/* ================================================================
+   UNIFIED SECTION HEADERS — every pushed screen (directory lists,
+   admin tools, manager modes) shares the same header layout: one
+   back control on the left, section title beside it, actions right.
+   ================================================================ */
+.vac-simple-header{display:flex;align-items:center;gap:10px}
+.vac-simple-header .logo-text{flex:1 1 auto}
+.screen:not(#screen-home) header .screen-close-btn{order:99}
 
 /* Keep every vacancy category on the same card surface as General Vacancies.
    Category sections are grouping markup only; they must not change card width,
