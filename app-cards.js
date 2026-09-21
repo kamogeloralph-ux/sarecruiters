@@ -792,8 +792,8 @@ function renderSaved() {
 // ----- Employer posters (swipeable poster feed) -----
 // A poster is a full recruitment-ad image an employer/agency uploads,
 // distinct from the small company_photo logo shown on a vacancyCard.
-// Multiple posters render as a horizontally swipeable, scroll-snapped
-// strip (see .poster-feed in styles.css).
+// Posters render as a vertical list on their own screen (screen-allposters),
+// separate from vacancies (see .poster-list in styles.css).
 var postersCache = [];
 
 function posterCard(p) {
@@ -808,13 +808,15 @@ function posterCard(p) {
 
 function renderPosterFeed(posters) {
   var container = document.getElementById('poster-feed');
-  if (!container) return;
   postersCache = posters || [];
-  if (!postersCache.length) {
-    container.innerHTML = '<div class="poster-feed-empty">No posters right now — check back soon.</div>';
+  if (!container) return;
+  var q = ((document.getElementById('allposters-search') || {}).value || '').trim().toLowerCase();
+  var list = q ? postersCache.filter(function(p){ return (p.caption || '').toLowerCase().indexOf(q) !== -1; }) : postersCache;
+  if (!list.length) {
+    container.innerHTML = '<div class="poster-feed-empty">' + (q ? 'No posters match your search.' : 'No posters right now — check back soon.') + '</div>';
     return;
   }
-  container.innerHTML = postersCache.map(posterCard).join('');
+  container.innerHTML = list.map(posterCard).join('');
 }
 
 async function loadPosterFeed() {
