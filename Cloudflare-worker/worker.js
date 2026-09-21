@@ -833,6 +833,80 @@ var worker_default = {
         });
         return json({ ok: true, email }, 200, origin);
       }
+      // ---------- Employer self-service registration (no Google sign-in, no Talent Pool profile) ----------
+      // A brand-new employer registers here and gets back a working Smart
+      // Manager link (manage_token) for the row this same call created —
+      // see public_register_employer() for why that's safe even though
+      // manage_token is otherwise locked down from anon reads.
+      if (path === "/api/submit/employer-register" && request.method === "POST") {
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const body = await request.json().catch(() => ({}));
+        const name = String(body.name || "").trim().slice(0, 200);
+        if (!name) return json({ error: "Add at least the company name." }, 400, origin);
+        const id = String(body.id || (Date.now().toString(36) + Math.random().toString(36).slice(2)));
+        let rows;
+        try {
+          rows = await supabaseRpc(env, "public_register_employer", {
+            p_id: id,
+            p_name: name,
+            p_industry: String(body.industry || "").slice(0, 200),
+            p_website: String(body.website || "").slice(0, 300),
+            p_contact: String(body.contact || "").slice(0, 200),
+            p_email: String(body.email || "").slice(0, 200),
+            p_location: String(body.location || "").slice(0, 200),
+            p_address: String(body.address || "").slice(0, 300),
+            p_photo: body.photo ? String(body.photo).slice(0, 500000) : null
+          });
+        } catch (e) {
+          const closed = /closed/i.test(e.detail || "");
+          return json({ error: closed ? "Employer self-registration is currently closed — please contact SA Recruiters directly." : "Could not register your company. Please try again." }, closed ? 403 : 502, origin);
+        }
+        const row = Array.isArray(rows) ? rows[0] : null;
+        if (!row || !row.manage_token) return json({ error: "Registration failed — please try again." }, 502, origin);
+        const managerLink = `${origin || "https://sa-recruiters.co.za"}/?manage_employer=${row.manage_token}`;
+        let email = { sent: false };
+        if (body.email) {
+          email = await sendNotificationEmail(env, {
+            to_email: String(body.email),
+            email_subject: "SA Recruiters | Your employer Manager Link",
+            notification_type: "EMPLOYER MANAGER LINK",
+            notification_title: "Welcome to SA Recruiters",
+            notification_intro: "Your company has been registered. Save this link \u2014 it's how you manage your listing and post vacancies. Treat it like a password: don't share it publicly.",
+            notification_body: "Manager Link: " + managerLink
+          });
+        }
+        return json({ ok: true, manage_token: row.manage_token, manager_link: managerLink, email }, 200, origin);
+      }
+      // Resend a lost Manager Link by registered email. Always returns the
+      // same generic response whether or not a match was found, so this
+      // can't be used to probe which emails belong to registered employers.
+      if (path === "/api/employer/resend-link" && request.method === "POST") {
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const body = await request.json().catch(() => ({}));
+        const emailAddr = String(body.email || "").trim();
+        if (!emailAddr) return json({ error: "Add the email you registered with." }, 400, origin);
+        let rows;
+        try {
+          rows = await supabaseRpc(env, "public_resend_employer_link", { p_email: emailAddr });
+        } catch (e) {
+          return json({ error: "Could not look that up. Please try again." }, 502, origin);
+        }
+        const row = Array.isArray(rows) ? rows[0] : null;
+        if (row && row.manage_token) {
+          const managerLink = `${origin || "https://sa-recruiters.co.za"}/?manage_employer=${row.manage_token}`;
+          await sendNotificationEmail(env, {
+            to_email: emailAddr,
+            email_subject: "SA Recruiters | Your Manager Link",
+            notification_type: "EMPLOYER MANAGER LINK",
+            notification_title: "Here's your Manager Link",
+            notification_intro: "As requested, here's the link to manage your SA Recruiters company listing.",
+            notification_body: "Manager Link: " + managerLink
+          });
+        }
+        return json({ ok: true }, 200, origin);
+      }
       if (path === "/api/generate-cv" && request.method === "POST") {
         // Require a signed-in SA Recruiters user (the app is auth-gated
         // already) so the Gemini quota isn't open to anonymous scraping.
