@@ -1011,9 +1011,11 @@ async function submitPoolRegistration() {
   } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent=defaultBtnLabel; } return; }
   if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
   rememberTalentPoolIdentity(phone, email);
+  if (!saAuthUser) { try { localStorage.setItem('sa_gate_registration_pending', '1'); } catch(e){} }
   verifyTalentPoolMembership(phone, email, true);
   trackEvent('candidate_registration_submitted', 'candidate', null, { alert_opt_in: alertOptIn });
   closeSheet('pool-register-overlay');
+  if (!saAuthUser && typeof setAuthGateState === 'function') setAuthGateState('ready', 'Registration received — now sign in with Google to continue.');
   showToast('Registration received — you\'ll go live once it\'s reviewed.');
 }
 

@@ -110,7 +110,7 @@ function startAuthenticatedApp(callback) {
       saAuthStarted = false;
       __saAuthReady = false;
       showAuthGate();
-      setAuthGateState('ready', 'Sign in with Google to continue.');
+      setAuthGateState('ready', 'Register for the Talent Pool, or sign in with Google.');
     }
   });
   supabaseClient.auth.getSession().then(async function(result) {
