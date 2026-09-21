@@ -264,6 +264,20 @@ window.switchEmpHubTab = function(btn, employerId, tab) {
 
 var directoryReturnScreen = 'home';
 
+// Gate sign-in policy helpers (registration-first).
+// gateRegistrationPending(): a Talent Pool registration was submitted on
+// this device and is (or was) awaiting account linking — the visitor may
+// sign in. Survives reloads via localStorage, so a registered user who
+// signs out can always sign back in.
+function gateRegistrationPending() {
+  try { return !!localStorage.getItem('sa_gate_registration_pending'); } catch(e) { return false; }
+}
+// gateSignInExempt(): manager token links (?manage= / ?manage_employer=)
+// invite agencies and employers directly — they are not Talent Pool
+// candidates and must reach sign-in without registering.
+function gateSignInExempt() {
+  try { var p = new URLSearchParams(window.location.search); return !!(p.get('manage') || p.get('manage_employer')); } catch(e) { return false; }
+}
 function talentPoolIdentityRecord() {
   try { return JSON.parse(localStorage.getItem('sa_pool_identity') || 'null'); } catch(e) { return null; }
 }
@@ -297,12 +311,12 @@ async function restoreTalentPoolMembership() {
 // openMyPoolProfile() remains the manual fallback.
 async function autoClaimGateRegistration() {
   if (!saAuthUser || !supabaseClient) return;
-  try { if (localStorage.getItem('sa_gate_registration_pending') !== '1') return; } catch(e) { return; }
+  try { if (localStorage.getItem('sa_gate_registration_pending') !== 'pending') return; } catch(e) { return; }
   var identity = talentPoolIdentityRecord();
   if (!identity || !identity.email || !identity.phone) return;
   try {
     var claim = await supabaseClient.rpc('candidate_claim_profile', { p_email: identity.email, p_phone: identity.phone });
-    if (!claim.error && claim.data) { try { localStorage.removeItem('sa_gate_registration_pending'); } catch(e){} }
+    if (!claim.error && claim.data) { try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e){} }
   } catch(e) { /* manual link via My Talent Pool profile still works */ }
 }
 function openEmployerDirectoryAccessMessage() {
