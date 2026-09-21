@@ -320,19 +320,46 @@ async function upsertJobs(jobs) {
 export async function runRetailGroupScraper() {
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   const results = { picknpay: 0, boxer: 0, cashbuild: 0, shoprite: 0, spar: 0 };
-  const summaries = await fetchPickNPayJobs();
-  results.picknpay = await upsertJobs(await fetchDetails(summaries));
-  results.boxer = await upsertJobs(await fetchBoxerJobs());
-  results.cashbuild = await upsertJobs(await fetchCashbuildJobs());
+  let failures = 0;
+
+  // Each retailer source is isolated: PNP uses Workday, Boxer its own
+  // eRecruit portal, Cashbuild a third API -- three unrelated integrations
+  // that can each break independently (an API shape change, a timeout, a
+  // site outage). Previously an exception from any one of them propagated
+  // straight out of this function and failed the whole run before the
+  // other two ever got a chance to scrape -- one broken source was taking
+  // down vacancies that were otherwise scraping fine. Each source now gets
+  // its own try/catch so a single failure only zeroes that source's count
+  // and still marks the run as failed (exit code 1) for visibility.
+  try {
+    const summaries = await fetchPickNPayJobs();
+    results.picknpay = await upsertJobs(await fetchDetails(summaries));
+  } catch (error) {
+    failures += 1;
+    console.error(`[retail:pnp] source failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  try {
+    results.boxer = await upsertJobs(await fetchBoxerJobs());
+  } catch (error) {
+    failures += 1;
+    console.error(`[retail:boxer] source failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  try {
+    results.cashbuild = await upsertJobs(await fetchCashbuildJobs());
+  } catch (error) {
+    failures += 1;
+    console.error(`[retail:cashbuild] source failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
   // Shoprite's public store portal is currently a registration/talent-pool flow,
   // not a public vacancy feed. SPAR directs applicants to Pnet; do not duplicate
   // or scrape it here while the Pnet source is being replaced.
   console.log('[retail:shoprite] skipped: no public store-vacancy feed exposed');
   console.log('[retail:spar] skipped: retailer directs vacancies to Pnet');
-  return results;
+  return { ...results, failures };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const results = await runRetailGroupScraper();
   console.log(`[retail] completed: ${JSON.stringify(results)}`);
+  if (results.failures) process.exitCode = 1;
 }
