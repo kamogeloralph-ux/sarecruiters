@@ -111,3 +111,37 @@ test('classifySite: no candidates at all -> skipped_unreachable', async () => {
   const result = classifySite([]);
   assert.equal(result.status, 'skipped_unreachable');
 });
+
+test('tier A: card scan ignores blog/article cards mixed in with real job cards', () => {
+  const html = `
+    <article>
+      <h3><a href="/career-advice/how-to-prepare-for-a-technical-assessment-test">How to Prepare for a Technical Assessment Test?</a></h3>
+    </article>
+    <div class="job">
+      <h3><a href="/vacancies/senior-financial-accountant">Senior Financial Accountant</a></h3>
+      <span class="job-location">Cape Town</span>
+    </div>`;
+  const jobs = parseAgencySiteJobs(html, site);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Senior Financial Accountant');
+});
+
+test('tier A: anchor-scan fallback excludes blog/insights/career-advice links even when they mention "career"', () => {
+  const html = `
+    <div class="listing">
+      <a href="/insights/why-cape-town-is-a-fintech-powerhouse">Why Cape Town is a Financial & FinTech Powerhouse</a>
+      <a href="/career-advice/top-roles-in-admin-recruitment-today">Top Roles in Admin Recruitment Today</a>
+      <a href="/jobs/warehouse-supervisor-pe">Warehouse Supervisor - Port Elizabeth</a>
+    </div>`;
+  const jobs = parseAgencySiteJobs(html, site);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Warehouse Supervisor - Port Elizabeth');
+});
+
+test('tier A: rejects headline-shaped titles (How/Why/Top/question marks) even under a job-like href', () => {
+  const html = `
+    <div class="job">
+      <h3><a href="/jobs/why-you-should-consider-a-career-change">Why You Should Consider a Career Change</a></h3>
+    </div>`;
+  assert.deepEqual(parseAgencySiteJobs(html, site), []);
+});
