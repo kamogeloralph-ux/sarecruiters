@@ -39,6 +39,8 @@
      Talent Pool sheet's scrim carries the same blue backdrop — a seamless
      handoff, and toasts/keyboard stay visible above the form. */
   body.gate-registering #auth-gate{display:none}
+  body.gate-registering #app-splash{display:none}
+  body.gate-registering #pool-register-overlay{visibility:visible}
   body.gate-registering #pool-register-overlay{visibility:visible;background-color:#050C1E;background-image:radial-gradient(120% 90% at 12% 42%,rgba(10,132,255,.30),transparent 55%),radial-gradient(90% 70% at 88% 18%,rgba(90,160,255,.14),transparent 55%),linear-gradient(160deg,#0A1B3F 0%,#071228 46%,#040A1A 100%)}
   body.gate-registering .toast{visibility:visible}
   /* Stay invisible while we're still checking for an existing session
@@ -59,6 +61,7 @@
   .gate-brand-badge img{width:100%;height:100%;object-fit:cover;display:block}
   .gate-brand-name{display:flex;flex-direction:column;line-height:1.14;font-weight:600;font-size:16.5px;letter-spacing:-.01em;color:#EAF2FF}
   .gate-brand-name small{font-size:10.5px;font-weight:600;letter-spacing:.22em;color:rgba(230,240,255,.66)}
+  .gate-brand-name small.gate-brand-slogan{font-size:10px;font-weight:500;letter-spacing:.02em;text-transform:none;color:rgba(230,240,255,.6);margin-top:2px;max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .gate-trust-pill{flex-shrink:0;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(230,240,255,.82);border:1px solid rgba(230,240,255,.26);border-radius:999px;padding:8px 14px;backdrop-filter:blur(6px)}
   /* Primary action: Talent Pool registration, using the app's blue gradient. */
   .gate-register-btn{display:flex;align-items:center;justify-content:center;gap:9px;height:54px;border:none;border-radius:999px;background:linear-gradient(135deg,#0A84FF,#0051D5);color:#fff;font-family:inherit;font-size:15.5px;font-weight:800;letter-spacing:-.01em;box-shadow:0 16px 36px -12px rgba(10,132,255,.65);cursor:pointer;transition:transform .18s var(--ease),filter .18s}
@@ -177,7 +180,7 @@
   <div class="gate-brandbar">
     <div class="gate-brand">
       <span class="gate-brand-badge" aria-hidden="true"><img src="icons/v2-icon-192.png" alt="" width="44" height="44"></span>
-      <span class="gate-brand-name">SA Recruiters</span>
+      <span class="gate-brand-name">SA Recruiters<small class="gate-brand-slogan">Connecting South Africa's Recruitment Community.</small></span>
     </div>
     <span class="gate-trust-pill">Trusted Directory</span>
   </div>
@@ -1182,7 +1185,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=9677d6a522" defer></script>
+<script src="app.bundle.min.js?v=ad25fbf982" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

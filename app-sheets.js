@@ -848,6 +848,7 @@ async function deleteMyPoolProfile() {
   } catch(e) { console.error('pool self delete', e); showToast('Could not remove your profile — please try again.'); if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = 'Remove my profile'; } return; }
   if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = 'Remove my profile'; }
   editingPoolCandidateId = null;
+  try { localStorage.removeItem('sa_gate_registration_pending'); } catch(e){}
   closeSheet('pool-register-overlay');
   showToast('Your Talent Pool profile has been removed.');
   poolLoaded = false; // force a fresh load next time the list is viewed
@@ -917,6 +918,18 @@ async function submitPoolRegistration() {
     closeSheet('pool-register-overlay');
     showToast('Your Talent Pool profile has been updated.');
     poolLoaded = false; // force a fresh load next time the list is viewed
+    return;
+  }
+
+  // ----- New registration: a user re-entering details on a fresh device
+  // may already be a verified member — register nothing, just mark the
+  // device and send them to sign-in (prevents duplicate rows).
+  var alreadyMember = await verifyTalentPoolMembership(phone, email, true);
+  if (alreadyMember) {
+    try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e){}
+    closeSheet('pool-register-overlay');
+    if (!saAuthUser && typeof setAuthGateState === 'function') setAuthGateState('ready', 'You are already registered — sign in with Google to continue.');
+    showToast('You are already registered — sign in with Google.');
     return;
   }
 
@@ -1011,7 +1024,7 @@ async function submitPoolRegistration() {
   } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent=defaultBtnLabel; } return; }
   if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
   rememberTalentPoolIdentity(phone, email);
-  if (!saAuthUser) { try { localStorage.setItem('sa_gate_registration_pending', '1'); } catch(e){} }
+  try { localStorage.setItem('sa_gate_registration_pending', 'pending'); } catch(e){}
   verifyTalentPoolMembership(phone, email, true);
   trackEvent('candidate_registration_submitted', 'candidate', null, { alert_opt_in: alertOptIn });
   closeSheet('pool-register-overlay');
