@@ -940,7 +940,7 @@ var worker_default = {
         if (bytes.byteLength > MAX_PHOTO_BYTES) {
           return json({ error: "Photo too large (max 3MB)." }, 413, origin);
         }
-        const allowedPrefixes = ["candidate-photos", "agency-logos", "employer-logos"];
+        const allowedPrefixes = ["candidate-photos", "agency-logos", "employer-logos", "vacancy-photos"];
         const reqPrefix = url.searchParams.get("prefix");
         const prefix = allowedPrefixes.includes(reqPrefix) ? reqPrefix : "candidate-photos";
         const key = `${prefix}/${randomKey()}.jpg`;
