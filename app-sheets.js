@@ -788,6 +788,14 @@ function setPoolSheetEditMode(isEdit) {
   if (submitBtn) submitBtn.textContent = isEdit ? 'Save changes' : 'Submit registration';
   var deleteBtn = document.getElementById('pool-delete-btn');
   if (deleteBtn) deleteBtn.style.display = isEdit ? 'block' : 'none';
+  // New joiners land on a quick, minimal form — the optional Mini-CV
+  // section starts collapsed so signing up feels fast. Editing an existing
+  // profile opens it straight away since that's the whole point of coming
+  // back here.
+  var miniCv = document.getElementById('pool-minicv-details');
+  if (miniCv) miniCv.open = !!isEdit;
+  var laterNote = document.getElementById('pool-finish-later-note');
+  if (laterNote) laterNote.style.display = isEdit ? 'none' : 'block';
 }
 
 function openPoolRegisterSheet() {
