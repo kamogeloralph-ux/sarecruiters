@@ -269,12 +269,47 @@ export async function discoverGovernmentVacancies(options = {}) {
   return jobs;
 }
 
+// Supabase client requests run under the `authenticator` Postgres role,
+// which has statement_timeout=8s (confirmed via pg_roles) -- that applies
+// to the whole session even after the client switches to service_role, so
+// it isn't something the service-role key bypasses. A single upsert() call
+// with the full discovered batch (5,900+ rows for a busy year) is one
+// INSERT ... ON CONFLICT statement checking uniqueness across `id` and the
+// lower(trim(...)) exact-source index for every row, which comfortably
+// blows past 8 seconds and gets killed with "canceling statement due to
+// statement timeout". Chunking (mirrors sync-oracle.mjs's upsertJobs)
+// keeps each statement well under the timeout; a chunk that still fails
+// retries row by row so one bad row is reported by id instead of losing
+// the whole chunk silently.
+const GOVERNMENT_UPSERT_CHUNK_SIZE = parsePositiveInt(process.env.GOVERNMENT_UPSERT_CHUNK_SIZE, 40);
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+function formatError(error) {
+  return error?.message || String(error);
+}
+
 export async function upsertGovernmentVacancies(vacancies) {
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   if (!vacancies.length) return 0;
-  const { error } = await supabase.from('vacancies').upsert(vacancies, { onConflict: 'id' });
-  if (error) throw error;
-  return vacancies.length;
+  let saved = 0;
+  const failures = [];
+  for (let i = 0; i < vacancies.length; i += GOVERNMENT_UPSERT_CHUNK_SIZE) {
+    const chunk = vacancies.slice(i, i + GOVERNMENT_UPSERT_CHUNK_SIZE);
+    const { error } = await supabase.from('vacancies').upsert(chunk, { onConflict: 'id' });
+    if (!error) { saved += chunk.length; continue; }
+    console.error(`[government] batch ${i}-${i + chunk.length - 1} rejected: ${formatError(error)} -- retrying row by row`);
+    for (const vacancy of chunk) {
+      const { error: rowError } = await supabase.from('vacancies').upsert(vacancy, { onConflict: 'id' });
+      if (rowError) {
+        failures.push({ id: vacancy.id, error: formatError(rowError) });
+        if (failures.length <= 5) console.error(`[government] row ${vacancy.id} failed: ${formatError(rowError)}`);
+      } else saved += 1;
+    }
+  }
+  if (failures.length) console.error(`[government] ${failures.length} row(s) failed to upsert out of ${vacancies.length}`);
+  return saved;
 }
 
 async function main() {
