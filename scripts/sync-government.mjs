@@ -168,9 +168,23 @@ export function parseGovernmentPdfText(text, { circularNumber, year, pdfUrl, sou
         duties ? `Duties: ${duties}` : '',
         `Government vacancy from Public Service Vacancy Circular ${circularNumber} of ${year}.`,
       ].filter(Boolean).join(' ')).slice(0, 12000);
+      // vacancies_exact_source_unique_idx is unique on (agency_id,
+      // lower(title), lower(location), lower(link)) -- not on id. A single
+      // combined circular PDF is the `link` for every post inside it, and
+      // it's routine for the same department to advertise the same job
+      // title at the same centre more than once (e.g. two posts of
+      // "ADMINISTRATION CLERK" at "Gauteng: Pretoria" under different REF
+      // numbers). Those are genuinely different vacancies -- different id,
+      // different REF/requirements -- but with an identical
+      // (title, location, link) tuple they collide on that index and abort
+      // the whole batch upsert. Tagging the link with this post's own
+      // official post number (always present, unique within the circular)
+      // keeps the same underlying PDF as the apply target while making the
+      // tuple unique per post, without touching the unrelated `id` field.
+      const postLink = `${pdfUrl}#post=${encodeURIComponent(postNumber)}`;
       jobs.push({
         id, title, company, location: centre || 'South Africa', closing_date: closingDate,
-        notes, link: pdfUrl, agency_id: 'general', source_type: 'government',
+        notes, link: postLink, agency_id: 'general', source_type: 'government',
         source_checked_at: new Date().toISOString(), last_verified_at: new Date().toISOString(),
         created_at: closingDate ? new Date(`${closingDate}T00:00:00.000Z`).toISOString() : new Date().toISOString(),
       });
