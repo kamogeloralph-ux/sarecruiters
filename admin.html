@@ -389,7 +389,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <!-- VACANCIES -->
       <div class="section section-manage" id="sec-vacancies">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
-        <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="renderVacancies()">
+        <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="debouncedRenderVacancies()">
         <div id="va-list"></div>
       </div>
 
@@ -818,6 +818,14 @@ var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
 var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [] };
+function debounce(fn, ms){
+  var t = null;
+  return function(){
+    var args = arguments, ctx = this;
+    clearTimeout(t);
+    t = setTimeout(function(){ fn.apply(ctx, args); }, ms);
+  };
+}
 var editing = { agency: null, branch: null, vacancy: null, employer: null, article: null, articleSection: null };
 var pendingPhoto = null;
 var pendingPhotoBlob = null;
@@ -972,20 +980,26 @@ async function getBranches(){
   return data || [];
 }
 async function getVacancies(){
-  // See app-data.js getVacancies() — Supabase/PostgREST silently caps a single
-  // request at 1000 rows, so this needs to page through in batches rather
-  // than assume one select() returns everything.
+  // Get the total count first, then fire all the range() pages in parallel
+  // instead of awaiting them one at a time — with ~9000 rows that was 9
+  // sequential round trips (each waiting on the last) just to open the
+  // admin panel. Supabase/PostgREST still caps a single request at 1000
+  // rows, so paging itself is still required, just no longer serial.
   try {
     var PAGE_SIZE = 1000;
+    var countRes = await supabaseClient.from('vacancies').select('id', { count: 'exact', head: true });
+    if (countRes.error) throw countRes.error;
+    var total = countRes.count || 0;
+    var cols = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+    var pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    var pages = await Promise.all(Array.from({length: pageCount}, function(_, i){
+      var from = i * PAGE_SIZE;
+      return supabaseClient.from('vacancies').select(cols).order('created_at',{ascending:false}).range(from, from + PAGE_SIZE - 1);
+    }));
     var all = [];
-    var from = 0;
-    while (true) {
-      var { data, error } = await supabaseClient.from('vacancies').select('id,agency_id,employer_id,title,company,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at').order('created_at',{ascending:false}).range(from, from + PAGE_SIZE - 1);
-      if (error) throw error;
-      if (!data || !data.length) break;
-      all = all.concat(data);
-      if (data.length < PAGE_SIZE) break;
-      from += PAGE_SIZE;
+    for (var i = 0; i < pages.length; i++) {
+      if (pages[i].error) throw pages[i].error;
+      all = all.concat(pages[i].data || []);
     }
     return all;
   } catch(e){}
@@ -2068,35 +2082,72 @@ async function purgeExpiredVacancies(){
   cache.vacancies = cache.vacancies.filter(function(v){ return ids.indexOf(v.id) === -1; });
   return true;
 }
+function buildVacancyDetailsHtml(v){
+  var ag = agencyById(v.agency_id);
+  var emp = v.employer_id ? employerById(v.employer_id) : null;
+  var details = '';
+  if(ag && ag.name) details += '<div class="det-row"><span class="det-label">Agency:</span> '+escapeHtml(ag.name)+'</div>';
+  if(emp && emp.name) details += '<div class="det-row"><span class="det-label">Employer:</span> '+escapeHtml(emp.name)+(emp.verified?' ✓ Verified':'')+'</div>';
+  if(v.company) details += '<div class="det-row"><span class="det-label">Company:</span> '+escapeHtml(v.company)+'</div>';
+  if(v.location) details += '<div class="det-row"><span class="det-label">Location:</span> '+escapeHtml(v.location)+'</div>';
+  if(v.remote) details += '<div class="det-row"><span class="det-label">Work arrangement:</span> '+escapeHtml(v.remote)+'</div>';
+  if(v.employment_type) details += '<div class="det-row"><span class="det-label">Type:</span> '+escapeHtml(v.employment_type)+'</div>';
+  if(v.experience_level) details += '<div class="det-row"><span class="det-label">Experience:</span> '+escapeHtml(v.experience_level)+'</div>';
+  if(v.contract_type) details += '<div class="det-row"><span class="det-label">Contract:</span> '+escapeHtml(v.contract_type)+'</div>';
+  if(v.salary) details += '<div class="det-row"><span class="det-label">Salary:</span> '+escapeHtml(v.salary)+'</div>';
+  if(v.hours) details += '<div class="det-row"><span class="det-label">Hours:</span> '+escapeHtml(v.hours)+'</div>';
+  if(v.work_schedule) details += '<div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(v.work_schedule)+'</div>';
+  if(v.start_date) details += '<div class="det-row"><span class="det-label">Start:</span> '+escapeHtml(v.start_date)+'</div>';
+  if(v.closing_date) details += '<div class="det-row"><span class="det-label">Closing:</span> '+escapeHtml(v.closing_date)+'</div>';
+  if(v.created_at){ var dl = vacancyDaysLeft(v); details += '<div class="det-row"><span class="det-label">Auto-deletes:</span> '+(dl!==null && dl<=0 ? 'Pending removal (expired)' : new Date(new Date(v.created_at).getTime()+VACANCY_TTL_DAYS*86400000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'})+' ('+dl+'d left)')+'</div>'; }
+  if(v.notes) details += '<div class="det-row"><span class="det-label">Notes:</span> '+escapeHtml((v.notes||'').replace(/<[^>]+>/g,'').slice(0,200))+'</div>';
+  if(v.link) details += '<div class="det-row"><span class="det-label">Link:</span> '+escapeHtml(v.link)+'</div>';
+  if(v.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(v.email)+'</div>';
+  if(v.phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(v.phone)+'</div>';
+  return details || '<div class="det-row muted">No additional details</div>';
+}
+// Expanding one row of thousands used to pre-build every row's detail HTML
+// (agency/employer lookups, TTL calc, escaping ~18 fields) up front for the
+// whole list on every render. Now that HTML is only built the moment a row
+// is actually opened, and cached on the row so re-opening it is free.
+function toggleVacancyRow(rowEl){
+  var container = rowEl.parentNode;
+  container.querySelectorAll('.row-item.expanded').forEach(function(r){ if(r!==rowEl) r.classList.remove('expanded'); });
+  rowEl.classList.toggle('expanded');
+  if(rowEl.classList.contains('expanded')){
+    var detailsEl = rowEl.nextElementSibling;
+    var slot = detailsEl && detailsEl.querySelector('.row-details-slot');
+    if(slot && slot.dataset.built !== '1'){
+      var v = cache.vacancies.find(function(x){ return x.id === rowEl.dataset.vid; });
+      slot.innerHTML = v ? buildVacancyDetailsHtml(v) : '<div class="det-row muted">Vacancy not found</div>';
+      slot.dataset.built = '1';
+    }
+  }
+}
+var VACANCIES_PAGE_SIZE = 150;
+var vacanciesShown = VACANCIES_PAGE_SIZE;
+var vacanciesLastQuery = null;
+function debouncedRenderVacancies(){ debounce(renderVacancies, 200)(); }
+function loadMoreVacancies(){ vacanciesShown += VACANCIES_PAGE_SIZE; renderVacancies(); }
 function renderVacancies(){
   var q = (document.getElementById('va-search').value||'').trim().toLowerCase();
-  var list = cache.vacancies.slice().map(function(v){ v._ag = agencyById(v.agency_id); v._emp = v.employer_id ? employerById(v.employer_id) : null; return v; });
-  if(q){ list = list.filter(function(v){ var hay=((v.title||'')+' '+(v.company||'')+' '+(v.location||'')+' '+(v.notes||'')+((v._ag&&v._ag.name)||'')+((v._emp&&v._emp.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  // Reset how many rows are shown only when the search itself changes, so
+  // "Load more" clicks (which re-render with the same query) don't get
+  // stomped back down to the first page.
+  if(q !== vacanciesLastQuery){ vacanciesShown = VACANCIES_PAGE_SIZE; vacanciesLastQuery = q; }
+  var list = cache.vacancies;
+  if(q){ list = list.filter(function(v){ var ag=agencyById(v.agency_id); var emp=v.employer_id?employerById(v.employer_id):null; var hay=((v.title||'')+' '+(v.company||'')+' '+(v.location||'')+' '+(v.notes||'')+((ag&&ag.name)||'')+((emp&&emp.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   var el = document.getElementById('va-list');
   if(!list.length){ el.innerHTML = emptyState('No vacancies','Add a vacancy or adjust your search.'); return; }
-  el.innerHTML = list.map(function(v){
-    var sub = [v.location, v.company, (v._ag&&v._ag.name), (v._emp&&v._emp.name?v._emp.name+' (Employer)':null), v.closing_date?('closes '+v.closing_date):null].filter(Boolean).join(' · ');
-    var details = '';
-    if(v._ag && v._ag.name) details += '<div class="det-row"><span class="det-label">Agency:</span> '+escapeHtml(v._ag.name)+'</div>';
-    if(v._emp && v._emp.name) details += '<div class="det-row"><span class="det-label">Employer:</span> '+escapeHtml(v._emp.name)+(v._emp.verified?' ✓ Verified':'')+'</div>';
-    if(v.company) details += '<div class="det-row"><span class="det-label">Company:</span> '+escapeHtml(v.company)+'</div>';
-    if(v.location) details += '<div class="det-row"><span class="det-label">Location:</span> '+escapeHtml(v.location)+'</div>';
-    if(v.remote) details += '<div class="det-row"><span class="det-label">Work arrangement:</span> '+escapeHtml(v.remote)+'</div>';
-    if(v.employment_type) details += '<div class="det-row"><span class="det-label">Type:</span> '+escapeHtml(v.employment_type)+'</div>';
-    if(v.experience_level) details += '<div class="det-row"><span class="det-label">Experience:</span> '+escapeHtml(v.experience_level)+'</div>';
-    if(v.contract_type) details += '<div class="det-row"><span class="det-label">Contract:</span> '+escapeHtml(v.contract_type)+'</div>';
-    if(v.salary) details += '<div class="det-row"><span class="det-label">Salary:</span> '+escapeHtml(v.salary)+'</div>';
-    if(v.hours) details += '<div class="det-row"><span class="det-label">Hours:</span> '+escapeHtml(v.hours)+'</div>';
-    if(v.work_schedule) details += '<div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(v.work_schedule)+'</div>';
-    if(v.start_date) details += '<div class="det-row"><span class="det-label">Start:</span> '+escapeHtml(v.start_date)+'</div>';
-    if(v.closing_date) details += '<div class="det-row"><span class="det-label">Closing:</span> '+escapeHtml(v.closing_date)+'</div>';
-    if(v.created_at){ var dl = vacancyDaysLeft(v); details += '<div class="det-row"><span class="det-label">Auto-deletes:</span> '+(dl!==null && dl<=0 ? 'Pending removal (expired)' : new Date(new Date(v.created_at).getTime()+VACANCY_TTL_DAYS*86400000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'})+' ('+dl+'d left)')+'</div>'; }
-    if(v.notes) details += '<div class="det-row"><span class="det-label">Notes:</span> '+escapeHtml((v.notes||'').replace(/<[^>]+>/g,'').slice(0,200))+'</div>';
-    if(v.link) details += '<div class="det-row"><span class="det-label">Link:</span> '+escapeHtml(v.link)+'</div>';
-    if(v.email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(v.email)+'</div>';
-    if(v.phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(v.phone)+'</div>';
-    if(!details) details = '<div class="det-row muted">No additional details</div>';
-    return '<div class="row-item" onclick="toggleRow(this)">'+
+  // Rendering all matches at once (thousands of full detail blocks) was the
+  // other half of the slowness — cap the DOM to a page of rows and let
+  // "Load more" pull in the rest, same underlying list either way.
+  var shown = list.slice(0, vacanciesShown);
+  el.innerHTML = shown.map(function(v){
+    var ag = agencyById(v.agency_id);
+    var emp = v.employer_id ? employerById(v.employer_id) : null;
+    var sub = [v.location, v.company, (ag&&ag.name), (emp&&emp.name?emp.name+' (Employer)':null), v.closing_date?('closes '+v.closing_date):null].filter(Boolean).join(' · ');
+    return '<div class="row-item" data-vid="'+v.id+'" onclick="toggleVacancyRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#d97706,#b45309)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(v.title||'Untitled role')+' '+vacancyExpiryBadge(v)+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+'</div></div>'+
       '<div class="row-actions-inline">'+
@@ -2105,13 +2156,14 @@ function renderVacancies(){
       '</div>'+
       '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
       '</div>'+
-      '<div class="row-details">'+details+
+      '<div class="row-details">'+
+        '<div class="row-details-slot" data-built="0"><div class="det-row muted">Loading…</div></div>'+
         '<div class="row-expanded-actions">'+
           '<button class="minibtn full" onclick="stopProp(event);openVacancySheet(\''+v.id+'\')">Edit vacancy</button>'+
           '<button class="minibtn full danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')">Delete</button>'+
         '</div>'+
       '</div>';
-  }).join('');
+  }).join('') + (list.length > shown.length ? '<button class="minibtn full" style="margin:12px 14px" onclick="loadMoreVacancies()">Load '+Math.min(VACANCIES_PAGE_SIZE, list.length-shown.length)+' more ('+(list.length-shown.length)+' remaining)</button>' : '');
 }
 function openVacancySheet(id, employerId){
   editing.vacancy = id || null;
@@ -2178,13 +2230,25 @@ async function saveVacancy(){
     phone:document.getElementById('v-phone').value.trim()
   };
   await upsertVacancy(payload);
-  if (photoUrl) await propagateCompanyPhoto(company, photoUrl);
+  if (photoUrl) {
+    await propagateCompanyPhoto(company, photoUrl);
+    // Mirror the server-side case-insensitive propagation locally so the
+    // list doesn't need a full reload to show it on other rows too.
+    var norm = company.trim().toLowerCase();
+    cache.vacancies.forEach(function(x){ if(x.company && x.company.trim().toLowerCase() === norm) x.company_photo = photoUrl; });
+  }
   var isNewVacancy = !editing.vacancy;
   closeSheet('vacancy-overlay');
   showToast(editing.vacancy ? 'Vacancy updated' : 'Vacancy added');
   if (isNewVacancy) await queueAndSendVacancyAlerts(payload);
   editing.vacancy = null; pendingVacancyPhoto = null; pendingVacancyPhotoBlob = null;
-  await loadAll(); renderNav(); renderVacancies(); renderDashboard();
+  // Patch the in-memory list instead of re-fetching all ~9000 vacancies
+  // from scratch after every single save — that reload (9+ paged requests)
+  // was a big chunk of the admin panel feeling slow.
+  var idx = cache.vacancies.findIndex(function(x){ return x.id === id; });
+  if (idx >= 0) cache.vacancies[idx] = Object.assign({}, cache.vacancies[idx], payload);
+  else cache.vacancies.unshift(Object.assign({created_at: new Date().toISOString()}, payload));
+  renderNav(); renderVacancies(); renderDashboard();
   if (document.getElementById('sec-employers').classList.contains('active')) renderEmployers();
 }
 async function deleteVacancy(id){
@@ -2192,7 +2256,8 @@ async function deleteVacancy(id){
   if(!confirm('Delete "'+(v?v.title:'this vacancy')+'"?')) return;
   await removeVacancy(id);
   showToast('Vacancy deleted');
-  await loadAll(); renderNav(); renderVacancies(); renderDashboard();
+  cache.vacancies = cache.vacancies.filter(function(x){ return x.id !== id; });
+  renderNav(); renderVacancies(); renderDashboard();
   if (document.getElementById('sec-employers').classList.contains('active')) renderEmployers();
 }
 
