@@ -40,6 +40,10 @@ function slugPart(value) {
   return clean(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
+function safeDecodeURIComponent(value) {
+  try { return decodeURIComponent(value); } catch { return value; }
+}
+
 function circularPageUrl(number, year) {
   return `${DPSA_PAGE_BASE}/circular-${number}-of-${year}/`;
 }
@@ -77,7 +81,7 @@ export function parseCircularPage(html, pageUrl) {
     if (!/\.pdf(?:$|\?)/i.test(href)) return;
     links.push({ url: absolutize(href, pageUrl), label: clean($(anchor).text()) });
   });
-  const pdf = links.find((item) => /PSV\s*CIRCULAR/i.test(item.url) || /CIRCULAR/i.test(item.label))?.url || links[0]?.url || '';
+  const pdf = links.find((item) => /PSV\s*CIRCULAR/i.test(safeDecodeURIComponent(item.url)) || /CIRCULAR/i.test(item.label))?.url || links[0]?.url || '';
   if (!pdf) return null;
   const departmentPdfs = links.filter((item) => item.url && item.url !== pdf);
   return {
@@ -101,6 +105,25 @@ function parseDepartmentName(lines) {
   return clean(line?.replace(/^ANNEXURE\s+[A-Z]\s*/i, '') || 'South African Government Department');
 }
 
+// A combined PSV circular PDF (the single "PSV CIRCULAR N of YYYY.pdf" that
+// covers every department) is laid out as one "ANNEXURE <letter>" section
+// per department, each with its own CLOSING DATE and its own run of
+// "POST N/N :" blocks. Splitting on ANNEXURE boundaries first, then
+// deriving department name + closing date PER SECTION (rather than once
+// for the whole document), is what makes this correct for a multi-
+// department combined PDF rather than only for a single-department one.
+// Falls back to treating the whole text as one section when no ANNEXURE
+// markers are present (e.g. a genuinely single-department PDF).
+function splitIntoDepartmentSections(fullText) {
+  const lines = fullText.split('\n');
+  const starts = [];
+  lines.forEach((line, index) => {
+    if (/^ANNEXURE\s+[A-Z]\b/i.test(clean(line))) starts.push(index);
+  });
+  if (!starts.length) return [fullText];
+  return starts.map((start, index) => lines.slice(start, starts[index + 1] || lines.length).join('\n'));
+}
+
 function parsePostBlocks(text) {
   const lines = String(text || '').replace(/\r/g, '').split('\n').map(clean);
   const starts = [];
@@ -117,35 +140,43 @@ function fieldFromBlock(block, label) {
 
 export function parseGovernmentPdfText(text, { circularNumber, year, pdfUrl, sourceFile = '' } = {}) {
   const fullText = String(text || '').replace(/\r/g, '');
-  const lines = fullText.split('\n').map(clean).filter(Boolean);
-  const company = parseDepartmentName(lines);
-  const closingDate = parseDateValue(fullText.match(/CLOSING DATE\s*:?\s*([^\n]+)/i)?.[1] || '');
-  const blocks = parsePostBlocks(fullText);
-  return blocks.map((block, index) => {
-    const header = block.match(/^POST\s+(\d+\/\d+)\s*:\s*([\s\S]*?)(?=\s+REF\s+NO\s*:|\n|$)/i);
-    const postNumber = header?.[1] || `${index + 1}`;
-    const ref = block.match(/REF\s+NO\s*:\s*([^\n]+)/i)?.[1] ? clean(block.match(/REF\s+NO\s*:\s*([^\n]+)/i)[1]) : '';
-    let title = clean(header?.[2] || '').replace(/\s+/g, ' ');
-    if (!title) title = clean(block.split('\n')[0].replace(/^POST\s+[^:]+:\s*/i, ''));
-    const centre = fieldFromBlock(block, 'CENTRE');
-    const salary = fieldFromBlock(block, 'SALARY');
-    const requirements = fieldFromBlock(block, 'REQUIREMENTS');
-    const duties = fieldFromBlock(block, 'DUTIES');
-    const id = `government-${year}-${String(circularNumber).padStart(2, '0')}-${slugPart(sourceFile || 'department')}-${slugPart(postNumber)}-${slugPart(ref).slice(0, 24) || index + 1}`;
-    const notes = clean([
-      ref ? `Reference: ${ref}.` : '',
-      salary ? `Salary: ${salary}.` : '',
-      requirements ? `Requirements: ${requirements}` : '',
-      duties ? `Duties: ${duties}` : '',
-      `Government vacancy from Public Service Vacancy Circular ${circularNumber} of ${year}.`,
-    ].filter(Boolean).join(' ')).slice(0, 12000);
-    return {
-      id, title, company, location: centre || 'South Africa', closing_date: closingDate,
-      notes, link: pdfUrl, agency_id: 'general', source_type: 'government',
-      source_checked_at: new Date().toISOString(), last_verified_at: new Date().toISOString(),
-      created_at: closingDate ? new Date(`${closingDate}T00:00:00.000Z`).toISOString() : new Date().toISOString(),
-    };
-  }).filter((job) => job.title && !/^ANNEXURE|^CONTENTS$/i.test(job.title));
+  const sections = splitIntoDepartmentSections(fullText);
+  const jobs = [];
+  sections.forEach((sectionText, sectionIndex) => {
+    const lines = sectionText.split('\n').map(clean).filter(Boolean);
+    const company = parseDepartmentName(lines);
+    // A combined circular has a CLOSING DATE per department section (they
+    // aren't all the same), so this is read from the section, not the
+    // whole document.
+    const closingDate = parseDateValue(sectionText.match(/CLOSING DATE\s*:?\s*([^\n]+)/i)?.[1] || '');
+    const blocks = parsePostBlocks(sectionText);
+    blocks.forEach((block, index) => {
+      const header = block.match(/^POST\s+(\d+\/\d+)\s*:\s*([\s\S]*?)(?=\s+REF\s+NO\s*:|\n|$)/i);
+      const postNumber = header?.[1] || `${sectionIndex + 1}-${index + 1}`;
+      const ref = block.match(/REF\s+NO\s*:\s*([^\n]+)/i)?.[1] ? clean(block.match(/REF\s+NO\s*:\s*([^\n]+)/i)[1]) : '';
+      let title = clean(header?.[2] || '').replace(/\s+/g, ' ');
+      if (!title) title = clean(block.split('\n')[0].replace(/^POST\s+[^:]+:\s*/i, ''));
+      const centre = fieldFromBlock(block, 'CENTRE');
+      const salary = fieldFromBlock(block, 'SALARY');
+      const requirements = fieldFromBlock(block, 'REQUIREMENTS');
+      const duties = fieldFromBlock(block, 'DUTIES');
+      const id = `government-${year}-${String(circularNumber).padStart(2, '0')}-${slugPart(sourceFile || 'department')}-${slugPart(company).slice(0, 24)}-${slugPart(postNumber)}-${slugPart(ref).slice(0, 24) || `${sectionIndex + 1}-${index + 1}`}`;
+      const notes = clean([
+        ref ? `Reference: ${ref}.` : '',
+        salary ? `Salary: ${salary}.` : '',
+        requirements ? `Requirements: ${requirements}` : '',
+        duties ? `Duties: ${duties}` : '',
+        `Government vacancy from Public Service Vacancy Circular ${circularNumber} of ${year}.`,
+      ].filter(Boolean).join(' ')).slice(0, 12000);
+      jobs.push({
+        id, title, company, location: centre || 'South Africa', closing_date: closingDate,
+        notes, link: pdfUrl, agency_id: 'general', source_type: 'government',
+        source_checked_at: new Date().toISOString(), last_verified_at: new Date().toISOString(),
+        created_at: closingDate ? new Date(`${closingDate}T00:00:00.000Z`).toISOString() : new Date().toISOString(),
+      });
+    });
+  });
+  return jobs.filter((job) => job.title && !/^ANNEXURE|^CONTENTS$/i.test(job.title));
 }
 
 async function fetchBuffer(url) {
@@ -199,7 +230,20 @@ export async function discoverGovernmentVacancies(options = {}) {
   const circulars = await discoverCirculars(options);
   const jobs = [];
   for (const circular of circulars) {
-    for (const department of circular.departmentPdfs || []) {
+    // Most DPSA circular pages expose exactly one PDF -- the combined
+    // circular covering every department in its own ANNEXURE section
+    // (confirmed against a real, previously-successful scrape: the page
+    // only ever linked to "PSV CIRCULAR N of YYYY.pdf", nothing else).
+    // A small number of circulars may additionally publish separate
+    // per-department PDFs -- when they do, prefer those (they're already
+    // split by department, which is easier to parse correctly than
+    // re-splitting the combined PDF). When they don't, fall back to
+    // parsing the combined PDF itself; parseGovernmentPdfText splits it
+    // into per-department ANNEXURE sections on its own.
+    const sources = (circular.departmentPdfs && circular.departmentPdfs.length)
+      ? circular.departmentPdfs
+      : [{ url: circular.link, label: 'Full circular' }];
+    for (const department of sources) {
       try {
         const buffer = await fetchBuffer(department.url);
         if (!buffer) continue;
