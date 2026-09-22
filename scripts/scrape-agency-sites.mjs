@@ -211,14 +211,33 @@ function jobId(siteName, link) {
 // the live listings, so this errs firmly toward skipping.
 const BLOG_PATH_RX = /\/(blog|news|articles?|insights?|resources?|advice|guides?|press|media|about)(\/|-|$)/i;
 const JOB_PATH_RX = /\/(vacanc(y|ies)|jobs?|positions?|openings?|current-vacancies)(\/|-|$)/i;
+// Matches the *index/landing* page for a job section rather than an
+// individual posting -- e.g. "/vacancies", "/vacancies/", "/jobs",
+// "/job-seekers/", "/current-vacancies" with nothing after it. A real
+// posting almost always has a slug or numeric id after the section
+// keyword ("/vacancies/electrician-cape-town", "/jobs/1234"); the bare
+// section root is just navigation to the listing page itself.
+const JOB_SECTION_ROOT_RX = /\/(vacanc(y|ies)|jobs?|careers?|positions?|openings?|current-vacancies|job-seekers?)\/?(\?.*)?(#.*)?$/i;
+// Generic calls-to-action and nav labels that keep getting scraped as if
+// they were a job title, because the text sits right next to (or inside)
+// a link whose href happens to match JOB_PATH_RX. None of these are ever
+// an actual vacancy title.
+const GENERIC_CTA_TITLE_RX = /^(vacanc(y|ies)|jobs?|careers?|positions?|openings?|current vacanc(y|ies)|available jobs?|open vacanc(y|ies)|view( all|s)? jobs?|view job\b|view more vacanc(y|ies)|browse jobs?|search vacanc(y|ies)|job (search|listings?|categories|seekers?|market news)|register( your)? cv( here)?|register now|submit( your)? cv|apply now|explore all fields|career opportunities)$/i;
 function looksLikeJobTitle(title) {
   if (!title || title.length < 4 || title.length > 90) return false;
   if (/\?\s*$/.test(title)) return false;
   if (/^(how|why|what|when|where|top\s+\w|the\s+(difference|complete|ultimate)s?\b|guide\s+to|\d+\s+(tips|ways|reasons|things))/i.test(title)) return false;
+  if (GENERIC_CTA_TITLE_RX.test(title.trim())) return false;
   return true;
 }
+function isRealPageLink(href) {
+  // Reject mailto:/tel:/javascript:/bare-# links -- these are contact or
+  // no-op links that occasionally sit first inside a "job card" and were
+  // getting picked up as the job's own link (see isLikelyJobLink note).
+  return !/^\s*(mailto|tel|javascript):/i.test(href) && href !== '#' && href.trim() !== '';
+}
 function isLikelyJobLink(href) {
-  return JOB_PATH_RX.test(href) && !BLOG_PATH_RX.test(href);
+  return isRealPageLink(href) && JOB_PATH_RX.test(href) && !BLOG_PATH_RX.test(href) && !JOB_SECTION_ROOT_RX.test(href);
 }
 
 // Tier A -- structural card scan: try known vacancy-card container
@@ -232,17 +251,27 @@ function parseTierA(html, site) {
   function push({ title, location, href }) {
     title = clean(title);
     if (!looksLikeJobTitle(title)) return;
+    if (!href || !isRealPageLink(href)) return;
     const link = absoluteUrl(href, site.url) || site.url;
-    if (BLOG_PATH_RX.test(link) || seen.has(link)) return;
+    if (BLOG_PATH_RX.test(link) || JOB_SECTION_ROOT_RX.test(link) || seen.has(link)) return;
     seen.add(link);
     jobs.push({ title, location: clean(location), link });
   }
   $('.job, .vacancy, .job-item, .job-listing, tr.job_listing, .career-item, .vacancy-item, [class*="job-card"], [class*="vacancy-card"]').each((_, el) => {
     const card = $(el);
+    // Prefer an anchor whose href actually looks job/vacancy-shaped; only
+    // fall back to "whatever the first link in the card is" if none of
+    // its links do. A bare comma-separated selector list here (as this
+    // used to be: 'a[href*="job"], a[href*="vacan"], a') is an OR across
+    // all three -- since a bare "a" matches every anchor, .first() just
+    // returned the first anchor in the card regardless of where it
+    // pointed (a "contact us" mailto:, a share button, etc.).
+    var candidateHref = card.find('a[href*="job"], a[href*="vacan"]').filter((i, a) => isRealPageLink($(a).attr('href') || '')).first().attr('href');
+    if (!candidateHref) candidateHref = card.find('a').filter((i, a) => isRealPageLink($(a).attr('href') || '')).first().attr('href');
     push({
       title: card.find('h1, h2, h3, h4, a.job-title, .title, td.job-title').first().text(),
       location: card.find('.location, .job-location, .region, .address').first().text(),
-      href: card.find('a[href*="job"], a[href*="vacan"], a').first().attr('href'),
+      href: candidateHref,
     });
   });
   if (!jobs.length) {
