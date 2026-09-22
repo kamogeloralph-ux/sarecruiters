@@ -1498,10 +1498,13 @@ async function uploadVacancyPhotoIfAny(){
   }catch(e){ console.error('vacancy photo upload', e); return pendingVacancyPhoto || null; }
 }
 // Applies a company photo to every vacancy sharing this company name (not
-// just the one being edited), so the whole listing stays in sync.
+// just the one being edited), matching case/whitespace-insensitively since
+// scraped sources often store the same company under different casing
+// (e.g. "Department of Agriculture" vs "DEPARTMENT OF AGRICULTURE").
 async function propagateCompanyPhoto(company, photoUrl){
   if(!company || !photoUrl) return;
-  var { error } = await supabaseClient.from('vacancies').update({company_photo:photoUrl}).eq('company', company);
+  var pattern = company.trim().replace(/[%_\\]/g, '\\$&');
+  var { error } = await supabaseClient.from('vacancies').update({company_photo:photoUrl}).ilike('company', pattern);
   if(error) console.error('company photo propagate', error);
 }
 // Talent Pool candidate photos go into the same Supabase Storage bucket the
