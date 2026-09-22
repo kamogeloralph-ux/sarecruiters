@@ -2160,7 +2160,7 @@ async function saveVacancy(){
     id:id, agency_id:agencyId, employer_id:employerId, title:title,
     company:company, company_photo:photoUrl,
     location:document.getElementById('v-location').value.trim(),
-    remote:document.getElementById('v-remote').value,
+    remote:document.getElementById('v-remote').value || null,
     employment_type:document.getElementById('v-etype').value.trim(),
     experience_level:document.getElementById('v-exp').value,
     contract_type:document.getElementById('v-contract').value.trim(),
