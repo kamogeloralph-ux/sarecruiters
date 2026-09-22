@@ -30,54 +30,9 @@
   @keyframes sa-splash-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.94);opacity:.85}}
   #app-splash.hide{opacity:0;pointer-events:none}
   body:not(.app-ready) .app{visibility:hidden}
-  /* Sign-in gate: deep navy with the app's own blue glow (0A84FF -> 0051D5),
-     matching the in-app theme instead of the old golden-hour look. */
-  #auth-gate{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;color:#EAF2FF;overflow:auto;background-color:#050C1E;background-image:radial-gradient(120% 90% at 12% 42%,rgba(10,132,255,.30),transparent 55%),radial-gradient(90% 70% at 88% 18%,rgba(90,160,255,.14),transparent 55%),linear-gradient(160deg,#0A1B3F 0%,#071228 46%,#040A1A 100%);transition:opacity .25s ease}
-  #auth-gate::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,rgba(180,214,255,.07),transparent 42%)}
-  /* Stay invisible while we're still checking for an existing session
-     ("loading"), and for the brief moment right after one's confirmed
-     ("authenticated", before the unified reveal in app-core.js hides it
-     for good) — only the "ready" (genuinely signed out) and "error"
-     states should ever actually show the sign-in card. Without this, the
-     full "Sign in with Google" prompt painted immediately on every load —
-     even for an already-signed-in user on a pull-to-refresh reload —
-     covering the calm splash screen underneath instead of letting it
-     show through during that brief check. */
-  #auth-gate[data-state="loading"],#auth-gate[data-state="authenticated"]{opacity:0;pointer-events:none}
-  #auth-gate.hide{opacity:0;pointer-events:none}
-  /* Top brand bar: serif SA badge + wordmark left, trust pill right. */
-  .gate-brandbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(env(safe-area-inset-top) + 18px) 22px 0}
-  .gate-brand{display:flex;align-items:center;gap:11px;min-width:0}
-  .gate-brand-badge{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;border-radius:14px;background:rgba(6,14,32,.55);border:1px solid rgba(230,240,255,.22);backdrop-filter:blur(6px);overflow:hidden}
-  .gate-brand-badge img{width:100%;height:100%;object-fit:cover;display:block}
-  .gate-brand-name{display:flex;flex-direction:column;line-height:1.14;font-weight:600;font-size:16.5px;letter-spacing:-.01em;color:#EAF2FF}
-  .gate-brand-name small{font-size:10.5px;font-weight:600;letter-spacing:.22em;color:rgba(230,240,255,.66)}
-  .gate-brand-name small.gate-brand-slogan{font-size:10px;font-weight:500;letter-spacing:.02em;text-transform:none;color:rgba(230,240,255,.6);margin-top:2px;max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* Legal link inline with the "By signing in" line at the very bottom. */
-  .gate-terms-link{display:inline;background:none;border:none;padding:0;color:#7CB6FF;font:inherit;font-weight:700;font-size:11.5px;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
-  .gate-terms-link:active{opacity:.75}
-  /* Editorial column pinned to the lower half, like the marketing hero. */
-  .gate-body{display:flex;flex-direction:column;width:min(560px,100%);margin:auto auto 0;padding:30px 22px calc(env(safe-area-inset-bottom) + 18px)}
-  .gate-eyebrow{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#6FB1FF}
-  #welcome-title{margin:0;font-weight:800;font-size:clamp(32px,8.6vw,44px);line-height:1.06;letter-spacing:-.03em;color:#F4F8FF}
-  .gate-sub{margin:16px 0 24px;max-width:440px;font-size:15px;line-height:1.55;color:rgba(230,240,255,.75)}
-  /* White pill Google button — the established secondary to the blue CTA. */
-  #google-sign-in{height:52px;border:none;border-radius:999px;background:#FFFFFF;color:#1F1F1F;box-shadow:0 16px 40px -14px rgba(3,15,40,.7)}
-  #google-sign-in .gsi-material-button-contents{font-size:15px;font-weight:600}
-  #google-sign-in .gsi-material-button-icon{width:22px;height:22px}
-  #google-sign-in:disabled{background:rgba(255,255,255,.5);border:none;cursor:wait}
-  #google-sign-in:not(:disabled):hover{background:#F2F6FF}
-  #auth-gate-status{min-height:18px;margin:13px 0 0;color:rgba(230,240,255,.6);font-size:12.5px}
-  /* Live network stats strip: hairline dividers, serif figures. */
-  .gate-divider{margin:24px 0 0;border-top:1px solid rgba(230,240,255,.14)}
-  .gate-stats{display:flex;align-items:stretch}
-  .gate-stat{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding:18px 6px 20px;border-left:1px solid rgba(230,240,255,.14)}
-  .gate-stat:first-child{border-left:none}
-  .gate-stat-value{font-size:29px;font-weight:800;line-height:1;color:#F4F8FF;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-  .gate-stat-label{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(230,240,255,.6)}
-  .auth-gate-privacy{margin:6px 0 0;color:rgba(230,240,255,.5);font-size:11.5px;line-height:1.5;text-align:center}
-  @media(max-width:420px){.gate-brandbar{padding-left:18px;padding-right:18px}.gate-body{padding-left:18px;padding-right:18px}.gate-stat-value{font-size:25px}}
-  /* ===== Official "Sign in with Google" branded button ===== */
+  body:not(.app-ready) .app{visibility:hidden}
+  /* Google Identity Services branded button (styles once in styles.css;
+     kept here so the account screen's sign-in button never paints raw). */
   .gsi-material-button{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #747775;border-radius:14px;box-sizing:border-box;color:#1f1f1f;cursor:pointer;font-family:'Roboto',arial,sans-serif;font-size:14px;height:44px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 18px;position:relative;text-align:center;transition:background-color .218s,border-color .218s,box-shadow .218s;vertical-align:middle;white-space:nowrap;width:100%;max-width:none}
   .gsi-material-button .gsi-material-button-icon{height:20px;margin-right:12px;min-width:20px;width:20px}
   .gsi-material-button .gsi-material-button-content-wrapper{align-items:center;display:flex;flex-direction:row;flex-wrap:nowrap;height:100%;justify-content:center;position:relative;width:100%}
@@ -156,41 +111,7 @@
 
 <div id="app-splash" aria-hidden="true"><img src="icons/v2-icon-192.png" alt=""></div>
 
-<section id="auth-gate" data-state="loading" aria-labelledby="welcome-title">
-  <div class="gate-brandbar">
-    <div class="gate-brand">
-      <span class="gate-brand-badge" aria-hidden="true"><img src="icons/v2-icon-192.png" alt="" width="44" height="44"></span>
-      <span class="gate-brand-name">SA Recruiters<small class="gate-brand-slogan">Connecting South Africa's Recruitment Community.</small></span>
-    </div>
-  </div>
-  <div class="gate-body">
-    <p class="gate-eyebrow">Your next chapter starts here</p>
-    <h1 id="welcome-title">Connecting South Africa's Recruitment Community.</h1>
-    <p class="gate-sub">Find trusted recruitment agencies, local branches, employers, and opportunities across the nation.</p>
-    <button id="google-sign-in" class="gsi-material-button" type="button" disabled>
-      <div class="gsi-material-button-state"></div>
-      <div class="gsi-material-button-content-wrapper">
-        <div class="gsi-material-button-icon">
-          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:block;">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-            <path fill="none" d="M0 0h48v48H0z"></path>
-          </svg>
-        </div>
-        <span class="gsi-material-button-contents">Sign in with Google</span>
-      </div>
-    </button>
-    <div id="auth-gate-status" role="status" aria-live="polite">Checking your sign-in…</div>
-    <div class="gate-divider" role="presentation"></div>
-    <div class="gate-stats">
-      <div class="gate-stat"><span class="gate-stat-value" id="gate-stat-agencies">—</span><span class="gate-stat-label">Agencies</span></div>
-      <div class="gate-stat"><span class="gate-stat-value" id="gate-stat-vacancies">—</span><span class="gate-stat-label">Live Vacancies</span></div>
-    </div>
-    <p class="auth-gate-privacy">By signing in, you agree to our <button type="button" class="gate-terms-link" onclick="window.open('docs/SA-Recruiters-Terms-and-Conditions.pdf','_blank','noopener')" aria-label="Read the Terms and Conditions (PDF)">Terms &amp; Conditions</button> and Privacy Policy.</p>
-  </div>
-</section>
+
 
 <div class="site-menu-backdrop" id="site-menu-backdrop" onclick="closeSiteMenu()" aria-hidden="true"></div>
 <aside class="site-menu-drawer" id="site-menu-drawer" aria-label="Site menu" aria-hidden="true">
@@ -198,9 +119,10 @@
     <div class="site-menu-brand"><img src="icons/v2-icon-192.png" alt="SA Recruiters" width="42" height="42"><div><strong>SA Recruiters</strong><span>Recruitment community</span></div></div>
     <button class="site-menu-close" type="button" data-ripple onclick="closeSiteMenu()" aria-label="Close site menu">×</button>
   </div>
-  <div class="site-menu-account">
+  <div class="site-menu-account" role="button" tabindex="0" onclick="closeSiteMenu();openAccountScreen()" onkeydown="activateAccountFromMenu(event)" aria-label="Open My Account">
     <div class="site-menu-avatar" id="welcome-user-avatar" aria-hidden="true"><span>A</span></div>
-    <div class="site-menu-account-copy"><span>Signed in with Google</span><strong id="welcome-user-name">Google account</strong></div>
+    <div class="site-menu-account-copy"><span id="site-menu-account-mode">Browsing as a guest</span><strong id="welcome-user-name">Guest</strong></div>
+    <svg class="site-menu-account-chev" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
   </div>
   <nav class="site-menu-nav" aria-label="Site navigation">
     <button type="button" data-ripple onclick="closeSiteMenu();showAllVacancies('home')"><span class="site-menu-nav-icon">⌕</span><span>Browse vacancies<small>Find your next opportunity</small></span><b>›</b></button>
@@ -264,6 +186,10 @@
 
     <div class="screen-scroll">
 
+    <div class="guest-teaser" id="guest-teaser" style="display:none">
+      <div class="guest-teaser-copy"><strong>Browsing as a guest</strong><span>You have 5 free vacancy views today. Create a free account for unlimited access.</span></div>
+      <button data-ripple onclick="openAccountScreen()">Create account</button>
+    </div>
     <p class="browse-jobs-row"><a href="/jobs/gauteng/">Browse Gauteng jobs →</a></p>
 
     <div class="sponsor-slot"></div>
@@ -323,9 +249,56 @@
     </div>
   </div>
 
-  <!-- ============ MENU ============ -->
-  <div class="screen" id="screen-profile">
+  <!-- ============ PROFILE / MY ACCOUNT (guest or Google) ============ -->
+  <div class="screen" id="screen-account">
+    <div class="screen-fixed">
+    <header>
+      <div class="screen-title-group"><div class="logo-text">Profile</div><div class="screen-context">Your SA Recruiters account</div></div>
+      <div class="header-actions"><button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button></div>
+    </header>
+    </div>
     <div class="screen-scroll menu-scroll">
+      <div class="account-hero">
+        <div class="account-avatar" id="account-avatar" aria-hidden="true"><span>A</span></div>
+        <div class="account-hero-copy">
+          <div class="account-name" id="account-name">Guest</div>
+          <div class="account-email" id="account-email">Browsing as a guest</div>
+          <div class="account-provider" id="account-provider" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.35 11.1H12v3.9h5.35c-.5 2.4-2.6 3.9-5.35 3.9a5.9 5.9 0 1 1 0-11.8c1.5 0 2.85.55 3.9 1.45l2.85-2.85A9.9 9.9 0 1 0 21.9 12c0-.3-.02-.6-.05-.9z"/></svg>Signed in with Google</div>
+        </div>
+      </div>
+
+      <div class="account-signin-card" id="account-signin-card">
+        <div class="account-signin-copy">
+          <strong>Create your free account</strong>
+          <span>Get unlimited access to every vacancy, save jobs across devices, and join the Talent Pool when you're ready.</span>
+        </div>
+        <button id="google-sign-in" class="gsi-material-button" type="button">
+          <div class="gsi-material-button-state"></div>
+          <div class="gsi-material-button-content-wrapper">
+            <div class="gsi-material-button-icon">
+              <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:block;">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                <path fill="none" d="M0 0h48v48H0z"></path>
+              </svg>
+            </div>
+            <span class="gsi-material-button-contents">Sign in with Google</span>
+          </div>
+        </button>
+        <p class="account-signin-status" id="account-signin-status" role="status" aria-live="polite" style="margin:8px 0 0;font-size:12.5px;color:var(--text-2);text-align:center"></p>
+        <p class="account-signin-terms">By signing in, you agree to our <button type="button" class="gate-terms-link" onclick="window.open('docs/SA-Recruiters-Terms-and-Conditions.pdf','_blank','noopener')" aria-label="Read the Terms and Conditions (PDF)">Terms &amp; Conditions</button> and Privacy Policy.</p>
+      </div>
+
+      <div class="account-quota-card" id="account-quota-card">
+        <div class="account-quota-top"><strong>Free views today</strong><span id="account-quota-count">5 of 5 left</span></div>
+        <div class="account-quota-bar"><div class="account-quota-fill" id="account-quota-fill"></div></div>
+        <div class="account-quota-note" id="account-quota-note">Full access is unlocked with a free account.</div>
+      </div>
     <div class="menu-hero">
     <header class="menu-header">
       <div class="menu-brand">
@@ -411,6 +384,29 @@
       <button class="profile-menu-item" data-ripple onclick="signOutSaRecruiters()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg></span><span>Sign out<span class="mi-sub">Sign out of your Google account</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
     <!-- ============ CONTACT DETAILS ============ -->
+
+
+      <div class="pgroup-label">Your listing</div>
+      <div class="pgrouped-list">
+        <button class="profile-menu-item" data-ripple onclick="openMyPoolProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Talent Pool profile<span class="mi-sub" id="account-pool-status">Your Mini-CV shown to recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
+
+      <div class="pgroup-label">Activity</div>
+      <div class="pgrouped-list">
+        <button class="profile-menu-item" data-ripple onclick="openMySubmissions()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>My submissions<span class="mi-sub">Track reports and suggestions you've sent</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
+
+      <div class="pgroup-label">Preferences</div>
+      <div class="pgrouped-list">
+        <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray"><svg><use href="icons.svg#i52b638"/></svg></span><span>Switch theme<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="window.open('docs/SA-Recruiters-Terms-and-Conditions.pdf','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (PDF)</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
+
+      <div class="pgroup-label">Account</div>
+      <div class="pgrouped-list" id="account-signout-group" style="display:none">
+        <button class="profile-menu-item" data-ripple onclick="signOutSaRecruiters()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5M15 12H3M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg></span><span>Sign out<span class="mi-sub">Sign out of your Google account</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
     <div class="contact-section">
       <div class="contact-section-title">Contact Details</div>
       <div class="contact-warning">
@@ -449,6 +445,9 @@
         </div>
       </div>
     </div>
+
+
+      <div class="account-meta" id="account-meta"></div>
     </div>
   </div>
 
@@ -740,11 +739,39 @@
     <svg><use href="icons.svg#i36ccb3"/></svg>
     <span class="navbtn-label">Feedback</span>
   </button>
-  <button class="navbtn" data-tab="profile" data-ripple aria-label="Menu">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    <span class="navbtn-label">Menu</span>
+  <button class="navbtn" data-tab="account" data-ripple aria-label="Account">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.7-3.8 3.3-5.8 7-5.8s6.3 2 7 5.8"/></svg>
+    <span class="navbtn-label">Profile</span>
   </button>
 </nav>
+
+
+<!-- ============ FREE VIEW LIMIT (guests) ============ -->
+<div class="sheet-scrim" id="guest-limit-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">&times;</button>
+    <h3>You've used your 5 free views</h3>
+    <div class="manager-banner" style="padding:0 0 12px">
+      <p>Create your free SA Recruiters account to keep browsing every vacancy — plus save jobs across devices, get alerts, and join the Talent Pool whenever you're ready.</p>
+    </div>
+    <button id="guest-limit-signin" class="gsi-material-button" type="button" onclick="signInWithGoogle()">
+      <div class="gsi-material-button-state"></div>
+      <div class="gsi-material-button-content-wrapper">
+        <div class="gsi-material-button-icon">
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:block;">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+            <path fill="none" d="M0 0h48v48H0z"></path>
+          </svg>
+        </div>
+        <span class="gsi-material-button-contents">Sign in with Google — it's free</span>
+      </div>
+    </button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('guest-limit-overlay')">Keep browsing</button>
+  </div>
+</div>
 
 <!-- ============ ADD/EDIT AGENCY SHEET ============ -->
 <div class="sheet-scrim" id="form-overlay">
@@ -1158,7 +1185,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=ca759b7ec6" defer></script>
+<script src="app.bundle.min.js?v=620e12455c" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

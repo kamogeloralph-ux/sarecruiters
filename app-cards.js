@@ -333,7 +333,7 @@ function requireEmployerDirectoryAccess() {
 
 function showAllEmployers() {
   if (!requireEmployerDirectoryAccess()) return;
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allemployers').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -780,6 +780,23 @@ window.toggleVac = function(target) {
   var c = target && target.closest ? target.closest('.vac-card') : document.getElementById('vc-' + target);
   if (c) {
     var opening = !c.classList.contains('open');
+    // Guests get GUEST_DAILY_VACANCY_LIMIT free vacancy opens per day; the
+    // limit only bites when OPENING a card (closing is always free). Once
+    // exhausted, the quota sheet explains why and offers the free account.
+    if (opening && typeof registerVacancyOpen === 'function' && !registerVacancyOpen()) {
+      var sheet = document.getElementById('guest-limit-overlay');
+      if (sheet) sheet.classList.add('open');
+      return;
+    }
+    if (opening) {
+      var qEl = document.getElementById('account-quota-note');
+      if (qEl && !saAuthUser && typeof guestViewsRemaining === 'function') {
+        var left = guestViewsRemaining();
+        qEl.textContent = left > 0
+          ? left + (left === 1 ? ' free view left today.' : ' free views left today.')
+          : 'Free views used — create an account for unlimited access.';
+      }
+    }
     c.classList.toggle('open');
     if (opening && c.dataset.vacancyId) {
       var viewKey = 'sa_vacancy_viewed_' + c.dataset.vacancyId + '_' + analyticsSessionId;

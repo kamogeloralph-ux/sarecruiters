@@ -603,7 +603,7 @@ async function getPoolCandidateCount() {
 }
 
 function goPool(returnScreen, openCandidateId) {
-  poolReturnScreen = returnScreen === 'profile' || (!returnScreen && document.getElementById('screen-profile').classList.contains('active')) ? 'profile' : 'home';
+  poolReturnScreen = returnScreen === 'profile' || (!returnScreen && document.getElementById('screen-account').classList.contains('active')) ? 'profile' : 'home';
   poolPendingOpenId = openCandidateId || null;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-pool').classList.add('active');
@@ -737,6 +737,13 @@ function setPoolSheetEditMode(isEdit) {
 }
 
 function openPoolRegisterSheet() {
+  // Talent Pool membership is a step that comes AFTER the general account:
+  // guests are pointed to the account screen's free sign-in card first.
+  if (!saAuthUser) {
+    showToast('Create your free account first — then join the Talent Pool.');
+    openAccountScreen();
+    return;
+  }
   editingPoolCandidateId = null;
   setPoolSheetEditMode(false);
   document.getElementById('pool-name').value = '';
@@ -928,8 +935,7 @@ async function submitPoolRegistration() {
   if (alreadyMember) {
     try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e){}
     closeSheet('pool-register-overlay');
-    if (!saAuthUser && typeof setAuthGateState === 'function') setAuthGateState('ready', 'You are already registered — sign in with Google to continue.');
-    showToast('You are already registered — sign in with Google.');
+    showToast('You are already registered — create your free account on the Profile tab to continue.');
     return;
   }
 
@@ -1028,7 +1034,6 @@ async function submitPoolRegistration() {
   verifyTalentPoolMembership(phone, email, true);
   trackEvent('candidate_registration_submitted', 'candidate', null, { alert_opt_in: alertOptIn });
   closeSheet('pool-register-overlay');
-  if (!saAuthUser && typeof setAuthGateState === 'function') setAuthGateState('ready', 'Registration received — now sign in with Google to continue.');
   showToast('Registration received — you\'ll go live once it\'s reviewed.');
 }
 

@@ -74,6 +74,7 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
     document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
     window.scrollTo({ top: 0 });
     if (btn.dataset.tab === 'saved') renderSaved();
+    if (btn.dataset.tab === 'account') renderAccountDetails();
   });
 });
 
@@ -227,7 +228,7 @@ function goSubmissions() {
 
 function closeTalentPool() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  var targetId = poolReturnScreen === 'profile' ? 'screen-profile' : 'screen-home';
+  var targetId = poolReturnScreen === 'profile' ? 'screen-account' : 'screen-home';
   var target = document.getElementById(targetId);
   if (target) target.classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === (poolReturnScreen === 'profile' ? 'profile' : 'home')); });
@@ -239,10 +240,122 @@ function goBackFromPool() {
 }
 function goBackToProfile() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById('screen-profile').classList.add('active');
+  document.getElementById('screen-account').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'profile'); });
-  resetActiveScreenScroll('screen-profile');
+  resetActiveScreenScroll('screen-account');
 }
+
+// ===== MY ACCOUNT (general signed-in profile) =====
+// A general account view — Google identity, preferences and activity — that is
+// deliberately separate from the Talent Pool product. The Talent Pool listing
+// stays a scoped section inside it ("Your listing"), not the account itself.
+var accountReturnScreen = 'profile';
+
+function openAccountScreen() {
+  var active = document.querySelector('.screen.active');
+  accountReturnScreen = active && active.id !== 'screen-account' ? active.id.replace(/^screen-/, '') : accountReturnScreen || 'profile';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-account').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'account'); });
+  resetActiveScreenScroll('screen-account');
+  renderAccountDetails();
+}
+window.openAccountScreen = openAccountScreen;
+
+// Keyboard activation for the drawer's account card (role="button" div):
+// Enter/Space opens the account screen, other keys are ignored. Clicks are
+// handled by the card's own onclick.
+function activateAccountFromMenu(e) {
+  if (!e || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault();
+  closeSiteMenu();
+  openAccountScreen();
+}
+window.activateAccountFromMenu = activateAccountFromMenu;
+
+function goBackFromAccount() {
+  var targetId = 'screen-' + (accountReturnScreen || 'profile');
+  if (!document.getElementById(targetId)) targetId = 'screen-account';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(targetId).classList.add('active');
+  var tab = targetId.replace(/^screen-/, '');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === tab); });
+  resetActiveScreenScroll(targetId);
+}
+window.goBackFromAccount = goBackFromAccount;
+
+// Mirrors the identity (renderAuthUser) into the account hero card and
+// switches the screen between guest mode (sign-in card + daily quota) and
+// signed-in mode (Google identity + sign-out group).
+function renderAccountIdentity(user) {
+  var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Guest';
+  var avatar = user && user.user_metadata && user.user_metadata.avatar_url;
+  var nameEl = document.getElementById('account-name');
+  var emailEl = document.getElementById('account-email');
+  var avatarEl = document.getElementById('account-avatar');
+  var providerEl = document.getElementById('account-provider');
+  if (nameEl) nameEl.textContent = user ? name : 'Guest';
+  if (emailEl) emailEl.textContent = user ? (user.email || '—') : 'Browsing as a guest';
+  if (avatarEl) {
+    avatarEl.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((name || 'A').charAt(0).toUpperCase()) + '</span>';
+  }
+  if (providerEl) providerEl.style.display = user ? 'inline-flex' : 'none';
+  // Guest chrome: sign-in card + quota meter. Signed-in chrome: sign-out.
+  var signinCard = document.getElementById('account-signin-card');
+  if (signinCard) signinCard.style.display = user ? 'none' : 'block';
+  var quotaCard = document.getElementById('account-quota-card');
+  if (quotaCard) quotaCard.style.display = user ? 'none' : 'block';
+  var signoutGroup = document.getElementById('account-signout-group');
+  if (signoutGroup) signoutGroup.style.display = user ? 'block' : 'none';
+  var guestTeaser = document.getElementById('guest-teaser');
+  if (guestTeaser) guestTeaser.style.display = user ? 'none' : 'flex';
+  var meta = document.getElementById('account-meta');
+  if (meta) {
+    var joined = user && user.created_at ? new Date(user.created_at) : null;
+    meta.textContent = joined && !isNaN(joined) ? 'Member since ' + joined.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' }) : '';
+  }
+  renderAccountQuota();
+}
+
+// Daily free-view meter shown to guests on the account screen.
+function renderAccountQuota() {
+  var countEl = document.getElementById('account-quota-count');
+  var fillEl = document.getElementById('account-quota-fill');
+  var noteEl = document.getElementById('account-quota-note');
+  if (saAuthUser) return; // signed-in users are unmetered; card is hidden
+  if (typeof guestQuotaState !== 'function') return;
+  var q = guestQuotaState();
+  var left = Math.max(0, q.limit - q.used);
+  if (countEl) countEl.textContent = left + ' of ' + q.limit + ' left';
+  if (fillEl) {
+    var pct = Math.round((left / q.limit) * 100);
+    fillEl.style.width = pct + '%';
+    fillEl.classList.toggle('low', left <= 1);
+  }
+  if (noteEl) noteEl.textContent = left > 0
+    ? left + (left === 1 ? ' free view left today.' : ' free views left today — full access is unlocked with a free account.')
+    : 'Free views used — create an account for unlimited access.';
+}
+
+// "Your listing" status: reflects whether the signed-in user currently has a
+// pool_candidates row linked, so the account view stays honest about the fact
+// that the Talent Pool is a product scoped to pool_candidates — not the
+// account itself.
+async function renderAccountPoolStatus() {
+  var el = document.getElementById('account-pool-status');
+  if (!el) return;
+  if (!saAuthUser || !supabaseClient) { el.textContent = 'Join free — available after you create an account'; return; }
+  try {
+    var res = await supabaseClient.from('pool_candidates').select('id').eq('user_id', saAuthUser.id).limit(1).maybeSingle();
+    if (el) el.textContent = (res && res.data) ? 'Listed — tap to edit your Mini-CV' : 'Not listed yet — join free';
+  } catch(e) { /* keep default copy on failure */ }
+}
+
+function renderAccountDetails() {
+  renderAccountIdentity(saAuthUser);
+  renderAccountPoolStatus();
+}
+window.renderAccountDetails = renderAccountDetails;
 
 function goBackToHome() {
   // If we're leaving a manager/manager-status screen, restore the normal app
@@ -298,7 +411,7 @@ function goBackFromDirectory() {
 }
 
 function showAllAgencies() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allagencies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -307,7 +420,7 @@ function showAllAgencies() {
 }
 
 function showAllBranches() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allbranches').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -316,7 +429,7 @@ function showAllBranches() {
 }
 
 function showAllVacancies() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allvacancies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -327,7 +440,7 @@ function showAllVacancies() {
 
 // Vacancy posters live on their own screen, separate from All Vacancies.
 function showVacancyPosters() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-profile').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allposters').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });

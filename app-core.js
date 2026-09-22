@@ -36,35 +36,32 @@ function isGoogleUser(user) {
   return Array.isArray(user.identities) && user.identities.some(function(identity) { return identity.provider === 'google'; });
 }
 function renderAuthUser(user) {
-  var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Account';
+  var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Guest';
   var avatar = user && user.user_metadata && user.user_metadata.avatar_url;
   var authName = document.getElementById('welcome-user-name');
-  if (authName) authName.textContent = user ? name : 'Google account';
+  if (authName) authName.textContent = user ? name : 'Guest';
+  var modeLabel = document.getElementById('site-menu-account-mode');
+  if (modeLabel) modeLabel.textContent = user ? 'Signed in with Google' : 'Browsing as a guest';
   var authAvatar = document.getElementById('welcome-user-avatar');
   if (authAvatar) {
-    authAvatar.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((name || 'A').charAt(0).toUpperCase()) + '</span>';
+    authAvatar.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((user ? name : 'A').charAt(0).toUpperCase()) + '</span>';
   }
+  // Keep the My Account screen in sync with the identity (guest or signed in).
+  if (typeof renderAccountIdentity === 'function') renderAccountIdentity(user);
 }
+// ===== Open app: auth is optional =====
+// The app is browsable by guests; a Google account unlocks unlimited
+// vacancy views, cross-device saved jobs, submissions tracking, and the
+// Talent Pool. There is no blocking gate: the account screen (Profile tab)
+// carries the sign-in card for guests.
 function setAuthGateState(state, message) {
-  var gate = document.getElementById('auth-gate');
+  // Legacy name kept: pending-submissions and other modules still call this
+  // with friendly status text. The status now lives on the account screen's
+  // sign-in card instead of a fullscreen gate.
+  var status = document.getElementById('account-signin-status');
+  if (status && typeof message === 'string') status.textContent = message;
   var button = document.getElementById('google-sign-in');
-  var status = document.getElementById('auth-gate-status');
-  if (gate) gate.dataset.state = state;
-  if (button) { button.disabled = state === 'loading' || state === 'redirecting'; button.classList.toggle('loading', button.disabled); }
-  if (status) status.textContent = message || '';
-}
-// Brings the sign-in gate back in front of an already-revealed app (session
-// expiry / sign-out without a full reload). No fade-in needed here — the
-// flicker this file fixes is specifically the *reveal* path (overlay to
-// app), not this comparatively rare reappearance.
-function showAuthGate() {
-  var gate = document.getElementById('auth-gate');
-  if (!gate) return;
-  gate.style.display = '';
-  gate.classList.remove('hide');
-  // Keep the live counts fresh for returning visitors (the numbers on
-  // the gate can be minutes old from the page-load fetch).
-  if (typeof loadGateStats === 'function') loadGateStats();
+  if (button) button.disabled = state === 'loading' || state === 'redirecting';
 }
 async function signInWithGoogle() {
   if (!supabaseClient || saAuthRedirecting) return;
@@ -80,40 +77,64 @@ async function signInWithGoogle() {
     console.error('Google sign-in', result.error);
   }
 }
+window.signInWithGoogle = signInWithGoogle;
 async function signOutSaRecruiters() {
   if (supabaseClient) await supabaseClient.auth.signOut();
-  window.location.reload();
+  // No reload: the signed-in-only listeners stay attached, so we just clear
+  // the user, reset the guest quota clock, and repaint the account screen
+  // (and any signed-in-only UI) as guest mode.
+  saAuthUser = null;
+  saAuthStarted = false;
+  resetGuestQuotaIfNewDay();
+  renderAuthUser(null);
+  renderAccountDetails();
+  closeSiteMenu();
+  showToast('Signed out — you can keep browsing as a guest.');
 }
 function startAuthenticatedApp(callback) {
   saAuthStartCallback = callback;
-  var button = document.getElementById('google-sign-in');
-  if (button) button.addEventListener('click', signInWithGoogle);
+  // The app boots EXACTLY ONCE, signed in or not: guests boot immediately
+  // once the session check resolves, so the directory is browsable without
+  // any account. The boot callback is consumed on first run so a later
+  // auth event can never double-boot (loadAll twice).
+  var booted = false;
+  function bootOnce() {
+    if (booted) return;
+    booted = true;
+    if (saAuthStartCallback) { var cb = saAuthStartCallback; saAuthStartCallback = null; cb(); }
+  }
+  // Wire every sign-in button (account screen card + guest-limit sheet).
+  document.querySelectorAll('#google-sign-in').forEach(function(button) {
+    button.addEventListener('click', signInWithGoogle);
+  });
   if (!supabaseClient || !supabaseClient.auth) {
-    setAuthGateState('error', 'Authentication is unavailable. Please refresh and try again.');
+    setAuthGateState('error', 'Sign-in is unavailable right now. Browsing still works.');
+    bootOnce();
     return;
   }
-  setAuthGateState('loading', 'Checking your sign-in…');
   supabaseClient.auth.onAuthStateChange(function(event, session) {
     saAuthUser = session && session.user ? session.user : null;
     if (saAuthUser && !isGoogleUser(saAuthUser)) {
       saAuthUser = null;
       supabaseClient.auth.signOut();
-      setAuthGateState('error', 'Please continue with Google to access SA Recruiters.');
+      setAuthGateState('error', 'Please continue with Google.');
+      return;
     }
     renderAuthUser(saAuthUser);
     if (saAuthUser && !saAuthStarted) {
       saAuthStarted = true;
-      setAuthGateState('authenticated', '');
-      // Don't hide the gate here — it fades out together with the splash,
-      // only once real app content has actually painted. See __saTryReveal.
       __saAuthReady = true;
-      window.__saTryReveal();
-      if (saAuthStartCallback) saAuthStartCallback();
-    } else if (!saAuthUser) {
+      bootOnce();
+      // Covers the rare guest → signed-in transition without a page reload
+      // (boot already ran, so its signed-in-only sync was skipped).
+      if (typeof loadSavedVacanciesFromSupabase === 'function') loadSavedVacanciesFromSupabase();
+      if (typeof renderAccountDetails === 'function') renderAccountDetails();
+    } else if (!saAuthUser && saAuthStarted) {
+      // Session expired mid-session: drop back to guest mode in place.
       saAuthStarted = false;
       __saAuthReady = false;
-      showAuthGate();
-      setAuthGateState('ready', 'Sign in with Google to continue.');
+      renderAccountDetails();
+      showToast('Your session ended — you can keep browsing as a guest.');
     }
   });
   supabaseClient.auth.getSession().then(async function(result) {
@@ -125,25 +146,57 @@ function startAuthenticatedApp(callback) {
       saAuthUser = null;
     }
     renderAuthUser(saAuthUser);
-    if (!saAuthUser) setAuthGateState('ready', 'Sign in with Google to continue.');
+    if (saAuthUser && !saAuthStarted) {
+      saAuthStarted = true;
+      __saAuthReady = true;
+    }
+    // Guests and signed-in users both boot here.
+    bootOnce();
   }).catch(function(error) {
     console.error('Supabase auth session', error);
-    setAuthGateState('error', 'We could not check your sign-in. Please refresh and try again.');
+    // Browsing must still work when the auth check fails.
+    bootOnce();
   });
 }
 
-// The public PWA does not include the admin-only settings controls. Keep the
-// shared loader safe when the admin page's UI helper is not present.
-if (typeof window.updateEmployerRegUI !== 'function') {
-  window.updateEmployerRegUI = function() {
-    var toggle = document.getElementById('emp-reg-toggle');
-    var sub = document.getElementById('emp-reg-sub');
-    if (toggle) toggle.checked = !!publicEmployerRegistrationOpen;
-    if (sub) sub.textContent = publicEmployerRegistrationOpen ? 'Open — anyone can register a company right now' : 'Closed — spam protected';
-  };
+// ===== Guest free-view quota =====
+// Guests can open GUEST_DAILY_VACANCY_LIMIT vacancies per calendar day
+// (device-local). Signed-in users are unmetered. The counter resets at
+// midnight via resetGuestQuotaIfNewDay(), which runs on boot, on sign-out,
+// and on the visibility/pageshow resume hooks.
+var GUEST_DAILY_VACANCY_LIMIT = 5;
+function guestQuotaState() {
+  try {
+    var raw = JSON.parse(localStorage.getItem('sa_guest_quota_v1') || 'null') || {};
+    var today = new Date();
+    var key = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    if (raw.day !== key) return { day: key, used: 0, limit: GUEST_DAILY_VACANCY_LIMIT };
+    return { day: raw.day || key, used: Math.max(0, Number(raw.used) || 0), limit: GUEST_DAILY_VACANCY_LIMIT };
+  } catch(e) {
+    return { day: '', used: 0, limit: GUEST_DAILY_VACANCY_LIMIT };
+  }
 }
-// First-party analytics: no IP address, user-agent, name, phone, or email is stored.
-// visitor_id persists in this browser; session_id is renewed after 30 minutes.
+function resetGuestQuotaIfNewDay() {
+  // Called on boot/resume: writing the fresh day key is the reset.
+  guestQuotaState();
+}
+function registerVacancyOpen() {
+  // Returns true if the open is allowed. Guests consume one view; signed-in
+  // users are always allowed.
+  if (saAuthUser) return true;
+  var q = guestQuotaState();
+  if (q.used >= q.limit) return false;
+  q.used += 1;
+  try { localStorage.setItem('sa_guest_quota_v1', JSON.stringify(q)); } catch(e) {}
+  if (typeof renderAccountDetails === 'function') renderAccountDetails();
+  return true;
+}
+function guestViewsRemaining() {
+  if (saAuthUser) return Infinity;
+  var q = guestQuotaState();
+  return Math.max(0, q.limit - q.used);
+}
+
 function analyticsRandomId(prefix) {
   try { if (window.crypto && crypto.randomUUID) return prefix + crypto.randomUUID(); } catch(e) {}
   return prefix + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,10);
@@ -407,7 +460,9 @@ function __saApplyReveal(usingViewTransition) {
   }
 }
 window.__saTryReveal = function () {
-  if (__saRevealed || !__saDataReady || !window.__saCssReady || !__saAuthReady) return;
+  // Guests are first-class: the reveal never waits for auth. __saAuthReady
+  // only gates the signed-in data work (saved sync etc.), not the UI.
+  if (__saRevealed || !__saDataReady || !window.__saCssReady) return;
   __saRevealed = true;
   // Two nested rAFs: the first runs once the browser has processed the
   // style/layout work from whatever just called this (e.g. the cards a
@@ -432,9 +487,8 @@ function markAppDataReady() {
 }
 // Safety net: never leave the splash up more than 2.5s even if the
 // stylesheet load event is somehow missed (slow network, browser quirk).
-// This can force data-ready before a real load finishes, but that's safe
-// — __saTryReveal above still refuses to reveal anything until auth has
-// also completed, so this can't expose an unauthenticated app shell.
+// Data may still be loading when this fires — the app paints whatever it
+// has (cached shell or skeletons) and refreshes in place afterwards.
 setTimeout(function () {
   window.__saCssReady = true;
   markAppDataReady();
