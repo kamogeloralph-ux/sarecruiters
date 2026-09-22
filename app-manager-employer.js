@@ -227,7 +227,8 @@ function bootAuthenticatedApp() {
 })();
 
 loadAll().then(markAppDataReady);
-loadSavedVacanciesFromSupabase();
+// Signed-in-only data sync; guests skip it (no session to sync against).
+if (saAuthUser) loadSavedVacanciesFromSupabase();
 initConnectionStatus();
 processAlertUnsubscribe();
 // Deliver any reports/suggestions that were trapped locally when the
@@ -257,13 +258,17 @@ startAuthenticatedApp(bootAuthenticatedApp);
       hiddenAt = Date.now();
     } else if (hiddenAt && (Date.now() - hiddenAt) > MIN_HIDDEN_MS) {
       hiddenAt = null;
-      if (saAuthUser) loadAll();
+      if (typeof resetGuestQuotaIfNewDay === 'function') resetGuestQuotaIfNewDay();
+      loadAll();
     }
   });
   // Covers the back/forward-cache restore case (Safari/iOS in particular),
   // which visibilitychange doesn't always catch.
   window.addEventListener('pageshow', function(e) {
-    if (e.persisted && saAuthUser) loadAll();
+    if (e.persisted) {
+      if (typeof resetGuestQuotaIfNewDay === 'function') resetGuestQuotaIfNewDay();
+      loadAll();
+    }
   });
 })();
 

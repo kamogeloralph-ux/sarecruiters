@@ -1552,3 +1552,52 @@ header{margin-bottom:18px}
   display:flex;align-items:center;justify-content:center;
   border:none;
 }
+
+/* ===== My Account (general signed-in profile) ===== */
+/* Hero card: Google identity. Reuses the app's card + accent tokens so it
+   matches the rest of the design system in both themes. */
+.account-hero{display:flex;align-items:center;gap:14px;margin:14px 2px 6px;padding:16px;border-radius:var(--radius-sm);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);box-shadow:0 12px 28px -18px color-mix(in srgb,var(--accent) 55%,transparent)}
+.account-avatar{width:58px;height:58px;min-width:58px;border-radius:19px;overflow:hidden;display:grid;place-items:center;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);color:var(--accent);font-size:22px;font-weight:800}
+.account-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.account-hero-copy{min-width:0;flex:1 1 auto}
+.account-name{font-size:17px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-email{font-size:12.5px;color:var(--text-2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-provider{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:4px 10px;border-radius:999px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);font-size:10.5px;font-weight:700;letter-spacing:.02em}
+.account-provider svg{width:12px;height:12px;fill:currentColor}
+/* Drawer account card is now a tappable link into My Account */
+.site-menu-account{cursor:pointer;transition:transform .15s var(--ease),background .2s}
+.site-menu-account:active{transform:scale(.98)}
+.site-menu-account-chev{width:16px;height:16px;flex-shrink:0;margin-left:auto;stroke:rgba(255,255,255,.7)}
+/* Footer line: joined date etc. */
+.account-meta{text-align:center;font-size:11px;color:var(--text-3);padding:16px 0 8px}
+#screen-account .screen-scroll{overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--accent) 45%,transparent) transparent}
+#screen-account .pgroup-label{margin-top:18px}
+
+/* ===== Guest mode: account sign-in card, quota meter, home teaser ===== */
+.account-signin-card{margin:14px 2px 4px;padding:16px;border-radius:var(--radius-sm);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);box-shadow:0 12px 28px -18px color-mix(in srgb,var(--accent) 55%,transparent)}
+.account-signin-copy{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.account-signin-copy strong{font-size:15.5px;font-weight:800;letter-spacing:-.02em}
+.account-signin-copy span{font-size:12.5px;line-height:1.5;color:var(--text-2)}
+.account-signin-card .gsi-material-button{border-radius:999px;height:50px;font-size:15px}
+.account-signin-card .gsi-material-button-contents{font-weight:600}
+.account-signin-status{min-height:16px;margin:10px 0 0;font-size:12px;color:var(--text-2)}
+.account-signin-terms{margin:12px 0 0;color:var(--text-3);font-size:11px;line-height:1.5;text-align:center}
+.gate-terms-link{display:inline;background:none;border:none;padding:0;color:var(--accent);font:inherit;font-weight:700;font-size:11px;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.gate-terms-link:active{opacity:.75}
+.account-quota-card{margin:12px 2px 4px;padding:14px 16px;border-radius:var(--radius-sm);background:var(--card);border:1px solid var(--border)}
+.account-quota-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.account-quota-top strong{font-size:13.5px;font-weight:800}
+.account-quota-top span{font-size:12px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.account-quota-bar{margin-top:10px;height:8px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);overflow:hidden}
+.account-quota-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 65%,#0051D5));transition:width .35s var(--ease)}
+.account-quota-fill.low{background:linear-gradient(90deg,#FF9F0A,#FF6B00)}
+.account-quota-note{margin-top:9px;font-size:11.5px;line-height:1.45;color:var(--text-2)}
+.guest-teaser{display:flex;align-items:center;gap:12px;margin:14px 2px 6px;padding:13px 15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 10%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--accent) 18%,transparent)}
+.guest-teaser-copy{min-width:0;flex:1 1 auto;display:flex;flex-direction:column;gap:3px}
+.guest-teaser-copy strong{font-size:13.5px;font-weight:800}
+.guest-teaser-copy span{font-size:11.5px;line-height:1.45;color:var(--text-2)}
+.guest-teaser button{flex-shrink:0;border:none;border-radius:999px;background:var(--accent);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;padding:10px 16px;cursor:pointer;box-shadow:0 8px 20px -10px color-mix(in srgb,var(--accent) 70%,transparent)}
+.guest-teaser button:active{transform:scale(.97)}
+/* The quota sheet's Google button spans full width above the cancel */
+#guest-limit-overlay .gsi-material-button{border-radius:999px;height:50px;margin-bottom:10px;font-size:15px}
+#guest-limit-overlay .gsi-material-button-contents{font-weight:600}

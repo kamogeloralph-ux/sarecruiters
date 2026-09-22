@@ -930,70 +930,10 @@ function updateStats() {
   refreshGateStats();
 }
 
-// ===== Auth gate: live network stats =====
-// The sign-in screen shows real-time totals for the directories. It must
-// work BEFORE sign-in, so it reads the Worker's public /api/startup
-// aggregate directly (same endpoint loadAll() uses once authenticated)
-// instead of waiting for the post-sign-in data pipeline. updateStats()
-// also funnels into refreshGateStats(), so once the app has loaded (and on
-// every later refresh) the strip mirrors the exact same numbers the
-// directory screens show — including cached values painted instantly from
-// IndexedDB on repeat visits.
-function gateVacancyTotal(agencies, vacancies, counts) {
-  // "Live Vacancies" is the platform-wide total: general pool +
-  // agency-attributed + dedicated-source (DPSA/retail/Adzuna/…) rows.
-  // counts.vacancies is exactly that, computed server-side; fall back to
-  // the general count, then to counting non-general rows locally.
-  if (counts && typeof counts.vacancies === 'number') return counts.vacancies;
-  if (counts && typeof counts.general === 'number') return counts.general;
-  var list = Array.isArray(vacancies) ? vacancies : [];
-  var total = 0;
-  for (var i = 0; i < list.length; i++) {
-    if (typeof isGeneralDirectoryVacancy === 'function' && !isGeneralDirectoryVacancy(list[i])) total++;
-  }
-  return total;
-}
-function refreshGateStats() {
-  var elA = document.getElementById('gate-stat-agencies');
-  if (elA) elA.textContent = agenciesCache.length;
-  var elV = document.getElementById('gate-stat-vacancies');
-  if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length;
-}
-// Live head-count of every vacancy row in the database — the same table
-// the app reads after sign-in (general pool + agency + employer +
-// dedicated-source rows). Counting directly avoids under-counts from an
-// older deployed Worker aggregate whose counts lag the table.
-async function fetchLiveVacancyTotal() {
-  if (!supabaseClient) return null;
-  try {
-    var result = await supabaseClient.from('vacancies').select('id', { count: 'exact', head: true });
-    if (!result.error && typeof result.count === 'number') return result.count;
-  } catch(e) {}
-  return null;
-}
-async function loadGateStats() {
-  try {
-    var url = (typeof R2_WORKER_URL === 'string' && R2_WORKER_URL ? R2_WORKER_URL : '') + '/api/startup';
-    if (!url || url === '/api/startup') return;
-    var controller = typeof AbortController === 'function' ? new AbortController() : null;
-    var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
-    var response = await fetch(url, { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller ? controller.signal : undefined });
-    if (timeout) clearTimeout(timeout);
-    if (!response.ok) return;
-    var payload = await response.json();
-    if (!payload || !Array.isArray(payload.agencies) || !payload.counts) return;
-    var elA = document.getElementById('gate-stat-agencies');
-    if (elA) elA.textContent = payload.agencies.length;
-    var elV = document.getElementById('gate-stat-vacancies');
-    // Prefer the direct database count; the Worker aggregate is only a
-    // fallback for when Supabase is unreachable from the client.
-    var liveTotal = await fetchLiveVacancyTotal();
-    if (elV) elV.textContent = liveTotal !== null ? liveTotal : gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
-  } catch (e) { /* leave the em-dash placeholders on failure */ }
-}
-// Fire once immediately: the gate is visible before sign-in, and the
-// fetch is unauthenticated, so there is nothing to wait for.
-loadGateStats();
+// ===== Auth-gate live stats: retired with the gate =====
+// loadGateStats() was the gate-only fetch; the gate no longer exists. The
+// startup aggregate is loaded by loadAll() for everyone (guests included).
+
 
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
