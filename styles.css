@@ -427,7 +427,9 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .branch-detail-actions .br-del{color:#c0392b}
 
 .screen{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden}
-.screen.active{display:flex}
+.screen.active{display:flex;animation:sa-screen-in .22s var(--ease)}
+@keyframes sa-screen-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.screen.active{animation:none}}
 .screen-fixed{flex-shrink:0;padding:16px 16px 10px}
 .screen-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 110px}
 .empty-state{text-align:center;padding:60px 20px 30px;color:var(--text-2)}

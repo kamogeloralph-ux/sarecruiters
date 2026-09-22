@@ -442,6 +442,16 @@ async function getEmployerPosters() {
     // own sort already ran before this resolved, since this fetch is
     // deliberately deferred past the first paint).
     if (typeof reorderStatCardsByCount === 'function') reorderStatCardsByCount();
+    // loadAll() fires loadPosterFeed() WITHOUT awaiting it (posters are
+    // "non-critical to the first render"), then calls saveDataCache() on
+    // the very next line — so the cache payload it writes is serialized
+    // before this query has any chance to resolve, and posterTotalCount is
+    // still null/stale at that point. Persisting the cache again here,
+    // now that the real count is known, is what actually lets the NEXT
+    // visit's instant-paint-from-cache pass restore a valid number instead
+    // of null — without this, the earlier cache/restore plumbing had
+    // nothing correct to save in the first place.
+    if (typeof saveDataCache === 'function') saveDataCache();
     return result.data || [];
   } catch(e) { console.error('getEmployerPosters', e); return []; }
 }
