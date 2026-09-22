@@ -222,7 +222,7 @@ const JOB_SECTION_ROOT_RX = /\/(vacanc(y|ies)|jobs?|careers?|positions?|openings
 // they were a job title, because the text sits right next to (or inside)
 // a link whose href happens to match JOB_PATH_RX. None of these are ever
 // an actual vacancy title.
-const GENERIC_CTA_TITLE_RX = /^(vacanc(y|ies)|jobs?|careers?|positions?|openings?|current vacanc(y|ies)|available jobs?|open vacanc(y|ies)|view( all|s)? jobs?|view job\b|view more vacanc(y|ies)|browse jobs?|search vacanc(y|ies)|job (search|listings?|categories|seekers?|market news)|register( your)? cv( here)?|register now|submit( your)? cv|apply now|explore all fields|career opportunities)$/i;
+const GENERIC_CTA_TITLE_RX = /^(vacanc(y|ies)|jobs?|careers?|positions?( available)?|openings?|current vacanc(y|ies)|available (jobs?|positions?|openings?|vacanc(y|ies))|open vacanc(y|ies)|view( all|s)? (jobs?|vacanc(y|ies)|positions?|openings?|categories)|view job\b|view more vacanc(y|ies)|browse jobs?|search vacanc(y|ies)|job (search|listings?|categories|seekers?|market news|dashboard|board)|find (a |your )?(next )?(job|role|position|vacancy|career)( now)?|find out more|more info(rmation)?|learn more|read more|register( your)? cv( here)?|register now|submit( your)? cv|apply now|explore all fields|career opportunities)$/i;
 function looksLikeJobTitle(title) {
   if (!title || title.length < 4 || title.length > 90) return false;
   if (/\?\s*$/.test(title)) return false;

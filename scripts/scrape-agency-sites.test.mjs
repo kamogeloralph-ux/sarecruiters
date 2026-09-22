@@ -184,3 +184,19 @@ test('tier A: rejects generic CTA text as a job title even under a job-shaped hr
   assert.equal(jobs.length, 1);
   assert.equal(jobs[0].title, 'Retail Store Manager - Durban');
 });
+
+test('tier A: rejects newer nav/CTA labels as job titles ("Positions Available", "Find your next role", "More Info", "View all categories", "Job Dashboard", "Find a job now")', () => {
+  const html = `
+    <div class="listing">
+      <a href="/careers/">Positions Available</a>
+      <a href="/jobs/">Find your next role</a>
+      <a href="/jobs/12345-details">More Info</a>
+      <a href="/jobs/categories">View all categories</a>
+      <a href="/jobs/dashboard">Job Dashboard</a>
+      <a href="/jobs/">Find a job now</a>
+      <a href="/jobs/night-shift-picker-jhb">Night Shift Picker - Johannesburg</a>
+    </div>`;
+  const jobs = parseAgencySiteJobs(html, site);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Night Shift Picker - Johannesburg');
+});
