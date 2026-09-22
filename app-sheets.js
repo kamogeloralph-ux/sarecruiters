@@ -8,7 +8,17 @@
  * exactly as before. Do not reorder these files relative to one another.
  */
 
-function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+function closeSheet(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
+  // Only ever set on pool-register-overlay by enforceTalentPoolProfile()
+  // below; harmless no-op on every other sheet. closeSheet is only reached
+  // here via a successful submit/claim/link path (the close button itself
+  // is hidden while mandatory — see the CSS rule), so stripping it here is
+  // safe and keeps every existing call site working unchanged.
+  el.classList.remove('gate-mandatory');
+}
 function openSupportSheet() { document.getElementById('support-overlay').classList.add('open'); }
 // ===== Private device Notes =====
 var NOTES_KEY = 'sa_recruiters_private_notes_v1';
@@ -307,6 +317,50 @@ function tryEmailJS(payload) {
     return client.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, templateParams);
   }).then(function() { console.log('emailjs sent ok'); return { sent: true }; })
     .catch(function(err) { console.error('emailjs error', err); return { sent: false, reason: err }; });
+}
+
+// ===== Employer entry point on the sign-in gate (no Google sign-in, no
+// Talent Pool profile) =====
+function openEmployerGateSheet() {
+  var emailEl = document.getElementById('employer-resend-email');
+  if (emailEl) emailEl.value = '';
+  renderTurnstile('employer-resend-turnstile', 'employer-gate-overlay');
+  var overlay = document.getElementById('employer-gate-overlay');
+  if (overlay) overlay.classList.add('open');
+}
+async function resendEmployerManagerLink() {
+  var email = (document.getElementById('employer-resend-email') || {}).value || '';
+  email = email.trim();
+  if (!email) { showToast('Add the email you registered with.'); return; }
+  var btn = document.getElementById('employer-resend-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  var res = await submitViaWorker('/api/employer/resend-link', { email: email }, 'employer-resend-turnstile');
+  resetTurnstile('employer-resend-turnstile');
+  if (btn) { btn.disabled = false; btn.textContent = 'Email my Manager Link'; }
+  if (!res.ok) { showToast(res.error || 'Could not send — please try again.'); return; }
+  closeSheet('employer-gate-overlay');
+  showToast('If that email matches a registered company, your Manager Link is on its way.');
+}
+// Shown once, right after a successful self-service registration — the
+// link is also emailed (see the Worker route), but shown in-app too since
+// email delivery isn't always instant or reliable.
+function showEmployerManagerLinkSheet(link, email) {
+  var body = document.getElementById('employer-manager-link-body');
+  if (body) body.value = link;
+  var note = document.getElementById('employer-manager-link-note');
+  if (note) note.textContent = email
+    ? 'We\u2019ve also emailed this link to ' + email + '. Save it \u2014 it\u2019s how you manage your listing, with no password needed, so don\u2019t share it publicly.'
+    : 'Save this link \u2014 it\u2019s how you manage your listing, with no password needed, so don\u2019t share it publicly.';
+  window.__pendingEmployerManagerLink = link;
+  var overlay = document.getElementById('employer-manager-link-overlay');
+  if (overlay) overlay.classList.add('open');
+}
+function copyEmployerManagerLink() {
+  var link = window.__pendingEmployerManagerLink;
+  if (!link) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(function(){ showToast('Manager Link copied'); }, function(){ showToast('Could not copy \u2014 select and copy the link manually.'); });
+  } else { showToast('Select and copy the link manually.'); }
 }
 
 function openReportSheet(presetAgency) {
@@ -734,6 +788,14 @@ function setPoolSheetEditMode(isEdit) {
   if (submitBtn) submitBtn.textContent = isEdit ? 'Save changes' : 'Submit registration';
   var deleteBtn = document.getElementById('pool-delete-btn');
   if (deleteBtn) deleteBtn.style.display = isEdit ? 'block' : 'none';
+  // New joiners land on a quick, minimal form — the optional Mini-CV
+  // section starts collapsed so signing up feels fast. Editing an existing
+  // profile opens it straight away since that's the whole point of coming
+  // back here.
+  var miniCv = document.getElementById('pool-minicv-details');
+  if (miniCv) miniCv.open = !!isEdit;
+  var laterNote = document.getElementById('pool-finish-later-note');
+  if (laterNote) laterNote.style.display = isEdit ? 'none' : 'block';
 }
 
 function openPoolRegisterSheet() {
@@ -844,6 +906,39 @@ async function openMyPoolProfile() {
   }
 }
 
+// ===== Mandatory Talent Pool profile gate =====
+// Called once per sign-in (see startAuthenticatedApp's onAuthStateChange
+// handler in app-core.js) right after a Google session is established.
+// Skipped entirely for employer/agency manager-link visitors, who never
+// sign in with Google at all (window.__saManagerLinkMode). A signed-in user
+// with no linked pool_candidates row gets the Talent Pool registration
+// sheet forced open with its close button hidden (.gate-mandatory) until
+// they submit — closeSheet() above strips that class the moment a
+// successful submit/claim/link path calls it.
+async function enforceTalentPoolProfile() {
+  if (!saAuthUser || (typeof __saManagerLinkMode !== 'undefined' && __saManagerLinkMode)) return;
+  // Never force SA Recruiters' own admin account (signing into the public
+  // site with the same Google login) through candidate profile registration.
+  try { if (typeof canTrackPublicTraffic === 'function' && !(await canTrackPublicTraffic())) return; } catch(e) {}
+  var result;
+  try {
+    result = await supabaseClient.from('pool_candidates').select('id').eq('user_id', saAuthUser.id).limit(1).maybeSingle();
+  } catch(e) { console.error('profile gate check', e); return; } // fail open — never lock someone out over a network blip
+  if (result.error) { console.error('profile gate check', result.error); return; }
+  if (result.data) return; // already has a linked profile — nothing to enforce
+  openPoolRegisterSheet();
+  var nameEl = document.getElementById('pool-name');
+  var emailEl = document.getElementById('pool-email');
+  var meta = saAuthUser.user_metadata || {};
+  if (nameEl && !nameEl.value) nameEl.value = meta.full_name || meta.name || '';
+  if (emailEl && !emailEl.value) emailEl.value = saAuthUser.email || '';
+  var overlay = document.getElementById('pool-register-overlay');
+  if (overlay) overlay.classList.add('gate-mandatory');
+  var title = document.getElementById('pool-register-title');
+  if (title) title.textContent = 'One last step — complete your profile';
+  showToast('Please complete your Talent Pool profile to start using SA Recruiters.');
+}
+
 async function deleteMyPoolProfile() {
   if (!editingPoolCandidateId) return;
   if (!confirm('Remove your Talent Pool profile? This can\u2019t be undone.')) return;
@@ -934,6 +1029,16 @@ async function submitPoolRegistration() {
   var alreadyMember = await verifyTalentPoolMembership(phone, email, true);
   if (alreadyMember) {
     try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e){}
+    // Signed-in already (e.g. re-entering matching details to clear the
+    // mandatory profile gate): link this verified row to the account now,
+    // rather than leaving user_id unset and re-showing the gate next visit.
+    if (saAuthUser) {
+      try { await supabaseClient.rpc('candidate_claim_profile', { p_email: email, p_phone: phone }); }
+      catch(e) { console.warn('candidate claim on already-member', e); }
+      closeSheet('pool-register-overlay');
+      showToast('You are already registered — your account is now linked.');
+      return;
+    }
     closeSheet('pool-register-overlay');
     showToast('You are already registered — create your free account on the Profile tab to continue.');
     return;

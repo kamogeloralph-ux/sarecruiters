@@ -27,6 +27,26 @@ var saAuthUser = null;
 var saAuthStarted = false;
 var saAuthStartCallback = null;
 var saAuthRedirecting = false;
+
+// ===== Employer / agency Smart Manager links bypass Google sign-in AND the
+// Talent Pool profile gate entirely (see detectManagerMode() in
+// app-manager-employer.js, which calls window.__saEnterManagerLinkMode() the
+// moment it sees ?manage=TOKEN or ?manage_employer=TOKEN in the URL — before
+// Google auth has had any chance to resolve). A visitor on one of these
+// links is an employer/agency being taken straight to their manager screen;
+// they must never see the consumer sign-in curtain. =====
+var __saManagerLinkMode = false;
+window.__saEnterManagerLinkMode = function () {
+  if (__saManagerLinkMode) return;
+  __saManagerLinkMode = true;
+  __saAuthReady = true;
+  var gate = document.getElementById('auth-gate');
+  if (gate) gate.style.display = 'none';
+  var splash = document.getElementById('app-splash');
+  if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+  document.body.classList.add('app-ready');
+  __saRevealed = true;
+};
 function authRedirectUrl() {
   return window.location.origin + window.location.pathname + window.location.search;
 }

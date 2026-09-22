@@ -162,6 +162,9 @@ function openEmployerForm(id) {
   var fallback = document.getElementById('emp-photo-fallback');
   if (e && e.photo) { preview.src = e.photo; preview.style.display='block'; fallback.style.display='none'; }
   else { preview.style.display='none'; fallback.style.display='flex'; }
+  // Spam check only applies to a brand-new self-service registration (the
+  // path that writes through the Worker) — admin edits skip it.
+  if (!id && !isAdmin) renderTurnstile('employer-turnstile', 'employer-form-overlay');
   document.getElementById('employer-form-overlay').classList.add('open');
 }
 function handleEmployerPhoto(evt) {
@@ -278,9 +281,36 @@ async function saveEmployer() {
     photo: window.pendingEmployerPhoto
   };
   if (isAdmin) payload.verified = document.getElementById('e-verified').checked;
+
+  // A brand-new self-service registration (not an admin edit, not editing
+  // an existing row) goes through the Worker so it comes back with a real,
+  // usable Manager Link — see public_register_employer() in
+  // 20260921_employer_self_service_registration.sql. Admin edits and
+  // updates to an already-registered employer keep the direct upsert path.
+  if (!editingEmployerId && !isAdmin) {
+    var btn = document.querySelector('#employer-form-overlay .sheet-submit');
+    if (btn) { btn.disabled = true; btn.textContent = 'Registering…'; }
+    var workerRes = await submitViaWorker('/api/submit/employer-register', payload, 'employer-turnstile');
+    if (btn) { btn.disabled = false; btn.textContent = 'Register your company'; }
+    if (workerRes.ok && workerRes.data && workerRes.data.manage_token) {
+      resetTurnstile('employer-turnstile');
+      closeSheet('employer-form-overlay');
+      editingEmployerId = null;
+      await loadAll();
+      if (document.getElementById('screen-allemployers').classList.contains('active')) renderAllEmployersList();
+      showEmployerManagerLinkSheet(workerRes.data.manager_link, payload.email);
+      return;
+    }
+    // Worker unreachable/rejected: fall back to the legacy direct upsert so
+    // the registration is never lost — the employer just won't have a
+    // working Manager Link yet, matching the pre-existing admin-manual-setup
+    // path (admin_set_employer_manager_token).
+    console.warn('employer self-register via worker failed, using legacy path', workerRes.error);
+  }
+
   var live = await upsertEmployer(payload);
   closeSheet('employer-form-overlay');
-  showToast(editingEmployerId ? 'Employer updated' : (live ? 'Company registered — you can now post vacancies' : '⚠ Only saved on THIS device — run CREATE_EMPLOYERS_TABLE.sql so it shows for everyone.'));
+  showToast(editingEmployerId ? 'Employer updated' : (live ? 'Company registered — an admin will set up your Manager Link shortly.' : '⚠ Only saved on THIS device — run CREATE_EMPLOYERS_TABLE.sql so it shows for everyone.'));
   editingEmployerId = null;
   await loadAll();
   if (document.getElementById('screen-allemployers').classList.contains('active')) renderAllEmployersList();

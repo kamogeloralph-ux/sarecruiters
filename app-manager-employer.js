@@ -183,6 +183,12 @@ async function fastResolveManagerToken() { /* resolution is server-side now */ }
   var params = new URLSearchParams(window.location.search);
   var token = params.get('manage');
   var empToken = params.get('manage_employer');
+  // Employers/agencies on a Smart Manager link must never see the Google
+  // sign-in gate or the Talent Pool profile gate — take the screen over
+  // immediately, before Google auth has had any chance to resolve.
+  if ((token || empToken) && typeof window.__saEnterManagerLinkMode === 'function') {
+    window.__saEnterManagerLinkMode();
+  }
   if (token) {
     // Agencies aren't loaded yet; set pending token — loadAll() will enter manager mode
     managerPendingToken = token;

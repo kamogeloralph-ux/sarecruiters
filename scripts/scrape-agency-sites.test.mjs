@@ -145,3 +145,58 @@ test('tier A: rejects headline-shaped titles (How/Why/Top/question marks) even u
     </div>`;
   assert.deepEqual(parseAgencySiteJobs(html, site), []);
 });
+
+test('tier A: anchor-scan fallback rejects bare job-section index links (real prod pollution: "Vacancies", "Job Seekers", "Current Vacancies" scraped as jobs pointing at the listing page itself)', () => {
+  const html = `
+    <nav>
+      <a href="/vacancies/">Vacancies</a>
+      <a href="/job-seekers/">Job Seekers</a>
+      <a href="/current-vacancies/">Current Vacancies</a>
+      <a href="/jobs">View all Jobs</a>
+    </nav>
+    <a href="/vacancies/electrician-cape-town">Electrician - Cape Town, WC</a>`;
+  const jobs = parseAgencySiteJobs(html, site);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Electrician - Cape Town, WC');
+});
+
+test('tier A: card scan prefers a job-shaped href over the first anchor in the card (real prod pollution: "Engineering Leadership" scraped with a mailto: link because it was the first <a> in the card)', () => {
+  const html = `
+    <div class="job-item">
+      <h3>Engineering Leadership</h3>
+      <a href="mailto:sam@example.co.za">Email us</a>
+      <a href="/jobs/engineering-leadership-role">View job</a>
+    </div>`;
+  const jobs = parseAgencySiteJobs(html, site);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].link, 'https://example.co.za/jobs/engineering-leadership-role');
+});
+
+test('tier A: rejects generic CTA text as a job title even under a job-shaped href ("Register your CV HERE", "Job Market News", "Submit CV")', () => {
+  const html = `
+    <div class="listing">
+      <a href="/job-seekers/register-your-cv">Register your CV HERE</a>
+      <a href="/job-market-news/">Job Market News</a>
+      <a href="/jobs/submit-cv">Submit CV</a>
+      <a href="/jobs/retail-store-manager-durban">Retail Store Manager - Durban</a>
+    </div>`;
+  const jobs = parseAgencySiteJobs(html, site);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Retail Store Manager - Durban');
+});
+
+test('tier A: rejects newer nav/CTA labels as job titles ("Positions Available", "Find your next role", "More Info", "View all categories", "Job Dashboard", "Find a job now")', () => {
+  const html = `
+    <div class="listing">
+      <a href="/careers/">Positions Available</a>
+      <a href="/jobs/">Find your next role</a>
+      <a href="/jobs/12345-details">More Info</a>
+      <a href="/jobs/categories">View all categories</a>
+      <a href="/jobs/dashboard">Job Dashboard</a>
+      <a href="/jobs/">Find a job now</a>
+      <a href="/jobs/night-shift-picker-jhb">Night Shift Picker - Johannesburg</a>
+    </div>`;
+  const jobs = parseAgencySiteJobs(html, site);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Night Shift Picker - Johannesburg');
+});
