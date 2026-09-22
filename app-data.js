@@ -437,6 +437,21 @@ async function getEmployerPosters() {
     // Real total (not capped by the 50-row feed limit) for the home stat card.
     posterTotalCount = typeof result.count === 'number' ? result.count : (result.data || []).length;
     updatePosterStat();
+    // The live count can differ from whatever was restored from cache —
+    // re-sort in case it now belongs in a different spot (updateStats()'s
+    // own sort already ran before this resolved, since this fetch is
+    // deliberately deferred past the first paint).
+    if (typeof reorderStatCardsByCount === 'function') reorderStatCardsByCount();
+    // loadAll() fires loadPosterFeed() WITHOUT awaiting it (posters are
+    // "non-critical to the first render"), then calls saveDataCache() on
+    // the very next line — so the cache payload it writes is serialized
+    // before this query has any chance to resolve, and posterTotalCount is
+    // still null/stale at that point. Persisting the cache again here,
+    // now that the real count is known, is what actually lets the NEXT
+    // visit's instant-paint-from-cache pass restore a valid number instead
+    // of null — without this, the earlier cache/restore plumbing had
+    // nothing correct to save in the first place.
+    if (typeof saveDataCache === 'function') saveDataCache();
     return result.data || [];
   } catch(e) { console.error('getEmployerPosters', e); return []; }
 }
@@ -747,6 +762,7 @@ async function saveDataCache() {
     generalVacancyCount: generalVacancyCount,
     employers: employersCache,
     poolCount: poolCandidateCount,
+    posterCount: posterTotalCount,
     savedAt: Date.now()
   };
   try {
@@ -780,6 +796,10 @@ async function loadDataCache() {
   generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
   employersCache = d.employers || [];
   poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
+  // Restore the cached poster total too, so the Posters stat card paints
+  // instantly alongside the others instead of sitting on its placeholder
+  // until the (deliberately deferred) live poster fetch resolves.
+  if (typeof d.posterCount === 'number') posterTotalCount = d.posterCount;
   lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
   return true;
 }
@@ -805,6 +825,20 @@ async function getStartupData() {
     return null;
   }
 }
+
+// The Employer entry point on the sign-in gate (openEmployerGateSheet ->
+// openEmployerForm) is reachable BEFORE Google sign-in, so
+// publicEmployerRegistrationOpen can't wait for the normal loadAll(), which
+// only ever runs after auth resolves (see bootAuthenticatedApp). Fetch just
+// the public settings independently, immediately at page load — this is
+// the same public, edge-cached /api/startup endpoint loadAll() itself uses.
+(function loadPreAuthEmployerRegFlag() {
+  getStartupData().then(function(startup) {
+    if (startup && startup.settings) {
+      publicEmployerRegistrationOpen = (startup.settings.public_employer_registration === true || startup.settings.public_employer_registration === 'true');
+    }
+  }).catch(function(){});
+})();
 
 async function loadAll() {
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
@@ -928,12 +962,123 @@ function updateStats() {
   var statPool = document.getElementById('stat-pool');
   if (statPool) statPool.textContent = poolLoaded ? poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length : poolCandidateCount;
   refreshGateStats();
+  reorderStatCardsByCount();
 }
 
-// ===== Auth-gate live stats: retired with the gate =====
-// loadGateStats() was the gate-only fetch; the gate no longer exists. The
-// startup aggregate is loaded by loadAll() for everyone (guests included).
+// Keeps the home-screen stat cards (Agencies / Posters / Vacancies /
+// Employers / Candidates) sorted so the highest count always leads,
+// lowest trails — re-run every time updateStats() refreshes the numbers.
+// Uses a lightweight FLIP animation (record position -> reorder the DOM ->
+// offset back to the old spot -> animate to zero) so cards visibly glide
+// into their new place instead of jumping.
+function reorderStatCardsByCount() {
+  var container = document.getElementById('home-stats');
+  if (!container) return;
+  var cards = Array.prototype.slice.call(container.querySelectorAll('.stat-card'));
+  if (cards.length < 2) return;
 
+  // FIRST: record where every card sits right now.
+  var firstRects = cards.map(function(card) { return card.getBoundingClientRect(); });
+
+  // Sort by count descending; ties keep their current relative order
+  // (stable sort) so cards don't jitter on every refresh when unchanged.
+  var withCounts = cards.map(function(card, i) {
+    var valueEl = card.querySelector('.stat-value');
+    var n = valueEl ? parseInt(valueEl.textContent, 10) : NaN;
+    return { card: card, count: isNaN(n) ? -1 : n, i: i };
+  });
+  withCounts.sort(function(a, b) { return b.count - a.count || a.i - b.i; });
+
+  // LAST: apply the new order to the real DOM.
+  withCounts.forEach(function(entry) { container.appendChild(entry.card); });
+
+  // INVERT + PLAY: nudge each moved card back to its old screen position
+  // with no transition, then release it into a transitioned move to 0 —
+  // the browser animates the slide for us.
+  withCounts.forEach(function(entry) {
+    var card = entry.card;
+    var oldRect = firstRects[entry.i];
+    var newRect = card.getBoundingClientRect();
+    var dx = oldRect.left - newRect.left;
+    if (Math.abs(dx) < 1) return; // didn't actually move — nothing to animate
+    card.style.transition = 'none';
+    card.style.transform = 'translateX(' + dx + 'px)';
+    card.offsetWidth; // force a reflow so the browser registers the start position
+    requestAnimationFrame(function() {
+      card.style.transition = 'transform .45s cubic-bezier(.22,1,.36,1)';
+      card.style.transform = '';
+    });
+    card.addEventListener('transitionend', function cleanup(e) {
+      if (e.propertyName !== 'transform') return;
+      card.style.transition = '';
+      card.removeEventListener('transitionend', cleanup);
+    });
+  });
+}
+
+// ===== Live network stats (pre-paint) =====
+// The home stat cards should show real figures as early as possible — the
+// Worker's public /api/startup aggregate is fetched before the full data
+// pipeline finishes and funnelled into the same cards updateStats() owns,
+// so guests and signed-in users alike see live totals (the retired sign-in
+// gate used to own this fetch; the open app now does).
+function gateVacancyTotal(agencies, vacancies, counts) {
+  // Platform-wide total: general pool + agency-attributed +
+  // dedicated-source (DPSA/retail/Adzuna/…) rows. counts.vacancies is
+  // exactly that, computed server-side; fall back to the general count,
+  // then to counting non-general rows locally.
+  if (counts && typeof counts.vacancies === 'number') return counts.vacancies;
+  if (counts && typeof counts.general === 'number') return counts.general;
+  var list = Array.isArray(vacancies) ? vacancies : [];
+  var total = 0;
+  for (var i = 0; i < list.length; i++) {
+    if (typeof isGeneralDirectoryVacancy === 'function' && !isGeneralDirectoryVacancy(list[i])) total++;
+  }
+  return total;
+}
+function refreshGateStats() {
+  var elA = document.getElementById('stat-agencies');
+  if (elA && agenciesCache.length) elA.textContent = agenciesCache.length;
+  var elV = document.getElementById('stat-vacancies');
+  if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length;
+}
+// Live head-count of every vacancy row in the database — the same table
+// the app reads for the directory. Counting directly avoids under-counts
+// from an older deployed Worker aggregate whose counts lag the table.
+async function fetchLiveVacancyTotal() {
+  if (!supabaseClient) return null;
+  try {
+    var result = await supabaseClient.from('vacancies').select('id', { count: 'exact', head: true });
+    if (!result.error && typeof result.count === 'number') return result.count;
+  } catch(e) {}
+  return null;
+}
+async function loadGateStats() {
+  try {
+    var url = (typeof R2_WORKER_URL === 'string' && R2_WORKER_URL ? R2_WORKER_URL : '') + '/api/startup';
+    if (!url || url === '/api/startup') return;
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
+    var response = await fetch(url, { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller ? controller.signal : undefined });
+    if (timeout) clearTimeout(timeout);
+    if (!response.ok) return;
+    var payload = await response.json();
+    if (!payload || !Array.isArray(payload.agencies) || !payload.counts) return;
+    var elA = document.getElementById('stat-agencies');
+    if (elA) elA.textContent = payload.agencies.length;
+    var elV = document.getElementById('stat-vacancies');
+    // Prefer the direct database count; the Worker aggregate is only a
+    // fallback for when Supabase is unreachable from the client.
+    var liveTotal = await fetchLiveVacancyTotal();
+    if (elV) elV.textContent = liveTotal !== null ? liveTotal : gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
+  } catch (e) { /* leave placeholders on failure */ }
+}
+// Paint the numbers instantly from whatever was cached on the last
+// successful visit (if any), so returning visitors see real figures right
+// away instead of sitting on the "…" placeholder while the network fetch
+// below is still in flight — the same instant-paint-from-cache pattern
+// bootAuthenticatedApp() uses for the main stat cards.
+loadGateStats();
 
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }

@@ -59,12 +59,14 @@ export function parseGraduates24Jobs(html, pageUrl = GENERAL_URL) {
   const jobs = [];
   const seen = new Set();
   let staleSkipped = 0;
+  let rawCardCount = 0;
   $('a').each((_, el) => {
     const anchor = $(el);
     if (clean(anchor.text()).toLowerCase() !== 'read more') return;
     const link = absoluteUrl(anchor.attr('href'), pageUrl);
     const slug = slugFromLink(link);
     if (!link || !slug || seen.has(slug)) return;
+    rawCardCount += 1;
 
     // Walk up from the "Read More" link until we find an ancestor that
     // also contains this listing's <h2> title — that's the card container.
@@ -139,6 +141,13 @@ export function parseGraduates24Jobs(html, pageUrl = GENERAL_URL) {
   if (staleSkipped) {
     console.log(`[graduates24] skipped ${staleSkipped} stale listing(s) (closed or older than the max age)`);
   }
+  // Attached rather than returned separately so parseGraduates24Jobs keeps
+  // returning a plain array (existing tests destructure it directly) --
+  // the caller uses this to tell "this page had zero listings at all"
+  // (genuine end of pagination) apart from "this page had listings but
+  // every one of them was filtered as stale" (NOT the end of pagination --
+  // stopping here would silently skip every later page too).
+  jobs.rawCardCount = rawCardCount;
   return jobs;
 }
 
@@ -182,23 +191,37 @@ async function scrapePage(page) {
   console.log(`[graduates24] page ${page}: fetching ${url}`);
   const parsed = parseGraduates24Jobs(await fetchPage(url), url);
   const jobs = await upsertJobs(parsed);
-  console.log(`[graduates24] page ${page}: parsed ${parsed.length}, upserted ${jobs.length}`);
-  return jobs.length;
+  console.log(`[graduates24] page ${page}: found ${parsed.rawCardCount} listing(s), parsed ${parsed.length} fresh, upserted ${jobs.length}`);
+  return { upserted: jobs.length, rawCardCount: parsed.rawCardCount };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   let failures = 0;
+  let totalUpserted = 0;
   for (let page = 1; page <= PAGE_COUNT; page += 1) {
     try {
-      const count = await scrapePage(page);
+      const { upserted, rawCardCount } = await scrapePage(page);
+      totalUpserted += upserted;
       // Graduates24 shows "no results" rather than erroring once you run
-      // past the last real page — stop early instead of grinding through
-      // the configured page count fetching nothing.
-      if (count === 0) { console.log(`[graduates24] page ${page}: no jobs found, stopping`); break; }
+      // past the last real page -- stop early instead of grinding through
+      // the configured page count fetching nothing. Stopping on
+      // rawCardCount (not on `upserted`) matters: a page can have real
+      // listings that are ALL filtered out as stale (see
+      // vacancy-freshness.mjs) without that meaning pagination has ended --
+      // stopping on `upserted === 0` would silently skip every later page
+      // too the moment one page happened to be all-stale.
+      if (rawCardCount === 0) { console.log(`[graduates24] page ${page}: no listings found, stopping`); break; }
     }
     catch (error) { failures += 1; console.error(`[graduates24] page ${page}: ${error instanceof Error ? error.message : String(error)}`); }
     if (page < PAGE_COUNT) await sleep(REQUEST_DELAY_MS);
+  }
+  // A run that completes with zero total upserts is suspicious enough to
+  // flag loudly (site markup change, freshness filter misfiring, etc.) --
+  // previously this exited 0 (success) even when nothing was written.
+  if (totalUpserted === 0 && !failures) {
+    console.error('[graduates24] run completed without upserting a single vacancy -- likely a site markup change or a freshness-filter bug, not a real empty result');
+    process.exitCode = 1;
   }
   if (failures) process.exitCode = 1;
 }
