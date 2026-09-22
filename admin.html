@@ -561,6 +561,8 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Parent agency</label><select id="v-agency"><option value="general">— General (no agency) —</option></select></div>
     <div class="field"><label>Job title *</label><input id="v-title" placeholder="e.g. Forklift Driver"></div>
     <div class="field"><label>Company</label><input id="v-company" placeholder="e.g. ABC Logistics"></div>
+    <div class="field"><label>Company profile photo / logo</label><input type="file" id="v-photo" accept="image/*" onchange="handleVacancyPhoto(event)"><span class="muted" style="display:block;margin-top:6px;font-size:12.5px">Updates the photo on every vacancy with this same company name.</span></div>
+    <div id="v-photo-preview" style="display:none;margin-bottom:12px"><img id="v-photo-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></div>
     <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Durban, KZN"></div>
     <div class="field"><label>Work arrangement</label><select id="v-remote"><option value="">— Not specified —</option><option value="On-site">On-site</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option></select></div>
     <div class="field"><label>Employment type</label><input id="v-etype" placeholder="Full-time / Part-time / Contract"></div>
@@ -1463,6 +1465,45 @@ async function uploadAgencyPhotoIfAny(){
     return data.url || null;
   }catch(e){ console.error('agency logo upload', e); return pendingPhoto || null; }
 }
+// Vacancy company profile photo — shared across every vacancy with the same
+// company name (see ADD_VACANCY_COMPANY_PHOTO.sql / vacancies.company_photo).
+var pendingVacancyPhoto = null;
+var pendingVacancyPhotoBlob = null;
+function handleVacancyPhoto(evt){
+  var file = evt.target.files[0]; if(!file) return;
+  var reader = new FileReader(); var img = new Image();
+  reader.onload = function(e){ img.onload = function(){
+    var c=document.createElement('canvas'); var max=480; var sc=Math.min(1,max/Math.max(img.width,img.height));
+    c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    c.toBlob(function(blob){
+      pendingVacancyPhotoBlob = blob;
+      var url = URL.createObjectURL(blob);
+      document.getElementById('v-photo-img').src = url;
+      document.getElementById('v-photo-preview').style.display = 'block';
+    }, 'image/jpeg', 0.75);
+  }; img.src=e.target.result; };
+  reader.readAsDataURL(file);
+}
+async function uploadVacancyPhotoIfAny(){
+  if(!pendingVacancyPhotoBlob) return pendingVacancyPhoto || null;
+  try{
+    var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-photo?prefix=vacancy-photos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: pendingVacancyPhotoBlob
+    });
+    var data = await res.json();
+    if(!res.ok){ console.error('vacancy photo upload', data && data.error); alert('Could not upload photo: '+(data && data.error)); return pendingVacancyPhoto || null; }
+    return data.url || null;
+  }catch(e){ console.error('vacancy photo upload', e); return pendingVacancyPhoto || null; }
+}
+// Applies a company photo to every vacancy sharing this company name (not
+// just the one being edited), so the whole listing stays in sync.
+async function propagateCompanyPhoto(company, photoUrl){
+  if(!company || !photoUrl) return;
+  var { error } = await supabaseClient.from('vacancies').update({company_photo:photoUrl}).eq('company', company);
+  if(error) console.error('company photo propagate', error);
+}
 // Talent Pool candidate photos go into the same Supabase Storage bucket the
 // public registration form uses, so admin-added/edited photos don't eat
 // into the 500MB database cap either — only the resulting URL is stored.
@@ -2084,6 +2125,11 @@ function openVacancySheet(id, employerId){
   document.getElementById('v-title').value = v ? (v.title||'') : '';
   var emp = employerId ? employerById(employerId) : (v && v.employer_id ? employerById(v.employer_id) : null);
   document.getElementById('v-company').value = v ? (v.company||'') : (emp ? emp.name : '');
+  pendingVacancyPhoto = v ? (v.company_photo||null) : null;
+  pendingVacancyPhotoBlob = null;
+  document.getElementById('v-photo').value = '';
+  var vprev = document.getElementById('v-photo-preview');
+  if(pendingVacancyPhoto){ document.getElementById('v-photo-img').src = pendingVacancyPhoto; vprev.style.display='block'; } else { vprev.style.display='none'; }
   document.getElementById('v-location').value = v ? (v.location||'') : (emp ? (emp.location||'') : '');
   document.getElementById('v-remote').value = v ? (v.remote||'') : '';
   document.getElementById('v-etype').value = v ? (v.employment_type||'') : '';
@@ -2108,9 +2154,11 @@ async function saveVacancy(){
   var agencyId, employerId = null;
   if (selVal.indexOf('employer:') === 0) { agencyId = 'employer'; employerId = selVal.slice(9); }
   else { agencyId = selVal; }
+  var company = document.getElementById('v-company').value.trim();
+  var photoUrl = await uploadVacancyPhotoIfAny();
   var payload = {
     id:id, agency_id:agencyId, employer_id:employerId, title:title,
-    company:document.getElementById('v-company').value.trim(),
+    company:company, company_photo:photoUrl,
     location:document.getElementById('v-location').value.trim(),
     remote:document.getElementById('v-remote').value,
     employment_type:document.getElementById('v-etype').value.trim(),
@@ -2127,11 +2175,12 @@ async function saveVacancy(){
     phone:document.getElementById('v-phone').value.trim()
   };
   await upsertVacancy(payload);
+  if (photoUrl) await propagateCompanyPhoto(company, photoUrl);
   var isNewVacancy = !editing.vacancy;
   closeSheet('vacancy-overlay');
   showToast(editing.vacancy ? 'Vacancy updated' : 'Vacancy added');
   if (isNewVacancy) await queueAndSendVacancyAlerts(payload);
-  editing.vacancy = null;
+  editing.vacancy = null; pendingVacancyPhoto = null; pendingVacancyPhotoBlob = null;
   await loadAll(); renderNav(); renderVacancies(); renderDashboard();
   if (document.getElementById('sec-employers').classList.contains('active')) renderEmployers();
 }
