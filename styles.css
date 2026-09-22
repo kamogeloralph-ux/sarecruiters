@@ -690,6 +690,36 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
 .field .char-counter{margin-top:6px;font-size:11px;color:var(--text-2)}
 .field .helper-note,.helper-note{display:block;font-size:11.5px;color:var(--text-2);margin-top:6px;line-height:1.5}
 
+/* ================================================================
+   TALENT POOL SHEET — quick-join layout: required basics grouped into
+   numbered cards up top, optional Mini-CV extras tucked into a collapsible
+   section so joining feels like a 1-minute step, not a long application.
+   ================================================================ */
+.pool-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-2px 0 2px}
+.pool-sheet-head h3{margin-bottom:0}
+.pool-time-chip{flex:none;font-size:11px;font-weight:800;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:6px 11px;white-space:nowrap}
+.pool-intro{margin-bottom:2px}
+.pool-section{background:var(--card-2);border:1px solid var(--border);border-radius:18px;padding:16px 16px 2px;margin:14px 0}
+.pool-section-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+.pool-section-num{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;margin-top:1px}
+.pool-section-head h4{font-size:14.5px;font-weight:800;letter-spacing:-.01em;margin:0 0 2px}
+.pool-section-head p{font-size:11.5px;color:var(--text-2);margin:0;line-height:1.4}
+.field-row{display:flex;gap:12px}
+.field-row .field{flex:1;min-width:0}
+@media(max-width:380px){.field-row{flex-direction:column;gap:0}}
+.pool-minicv{margin:14px 0 6px;border:1px solid var(--border);border-radius:18px;background:var(--card-2);overflow:hidden}
+.pool-minicv[open]{background:var(--card);border-color:var(--border-strong)}
+.pool-minicv-summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:15px 16px}
+.pool-minicv-summary::-webkit-details-marker{display:none}
+.pool-minicv-summary-icon{flex:none;font-size:18px;line-height:1}
+.pool-minicv-summary-text{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.pool-minicv-summary-text strong{font-size:14px;font-weight:800;letter-spacing:-.01em}
+.pool-minicv-summary-text small{font-size:11.5px;color:var(--text-2);line-height:1.4}
+.pool-minicv-chevron{width:18px;height:18px;color:var(--text-2);flex:none;transition:transform .25s var(--ease)}
+.pool-minicv[open] .pool-minicv-chevron{transform:rotate(180deg)}
+.pool-minicv-body{padding:2px 16px 16px;border-top:1px solid var(--border)}
+.pool-finish-later-note{text-align:center;font-size:11.5px;color:var(--text-2);margin:10px 2px 0;line-height:1.5}
+
 /* Auth gate: same type rhythm as every form in the app. */
 /* Auth gate typography is owned by the inline critical CSS in index.html. */
 .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--card-2);border-radius:14px;padding:13px 15px;margin-bottom:12px}
