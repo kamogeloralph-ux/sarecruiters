@@ -333,7 +333,7 @@ function requireEmployerDirectoryAccess() {
 
 function showAllEmployers() {
   if (!requireEmployerDirectoryAccess()) return;
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allemployers').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });

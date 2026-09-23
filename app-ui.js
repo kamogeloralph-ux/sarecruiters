@@ -231,7 +231,7 @@ function closeTalentPool() {
   var targetId = poolReturnScreen === 'profile' ? 'screen-account' : 'screen-home';
   var target = document.getElementById(targetId);
   if (target) target.classList.add('active');
-  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === (poolReturnScreen === 'profile' ? 'profile' : 'home')); });
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === (poolReturnScreen === 'profile' ? 'account' : 'home')); });
   resetActiveScreenScroll(targetId);
 }
 window.closeTalentPool = closeTalentPool;
@@ -241,7 +241,7 @@ function goBackFromPool() {
 function goBackToProfile() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-account').classList.add('active');
-  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'profile'); });
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'account'); });
   resetActiveScreenScroll('screen-account');
 }
 
@@ -289,7 +289,7 @@ window.goBackFromAccount = goBackFromAccount;
 // signed-in mode (Google identity + sign-out group).
 function renderAccountIdentity(user) {
   var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Guest';
-  var avatar = user && user.user_metadata && user.user_metadata.avatar_url;
+  var avatar = user && user.user_metadata && (user.user_metadata.profile_photo || user.user_metadata.avatar_url);
   var nameEl = document.getElementById('account-name');
   var emailEl = document.getElementById('account-email');
   var avatarEl = document.getElementById('account-avatar');
@@ -354,8 +354,232 @@ async function renderAccountPoolStatus() {
 function renderAccountDetails() {
   renderAccountIdentity(saAuthUser);
   renderAccountPoolStatus();
+  renderProfileSettingsVisibility();
 }
 window.renderAccountDetails = renderAccountDetails;
+
+// ===== PROFILE SETTINGS (edit name, photo, delete account) =====
+// Available to signed-in users only. The name is stored on the Supabase auth
+// user (user_metadata.full_name) and the photo is uploaded through the
+// Worker's media endpoint (candidate-photos bucket, same pipeline as Talent
+// Pool photos) with the URL kept in user_metadata.profile_photo.
+function renderProfileSettingsVisibility() {
+  var group = document.getElementById('account-settings-group');
+  if (group) group.style.display = saAuthUser ? 'block' : 'none';
+}
+window.renderProfileSettingsVisibility = renderProfileSettingsVisibility;
+
+function setProfileSettingsStatus(id, msg) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = msg || '';
+}
+
+function profilePhotoUrl() {
+  return saAuthUser && saAuthUser.user_metadata && saAuthUser.user_metadata.profile_photo || null;
+}
+
+function openEditProfileSheet() {
+  if (!saAuthUser) { showToast('Create your free account first — open sign-in below.'); return; }
+  var nameEl = document.getElementById('ep-name');
+  var emailEl = document.getElementById('ep-email');
+  if (nameEl) nameEl.value = (saAuthUser.user_metadata && (saAuthUser.user_metadata.full_name || saAuthUser.user_metadata.name)) || '';
+  if (emailEl) emailEl.value = saAuthUser.email || '';
+  setProfileSettingsStatus('edit-profile-status', '');
+  var overlay = document.getElementById('edit-profile-overlay');
+  if (overlay) overlay.classList.add('open');
+}
+window.openEditProfileSheet = openEditProfileSheet;
+
+async function saveProfileEdits() {
+  var nameEl = document.getElementById('ep-name');
+  var btn = document.getElementById('edit-profile-save-btn');
+  var name = (nameEl && nameEl.value || '').trim();
+  if (!name) { setProfileSettingsStatus('edit-profile-status', 'Please enter a display name.'); return; }
+  if (!supabaseClient || !saAuthUser) { setProfileSettingsStatus('edit-profile-status', 'You need to be signed in.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  setProfileSettingsStatus('edit-profile-status', '');
+  var meta = Object.assign({}, saAuthUser.user_metadata, { full_name: name });
+  var res = await supabaseClient.auth.updateUser({ data: meta });
+  if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+  if (res && res.error) {
+    setProfileSettingsStatus('edit-profile-status', 'Could not save — ' + res.error.message);
+    return;
+  }
+  saAuthUser = res && res.user ? res.user : saAuthUser;
+  renderAuthUser(saAuthUser);
+  renderAccountDetails();
+  closeSheet('edit-profile-overlay');
+  showToast('Profile updated');
+}
+window.saveProfileEdits = saveProfileEdits;
+
+function openProfilePhotoSheet() {
+  if (!saAuthUser) { showToast('Create your free account first — open sign-in below.'); return; }
+  var url = profilePhotoUrl();
+  var preview = document.getElementById('pp-preview');
+  var fallback = document.getElementById('pp-fallback');
+  var removeBtn = document.getElementById('profile-photo-remove-btn');
+  window.pendingProfilePhotoBlob = null;
+  if (preview) {
+    if (url) { preview.src = url; preview.style.display = 'block'; if (fallback) fallback.style.display = 'none'; }
+    else { preview.style.display = 'none'; if (fallback) fallback.style.display = 'flex'; }
+  }
+  if (removeBtn) removeBtn.style.display = url ? 'block' : 'none';
+  setProfileSettingsStatus('profile-photo-status', '');
+  var overlay = document.getElementById('profile-photo-overlay');
+  if (overlay) overlay.classList.add('open');
+}
+window.openProfilePhotoSheet = openProfilePhotoSheet;
+
+// Reuses the Talent Pool photo pipeline: centre-crop to a 512x512 square and
+// keep the blob locally until Save, so nothing uploads until the user commits.
+function handleProfilePhoto(evt) {
+  var file = evt.target.files && evt.target.files[0];
+  if (!file) return;
+  var img = new Image();
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    img.onload = function() {
+      var SIZE = 512;
+      var side = Math.min(img.width, img.height);
+      var sx = (img.width - side) / 2;
+      var sy = (img.height - side) / 2;
+      var canvas = document.createElement('canvas');
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
+      canvas.toBlob(function(blob) {
+        window.pendingProfilePhotoBlob = blob;
+        var preview = document.getElementById('pp-preview');
+        var fallback = document.getElementById('pp-fallback');
+        var url = URL.createObjectURL(blob);
+        if (preview) { preview.src = url; preview.style.display = 'block'; }
+        if (fallback) fallback.style.display = 'none';
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+window.handleProfilePhoto = handleProfilePhoto;
+
+async function saveProfilePhoto() {
+  var btn = document.getElementById('profile-photo-save-btn');
+  if (!supabaseClient || !saAuthUser) { setProfileSettingsStatus('profile-photo-status', 'You need to be signed in.'); return; }
+  var meta = Object.assign({}, saAuthUser.user_metadata);
+  var existing = meta.profile_photo || null;
+  if (window.pendingProfilePhotoBlob) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+    setProfileSettingsStatus('profile-photo-status', 'Uploading photo…');
+    try {
+      var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'image/jpeg' },
+        body: window.pendingProfilePhotoBlob
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if (!res.ok || !data.url) throw new Error((data && data.error) || 'Upload failed');
+      meta.profile_photo = data.url;
+    } catch(e) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Save photo'; }
+      setProfileSettingsStatus('profile-photo-status', 'Photo upload failed — please try again.');
+      return;
+    }
+  } else if (!existing) {
+    setProfileSettingsStatus('profile-photo-status', 'Choose a photo first.');
+    return;
+  }
+  var upd = await supabaseClient.auth.updateUser({ data: meta });
+  if (btn) { btn.disabled = false; btn.textContent = 'Save photo'; }
+  if (upd && upd.error) {
+    setProfileSettingsStatus('profile-photo-status', 'Could not save — ' + upd.error.message);
+    return;
+  }
+  saAuthUser = upd && upd.user ? upd.user : saAuthUser;
+  window.pendingProfilePhotoBlob = null;
+  renderAuthUser(saAuthUser);
+  renderAccountDetails();
+  closeSheet('profile-photo-overlay');
+  showToast('Profile photo saved');
+}
+window.saveProfilePhoto = saveProfilePhoto;
+
+async function removeProfilePhoto() {
+  if (!supabaseClient || !saAuthUser) return;
+  var meta = Object.assign({}, saAuthUser.user_metadata);
+  delete meta.profile_photo;
+  var btn = document.getElementById('profile-photo-remove-btn');
+  if (btn) { btn.disabled = true; }
+  var upd = await supabaseClient.auth.updateUser({ data: meta });
+  if (btn) { btn.disabled = false; }
+  if (upd && upd.error) {
+    setProfileSettingsStatus('profile-photo-status', 'Could not remove the photo — please try again.');
+    return;
+  }
+  saAuthUser = upd && upd.user ? upd.user : saAuthUser;
+  window.pendingProfilePhotoBlob = null;
+  renderAuthUser(saAuthUser);
+  renderAccountDetails();
+  var preview = document.getElementById('pp-preview');
+  var fallback = document.getElementById('pp-fallback');
+  var removeBtn = document.getElementById('profile-photo-remove-btn');
+  if (preview) preview.style.display = 'none';
+  if (fallback) fallback.style.display = 'flex';
+  if (removeBtn) removeBtn.style.display = 'none';
+  showToast('Profile photo removed');
+}
+window.removeProfilePhoto = removeProfilePhoto;
+
+function openDeleteAccountSheet() {
+  if (!saAuthUser) { showToast('You are browsing as a guest — nothing to delete.'); return; }
+  var confirmEl = document.getElementById('da-confirm');
+  if (confirmEl) confirmEl.value = '';
+  setProfileSettingsStatus('delete-account-status', '');
+  var overlay = document.getElementById('delete-account-overlay');
+  if (overlay) overlay.classList.add('open');
+}
+window.openDeleteAccountSheet = openDeleteAccountSheet;
+
+async function confirmDeleteAccount() {
+  var confirmEl = document.getElementById('da-confirm');
+  var btn = document.getElementById('delete-account-btn');
+  if (!confirmEl || (confirmEl.value || '').trim().toUpperCase() !== 'DELETE') {
+    setProfileSettingsStatus('delete-account-status', 'Type DELETE to confirm.');
+    return;
+  }
+  if (!supabaseClient || !saAuthUser) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+  setProfileSettingsStatus('delete-account-status', '');
+  var authToken = null;
+  try {
+    var sessionResult = await supabaseClient.auth.getSession();
+    authToken = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+  } catch(e) {}
+  if (!authToken) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete my account permanently'; }
+    setProfileSettingsStatus('delete-account-status', 'Could not verify your session — please sign in again.');
+    return;
+  }
+  var ok = false;
+  try {
+    var res = await fetch(R2_WORKER_URL + '/api/account/delete', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    var data = await res.json().catch(function(){ return {}; });
+    ok = res.ok && data && data.ok;
+    if (!ok) console.error('account delete', data && data.error);
+  } catch(e) { console.error('account delete', e); }
+  if (btn) { btn.disabled = false; btn.textContent = 'Delete my account permanently'; }
+  if (!ok) {
+    setProfileSettingsStatus('delete-account-status', 'Could not delete right now — please try again or contact support.');
+    return;
+  }
+  closeSheet('delete-account-overlay');
+  await signOutSaRecruiters();
+  showToast('Your account has been deleted.');
+}
+window.confirmDeleteAccount = confirmDeleteAccount;
 
 function goBackToHome() {
   // If we're leaving a manager/manager-status screen, restore the normal app
@@ -411,7 +635,7 @@ function goBackFromDirectory() {
 }
 
 function showAllAgencies() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allagencies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -420,7 +644,7 @@ function showAllAgencies() {
 }
 
 function showAllBranches() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allbranches').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -429,7 +653,7 @@ function showAllBranches() {
 }
 
 function showAllVacancies() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allvacancies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -440,7 +664,7 @@ function showAllVacancies() {
 
 // Vacancy posters live on their own screen, separate from All Vacancies.
 function showVacancyPosters() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'profile' : 'home');
+  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allposters').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
