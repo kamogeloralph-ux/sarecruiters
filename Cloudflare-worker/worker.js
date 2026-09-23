@@ -683,7 +683,10 @@ async function generateCvWithGemini(env, { fullName, targetRole, rawInput }) {
   if (!env.GEMINI_API_KEY) {
     return { ok: false, status: 503, error: "CV Builder is not configured yet." };
   }
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+  // Use the stable alias supported by the same REST endpoint used during
+  // account-key verification. An optional GEMINI_MODEL secret/var can still
+  // override this for deployments that explicitly pin a model.
+  const model = env.GEMINI_MODEL || "gemini-flash-latest";
   const prompt = [
     "You are a professional CV/resume writer for the South African job market (SA Recruiters).",
     "Turn the job seeker's raw notes below into a clean, ATS-friendly CV.",
