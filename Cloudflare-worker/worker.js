@@ -321,7 +321,22 @@ async function loadStartupData(env) {
     "source_type.not.is.null"
   ].join(",")})`;
   const dedicatedSources = `(${STARTUP_DEDICATED_SOURCES.join(",")})`;
-  const [agencies, branches, vacancies, dedicatedVacancies, employers, generalCount, generalPoolCount, settings, poolCount] = await Promise.all([
+  const readCountHeader = (headers) => {
+    const range = headers.get("content-range") || "";
+    const match = range.match(/\/(\d+)$/);
+    return match ? Number(match[1]) : 0;
+  };
+  // Folder groupings mirror the classifier functions in app-ui.js
+  // (isHimalayasVacancy/isAdzunaVacancy/isGovernmentVacancy/isRetailVacancy/
+  // isLearnershipVacancy) so these counts label the same folders the user sees.
+  const DEDICATED_FOLDERS = {
+    himalayas: ["himalayas"],
+    adzuna: ["adzuna"],
+    government: ["government", "dpsa"],
+    retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
+    learnerships: ["learnerships"]
+  };
+  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
       order: "created_at.desc"
@@ -335,17 +350,19 @@ async function loadStartupData(env) {
     // platform passed 1000, everything past the most recent 1000 (ordered by
     // created_at desc) was silently dropped from every visitor's startup payload,
     // so agencies with older or less-recent postings showed incomplete lists.
-    // supabaseGetAll() pages through all of them, matching how dedicatedVacancies
-    // is already fetched just below.
+    // supabaseGetAll() pages through all of them.
+    //
+    // The dedicated-source bulk (Himalayas/Adzuna/Government/Retail/
+    // Learnerships -- ~95% of all vacancy rows) used to be fetched here too
+    // and embedded whole in every visitor's startup payload (15MB+ and
+    // growing with every scrape). Those folders now fetch their own pages
+    // lazily via fetchDedicatedVacancyPage() in app-data.js, the same
+    // pattern the "General Vacancies" folder already used -- startup only
+    // needs their counts (folderCounts below) to label the folder cards.
     supabaseGetAll(env, "vacancies", {
       select: vacancyColumns,
       or: vacancyFilter,
       source_type: `not.in.${dedicatedSources}`,
-      order: "created_at.desc"
-    }, STARTUP_VACANCY_PAGE_SIZE),
-    supabaseGetAll(env, "vacancies", {
-      select: vacancyColumns,
-      source_type: `in.${dedicatedSources}`,
       order: "created_at.desc"
     }, STARTUP_VACANCY_PAGE_SIZE),
     supabaseGet(env, "employers", {
@@ -354,7 +371,7 @@ async function loadStartupData(env) {
     }),
     // STRICT general count (source_type IS NULL only). Used ONLY as an addend
     // in counts.vacancies below, alongside vacancies.length and
-    // dedicatedVacancies.length — those two already include every row that
+    // dedicatedCount -- those two already include every row that
     // has ANY source_type set (see vacancyFilter's source_type.not.is.null
     // branch), so this bucket must be the true, non-overlapping complement:
     // rows with no source_type at all. Using "not in dedicatedSources" here
@@ -392,7 +409,19 @@ async function loadStartupData(env) {
     // until someone opened the Talent Pool screen (which queries the public
     // view directly and got the real number). Count the public view instead,
     // matching getPoolCandidateCount() on the client.
-    supabaseGet(env, "pool_candidates_public", { select: "id", limit: "0" }, { prefer: "count=exact" })
+    supabaseGet(env, "pool_candidates_public", { select: "id", limit: "0" }, { prefer: "count=exact" }),
+    // Grand total of every dedicated-source row (all 5 folders combined),
+    // used only to keep counts.vacancies accurate now that those rows are
+    // no longer fetched in full.
+    supabaseGet(env, "vacancies", { select: "id", source_type: `in.${dedicatedSources}`, limit: "0" }, { prefer: "count=exact" }),
+    // Per-folder counts, one lightweight indexed count query each (backed by
+    // vacancies_source_created_at_idx), fired in parallel -- this is what
+    // labels each folder card ("Government Vacancies · 5,936 vacancies")
+    // without downloading a single row of their content.
+    Promise.all(Object.entries(DEDICATED_FOLDERS).map(([key, sources]) =>
+      supabaseGet(env, "vacancies", { select: "id", source_type: `in.(${sources.join(",")})`, limit: "0" }, { prefer: "count=exact" })
+        .then((res) => [key, readCountHeader(res.headers)])
+    ))
   ]);
   const settingMap = Object.fromEntries(settings.map(({ body }) => {
     const row = Array.isArray(body) ? body[0] : null;
@@ -407,12 +436,12 @@ async function loadStartupData(env) {
     generated_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: agencies.body || [],
     branches: branches.body || [],
-    vacancies: [...vacancies, ...dedicatedVacancies],
+    vacancies: [...vacancies],
     employers: employers.body || [],
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
-      vacancies: (readCount(generalCount.headers) ?? 0) + vacancies.length + dedicatedVacancies.length,
+      vacancies: (readCount(generalCount.headers) ?? 0) + vacancies.length + readCountHeader(dedicatedCount.headers),
       // The true "General Vacancies" tab size: NULL-source rows (generalCount)
       // plus non-dedicated-source rows (generalPoolCount). The client uses
       // this directly instead of inferring it from
@@ -421,7 +450,11 @@ async function loadStartupData(env) {
       // app-data.js loadAll() for the client-side half of this fix.
       general: (readCount(generalCount.headers) ?? 0) + (readCount(generalPoolCount.headers) ?? 0),
       employers: Array.isArray(employers.body) ? employers.body.length : 0,
-      candidates: readCount(poolCount.headers) ?? 0
+      candidates: readCount(poolCount.headers) ?? 0,
+      // Per-folder counts for the dedicated-source vacancy folders (Himalayas/
+      // Adzuna/Government/Retail/Learnerships), which no longer ship their
+      // rows in this payload -- see fetchDedicatedVacancyPage() client-side.
+      dedicated: Object.fromEntries(folderCounts)
     },
     settings: {
       public_vacancy_posting: settingMap.public_vacancy_posting ?? "false",
