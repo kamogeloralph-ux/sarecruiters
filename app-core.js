@@ -483,6 +483,7 @@ function __saHideOverlayWithFade(el, removeFromDom) {
 }
 function __saApplyReveal(usingViewTransition) {
   document.body.classList.add('app-ready');
+  if (typeof __saClearSlowLoadStatus === 'function') __saClearSlowLoadStatus();
   var splash = document.getElementById('app-splash');
   var gate = document.getElementById('auth-gate');
   if (usingViewTransition) {
@@ -523,6 +524,45 @@ function markAppDataReady() {
   __saDataReady = true;
   window.__saTryReveal();
 }
+
+/* ── Slow-load status text: stays invisible for the first SA_SLOW_LOAD_DELAY
+   ms, so a normal, fast load never shows it. If the splash is still up
+   after that delay, it fades in and cycles through short status messages
+   with the three animated dots — reassurance that something is happening
+   rather than the app being stuck. Cleared the moment the real reveal
+   happens, wherever that fires from. ───────────────────────────────── */
+var SA_SLOW_LOAD_DELAY = 1400; // ms before we admit the load is taking a while
+var SA_SLOW_LOAD_MESSAGES = [
+  { title: 'Getting things ready…', sub: 'Loading the latest listings' },
+  { title: 'Almost there…', sub: 'Fetching vacancies and agency data' },
+  { title: 'Just a moment…', sub: 'This is taking a little longer than usual' }
+];
+var __saSlowLoadTimer = null;
+var __saSlowLoadCycleTimer = null;
+var __saSlowLoadIndex = 0;
+
+function __saCycleSlowLoadMessage() {
+  var titleEl = document.getElementById('app-splash-title');
+  var subEl = document.getElementById('app-splash-sub');
+  if (!titleEl || !subEl) return;
+  var msg = SA_SLOW_LOAD_MESSAGES[__saSlowLoadIndex % SA_SLOW_LOAD_MESSAGES.length];
+  titleEl.textContent = msg.title;
+  subEl.textContent = msg.sub;
+  __saSlowLoadIndex++;
+}
+function __saShowSlowLoadStatus() {
+  if (__saRevealed) return; // already loaded by the time the delay elapsed
+  var status = document.getElementById('app-splash-status');
+  if (!status) return;
+  status.classList.add('show');
+  __saCycleSlowLoadMessage();
+  __saSlowLoadCycleTimer = setInterval(__saCycleSlowLoadMessage, 2200);
+}
+function __saClearSlowLoadStatus() {
+  if (__saSlowLoadTimer) { clearTimeout(__saSlowLoadTimer); __saSlowLoadTimer = null; }
+  if (__saSlowLoadCycleTimer) { clearInterval(__saSlowLoadCycleTimer); __saSlowLoadCycleTimer = null; }
+}
+__saSlowLoadTimer = setTimeout(__saShowSlowLoadStatus, SA_SLOW_LOAD_DELAY);
 // Safety net: never leave the splash up more than 2.5s even if the
 // stylesheet load event is somehow missed (slow network, browser quirk).
 // Data may still be loading when this fires — the app paints whatever it
