@@ -237,8 +237,18 @@ function publicUrlFor(env, key) {
   return `${base}/${key}`;
 }
 __name(publicUrlFor, "publicUrlFor");
-var STARTUP_CACHE_TTL = 600;
-var STARTUP_STALE_TTL = 1800;
+// Raised from 600/1800 (10 min / 30 min) — the 10-minute fresh window meant
+// any steady trickle of traffic (real visitors, crawlers, uptime monitors)
+// kept this endpoint refreshing from Supabase up to ~144x/day, a fixed
+// egress cost that barely depended on actual visitor count. 1 hour fresh /
+// 3 hour stale-while-revalidate keeps the same 3x ratio but cuts that
+// refresh cadence ~6x. Trade-off: a brand-new visitor can wait up to an
+// hour (worst case) to see an agency/vacancy edit, instead of 10 minutes —
+// existing visitors already tolerate up to 30 minutes of staleness today
+// via the background-refresh branch below, so this is a difference of
+// degree, not a new kind of staleness.
+var STARTUP_CACHE_TTL = 3600;
+var STARTUP_STALE_TTL = 10800;
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
