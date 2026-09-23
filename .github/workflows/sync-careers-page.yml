@@ -1,0 +1,44 @@
+name: Sync Careers Page vacancies
+on:
+  schedule:
+    # Public career portals can change daily; keep the feed fresh without
+    # repeatedly requesting pages during the day.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Only sync crew or gourmet; leave empty for both"
+        required: false
+        default: ""
+        type: string
+      dry_run:
+        description: "Fetch and parse without writing to Supabase"
+        required: false
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: careers-page-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CAREERS_PAGE_ONLY: ${{ inputs.only || '' }}
+      DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Sync public Careers Page vacancies
+        run: npm run scrape:careers-page

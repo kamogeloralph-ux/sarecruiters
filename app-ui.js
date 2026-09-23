@@ -1050,7 +1050,7 @@ function loadMoreGeneralVacancies() {
 // 5 dedicated-source folders (Himalayas/Adzuna/Government/Retail/
 // Learnerships). One shared state machine since only one folder is open at
 // a time — see dedicatedVacancy* globals in app-core.js.
-var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships' };
+var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships', careers_page: 'Careers Page Vacancies' };
 function renderDedicatedVacancyCards(append) {
   var el = document.getElementById('allvacancies-list');
   var loadMore = document.getElementById('allvacancies-loadmore');
@@ -1140,7 +1140,8 @@ function renderAllVacanciesList() {
   var isGovernmentVacancy = function(v){ return ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || '')); };
   var isRetailVacancy = function(v){ return ['retail','shoprite','picknpay','woolworths','truworths','spar'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/i.test(String(v.id || '')); };
   var isLearnershipVacancy = function(v){ return v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0; };
-  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isGovernmentVacancy(v) || isRetailVacancy(v) || isLearnershipVacancy(v); };
+  var isCareersPageVacancy = function(v){ return v.source_type === 'careers_page' || String(v.id || '').indexOf('careers-page-') === 0; };
+  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isGovernmentVacancy(v) || isRetailVacancy(v) || isLearnershipVacancy(v) || isCareersPageVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
   var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
@@ -1165,6 +1166,8 @@ function renderAllVacanciesList() {
                     ? visible.filter(isRetailVacancy)
                     : allVacanciesFolder === 'learnerships'
                       ? visible.filter(isLearnershipVacancy)
+                      : allVacanciesFolder === 'careers_page'
+                        ? visible.filter(isCareersPageVacancy)
               : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
@@ -1212,6 +1215,7 @@ function renderAllVacanciesList() {
     var governmentCount = dedicatedVacancyCounts.government || 0;
     var retailCount = dedicatedVacancyCounts.retail || 0;
     var learnershipsCount = dedicatedVacancyCounts.learnerships || 0;
+    var careersPageCount = dedicatedVacancyCounts.careers_page || 0;
     var folderCountLabel = function(count) {
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
@@ -1250,6 +1254,11 @@ function renderAllVacanciesList() {
         '<button class="vac-folder-card vac-folder-card-learnerships" data-ripple onclick="openVacancyFolder(\'learnerships\')" aria-label="Open Learnerships">' +
           '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 10v6"/></svg></span>' +
           '<span class="vac-folder-copy"><span class="vac-folder-title">Learnerships</span><span class="vac-folder-count">' + folderCountLabel(learnershipsCount) + '</span></span>' +
+          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+        '</button>' +
+        '<button class="vac-folder-card vac-folder-card-careers" data-ripple onclick="openVacancyFolder(\'careers_page\')" aria-label="Open Careers Page vacancies">' +
+          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></span>' +
+          '<span class="vac-folder-copy"><span class="vac-folder-title">Careers Page Vacancies</span><span class="vac-folder-count">' + folderCountLabel(careersPageCount) + '</span></span>' +
           '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
         '</button>' +
       '</div>';

@@ -262,7 +262,8 @@ var STARTUP_DEDICATED_SOURCES = [
   "truworths",
   "spar",
   "career_board",
-  "learnerships"
+  "learnerships",
+  "careers_page"
 ];
 function supabaseRestUrl(env, table, params = {}) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
@@ -410,7 +411,8 @@ async function loadStartupDataFromD1(env) {
     adzuna: ["adzuna"],
     government: ["government", "dpsa"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
-    learnerships: ["learnerships"]
+    learnerships: ["learnerships"],
+    careers_page: ["careers_page"]
   };
 
   const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR, poolCandidatesR] = await Promise.all([
@@ -534,7 +536,8 @@ async function loadStartupData(env) {
     adzuna: ["adzuna"],
     government: ["government", "dpsa"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
-    learnerships: ["learnerships"]
+    learnerships: ["learnerships"],
+    careers_page: ["careers_page"]
   };
   const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts, poolCandidates] = await Promise.all([
     supabaseGet(env, "agencies", {

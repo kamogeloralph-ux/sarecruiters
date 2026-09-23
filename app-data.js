@@ -548,7 +548,7 @@ async function getGeneralVacancyCount() {
       // government imports. Keep only the dedicated external sources in
       // their own folders; otherwise the count understates the directory
       // (e.g. 43 instead of several thousand rows).
-      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships)');
+      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships,careers_page)');
     if (result.error) return null;
     return typeof result.count === 'number' ? result.count : 0;
   } catch(e) { return null; }
@@ -558,8 +558,8 @@ async function getGeneralVacancyCount() {
 // DEDICATED_FOLDERS in Cloudflare-worker/worker.js) with 5 small indexed
 // count queries instead of one big row fetch.
 async function getDedicatedVacancyCounts() {
-  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government','dpsa'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], learnerships: ['learnerships'] };
-  var out = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0 };
+  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government','dpsa'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], learnerships: ['learnerships'], careers_page: ['careers_page'] };
+  var out = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0, careers_page: 0 };
   try {
     await Promise.all(Object.keys(folders).map(function(key){
       return supabaseClient.from('vacancies').select('id', { count: 'exact', head: true }).in('source_type', folders[key])
@@ -569,7 +569,7 @@ async function getDedicatedVacancyCounts() {
   return out;
 }
 function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships', 'careers_page'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
@@ -633,7 +633,7 @@ async function fetchGeneralVacancyPage(state, page) {
     // Match the folder classification used by renderAllVacanciesList():
     // unassigned agency/government imports are general, while Himalayas,
     // Adzuna, DPSA, and retail feeds have dedicated folders.
-    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships)')
+    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships,careers_page)')
     .order('created_at', { ascending: false })
     .range(from, from + generalVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);
@@ -654,7 +654,8 @@ var DEDICATED_VACANCY_FOLDER_SOURCES = {
   adzuna: ['adzuna'],
   government: ['government', 'dpsa'],
   retail: ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'],
-  learnerships: ['learnerships']
+  learnerships: ['learnerships'],
+  careers_page: ['careers_page']
 };
 // Each dedicated folder (Himalayas, Adzuna, Government, Retail,
 // Learnerships) used to be a client-side filter over the fully-preloaded
@@ -1075,7 +1076,7 @@ async function loadAll() {
 
 function dedicatedVacancyGrandTotal() {
   var c = dedicatedVacancyCounts || {};
-  return (c.himalayas||0) + (c.adzuna||0) + (c.government||0) + (c.retail||0) + (c.learnerships||0);
+  return (c.himalayas||0) + (c.adzuna||0) + (c.government||0) + (c.retail||0) + (c.learnerships||0) + (c.careers_page||0);
 }
 function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
