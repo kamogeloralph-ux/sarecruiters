@@ -714,7 +714,6 @@ async function generateCvWithGemini(env, { fullName, targetRole, rawInput }) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            responseSchema: CV_SCHEMA,
             temperature: 0.4
           }
         })
