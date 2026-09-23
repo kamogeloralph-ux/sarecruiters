@@ -280,8 +280,11 @@ function renderTurnstile(containerId, sheetId) {
         showTurnstileSlotError(host, 'Spam check could not be displayed. Please refresh the page and try again.');
       }
     };
-    if (typeof ts.ready === 'function') ts.ready(doRender);
-    else doRender();
+    // The static API script is intentionally loaded without async/defer.
+    // Calling turnstile.ready() with an async/defer-loaded script triggers
+    // Cloudflare's "Remove async/defer" error, so render directly once the
+    // script's load promise has completed.
+    doRender();
   }).catch(function(e) {
     console.warn('[Turnstile] load failed:', e);
     showTurnstileSlotError(host, 'Spam check could not load. Check your connection and refresh the page.');
