@@ -75,7 +75,7 @@ Expected: `HTTP 403` with a Turnstile "invalid input token" style error.
 `HTTP 503 Spam protection is not configured.` means the secret still is not
 reaching the Worker.
 
-Note: the public **site** key (`0x4AAAAAAAE781UzzffMh7u8L`) is NOT a secret;
+Note: the public **site** key (`0x4AAAAAAE781UzzffMh7u8L`) is NOT a secret;
 it lives in `app-sheets.js` (`TURNSTILE_SITE_KEY`) and as a plain dashboard
 Variable. Only the **secret** key goes in Actions secrets / dashboard
 secrets.
