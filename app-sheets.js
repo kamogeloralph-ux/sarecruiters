@@ -792,9 +792,9 @@ var poolPendingOpenId = null;
 // loads once someone actually opens the Talent Pool screen).
 async function getPoolCandidateCount() {
   try {
-    // pool_candidates_public already filters to status = 'active' — see
-    // CREATE_POOL_PUBLIC_ACCESS.sql. The raw pool_candidates table is
-    // admin-only now, so an anon count against it would return 0.
+    var startup = await getPublicPoolCandidatesFromWorker();
+    if (startup && startup.counts && typeof startup.counts.candidates === 'number') return startup.counts.candidates;
+    // Resilience fallback for a temporary Worker/D1 outage.
     var { count, error } = await supabaseClient.from('pool_candidates_public').select('id', { count: 'exact', head: true });
     if (error) throw error;
     return typeof count === 'number' ? count : null;
@@ -825,17 +825,17 @@ async function loadPoolCandidates() {
   var listEl = document.getElementById('pool-list');
   if (listEl && !poolLoaded) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>Loading…</h3></div></div>';
   try {
-    // pool_candidates_public (see CREATE_POOL_PUBLIC_ACCESS.sql) only ever
-    // exposes name, position, sector, location, experience, "about me",
-    // photo and the verified flag for status = 'active' candidates — no
-    // phone, email, gender, criminal record, salary or CV link. The raw
-    // pool_candidates table is admin-only (readable only from a signed-in
-    // admin.html session) so employers and other app users never see it.
-    var { data, error } = await supabaseClient.from('pool_candidates_public')
-      .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
-      .order('created_at', { ascending: false });
-    if (error) { console.error('pool load', error); poolCache = []; }
-    else poolCache = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){ return (b.verified?1:0) - (a.verified?1:0); });
+    var startup = await getPublicPoolCandidatesFromWorker();
+    var data = startup && Array.isArray(startup.pool_candidates) ? startup.pool_candidates : null;
+    if (!data) {
+      // Resilience fallback for a temporary Worker/D1 outage.
+      var result = await supabaseClient.from('pool_candidates_public')
+        .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
+        .order('created_at', { ascending: false });
+      if (result.error) throw result.error;
+      data = result.data || [];
+    }
+    poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){ return (b.verified?1:0) - (a.verified?1:0); });
   } catch(e) { console.error('pool load', e); poolCache = []; }
   poolLoaded = true;
   poolCandidateCount = poolCache.length;
