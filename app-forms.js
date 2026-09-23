@@ -164,8 +164,8 @@ function openEmployerForm(id) {
   else { preview.style.display='none'; fallback.style.display='flex'; }
   // Spam check only applies to a brand-new self-service registration (the
   // path that writes through the Worker) — admin edits skip it.
-  if (!id && !isAdmin) renderTurnstile('employer-turnstile', 'employer-form-overlay');
   document.getElementById('employer-form-overlay').classList.add('open');
+  if (!id && !isAdmin) renderTurnstile('employer-turnstile', 'employer-form-overlay');
 }
 function handleEmployerPhoto(evt) {
   var file = evt.target.files[0];
@@ -789,8 +789,8 @@ function openCvBuilderSheet() {
     var meta = saAuthUser.user_metadata || {};
     nameEl.value = meta.full_name || meta.name || '';
   }
-  renderTurnstile('cvbuilder-turnstile', 'cv-builder-overlay');
   document.getElementById('cv-builder-overlay').classList.add('open');
+  renderTurnstile('cvbuilder-turnstile', 'cv-builder-overlay');
 }
 function cvBuilderEditAgain() {
   showCvBuilderFormView();

@@ -207,26 +207,70 @@ function ensureTurnstileSlot(containerId, sheetId) {
   else sheet.appendChild(host);
   return host;
 }
+// Keep the widget id returned by Turnstile. Passing the id is more reliable
+// than passing a DOM element after a sheet has been opened/closed repeatedly.
+var turnstileWidgets = {};
+function showTurnstileSlotError(host, message) {
+  if (!host) return;
+  host.innerHTML = '';
+  var note = document.createElement('div');
+  note.className = 'turnstile-error';
+  note.setAttribute('role', 'alert');
+  note.style.cssText = 'font-size:13px;line-height:1.4;color:#b91c1c;';
+  note.textContent = message;
+  host.appendChild(note);
+}
 // Render (or re-render) the widget inside its sheet. Returns the container,
 // or null when Turnstile is not configured — the submit paths treat null as
 // "no token needed" so forms keep working in dev before the keys are added.
 function renderTurnstile(containerId, sheetId) {
   var host = ensureTurnstileSlot(containerId, sheetId);
   if (!host || !turnstileConfigured()) return null;
+  if (turnstileWidgets[containerId] != null && window.turnstile && typeof window.turnstile.remove === 'function') {
+    try { window.turnstile.remove(turnstileWidgets[containerId]); } catch (e) {}
+  }
+  turnstileWidgets[containerId] = null;
   host.innerHTML = '';
   loadTurnstile().then(function(ts) {
-    if (!ts) return;
-    try {
-      ts.render(host, { sitekey: TURNSTILE_SITE_KEY, theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light' });
-    } catch(e) { console.warn('turnstile render', e); }
-  }).catch(function(){});
+    if (!ts || typeof ts.render !== 'function') {
+      showTurnstileSlotError(host, 'Spam check could not load. Please refresh the page and try again.');
+      return;
+    }
+    var doRender = function() {
+      try {
+        turnstileWidgets[containerId] = ts.render(host, {
+          sitekey: TURNSTILE_SITE_KEY,
+          theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
+          'error-callback': function(code) {
+            console.warn('[Turnstile] error-callback:', code);
+            showTurnstileSlotError(host, 'Spam check failed to load (code ' + (code || 'unknown') + '). Please refresh and try again.');
+          },
+          'expired-callback': function() {
+            try { ts.reset(turnstileWidgets[containerId]); } catch (e) {}
+          },
+          'timeout-callback': function() {
+            try { ts.reset(turnstileWidgets[containerId]); } catch (e) {}
+          }
+        });
+      } catch (e) {
+        console.warn('[Turnstile] render threw:', e);
+        showTurnstileSlotError(host, 'Spam check could not be displayed. Please refresh the page and try again.');
+      }
+    };
+    if (typeof ts.ready === 'function') ts.ready(doRender);
+    else doRender();
+  }).catch(function(e) {
+    console.warn('[Turnstile] load failed:', e);
+    showTurnstileSlotError(host, 'Spam check could not load. Check your connection and refresh the page.');
+  });
   return host;
 }
 function resetTurnstile(containerId) {
   var host = document.getElementById(containerId);
   if (!host) return;
+  var id = turnstileWidgets[containerId];
   if (window.turnstile && typeof window.turnstile.reset === 'function') {
-    try { window.turnstile.reset(host); return; } catch (e) {}
+    try { window.turnstile.reset(id != null ? id : host); return; } catch (e) {}
   }
   host.innerHTML = '';
 }
@@ -234,11 +278,8 @@ function getTurnstileResponse(containerId) {
   if (!turnstileConfigured()) return '';
   var host = document.getElementById(containerId);
   if (!host || !window.turnstile) return '';
-  // Turnstile's getResponse() needs the exact container element passed to
-  // render() (or its widget id) — NOT a child node. Passing host.firstChild
-  // (the widget's inner iframe) silently never matches, so it always
-  // returned '' even after the user completed the check. Pass host itself.
-  try { return window.turnstile.getResponse(host) || ''; } catch (e) { return ''; }
+  var id = turnstileWidgets[containerId];
+  try { return window.turnstile.getResponse(id != null ? id : host) || ''; } catch (e) { return ''; }
 }
 
 // ===== SUBMIT VIA CLOUDFLARE WORKER (spam-gated DB write + email) =====
@@ -324,9 +365,9 @@ function tryEmailJS(payload) {
 function openEmployerGateSheet() {
   var emailEl = document.getElementById('employer-resend-email');
   if (emailEl) emailEl.value = '';
-  renderTurnstile('employer-resend-turnstile', 'employer-gate-overlay');
   var overlay = document.getElementById('employer-gate-overlay');
   if (overlay) overlay.classList.add('open');
+  renderTurnstile('employer-resend-turnstile', 'employer-gate-overlay');
 }
 async function resendEmployerManagerLink() {
   var email = (document.getElementById('employer-resend-email') || {}).value || '';
@@ -373,8 +414,8 @@ function openReportSheet(presetAgency) {
   document.getElementById('r-contact').value = '';
   var err = document.getElementById('report-error');
   err.style.display = 'none'; err.textContent = '';
-  renderTurnstile('report-turnstile', 'report-overlay');
   document.getElementById('report-overlay').classList.add('open');
+  renderTurnstile('report-turnstile', 'report-overlay');
 }
 async function submitReport() {
   var agencyName = document.getElementById('r-agency').value.trim();
@@ -553,8 +594,8 @@ function openSuggestionSheet() {
   document.getElementById('s-contact').value = '';
   var err = document.getElementById('suggestion-error');
   err.style.display = 'none'; err.textContent = '';
-  renderTurnstile('suggestion-turnstile', 'suggestion-overlay');
   document.getElementById('suggestion-overlay').classList.add('open');
+  renderTurnstile('suggestion-turnstile', 'suggestion-overlay');
 }
 async function submitSuggestion() {
   var type = document.getElementById('s-type').value;
@@ -660,8 +701,8 @@ function openPostJobSheet() {
   err.style.display = 'none'; err.textContent = '';
   var waLink = document.getElementById('post-job-wa-link');
   if (waLink) waLink.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent("Hi, I'd like to post a job on SA Recruiters.");
-  renderTurnstile('post-job-turnstile', 'post-job-overlay');
   document.getElementById('post-job-overlay').classList.add('open');
+  renderTurnstile('post-job-turnstile', 'post-job-overlay');
 }
 async function submitJobPostEnquiry() {
   var company = document.getElementById('pj-company').value.trim();
@@ -1250,4 +1291,3 @@ function copyText(text, el) {
 
 /* SECTION_CONTENT + openContentSheet now live in content.js / content-manager.js
    (admin-editable article system). */
-
