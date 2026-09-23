@@ -26,6 +26,10 @@
 /* Site menu trigger (present in every screen's header) joins the iOS blue system too. */
 .screen:not(#screen-home) .site-menu-trigger{width:50px;height:50px;border:2px solid color-mix(in srgb,var(--ios-blue) 72%,#fff);background:var(--ios-blue);color:#fff;box-shadow:0 8px 18px -8px color-mix(in srgb,var(--ios-blue) 75%,transparent);}
 
+/* Keep the hamburger and the three-dot Notes control visually identical in
+   every section, including the blue Menu hero. */
+.site-menu-trigger,.menu-more-btn{border:2px solid color-mix(in srgb,var(--accent) 72%,#fff);background:linear-gradient(145deg,var(--accent),color-mix(in srgb,var(--accent) 78%,#111));color:#fff;box-shadow:0 8px 18px -8px color-mix(in srgb,var(--accent) 75%,transparent);}
+
 /* Search fields are grouped, soft and unmistakably part of the blue system. */
 .screen:not(#screen-home) .search-inner{height:48px;border:1px solid var(--ios-blue-line);border-radius:16px;background:var(--ios-surface);box-shadow:0 5px 16px rgba(10,35,80,.06);}
 .screen:not(#screen-home) .search-inner:focus-within{border-color:var(--ios-blue);box-shadow:0 0 0 4px var(--ios-blue-soft),0 5px 16px rgba(10,35,80,.06);}
