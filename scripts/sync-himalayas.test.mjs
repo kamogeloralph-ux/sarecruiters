@@ -44,7 +44,7 @@ test('returns an empty array for malformed or empty payloads', () => {
   assert.deepEqual(mapHimalayasResults(null), []);
 });
 
-test('carries expiresAt/publishedAt through as closing_date/postedText when present', () => {
+test('carries expiresAt through as closing_date, and publishedAt is used for the (internal-only) freshness check', () => {
   const [job] = mapHimalayasResults({
     jobs: [{
       guid: 'https://himalayas.app/companies/acme/jobs/fresh-role',
@@ -56,7 +56,11 @@ test('carries expiresAt/publishedAt through as closing_date/postedText when pres
     }],
   }, new Date('2026-09-21T00:00:00Z'));
   assert.equal(job.closing_date, '2026-10-18');
-  assert.equal(job.postedText, '2026-09-18');
+  // postedText is intentionally NOT a field on the returned row -- there's
+  // no such column in `vacancies`, and PostgREST rejects the whole upsert
+  // batch (PGRST204) if an unrecognized key is present. It's only used
+  // internally to feed isStaleVacancy, which the two tests below confirm.
+  assert.equal(job.postedText, undefined);
 });
 
 test('skips a Himalayas job whose publishedAt is older than the max age', () => {

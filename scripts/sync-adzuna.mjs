@@ -86,7 +86,9 @@ export function mapAdzunaResults(payload, now = new Date()) {
         source_type: 'adzuna',
         source_checked_at: nowIso,
         last_verified_at: nowIso,
-        postedText,
+        // postedText deliberately omitted -- 'vacancies' has no such
+        // column; PostgREST rejects the whole upsert batch (PGRST204) if
+        // an unrecognized key is present in the payload.
       };
     })
     .filter(Boolean);
