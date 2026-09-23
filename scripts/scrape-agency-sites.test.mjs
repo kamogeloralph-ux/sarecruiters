@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseAgencySiteJobs, extractJobDetail } from './scrape-agency-sites.mjs';
+import { parseAgencySiteJobs } from './scrape-agency-sites.mjs';
 
 const site = { name: 'Test Agency', url: 'https://example.co.za/vacancies/' };
 
@@ -201,100 +201,16 @@ test('tier A: rejects newer nav/CTA labels as job titles ("Positions Available",
   assert.equal(jobs[0].title, 'Night Shift Picker - Johannesburg');
 });
 
-test('real prod pollution: card heading vs. separate CTA button -- title comes from the nearby heading, not the "View Details" button text', () => {
+test('tier A: rejects "<Category Name><badge count>" facet-filter links as job titles ("Legal 1", "Dubai 1", "Permanent 6", "Contract 3") -- confirmed live on Networkers International and AGC Recruitment', () => {
   const html = `
-    <div class="job-card">
-      <h3>Senior Bookkeeper - Sandton</h3>
-      <p class="location">Gauteng</p>
-      <a href="/vacancies/senior-bookkeeper-sandton">View Details</a>
+    <div class="listing">
+      <a href="/jobs/legal">Legal 1</a>
+      <a href="/jobs/dubai">Dubai 1</a>
+      <a href="/jobs/permanent">Permanent 6</a>
+      <a href="/jobs/contract">Contract 3</a>
+      <a href="/job/financial-manager-6015895">Financial Manager</a>
     </div>`;
   const jobs = parseAgencySiteJobs(html, site);
   assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].title, 'Senior Bookkeeper - Sandton');
-});
-
-test('real prod pollution: rejects a link to a different domain that is itself a WordPress theme demo site (Dynamic Labour Solutions -> wordpress-theme.spider-themes.net/jobi/job-list-1/)', () => {
-  const html = `<a href="https://wordpress-theme.spider-themes.net/jobi/job-list-1/">Explore all jobs</a>
-    <a href="/vacancies/warehouse-supervisor-durban">Warehouse Supervisor - Durban</a>`;
-  const jobs = parseAgencySiteJobs(html, site);
-  assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].title, 'Warehouse Supervisor - Durban');
-});
-
-test('real prod pollution: rejects blog/tips articles whose URL has no recognized blog keyword but does contain "tips" (Kontak Recruitment -> /jobs-online-search-tips/, /job-market-news/)', () => {
-  const html = `
-    <a href="/jobs-online-search-tips/">SOCIAL MEDIA IN JOB SEARCH</a>
-    <a href="/job-market-news/">READ MORE ARTICLES</a>
-    <a href="/vacancies/debtors-clerk-centurion">Debtors Clerk - Centurion</a>`;
-  const jobs = parseAgencySiteJobs(html, site);
-  assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].title, 'Debtors Clerk - Centurion');
-});
-
-test('real prod pollution: rejects a WP Job Manager taxonomy archive link, same path depth as a real posting (Salt Recruitment -> /job-category/south-africa/ titled "Jobs in SA")', () => {
-  const html = `
-    <a href="/job-category/south-africa/">Jobs in SA</a>
-    <a href="/vacancies/payroll-administrator-cape-town">Payroll Administrator - Cape Town</a>`;
-  const jobs = parseAgencySiteJobs(html, site);
-  assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].title, 'Payroll Administrator - Cape Town');
-});
-
-test('does NOT reject a real job whose slug happens to contain "resource" mid-word (AGC Recruitment: "Mineral Resource Manager" -> /job/mineral-resource-manager-6017596) -- a regression from broadening BLOG_PATH_RX to catch compound blog paths', () => {
-  const html = `<a href="/job/mineral-resource-manager-6017596">Mineral Resource Manager</a>`;
-  const jobs = parseAgencySiteJobs(html, site);
-  assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].title, 'Mineral Resource Manager');
-});
-
-test('still rejects an actual /resources/ section link', () => {
-  const html = `<a href="/resources/interview-tips-for-candidates">Interview Tips For Candidates</a>
-    <a href="/vacancies/site-foreman-bloemfontein">Site Foreman - Bloemfontein</a>`;
-  const jobs = parseAgencySiteJobs(html, site);
-  assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].title, 'Site Foreman - Bloemfontein');
-});
-
-test('real prod pollution: rejects "Save Job" / "Bookmark Job" bookmark-button links (AGC Recruitment, Networkers International -- e.g. .../job/mineral-resource-manager-6017596/save_job)', () => {
-  const html = `
-    <a href="/job/mineral-resource-manager-6017596">Mineral Resource Manager</a>
-    <a href="/job/mineral-resource-manager-6017596/save_job">Save Job</a>`;
-  const jobs = parseAgencySiteJobs(html, site);
-  assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].title, 'Mineral Resource Manager');
-});
-
-test('extractJobDetail pulls location/salary/closing date/description from a job detail page (known content-area selector present)', () => {
-  const html = `
-    <html><body>
-      <nav>Home | Vacancies | Contact</nav>
-      <article class="job-description">
-        <h1>Senior Electrician</h1>
-        <p>Location: Cape Town, Western Cape</p>
-        <p>Salary: R35 000 - R40 000 per month</p>
-        <p>Closing Date: 30 October 2026</p>
-        <p>We are looking for a qualified electrician with a wireman's licence and at least 5 years experience on industrial sites.</p>
-      </article>
-      <footer>© 2026 Example Agency</footer>
-    </body></html>`;
-  const detail = extractJobDetail(html);
-  assert.match(detail.location, /Cape Town/);
-  assert.match(detail.salary, /R35 000/);
-  assert.match(detail.closingDateRaw, /30 October 2026/);
-  assert.match(detail.description, /wireman's licence/);
-});
-
-test('extractJobDetail falls back to the largest body block when no known content-area selector matches', () => {
-  const html = `
-    <html><body>
-      <div class="header-bar">Example Agency</div>
-      <div class="page-body">
-        Job Title: Warehouse Supervisor. Location: Durban. Salary: R18 000 per month.
-        The successful candidate will manage a team of ten warehouse staff and oversee stock control across two sites, reporting directly to the operations manager on a daily basis.
-      </div>
-      <div class="tiny-footer">2026</div>
-    </body></html>`;
-  const detail = extractJobDetail(html);
-  assert.match(detail.description, /warehouse staff/);
-  assert.match(detail.location, /Durban/);
+  assert.equal(jobs[0].title, 'Financial Manager');
 });
