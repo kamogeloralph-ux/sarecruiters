@@ -413,7 +413,7 @@ async function loadStartupDataFromD1(env) {
     learnerships: ["learnerships"]
   };
 
-  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR] = await Promise.all([
+  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR, poolCandidatesR] = await Promise.all([
     env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
     // Same filter as before: (agency_id != 'general' OR employer_id IS NOT NULL)
@@ -429,13 +429,19 @@ async function loadStartupDataFromD1(env) {
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${dedicatedPlaceholders})`).bind(...dedicated).all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM agencies").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM branches").all(),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM employers").all()
+    env.DB.prepare("SELECT COUNT(*) AS n FROM employers").all(),
+    env.DB.prepare("SELECT * FROM pool_candidates WHERE status = 'active' ORDER BY created_at DESC").all()
   ]);
 
   const folderCounts = await Promise.all(Object.entries(DEDICATED_FOLDERS).map(async ([key, sources]) => {
     const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${sources.map(() => "?").join(",")})`).bind(...sources).all();
     return [key, r.results[0]?.n || 0];
   }));
+  const employerVacancyCounts = await Promise.all((employersR.results || []).map(async (employer) => {
+    const r = await env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE employer_id = ?").bind(employer.id).all();
+    return [employer.id, r.results[0]?.n || 0];
+  }));
+  const employerCountMap = Object.fromEntries(employerVacancyCounts);
 
   const n = (r) => r.results[0]?.n || 0;
   const settingMap = Object.fromEntries((settingsR.results || []).map((row) => [row.key, row.value]));
@@ -444,7 +450,11 @@ async function loadStartupDataFromD1(env) {
     agencies: agenciesR.results || [],
     branches: branchesR.results || [],
     vacancies: vacanciesR.results || [],
-    employers: employersR.results || [],
+    employers: (employersR.results || []).map((employer) => ({
+      ...employer,
+      vacancy_count: employerCountMap[employer.id] || 0
+    })),
+    pool_candidates: poolCandidatesR.results || [],
     counts: {
       agencies: n(agencyCountR),
       branches: n(branchCountR),
@@ -526,7 +536,7 @@ async function loadStartupData(env) {
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     learnerships: ["learnerships"]
   };
-  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts] = await Promise.all([
+  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts, poolCandidates] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
       order: "created_at.desc"
@@ -611,7 +621,11 @@ async function loadStartupData(env) {
     Promise.all(Object.entries(DEDICATED_FOLDERS).map(([key, sources]) =>
       supabaseGet(env, "vacancies", { select: "id", source_type: `in.(${sources.join(",")})`, limit: "0" }, { prefer: "count=exact" })
         .then((res) => [key, readCountHeader(res.headers)])
-    ))
+    )),
+    supabaseGet(env, "pool_candidates_public", {
+      select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
+      order: "created_at.desc"
+    })
   ]);
   // Keep employer card counts independent of the startup vacancy feed. The
   // feed intentionally omits dedicated-source rows, and a NULL source_type
@@ -644,6 +658,7 @@ async function loadStartupData(env) {
       ...employer,
       vacancy_count: employerCountMap[employer.id] || 0
     })),
+    pool_candidates: poolCandidates.body || [],
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
@@ -674,7 +689,7 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=employer-counts-v1", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=talent-pool-v1", request.url), request);
 
   function buildResponse(payload) {
     return new Response(JSON.stringify(payload), {

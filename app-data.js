@@ -122,20 +122,42 @@ function renderManagedPosters(posters) {
 // tapping a card sends the visitor to the full Talent Pool for the
 // complete Mini-CV. RLS only ever returns status = 'active' rows to
 // anonymous visitors, but the status filter below is defense-in-depth.
+var publicPoolStartupPromise = null;
+async function getPublicPoolCandidatesFromWorker() {
+  if (window.__saStartupPayload && Array.isArray(window.__saStartupPayload.pool_candidates)) {
+    return window.__saStartupPayload;
+  }
+  if (!publicPoolStartupPromise) {
+    publicPoolStartupPromise = fetch(R2_WORKER_URL + '/api/startup', {
+      method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }
+    }).then(function(response) {
+      if (!response.ok) throw new Error('Talent Pool Worker request failed');
+      return response.json();
+    });
+  }
+  try {
+    return await publicPoolStartupPromise;
+  } catch (e) {
+    publicPoolStartupPromise = null;
+    return null;
+  }
+}
 async function loadCandidateSpotlight() {
   var target = document.getElementById('candidate-spotlight-deck');
   if (!target) return;
   var list = [];
   try {
-    // pool_candidates_public (see CREATE_POOL_PUBLIC_ACCESS.sql) already
-    // filters to status = 'active' — full candidate details beyond
-    // name/position/experience/photo are admin-only.
-    var { data, error } = await supabaseClient.from('pool_candidates_public')
-      .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
-      .order('created_at', { ascending: false })
-      .limit(30);
-    if (error) throw error;
-    list = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
+    var startup = await getPublicPoolCandidatesFromWorker();
+    if (startup && Array.isArray(startup.pool_candidates)) {
+      list = startup.pool_candidates.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice(0, 30);
+    } else {
+      // Resilience fallback for a temporary Worker/D1 outage.
+      var result = await supabaseClient.from('pool_candidates_public')
+        .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
+        .order('created_at', { ascending: false }).limit(30);
+      if (result.error) throw result.error;
+      list = (result.data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
+    }
   } catch (e) { console.warn('candidate spotlight load', e); list = []; }
   // Keep complete profiles ahead of partial profiles. A profile is considered
   // complete for the public spotlight when its useful professional summary is
@@ -934,6 +956,7 @@ async function loadAll() {
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
   // original independent Supabase reads so launch remains resilient.
   var startup = await getStartupData();
+  window.__saStartupPayload = startup;
   var results = startup ? [
     startup.agencies, startup.branches, startup.vacancies, startup.employers,
     // Prefer the worker's own counts.general (NULL-source rows + non-dedicated-
