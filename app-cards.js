@@ -180,7 +180,7 @@ function employerHubCard(e) {
 
 function employerHubVacancies(e) {
   var list = vacanciesForEmployer(e.id);
-  var html = '<div class="hub-list" data-vacancy-state="' + (list.length ? 'ready' : 'empty') + '" style="padding:4px 0;">';
+  var html = '';
   if (!list.length) {
     html += vacancyScreenStateMarkup('employer', false, false);
   } else {
@@ -191,7 +191,7 @@ function employerHubVacancies(e) {
       }
     });
   }
-  html += '</div>';
+  // Employer vacancies use the same direct card flow as the main vacancies view.
   if (isAdmin) {
     html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openEmployerVacancySheet(\'' + e.id + '\')">+ Post vacancy</button>' +
       '<button class="hub-add-btn" data-ripple onclick="openPosterUploadSheet(\'' + e.id + '\')">+ Upload poster</button></div>';
