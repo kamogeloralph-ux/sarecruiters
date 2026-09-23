@@ -975,6 +975,7 @@ async function loadAll() {
   rebuildPublicListingSlugs();
   updateStats();
   filterAndRenderCached();
+  if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   // Candidate spotlight is non-critical; fetch it after the first useful home render.
   loadCandidateSpotlight();
   // Poster feed is likewise non-critical to the first render.
@@ -1172,4 +1173,3 @@ function sortVacancies(list) {
     return da - db;
   });
 }
-
