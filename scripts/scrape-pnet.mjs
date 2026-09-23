@@ -206,7 +206,11 @@ export function parsePnetJobDetail(html, { id, link, agency }) {
     source_type: 'pnet',
     source_checked_at: new Date().toISOString(),
     last_verified_at: new Date().toISOString(),
-    postedText,
+    // NOTE: postedText is intentionally NOT included here -- 'vacancies'
+    // has no such column, and PostgREST rejects the whole batch
+    // (PGRST204) if an unknown key is present in the upsert payload. It's
+    // only used above, locally, to feed isStaleVacancy before this object
+    // is built.
   };
 }
 

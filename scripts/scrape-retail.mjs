@@ -197,7 +197,9 @@ export function parseBoxerDetail(html, summary) {
     link: summary.link, email: '', phone: '', remote: null, experience_level: '',
     employment_type: clean(job.employmentType || ''), contract_type: '', work_schedule: '', hours: '', salary: '', start_date: '',
     source_type: 'retail', source_checked_at: new Date().toISOString(), last_verified_at: new Date().toISOString(),
-    postedText,
+    // postedText deliberately omitted from the row -- see the matching
+    // note in scrape-pnet.mjs; 'vacancies' has no such column and
+    // PostgREST rejects the whole batch if it's present.
   };
 }
 
