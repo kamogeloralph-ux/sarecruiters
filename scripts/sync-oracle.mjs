@@ -23,6 +23,7 @@
 // ============================================================
 
 import { pathToFileURL } from 'node:url';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -144,6 +145,17 @@ export function buildVacancy(src, summary, detail, employerId, now = new Date())
   const notes = sections.map((s, i) => (i === 0 ? htmlToText(s) : s)).join('\n\n').slice(0, 20_000);
   const iso = now.toISOString();
   const workplace = clean(d.WorkplaceType || summary.workplaceType).toLowerCase();
+  const closingDate = toDateOnly(d.ExternalPostedEndDate);
+  // summary.postedDate comes straight from the search API's own PostedDate
+  // field (see parseSearchPage) -- always fetched, previously never used
+  // for anything. It's a structured, source-provided signal, more reliable
+  // than scraping visible "Posted" text off a page.
+  const postedText = summary.postedDate || '';
+  const stale = isStaleVacancy({ closing_date: closingDate, postedText, source_type: 'retail' }, now);
+  if (stale.stale) {
+    console.log(`[oracle:${src.key}] skipping ${summary.reqId}: ${stale.reason}`);
+    return null;
+  }
   return {
     id: idForJob(src, summary.reqId),
     agency_id: employerId ? 'employer' : 'general',
@@ -151,7 +163,7 @@ export function buildVacancy(src, summary, detail, employerId, now = new Date())
     title: summary.title,
     company: src.company,
     location: cleanLocation(d.PrimaryLocation) || summary.location,
-    closing_date: toDateOnly(d.ExternalPostedEndDate),
+    closing_date: closingDate,
     notes,
     link: publicJobUrl(src, summary.reqId),
     email: '',
@@ -167,6 +179,7 @@ export function buildVacancy(src, summary, detail, employerId, now = new Date())
     source_type: 'retail',
     source_checked_at: iso,
     last_verified_at: iso,
+    postedText,
   };
 }
 

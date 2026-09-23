@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { pathToFileURL } from 'node:url';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -45,9 +46,9 @@ function formatSalary(min, max, isPredicted) {
 
 // Maps a raw Adzuna /search response into the shared vacancy shape used by
 // the other active vacancy sources.
-export function mapAdzunaResults(payload) {
+export function mapAdzunaResults(payload, now = new Date()) {
   const results = Array.isArray(payload?.results) ? payload.results : [];
-  const now = new Date().toISOString();
+  const nowIso = now.toISOString();
 
   return results
     .map((item) => {
@@ -60,9 +61,20 @@ export function mapAdzunaResults(payload) {
       const location = clean(item?.location?.display_name);
       const salary = formatSalary(item?.salary_min, item?.salary_max, item?.salary_is_predicted);
       const contract = clean([item?.contract_time, item?.contract_type].filter(Boolean).join(' '));
-      const posted = item?.created ? `Posted ${String(item.created).slice(0, 10)}` : '';
+      // Adzuna's own `created` field -- already fetched for the "Posted"
+      // text in notes below, now also used as a structured signal so a
+      // listing Adzuna's own index never refreshes can be skipped. Adzuna
+      // has no closing-date field, so posting age is the only signal here.
+      const postedText = item?.created ? String(item.created).slice(0, 10) : '';
+      const posted = postedText ? `Posted ${postedText}` : '';
       const description = clean(item?.description).slice(0, 500);
       const notes = clean([salary, contract, posted, description].filter(Boolean).join(' · ')).slice(0, 20_000);
+
+      const stale = isStaleVacancy({ closing_date: '', postedText, source_type: 'adzuna' }, now);
+      if (stale.stale) {
+        console.log(`[adzuna] skipping ${link}: ${stale.reason}`);
+        return null;
+      }
 
       return {
         id: `adzuna-${id}`,
@@ -72,8 +84,9 @@ export function mapAdzunaResults(payload) {
         notes,
         link,
         source_type: 'adzuna',
-        source_checked_at: now,
-        last_verified_at: now,
+        source_checked_at: nowIso,
+        last_verified_at: nowIso,
+        postedText,
       };
     })
     .filter(Boolean);
