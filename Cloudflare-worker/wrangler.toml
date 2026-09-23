@@ -15,6 +15,21 @@ keep_vars = true
 binding = "MEDIA_BUCKET"
 bucket_name = "sarecruiters-media"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "sarecruiters-d1"
+database_id = "7d1a4327-6056-45cf-ae62-b5b26a454627"
+
+# Keeps the D1 mirror of agencies/branches/vacancies/employers/pool_candidates
+# fresh so /api/startup (and, going forward, other read paths) can serve from
+# D1 instead of hitting Supabase on every cache expiry. D1 reads don't count
+# against the Supabase egress budget at all — only the sync itself does, and
+# that now happens on this fixed schedule instead of being driven by visitor
+# traffic. Adjust the cadence in Cloudflare Dashboard -> Workers & Pages ->
+# sarecruiters-uploader -> Triggers if you want it more/less fresh.
+[triggers]
+crons = ["*/30 * * * *"]
+
 [vars]
 SUPABASE_URL = "https://ythznnktswgymerdcxky.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH"

@@ -237,8 +237,18 @@ function publicUrlFor(env, key) {
   return `${base}/${key}`;
 }
 __name(publicUrlFor, "publicUrlFor");
-var STARTUP_CACHE_TTL = 600;
-var STARTUP_STALE_TTL = 1800;
+// Raised from 600/1800 (10 min / 30 min) — the 10-minute fresh window meant
+// any steady trickle of traffic (real visitors, crawlers, uptime monitors)
+// kept this endpoint refreshing from Supabase up to ~144x/day, a fixed
+// egress cost that barely depended on actual visitor count. 1 hour fresh /
+// 3 hour stale-while-revalidate keeps the same 3x ratio but cuts that
+// refresh cadence ~6x. Trade-off: a brand-new visitor can wait up to an
+// hour (worst case) to see an agency/vacancy edit, instead of 10 minutes —
+// existing visitors already tolerate up to 30 minutes of staleness today
+// via the background-refresh branch below, so this is a difference of
+// degree, not a new kind of staleness.
+var STARTUP_CACHE_TTL = 3600;
+var STARTUP_STALE_TTL = 10800;
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
@@ -290,6 +300,186 @@ async function supabaseGetAll(env, table, params = {}, pageSize = 1000) {
   }
 }
 __name(supabaseGetAll, "supabaseGetAll");
+
+// Writes `rows` into D1 table `table` as (DELETE all, then batched INSERT),
+// chunked to keep each env.DB.batch() call comfortably under D1's batch
+// limits even for the ~9,000-row vacancies table. `columns` controls both
+// the column order and (via `boolCols`) which fields get coerced from a
+// Postgres boolean to D1's 0/1 integer convention.
+async function replaceD1Table(env, table, columns, rows, boolCols = []) {
+  const placeholders = `(${columns.map(() => "?").join(",")})`;
+  const insertSql = `INSERT INTO ${table} (${columns.join(",")}) VALUES ${placeholders}`;
+  await env.DB.prepare(`DELETE FROM ${table}`).run();
+  const CHUNK = 200;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const stmts = chunk.map((row) => {
+      const values = columns.map((col) => {
+        const v = row[col];
+        if (boolCols.includes(col)) return v ? 1 : 0;
+        if (v === void 0) return null;
+        if (v !== null && typeof v === "object") return JSON.stringify(v);
+        return v;
+      });
+      return env.DB.prepare(insertSql).bind(...values);
+    });
+    if (stmts.length) await env.DB.batch(stmts);
+  }
+}
+__name(replaceD1Table, "replaceD1Table");
+
+// Pulls the full current state of every table the app reads for browsing
+// (not just the startup-filtered subset) from Supabase and mirrors it into
+// D1. This is the ONLY thing that still costs Supabase egress for these
+// tables -- it runs on the cron schedule in wrangler.toml (and can be
+// triggered manually via POST /api/sync-d1), not on every visitor request.
+async function syncD1FromSupabase(env) {
+  const vacancyColumns = [
+    "id", "agency_id", "employer_id", "title", "company", "company_photo",
+    "location", "closing_date", "notes", "link", "email", "phone", "remote",
+    "experience_level", "employment_type", "contract_type", "work_schedule",
+    "hours", "salary", "start_date", "created_at", "source_type"
+  ];
+  const [agencies, branches, vacancies, employers, pool, settings] = await Promise.all([
+    supabaseGet(env, "agencies", {
+      select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,created_at",
+      order: "created_at.desc"
+    }),
+    supabaseGet(env, "branches", {
+      select: "id,agency_id,name,location,phone,email",
+      order: "name.asc"
+    }),
+    // Full mirror -- every vacancy row, not just the agency/employer-linked
+    // subset the startup payload itself needs -- so this same D1 table can
+    // also back the general-directory and dedicated-source folder pages
+    // (currently direct-to-Supabase, paginated) once those are migrated too.
+    supabaseGetAll(env, "vacancies", { select: vacancyColumns.join(","), order: "created_at.desc" }, 1000),
+    supabaseGet(env, "employers", {
+      select: "id,name,industry,website,contact,email,location,address,photo,verified,created_at",
+      order: "created_at.desc"
+    }),
+    // Deliberately the public, already-redacted view -- same privacy
+    // boundary the client relies on (see the comment above the client-side
+    // pool_candidates_public query in app-sheets.js). Never sync the raw,
+    // admin-only pool_candidates table into this D1 database.
+    supabaseGet(env, "pool_candidates_public", {
+      select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
+      order: "created_at.desc"
+    }),
+    supabaseGet(env, "app_settings", { select: "key,value" })
+  ]);
+
+  await replaceD1Table(env, "agencies",
+    ["id", "name", "website", "contact", "email", "location", "address", "cvpref", "photo", "companies", "trades", "verified", "created_at"],
+    agencies.body || [], ["verified"]);
+  await replaceD1Table(env, "branches",
+    ["id", "agency_id", "name", "location", "phone", "email"],
+    branches.body || []);
+  await replaceD1Table(env, "vacancies", vacancyColumns, vacancies || []);
+  await replaceD1Table(env, "employers",
+    ["id", "name", "industry", "website", "contact", "email", "location", "address", "photo", "verified", "created_at"],
+    employers.body || [], ["verified"]);
+  await replaceD1Table(env, "pool_candidates",
+    ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"],
+    pool.body || [], ["verified"]);
+  await replaceD1Table(env, "app_settings", ["key", "value"], settings.body || []);
+
+  const summary = {
+    synced_at: (/* @__PURE__ */ new Date()).toISOString(),
+    agencies: (agencies.body || []).length,
+    branches: (branches.body || []).length,
+    vacancies: (vacancies || []).length,
+    employers: (employers.body || []).length,
+    pool_candidates: (pool.body || []).length
+  };
+  await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
+    .bind("last_sync", JSON.stringify(summary)).run();
+  return summary;
+}
+__name(syncD1FromSupabase, "syncD1FromSupabase");
+
+// Same STARTUP_DEDICATED_SOURCES exclusion loadStartupData() applies via
+// Supabase's `source_type=not.in.(...)`, replicated as a SQL WHERE clause
+// against the local D1 mirror -- zero Supabase egress either way, since D1
+// reads never touch Supabase at all.
+async function loadStartupDataFromD1(env) {
+  const dedicated = STARTUP_DEDICATED_SOURCES;
+  const dedicatedPlaceholders = dedicated.map(() => "?").join(",");
+  const DEDICATED_FOLDERS = {
+    himalayas: ["himalayas"],
+    adzuna: ["adzuna"],
+    government: ["government", "dpsa"],
+    retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
+    learnerships: ["learnerships"]
+  };
+
+  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR] = await Promise.all([
+    env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
+    env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
+    // Same filter as before: (agency_id != 'general' OR employer_id IS NOT NULL)
+    // AND source_type NOT IN (dedicated list) -- matches vacancyFilter +
+    // the source_type=not.in.(...) param loadStartupData() used to send to
+    // Supabase directly.
+    env.DB.prepare(`SELECT * FROM vacancies WHERE (agency_id IS NOT NULL AND agency_id != 'general' OR employer_id IS NOT NULL) AND (source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE * 10}`).bind(...dedicated).all(),
+    env.DB.prepare("SELECT * FROM employers ORDER BY created_at DESC").all(),
+    env.DB.prepare("SELECT key, value FROM app_settings").all(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM pool_candidates WHERE status = 'active'").all(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL").all(),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NOT NULL AND source_type NOT IN (${dedicatedPlaceholders})`).bind(...dedicated).all(),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${dedicatedPlaceholders})`).bind(...dedicated).all(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM agencies").all(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM branches").all(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM employers").all()
+  ]);
+
+  const folderCounts = await Promise.all(Object.entries(DEDICATED_FOLDERS).map(async ([key, sources]) => {
+    const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${sources.map(() => "?").join(",")})`).bind(...sources).all();
+    return [key, r.results[0]?.n || 0];
+  }));
+
+  const n = (r) => r.results[0]?.n || 0;
+  const settingMap = Object.fromEntries((settingsR.results || []).map((row) => [row.key, row.value]));
+  return {
+    generated_at: (/* @__PURE__ */ new Date()).toISOString(),
+    agencies: agenciesR.results || [],
+    branches: branchesR.results || [],
+    vacancies: vacanciesR.results || [],
+    employers: employersR.results || [],
+    counts: {
+      agencies: n(agencyCountR),
+      branches: n(branchCountR),
+      vacancies: n(generalCountR) + (vacanciesR.results || []).length + n(dedicatedCountR),
+      general: n(generalCountR) + n(generalPoolCountR),
+      employers: n(employerCountR),
+      candidates: n(poolCountR),
+      dedicated: Object.fromEntries(folderCounts)
+    },
+    settings: {
+      public_vacancy_posting: settingMap.public_vacancy_posting ?? "false",
+      public_employer_registration: settingMap.public_employer_registration ?? "false",
+      public_employer_directory: settingMap.public_employer_directory ?? "true"
+    }
+  };
+}
+__name(loadStartupDataFromD1, "loadStartupDataFromD1");
+
+// Prefers the D1 mirror (zero Supabase egress) and only falls back to the
+// live Supabase path when D1 has nothing yet -- e.g. before the first
+// scheduled sync has ever run, or if the DB binding is missing entirely.
+// Once syncD1FromSupabase() has run at least once, this never touches
+// Supabase on a normal request.
+async function loadStartupDataOrFallback(env) {
+  if (env.DB) {
+    try {
+      const check = await env.DB.prepare("SELECT COUNT(*) AS n FROM agencies").all();
+      if ((check.results[0]?.n || 0) > 0) return await loadStartupDataFromD1(env);
+    } catch (e) {
+      // D1 unreachable or not yet migrated -- fall through to Supabase.
+    }
+  }
+  return await loadStartupData(env);
+}
+__name(loadStartupDataOrFallback, "loadStartupDataOrFallback");
 async function loadStartupData(env) {
   const vacancyColumns = [
     "id",
@@ -507,7 +697,7 @@ async function startupResponse(request, env, ctx, origin) {
   __name(buildResponse, "buildResponse");
 
   async function refreshAndCache() {
-    const payload = await loadStartupData(env);
+    const payload = await loadStartupDataOrFallback(env);
     await cache.put(cacheKey, buildResponse(payload).clone());
     return payload;
   }
@@ -783,6 +973,15 @@ async function generateCvWithGemini(env, { fullName, targetRole, rawInput }) {
 }
 __name(generateCvWithGemini, "generateCvWithGemini");
 var worker_default = {
+  // Cloudflare invokes this on the cron schedule in wrangler.toml's
+  // [triggers] block -- this is what keeps the D1 mirror fresh without any
+  // per-visitor Supabase egress. ctx.waitUntil lets the sync finish even
+  // though cron invocations don't wait on a returned Promise otherwise.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(syncD1FromSupabase(env).catch((e) => {
+      console.error("scheduled D1 sync failed", e);
+    }));
+  },
   async fetch(request, env, ctx) {
     const origin = request.headers.get("Origin");
     const url = new URL(request.url);
@@ -793,6 +992,24 @@ var worker_default = {
     try {
       if (path === "/api/startup" && request.method === "GET") {
         return await startupResponse(request, env, ctx, origin);
+      }
+
+      // Manual trigger for the D1 mirror sync -- same auth as the other
+      // admin-only endpoints. The scheduled() export above runs this
+      // automatically on the cron in wrangler.toml; this exists so a sync
+      // can be forced immediately after a data change, without waiting for
+      // the next cron tick.
+      if (path === "/api/sync-d1" && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Unauthorized" }, 401, origin);
+        }
+        if (!env.DB) return json({ error: "D1 not bound" }, 500, origin);
+        try {
+          const summary = await syncD1FromSupabase(env);
+          return json({ ok: true, ...summary }, 200, origin);
+        } catch (error) {
+          return json({ error: "Sync failed", detail: error.message }, 500, origin);
+        }
       }
 
       // ---------- Smart Manager: server-side token flows ----------
