@@ -632,6 +632,102 @@ async function submitSuggestion() {
   });
 }
 
+// ===== "POST A JOB" — public, ALWAYS-OPEN enquiry form =====
+// FirstJobly-style lead capture (see firstjobly.co.za/post-a-job): unlike
+// self-service vacancy posting / employer registration, this is never
+// gated behind an admin "open/closed" flag — see
+// public_submit_job_enquiry() (20260923_add_job_post_enquiries.sql) and
+// /api/submit/job-enquiry in the Worker. The static /post-a-job/ page
+// (generate-pages.js) posts to the same Worker endpoint independently of
+// this in-app sheet.
+function pjSelectedRoleTypes() {
+  var group = document.getElementById('pj-role-types');
+  if (!group) return [];
+  return Array.prototype.slice.call(group.querySelectorAll('.role-pill.active')).map(function(b){ return b.textContent.trim(); });
+}
+function openPostJobSheet() {
+  document.getElementById('pj-company').value = '';
+  document.getElementById('pj-contact').value = '';
+  document.getElementById('pj-email').value = '';
+  document.getElementById('pj-phone').value = '';
+  document.getElementById('pj-industry').value = '';
+  document.getElementById('pj-positions').selectedIndex = 0;
+  document.getElementById('pj-details').value = '';
+  document.getElementById('pj-website').value = '';
+  var group = document.getElementById('pj-role-types');
+  if (group) group.querySelectorAll('.role-pill.active').forEach(function(b){ b.classList.remove('active'); });
+  var err = document.getElementById('post-job-error');
+  err.style.display = 'none'; err.textContent = '';
+  var waLink = document.getElementById('post-job-wa-link');
+  if (waLink) waLink.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent("Hi, I'd like to post a job on SA Recruiters.");
+  renderTurnstile('post-job-turnstile', 'post-job-overlay');
+  document.getElementById('post-job-overlay').classList.add('open');
+}
+async function submitJobPostEnquiry() {
+  var company = document.getElementById('pj-company').value.trim();
+  var contact = document.getElementById('pj-contact').value.trim();
+  var email = document.getElementById('pj-email').value.trim();
+  var phone = document.getElementById('pj-phone').value.trim();
+  var industry = document.getElementById('pj-industry').value.trim();
+  var positions = document.getElementById('pj-positions').value;
+  var roleTypes = pjSelectedRoleTypes();
+  var details = document.getElementById('pj-details').value.trim();
+  var website = document.getElementById('pj-website').value.trim();
+  var err = document.getElementById('post-job-error');
+  err.style.display = 'none'; err.textContent = '';
+  if (!company || !email) {
+    err.textContent = 'Add your company name and work email.'; err.style.display = 'block'; return;
+  }
+  var payload = {
+    company_name: company, contact_person: contact, work_email: email, phone: phone,
+    industry: industry, positions_to_fill: positions, role_types: roleTypes,
+    additional_details: details, website: website
+  };
+  var btn = event && event.target ? event.target : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
+  var workerRes = await submitViaWorker('/api/submit/job-enquiry', payload, 'post-job-turnstile');
+  var savedToDatabase = !!workerRes.ok;
+  if (workerRes.ok) {
+    console.log('job enquiry submitted via worker', workerRes.data && workerRes.data.email);
+  } else {
+    // Fallback: legacy direct Supabase insert + EmailJS.
+    var enquiryError = null;
+    try {
+      var { error } = await supabaseClient.from('job_post_enquiries').insert([{
+        company_name: company, contact_person: contact, work_email: email, phone: phone,
+        industry: industry, positions_to_fill: positions, role_types: roleTypes,
+        additional_details: details, website: website, status: 'new',
+        user_id: saAuthUser ? saAuthUser.id : null
+      }]);
+      enquiryError = error || null;
+      if (error) console.warn('job enquiry fallback insert', error);
+    } catch(e){ enquiryError = e; }
+    savedToDatabase = !enquiryError;
+    tryEmailJS({
+      type: 'submission',
+      to_email: ADMIN_EMAIL,
+      email_subject: 'SA Recruiters | New "Post a job" enquiry — ' + company,
+      notification_title: 'New job posting enquiry',
+      notification_intro: 'An employer asked to post a job through SA Recruiters.',
+      notification_body: 'Company: ' + company + '\nContact: ' + (contact || '-') + '\nWork email: ' + email +
+        '\nPhone: ' + (phone || '-') + '\nIndustry: ' + (industry || '-') + '\nPositions to fill: ' + (positions || '-') +
+        '\nRoles: ' + (roleTypes.length ? roleTypes.join(', ') : '-') + '\nWebsite: ' + (website || '-') + '\nDetails: ' + (details || '-')
+    });
+    if (!savedToDatabase) {
+      try {
+        var localEnq = JSON.parse(localStorage.getItem('sa_job_enquiries_local') || '[]');
+        var localCopy = Object.assign({}, payload, { created_at: new Date().toISOString(), _localId: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7) });
+        localEnq.push(localCopy);
+        localStorage.setItem('sa_job_enquiries_local', JSON.stringify(localEnq));
+      } catch(e){}
+    }
+  }
+  resetTurnstile('post-job-turnstile');
+  if (btn) { btn.disabled = false; btn.textContent = 'Submit enquiry'; }
+  closeSheet('post-job-overlay');
+  showToast(savedToDatabase ? "Thanks — we'll be in touch to get your listing live." : "Sent — we'll follow up as soon as we can.");
+}
+
 // ===== TALENT POOL (public browse + self-registration) =====
 var poolCache = [];
 var poolLoaded = false;

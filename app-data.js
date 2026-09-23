@@ -407,18 +407,14 @@ async function togglePublicPosting(checked) {
   }
   updatePostingToggleUI();
 }
-function openVacancyLockedSheet() {
-  var msg = 'Hi, I\'d like to post a vacancy on SA Recruiters. Please could you open vacancy posting for me?';
-  var link = document.getElementById('vacancy-locked-wa-link');
-  if (link) link.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
-  document.getElementById('vacancy-locked-overlay').classList.add('open');
-}
-function openEmployerLockedSheet() {
-  var msg = 'Hi, I\'d like to register my company as an employer on SA Recruiters. Please could you set this up for me?';
-  var link = document.getElementById('employer-locked-wa-link');
-  if (link) link.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
-  document.getElementById('employer-locked-overlay').classList.add('open');
-}
+// Self-service vacancy posting / employer registration is admin-gated (see
+// publicVacancyPostingOpen / publicEmployerRegistrationOpen above), but a
+// visitor should never just hit a WhatsApp-only wall for that — see
+// openPostJobSheet() in app-sheets.js, which opens the always-open
+// "Post a job" enquiry form (post-job-overlay, FirstJobly-style lead form).
+// WhatsApp stays available as a secondary link inside that sheet.
+function openVacancyLockedSheet() { openPostJobSheet(); }
+function openEmployerLockedSheet() { openPostJobSheet(); }
 
 // ----- Employer posters (swipeable poster feed) -----
 var posterTotalCount = null;

@@ -415,6 +415,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <button class="minibtn" id="sub-tab-reports" onclick="switchSubTab('reports')">Reports <span class="nav-badge" id="sub-badge-reports"></span></button>
           <button class="minibtn" id="sub-tab-suggestions" onclick="switchSubTab('suggestions')">Suggestions <span class="nav-badge" id="sub-badge-suggestions"></span></button>
+          <button class="minibtn" id="sub-tab-jobenquiries" onclick="switchSubTab('jobenquiries')">Job enquiries <span class="nav-badge" id="sub-badge-jobenquiries"></span></button>
         </div>
         <div id="sub-list"></div>
       </div>
@@ -817,7 +818,7 @@ async function deleteR2Object(key) {
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [] };
+var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [] };
 function debounce(fn, ms){
   var t = null;
   return function(){
@@ -926,7 +927,7 @@ async function doLogout(){
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
-  cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[] };
+  cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[] };
 }
 async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
@@ -1011,6 +1012,10 @@ async function getReports(){
 }
 async function getSuggestions(){
   try { var { data, error } = await supabaseClient.from('suggestions').select('id,type,agency_name,details,contact,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  return [];
+}
+async function getJobEnquiries(){
+  try { var { data, error } = await supabaseClient.from('job_post_enquiries').select('id,company_name,contact_person,work_email,phone,industry,positions_to_fill,role_types,additional_details,website,status,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function getPoolCandidates(){
@@ -1210,7 +1215,7 @@ async function regenerateAllEmployerTokens(){
 async function loadAll(){
   var results = await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(),
-    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters()
+    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters(), getJobEnquiries()
   ]);
   cache.agencies = results[0] || [];
   cache.branches = results[1] || [];
@@ -1221,6 +1226,7 @@ async function loadAll(){
   cache.tracks = results[6] || [];
   cache.poolCandidates = results[7] || [];
   cache.posters = results[8] || [];
+  cache.jobEnquiries = results[9] || [];
 
   var settings = await Promise.all([
     getAppSetting('public_vacancy_posting','false'),
@@ -1276,7 +1282,7 @@ function renderNav(){
     if(n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
     if(n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
     if(n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
-    if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; badge = '<span class="nav-badge">'+c+'</span>'; }
+    if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
     if(n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
     var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
@@ -2442,12 +2448,13 @@ async function deletePoolCandidate(id){
 }
 
 // ===== Submissions =====
-function switchSubTab(tab){ subTab = tab; document.getElementById('sub-tab-reports').classList.toggle('active', tab==='reports'); document.getElementById('sub-tab-suggestions').classList.toggle('active', tab==='suggestions'); renderSubmissions(); }
+function switchSubTab(tab){ subTab = tab; document.getElementById('sub-tab-reports').classList.toggle('active', tab==='reports'); document.getElementById('sub-tab-suggestions').classList.toggle('active', tab==='suggestions'); document.getElementById('sub-tab-jobenquiries').classList.toggle('active', tab==='jobenquiries'); renderSubmissions(); }
 function renderSubmissions(){
   var el = document.getElementById('sub-list');
   var openR = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length;
   document.getElementById('sub-badge-reports').textContent = openR || '';
   document.getElementById('sub-badge-suggestions').textContent = cache.suggestions.length || '';
+  document.getElementById('sub-badge-jobenquiries').textContent = cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length || '';
   if(subTab==='reports'){
     if(!cache.reports.length){ el.innerHTML = emptyState('No reports','Reports submitted by users will appear here.'); return; }
     el.innerHTML = cache.reports.map(function(r){
@@ -2462,7 +2469,7 @@ function renderSubmissions(){
         '<button class="minibtn danger" onclick="delReport('+r.id+')">Delete</button>'+
       '</div></div>';
     }).join('');
-  } else {
+  } else if(subTab==='suggestions') {
     if(!cache.suggestions.length){ el.innerHTML = emptyState('No suggestions','Suggestions & feedback from users will appear here.'); return; }
     el.innerHTML = cache.suggestions.map(function(s){
       return '<div class="row-item"><div class="row-main">'+
@@ -2472,12 +2479,37 @@ function renderSubmissions(){
         '<div class="muted" style="margin-top:3px">'+fmtDate(s.created_at)+'</div>'+
       '</div><div class="row-actions"><button class="minibtn danger" onclick="delSuggestion('+s.id+')">Delete</button></div></div>';
     }).join('');
+  } else {
+    // Job enquiries — the FirstJobly-style "Post a job" lead form
+    // (job_post_enquiries, always open, no self-registration gate).
+    if(!cache.jobEnquiries.length){ el.innerHTML = emptyState('No job enquiries','Enquiries from the "Post a job" form (in-app and /post-a-job/) will appear here.'); return; }
+    el.innerHTML = cache.jobEnquiries.map(function(j){
+      var st = (j.status||'new');
+      var roles = Array.isArray(j.role_types) ? j.role_types.join(', ') : '';
+      return '<div class="row-item"><div class="row-main">'+
+        '<div class="row-title">'+escapeHtml(j.company_name||'Untitled company')+' <span class="badge '+(st==='new'?'open':'resolved')+'">'+st+'</span></div>'+
+        '<div class="row-sub"><strong>Contact:</strong> '+escapeHtml(j.contact_person||'—')+' &middot; '+escapeHtml(j.work_email||'—')+(j.phone?(' &middot; '+escapeHtml(j.phone)):'')+'</div>'+
+        (j.industry || j.positions_to_fill ? '<div class="row-sub">'+[j.industry?('Industry: '+escapeHtml(j.industry)):'', j.positions_to_fill?('Positions: '+escapeHtml(j.positions_to_fill)):''].filter(Boolean).join(' &middot; ')+'</div>' : '')+
+        (roles?'<div class="row-sub">Roles: '+escapeHtml(roles)+'</div>':'')+
+        (j.additional_details?'<div class="row-sub" style="white-space:normal">'+escapeHtml(j.additional_details)+'</div>':'')+
+        (j.website?'<div class="row-sub">Website: '+escapeHtml(j.website)+'</div>':'')+
+        '<div class="muted" style="margin-top:3px">'+fmtDate(j.created_at)+'</div>'+
+      '</div><div class="row-actions">'+
+        (st!=='contacted'?'<button class="minibtn ok" onclick="markJobEnquiryContacted('+"'"+j.id+"'"+')">Mark contacted</button>':'<button class="minibtn" onclick="reopenJobEnquiry('+"'"+j.id+"'"+')">Reopen</button>')+
+        '<button class="minibtn danger" onclick="delJobEnquiry('+"'"+j.id+"'"+')">Delete</button>'+
+      '</div></div>';
+    }).join('');
   }
 }
 async function resolveReport(id){ await updateReportStatus(id,'resolved'); showToast('Marked resolved'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 async function reopenReport(id){ await updateReportStatus(id,'open'); showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 async function delReport(id){ if(!confirm('Delete this report?')) return; await deleteReport(id); showToast('Report deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function markJobEnquiryContacted(id){ await updateJobEnquiryStatus(id,'contacted'); showToast('Marked contacted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function reopenJobEnquiry(id){ await updateJobEnquiryStatus(id,'new'); showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) return; await deleteJobEnquiry(id); showToast('Enquiry deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function updateJobEnquiryStatus(id,status){ try{ await supabaseClient.from('job_post_enquiries').update({status:status}).eq('id',id); }catch(e){} }
+async function deleteJobEnquiry(id){ try{ await supabaseClient.from('job_post_enquiries').delete().eq('id',id); }catch(e){} }
 
 // ===== Settings =====
 async function loadPoolBankingDetails(){
