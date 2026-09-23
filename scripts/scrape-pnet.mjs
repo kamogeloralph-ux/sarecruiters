@@ -2,6 +2,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 // Replaces the old fixed-URL Pnet scraper (3 hardcoded agencies) and the
 // retired Job Mail scraper. Pnet is South Africa's largest job board and
@@ -169,6 +170,18 @@ export function parsePnetJobDetail(html, { id, link, agency }) {
     || (Array.isArray(posting?.jobLocation) ? posting.jobLocation[0]?.address?.addressLocality : '')
   ) || fallbackLocation($);
   const description = posting?.description ? htmlToText(posting.description).slice(0, 20_000) : '';
+  const closingDate = clean(posting?.validThrough || '').slice(0, 10);
+  // datePosted is the JobPosting schema's sibling to validThrough -- same
+  // block we already read for the closing date, just an unused field until
+  // now. Pnet listings don't visibly show a "posted" date on the page the
+  // way JobMail/Graduates24 do, so this structured field is the only
+  // signal available for catching a listing Pnet itself never took down.
+  const postedText = clean(posting?.datePosted || '').slice(0, 10);
+  const stale = isStaleVacancy({ closing_date: closingDate, postedText, source_type: 'pnet' });
+  if (stale.stale) {
+    console.log(`[pnet:${agency.name}] skipping ${link}: ${stale.reason}`);
+    return null;
+  }
   return {
     id: `pnet-${id}`,
     agency_id: agency.id,
@@ -177,7 +190,7 @@ export function parsePnetJobDetail(html, { id, link, agency }) {
     company: agency.name,
     company_photo: agency.photo || null,
     location,
-    closing_date: clean(posting?.validThrough || '').slice(0, 10),
+    closing_date: closingDate,
     notes: description,
     link,
     email: '',
@@ -193,6 +206,11 @@ export function parsePnetJobDetail(html, { id, link, agency }) {
     source_type: 'pnet',
     source_checked_at: new Date().toISOString(),
     last_verified_at: new Date().toISOString(),
+    // NOTE: postedText is intentionally NOT included here -- 'vacancies'
+    // has no such column, and PostgREST rejects the whole batch
+    // (PGRST204) if an unknown key is present in the upsert payload. It's
+    // only used above, locally, to feed isStaleVacancy before this object
+    // is built.
   };
 }
 

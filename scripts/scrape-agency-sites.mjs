@@ -223,11 +223,22 @@ const JOB_SECTION_ROOT_RX = /\/(vacanc(y|ies)|jobs?|careers?|positions?|openings
 // a link whose href happens to match JOB_PATH_RX. None of these are ever
 // an actual vacancy title.
 const GENERIC_CTA_TITLE_RX = /^(vacanc(y|ies)|jobs?|careers?|positions?( available)?|openings?|current vacanc(y|ies)|available (jobs?|positions?|openings?|vacanc(y|ies))|open vacanc(y|ies)|view( all|s)? (jobs?|vacanc(y|ies)|positions?|openings?|categories)|view job\b|view more vacanc(y|ies)|browse jobs?|search vacanc(y|ies)|job (search|listings?|categories|seekers?|market news|dashboard|board)|find (a |your )?(next )?(job|role|position|vacancy|career)( now)?|find out more|more info(rmation)?|learn more|read more|register( your)? cv( here)?|register now|submit( your)? cv|apply now|explore all fields|career opportunities)$/i;
+// A facet/filter sidebar or menu sometimes renders "<Category
+// Name><badge count>" as one link's text with no separator between them
+// -- "Legal 1", "Dubai 1", "IT & Telecoms 1", "Contract 3", "Permanent
+// 20" all confirmed live (Networkers International's location/sector
+// filters, AGC Recruitment's contract-type filters). A real job title
+// essentially never ends in a bare 1-2 digit number with nothing else
+// around it -- titles that do include a number ("Grade 3 Teacher",
+// "Level 2 Technician") have it in the middle, not as the very last
+// token -- so this is a safe shape to reject.
+const FACET_COUNT_TITLE_RX = /^[A-Za-z][A-Za-z&.':\s]{1,40}\s\d{1,2}$/;
 function looksLikeJobTitle(title) {
   if (!title || title.length < 4 || title.length > 90) return false;
   if (/\?\s*$/.test(title)) return false;
   if (/^(how|why|what|when|where|top\s+\w|the\s+(difference|complete|ultimate)s?\b|guide\s+to|\d+\s+(tips|ways|reasons|things))/i.test(title)) return false;
   if (GENERIC_CTA_TITLE_RX.test(title.trim())) return false;
+  if (FACET_COUNT_TITLE_RX.test(title.trim())) return false;
   return true;
 }
 function isRealPageLink(href) {

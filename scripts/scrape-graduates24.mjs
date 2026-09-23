@@ -125,7 +125,11 @@ export function parseGraduates24Jobs(html, pageUrl = GENERAL_URL) {
       company: companyFromTitle(title),
       location,
       closing_date: closesMatch ? closesMatch[1] : '',
-      postedText: postedMatch ? postedMatch[1] : '',
+      // NOTE: postedText was previously included here as a row field, but
+      // 'vacancies' has no such column -- PostgREST rejects the whole
+      // upsert batch (PGRST204) if an unrecognized key is present in the
+      // payload. It's already used above (isStaleVacancy) before this
+      // object is built; it doesn't need to also be a column.
       notes: (postedMatch ? `Posted ${postedMatch[1]}. ` : '') + description.slice(0, 20_000 - 20),
       link,
       // 'learnerships' is a dedicated source type (see isDedicatedVacancySource

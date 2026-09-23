@@ -37,6 +37,12 @@ test('extracts every POST block from a Government department PDF text export', (
   assert.match(jobs[1].title, /ASSISTANT DIRECTOR/);
 });
 
+test('skips a POST block whose CLOSING DATE has already passed', () => {
+  const text = `ANNEXURE B\nDEPARTMENT OF HEALTH\nCLOSING DATE : 01 January 2026 at 16:00\nPOST 33/09 : LONG-EXPIRED POST REF NO: 3/3/1/99/2026\nSALARY : R300 000 per annum\nCENTRE : Western Cape: Cape Town\nREQUIREMENTS : Grade 12.`;
+  const jobs = parseGovernmentPdfTextForTest(text, { circularNumber: 33, year: 2026, pdfUrl: 'https://example.gov/b.pdf', sourceFile: 'b.pdf' });
+  assert.equal(jobs.length, 0);
+});
+
 // Real-world shape: DPSA's circular page links to exactly ONE PDF -- the
 // combined circular -- which itself contains one "ANNEXURE <letter>"
 // section per department, each with its own closing date. This is the
