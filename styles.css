@@ -1652,3 +1652,12 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 /* The quota sheet's Google button spans full width above the cancel */
 #guest-limit-overlay .gsi-material-button{border-radius:999px;height:50px;margin-bottom:10px;font-size:15px}
 #guest-limit-overlay .gsi-material-button-contents{font-weight:600}
+
+/* FINAL MENU CONTROL STANDARD: the home hamburger and every three-dot menu
+   button must share one visible treatment, including the Menu hero override. */
+.site-menu-trigger,.menu-more-btn{
+  border:2px solid color-mix(in srgb,var(--accent) 72%,#fff) !important;
+  background:linear-gradient(145deg,var(--accent),color-mix(in srgb,var(--accent) 78%,#111)) !important;
+  color:#fff !important;
+  box-shadow:0 8px 18px -8px color-mix(in srgb,var(--accent) 75%,transparent) !important;
+}
