@@ -4,8 +4,9 @@ This covers the three changes shipped together:
 
 1. **Smart Manager token lockdown** — `manage_token` is no longer readable or
    writable by the public; manager links are verified server-side.
-2. **Server-side email (Resend)** — admin notifications are sent from the
-   Cloudflare Worker instead of the browser (EmailJS stays as a fallback).
+2. **Server-side email (Resend)** — all transactional and Talent Pool alert
+   notifications are sent from the Cloudflare Worker; email credentials never
+   reach the browser.
 3. **Turnstile spam protection** — public report/suggestion forms are gated by
    a Cloudflare Turnstile check verified in the Worker.
 

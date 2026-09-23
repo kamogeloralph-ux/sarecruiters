@@ -138,8 +138,6 @@ var ADMIN_WHATSAPP = '27715531005'; // +27 71 553 1005
 var ADMIN_BANK_ACCOUNT = '2573389037'; // Capitec
 var ADMIN_BANK_HOLDER = 'SA Recruiters';
 /* ⚠️ END PROTECTED CONTACT DETAILS ⚠️ */
-var EMAILJS_CONFIG = { serviceId: 'service_aqzditg', templateId: 'template_edvys4b', publicKey: 'oqqjLLXpmji_dmmQP' }; // EmailJS — activated
-
 function showWhatsAppConfirm(opts) {
   /* opts: { title, message, waText, skipSaveToast } */
   var titleEl = document.getElementById('wa-confirm-title');
@@ -150,21 +148,6 @@ function showWhatsAppConfirm(opts) {
   var waUrl = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + opts.waText;
   linkEl.href = waUrl;
   document.getElementById('whatsapp-confirm-overlay').classList.add('open');
-}
-
-var emailJsLoader = null;
-function loadEmailJS() {
-  if (window.emailjs) return Promise.resolve(window.emailjs);
-  if (emailJsLoader) return emailJsLoader;
-  emailJsLoader = new Promise(function(resolve, reject) {
-    var script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-    script.async = true;
-    script.onload = function(){ resolve(window.emailjs); };
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-  return emailJsLoader;
 }
 
 // ===== CLOUDFLARE TURNSTILE (spam protection for public forms) =====
@@ -365,36 +348,6 @@ async function submitViaWorker(path, payload, turnstileContainerId) {
   }
 }
 
-function tryEmailJS(payload) {
-  /* One unified EmailJS template is used for both admin submissions and
-     vacancy alerts. The variable notification_body is already tailored to
-     the event, so the template never displays irrelevant report/vacancy fields. */
-  if (!EMAILJS_CONFIG.serviceId || !EMAILJS_CONFIG.templateId || !EMAILJS_CONFIG.publicKey) {
-    return Promise.resolve({ sent: false, reason: 'not-configured' });
-  }
-  var type = payload.type === 'report' ? 'REPORT' : (payload.type === 'suggestion' ? 'SUGGESTION' : 'SUBMISSION');
-  var submitDate = new Date().toLocaleString('en-ZA', { dateStyle: 'full', timeStyle: 'short' });
-  var templateParams = {
-    to_email: payload.to_email || ADMIN_EMAIL,
-    email_subject: payload.email_subject || ('SA Recruiters | New ' + type.toLowerCase()),
-    notification_type: type,
-    notification_title: payload.notification_title || ('New ' + type.toLowerCase()),
-    notification_intro: payload.notification_intro || 'A new notification has been received through SA Recruiters.',
-    notification_body: payload.notification_body || payload.details || '-',
-    submit_date: submitDate,
-    submitted_via: 'SA Recruiters'
-  };
-  return loadEmailJS().then(function(client) {
-    if (!client) return { sent: false, reason: 'emailjs-unavailable' };
-    if (!client._initialized) {
-      client.init({ publicKey: EMAILJS_CONFIG.publicKey });
-      client._initialized = true;
-    }
-    return client.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, templateParams);
-  }).then(function() { console.log('emailjs sent ok'); return { sent: true }; })
-    .catch(function(err) { console.error('emailjs error', err); return { sent: false, reason: err }; });
-}
-
 // ===== Employer entry point on the sign-in gate (no Google sign-in, no
 // Talent Pool profile) =====
 function openEmployerGateSheet() {
@@ -485,18 +438,11 @@ async function submitReport() {
   if (workerRes.ok) {
     console.log('report submitted via worker', workerRes.data && workerRes.data.email);
   } else {
-    // Fallback 1: legacy direct Supabase insert + EmailJS (may be blocked by
-    // RLS after the lockdown migration; harmless when it is).
+    // Fallback: preserve the database submission if the Worker is unavailable.
+    // Email notifications stay server-side through Resend only; never send
+    // from the browser or fall back to a second email provider.
     var res = await submitReportToSupabase(payload);
     savedToDatabase = !!res.ok;
-    tryEmailJS({
-      type: 'report',
-      to_email: ADMIN_EMAIL,
-      email_subject: 'SA Recruiters | New report received',
-      notification_title: 'New report received',
-      notification_intro: 'A user submitted a report about a listing or agency.',
-      notification_body: 'Agency: ' + (payload.agency_name || '-') + '\nReason: ' + (payload.reason || '-') + '\nDetails: ' + (payload.details || '-')
-    });
     if (!res.ok && !/row-level security|permission denied/i.test((res.error && res.error.message) || '')) {
       console.warn('report fallback also failed', res.error);
     }
@@ -661,7 +607,8 @@ async function submitSuggestion() {
   if (workerRes.ok) {
     console.log('suggestion submitted via worker', workerRes.data && workerRes.data.email);
   } else {
-    // Fallback: legacy direct Supabase insert + EmailJS.
+    // Fallback: preserve the database submission if the Worker is unavailable.
+    // Email notifications remain server-side through Resend only.
     var suggError = null;
     try {
       var { error } = await supabaseClient.from('suggestions').insert([payload]);
@@ -669,14 +616,6 @@ async function submitSuggestion() {
       if (error) console.warn('suggestion fallback insert', error);
     } catch(e){ suggError = e; }
     savedToDatabase = !suggError;
-    tryEmailJS({
-      type: 'suggestion',
-      to_email: ADMIN_EMAIL,
-      email_subject: 'SA Recruiters | New suggestion received',
-      notification_title: 'New suggestion received',
-      notification_intro: 'A user submitted a suggestion or comment through SA Recruiters.',
-      notification_body: 'Type: ' + (payload.type || '-') + '\nAgency: ' + (payload.agency_name || '-') + '\nDetails: ' + (payload.details || '-')
-    });
   }
   // Local fallback only when BOTH paths failed (see submitReport) — otherwise
   // My submissions shows the delivered item twice: the real row plus a local

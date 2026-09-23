@@ -33,7 +33,17 @@ async function isAdminRequest(request, env) {
         "apikey": env.SUPABASE_ANON_KEY
       }
     });
-    return res.ok;
+    if (!res.ok) return false;
+    const user = await res.json().catch(() => null);
+    if (!user?.id) return false;
+    const adminRes = await fetch(`${env.SUPABASE_URL}/rest/v1/admin_users?select=user_id&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "apikey": env.SUPABASE_ANON_KEY
+      }
+    });
+    const admins = await adminRes.json().catch(() => []);
+    return adminRes.ok && Array.isArray(admins) && admins.length > 0;
   } catch (e) {
     return false;
   }
@@ -161,8 +171,7 @@ async function supabaseRpc(env, fnName, args) {
 __name(supabaseRpc, "supabaseRpc");
 
 // ============================================================
-//  Transactional email via Resend (server-side replacement for the old
-//  client-side EmailJS send). RESEND_API_KEY is a wrangler secret; the
+//  Transactional email via Resend. RESEND_API_KEY is a wrangler secret; the
 //  browser never sees it. Email is best-effort: a failure is logged and
 //  reported in the response but never blocks the database insert.
 // ============================================================
@@ -1301,6 +1310,43 @@ var worker_default = {
           });
         }
         return json({ ok: true }, 200, origin);
+      }
+      if (path === "/api/admin/send-vacancy-alerts" && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Not authorized." }, 401, origin);
+        }
+        const body = await request.json().catch(() => ({}));
+        const vacancy = body.vacancy && typeof body.vacancy === "object" ? body.vacancy : {};
+        const recipients = Array.isArray(body.recipients) ? body.recipients.slice(0, 200) : [];
+        if (!vacancy.title || !recipients.length) {
+          return json({ error: "Vacancy title and recipients are required." }, 400, origin);
+        }
+        const results = [];
+        for (const recipient of recipients) {
+          const email = String(recipient.email || "").trim();
+          const candidateId = String(recipient.candidate_id || "");
+          if (!email || !candidateId) {
+            results.push({ candidate_id: candidateId, sent: false, error: "Missing recipient details." });
+            continue;
+          }
+          const sent = await sendNotificationEmail(env, {
+            to_email: email,
+            email_subject: `SA Recruiters | New vacancy: ${String(vacancy.title).slice(0, 180)}`,
+            notification_type: "VACANCY ALERT",
+            notification_title: "New vacancy opportunity",
+            notification_intro: "A new vacancy matching your Talent Pool preferences has been posted.",
+            notification_body: [
+              `Role: ${vacancy.title || "-"}`,
+              `Company: ${vacancy.company || "-"}`,
+              `Location: ${vacancy.location || "-"}`,
+              `Employment type: ${vacancy.employment_type || "-"}`,
+              `Closing date: ${vacancy.closing_date || "-"}`,
+              `Apply: ${vacancy.link || vacancy.email || vacancy.phone || "-"}`
+            ].join("\n")
+          });
+          results.push({ candidate_id: candidateId, sent: !!sent.sent, error: sent.sent ? null : sent.reason || "Resend failed." });
+        }
+        return json({ ok: true, sent: results.filter((row) => row.sent).length, matched: results.length, results }, 200, origin);
       }
       if (path === "/api/generate-cv" && request.method === "POST") {
         // Require a signed-in SA Recruiters user (the app is auth-gated

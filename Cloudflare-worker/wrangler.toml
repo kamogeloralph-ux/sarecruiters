@@ -47,8 +47,8 @@ R2_PUBLIC_BASE_URL = "https://pub-911e4cd402674c6f85c747b12212772f.r2.dev"
 # new spam/email/manager-link features. Set each with:
 #   cd Cloudflare-worker && npx wrangler secret put <NAME>
 #
-#   RESEND_API_KEY        Resend API key (re_...) — enables server-side
-#                         admin notification emails (replaces EmailJS).
+#   RESEND_API_KEY        Resend API key (re_...) — enables all server-side
+#                         notification emails.
 #   TURNSTILE_SECRET_KEY  Turnstile secret key (0x4AAA...) — enables spam
 #                         checks on /api/submit/* endpoints. The matching
 #                         SITE key goes in app-sheets.js (TURNSTILE_SITE_KEY).

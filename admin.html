@@ -1093,17 +1093,6 @@ async function removeVacancy(id){ var { error } = await supabaseClient.from('vac
 async function updateReportStatus(id, status){ var { error } = await supabaseClient.from('reports').update({status:status}).eq('id',id); if(error) console.error('report upd',error); }
 async function deleteReport(id){ var { error } = await supabaseClient.from('reports').delete().eq('id',id); if(error) console.error('report del',error); }
 async function deleteSuggestion(id){ var { error } = await supabaseClient.from('suggestions').delete().eq('id',id); if(error) console.error('sugg del',error); }
-var alertEmailJsLoader = null;
-var ALERT_EMAIL_CONFIG = { serviceId: 'service_aqzditg', templateId: 'template_edvys4b', publicKey: 'oqqjLLXpmji_dmmQP' };
-function loadAlertEmailJS(){
-  if (window.emailjs) return Promise.resolve(window.emailjs);
-  if (alertEmailJsLoader) return alertEmailJsLoader;
-  alertEmailJsLoader = new Promise(function(resolve,reject){
-    var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js'; s.async=true;
-    s.onload=function(){resolve(window.emailjs)}; s.onerror=reject; document.head.appendChild(s);
-  });
-  return alertEmailJsLoader;
-}
 function alertMatchesVacancy(candidate, vacancy){
   var sectorPref=(candidate.alert_sectors||candidate.sector||'').toLowerCase().trim();
   var locationPref=(candidate.alert_locations||candidate.location||'').toLowerCase().trim();
@@ -1126,34 +1115,29 @@ async function queueAndSendVacancyAlerts(vacancy){
     var rows=matches.map(function(c){return {vacancy_id:vacancy.id,candidate_id:c.id,recipient_email:c.contact_email,status:'queued'};});
     var queueResult=await supabaseClient.from('vacancy_alert_queue').upsert(rows,{onConflict:'vacancy_id,candidate_id'});
     if(queueResult.error) console.warn('vacancy alert queue unavailable',queueResult.error);
-    var client=await loadAlertEmailJS();
-    if(!client){ showToast('Email alert service could not load.'); return {sent:0,reason:'emailjs-load'}; }
-    if(!client._initialized){client.init({publicKey:ALERT_EMAIL_CONFIG.publicKey});client._initialized=true;}
-    var sent=0;
-    for(var i=0;i<matches.length;i++){
-      var c=matches[i];
-      try{
-        await client.send(ALERT_EMAIL_CONFIG.serviceId,ALERT_EMAIL_CONFIG.templateId,{
-          to_email:c.contact_email,
-          email_subject:'SA Recruiters | New vacancy: '+(vacancy.title||'Opportunity'),
-          notification_type:'VACANCY ALERT',
-          notification_title:'New vacancy opportunity',
-          notification_intro:'A new vacancy matching your Talent Pool preferences has been posted.',
-          notification_body:'Role: '+(vacancy.title||'-')+'\nCompany: '+(vacancy.company||'-')+'\nLocation: '+(vacancy.location||'-')+'\nEmployment type: '+(vacancy.employment_type||'-')+'\nClosing date: '+(vacancy.closing_date||'-')+'\nApply: '+(vacancy.link||vacancy.email||vacancy.phone||'-'),
-          to_name:c.full_name||'Talent Pool member',
-          vacancy_title:vacancy.title||'New vacancy',company:vacancy.company||'',location:vacancy.location||'',apply_link:vacancy.link||'',unsubscribe_token:c.alert_unsubscribe_token||'',
-          submitted_via:'SA Recruiters'
-        });
-        sent++;
-        await supabaseClient.from('vacancy_alert_queue').update({status:'sent',sent_at:new Date().toISOString(),error_message:null}).eq('vacancy_id',vacancy.id).eq('candidate_id',c.id);
-      }catch(sendErr){
-        console.warn('alert email failed',sendErr);
-        await supabaseClient.from('vacancy_alert_queue').update({status:'failed',error_message:String(sendErr && (sendErr.text||sendErr.message||sendErr))}).eq('vacancy_id',vacancy.id).eq('candidate_id',c.id);
-      }
+    var authHdr=await r2AuthHeader();
+    if(!authHdr.Authorization){ showToast('Your admin session expired. Please log in again.'); return {sent:0,reason:'admin-auth'}; }
+    var workerRes=await fetch(R2_WORKER_URL+'/api/admin/send-vacancy-alerts',{
+      method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHdr),
+      body:JSON.stringify({
+        vacancy:{title:vacancy.title||'',company:vacancy.company||'',location:vacancy.location||'',employment_type:vacancy.employment_type||'',closing_date:vacancy.closing_date||'',link:vacancy.link||'',email:vacancy.email||'',phone:vacancy.phone||''},
+        recipients:matches.map(function(c){return {candidate_id:c.id,email:c.contact_email};})
+      })
+    });
+    var workerData=await workerRes.json().catch(function(){return {};});
+    if(!workerRes.ok){ showToast((workerData&&workerData.error)||'The Resend alert service could not send the alerts.'); return {sent:0,reason:'worker-alerts'}; }
+    var results=workerData.results||[];
+    for(var i=0;i<results.length;i++){
+      var result=results[i];
+      await supabaseClient.from('vacancy_alert_queue').update(result.sent
+        ? {status:'sent',sent_at:new Date().toISOString(),error_message:null}
+        : {status:'failed',error_message:result.error||'Resend failed.'})
+        .eq('vacancy_id',vacancy.id).eq('candidate_id',result.candidate_id);
     }
-    if(sent) showToast(sent+' vacancy alert'+(sent===1?'':'s')+' sent');
-    else showToast('The alert matched members but EmailJS rejected the send. Check the EmailJS service/template settings.');
-    return {sent:sent,matched:matches.length};
+    var sent=Number(workerData.sent)||0;
+    if(sent) showToast(sent+' vacancy alert'+(sent===1?'':'s')+' sent via Resend');
+    else showToast('The alert matched members but Resend did not send any messages.');
+    return {sent:sent,matched:Number(workerData.matched)||matches.length};
   }catch(e){ console.warn('vacancy alerts unavailable',e); showToast('Vacancy saved, but the email alert could not be sent.'); return {sent:0,reason:'unexpected'}; }
 }
 async function getAppSetting(key, fb){ try{ var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key',key).maybeSingle(); if(error||!data) return fb; return data.value; }catch(e){ return fb; } }
