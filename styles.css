@@ -1200,7 +1200,6 @@ header{margin-bottom:18px}
 #screen-home .stat-label{font-size:9px;color:rgba(255,255,255,.78)}
 #screen-home .screen-scroll{padding-top:18px;background:var(--bg)}
 #screen-home .browse-jobs-row{display:flex;align-items:center;padding:0 2px;margin:0 0 14px!important;min-height:28px;font-size:13px!important}
-#screen-home .browse-jobs-row::after{content:'☷';margin-left:8px;color:var(--accent);font-size:23px;line-height:1;flex:0 0 auto}
 #screen-home .browse-jobs-scroll{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex:1 1 auto;min-width:0}
 #screen-home .browse-jobs-scroll::-webkit-scrollbar{display:none}
 #screen-home .browse-jobs-scroll a{flex:0 0 auto;color:var(--accent)!important;text-decoration:none;font-weight:600;background:var(--card-2);border:1px solid var(--border);border-radius:999px;padding:6px 13px;white-space:nowrap}
