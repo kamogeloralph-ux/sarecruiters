@@ -726,8 +726,8 @@ async function generateCvWithGemini(env, { fullName, targetRole, rawInput }) {
       // fail when a lower-demand Flash variant is available.
       if (res.status === 429 || res.status === 503) {
         const fallbackModel = model === "gemini-flash-latest"
-          ? "gemini-2.5-flash-lite"
-          : model === "gemini-2.5-flash-lite" ? "gemini-2.0-flash" : null;
+          ? "gemini-3.5-flash-lite"
+          : model === "gemini-3.5-flash-lite" ? "gemini-3.5-flash" : null;
         if (fallbackModel) {
           return generateCvWithGemini(
             { ...env, GEMINI_MODEL: fallbackModel },
