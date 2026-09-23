@@ -722,6 +722,19 @@ async function generateCvWithGemini(env, { fullName, targetRole, rawInput }) {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       console.error("Gemini CV generation failed", res.status, detail.slice(0, 500));
+      // A temporary 429/503 from one model should not make the CV builder
+      // fail when a lower-demand Flash variant is available.
+      if (res.status === 429 || res.status === 503) {
+        const fallbackModel = model === "gemini-flash-latest"
+          ? "gemini-2.5-flash-lite"
+          : model === "gemini-2.5-flash-lite" ? "gemini-2.0-flash" : null;
+        if (fallbackModel) {
+          return generateCvWithGemini(
+            { ...env, GEMINI_MODEL: fallbackModel },
+            { fullName, targetRole, rawInput }
+          );
+        }
+      }
       let reason = "Gemini rejected the request";
       try {
         const parsed = JSON.parse(detail);
