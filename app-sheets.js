@@ -177,13 +177,36 @@ var turnstileLoader = null;
 function loadTurnstile() {
   if (window.turnstile && typeof window.turnstile.render === 'function') return Promise.resolve(window.turnstile);
   if (turnstileLoader) return turnstileLoader;
+  // A transient challenge/network failure must not poison the shared promise
+  // forever. The previous implementation cached the first rejection, so all
+  // forms showed an empty widget until the whole page was manually refreshed.
   turnstileLoader = new Promise(function(resolve, reject) {
-    var script = document.createElement('script');
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-    script.async = true;
-    script.onload = function(){ resolve(window.turnstile); };
-    script.onerror = function(){ reject(new Error('turnstile-load-failed')); };
-    document.head.appendChild(script);
+    var attempt = 0;
+    var tryLoad = function() {
+      if (window.turnstile && typeof window.turnstile.render === 'function') {
+        resolve(window.turnstile);
+        return;
+      }
+      attempt += 1;
+      var script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&retry=' + attempt + '_' + Date.now();
+      script.async = true;
+      script.onload = function(){
+        if (window.turnstile && typeof window.turnstile.render === 'function') resolve(window.turnstile);
+        else if (attempt < 3) setTimeout(tryLoad, 500);
+        else reject(new Error('turnstile-runtime-missing'));
+      };
+      script.onerror = function(){
+        if (attempt < 3) setTimeout(tryLoad, 750);
+        else reject(new Error('turnstile-load-failed'));
+      };
+      document.head.appendChild(script);
+    };
+    tryLoad();
+  }).catch(function(error) {
+    // Permit a later form open to start a fresh load attempt.
+    turnstileLoader = null;
+    throw error;
   });
   return turnstileLoader;
 }
