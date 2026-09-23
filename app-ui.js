@@ -37,6 +37,55 @@ function updateAdminUI() {
 // (Supabase session restore + admin console handled in admin.html.)
 
 // ===== Bottom nav =====
+var SA_ACTIVE_SCREEN_KEY = 'sa_active_screen_v1';
+var SA_RESTORABLE_SCREENS = {
+  home: true, account: true, saved: true, menu: true,
+  allagencies: true, allbranches: true, allvacancies: true,
+  allemployers: true, allposters: true, pool: true
+};
+function isRestorableScreen(name) {
+  return !!SA_RESTORABLE_SCREENS[name];
+}
+function persistActiveScreen(name) {
+  if (!isRestorableScreen(name)) return;
+  try { sessionStorage.setItem(SA_ACTIVE_SCREEN_KEY, name); } catch(e) {}
+}
+function restoredScreenName() {
+  try {
+    var name = sessionStorage.getItem(SA_ACTIVE_SCREEN_KEY);
+    return isRestorableScreen(name) ? name : 'home';
+  } catch(e) { return 'home'; }
+}
+function restoreActiveScreenBeforeReveal() {
+  // Manager links and PWA actions are URL-owned entry points; never let an
+  // old consumer section override those destinations on a refresh.
+  var params = new URLSearchParams(window.location.search);
+  if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab')) return;
+  var name = restoredScreenName();
+  var target = document.getElementById('screen-' + name);
+  if (!target) return;
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  target.classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.tab === name);
+  });
+  window.__saRestoredScreen = name;
+}
+restoreActiveScreenBeforeReveal();
+// All navigation paths in this app eventually toggle a screen's `active`
+// class. Observing that single state change keeps refresh restoration in sync
+// without relying on every individual menu/card handler remembering to call a
+// second persistence helper.
+if (window.MutationObserver) {
+  new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      if (m.type !== 'attributes' || m.attributeName !== 'class') return;
+      var el = m.target;
+      if (!el.classList.contains('screen') || !el.classList.contains('active')) return;
+      persistActiveScreen(el.id.replace(/^screen-/, ''));
+    });
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+}
 function openSiteMenu() {
   var drawer = document.getElementById('site-menu-drawer');
   var backdrop = document.getElementById('site-menu-backdrop');
@@ -77,6 +126,24 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
     if (btn.dataset.tab === 'account') renderAccountDetails();
   });
 });
+
+function renderRestoredScreenContent() {
+  var name = window.__saRestoredScreen;
+  if (!name) return;
+  if (name === 'account' && typeof renderAccountDetails === 'function') renderAccountDetails();
+  else if (name === 'saved' && typeof renderSaved === 'function') renderSaved();
+  else if (name === 'allagencies' && typeof renderAllAgenciesList === 'function') renderAllAgenciesList();
+  else if (name === 'allbranches' && typeof renderAllBranchesList === 'function') renderAllBranchesList();
+  else if (name === 'allemployers' && typeof renderAllEmployersList === 'function') renderAllEmployersList();
+  else if (name === 'allvacancies' && typeof renderAllVacanciesList === 'function') renderAllVacanciesList();
+  else if (name === 'allposters') {
+    if (typeof renderPosterFeed === 'function') renderPosterFeed(postersCache);
+    if (typeof loadPosterFeed === 'function') loadPosterFeed();
+  } else if (name === 'pool' && typeof loadPoolCandidates === 'function') {
+    loadPoolCandidates();
+  }
+}
+window.renderRestoredScreenContent = renderRestoredScreenContent;
 
 // ===== Home horizontal navigation =====
 function scrollStats(direction) {

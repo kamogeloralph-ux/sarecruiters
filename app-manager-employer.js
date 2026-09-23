@@ -228,6 +228,7 @@ function bootAuthenticatedApp() {
   if (await loadDataCache()) {
     updateStats();
     filterAndRenderCached();
+    if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
     markAppDataReady();
   }
 })();
