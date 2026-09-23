@@ -29,8 +29,8 @@ test('parseDateString returns null for junk or ambiguous junk rather than guessi
 
 test('closingDateIsPast: past dates are stale, recent/future/garbage are not', () => {
   assert.equal(closingDateIsPast('01 Jan 2021', NOW), true);
-  assert.equal(closingDateIsPast('17 Sep 2026', NOW), true, '2 days past closing (incl. grace)');
-  assert.equal(closingDateIsPast('18 Sep 2026', NOW), false, 'inside the 2-day grace period');
+  assert.equal(closingDateIsPast('17 Sep 2026', NOW), true, 'past closing date');
+  assert.equal(closingDateIsPast('18 Sep 2026', NOW), true, 'one day past closing date');
   assert.equal(closingDateIsPast('01 Jan 2027', NOW), false);
   assert.equal(closingDateIsPast('', NOW), false);
   assert.equal(closingDateIsPast('whenever', NOW), false);

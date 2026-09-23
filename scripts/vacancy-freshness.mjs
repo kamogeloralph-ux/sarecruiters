@@ -87,14 +87,12 @@ function daysBetween(fromDate, toDate) {
 }
 
 // ---- Closing-date signal ------------------------------------------------
-// A listing whose closing date has passed is out of date. Adds a 2-day
-// grace period because scraped "Closes:" text is occasionally off by a
-// day around midnight boundaries, and because some sites keep the page
-// up briefly after closing.
+// A listing whose closing date has passed is out of date immediately.
 export function closingDateIsPast(closingDate, now = new Date()) {
   const date = parseDateString(closingDate);
   if (!date) return false;
-  return date.getTime() < now.getTime() - 2 * 86_400_000;
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return date.getTime() < todayUtc;
 }
 
 // ---- Posting-age signal --------------------------------------------------

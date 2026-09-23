@@ -474,6 +474,29 @@ async function getEmployerPosters() {
 }
 
 // ----- Vacancies -----
+function parseVacancyClosingDate(value) {
+  if (!value) return null;
+  var s = String(value).trim(), m;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/))) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
+  m = s.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\.?\s+(\d{4})/);
+  if (m) {
+    var months = { jan:0, january:0, feb:1, february:1, mar:2, march:2, apr:3, april:3, may:4, jun:5, june:5, jul:6, july:6, aug:7, august:7, sep:8, sept:8, september:8, oct:9, october:9, nov:10, november:10, dec:11, december:11 };
+    var month = months[m[2].toLowerCase()];
+    if (month !== undefined) return new Date(Date.UTC(+m[3], month, +m[1]));
+  }
+  return null;
+}
+function isVacancyExpired(v) {
+  var closing = parseVacancyClosingDate(v && v.closing_date);
+  if (!closing || isNaN(closing.getTime())) return false;
+  var today = new Date();
+  var todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  return closing.getTime() < todayUtc;
+}
+function filterExpiredVacancies(rows) {
+  return (rows || []).filter(function(v) { return !isVacancyExpired(v); });
+}
 async function getVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
   var pageSize = 1000;
@@ -488,10 +511,10 @@ async function getVacancies() {
       if (result.error) break;
       var page = result.data || [];
       rows = rows.concat(page);
-      if (page.length < pageSize) return rows;
+      if (page.length < pageSize) return filterExpiredVacancies(rows);
     }
   } catch(e){}
-  return markLoadError(readLocal('vacancies'));
+  return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
 }
 async function getGeneralVacancyCount() {
   try {
@@ -599,7 +622,7 @@ async function fetchGeneralVacancyPage(state, page) {
   }
   var result = await query;
   if (result.error) throw result.error;
-  return result.data || [];
+  return filterExpiredVacancies(result.data || []);
 }
 // Source-type groupings for the 5 dedicated-source folders, mirroring the
 // classifier functions in renderAllVacanciesList() (isHimalayasVacancy etc.)
@@ -633,7 +656,7 @@ async function fetchDedicatedVacancyPage(folder, state, page) {
   }
   var result = await query;
   if (result.error) throw result.error;
-  return result.data || [];
+  return filterExpiredVacancies(result.data || []);
 }
 async function upsertVacancy(v) {
   // First attempt: send all fields
@@ -954,6 +977,7 @@ async function loadAll() {
   if (results[2].__loadError) { hadLoadError = true; } else {
     // Resolve imported/general records against the agency directory before
     // splitting the startup cache from the lazy General Vacancies feed.
+    results[2] = filterExpiredVacancies(results[2]);
     matchVacanciesToAgencies(results[2], agenciesCache);
     vacanciesCache = sortVacancies(results[2].filter(function(v){
       // General-folder rows are loaded lazily. Do not retain them here or
