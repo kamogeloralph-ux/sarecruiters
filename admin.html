@@ -2487,7 +2487,7 @@ function renderSubmissions(){
       var st = (j.status||'new');
       var roles = Array.isArray(j.role_types) ? j.role_types.join(', ') : '';
       return '<div class="row-item"><div class="row-main">'+
-        '<div class="row-title">'+escapeHtml(j.company_name||'Untitled company')+' <span class="badge '+(st==='new'?'open':'resolved')+'">'+st+'</span></div>'+
+        '<div class="row-title">'+escapeHtml(j.company_name||'Untitled company')+' <span class="badge '+(st==='new'?'open':(st==='approved'?'resolved':'resolved'))+'">'+st+'</span></div>'+
         '<div class="row-sub"><strong>Contact:</strong> '+escapeHtml(j.contact_person||'—')+' &middot; '+escapeHtml(j.work_email||'—')+(j.phone?(' &middot; '+escapeHtml(j.phone)):'')+'</div>'+
         (j.industry || j.positions_to_fill ? '<div class="row-sub">'+[j.industry?('Industry: '+escapeHtml(j.industry)):'', j.positions_to_fill?('Positions: '+escapeHtml(j.positions_to_fill)):''].filter(Boolean).join(' &middot; ')+'</div>' : '')+
         (roles?'<div class="row-sub">Roles: '+escapeHtml(roles)+'</div>':'')+
@@ -2495,7 +2495,10 @@ function renderSubmissions(){
         (j.website?'<div class="row-sub">Website: '+escapeHtml(j.website)+'</div>':'')+
         '<div class="muted" style="margin-top:3px">'+fmtDate(j.created_at)+'</div>'+
       '</div><div class="row-actions">'+
-        (st!=='contacted'?'<button class="minibtn ok" onclick="markJobEnquiryContacted('+"'"+j.id+"'"+')">Mark contacted</button>':'<button class="minibtn" onclick="reopenJobEnquiry('+"'"+j.id+"'"+')">Reopen</button>')+
+        (st==='new'?'<button class="minibtn ok" onclick="approveJobEnquiry('+"'"+j.id+"'"+')">Approve for posting</button><button class="minibtn danger" onclick="rejectJobEnquiry('+"'"+j.id+"'"+')">Reject</button>':'')+
+        (st==='approved'?'<button class="minibtn ok" onclick="markJobEnquiryContacted('+"'"+j.id+"'"+')">Mark contacted</button>':'')+
+        (st==='contacted'?'<button class="minibtn" onclick="reopenJobEnquiry('+"'"+j.id+"'"+')">Reopen</button>':'')+
+        (st==='rejected'?'<button class="minibtn" onclick="reopenJobEnquiry('+"'"+j.id+"'"+')">Reopen</button>':'')+
         '<button class="minibtn danger" onclick="delJobEnquiry('+"'"+j.id+"'"+')">Delete</button>'+
       '</div></div>';
     }).join('');
@@ -2505,6 +2508,14 @@ async function resolveReport(id){ await updateReportStatus(id,'resolved'); showT
 async function reopenReport(id){ await updateReportStatus(id,'open'); showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 async function delReport(id){ if(!confirm('Delete this report?')) return; await deleteReport(id); showToast('Report deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function approveJobEnquiry(id){
+  if(!confirm('Approve this request for posting? It will still need to be turned into a vacancy by an admin.')) return;
+  await updateJobEnquiryStatus(id,'approved'); showToast('Approved for posting'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard();
+}
+async function rejectJobEnquiry(id){
+  if(!confirm('Reject this job request? It will not be published.')) return;
+  await updateJobEnquiryStatus(id,'rejected'); showToast('Request rejected'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard();
+}
 async function markJobEnquiryContacted(id){ await updateJobEnquiryStatus(id,'contacted'); showToast('Marked contacted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 async function reopenJobEnquiry(id){ await updateJobEnquiryStatus(id,'new'); showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) return; await deleteJobEnquiry(id); showToast('Enquiry deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }

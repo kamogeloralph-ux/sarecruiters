@@ -762,46 +762,19 @@ async function submitJobPostEnquiry() {
   var btn = event && event.target ? event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
   var workerRes = await submitViaWorker('/api/submit/job-enquiry', payload, 'post-job-turnstile');
-  var savedToDatabase = !!workerRes.ok;
-  if (workerRes.ok) {
-    console.log('job enquiry submitted via worker', workerRes.data && workerRes.data.email);
-  } else {
-    // Fallback: legacy direct Supabase insert + EmailJS.
-    var enquiryError = null;
-    try {
-      var { error } = await supabaseClient.from('job_post_enquiries').insert([{
-        company_name: company, contact_person: contact, work_email: email, phone: phone,
-        industry: industry, positions_to_fill: positions, role_types: roleTypes,
-        additional_details: details, website: website, status: 'new',
-        user_id: saAuthUser ? saAuthUser.id : null
-      }]);
-      enquiryError = error || null;
-      if (error) console.warn('job enquiry fallback insert', error);
-    } catch(e){ enquiryError = e; }
-    savedToDatabase = !enquiryError;
-    tryEmailJS({
-      type: 'submission',
-      to_email: ADMIN_EMAIL,
-      email_subject: 'SA Recruiters | New "Post a job" enquiry — ' + company,
-      notification_title: 'New job posting enquiry',
-      notification_intro: 'An employer asked to post a job through SA Recruiters.',
-      notification_body: 'Company: ' + company + '\nContact: ' + (contact || '-') + '\nWork email: ' + email +
-        '\nPhone: ' + (phone || '-') + '\nIndustry: ' + (industry || '-') + '\nPositions to fill: ' + (positions || '-') +
-        '\nRoles: ' + (roleTypes.length ? roleTypes.join(', ') : '-') + '\nWebsite: ' + (website || '-') + '\nDetails: ' + (details || '-')
-    });
-    if (!savedToDatabase) {
-      try {
-        var localEnq = JSON.parse(localStorage.getItem('sa_job_enquiries_local') || '[]');
-        var localCopy = Object.assign({}, payload, { created_at: new Date().toISOString(), _localId: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7) });
-        localEnq.push(localCopy);
-        localStorage.setItem('sa_job_enquiries_local', JSON.stringify(localEnq));
-      } catch(e){}
-    }
+  if (!workerRes.ok) {
+    // Never fall back to a direct Supabase insert here: that would bypass the
+    // Worker-side Turnstile check and allow an attacker to flood enquiries.
+    err.textContent = workerRes.error || 'Could not submit the enquiry. Please try again.';
+    err.style.display = 'block';
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit for admin review'; }
+    return;
   }
+  var savedToDatabase = true;
   resetTurnstile('post-job-turnstile');
-  if (btn) { btn.disabled = false; btn.textContent = 'Submit enquiry'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Submit for admin review'; }
   closeSheet('post-job-overlay');
-  showToast(savedToDatabase ? "Thanks — we'll be in touch to get your listing live." : "Sent — we'll follow up as soon as we can.");
+  showToast("Submitted for admin review — it will not be published until approved.");
 }
 
 // ===== TALENT POOL (public browse + self-registration) =====
