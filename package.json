@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "generate": "node generate-pages.js",
-    "scrape:careerjunction": "node scripts/scrape-careerjunction.mjs",
     "sync:adzuna": "node scripts/sync-adzuna.mjs",
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
     "sync:oracle": "node scripts/sync-oracle.mjs",
