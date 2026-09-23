@@ -156,6 +156,19 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+function isExpiredVacancy(vacancy) {
+  const value = String(vacancy?.closing_date || '').trim();
+  if (!value) return false;
+  let match = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  let closing;
+  if (match) closing = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3]));
+  else if ((match = value.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/))) closing = new Date(Date.UTC(+match[3], +match[2] - 1, +match[1]));
+  else return false;
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  return !Number.isNaN(closing.getTime()) && closing.getTime() < todayUtc;
+}
+
 function recordMapKey(record, index) {
   if (!record.__staticSlugKey) {
     const rawId = record.id === undefined || record.id === null || record.id === '' ? `row-${index}` : String(record.id);
@@ -286,7 +299,7 @@ async function fetchAll() {
   return {
     agencies: agencies || [],
     branches: branches || [],
-    vacancies: vacancies || [],
+    vacancies: (vacancies || []).filter((vacancy) => !isExpiredVacancy(vacancy)),
   };
 }
 
@@ -393,20 +406,12 @@ function buildJobLocationFields(vacancy) {
   };
 }
 
-// validThrough is only "recommended", not required, but leaving it out
-// makes Google treat the posting as having no defined expiry, and many
-// of our listings (sourced from job boards that don't expose a real
-// closing date) had this dropped entirely. Where we have a genuine
-// closing_date we use it; otherwise we fall back to 60 days after the
-// post date, which is a conservative, commonly-used default for job
-// boards and keeps the listing from looking permanently open.
+// validThrough is only emitted when the source supplies a genuine closing
+// date. Never invent an expiry date from created_at: the application removes
+// vacancies when their explicit closing date has passed.
 function resolveValidThrough(vacancy) {
   if (vacancy.closing_date) return vacancy.closing_date;
-  if (!vacancy.created_at) return undefined;
-  const posted = new Date(vacancy.created_at);
-  if (Number.isNaN(posted.getTime())) return undefined;
-  const fallback = new Date(posted.getTime() + 60 * 24 * 60 * 60 * 1000);
-  return fallback.toISOString().slice(0, 10);
+  return undefined;
 }
 
 // schema.org expects baseSalary.value.value to be a NUMBER, and

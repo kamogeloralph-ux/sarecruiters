@@ -6,18 +6,9 @@
 //  listings whose postings were years old — most visibly the 2021
 //  learnerships still listed on Graduates24.
 //
-//  Deletes rows where ANY of these hold:
-//    1. Stale by the shared freshness rules (scripts/vacancy-freshness.mjs):
-//       a parsed closing date in the past, or a posting older than the
-//       source's max age (21d jobmail, 30d learnerships/retail, 45d job
-//       boards, 90d government).
-//    2. Older than the per-source TTL on row age (mirrors
-//       delete_expired_vacancies() in 20260919b_per_source_vacancy_ttl.sql)
-//       — catches rows whose listing page never showed a parseable date.
-//
-//  Rows with NO parseable dates anywhere (no closing date, no posted text
-//  in notes, created_at missing) are left alone by rule 1 and handled by
-//  rule 2 via their row age — deliberately conservative.
+//  Deletes rows whose explicit closing date has passed. Rows without a
+//  parseable closing date are retained; created_at is never used as an
+//  invented expiry date.
 //
 //  Usage:
 //    npm run purge:stale          # delete + print summary
@@ -29,7 +20,7 @@
 
 import { pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
-import { isStaleVacancy, maxAgeDaysForSource } from './vacancy-freshness.mjs';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,11 +30,6 @@ const PAGE_SIZE = 1000;
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
   : null;
-
-function ttlCutoffFor(sourceType) {
-  const days = maxAgeDaysForSource(sourceType);
-  return new Date(Date.now() - days * 86_400_000).toISOString();
-}
 
 async function loadAllVacancies() {
   const all = [];
@@ -74,16 +60,12 @@ async function run() {
   const reasonsBySource = {};
 
   for (const row of vacancies) {
-    // Rule 1: content-based staleness (closing date / posting age).
-    const check = isStaleVacancy(row, now);
+    // Only an explicit closing date is authoritative for deletion. Do not
+    // infer expiry from created_at or a source-age window.
+    const check = isStaleVacancy({ closing_date: row.closing_date }, now);
     if (check.stale) {
       toDelete.push({ id: row.id, title: row.title, source: row.source_type || 'unknown', reason: check.reason });
       continue;
-    }
-    // Rule 2: row-age TTL fallback (same ceilings as the SQL function).
-    const cutoff = ttlCutoffFor(row.source_type);
-    if (row.created_at && row.created_at < cutoff) {
-      toDelete.push({ id: row.id, title: row.title, source: row.source_type || 'unknown', reason: `row older than ${maxAgeDaysForSource(row.source_type)}d TTL` });
     }
   }
 
