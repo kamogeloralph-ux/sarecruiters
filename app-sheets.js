@@ -172,7 +172,7 @@ function loadEmailJS() {
 // key lives in the Cloudflare Worker, which refuses submissions the widget
 // did not answer. Site key: add the real one from the Cloudflare dashboard
 // (Turnstile → Add site) for sa-recruiters.co.za.
-var TURNSTILE_SITE_KEY = '0x4AAAAAAAE781UzzffMh7u8L';
+var TURNSTILE_SITE_KEY = '0x4AAAAAAE781UzzffMh7u8L';
 var turnstileLoader = null;
 function loadTurnstile() {
   if (window.turnstile && typeof window.turnstile.render === 'function') return Promise.resolve(window.turnstile);

@@ -128,7 +128,7 @@ const OUT_DIR = path.join(__dirname); // publish root — adjust if you move thi
 // read these from, since it must work with zero JS dependencies besides
 // Turnstile itself.
 const R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
-const TURNSTILE_SITE_KEY = '0x4AAAAAAAE781UzzffMh7u8L';
+const TURNSTILE_SITE_KEY = '0x4AAAAAAE781UzzffMh7u8L';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
