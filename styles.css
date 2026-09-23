@@ -1604,16 +1604,16 @@ header{margin-bottom:18px}
 /* ===== My Account (general signed-in profile) ===== */
 /* Hero card: Google identity. Reuses the app's card + accent tokens so it
    matches the rest of the design system in both themes. */
-.account-hero{display:flex;align-items:center;gap:14px;margin:14px 2px 6px;padding:16px;border-radius:var(--radius-sm);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);box-shadow:0 12px 28px -18px color-mix(in srgb,var(--accent) 55%,transparent)}
-.account-avatar{width:58px;height:58px;min-width:58px;border-radius:19px;overflow:hidden;display:grid;place-items:center;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);color:var(--accent);font-size:22px;font-weight:800}
+.account-hero{display:flex;align-items:center;gap:11px;width:min(100%,420px);margin:12px auto 6px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 10%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);box-shadow:0 8px 20px -16px color-mix(in srgb,var(--accent) 55%,transparent)}
+.account-avatar{width:48px;height:48px;min-width:48px;border-radius:15px;overflow:hidden;display:grid;place-items:center;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);color:var(--accent);font-size:19px;font-weight:800}
 .account-avatar img{width:100%;height:100%;object-fit:cover;display:block}
 button.account-avatar.account-avatar-btn{cursor:pointer;padding:0;font-family:inherit;position:relative;transition:transform .18s var(--ease),box-shadow .18s}
 button.account-avatar.account-avatar-btn:active{transform:scale(.94)}
 button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolute;right:-6px;bottom:-6px;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;line-height:1;box-shadow:0 4px 10px -3px color-mix(in srgb,var(--accent) 70%,transparent);pointer-events:none}
 .account-hero-copy{min-width:0;flex:1 1 auto}
-.account-name{font-size:17px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-name{font-size:15.5px;font-weight:800;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .account-email{font-size:12.5px;color:var(--text-2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.account-provider{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:4px 10px;border-radius:999px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);font-size:10.5px;font-weight:700;letter-spacing:.02em}
+.account-provider{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:3px 8px;border-radius:999px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);font-size:10px;font-weight:700;letter-spacing:.01em}
 .account-provider svg{width:12px;height:12px;fill:currentColor}
 /* Drawer account card is now a tappable link into My Account */
 .site-menu-account{cursor:pointer;transition:transform .15s var(--ease),background .2s}
