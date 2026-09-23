@@ -722,7 +722,14 @@ async function generateCvWithGemini(env, { fullName, targetRole, rawInput }) {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       console.error("Gemini CV generation failed", res.status, detail.slice(0, 500));
-      return { ok: false, status: 502, error: "The CV Builder could not reach the AI service. Please try again." };
+      let reason = "Gemini rejected the request";
+      try {
+        const parsed = JSON.parse(detail);
+        reason = parsed.error && parsed.error.message ? String(parsed.error.message) : reason;
+      } catch (e) {}
+      // Return only a short provider diagnostic; never echo request headers or
+      // secrets. This makes configuration/quota/model failures actionable.
+      return { ok: false, status: 502, error: `AI service error (${res.status}): ${reason.slice(0, 240)}` };
     }
     const data = await res.json();
     const text = data && data.candidates && data.candidates[0] && data.candidates[0].content &&
