@@ -131,14 +131,35 @@ async function loadCandidateSpotlight() {
     // filters to status = 'active' — full candidate details beyond
     // name/position/experience/photo are admin-only.
     var { data, error } = await supabaseClient.from('pool_candidates_public')
-      .select('id,full_name,position,experience_years,photo_url,verified,status,created_at')
+      .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
       .order('created_at', { ascending: false })
       .limit(30);
     if (error) throw error;
     list = (data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
   } catch (e) { console.warn('candidate spotlight load', e); list = []; }
-  // Verified candidates first, then most recently joined; cap the deck at 10 cards.
-  list.sort(function(a, b) { return (b.verified?1:0) - (a.verified?1:0); });
+  // Keep complete profiles ahead of partial profiles. A profile is considered
+  // complete for the public spotlight when its useful professional summary is
+  // present: name, position, sector, location, experience and about text.
+  // Photo is intentionally optional and does not make a candidate look
+  // incomplete. Verified status remains the tie-breaker within each group.
+  function spotlightCompleteness(c) {
+    var score = 0;
+    if (String(c.full_name || '').trim()) score++;
+    if (String(c.position || '').trim()) score++;
+    if (String(c.sector || '').trim()) score++;
+    if (String(c.location || '').trim()) score++;
+    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') score++;
+    if (String(c.about_you || '').trim()) score++;
+    return score;
+  }
+  list.sort(function(a, b) {
+    var aScore = spotlightCompleteness(a), bScore = spotlightCompleteness(b);
+    var aComplete = aScore === 6, bComplete = bScore === 6;
+    if (aComplete !== bComplete) return aComplete ? -1 : 1;
+    if (aScore !== bScore) return bScore - aScore;
+    if ((b.verified?1:0) !== (a.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  });
   renderCandidateSpotlight(list.slice(0, 10));
 }
 function renderCandidateSpotlight(list) {
