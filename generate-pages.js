@@ -50,7 +50,6 @@ const STATIC_ASSETS = [
   'styles.css',
   'content.js',
   'content-manager.js',
-  'sponsor-widget.js',
   'manifest.json',
 ];
 

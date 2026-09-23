@@ -57,7 +57,6 @@ const CORE_ASSETS = [
   './manifest.json',
   './content.js',
   './content-manager.js',
-  './sponsor-widget.js',
   './icons/v2-icon-192.png',
   './icons/v2-icon-512.png',
   './icons/v2-Maskable-192.png',
