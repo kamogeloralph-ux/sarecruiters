@@ -261,6 +261,24 @@ var generalVacancyLoading = false;
 var generalVacancyRows = [];
 var generalVacancyQueryKey = '';
 var generalVacancyRequestId = 0;
+// Dedicated-source vacancy folders (Himalayas/Adzuna/Government/Retail/
+// Learnerships) used to be fully embedded in vacanciesCache via the startup
+// payload -- that was ~95% of all vacancy rows and the main cause of a slow
+// first load. They now lazy-load a page at a time, the same pattern as the
+// General Vacancies folder just above, sharing this one state machine since
+// only one folder is ever open at a time.
+var dedicatedVacancyFolder = '';
+var dedicatedVacancyPageSize = 30;
+var dedicatedVacancyPage = 0;
+var dedicatedVacancyHasMore = false;
+var dedicatedVacancyLoading = false;
+var dedicatedVacancyRows = [];
+var dedicatedVacancyQueryKey = '';
+var dedicatedVacancyRequestId = 0;
+// Folder counts for the overview grid (Himalayas · N vacancies, etc.),
+// populated from startup.counts.dedicated -- a handful of small indexed
+// COUNT queries server-side, not the rows themselves.
+var dedicatedVacancyCounts = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0 };
 // Public static listing URLs are generated from the same deterministic maps
 // used by generate-pages.js. This keeps links correct when names repeat.
 var publicAgencySlugs = Object.create(null);
