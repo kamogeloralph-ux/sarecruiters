@@ -331,7 +331,11 @@ async function submitViaWorker(path, payload, turnstileContainerId) {
   } catch(e) {}
   try {
     var controller = typeof AbortController === 'function' ? new AbortController() : null;
-    var timeout = controller ? setTimeout(function(){ controller.abort(); }, 12000) : null;
+    // Gemini-backed CV generation can take longer than a normal form request,
+    // especially while the Worker wakes up on a mobile connection. Aborting
+    // after 12 seconds made a healthy request appear as "offline".
+    var requestTimeoutMs = path === '/api/generate-cv' ? 60000 : 12000;
+    var timeout = controller ? setTimeout(function(){ controller.abort(); }, requestTimeoutMs) : null;
     var res = await fetch(R2_WORKER_URL + path, {
       method: 'POST',
       headers: Object.assign(
@@ -352,7 +356,12 @@ async function submitViaWorker(path, payload, turnstileContainerId) {
     }
     return { ok: true, data: data };
   } catch(e) {
-    return { ok: false, error: 'offline', retriable: false };
+    if (e && e.name === 'AbortError') {
+      return { ok: false, error: path === '/api/generate-cv'
+        ? 'CV generation is taking longer than expected. Please try again.'
+        : 'The request timed out — please try again.', retriable: true };
+    }
+    return { ok: false, error: 'Could not reach SA Recruiters — please check your connection and try again.', retriable: false };
   }
 }
 
