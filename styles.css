@@ -1295,8 +1295,11 @@ header{margin-bottom:18px}
 #screen-menu .menu-brand-copy .profile-name{color:#fff}
 #screen-menu .menu-brand-copy .profile-slogan,#screen-menu .menu-brand-copy .profile-sub{color:rgba(255,255,255,.8)}
 #screen-menu .menu-more-btn,#screen-menu .menu-hero .theme-toggle{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.26);color:#fff;box-shadow:none}
-.site-menu-trigger{width:46px;height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border));border-radius:14px;background:var(--accent-soft);color:var(--accent);cursor:pointer}
-.site-menu-trigger span{width:19px;height:2px;border-radius:2px;background:currentColor;transition:transform .2s ease}
+.site-menu-trigger{width:50px;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:2px solid color-mix(in srgb,var(--accent) 72%,#fff);border-radius:15px;background:linear-gradient(145deg,var(--accent),color-mix(in srgb,var(--accent) 78%,#111));color:#fff;cursor:pointer;box-shadow:0 8px 18px -8px color-mix(in srgb,var(--accent) 75%,transparent);transition:transform .18s ease,filter .18s ease,box-shadow .18s ease}
+.site-menu-trigger span{width:22px;height:3px;border-radius:3px;background:currentColor;transition:transform .2s ease}
+.site-menu-trigger:hover{filter:brightness(1.08);box-shadow:0 10px 22px -8px color-mix(in srgb,var(--accent) 85%,transparent)}
+.site-menu-trigger:active{transform:scale(.94)}
+.site-menu-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:3px}
 .site-menu-open{overflow:hidden}
 .site-menu-backdrop{position:fixed;inset:0;z-index:10020;background:rgba(3,19,43,.42);opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(5px)}
 .site-menu-backdrop.is-visible{opacity:1;pointer-events:auto}
