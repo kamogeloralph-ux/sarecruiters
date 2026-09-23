@@ -423,6 +423,19 @@ async function loadStartupData(env) {
         .then((res) => [key, readCountHeader(res.headers)])
     ))
   ]);
+  // Keep employer card counts independent of the startup vacancy feed. The
+  // feed intentionally omits dedicated-source rows, and a NULL source_type
+  // can also be excluded by PostgREST's NOT IN semantics; neither should make
+  // an employer's card appear to have zero vacancies.
+  const employerVacancyCounts = await Promise.all((employers.body || []).map(async (employer) => {
+    const result = await supabaseGet(env, "vacancies", {
+      select: "id",
+      employer_id: `eq.${employer.id}`,
+      limit: "0"
+    }, { prefer: "count=exact" });
+    return [employer.id, readCountHeader(result.headers)];
+  }));
+  const employerCountMap = Object.fromEntries(employerVacancyCounts);
   const settingMap = Object.fromEntries(settings.map(({ body }) => {
     const row = Array.isArray(body) ? body[0] : null;
     return [row?.key, row?.value];
@@ -437,7 +450,10 @@ async function loadStartupData(env) {
     agencies: agencies.body || [],
     branches: branches.body || [],
     vacancies: [...vacancies],
-    employers: employers.body || [],
+    employers: (employers.body || []).map((employer) => ({
+      ...employer,
+      vacancy_count: employerCountMap[employer.id] || 0
+    })),
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
@@ -466,7 +482,9 @@ async function loadStartupData(env) {
 __name(loadStartupData, "loadStartupData");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/startup", request.url), request);
+  // Bump the internal key whenever the payload shape changes so visitors do
+  // not receive an older cached startup response without employer counts.
+  const cacheKey = new Request(new URL("/api/startup?schema=employer-counts-v1", request.url), request);
 
   function buildResponse(payload) {
     return new Response(JSON.stringify(payload), {
