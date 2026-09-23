@@ -237,8 +237,8 @@ function publicUrlFor(env, key) {
   return `${base}/${key}`;
 }
 __name(publicUrlFor, "publicUrlFor");
-var STARTUP_CACHE_TTL = 60;
-var STARTUP_STALE_TTL = 300;
+var STARTUP_CACHE_TTL = 600;
+var STARTUP_STALE_TTL = 1800;
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
@@ -434,23 +434,58 @@ __name(loadStartupData, "loadStartupData");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   const cacheKey = new Request(new URL("/api/startup", request.url), request);
-  const cached = await cache.match(cacheKey);
-  if (cached) {
-    return cached;
-  }
-  try {
-    const payload = await loadStartupData(env);
-    const response = new Response(JSON.stringify(payload), {
+
+  function buildResponse(payload) {
+    return new Response(JSON.stringify(payload), {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": `public, max-age=${STARTUP_CACHE_TTL}, s-maxage=${STARTUP_CACHE_TTL}, stale-while-revalidate=${STARTUP_STALE_TTL}`,
+        // Cached at a long max-age so Cloudflare's Cache API never silently
+        // evicts this entry on its own -- freshness below is decided
+        // ourselves from payload.generated_at, which is what makes the
+        // stale-while-revalidate behavior actually work (the Cache API
+        // otherwise drops an entry the instant its own max-age passes, so a
+        // short max-age here just meant "block on a full Supabase re-scan
+        // every N seconds", not real SWR).
+        "Cache-Control": `public, max-age=86400, s-maxage=86400`,
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
       }
     });
-    ctx.waitUntil(cache.put(cacheKey, response.clone()));
-    return response;
+  }
+  __name(buildResponse, "buildResponse");
+
+  async function refreshAndCache() {
+    const payload = await loadStartupData(env);
+    await cache.put(cacheKey, buildResponse(payload).clone());
+    return payload;
+  }
+  __name(refreshAndCache, "refreshAndCache");
+
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    try {
+      const payload = await cached.clone().json();
+      const ageSeconds = (Date.now() - new Date(payload.generated_at).getTime()) / 1e3;
+      if (ageSeconds < STARTUP_CACHE_TTL) {
+        return cached;
+      }
+      if (ageSeconds < STARTUP_STALE_TTL) {
+        // Stale but usable: serve it immediately, refresh in the background
+        // so the NEXT visitor gets fresh data without anyone blocking on the
+        // full Supabase scan.
+        ctx.waitUntil(refreshAndCache().catch(() => {}));
+        return cached;
+      }
+      // Past the stale window -- fall through to a blocking refresh below.
+    } catch (e) {
+      // Malformed cache entry; fall through to a fresh fetch.
+    }
+  }
+
+  try {
+    const payload = await refreshAndCache();
+    return buildResponse(payload);
   } catch (error) {
     return json({ error: "Startup data unavailable", detail: error.message }, 502, origin);
   }
