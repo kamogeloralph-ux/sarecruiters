@@ -491,6 +491,21 @@ async function getGeneralVacancyCount() {
     return typeof result.count === 'number' ? result.count : 0;
   } catch(e) { return null; }
 }
+// Fallback for when /api/startup is unreachable and loadAll() falls back to
+// direct Supabase reads — mirrors the worker's per-folder counts (see
+// DEDICATED_FOLDERS in Cloudflare-worker/worker.js) with 5 small indexed
+// count queries instead of one big row fetch.
+async function getDedicatedVacancyCounts() {
+  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government','dpsa'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], learnerships: ['learnerships'] };
+  var out = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0 };
+  try {
+    await Promise.all(Object.keys(folders).map(function(key){
+      return supabaseClient.from('vacancies').select('id', { count: 'exact', head: true }).in('source_type', folders[key])
+        .then(function(res){ if (typeof res.count === 'number') out[key] = res.count; });
+    }));
+  } catch(e) {}
+  return out;
+}
 function isDedicatedVacancySource(sourceType) {
   return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
@@ -559,6 +574,40 @@ async function fetchGeneralVacancyPage(state, page) {
     .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships)')
     .order('created_at', { ascending: false })
     .range(from, from + generalVacancyPageSize - 1);
+  if (state.remote) query = query.eq('remote', state.remote);
+  if (state.exp) query = query.eq('experience_level', state.exp);
+  if (state.q) {
+    var safe = state.q.replace(/[(),]/g, ' ').replace(/%/g, '').trim();
+    if (safe) query = query.or('title.ilike.%' + safe + '%,company.ilike.%' + safe + '%,location.ilike.%' + safe + '%,notes.ilike.%' + safe + '%');
+  }
+  var result = await query;
+  if (result.error) throw result.error;
+  return result.data || [];
+}
+// Source-type groupings for the 5 dedicated-source folders, mirroring the
+// classifier functions in renderAllVacanciesList() (isHimalayasVacancy etc.)
+// and DEDICATED_FOLDERS in Cloudflare-worker/worker.js.
+var DEDICATED_VACANCY_FOLDER_SOURCES = {
+  himalayas: ['himalayas'],
+  adzuna: ['adzuna'],
+  government: ['government', 'dpsa'],
+  retail: ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'],
+  learnerships: ['learnerships']
+};
+// Each dedicated folder (Himalayas, Adzuna, Government, Retail,
+// Learnerships) used to be a client-side filter over the fully-preloaded
+// vacanciesCache. That cache no longer carries these ~8,700 rows (see
+// worker.js loadStartupData), so each folder now fetches its own page
+// directly, the same way fetchGeneralVacancyPage() already does.
+async function fetchDedicatedVacancyPage(folder, state, page) {
+  var sources = DEDICATED_VACANCY_FOLDER_SOURCES[folder];
+  if (!sources) return [];
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var from = page * dedicatedVacancyPageSize;
+  var query = supabaseClient.from('vacancies').select(columns)
+    .in('source_type', sources)
+    .order('created_at', { ascending: false })
+    .range(from, from + dedicatedVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);
   if (state.exp) query = query.eq('experience_level', state.exp);
   if (state.q) {
@@ -868,13 +917,15 @@ async function loadAll() {
     startup.settings.public_vacancy_posting,
     startup.settings.public_employer_registration,
     startup.settings.public_employer_directory,
-    typeof startup.counts.candidates === 'number' ? startup.counts.candidates : null
+    typeof startup.counts.candidates === 'number' ? startup.counts.candidates : null,
+    startup.counts.dedicated || null
   ] : await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(), getGeneralVacancyCount(),
     getAppSetting('public_vacancy_posting', 'false'),
     getAppSetting('public_employer_registration', 'false'),
     getAppSetting('public_employer_directory', 'true'),
-    getPoolCandidateCount()
+    getPoolCandidateCount(),
+    getDedicatedVacancyCounts()
   ]);
   // If a fetch failed, keep whatever was already on screen (last good cache)
   // instead of wiping it to an empty list — a failed refresh should never
@@ -896,6 +947,10 @@ async function loadAll() {
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
   if (typeof results[4] === 'number') generalVacancyCount = results[4];
   else if (results[4] === null) hadLoadError = true;
+  // Not treated as a load error: the dedicated folder count badges are
+  // cosmetic (they just label the folder cards), so a miss here shouldn't
+  // trigger the retry banner the way a core data fetch failing would.
+  if (results[9] && typeof results[9] === 'object') dedicatedVacancyCounts = results[9];
   setRetryBanner(hadLoadError);
   if (!hadLoadError) lastDataRefreshAt = Date.now();
   setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
@@ -953,10 +1008,14 @@ async function loadAll() {
   }
 }
 
+function dedicatedVacancyGrandTotal() {
+  var c = dedicatedVacancyCounts || {};
+  return (c.himalayas||0) + (c.adzuna||0) + (c.government||0) + (c.retail||0) + (c.learnerships||0);
+}
 function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   updatePosterStat();
-  document.getElementById('stat-vacancies').textContent = generalVacancyCount + vacanciesCache.length;
+  document.getElementById('stat-vacancies').textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
   var statEmployers = document.getElementById('stat-employers');
   if (statEmployers) statEmployers.textContent = employersCache.length;
   var statPool = document.getElementById('stat-pool');
@@ -1040,7 +1099,7 @@ function refreshGateStats() {
   var elA = document.getElementById('stat-agencies');
   if (elA && agenciesCache.length) elA.textContent = agenciesCache.length;
   var elV = document.getElementById('stat-vacancies');
-  if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length;
+  if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
 }
 // Live head-count of every vacancy row in the database — the same table
 // the app reads for the directory. Counting directly avoids under-counts

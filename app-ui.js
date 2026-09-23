@@ -884,6 +884,12 @@ function openVacancyFolder(type) {
   if (type === 'general') {
     generalVacancyQueryKey = '__open__';
     generalVacancyHasMore = true;
+  } else if (DEDICATED_VACANCY_FOLDER_SOURCES[type]) {
+    // Switching to a different dedicated folder (or opening one fresh)
+    // always needs a new fetch — force loadDedicatedVacancies() to reset.
+    dedicatedVacancyFolder = type;
+    dedicatedVacancyQueryKey = '__open__';
+    dedicatedVacancyHasMore = true;
   }
   // Filters are shared by the folder picker and its listing view, so a user
   // can narrow the category before opening it and keep that context.
@@ -967,9 +973,78 @@ async function loadGeneralVacancies(reset) {
 }
 function loadMoreGeneralVacancies() {
   if (allVacanciesFolder === 'general') loadGeneralVacancies(false);
+  else if (DEDICATED_VACANCY_FOLDER_SOURCES[allVacanciesFolder]) loadDedicatedVacancies(false);
   else {
     vacancyFolderDisplayLimit += 30;
     renderAllVacanciesList();
+  }
+}
+// Mirrors renderGeneralVacancyCards()/loadGeneralVacancies() above for the
+// 5 dedicated-source folders (Himalayas/Adzuna/Government/Retail/
+// Learnerships). One shared state machine since only one folder is open at
+// a time — see dedicatedVacancy* globals in app-core.js.
+var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships' };
+function renderDedicatedVacancyCards(append) {
+  var el = document.getElementById('allvacancies-list');
+  var loadMore = document.getElementById('allvacancies-loadmore');
+  var countLabel = document.getElementById('allvacancies-result-count');
+  if (!el) return;
+  var folderLabel = DEDICATED_VACANCY_FOLDER_LABELS[dedicatedVacancyFolder] || 'Vacancies';
+  var folderCount = (dedicatedVacancyCounts && dedicatedVacancyCounts[dedicatedVacancyFolder]) || 0;
+  if (dedicatedVacancyLoading && !dedicatedVacancyRows.length) {
+    el.dataset.state = 'loading';
+    el.innerHTML = '<div class="empty-state"><h3>Loading vacancies…</h3><p>Fetching the latest opportunities.</p></div>';
+  } else if (!dedicatedVacancyRows.length) {
+    el.dataset.state = 'empty';
+    el.innerHTML = vacancyScreenStateMarkup('all', false, !!dedicatedVacancyQueryKey && dedicatedVacancyQueryKey !== '__open__');
+  } else {
+    el.dataset.state = 'ready';
+    var cards = dedicatedVacancyRows.map(function(v){ return vacancyCard(v, {}, { hideBadges: true }); }).join('');
+    el.innerHTML = '<div class="pgroup-label">' + escapeHtml(folderLabel) + '</div>' + cards;
+  }
+  if (countLabel) countLabel.textContent = folderCount ? dedicatedVacancyRows.length + ' of ' + folderCount + ' loaded' : dedicatedVacancyRows.length + ' loaded';
+  if (loadMore) {
+    loadMore.style.display = dedicatedVacancyHasMore ? 'block' : 'none';
+    loadMore.disabled = dedicatedVacancyLoading;
+    loadMore.textContent = dedicatedVacancyLoading ? 'Loading vacancies…' : 'Load more vacancies';
+  }
+}
+async function loadDedicatedVacancies(reset) {
+  var folder = allVacanciesFolder;
+  if (!DEDICATED_VACANCY_FOLDER_SOURCES[folder]) return;
+  var state = generalVacancyQueryState();
+  var key = folder + '|' + generalVacancyQueryKeyFor(state);
+  var queryChanged = reset || folder !== dedicatedVacancyFolder || key !== dedicatedVacancyQueryKey;
+  if (queryChanged) {
+    dedicatedVacancyRequestId++;
+    dedicatedVacancyFolder = folder;
+    dedicatedVacancyQueryKey = key;
+    dedicatedVacancyPage = 0;
+    dedicatedVacancyRows = [];
+    dedicatedVacancyHasMore = true;
+    dedicatedVacancyLoading = false;
+  }
+  if (dedicatedVacancyLoading || !dedicatedVacancyHasMore) { renderDedicatedVacancyCards(false); return; }
+  var requestId = ++dedicatedVacancyRequestId;
+  dedicatedVacancyLoading = true;
+  renderDedicatedVacancyCards(false);
+  try {
+    var page = await fetchDedicatedVacancyPage(folder, state, dedicatedVacancyPage);
+    if (requestId !== dedicatedVacancyRequestId) return;
+    dedicatedVacancyRows = dedicatedVacancyRows.concat(page);
+    dedicatedVacancyHasMore = page.length === dedicatedVacancyPageSize;
+    dedicatedVacancyPage += 1;
+    renderDedicatedVacancyCards(true);
+  } catch(e) {
+    if (requestId !== dedicatedVacancyRequestId) return;
+    var el = document.getElementById('allvacancies-list');
+    if (el) el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadDedicatedVacancies(true)">Try again</button></div>';
+    dedicatedVacancyHasMore = true;
+  } finally {
+    if (requestId === dedicatedVacancyRequestId) {
+      dedicatedVacancyLoading = false;
+      renderDedicatedVacancyCards(false);
+    }
   }
 }
 function renderAllVacanciesList() {
@@ -977,6 +1052,10 @@ function renderAllVacanciesList() {
 
   if (allVacanciesFolder === 'general') {
     loadGeneralVacancies(false);
+    return;
+  }
+  if (DEDICATED_VACANCY_FOLDER_SOURCES[allVacanciesFolder]) {
+    loadDedicatedVacancies(false);
     return;
   }
 
@@ -1057,11 +1136,15 @@ function renderAllVacanciesList() {
     if (overviewLoadMore) overviewLoadMore.style.display = 'none';
     var agencyCount = list.filter(hasAssignedAgency).length;
     var generalCount = generalVacancyCount;
-    var himalayasCount = list.filter(isHimalayasVacancy).length;
-    var adzunaCount = list.filter(isAdzunaVacancy).length;
-    var governmentCount = list.filter(isGovernmentVacancy).length;
-    var retailCount = list.filter(isRetailVacancy).length;
-    var learnershipsCount = list.filter(isLearnershipVacancy).length;
+    // These 5 folders no longer keep their rows in vacanciesCache (see
+    // worker.js loadStartupData), so their counts come from the server-side
+    // aggregate the same way generalCount does just above, rather than a
+    // client-side filter that would now always read zero.
+    var himalayasCount = dedicatedVacancyCounts.himalayas || 0;
+    var adzunaCount = dedicatedVacancyCounts.adzuna || 0;
+    var governmentCount = dedicatedVacancyCounts.government || 0;
+    var retailCount = dedicatedVacancyCounts.retail || 0;
+    var learnershipsCount = dedicatedVacancyCounts.learnerships || 0;
     var folderCountLabel = function(count) {
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
