@@ -1663,3 +1663,14 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
   color:#fff !important;
   box-shadow:0 8px 18px -8px color-mix(in srgb,var(--accent) 75%,transparent) !important;
 }
+
+/* STANDARD BUTTON SURFACE: match the Profile night/day toggle. Branded and
+   primary action buttons are intentionally excluded so their meaning remains clear. */
+.app button:not(.social-link-btn):not(.gsi-material-button):not(.site-menu-nav button):not(.site-menu-action):not(.sheet-submit):not(.vac-apply):not(.employer-cta-action):not(.poster-cta button){
+  background:var(--card) !important;
+  border-color:var(--border) !important;
+  color:var(--text) !important;
+}
+.app button:not(.social-link-btn):not(.gsi-material-button):not(.site-menu-nav button):not(.site-menu-action):not(.sheet-submit):not(.vac-apply):not(.employer-cta-action):not(.poster-cta button):active{
+  background:var(--card-2) !important;
+}
