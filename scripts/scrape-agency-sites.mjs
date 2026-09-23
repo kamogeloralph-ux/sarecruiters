@@ -209,56 +209,36 @@ function jobId(siteName, link) {
 // site_scrape_status 'skipped_no_jobs' for manual follow-up; a false
 // positive (a blog post saved as a vacancy) ships wrong data straight into
 // the live listings, so this errs firmly toward skipping.
-// "resource(s)" deliberately excluded from BLOG_PATH_RX's keyword list --
-// see below.
-const BLOG_PATH_RX = /[/-](blog|news|articles?|insights?|advice|guides?|tips?|press|media|about)([/-]|$)/i;
-// "resource(s)" needs a stricter leading boundary than the rest: unlike
-// blog/news/tips/etc., it collides with real job *titles* often enough
-// that the same hyphen-tolerant boundary used above produces false
-// positives -- confirmed real: AGC Recruitment's "Mineral Resource
-// Manager" (a genuine posting) would get rejected because "resource"
-// sits mid-slug as "mineral-RESOURCE-manager", hyphen-bounded on both
-// sides, same shape as the compound blog-path segments this regex family
-// exists to catch. Keeping this one on a strict slash-only leading
-// boundary means it still catches a real /resources/ or /our-resources/
-// section link, just not the word appearing inside an unrelated slug.
-const RESOURCES_SECTION_RX = /\/resources?([/-]|$)/i;
-const JOB_PATH_RX = /[/-](vacanc(y|ies)|jobs?|positions?|openings?|current-vacancies)([/-]|$)/i;
+const BLOG_PATH_RX = /\/(blog|news|articles?|insights?|resources?|advice|guides?|press|media|about)(\/|-|$)/i;
+const JOB_PATH_RX = /\/(vacanc(y|ies)|jobs?|positions?|openings?|current-vacancies)(\/|-|$)/i;
 // Matches the *index/landing* page for a job section rather than an
 // individual posting -- e.g. "/vacancies", "/vacancies/", "/jobs",
 // "/job-seekers/", "/current-vacancies" with nothing after it. A real
 // posting almost always has a slug or numeric id after the section
 // keyword ("/vacancies/electrician-cape-town", "/jobs/1234"); the bare
 // section root is just navigation to the listing page itself.
-//
-// Also matches a WP Job Manager-style TAXONOMY archive
-// ("/job-category/south-africa/", "/vacancy-type/permanent/") -- these have
-// the same path depth as a real posting ("/job-category/south-africa/" has
-// as many segments as "/vacancies/electrician-cape-town"), so a
-// segment-count heuristic alone can't tell them apart; a real posting's
-// last segment/query is a specific slug or numeric id, "south-africa" here
-// is a taxonomy *term*, i.e. still every job in that province/category,
-// which is exactly the "index page, not one posting" case this exists to
-// catch. Confirmed real: welovesalt.com's "Jobs in SA" ->
-// /job-category/south-africa/.
-const JOB_SECTION_ROOT_RX = /[/-](vacanc(y|ies)|jobs?|careers?|positions?|openings?|current-vacancies|job-seekers?)\/?(\?.*)?(#.*)?$|[/-](job|vacancy|jobs|vacancies)-(categor(y|ies)|region|type|location|department)\/[^/]+\/?(\?.*)?(#.*)?$/i;
-// A handful of agency sites link out to a WordPress theme's own demo
-// content instead of their real listings, apparently left over from
-// whoever built the site never swapping the theme's placeholder data --
-// confirmed real: Dynamic Labour Solutions' "Explore all jobs" resolves to
-// wordpress-theme.spider-themes.net/jobi/job-list-1/, a theme *marketplace*
-// demo site, not their own domain at all.
-const THEME_DEMO_HOST_RX = /(^|\.)(spider-themes|theme-?fusion|elegantthemes|envato|themeforest|wpbakery|demo\d*)\./i;
+const JOB_SECTION_ROOT_RX = /\/(vacanc(y|ies)|jobs?|careers?|positions?|openings?|current-vacancies|job-seekers?)\/?(\?.*)?(#.*)?$/i;
 // Generic calls-to-action and nav labels that keep getting scraped as if
 // they were a job title, because the text sits right next to (or inside)
 // a link whose href happens to match JOB_PATH_RX. None of these are ever
 // an actual vacancy title.
-const GENERIC_CTA_TITLE_RX = /^(vacanc(y|ies)|jobs?|careers?|positions?( available)?|openings?|current vacanc(y|ies)|available (jobs?|positions?|openings?|vacanc(y|ies))|open vacanc(y|ies)|view( all|s)? (jobs?|vacanc(y|ies)|positions?|openings?|categories|details)|view job\b|view more vacanc(y|ies)|browse jobs?|search vacanc(y|ies)|job (search|listings?|categories|seekers?|market news|dashboard|board)|find (a |your )?(next )?(job|role|position|vacancy|career)( now)?|find out more|more info(rmation)?|learn more|read more( articles?| jobs?| vacanc(y|ies)| about (us|this))?|explore (all |our )?(the )?(jobs?|vacanc(y|ies)|positions?|fields|opportunities)|register( your)? cv( here)?|register now|submit( your)? cv|apply now|(save|bookmark|share|email|print)( this)? job|career opportunities)$/i;
+const GENERIC_CTA_TITLE_RX = /^(vacanc(y|ies)|jobs?|careers?|positions?( available)?|openings?|current vacanc(y|ies)|available (jobs?|positions?|openings?|vacanc(y|ies))|open vacanc(y|ies)|view( all|s)? (jobs?|vacanc(y|ies)|positions?|openings?|categories)|view job\b|view more vacanc(y|ies)|browse jobs?|search vacanc(y|ies)|job (search|listings?|categories|seekers?|market news|dashboard|board)|find (a |your )?(next )?(job|role|position|vacancy|career)( now)?|find out more|more info(rmation)?|learn more|read more|register( your)? cv( here)?|register now|submit( your)? cv|apply now|explore all fields|career opportunities)$/i;
+// A facet/filter sidebar or menu sometimes renders "<Category
+// Name><badge count>" as one link's text with no separator between them
+// -- "Legal 1", "Dubai 1", "IT & Telecoms 1", "Contract 3", "Permanent
+// 20" all confirmed live (Networkers International's location/sector
+// filters, AGC Recruitment's contract-type filters). A real job title
+// essentially never ends in a bare 1-2 digit number with nothing else
+// around it -- titles that do include a number ("Grade 3 Teacher",
+// "Level 2 Technician") have it in the middle, not as the very last
+// token -- so this is a safe shape to reject.
+const FACET_COUNT_TITLE_RX = /^[A-Za-z][A-Za-z&.':\s]{1,40}\s\d{1,2}$/;
 function looksLikeJobTitle(title) {
   if (!title || title.length < 4 || title.length > 90) return false;
   if (/\?\s*$/.test(title)) return false;
   if (/^(how|why|what|when|where|top\s+\w|the\s+(difference|complete|ultimate)s?\b|guide\s+to|\d+\s+(tips|ways|reasons|things))/i.test(title)) return false;
   if (GENERIC_CTA_TITLE_RX.test(title.trim())) return false;
+  if (FACET_COUNT_TITLE_RX.test(title.trim())) return false;
   return true;
 }
 function isRealPageLink(href) {
@@ -267,32 +247,8 @@ function isRealPageLink(href) {
   // getting picked up as the job's own link (see isLikelyJobLink note).
   return !/^\s*(mailto|tel|javascript):/i.test(href) && href !== '#' && href.trim() !== '';
 }
-function isThemeDemoLink(link) {
-  try { return THEME_DEMO_HOST_RX.test(new URL(link).hostname); } catch { return false; }
-}
 function isLikelyJobLink(href) {
-  return isRealPageLink(href) && JOB_PATH_RX.test(href) && !BLOG_PATH_RX.test(href) && !RESOURCES_SECTION_RX.test(href) && !JOB_SECTION_ROOT_RX.test(href);
-}
-
-// Used only by the anchor-scan fallback below. Many agency sites structure
-// each listing as a heading plus a SEPARATE "View Details"/"Read More"/
-// "Apply Now" button linking to the same job -- the button's own text is
-// never the job title, but naively grabbing $(anchor).text() as the title
-// (the previous behaviour) captured exactly that button text instead of
-// the real heading sitting right next to it. This climbs a few ancestor
-// levels from the anchor looking for a heading-shaped element and prefers
-// it over the anchor's own text when one is found and looks title-like --
-// capped at 3 hops so it can't reach past the current card into a
-// neighbouring one's heading in a shared list wrapper.
-function findNearbyHeading($, anchorEl) {
-  let node = $(anchorEl);
-  for (let hop = 0; hop < 3 && node.length; hop += 1) {
-    const heading = node.find('h1, h2, h3, h4, h5, .title, .job-title, [class*="title"], [class*="position"]').first();
-    const text = clean(heading.text());
-    if (text) return text;
-    node = node.parent();
-  }
-  return '';
+  return isRealPageLink(href) && JOB_PATH_RX.test(href) && !BLOG_PATH_RX.test(href) && !JOB_SECTION_ROOT_RX.test(href);
 }
 
 // Tier A -- structural card scan: try known vacancy-card container
@@ -308,7 +264,7 @@ function parseTierA(html, site) {
     if (!looksLikeJobTitle(title)) return;
     if (!href || !isRealPageLink(href)) return;
     const link = absoluteUrl(href, site.url) || site.url;
-    if (BLOG_PATH_RX.test(link) || RESOURCES_SECTION_RX.test(link) || JOB_SECTION_ROOT_RX.test(link) || isThemeDemoLink(link) || seen.has(link)) return;
+    if (BLOG_PATH_RX.test(link) || JOB_SECTION_ROOT_RX.test(link) || seen.has(link)) return;
     seen.add(link);
     jobs.push({ title, location: clean(location), link });
   }
@@ -333,17 +289,8 @@ function parseTierA(html, site) {
     $('a').each((_, el) => {
       const href = $(el).attr('href') || '';
       if (!isLikelyJobLink(href)) return;
-      const anchorText = clean($(el).text());
-      // A CTA button's own text ("View Details", "Read More", "Explore
-      // all jobs", "Apply Now"...) is never the job title -- when the
-      // anchor text itself is one of these (or too short to be a title
-      // at all), the real title is almost always a heading sitting right
-      // next to it, not the button. Only fall through to the anchor's own
-      // text when no such heading exists nearby.
-      const looksLikeCta = anchorText.length < 6 || GENERIC_CTA_TITLE_RX.test(anchorText);
-      const heading = looksLikeCta ? findNearbyHeading($, el) : '';
-      const title = heading && looksLikeJobTitle(heading) ? heading : anchorText;
-      push({ title, location: '', href });
+      const text = clean($(el).text());
+      if (text.length >= 6) push({ title: text, location: '', href });
     });
   }
   return jobs;
@@ -379,79 +326,6 @@ function parseTierB(html, site) {
     jobs.push({ title, location, link });
   }
   return jobs;
-}
-
-// Extracts fuller detail (location, salary, closing date, a description
-// blurb) from a job's OWN detail page -- the listing/card page a site's
-// vacancy index shows usually has just a title (sometimes a location),
-// nothing else, even though the individual job page has the full posting.
-// Confirmed real: every currently-scraped agency vacancy has location,
-// salary, closing_date and notes all blank, despite the source sites
-// visibly listing all of that on the job's own page. This is best-effort
-// and generic (there's no shared template across ~140 different agency
-// sites) -- it tries known content-area selectors first, then falls back
-// to the largest text block in the page body outside nav/header/footer.
-const DETAIL_CONTENT_SELECTORS = 'article, main, .job-description, .vacancy-description, .job-detail, .job-details, .vacancy-detail, .entry-content, .content, [class*="description"], #content';
-export function extractJobDetail(html) {
-  const $ = cheerio.load(html);
-  $('script, style, nav, header, footer, .menu, .navigation, .breadcrumbs').remove();
-  let container = $(DETAIL_CONTENT_SELECTORS).first();
-  if (!container.length || clean(container.text()).length < 40) {
-    // No matching content area, or it matched something too thin to be
-    // the actual posting (e.g. a one-line header) -- fall back to
-    // whichever top-level body element has the most text, which is
-    // usually the main content column even on an unfamiliar template.
-    let best = null;
-    let bestLength = 0;
-    $('body').children().each((_, el) => {
-      const text = clean($(el).text());
-      if (text.length > bestLength) { bestLength = text.length; best = $(el); }
-    });
-    if (best) container = best;
-  }
-  const text = clean(container.text ? container.text() : '');
-  const salary = text.match(/(?:salary|remuneration|package)\s*:?\s*([^\n.]{3,80})/i)?.[1]?.trim() || '';
-  const closingDateRaw = text.match(/closing date\s*:?\s*([^\n.]{3,40})/i)?.[1]?.trim() || '';
-  const location = text.match(/(?:location|centre|based in)\s*:?\s*([^\n.]{2,60})/i)?.[1]?.trim() || '';
-  // Capped: this is meant to give a useful blurb, not mirror the whole page
-  // (and keeps the eventual `notes` column from growing unbounded across
-  // ~150 agencies' worth of postings).
-  const description = text.slice(0, 1500);
-  return { location, salary, closingDateRaw, description };
-}
-
-// Bounded, OPT-IN enrichment: fetches each discovered job's own detail
-// page and fills in what extractJobDetail finds. Off by default
-// (AGENCY_SITES_FETCH_DETAILS) because it multiplies request volume by
-// roughly the average jobs-per-site instead of one fetch per site -- with
-// ~40 sites/run and a 15-minute total budget, this needs a real dry run
-// (see the file-level comment) to confirm it doesn't blow the timeout
-// before it's turned on in the scheduled workflow. AGENCY_SITES_DETAIL_LIMIT
-// caps it further per site regardless.
-const FETCH_DETAILS = /^(1|true|yes)$/i.test(process.env.AGENCY_SITES_FETCH_DETAILS || '');
-const DETAIL_FETCH_LIMIT = parsePositiveInt(process.env.AGENCY_SITES_DETAIL_LIMIT, 8);
-async function enrichWithDetailPages(jobs) {
-  if (!FETCH_DETAILS) return jobs;
-  const enriched = [];
-  for (const [index, job] of jobs.entries()) {
-    if (index >= DETAIL_FETCH_LIMIT) { enriched.push(job); continue; }
-    try {
-      const html = await fetchText(job.link, { timeoutMs: DISCOVERY_TIMEOUT_MS, attempts: 1 });
-      const detail = extractJobDetail(html);
-      enriched.push({
-        ...job,
-        location: job.location || detail.location,
-        salary: detail.salary,
-        closing_date: detail.closingDateRaw,
-        notes: detail.description,
-      });
-    } catch (error) {
-      console.warn(`[agency-sites] detail fetch failed for ${job.link}: ${error instanceof Error ? error.message : String(error)}`);
-      enriched.push(job);
-    }
-    if (index < jobs.length - 1) await sleep(REQUEST_DELAY_MS);
-  }
-  return enriched;
 }
 
 export function parseAgencySiteJobs(html, site) {
@@ -550,14 +424,12 @@ async function scrapeSite(agency) {
     await markStatus(agency.id, { site_scrape_status: status, site_scrape_reason: reason, site_vacancy_url: null });
     return 0;
   }
-  const detailed = await enrichWithDetailPages(parsed);
-  const jobs = detailed.map((job) => ({
+  const jobs = parsed.map((job) => ({
     ...job,
     id: jobId(agency.name, job.link),
     employer_id: null,
     email: '', phone: '', remote: null, experience_level: '', employment_type: '',
-    contract_type: '', work_schedule: '', hours: '', start_date: '',
-    salary: job.salary || '', notes: job.notes || '', closing_date: job.closing_date || '',
+    contract_type: '', work_schedule: '', hours: '', salary: '', start_date: '', notes: '', closing_date: '',
     source_type: 'agency',
     source_checked_at: new Date().toISOString(),
     last_verified_at: new Date().toISOString(),
