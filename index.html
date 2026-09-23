@@ -1059,16 +1059,13 @@
 </div>
 
 <!-- ============ POST A JOB — public enquiry form (FirstJobly-style, ALWAYS open) ============ -->
-<!-- Ungated lead form: no admin approval needed to submit. Used in place of
-     the old WhatsApp-only lock screens for vacancy posting / employer
-     registration — see openVacancyLockedSheet()/openEmployerLockedSheet()
-     in app-sheets.js, and the static /post-a-job/ page (generate-pages.js)
-     which posts to the same Worker endpoint. -->
+<!-- This form creates a pending enquiry only. It never publishes a vacancy;
+     an admin must review and approve it first. -->
 <div class="sheet-scrim" id="post-job-overlay">
   <div class="sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <h3>Post a job</h3>
-    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Tell us about the roles you're hiring for and we'll be in touch to get your listing live — SA Recruiters never charges employers to list vacancies.</p>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Tell us about the roles you're hiring for. An admin will review your request before anything is published — SA Recruiters never charges employers to list vacancies.</p>
     <div class="field"><label>Company name</label><input id="pj-company" placeholder="e.g. Shoprite Checkers"></div>
     <div class="field"><label>Contact person</label><input id="pj-contact" placeholder="e.g. Jane Dlamini, HR"></div>
     <div class="field"><label>Work email</label><input id="pj-email" type="email" autocomplete="email" placeholder="you@company.co.za"></div>
@@ -1100,7 +1097,7 @@
     <div class="field"><label>Additional details <span class="field-optional">optional</span></label><textarea id="pj-details" placeholder="Anything else that helps us understand the roles..."></textarea></div>
     <div class="field"><label>Website <span class="field-optional">optional</span></label><input id="pj-website" placeholder="e.g. www.example.co.za"></div>
     <div id="post-job-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
-    <button class="sheet-submit" data-ripple onclick="submitJobPostEnquiry()">Submit enquiry</button>
+    <button class="sheet-submit" data-ripple onclick="submitJobPostEnquiry()">Submit for admin review</button>
     <p style="font-size:11.5px;color:var(--text-3);text-align:center;margin-top:12px;">Prefer WhatsApp? <a href="#" id="post-job-wa-link" target="_blank" rel="noopener">Message the admin instead</a>.</p>
   </div>
 </div>
@@ -1306,7 +1303,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=8ebdb70cd8" defer></script>
+<script src="app.bundle.min.js?v=26a8d65d7c" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

@@ -675,7 +675,7 @@ ${vacancyList}
 function buildPostAJobPage() {
   const canonical = `${SITE_URL}/post-a-job/`;
   const title = 'Post a job on SA Recruiters — reach South African job seekers';
-  const description = "Tell us about the roles you're hiring for and we'll get your vacancies in front of thousands of South African job seekers. SA Recruiters never charges employers to list vacancies.";
+  const description = "Tell us about the roles you're hiring for. An admin reviews every request before anything is published. SA Recruiters never charges employers to list vacancies.";
 
   const roleTypes = ['Internships', 'Learnerships', 'Entry-Level', 'Graduate Programmes', 'Bursaries', 'Apprenticeships', 'Permanent', 'Contract'];
 
@@ -690,7 +690,7 @@ function buildPostAJobPage() {
 
   const body = `
 <h1>Post a job</h1>
-<p>Tell us about the roles you're hiring for and we'll be in touch to get your listing live &mdash; SA Recruiters never charges employers to list vacancies.</p>
+<p>Tell us about the roles you're hiring for. An admin will review your request before anything is published &mdash; SA Recruiters never charges employers to list vacancies.</p>
 <form id="pj-form" class="pj-form" novalidate>
   <label>Company name<input id="pj-company" name="company_name" required></label>
   <label>Contact person<input id="pj-contact" name="contact_person"></label>
@@ -710,7 +710,7 @@ function buildPostAJobPage() {
   <label>Additional details <span class="pj-optional">optional</span><textarea id="pj-details" name="additional_details" rows="4"></textarea></label>
   <label>Website <span class="pj-optional">optional</span><input id="pj-website" name="website"></label>
   <div id="pj-turnstile" class="cf-turnstile" data-sitekey="${TURNSTILE_SITE_KEY}"></div>
-  <button type="submit" id="pj-submit">Submit enquiry</button>
+  <button type="submit" id="pj-submit">Submit for admin review</button>
   <p id="pj-status" role="status" aria-live="polite"></p>
 </form>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -742,7 +742,7 @@ document.getElementById('pj-form').addEventListener('submit', async function(e){
     });
     var data = await res.json().catch(function(){ return null; });
     if (res.ok) {
-      status.textContent = "Thanks — we'll be in touch to get your listing live.";
+      status.textContent = 'Submitted for admin review — it will not be published until approved.';
       form.reset();
       if (window.turnstile) window.turnstile.reset();
     } else {
@@ -751,7 +751,7 @@ document.getElementById('pj-form').addEventListener('submit', async function(e){
   } catch (err) {
     status.textContent = 'Could not reach SA Recruiters — please try again or WhatsApp us on 071 553 1005.';
   }
-  btn.disabled = false; btn.textContent = 'Submit enquiry';
+  btn.disabled = false; btn.textContent = 'Submit for admin review';
 });
 </script>
 `;
