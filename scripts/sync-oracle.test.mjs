@@ -59,7 +59,11 @@ test('builds a retail vacancy linked to the employer and Mr Price apply page', (
 
 test('still produces a listing from search data when the detail call failed', () => {
   const summary = parseSearchPage(searchPayload).jobs[0];
-  const job = buildVacancy(MRP, summary, null, null);
+  // Explicit `now` pinned close to the fixture's PostedDate (2026-09-15) --
+  // buildVacancy now checks posting age via isStaleVacancy, so leaving this
+  // on the real wall clock would make the test start failing on its own
+  // once real time passes the retail 30-day staleness window.
+  const job = buildVacancy(MRP, summary, null, null, new Date('2026-09-21T00:00:00Z'));
   assert.equal(job.agency_id, 'general');
   assert.equal(job.employer_id, null);
   assert.equal(job.notes, 'Sell fashion.');
@@ -91,6 +95,19 @@ test('source id prefixes are unique so cleanup never crosses employers', () => {
   const prefixes = Object.values(SOURCES).map((s) => s.idPrefix);
   assert.equal(new Set(prefixes).size, prefixes.length);
   prefixes.forEach((p, i) => prefixes.forEach((q, j) => { if (i !== j) assert.ok(!q.startsWith(p)); }));
+});
+
+test('buildVacancy skips a listing whose search-API PostedDate is older than the retail max age', () => {
+  const summary = { reqId: '30099', title: 'Old Listing', postedDate: '2026-01-01', location: 'Cape Town, Western Cape' };
+  const job = buildVacancy(MRP, summary, null, null, new Date('2026-09-21T00:00:00Z'));
+  assert.equal(job, null);
+});
+
+test('buildVacancy skips a listing whose ExternalPostedEndDate (closing date) has already passed', () => {
+  const summary = { reqId: '30098', title: 'Closed Listing', postedDate: '2026-09-18', location: 'Cape Town, Western Cape' };
+  const detail = parseDetail({ items: [{ ExternalPostedEndDate: '2026-09-01T00:00:00+00:00' }] });
+  const job = buildVacancy(MRP, summary, detail, null, new Date('2026-09-21T00:00:00Z'));
+  assert.equal(job, null);
 });
 
 test('selectSources filters by key and rejects unknown names', () => {
