@@ -281,6 +281,9 @@ startAuthenticatedApp(bootAuthenticatedApp);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('sw.js', { scope: '/', updateViaCache: 'none' }).then(function(reg) {
+      // Force an update check so a normal refresh discovers a newly deployed
+      // bundle instead of remaining on the previous cached shell.
+      if (typeof reg.update === 'function') reg.update().catch(function() {});
       // Listen for updates
       reg.addEventListener('updatefound', function() {
         var newWorker = reg.installing;
