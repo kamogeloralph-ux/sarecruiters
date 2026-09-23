@@ -466,7 +466,7 @@ async function getVacancies() {
       // General public vacancies are loaded lazily by the paginated directory
       // query below. Startup only needs agency/employer records for hub cards.
       var result = await supabaseClient.from('vacancies').select(columns)
-        .or('agency_id.neq.general,employer_id.not.is.null,source_type.not.is.null')
+        .or('agency_id.neq.general,employer_id.not.is.null')
         .order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
       if (result.error) break;
       var page = result.data || [];
