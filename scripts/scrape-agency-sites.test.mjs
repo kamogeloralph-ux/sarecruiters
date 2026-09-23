@@ -200,3 +200,17 @@ test('tier A: rejects newer nav/CTA labels as job titles ("Positions Available",
   assert.equal(jobs.length, 1);
   assert.equal(jobs[0].title, 'Night Shift Picker - Johannesburg');
 });
+
+test('tier A: rejects "<Category Name><badge count>" facet-filter links as job titles ("Legal 1", "Dubai 1", "Permanent 6", "Contract 3") -- confirmed live on Networkers International and AGC Recruitment', () => {
+  const html = `
+    <div class="listing">
+      <a href="/jobs/legal">Legal 1</a>
+      <a href="/jobs/dubai">Dubai 1</a>
+      <a href="/jobs/permanent">Permanent 6</a>
+      <a href="/jobs/contract">Contract 3</a>
+      <a href="/job/financial-manager-6015895">Financial Manager</a>
+    </div>`;
+  const jobs = parseAgencySiteJobs(html, site);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Financial Manager');
+});

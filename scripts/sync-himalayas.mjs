@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { pathToFileURL } from 'node:url';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -8,6 +9,8 @@ const PAGE_COUNT = Number.parseInt(process.env.HIMALAYAS_PAGES || '5', 10);
 const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.HIMALAYAS_PAGE_SIZE || '20', 10) || 20, 1), 20);
 const REQUEST_DELAY_MS = Number.parseInt(process.env.HIMALAYAS_REQUEST_DELAY_MS || '1500', 10);
 const API_URL = 'https://himalayas.app/jobs/api/search';
+
+const DEBUG_RAW = /^(1|true|yes)$/i.test(process.env.DEBUG_RAW || '');
 
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -54,9 +57,15 @@ function formatLocation(job) {
 }
 
 // Maps Himalayas /jobs/api/search results into the shared vacancy shape.
-export function mapHimalayasResults(payload) {
+// `publishedAt`/`expiresAt` are not documented in Himalayas' own public
+// docs, but are consistently present on this exact endpoint per
+// third-party scrapers of it (e.g. Apify's himalayas-jobs-scraper output
+// schema) -- run with DEBUG_RAW=1 to print a live payload and confirm the
+// field names still match before relying on this in production.
+export function mapHimalayasResults(payload, now = new Date()) {
   const jobs = Array.isArray(payload?.jobs) ? payload.jobs : [];
-  const now = new Date().toISOString();
+  if (DEBUG_RAW && jobs[0]) console.log('[himalayas] RAW job sample:', JSON.stringify(jobs[0]).slice(0, 3000));
+  const nowIso = now.toISOString();
   return jobs.map((job) => {
     const slug = jobSlug(job);
     const link = clean(job?.applicationLink) || clean(job?.guid);
@@ -67,17 +76,28 @@ export function mapHimalayasResults(payload) {
     const excerpt = stripHtml(job?.excerpt);
     const description = stripHtml(job?.description);
     const notes = clean([salary, employment, excerpt || description].filter(Boolean).join(' · ')).slice(0, 20_000);
+    const closingDate = clean(job?.expiresAt || '').slice(0, 10);
+    const postedText = clean(job?.publishedAt || '').slice(0, 10);
+    const stale = isStaleVacancy({ closing_date: closingDate, postedText, source_type: 'himalayas' }, now);
+    if (stale.stale) {
+      console.log(`[himalayas] skipping ${link}: ${stale.reason}`);
+      return null;
+    }
     return {
       id: `himalayas-${slug}`,
       title,
       company: clean(job?.companyName) || 'Himalayas employer',
       location: formatLocation(job),
+      closing_date: closingDate,
       notes,
       link,
       remote: 'Remote',
       source_type: 'himalayas',
-      source_checked_at: now,
-      last_verified_at: now,
+      source_checked_at: nowIso,
+      last_verified_at: nowIso,
+      // postedText deliberately omitted -- 'vacancies' has no such column;
+      // PostgREST rejects the whole upsert batch (PGRST204) if an
+      // unrecognized key is present in the payload.
     };
   }).filter(Boolean);
 }

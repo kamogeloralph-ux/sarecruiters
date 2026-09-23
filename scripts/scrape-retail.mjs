@@ -2,6 +2,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -79,6 +80,14 @@ export function parsePickNPayDetail(payload, summary, employerId) {
   const info = payload && payload.jobPostingInfo;
   if (!info || !info.title || !summary?.link) return null;
   const jobReqId = clean(info.jobReqId || info.jobPostingId || summary.externalPath.split('_').pop());
+  // NOTE on freshness: unlike Boxer/Pnet, Workday's jobPostingInfo payload
+  // here carries no closing date and no verified "posted" field (Workday
+  // tenants typically expose relative text like "Posted 30+ Days Ago" in
+  // the search payload, not an absolute date parseable by
+  // vacancy-freshness.mjs) -- so this source has no per-listing staleness
+  // signal yet and relies entirely on the 30-day retail TTL in
+  // delete_expired_vacancies() to age rows out. Confirm the real field
+  // name from a live payload capture before wiring a check in here.
   return {
     id: idForJob({ jobReqId, jobPostingId: info.jobPostingId }),
     // Pick n Pay has its own employers record -- always file its vacancies
@@ -170,18 +179,36 @@ export function parseBoxerDetail(html, summary) {
   const address = job.jobLocation?.address || {};
   const location = clean([address.addressLocality, address.addressRegion].filter(Boolean).join(', ') || summary.location);
   const identifier = job.identifier?.value || summary.externalId;
+  const closingDate = clean(job.validThrough || summary.closingDate);
+  // Only the JSON-LD branch (parseJsonLdJob) carries datePosted -- the
+  // table-scrape fallback (parseBoxerTableJob) has no "Posted" row to read,
+  // so postedText is simply absent for those listings and the staleness
+  // check falls back to closing_date alone, same as before this change.
+  const postedText = clean(job.datePosted || '').slice(0, 10);
+  const stale = isStaleVacancy({ closing_date: closingDate, postedText, source_type: 'retail' });
+  if (stale.stale) {
+    console.log(`[retail:boxer] skipping ${summary.link}: ${stale.reason}`);
+    return null;
+  }
   return {
     id: idForBoxerJob({ externalId: identifier }), agency_id: 'general', employer_id: null,
     title: clean(job.title), company: 'Boxer Superstores', location,
-    closing_date: clean(job.validThrough || summary.closingDate), notes: htmlToText(job.description).slice(0, 20_000),
+    closing_date: closingDate, notes: htmlToText(job.description).slice(0, 20_000),
     link: summary.link, email: '', phone: '', remote: null, experience_level: '',
     employment_type: clean(job.employmentType || ''), contract_type: '', work_schedule: '', hours: '', salary: '', start_date: '',
     source_type: 'retail', source_checked_at: new Date().toISOString(), last_verified_at: new Date().toISOString(),
+    // postedText deliberately omitted from the row -- see the matching
+    // note in scrape-pnet.mjs; 'vacancies' has no such column and
+    // PostgREST rejects the whole batch if it's present.
   };
 }
 
 export function parseCashbuildSearch(payload, employerId = null) {
   if (!payload || !Array.isArray(payload.results)) return [];
+  // Same gap as Pick n Pay above: this careers-page.com payload (see
+  // scrape-retail.test.mjs fixture) has no closing-date or verified
+  // posted-date field to check with vacancy-freshness.mjs -- relies on the
+  // 30-day retail TTL until a live capture confirms a real date field.
   return payload.results.filter((job) => job && job.hash && job.position_name).map((job) => {
     const location = clean(job.location_display || [job.city, job.state].filter(Boolean).join(', '));
     const now = new Date().toISOString();

@@ -27,7 +27,11 @@ test('maps Adzuna search results into vacancy records', () => {
     count: 1,
   };
 
-  const [job] = mapAdzunaResults(payload);
+  // Explicit `now` close to the fixture's `created` date -- mapAdzunaResults
+  // now checks posting age via isStaleVacancy, so leaving this on the real
+  // wall clock would make the test start failing on its own once real time
+  // passes Adzuna's 45-day staleness window.
+  const [job] = mapAdzunaResults(payload, new Date('2026-09-21T00:00:00Z'));
   assert.equal(job.id, 'adzuna-5012345678');
   assert.equal(job.title, 'Senior Backend Developer');
   assert.equal(job.company, 'Datafin');
@@ -37,6 +41,17 @@ test('maps Adzuna search results into vacancy records', () => {
   assert.match(job.notes, /permanent full_time/);
   assert.match(job.notes, /Posted 2026-09-12/);
   assert.match(job.notes, /payment infrastructure/);
+});
+
+test('skips a listing whose `created` date is older than Adzuna\'s max age', () => {
+  const payload = {
+    results: [{
+      id: 999, title: 'Ancient Listing', created: '2026-01-01T00:00:00Z',
+      redirect_url: 'https://www.adzuna.co.za/land/ad/999',
+    }],
+  };
+  const jobs = mapAdzunaResults(payload, new Date('2026-09-21T00:00:00Z'));
+  assert.equal(jobs.length, 0);
 });
 
 test('marks predicted salaries and skips jobs missing a redirect_url or title', () => {

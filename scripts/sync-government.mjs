@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
+import { isStaleVacancy } from './vacancy-freshness.mjs';
 
 // NOTE ON SCOPE: "Government vacancies" here means the Public Service
 // Vacancy Circular published weekly by the Department of Public Service and
@@ -182,6 +183,19 @@ export function parseGovernmentPdfText(text, { circularNumber, year, pdfUrl, sou
       // keeps the same underlying PDF as the apply target while making the
       // tuple unique per post, without touching the unrelated `id` field.
       const postLink = `${pdfUrl}#post=${encodeURIComponent(postNumber)}`;
+      // Definitive signal already in hand: DPSA's own CLOSING DATE per
+      // section. A circular published today can still include a post whose
+      // closing date already passed (late re-scrapes, a circular re-fetched
+      // after its window closed) -- skip those here rather than relying
+      // solely on the 90-day government TTL to age them out later. Posting
+      // age isn't checked per-post: DPSA's circular-level "Posting date" is
+      // parsed elsewhere (parsePostingDate, for the circular's own archive
+      // record) but isn't threaded down to each post here, since
+      // closing_date is the strong, official signal for this source and
+      // covers the case that actually happens (stale = expired, not stale
+      // = "posted a while ago but still legitimately open").
+      const stale = isStaleVacancy({ closing_date: closingDate, source_type: 'government' });
+      if (stale.stale) return;
       jobs.push({
         id, title, company, location: centre || 'South Africa', closing_date: closingDate,
         notes, link: postLink, agency_id: 'general', source_type: 'government',
