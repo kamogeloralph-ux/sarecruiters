@@ -186,10 +186,6 @@
 
     <div class="screen-scroll">
 
-    <div class="guest-teaser" id="guest-teaser" style="display:none">
-      <div class="guest-teaser-copy"><strong>Browsing as a guest</strong><span>You have 5 free vacancy views today. Create a free account for unlimited access.</span></div>
-      <button data-ripple onclick="openAccountScreen()">Create account</button>
-    </div>
     <p class="browse-jobs-row"><a href="/jobs/gauteng/">Browse Gauteng jobs →</a></p>
 
     <div class="sponsor-slot"></div>
@@ -207,37 +203,12 @@
     </div>
   </div>
 
-  <!-- ============ SEARCH ============ -->
-  <div class="screen" id="screen-search">
-    <div class="screen-fixed">
-    <header>
-      <div class="logo-text">Search</div>
-      <div class="header-actions">
-        <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
-        <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-        </button>
-      </div>
-    </header>
-    <div class="search">
-      <div class="search-inner">
-        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
-        <input id="search-input" type="search" placeholder="Search agencies, trades, jobs, locations..." oninput="handleSearchScreen(this.value)">
-      </div>
-    </div>
-    </div>
-    <div class="screen-scroll">
-    <div id="search-results" style="margin-top:20px"></div>
-    </div>
-  </div>
-
   <!-- ============ SAVED ============ -->
   <div class="screen" id="screen-saved">
     <div class="screen-fixed">
     <header>
       <div class="logo-text">Saved vacancies</div>
       <div class="header-actions">
-        <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
         <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
           <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
         </button>
@@ -254,15 +225,14 @@
     <div class="screen-fixed">
     <header>
       <div class="screen-title-group"><div class="logo-text">Profile</div><div class="screen-context">Your SA Recruiters account</div></div>
-      <div class="header-actions"><button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
-      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+      <div class="header-actions"><button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
     </header>
     </div>
     <div class="screen-scroll menu-scroll">
       <div class="account-hero">
-        <div class="account-avatar" id="account-avatar" aria-hidden="true"><span>A</span></div>
+        <button class="account-avatar account-avatar-btn" id="account-avatar" data-ripple onclick="openProfilePhotoSheet()" aria-label="Change profile photo" title="Change profile photo"><span>A</span></button>
         <div class="account-hero-copy">
           <div class="account-name" id="account-name">Guest</div>
           <div class="account-email" id="account-email">Browsing as a guest</div>
@@ -299,92 +269,14 @@
         <div class="account-quota-bar"><div class="account-quota-fill" id="account-quota-fill"></div></div>
         <div class="account-quota-note" id="account-quota-note">Full access is unlocked with a free account.</div>
       </div>
-    <div class="menu-hero">
-    <header class="menu-header">
-      <div class="menu-brand">
-        <div class="menu-brand-logo" style="width:50px;height:50px;min-width:50px;max-width:50px;min-height:50px;max-height:50px;overflow:hidden;"><img src="icons/v2-Maskable-512.png" alt="SA Recruiters" width="50" height="50" style="display:block;width:50px;height:50px;max-width:50px;max-height:50px;object-fit:cover;"></div>
-        <div class="menu-brand-copy">
-          <div class="profile-name" id="profile-status-name">SA Recruiters</div>
-          <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
-        </div>
+
+      <!-- ===== Profile settings (signed-in): edit name + photo, delete account ===== -->
+      <div class="pgroup-label">Profile settings</div>
+      <div class="pgrouped-list" id="account-settings-group" style="display:none">
+        <button class="profile-menu-item" data-ripple onclick="openEditProfileSheet()"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span><span>Edit profile<span class="mi-sub">Name and profile photo</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="openProfilePhotoSheet()"><span class="mi-icon tile-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 15l-4.5-4.5L9 18"/></svg></span><span>Change profile photo<span class="mi-sub">Shown next to your name and activity</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="openDeleteAccountSheet()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span><span>Delete my account<span class="mi-sub">Permanently removes your sign-in data</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
-      <div class="menu-header-actions">
-        <button class="menu-more-btn" data-ripple onclick="openNotesSheet()" aria-label="Open Notes" title="Notes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/></svg></button>
-        <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
-          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
-        </button>
-      </div>
-    </header>
-
-    <!-- ===== Track of the Day ===== -->
-    <div class="track-card-wrap">
-      <div class="track-card" id="track-card">
-        <div class="track-art" id="track-art">
-          <svg><use href="icons.svg#ibdb88b"/></svg>
-          <div class="art-bars"><span></span><span></span><span></span><span></span></div>
-        </div>
-        <div class="track-info" id="track-info">
-          <div class="track-label">Track of the Day</div>
-          <div class="track-title" id="track-title">Loading…</div>
-          <div class="track-artist" id="track-artist"></div>
-        </div>
-        <button class="track-play" id="track-play" disabled onclick="toggleTrackPlay()" aria-label="Play track">
-          <svg><use href="icons.svg#idac8d7"/></svg>
-        </button>
-      </div>
-      <div class="track-progress" id="track-progress" style="display:none"><div class="track-progress-fill" id="track-progress-fill"></div></div>
-    </div>
-    <audio id="track-audio" preload="metadata" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>
-
-    <!-- ===== Support ticker ===== -->
-    <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory — view donation details">
-      <span class="support-ticker-item">💙 Support the Directory to keep it running — Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
-    </div>
-    </div>
-
-    <section class="quick-access" aria-label="Quick access">
-      <div class="quick-access-label">Quick access</div>
-      <div class="quick-access-grid">
-        <div class="quick-card quick-card-candidates">
-          <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or join the Talent Pool</small></div></div>
-          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openPoolRegisterSheet()">Join Talent Pool</button></div>
-        </div>
-        <div class="quick-card quick-card-employers">
-          <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div><strong>Employers</strong><small>Find candidates or post a vacancy</small></div></div>
-          <div class="quick-card-actions"><button data-ripple onclick="goPool('profile')">Browse candidates</button><button data-ripple onclick="openGeneralVacancySheet()">Post vacancy</button></div>
-        </div>
-      </div>
-    </section>
-    <section class="spotlight-mini" aria-labelledby="spotlight-mini-title">
-      <div class="spotlight-mini-head"><div><div class="quick-access-label">Talent Pool spotlight</div><h2 id="spotlight-mini-title">Meet our candidates</h2></div><button data-ripple onclick="goPool('profile')">See all →</button></div>
-      <div class="spotlight-deck" id="candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"></div>
-    </section>
-
-    <div class="pgroup-label">Community</div>
-    <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-    </div>
-
-    <div class="pgroup-label">Resources</div>
-    <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Learning Hub<span class="mi-sub">Guides &amp; resources for job seekers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg><use href="icons.svg#ia65142"/></svg></span><span>How to Prepare Your CV<span class="mi-sub">Step-by-step CV writing guide</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg><use href="icons.svg#ib745ad"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg><use href="icons.svg#i4ccc00"/></svg></span><span>Interview Tips<span class="mi-sub">Ace your next interview with confidence</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg><use href="icons.svg#i053685"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ie9938a"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-    </div>
-
-    <div class="pgroup-label">&nbsp;</div>
-    <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="signOutSaRecruiters()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg></span><span>Sign out<span class="mi-sub">Sign out of your Google account</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-    </div>
-    <!-- ============ CONTACT DETAILS ============ -->
-
 
       <div class="pgroup-label">Your listing</div>
       <div class="pgrouped-list">
@@ -451,13 +343,103 @@
     </div>
   </div>
 
+
+  <!-- ============ MENU (site menu: brand, track, community, resources) ============ -->
+  <div class="screen" id="screen-menu">
+    <div class="screen-scroll menu-scroll">
+    <div class="menu-hero">
+    <header class="menu-header">
+      <div class="menu-brand">
+        <div class="menu-brand-logo" style="width:50px;height:50px;min-width:50px;max-width:50px;min-height:50px;max-height:50px;overflow:hidden;"><img src="icons/v2-Maskable-512.png" alt="SA Recruiters" width="50" height="50" style="display:block;width:50px;height:50px;max-width:50px;max-height:50px;object-fit:cover;"></div>
+        <div class="menu-brand-copy">
+          <div class="profile-name" id="profile-status-name">SA Recruiters</div>
+          <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
+        </div>
+      </div>
+      <div class="menu-header-actions">
+        <button class="menu-more-btn" data-ripple onclick="openNotesSheet()" aria-label="Open Notes" title="Notes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/></svg></button>
+        <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===== Track of the Day ===== -->
+    <div class="track-card-wrap">
+      <div class="track-card" id="track-card">
+        <div class="track-art" id="track-art">
+          <svg><use href="icons.svg#ibdb88b"/></svg>
+          <div class="art-bars"><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="track-info" id="track-info">
+          <div class="track-label">Track of the Day</div>
+          <div class="track-title" id="track-title">Loading&#8230;</div>
+          <div class="track-artist" id="track-artist"></div>
+        </div>
+        <button class="track-play" id="track-play" disabled onclick="toggleTrackPlay()" aria-label="Play track">
+          <svg><use href="icons.svg#idac8d7"/></svg>
+        </button>
+      </div>
+      <div class="track-progress" id="track-progress" style="display:none"><div class="track-progress-fill" id="track-progress-fill"></div></div>
+    </div>
+    <audio id="track-audio" preload="metadata" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>
+
+    <!-- ===== Support ticker ===== -->
+    <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory &#8212; view donation details">
+      <span class="support-ticker-item">&#128153; Support the Directory to keep it running &#8212; Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
+    </div>
+    </div>
+
+    <section class="quick-access" aria-label="Quick access">
+      <div class="quick-access-label">Quick access</div>
+      <div class="quick-access-grid">
+        <div class="quick-card quick-card-candidates">
+          <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or join the Talent Pool</small></div></div>
+          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openPoolRegisterSheet()">Join Talent Pool</button></div>
+        </div>
+        <div class="quick-card quick-card-employers">
+          <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div><strong>Employers</strong><small>Find candidates or post a vacancy</small></div></div>
+          <div class="quick-card-actions"><button data-ripple onclick="goPool('profile')">Browse candidates</button><button data-ripple onclick="openGeneralVacancySheet()">Post vacancy</button></div>
+        </div>
+      </div>
+    </section>
+    <section class="spotlight-mini" aria-labelledby="spotlight-mini-title">
+      <div class="spotlight-mini-head"><div><div class="quick-access-label">Talent Pool spotlight</div><h2 id="spotlight-mini-title">Meet our candidates</h2></div><button data-ripple onclick="goPool('profile')">See all &#8594;</button></div>
+      <div class="spotlight-deck" id="candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"></div>
+    </section>
+
+    <div class="pgroup-label">Community</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+    </div>
+
+    <div class="pgroup-label">Resources</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Learning Hub<span class="mi-sub">Guides &amp; resources for job seekers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg><use href="icons.svg#ia65142"/></svg></span><span>How to Prepare Your CV<span class="mi-sub">Step-by-step CV writing guide</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg><use href="icons.svg#ib745ad"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg><use href="icons.svg#i4ccc00"/></svg></span><span>Interview Tips<span class="mi-sub">Ace your next interview with confidence</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg><use href="icons.svg#i053685"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ie9938a"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+    </div>
+
+    <div class="pgroup-label">&nbsp;</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('docs/SA-Recruiters-Terms-and-Conditions.pdf','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (PDF)</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+    </div>
+    </div>
+  </div>
+
   <!-- ============ SMART MANAGER (admin only) ============ -->
   <div class="screen" id="screen-smartmanager">
     <div class="screen-fixed">
     <header>
       <div class="screen-title-group"><div class="logo-text">Smart Manager</div><div class="screen-context">Admin tools</div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to menu" title="Back to menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile" title="Back to profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -483,8 +465,7 @@
     <div class="screen-fixed">
     <header>
       <div class="screen-title-group"><div class="logo-text">Submissions</div><div class="screen-context">Admin tools</div></div>
-      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to menu" title="Back to menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile" title="Back to profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -525,7 +506,6 @@
     <header>
       <div class="screen-title-group"><div class="logo-text" id="manager-agency-name">Agency</div><div class="screen-context">Agency manager</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -552,7 +532,6 @@
     <header>
       <div class="screen-title-group"><div class="logo-text" id="manager-employer-name">Company</div><div class="screen-context">Employer manager</div></div>
       <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <button class="site-menu-trigger" data-ripple onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
         <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
       </button></div>
@@ -727,9 +706,9 @@
     <svg><use href="icons.svg#i36f2ce"/></svg>
     <span class="navbtn-label">Home</span>
   </button>
-  <button class="navbtn" data-tab="search" data-ripple aria-label="Search">
-    <svg><use href="icons.svg#i628077"/></svg>
-    <span class="navbtn-label">Search</span>
+  <button class="navbtn" data-tab="account" data-ripple aria-label="Profile">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.7-3.8 3.3-5.8 7-5.8s6.3 2 7 5.8"/></svg>
+    <span class="navbtn-label">Profile</span>
   </button>
   <button class="navbtn" data-tab="saved" data-ripple aria-label="Saved">
     <svg><use href="icons.svg#i74f28f"/></svg>
@@ -739,9 +718,9 @@
     <svg><use href="icons.svg#i36ccb3"/></svg>
     <span class="navbtn-label">Feedback</span>
   </button>
-  <button class="navbtn" data-tab="account" data-ripple aria-label="Account">
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.7-3.8 3.3-5.8 7-5.8s6.3 2 7 5.8"/></svg>
-    <span class="navbtn-label">Profile</span>
+  <button class="navbtn" data-tab="menu" data-ripple aria-label="Menu">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    <span class="navbtn-label">Menu</span>
   </button>
 </nav>
 
@@ -770,6 +749,49 @@
       </div>
     </button>
     <button class="sheet-cancel" data-ripple onclick="closeSheet('guest-limit-overlay')">Keep browsing</button>
+  </div>
+</div>
+
+<!-- ============ PROFILE SETTINGS: EDIT PROFILE ============ -->
+<div class="sheet-scrim" id="edit-profile-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('edit-profile-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Edit profile</h3>
+    <div class="field"><label>Display name</label><input id="ep-name" placeholder="How your name appears in the app" maxlength="80"></div>
+    <div class="field"><label>Email (sign-in identity)</label><input id="ep-email" readonly style="opacity:.65"></div>
+    <p class="account-signin-status" id="edit-profile-status" role="status" aria-live="polite" style="min-height:16px;margin:4px 0 8px;font-size:12px;color:var(--text-2)"></p>
+    <button class="sheet-submit" data-ripple onclick="saveProfileEdits()" id="edit-profile-save-btn">Save changes</button>
+  </div>
+</div>
+
+<!-- ============ PROFILE SETTINGS: PROFILE PHOTO ============ -->
+<div class="sheet-scrim" id="profile-photo-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('profile-photo-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Profile photo</h3>
+    <div class="photo-row">
+      <div class="avatar" style="width:64px;height:64px;">
+        <img id="pp-preview" style="display:none;">
+        <span id="pp-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
+      </div>
+      <label>Add photo<input type="file" accept="image/*" onchange="handleProfilePhoto(event)"></label>
+    </div>
+    <p class="account-signin-status" id="profile-photo-status" role="status" aria-live="polite" style="min-height:16px;margin:4px 0 8px;font-size:12px;color:var(--text-2)"></p>
+    <button class="sheet-submit" data-ripple onclick="saveProfilePhoto()" id="profile-photo-save-btn">Save photo</button>
+    <button class="sheet-cancel" data-ripple onclick="removeProfilePhoto()" id="profile-photo-remove-btn" style="display:none">Remove photo</button>
+  </div>
+</div>
+
+<!-- ============ PROFILE SETTINGS: DELETE ACCOUNT ============ -->
+<div class="sheet-scrim" id="delete-account-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('delete-account-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Delete my account</h3>
+    <div class="manager-banner" style="padding:0 0 12px"><p>This permanently removes your SA Recruiters sign-in, your saved vacancies, and your Talent Pool listing if you have one. This cannot be undone.</p></div>
+    <div class="field"><label>Type DELETE to confirm</label><input id="da-confirm" placeholder="DELETE" autocomplete="off"></div>
+    <p class="account-signin-status" id="delete-account-status" role="status" aria-live="polite" style="min-height:16px;margin:4px 0 8px;font-size:12px;color:var(--text-2)"></p>
+    <button class="sheet-submit danger" data-ripple onclick="confirmDeleteAccount()" id="delete-account-btn">Delete my account permanently</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('delete-account-overlay')">Keep my account</button>
   </div>
 </div>
 
@@ -1236,7 +1258,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=85a3edff64" defer></script>
+<script src="app.bundle.min.js?v=6deeda3007" defer></script>
 <!-- Optional sponsor widget: the directory remains fully functional when it is not configured. -->
 <script>
   // Waits for app.js's DOMContentLoaded setup (deferred scripts run in order,

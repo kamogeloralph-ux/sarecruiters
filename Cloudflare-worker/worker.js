@@ -929,6 +929,46 @@ var worker_default = {
         if (!result.ok) return json({ error: result.error }, result.status, origin);
         return json({ ok: true, cv: result.cv }, 200, origin);
       }
+      if (path === "/api/account/delete" && request.method === "POST") {
+        // Self-service account deletion (GDPR/POPIA-style right to erasure).
+        // The user's access token is verified server-side; the Supabase admin
+        // API then removes the auth user. auth.users cascades delete the
+        // saved_vacancies rows (FK ON DELETE CASCADE), and reports/suggestions
+        // keep only a nullified user_id (ON DELETE SET NULL). The Talent Pool
+        // listing is a separate pool_candidates row, cleared here explicitly.
+        const deleteUserId = await verifiedUserId(request, env);
+        if (!deleteUserId) {
+          return json({ error: "Please sign in to delete your account." }, 401, origin);
+        }
+        const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!adminKey) {
+          return json({ error: "Account deletion is not configured." }, 503, origin);
+        }
+        const authHeaders = {
+          apikey: adminKey,
+          Authorization: `Bearer ${adminKey}`,
+          "Content-Type": "application/json"
+        };
+        try {
+          // Talent Pool listing rows are linked by user_id but not FK-cascaded.
+          const poolRes = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?user_id=eq.${deleteUserId}`, {
+            method: "DELETE",
+            headers: authHeaders
+          });
+          if (!poolRes.ok) return json({ error: "Could not remove your Talent Pool listing." }, 502, origin);
+          const delRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${deleteUserId}`, {
+            method: "DELETE",
+            headers: authHeaders
+          });
+          if (!delRes.ok) {
+            const detail = await delRes.text().catch(() => "");
+            return json({ error: "Could not delete the account.", detail: detail.slice(0, 200) }, 502, origin);
+          }
+        } catch (e) {
+          return json({ error: "Account deletion failed — please try again." }, 502, origin);
+        }
+        return json({ ok: true }, 200, origin);
+      }
       if (path === "/api/upload/candidate-photo" && request.method === "POST") {
         const contentType = request.headers.get("Content-Type") || "";
         if (!contentType.startsWith("image/")) {

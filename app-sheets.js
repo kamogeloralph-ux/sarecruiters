@@ -657,7 +657,7 @@ async function getPoolCandidateCount() {
 }
 
 function goPool(returnScreen, openCandidateId) {
-  poolReturnScreen = returnScreen === 'profile' || (!returnScreen && document.getElementById('screen-account').classList.contains('active')) ? 'profile' : 'home';
+  poolReturnScreen = returnScreen === 'profile' || returnScreen === 'account' || (!returnScreen && document.getElementById('screen-account').classList.contains('active')) ? 'profile' : 'home';
   poolPendingOpenId = openCandidateId || null;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-pool').classList.add('active');

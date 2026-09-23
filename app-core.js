@@ -57,7 +57,7 @@ function isGoogleUser(user) {
 }
 function renderAuthUser(user) {
   var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Guest';
-  var avatar = user && user.user_metadata && user.user_metadata.avatar_url;
+  var avatar = user && user.user_metadata && (user.user_metadata.profile_photo || user.user_metadata.avatar_url);
   var authName = document.getElementById('welcome-user-name');
   if (authName) authName.textContent = user ? name : 'Guest';
   var modeLabel = document.getElementById('site-menu-account-mode');
