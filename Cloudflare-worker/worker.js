@@ -237,18 +237,8 @@ function publicUrlFor(env, key) {
   return `${base}/${key}`;
 }
 __name(publicUrlFor, "publicUrlFor");
-// Raised from 600/1800 (10 min / 30 min) — the 10-minute fresh window meant
-// any steady trickle of traffic (real visitors, crawlers, uptime monitors)
-// kept this endpoint refreshing from Supabase up to ~144x/day, a fixed
-// egress cost that barely depended on actual visitor count. 1 hour fresh /
-// 3 hour stale-while-revalidate keeps the same 3x ratio but cuts that
-// refresh cadence ~6x. Trade-off: a brand-new visitor can wait up to an
-// hour (worst case) to see an agency/vacancy edit, instead of 10 minutes —
-// existing visitors already tolerate up to 30 minutes of staleness today
-// via the background-refresh branch below, so this is a difference of
-// degree, not a new kind of staleness.
-var STARTUP_CACHE_TTL = 3600;
-var STARTUP_STALE_TTL = 10800;
+var STARTUP_CACHE_TTL = 600;
+var STARTUP_STALE_TTL = 1800;
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
@@ -908,6 +898,58 @@ var worker_default = {
           notification_title: "New suggestion received",
           notification_intro: "A user submitted a suggestion or comment through SA Recruiters.",
           notification_body: "Type: " + (body.type || "-") + "\nAgency: " + (body.agency_name || "-") + "\nDetails: " + (body.details || "-")
+        });
+        return json({ ok: true, email }, 200, origin);
+      }
+      // ---------- "Post a job" enquiry (public, ALWAYS open — see 20260923_add_job_post_enquiries.sql) ----------
+      // Deliberately separate from /api/submit/employer-register: this is a
+      // low-friction lead form (firstjobly.co.za/post-a-job style) that is
+      // never gated behind a "self-registration closed" flag. Used by both
+      // the in-app sheet and the static /post-a-job/ page.
+      if (path === "/api/submit/job-enquiry" && request.method === "POST") {
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const body = await request.json().catch(() => ({}));
+        const companyName = String(body.company_name || "").trim().slice(0, 200);
+        const workEmail = String(body.work_email || "").trim().slice(0, 200);
+        if (!companyName || !workEmail) {
+          return json({ error: "Add your company name and work email." }, 400, origin);
+        }
+        const roleTypes = Array.isArray(body.role_types)
+          ? body.role_types.map((r) => String(r).slice(0, 60)).slice(0, 20)
+          : [];
+        const enquiryUserId = await verifiedUserId(request, env);
+        try {
+          await supabaseRpc(env, "public_submit_job_enquiry", {
+            p_company_name: companyName,
+            p_contact_person: String(body.contact_person || "").slice(0, 200),
+            p_work_email: workEmail,
+            p_phone: String(body.phone || "").slice(0, 60),
+            p_industry: String(body.industry || "").slice(0, 200),
+            p_positions_to_fill: String(body.positions_to_fill || "").slice(0, 60),
+            p_role_types: roleTypes,
+            p_additional_details: String(body.additional_details || "").slice(0, 4000),
+            p_website: String(body.website || "").slice(0, 300),
+            p_user_id: enquiryUserId
+          });
+        } catch (e) {
+          return json({ error: "Could not send your enquiry — please try again.", detail: e.detail }, 502, origin);
+        }
+        const email = await sendNotificationEmail(env, {
+          to_email: env.ADMIN_NOTIFY_EMAIL || "sarecruiters.directory@gmail.com",
+          email_subject: "SA Recruiters | New \"Post a job\" enquiry — " + companyName,
+          notification_type: "JOB ENQUIRY",
+          notification_title: "New job posting enquiry",
+          notification_intro: "An employer asked to post a job through SA Recruiters.",
+          notification_body: "Company: " + companyName +
+            "\nContact: " + (body.contact_person || "-") +
+            "\nWork email: " + workEmail +
+            "\nPhone: " + (body.phone || "-") +
+            "\nIndustry: " + (body.industry || "-") +
+            "\nPositions to fill: " + (body.positions_to_fill || "-") +
+            "\nRoles: " + (roleTypes.length ? roleTypes.join(", ") : "-") +
+            "\nWebsite: " + (body.website || "-") +
+            "\nDetails: " + (body.additional_details || "-")
         });
         return json({ ok: true, email }, 200, origin);
       }
