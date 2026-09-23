@@ -123,6 +123,12 @@ const SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 
 const SITE_URL = 'https://sa-recruiters.co.za';
 const OUT_DIR = path.join(__dirname); // publish root — adjust if you move this script
+// Kept in sync by hand with app-core.js (R2_WORKER_URL) and app-sheets.js
+// (TURNSTILE_SITE_KEY) — the static /post-a-job/ page has no app bundle to
+// read these from, since it must work with zero JS dependencies besides
+// Turnstile itself.
+const R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
+const TURNSTILE_SITE_KEY = '0x4AAAAAAAE781UzzffMh7u8L';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -520,7 +526,10 @@ function isOpenVacancy(vacancy) {
 }
 
 function locationContains(value, locationName) {
-  return String(value || '').toLowerCase().includes(locationName.toLowerCase());
+  // Normalise hyphens/spaces so "KwaZulu-Natal" (slug-derived name) still
+  // matches free-text locations written as "Kwazulu Natal" or "kwa-zulu natal".
+  const norm = (s) => String(s || '').toLowerCase().replace(/[-\s]+/g, ' ').trim();
+  return norm(value).includes(norm(locationName));
 }
 
 function buildLocationHubPage({ locationName, slug, vacancies, agencies, branches }) {
@@ -593,6 +602,163 @@ ${agencyList}
   return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
 }
 
+// ---------- category hubs (Government/Learnerships/Internships/etc, see
+// firstjobly.co.za "Browse by type") ----------
+// employment_type/contract_type are free-text fields (not an enum), so we
+// match the same way locationContains() does for province hubs: a
+// case-insensitive substring check across the fields most likely to carry
+// the category keyword, plus source_type for the vacancies we already tag
+// at ingestion time (government/dpsa, learnerships).
+function vacancyMatchesCategory(vacancy, category) {
+  const haystack = [
+    vacancy.title, vacancy.employment_type, vacancy.contract_type,
+    vacancy.notes, vacancy.experience_level, vacancy.source_type,
+  ].filter(Boolean).join(' ').toLowerCase();
+  return category.keywords.some((kw) => haystack.includes(kw));
+}
+
+function buildCategoryHubPage({ category, vacancies }) {
+  const currentVacancies = vacancies
+    .filter((vacancy) => isOpenVacancy(vacancy))
+    .filter((vacancy) => vacancyMatchesCategory(vacancy, category));
+
+  // Do not publish a thin, empty hub. The caller should also omit this URL
+  // from the sitemap when the function returns null.
+  if (currentVacancies.length === 0) return null;
+
+  const canonical = `${SITE_URL}/browse/category/${category.slug}/`;
+  const title = `${category.label} in South Africa — SA Recruiters`;
+  const description = `Browse current ${category.label.toLowerCase()} in South Africa. Updated listings from recruitment agencies and employers on SA Recruiters.`;
+
+  const vacancyList = `<h2>Current ${escapeHtml(category.label)}</h2>
+    <ul class="hub-list">${currentVacancies.slice(0, 50).map((vacancy) => {
+      return `<li><strong>${escapeHtml(vacancy.title || 'Untitled vacancy')}</strong>${vacancy.company ? ` — ${escapeHtml(vacancy.company)}` : ''}${vacancy.location ? ` <span class="muted">(${escapeHtml(vacancy.location)})</span>` : ''}</li>`;
+    }).join('')}</ul>`;
+
+  const itemList = currentVacancies.slice(0, 50).map((vacancy, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: vacancy.title || 'Vacancy',
+  }));
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: title,
+    description,
+    url: canonical,
+    isPartOf: { '@type': 'WebSite', name: 'SA Recruiters', url: `${SITE_URL}/` },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: itemList.length,
+      itemListElement: itemList,
+    },
+  };
+
+  const body = `
+<h1>${escapeHtml(category.label)} in South Africa</h1>
+<p>${escapeHtml(category.intro)}</p>
+${vacancyList}
+<p class="hub-note"><a href="/">Return to the SA Recruiters directory</a> to browse all agencies, employers and vacancies.</p>
+`;
+
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
+}
+
+// ---------- static "Post a job" page (firstjobly.co.za/post-a-job style) ----------
+// A real, crawlable, always-open lead-capture page — see the "Fix all
+// issues" request: unlike the in-app sheet, this needs no JS bundle or
+// Supabase client to load; it posts straight to the Worker's
+// /api/submit/job-enquiry endpoint (public_submit_job_enquiry RPC,
+// 20260923_add_job_post_enquiries.sql), gated only by Cloudflare
+// Turnstile, exactly like the in-app "Post a job" sheet.
+function buildPostAJobPage() {
+  const canonical = `${SITE_URL}/post-a-job/`;
+  const title = 'Post a job on SA Recruiters — reach South African job seekers';
+  const description = "Tell us about the roles you're hiring for and we'll get your vacancies in front of thousands of South African job seekers. SA Recruiters never charges employers to list vacancies.";
+
+  const roleTypes = ['Internships', 'Learnerships', 'Entry-Level', 'Graduate Programmes', 'Bursaries', 'Apprenticeships', 'Permanent', 'Contract'];
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: title,
+    description,
+    url: canonical,
+    isPartOf: { '@type': 'WebSite', name: 'SA Recruiters', url: `${SITE_URL}/` },
+  };
+
+  const body = `
+<h1>Post a job</h1>
+<p>Tell us about the roles you're hiring for and we'll be in touch to get your listing live &mdash; SA Recruiters never charges employers to list vacancies.</p>
+<form id="pj-form" class="pj-form" novalidate>
+  <label>Company name<input id="pj-company" name="company_name" required></label>
+  <label>Contact person<input id="pj-contact" name="contact_person"></label>
+  <label>Work email<input id="pj-email" name="work_email" type="email" required></label>
+  <label>Phone number <span class="pj-optional">optional</span><input id="pj-phone" name="phone" type="tel"></label>
+  <label>Industry <span class="pj-optional">optional</span><input id="pj-industry" name="industry"></label>
+  <label>Positions to fill <span class="pj-optional">optional</span>
+    <select id="pj-positions" name="positions_to_fill">
+      <option value="">Select</option>
+      <option>1</option><option>2-5</option><option>6-10</option><option>10+</option>
+    </select>
+  </label>
+  <fieldset class="pj-roles">
+    <legend>What kind of roles? <span class="pj-optional">optional</span></legend>
+    ${roleTypes.map((r) => `<label class="pj-role-check"><input type="checkbox" name="role_types" value="${escapeHtml(r)}"> ${escapeHtml(r)}</label>`).join('')}
+  </fieldset>
+  <label>Additional details <span class="pj-optional">optional</span><textarea id="pj-details" name="additional_details" rows="4"></textarea></label>
+  <label>Website <span class="pj-optional">optional</span><input id="pj-website" name="website"></label>
+  <div id="pj-turnstile" class="cf-turnstile" data-sitekey="${TURNSTILE_SITE_KEY}"></div>
+  <button type="submit" id="pj-submit">Submit enquiry</button>
+  <p id="pj-status" role="status" aria-live="polite"></p>
+</form>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+document.getElementById('pj-form').addEventListener('submit', async function(e){
+  e.preventDefault();
+  var form = e.target, status = document.getElementById('pj-status'), btn = document.getElementById('pj-submit');
+  var roleTypes = Array.prototype.slice.call(form.querySelectorAll('input[name="role_types"]:checked')).map(function(c){ return c.value; });
+  var token = '';
+  try { if (window.turnstile) token = window.turnstile.getResponse() || ''; } catch (err) {}
+  var payload = {
+    company_name: form.company_name.value.trim(),
+    contact_person: form.contact_person.value.trim(),
+    work_email: form.work_email.value.trim(),
+    phone: form.phone.value.trim(),
+    industry: form.industry.value.trim(),
+    positions_to_fill: form.positions_to_fill.value,
+    role_types: roleTypes,
+    additional_details: form.additional_details.value.trim(),
+    website: form.website.value.trim()
+  };
+  if (!payload.company_name || !payload.work_email) { status.textContent = 'Add your company name and work email.'; return; }
+  btn.disabled = true; btn.textContent = 'Submitting…';
+  try {
+    var res = await fetch('${R2_WORKER_URL}/api/submit/job-enquiry', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { 'cf-turnstile-response': token } : {}),
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json().catch(function(){ return null; });
+    if (res.ok) {
+      status.textContent = "Thanks — we'll be in touch to get your listing live.";
+      form.reset();
+      if (window.turnstile) window.turnstile.reset();
+    } else {
+      status.textContent = (data && data.error) || 'Could not send your enquiry — please try again.';
+    }
+  } catch (err) {
+    status.textContent = 'Could not reach SA Recruiters — please try again or WhatsApp us on 071 553 1005.';
+  }
+  btn.disabled = false; btn.textContent = 'Submit enquiry';
+});
+</script>
+`;
+
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
+}
+
 // ---------- main ----------
 
 async function main() {
@@ -602,9 +768,18 @@ async function main() {
 
   const sitemapUrls = [`${SITE_URL}/`];
 
-  // Location hubs: generate only curated, useful landing pages.
+  // Location hubs: one per province (matches firstjobly.co.za/browse/province/*
+  // coverage — previously only Gauteng was generated here).
   const locationHubs = [
     { name: 'Gauteng', slug: 'gauteng' },
+    { name: 'Western Cape', slug: 'western-cape' },
+    { name: 'Eastern Cape', slug: 'eastern-cape' },
+    { name: 'KwaZulu-Natal', slug: 'kwazulu-natal' },
+    { name: 'Free State', slug: 'free-state' },
+    { name: 'Limpopo', slug: 'limpopo' },
+    { name: 'Mpumalanga', slug: 'mpumalanga' },
+    { name: 'North West', slug: 'north-west' },
+    { name: 'Northern Cape', slug: 'northern-cape' },
   ];
   const jobsDir = path.join(OUT_DIR, 'jobs');
   ensureDir(jobsDir);
@@ -623,6 +798,40 @@ async function main() {
     fs.writeFileSync(path.join(dir, 'index.html'), html);
     sitemapUrls.push(`${SITE_URL}/jobs/${slug}/`);
   });
+
+  // Category hubs (matches firstjobly.co.za's "Browse by type": Government
+  // Vacancies, Learnerships, Internships, Graduate Programmes, Bursaries,
+  // Apprenticeships, Part-time, Remote, Permanent, Contract roles).
+  const categories = [
+    { slug: 'government', label: 'Government Vacancies', intro: 'Government and public-sector vacancies across South Africa, including municipal, SOE and department postings.', keywords: ['government', 'dpsa', 'municipal', 'municipality'] },
+    { slug: 'learnership', label: 'Learnerships', intro: 'Learnership programmes across South African employers, agencies and government departments.', keywords: ['learnership', 'learnerships'] },
+    { slug: 'internship', label: 'Internships', intro: 'Internship opportunities for graduates and students across South African employers.', keywords: ['internship', 'intern '] },
+    { slug: 'graduate_programme', label: 'Graduate Programmes', intro: 'Graduate development and trainee programmes from South African employers.', keywords: ['graduate programme', 'graduate program', 'trainee', 'graduate-in-training', 'graduates in training'] },
+    { slug: 'bursary', label: 'Bursaries', intro: 'Bursary opportunities for South African students.', keywords: ['bursary', 'bursaries'] },
+    { slug: 'apprenticeship', label: 'Apprenticeships', intro: 'Apprenticeship opportunities across South African trades and industries.', keywords: ['apprentice', 'apprenticeship'] },
+    { slug: 'part_time', label: 'Part-time roles', intro: 'Part-time job opportunities across South Africa.', keywords: ['part-time', 'part time'] },
+    { slug: 'remote', label: 'Remote / Work from home jobs', intro: 'Remote and work-from-home job opportunities open to South African candidates.', keywords: ['remote', 'work from home', 'work-from-home'] },
+    { slug: 'permanent', label: 'Permanent roles', intro: 'Permanent job opportunities across South African employers and agencies.', keywords: ['permanent'] },
+    { slug: 'contract', label: 'Contract roles', intro: 'Contract and fixed-term job opportunities across South African employers.', keywords: ['contract', 'fixed-term', 'fixed term'] },
+  ];
+  const categoryDir = path.join(OUT_DIR, 'browse', 'category');
+  ensureDir(categoryDir);
+  categories.forEach((category) => {
+    const html = buildCategoryHubPage({ category, vacancies });
+    // No useful inventory means no page and no sitemap entry.
+    if (!html) return;
+    const dir = path.join(categoryDir, category.slug);
+    ensureDir(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), html);
+    sitemapUrls.push(`${SITE_URL}/browse/category/${category.slug}/`);
+  });
+
+  // "Post a job" — always-open, crawlable public lead-capture page (see
+  // buildPostAJobPage()). No inventory dependency, so it's always written.
+  const postAJobDir = path.join(OUT_DIR, 'post-a-job');
+  ensureDir(postAJobDir);
+  fs.writeFileSync(path.join(postAJobDir, 'index.html'), buildPostAJobPage());
+  sitemapUrls.push(`${SITE_URL}/post-a-job/`);
 
   // Agency + vacancy pages: one static, crawlable page per record, written
   // to /agency/{slug}/index.html and /vacancy/{slug}/index.html. app.js's
@@ -697,10 +906,22 @@ h2{font-size:1.2rem;margin-top:1.5rem}
 .hub-list{padding-left:1.25rem}
 .hub-list li{margin:.55rem 0}
 .muted{color:#667085}
-.hub-note{border-top:1px solid #e5e7eb;margin-top:2rem;padding-top:1rem}`;
+.hub-note{border-top:1px solid #e5e7eb;margin-top:2rem;padding-top:1rem}
+.pj-form{display:flex;flex-direction:column;gap:16px;margin-top:1.5rem}
+.pj-form label{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:700;color:#111}
+.pj-optional{font-size:.7rem;font-weight:500;color:#0a66c2;text-transform:none}
+.pj-form input,.pj-form select,.pj-form textarea{font:inherit;font-weight:400;min-height:48px;border:1px solid #d0d5dd;border-radius:12px;padding:11px 13px;background:#fff;color:#111}
+.pj-form textarea{min-height:84px;resize:vertical}
+.pj-roles{border:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.pj-roles legend{font-size:.85rem;font-weight:700;padding:0;margin-bottom:4px}
+.pj-role-check{flex-direction:row!important;align-items:center;gap:8px!important;font-weight:500!important}
+.pj-role-check input{min-height:auto;width:16px;height:16px}
+.pj-form button{min-height:50px;background:#0a66c2;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer}
+.pj-form button:disabled{opacity:.6;cursor:wait}
+#pj-status{font-size:.85rem;color:#0a66c2;min-height:1.2em}`;
   fs.writeFileSync(path.join(OUT_DIR, 'static-pages.css'), css);
 
-  console.log(`Done. Wrote ${agencies.length} agency page(s), ${vacancies.length} vacancy page(s), ${locationHubs.length} configured location hub(s) when non-empty, and sitemap.xml.`);
+  console.log(`Done. Wrote ${agencies.length} agency page(s), ${vacancies.length} vacancy page(s), ${locationHubs.length} province hub(s), ${categories.length} category hub(s) (thin/empty ones skipped), the /post-a-job/ page, and sitemap.xml.`);
 }
 
 main().catch((err) => {
