@@ -1,8 +1,8 @@
 name: Sync Government vacancies
 on:
   schedule:
-    # Government public-service circulars are normally published weekly; run Friday afternoon SAST.
-    - cron: "30 13 * * 5"
+    # Twice weekly: Monday and Friday at 13:30 UTC (15:30 SAST).
+    - cron: "30 13 * * 1,5"
   workflow_dispatch:
     inputs:
       years:

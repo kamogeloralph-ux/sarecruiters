@@ -1,7 +1,8 @@
 name: Scrape retail vacancies
 on:
   schedule:
-    - cron: "47 */6 * * *"
+    # Twice weekly: Monday and Friday at 02:47 UTC.
+    - cron: "47 2 * * 1,5"
   workflow_dispatch:
 permissions:
   contents: read
