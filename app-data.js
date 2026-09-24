@@ -991,6 +991,16 @@ async function loadAll() {
     getPoolCandidateCount(),
     getDedicatedVacancyCounts()
   ]);
+  // The Worker startup payload may be served from its D1 mirror, which can
+  // briefly lag after a bulk purge or scraper run. Refresh this one exact,
+  // indexed head-count directly from Supabase so the General Vacancies card
+  // cannot display an obsolete mirror value such as 34.
+  if (startup) {
+    try {
+      var liveGeneralCount = await getGeneralVacancyCount();
+      if (typeof liveGeneralCount === 'number') results[4] = liveGeneralCount;
+    } catch(e) {}
+  }
   // If a fetch failed, keep whatever was already on screen (last good cache)
   // instead of wiping it to an empty list — a failed refresh should never
   // make the directory look emptier than it did a moment ago. Track whether
