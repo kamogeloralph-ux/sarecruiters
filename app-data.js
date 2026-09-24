@@ -557,6 +557,22 @@ async function getEmployerVacancies() {
     return [];
   }
 }
+async function getAgencyAdzunaVacancies() {
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  try {
+    var result = await supabaseClient.from('vacancies').select(columns)
+      .eq('source_type', 'adzuna')
+      .not('agency_id', 'is', null)
+      .neq('agency_id', 'general')
+      .is('employer_id', null)
+      .order('created_at', { ascending: false }).limit(1000);
+    if (result.error) throw result.error;
+    return filterExpiredVacancies(result.data || []);
+  } catch(e) {
+    console.warn('agency Adzuna vacancies fetch', e);
+    return [];
+  }
+}
 async function getGeneralVacancyCount() {
   try {
     var result = await supabaseClient.from('vacancies')
@@ -1012,13 +1028,13 @@ async function loadAll() {
   ]);
   if (startup) {
     // The Worker intentionally excludes dedicated-source rows from its
-    // startup payload to keep the initial response small. Some of those rows
-    // are nevertheless assigned to employers (for example Pick n Pay, TFG,
-    // Mr Price, and Cashbuild), so fetch the employer-owned subset separately
-    // or their cards show a correct count but an empty vacancy list.
+    // startup payload to keep the initial response small. Some rows are
+    // nevertheless assigned to employers or agencies, so fetch those subsets
+    // separately or their cards show a correct count but an empty vacancy list.
     try {
       var employerRows = await getEmployerVacancies();
-      var startupRows = (results[2] || []).concat(employerRows || []);
+      var adzunaAgencyRows = await getAgencyAdzunaVacancies();
+      var startupRows = (results[2] || []).concat(employerRows || [], adzunaAgencyRows || []);
       var seenEmployerRows = {};
       results[2] = startupRows.filter(function(v) {
         if (!v || !v.id) return false;
@@ -1255,10 +1271,12 @@ loadGateStats();
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
 function vacanciesFor(agencyId) {
-  // Guard against any dedicated-source (Himalayas/Adzuna/DPSA/retail) row
-  // that already has agency_id stored on it, so an agency's own hub page
-  // can never show a scraped vacancy -- those live only in their own folder.
-  return sortVacancies(vacanciesCache.filter(function(v){ return v.agency_id === agencyId && !isDedicatedVacancySource(v.source_type); }));
+  // Adzuna rows explicitly assigned to an agency belong in that agency's
+  // section as well as the Adzuna folder. Other dedicated feeds remain in
+  // their dedicated folders unless explicitly handled by their own section.
+  return sortVacancies(vacanciesCache.filter(function(v){
+    return v.agency_id === agencyId && (String(v.source_type || '').toLowerCase() === 'adzuna' || !isDedicatedVacancySource(v.source_type));
+  }));
 }
 function vacanciesForEmployer(employerId) { return sortVacancies(vacanciesCache.filter(function(v){ return v.employer_id === employerId; })); }
 
