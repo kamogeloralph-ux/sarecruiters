@@ -36,6 +36,7 @@ export const MAX_AGE_DAYS = {
   adzuna: 45,
   himalayas: 45,
   pnet: 45, // external job-board aggregation, same tier as adzuna/himalayas
+  simplify: 45, // external job-board aggregation, same tier as Pnet/Adzuna
   oracle: 60, // corporate career-site postings tend to stay open longer
   government: 90, // DPSA circulars close on fixed dates but stay listed long
 };
