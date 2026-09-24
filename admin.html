@@ -933,11 +933,22 @@ async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('who-am-i').textContent = user.email || 'admin';
-  await loadAll();
-  await checkTracksTable();
-  await cleanupOldTracks();
+  // Paint the console immediately. The previous bootstrap awaited every
+  // table—including all vacancy pages and posters—before showing Dashboard,
+  // which made the admin page look stuck on slower mobile connections.
   renderNav();
   renderDashboard();
+  loadAll().then(async function(){
+    await checkTracksTable();
+    await cleanupOldTracks();
+    renderNav();
+    renderDashboard();
+  }).catch(function(error){
+    console.error('Admin data bootstrap failed:', error);
+    showToast('Some admin data could not be loaded.');
+    renderNav();
+    renderDashboard();
+  });
 }
 // Check session status on page load and render the appropriate admin state.
 async function initAdminPage(){
