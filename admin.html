@@ -1006,12 +1006,20 @@ async function getVacancies(){
   } catch(e){}
   return [];
 }
+async function getAdminSubmissions(){
+  var authHdr = await r2AuthHeader();
+  if (!authHdr.Authorization) throw new Error('Admin session expired');
+  var res = await fetch(R2_WORKER_URL + '/api/admin/submissions', { headers: authHdr });
+  var body = await res.json().catch(function(){ return {}; });
+  if (!res.ok) throw new Error(body.error || 'Could not load submissions');
+  return body;
+}
 async function getReports(){
-  try { var { data, error } = await supabaseClient.from('reports').select('id,agency_name,reason,details,status,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var data = await getAdminSubmissions(); return Array.isArray(data.reports) ? data.reports : []; } catch(e) { console.error('admin reports', e); }
   return [];
 }
 async function getSuggestions(){
-  try { var { data, error } = await supabaseClient.from('suggestions').select('id,type,agency_name,details,contact,created_at').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var data = await getAdminSubmissions(); return Array.isArray(data.suggestions) ? data.suggestions : []; } catch(e) { console.error('admin suggestions', e); }
   return [];
 }
 async function getJobEnquiries(){
@@ -1090,9 +1098,24 @@ async function upsertVacancy(v){
   }
 }
 async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); }
-async function updateReportStatus(id, status){ var { error } = await supabaseClient.from('reports').update({status:status}).eq('id',id); if(error) console.error('report upd',error); }
-async function deleteReport(id){ var { error } = await supabaseClient.from('reports').delete().eq('id',id); if(error) console.error('report del',error); }
-async function deleteSuggestion(id){ var { error } = await supabaseClient.from('suggestions').delete().eq('id',id); if(error) console.error('sugg del',error); }
+async function adminSubmissionAction(kind, id, method, status){
+  try {
+    var authHdr = await r2AuthHeader();
+    if (!authHdr.Authorization) throw new Error('Admin session expired');
+    var opts = { method: method, headers: authHdr };
+    if (method === 'POST') {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify({ status: status });
+    }
+    var res = await fetch(R2_WORKER_URL + '/api/admin/submissions/' + kind + '/' + encodeURIComponent(id), opts);
+    var body = await res.json().catch(function(){ return {}; });
+    if (!res.ok) throw new Error(body.error || 'Could not update submission');
+    return true;
+  } catch(e) { console.error('admin submission action', e); showToast(e.message || 'Could not update submission'); return false; }
+}
+async function updateReportStatus(id, status){ return adminSubmissionAction('report', id, 'POST', status); }
+async function deleteReport(id){ return adminSubmissionAction('report', id, 'DELETE'); }
+async function deleteSuggestion(id){ return adminSubmissionAction('suggestion', id, 'DELETE'); }
 function alertMatchesVacancy(candidate, vacancy){
   var sectorPref=(candidate.alert_sectors||candidate.sector||'').toLowerCase().trim();
   var locationPref=(candidate.alert_locations||candidate.location||'').toLowerCase().trim();
