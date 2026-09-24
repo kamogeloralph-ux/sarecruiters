@@ -538,6 +538,25 @@ async function getVacancies() {
   } catch(e){}
   return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
 }
+async function getEmployerVacancies() {
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var pageSize = 1000;
+  var rows = [];
+  try {
+    for (var offset = 0; ; offset += pageSize) {
+      var result = await supabaseClient.from('vacancies').select(columns)
+        .not('employer_id', 'is', null)
+        .order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
+      if (result.error) throw result.error;
+      var page = result.data || [];
+      rows = rows.concat(page);
+      if (page.length < pageSize) return filterExpiredVacancies(rows);
+    }
+  } catch(e) {
+    console.warn('employer vacancies fetch', e);
+    return [];
+  }
+}
 async function getGeneralVacancyCount() {
   try {
     var result = await supabaseClient.from('vacancies')
@@ -991,6 +1010,24 @@ async function loadAll() {
     getPoolCandidateCount(),
     getDedicatedVacancyCounts()
   ]);
+  if (startup) {
+    // The Worker intentionally excludes dedicated-source rows from its
+    // startup payload to keep the initial response small. Some of those rows
+    // are nevertheless assigned to employers (for example Pick n Pay, TFG,
+    // Mr Price, and Cashbuild), so fetch the employer-owned subset separately
+    // or their cards show a correct count but an empty vacancy list.
+    try {
+      var employerRows = await getEmployerVacancies();
+      var startupRows = (results[2] || []).concat(employerRows || []);
+      var seenEmployerRows = {};
+      results[2] = startupRows.filter(function(v) {
+        if (!v || !v.id) return false;
+        if (seenEmployerRows[v.id]) return false;
+        seenEmployerRows[v.id] = true;
+        return true;
+      });
+    } catch(e) {}
+  }
   // The Worker startup payload may be served from its D1 mirror, which can
   // briefly lag after a bulk purge or scraper run. Refresh this one exact,
   // indexed head-count directly from Supabase so the General Vacancies card
