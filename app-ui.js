@@ -1050,7 +1050,7 @@ function loadMoreGeneralVacancies() {
 // 5 dedicated-source folders (Himalayas/Adzuna/Government/Retail/
 // Learnerships). One shared state machine since only one folder is open at
 // a time — see dedicatedVacancy* globals in app-core.js.
-var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships', careers_page: 'Careers Page Vacancies' };
+var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships', careers_page: 'Cruise careers' };
 function renderDedicatedVacancyCards(append) {
   var el = document.getElementById('allvacancies-list');
   var loadMore = document.getElementById('allvacancies-loadmore');
@@ -1256,9 +1256,9 @@ function renderAllVacanciesList() {
           '<span class="vac-folder-copy"><span class="vac-folder-title">Learnerships</span><span class="vac-folder-count">' + folderCountLabel(learnershipsCount) + '</span></span>' +
           '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
         '</button>' +
-        '<button class="vac-folder-card vac-folder-card-careers" data-ripple onclick="openVacancyFolder(\'careers_page\')" aria-label="Open Careers Page vacancies">' +
+        '<button class="vac-folder-card vac-folder-card-careers" data-ripple onclick="openVacancyFolder(\'careers_page\')" aria-label="Open Cruise careers">' +
           '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Careers Page Vacancies</span><span class="vac-folder-count">' + folderCountLabel(careersPageCount) + '</span></span>' +
+          '<span class="vac-folder-copy"><span class="vac-folder-title">Cruise careers</span><span class="vac-folder-count">' + folderCountLabel(careersPageCount) + '</span></span>' +
           '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
         '</button>' +
       '</div>';
