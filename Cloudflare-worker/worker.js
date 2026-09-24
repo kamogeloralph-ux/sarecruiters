@@ -177,6 +177,7 @@ __name(supabaseRpc, "supabaseRpc");
 // ============================================================
 const EMAIL_MAX_BODY = 8000;
 const DEFAULT_EMAIL_FROM = "SA Recruiters <notifications@sa-recruiters.co.za>";
+const EMAIL_LOGO_URL = "https://sa-recruiters.co.za/icons/v2-icon-192.png";
 function escapeEmailHtml(s) {
   return String(s || "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;",
@@ -197,6 +198,7 @@ function notificationEmailHtml(payload) {
 <div style="padding:28px 12px">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e6e1ef;border-radius:18px;overflow:hidden">
     <tr><td style="background:#5b2ca0;padding:26px 28px;color:#ffffff">
+      <img src="${EMAIL_LOGO_URL}" alt="SA Recruiters" width="48" height="48" style="display:block;width:48px;height:48px;border-radius:12px;background:#ffffff;margin:0 0 16px;border:0">
       <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;font-weight:700;opacity:.82">SA Recruiters</div>
       <div style="font-size:25px;line-height:1.25;font-weight:800;margin-top:8px">${title}</div>
       <div style="font-size:13px;line-height:1.5;margin-top:8px;opacity:.9">${type}</div>
