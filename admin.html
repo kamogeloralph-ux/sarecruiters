@@ -368,7 +368,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <div class="section section-dashboard active" id="sec-dashboard">
         <div class="section-head"><h2>Dashboard</h2></div>
         <div class="stats-grid" id="stats-grid"></div>
-        <div class="card analytics-card section-analytics-card" style="margin-top:14px"><div class="card-pad"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0;font-size:16px">Usage analytics</h3><p style="margin:3px 0 0;color:var(--text-2);font-size:12px">Last 30 days · anonymous events</p></div><button class="minibtn" onclick="loadAnalyticsSummary()">Refresh</button></div><div id="analytics-summary" style="margin-top:14px"><div style="color:var(--text-2);font-size:13px">Loading analytics…</div></div></div></div>
+        <div class="card analytics-card section-analytics-card" style="margin-top:14px"><div class="card-pad"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0;font-size:16px">Usage analytics</h3><p style="margin:3px 0 0;color:var(--text-2);font-size:12px">Last 30 days · anonymous events</p></div><button class="minibtn" onclick="loadAnalyticsSummary(true)">Load analytics</button></div><div id="analytics-summary" style="margin-top:14px"><div style="color:var(--text-2);font-size:13px">Analytics is loaded only when requested.</div></div></div></div>
         <div id="home-cards" style="margin-top:8px"></div>
       </div>
 
@@ -938,7 +938,6 @@ async function enterConsole(user){
   await cleanupOldTracks();
   renderNav();
   renderDashboard();
-  loadAnalyticsSummary();
 }
 // Check session status on page load and render the appropriate admin state.
 async function initAdminPage(){
@@ -1361,9 +1360,14 @@ function renderDashboard(){
     homeEl.innerHTML = html;
   }
 }
-async function loadAnalyticsSummary(){
+var analyticsLoadInFlight = false;
+async function loadAnalyticsSummary(force){
   var el = document.getElementById('analytics-summary');
   if (!el) return;
+  if (analyticsLoadInFlight) return;
+  if (!force && el.dataset.loaded === 'true') return;
+  analyticsLoadInFlight = true;
+  el.innerHTML = '<div style="color:var(--text-2);font-size:13px">Loading analytics…</div>';
   var since = new Date(Date.now() - 30*24*60*60*1000).toISOString();
   try {
     var res = await supabaseClient.from('analytics_events').select('event_name,session_id').gte('created_at', since).limit(10000);
@@ -1377,8 +1381,12 @@ async function loadAnalyticsSummary(){
       ['vacancy_click','Vacancy clicks']
     ];
     el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">' + items.map(function(item){ return '<div style="background:var(--card-2);border-radius:10px;padding:10px 11px"><div style="font-size:21px;font-weight:800">'+(counts[item[0]]||0)+'</div><div style="font-size:11.5px;color:var(--text-2)">'+item[1]+'</div></div>'; }).join('') + '</div><div style="margin-top:10px;color:var(--text-2);font-size:11.5px">'+Object.keys(sessions).length+' unique sessions recorded from '+rows.length+' events.</div>';
+    el.dataset.loaded = 'true';
   } catch(e) {
+    el.dataset.loaded = 'false';
     el.innerHTML = '<div style="color:var(--text-2);font-size:13px;line-height:1.5">Analytics is not available yet. Run <strong>CREATE_ANALYTICS.sql</strong> in Supabase, then tap Refresh.</div>';
+  } finally {
+    analyticsLoadInFlight = false;
   }
 }
 function buildHomeGroup(label, itemIds){
