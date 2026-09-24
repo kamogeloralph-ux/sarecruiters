@@ -6,9 +6,11 @@
 //  listings whose postings were years old — most visibly the 2021
 //  learnerships still listed on Graduates24.
 //
-//  Deletes rows whose explicit closing date has passed. Rows without a
-//  parseable closing date are retained; created_at is never used as an
-//  invented expiry date.
+// Deletes rows whose explicit closing date has passed, whose posted date in
+// notes is older than that source's freshness window, or whose created_at is
+// older than the source window when no other date is available. This makes
+// the cleanup complete for imported rows that show old July/August dates but
+// have no structured closing_date.
 //
 //  Usage:
 //    npm run purge:stale          # delete + print summary
@@ -60,9 +62,12 @@ async function run() {
   const reasonsBySource = {};
 
   for (const row of vacancies) {
-    // Only an explicit closing date is authoritative for deletion. Do not
-    // infer expiry from created_at or a source-age window.
-    const check = isStaleVacancy({ closing_date: row.closing_date }, now);
+    const check = isStaleVacancy({
+      closing_date: row.closing_date,
+      notes: row.notes,
+      created_at: row.created_at,
+      source_type: row.source_type,
+    }, now);
     if (check.stale) {
       toDelete.push({ id: row.id, title: row.title, source: row.source_type || 'unknown', reason: check.reason });
       continue;
