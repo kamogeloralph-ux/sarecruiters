@@ -1073,12 +1073,12 @@ async function loadAll() {
     }));
   }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
-  if (typeof results[4] === 'number') generalVacancyCount = results[4];
+  if (typeof results[4] === 'number') { generalVacancyCount = results[4]; generalVacancyCountLoaded = true; }
   else if (results[4] === null) hadLoadError = true;
   // Not treated as a load error: the dedicated folder count badges are
   // cosmetic (they just label the folder cards), so a miss here shouldn't
   // trigger the retry banner the way a core data fetch failing would.
-  if (results[9] && typeof results[9] === 'object') dedicatedVacancyCounts = results[9];
+  if (results[9] && typeof results[9] === 'object') { dedicatedVacancyCounts = results[9]; dedicatedVacancyCountsLoaded = true; }
   setRetryBanner(hadLoadError);
   if (!hadLoadError) lastDataRefreshAt = Date.now();
   setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
@@ -1144,7 +1144,10 @@ function dedicatedVacancyGrandTotal() {
 function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   updatePosterStat();
-  document.getElementById('stat-vacancies').textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+  var vacancyStat = document.getElementById('stat-vacancies');
+  if (vacancyStat && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+    vacancyStat.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+  }
   var statEmployers = document.getElementById('stat-employers');
   if (statEmployers) statEmployers.textContent = employersCache.length;
   var statPool = document.getElementById('stat-pool');
@@ -1228,7 +1231,9 @@ function refreshGateStats() {
   var elA = document.getElementById('stat-agencies');
   if (elA && agenciesCache.length) elA.textContent = agenciesCache.length;
   var elV = document.getElementById('stat-vacancies');
-  if (elV) elV.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+  if (elV && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+    elV.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+  }
 }
 // Live head-count of every vacancy row in the database — the same table
 // the app reads for the directory. Counting directly avoids under-counts
