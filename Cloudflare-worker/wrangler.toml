@@ -33,15 +33,18 @@ crons = ["0 */6 * * *"]
 [vars]
 SUPABASE_URL = "https://ythznnktswgymerdcxky.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH"
+# Must use the verified sa-recruiters.co.za Resend domain so notification
+# emails can reach recipients other than the Resend account owner.
+EMAIL_FROM = "SA Recruiters <notifications@sa-recruiters.co.za>"
 # Enable public access on this bucket in the Cloudflare dashboard first
 # (R2 -> sarecruiters-media -> Settings -> Public Access), then use that
 # URL here. Already confirmed working:
 R2_PUBLIC_BASE_URL = "https://pub-911e4cd402674c6f85c747b12212772f.r2.dev"
 #
-# OPTIONAL (non-secret) settings — set with `wrangler secret put` if you
-# want to override the defaults in worker.js:
+# OPTIONAL non-secret settings — configure these as Worker variables if you
+# need to change the defaults:
 #   ADMIN_NOTIFY_EMAIL  default: sarecruiters.directory@gmail.com
-#   EMAIL_FROM          default: SA Recruiters <onboarding@resend.dev>
+#   EMAIL_FROM          defaults to notifications@sa-recruiters.co.za
 #
 # SECRET settings (never put real values in this file) — required for the
 # new spam/email/manager-link features. Set each with:

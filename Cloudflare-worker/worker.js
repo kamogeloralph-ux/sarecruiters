@@ -176,6 +176,7 @@ __name(supabaseRpc, "supabaseRpc");
 //  reported in the response but never blocks the database insert.
 // ============================================================
 const EMAIL_MAX_BODY = 8000;
+const DEFAULT_EMAIL_FROM = "SA Recruiters <notifications@sa-recruiters.co.za>";
 function escapeEmailHtml(s) {
   return String(s || "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;",
@@ -214,7 +215,9 @@ async function sendNotificationEmail(env, payload) {
   if (!env.RESEND_API_KEY) {
     return { sent: false, reason: "RESEND_API_KEY not configured" };
   }
-  const from = env.EMAIL_FROM || "SA Recruiters <onboarding@resend.dev>";
+  // Resend only permits arbitrary recipients from a verified domain. Do not
+  // fall back to onboarding@resend.dev, which is limited to the account owner.
+  const from = env.EMAIL_FROM || DEFAULT_EMAIL_FROM;
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
