@@ -1,9 +1,8 @@
 name: Scrape Pnet agency vacancies
 on:
   schedule:
-    # Offset from the other scrapers so jobs never queue for the same
-    # GitHub-hosted runner minute.
-    - cron: "7 */6 * * *"
+    # Twice weekly: Monday and Friday at 01:07 UTC.
+    - cron: "7 1 * * 1,5"
   workflow_dispatch:
 permissions:
   contents: read
