@@ -1044,6 +1044,49 @@ var worker_default = {
         }
       }
 
+      // Admin submission queue. Reports and suggestions are inserted through
+      // SECURITY DEFINER RPCs, so the admin console must not depend on the
+      // browser role having broad table SELECT/UPDATE/DELETE policies. The
+      // Worker verifies the signed-in admin first, then uses the service role
+      // only for this narrowly scoped queue and its actions.
+      if (path === "/api/admin/submissions" && request.method === "GET") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Unauthorized" }, 401, origin);
+        }
+        const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
+        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}` };
+        const [reportsRes, suggestionsRes] = await Promise.all([
+          fetch(`${env.SUPABASE_URL}/rest/v1/reports?select=id,agency_name,reason,details,status,created_at&order=created_at.desc`, { headers }),
+          fetch(`${env.SUPABASE_URL}/rest/v1/suggestions?select=id,type,agency_name,details,contact,status,created_at&order=created_at.desc`, { headers })
+        ]);
+        if (!reportsRes.ok || !suggestionsRes.ok) {
+          return json({ error: "Could not load submissions." }, 502, origin);
+        }
+        return json({ reports: await reportsRes.json(), suggestions: await suggestionsRes.json() }, 200, origin);
+      }
+      const adminSubmissionMatch = path.match(/^\/api\/admin\/submissions\/(report|suggestion)\/(\d+)$/);
+      if (adminSubmissionMatch && (request.method === "POST" || request.method === "DELETE")) {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Unauthorized" }, 401, origin);
+        }
+        const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
+        const table = adminSubmissionMatch[1] === "report" ? "reports" : "suggestions";
+        const id = adminSubmissionMatch[2];
+        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json" };
+        const target = `${env.SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`;
+        const response = request.method === "DELETE"
+          ? await fetch(target, { method: "DELETE", headers })
+          : await (async () => {
+              const body = await request.json().catch(() => ({}));
+              const status = body.status === "resolved" ? "resolved" : "open";
+              return fetch(target, { method: "PATCH", headers: { ...headers, Prefer: "return=minimal" }, body: JSON.stringify({ status }) });
+            })();
+        if (!response.ok) return json({ error: "Could not update submission." }, 502, origin);
+        return json({ ok: true }, 200, origin);
+      }
+
       // ---------- Smart Manager: server-side token flows ----------
       // The browser sends the token it received in the manager link; the
       // authorization decision happens in the database, not the client.
