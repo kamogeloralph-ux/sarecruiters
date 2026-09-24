@@ -105,7 +105,6 @@ var SOCIAL_LABELS = { facebook: 'Facebook', instagram: 'Instagram', whatsapp: 'W
 var SOCIAL_LINKS_KEY = 'social_links';
 async function loadSocialLinks() {
   var container = document.getElementById('social-links-row');
-  if (!container) return;
   var raw = await getAppSetting(SOCIAL_LINKS_KEY, '');
   var links = {};
   if (raw) { try { links = JSON.parse(raw) || {}; } catch(e) { links = {}; } }
@@ -113,15 +112,27 @@ async function loadSocialLinks() {
 }
 function renderSocialLinks(links) {
   var container = document.getElementById('social-links-row');
-  if (!container) return;
   links = links || {};
-  var html = Object.keys(SOCIAL_ICONS).map(function(key) {
-    var url = (links[key] || '').trim();
-    if (!url) return '';
-    var label = SOCIAL_LABELS[key];
-    return '<a class="social-link-btn social-' + key + '" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" data-ripple aria-label="' + label + '" title="' + label + '">' + SOCIAL_ICONS[key] + '</a>';
-  }).join('');
-  container.innerHTML = html || '<div class="social-links-empty">Social links coming soon.</div>';
+  if (container) {
+    var html = Object.keys(SOCIAL_ICONS).map(function(key) {
+      var url = (links[key] || '').trim();
+      if (!url) return '';
+      var label = SOCIAL_LABELS[key];
+      return '<a class="social-link-btn social-' + key + '" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" data-ripple aria-label="' + label + '" title="' + label + '">' + SOCIAL_ICONS[key] + '</a>';
+    }).join('');
+    container.innerHTML = html || '<div class="social-links-empty">Social links coming soon.</div>';
+  }
+  var floatingWhatsApp = document.getElementById('floating-whatsapp');
+  if (floatingWhatsApp) {
+    var whatsappUrl = (links.whatsapp || '').trim();
+    if (/^https:\/\//i.test(whatsappUrl)) {
+      floatingWhatsApp.href = whatsappUrl;
+      floatingWhatsApp.style.display = 'inline-flex';
+    } else {
+      floatingWhatsApp.removeAttribute('href');
+      floatingWhatsApp.style.display = 'none';
+    }
+  }
 }
 
 // ===== Report a problem =====
