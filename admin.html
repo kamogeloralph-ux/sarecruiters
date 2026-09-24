@@ -819,6 +819,7 @@ var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
 var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [] };
+var adminDataReady = false;
 function debounce(fn, ms){
   var t = null;
   return function(){
@@ -941,10 +942,12 @@ async function enterConsole(user){
   loadAll().then(async function(){
     await checkTracksTable();
     await cleanupOldTracks();
+    adminDataReady = true;
     renderNav();
     renderDashboard();
   }).catch(function(error){
     console.error('Admin data bootstrap failed:', error);
+    adminDataReady = true;
     showToast('Some admin data could not be loaded.');
     renderNav();
     renderDashboard();
@@ -1294,19 +1297,20 @@ function renderNav(){
   var el = document.getElementById('sidebar');
   el.innerHTML = NAV.map(function(n){
     var badge = '';
-    if(n.id==='agencies') badge = '<span class="nav-badge">'+cache.agencies.length+'</span>';
-    if(n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
-    if(n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
-    if(n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
-    if(n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
-    if(n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
-    if(n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
-    if(n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
+    if(adminDataReady && n.id==='agencies') badge = '<span class="nav-badge">'+cache.agencies.length+'</span>';
+    if(adminDataReady && n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
+    if(adminDataReady && n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
+    if(adminDataReady && n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
+    if(adminDataReady && n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
+    if(adminDataReady && n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
+    if(adminDataReady && n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
+    if(adminDataReady && n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
     var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
     return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
 function navBadge(id){
+  if(!adminDataReady) return null;
   if(id==='agencies') return cache.agencies.length;
   if(id==='branches') return cache.branches.length;
   if(id==='vacancies') return cache.vacancies.length;
@@ -1353,7 +1357,7 @@ function renderDashboard(){
     { v:cache.poolCandidates.length, l:'Talent Pool ('+poolPending+' pending)' }
   ];
   document.getElementById('stats-grid').innerHTML = stats.map(function(s){
-    return '<div class="stat"><div class="v">'+s.v+'</div><div class="l">'+s.l+'</div></div>';
+    return '<div class="stat"><div class="v">'+(adminDataReady ? s.v : '…')+'</div><div class="l">'+s.l+'</div></div>';
   }).join('');
   // Build the home card grid (grouped like Profile section)
   var homeEl = document.getElementById('home-cards');

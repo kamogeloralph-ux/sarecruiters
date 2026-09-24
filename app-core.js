@@ -254,6 +254,7 @@ var branchesCache = [];
 var vacanciesCache = [];
 var employersCache = [];
 var generalVacancyCount = 0;
+var generalVacancyCountLoaded = false;
 var generalVacancyPageSize = 30;
 var generalVacancyPage = 0;
 var generalVacancyHasMore = false;
@@ -279,6 +280,7 @@ var dedicatedVacancyRequestId = 0;
 // populated from startup.counts.dedicated -- a handful of small indexed
 // COUNT queries server-side, not the rows themselves.
 var dedicatedVacancyCounts = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0 };
+var dedicatedVacancyCountsLoaded = false;
 // Public static listing URLs are generated from the same deterministic maps
 // used by generate-pages.js. This keeps links correct when names repeat.
 var publicAgencySlugs = Object.create(null);

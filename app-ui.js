@@ -1217,6 +1217,7 @@ function renderAllVacanciesList() {
     var learnershipsCount = dedicatedVacancyCounts.learnerships || 0;
     var careersPageCount = dedicatedVacancyCounts.careers_page || 0;
     var folderCountLabel = function(count) {
+      if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading…';
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
     el.innerHTML =
