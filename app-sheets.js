@@ -875,6 +875,14 @@ function poolCandidateWhatsAppLink(c) {
 // register sheet is being used to create a brand-new candidate; a candidate
 // id = the sheet is editing (and will UPDATE, not INSERT) that owned row.
 var editingPoolCandidateId = null;
+function resetPoolCvUpload() {
+  window.currentPoolCvUrl = null;
+  window.pendingPoolCvFile = null;
+  var input = document.getElementById('pool-cv');
+  var status = document.getElementById('pool-cv-status');
+  if (input) input.value = '';
+  if (status) status.textContent = 'Upload your latest CV so employers can be considered through SA Recruiters.';
+}
 function resetPoolTermsAcceptance() {
   var input = document.getElementById('pool-terms-accept');
   if (input) input.checked = false;
@@ -930,7 +938,7 @@ function openPoolRegisterSheet() {
   document.getElementById('pool-salary').value = '';
   document.getElementById('pool-work-authorized').value = '';
   document.getElementById('pool-about').value = '';
-  document.getElementById('pool-cv').value = '';
+  resetPoolCvUpload();
   var alertOptIn = document.getElementById('pool-email-alerts');
   if (alertOptIn) alertOptIn.checked = false;
   resetPoolTermsAcceptance();
@@ -970,7 +978,10 @@ function fillPoolFormFromCandidate(c) {
   document.getElementById('pool-work-authorized').value = c.work_authorized || '';
   var aboutEl = document.getElementById('pool-about');
   if (aboutEl) { aboutEl.value = c.about_you || ''; aboutEl.dispatchEvent(new Event('input')); }
-  document.getElementById('pool-cv').value = c.cv_link || '';
+  resetPoolCvUpload();
+  var cvStatus = document.getElementById('pool-cv-status');
+  window.currentPoolCvUrl = c.cv_link || null;
+  if (cvStatus && c.cv_link) cvStatus.textContent = 'A CV is already uploaded. Choose a new file to replace it.';
   var alertOptIn = document.getElementById('pool-email-alerts');
   if (alertOptIn) alertOptIn.checked = !!c.email_alert_opt_in;
 }
@@ -1082,7 +1093,7 @@ function poolFormToProfileFields() {
     p_salary_expectation: document.getElementById('pool-salary').value.trim(),
     p_work_authorized: document.getElementById('pool-work-authorized').value,
     p_about_you: document.getElementById('pool-about').value.trim().slice(0, 150),
-    p_cv_link: document.getElementById('pool-cv').value.trim(),
+    p_cv_link: window.currentPoolCvUrl || null,
     p_email_alert_opt_in: !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked)
   };
 }
@@ -1111,9 +1122,12 @@ async function submitPoolRegistration() {
   if (editingPoolCandidateId) {
     if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
     var editPhotoUrl = await uploadPoolPhotoIfAny();
+    var editCvUrl = await uploadPoolCvIfAny();
+    if (window.pendingPoolCvFile && !editCvUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
     var editFields = poolFormToProfileFields();
     editFields.p_id = editingPoolCandidateId;
     editFields.p_photo_url = editPhotoUrl || null;
+    if (editCvUrl) editFields.p_cv_link = editCvUrl;
     var editResult;
     try { editResult = await supabaseClient.rpc('candidate_update_own_profile', editFields); }
     catch(e) { console.error('pool self update', e); showToast('Could not save — please try again.'); if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
@@ -1156,9 +1170,12 @@ async function submitPoolRegistration() {
       var claim = await supabaseClient.rpc('candidate_claim_profile', { p_email: email, p_phone: phone });
       if (!claim.error && claim.data) {
         var claimPhotoUrl = await uploadPoolPhotoIfAny();
+        var claimCvUrl = await uploadPoolCvIfAny();
+        if (window.pendingPoolCvFile && !claimCvUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
         var claimFields = poolFormToProfileFields();
         claimFields.p_id = claim.data;
         claimFields.p_photo_url = claimPhotoUrl || null;
+        if (claimCvUrl) claimFields.p_cv_link = claimCvUrl;
         var claimUpdate = await supabaseClient.rpc('candidate_update_own_profile', claimFields);
         if (claimUpdate.error) console.error('pool claim update', claimUpdate.error);
         if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
@@ -1198,12 +1215,15 @@ async function submitPoolRegistration() {
     salary_expectation: document.getElementById('pool-salary').value.trim(),
     work_authorized: document.getElementById('pool-work-authorized').value,
     about_you: document.getElementById('pool-about').value.trim().slice(0, 150),
-    cv_link: document.getElementById('pool-cv').value.trim(),
+    cv_link: window.currentPoolCvUrl || null,
     status: 'pending'
   };
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
   var photoUrl = await uploadPoolPhotoIfAny();
+  var cvUrl = await uploadPoolCvIfAny();
+  if (window.pendingPoolCvFile && !cvUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
   if (photoUrl) payload.photo_url = photoUrl;
+  if (cvUrl) payload.cv_link = cvUrl;
   try {
     var result = await supabaseClient.from('pool_candidates').insert([payload]);
     if (result.error && photoUrl && /column|schema cache/i.test(result.error.message || '')) {

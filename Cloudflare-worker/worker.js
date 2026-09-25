@@ -1464,6 +1464,20 @@ var worker_default = {
         }
         return json({ ok: true }, 200, origin);
       }
+      if (path === "/api/upload/candidate-cv" && request.method === "POST") {
+        const contentType = request.headers.get("Content-Type") || "";
+        const allowedTypes = ["application/pdf", "image/png", "image/jpeg"];
+        if (!allowedTypes.includes(contentType.split(";")[0].toLowerCase())) {
+          return json({ error: "Only PDF, PNG, or JPG CV files are allowed." }, 400, origin);
+        }
+        const bytes = await request.arrayBuffer();
+        if (bytes.byteLength === 0) return json({ error: "Empty file." }, 400, origin);
+        if (bytes.byteLength > MAX_PHOTO_BYTES) return json({ error: "CV too large (max 3MB)." }, 413, origin);
+        const ext = contentType.toLowerCase().includes("pdf") ? "pdf" : contentType.toLowerCase().includes("png") ? "png" : "jpg";
+        const key = `candidate-cvs/${randomKey()}.${ext}`;
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType } });
+        return json({ url: publicUrlFor(env, key), key }, 200, origin);
+      }
       if (path === "/api/upload/candidate-photo" && request.method === "POST") {
         const contentType = request.headers.get("Content-Type") || "";
         if (!contentType.startsWith("image/")) {

@@ -88,6 +88,50 @@ function handlePoolPhoto(evt) {
   };
   reader.readAsDataURL(file);
 }
+var MAX_POOL_CV_BYTES = 3 * 1024 * 1024;
+var POOL_CV_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
+function handlePoolCv(evt) {
+  var file = evt.target.files && evt.target.files[0];
+  var status = document.getElementById('pool-cv-status');
+  window.pendingPoolCvFile = null;
+  if (!file) {
+    if (status) status.textContent = 'Upload your latest CV so employers can be considered through SA Recruiters.';
+    return;
+  }
+  if (POOL_CV_TYPES.indexOf(file.type) === -1) {
+    evt.target.value = '';
+    if (status) status.textContent = 'Please choose a PDF, PNG or JPG file.';
+    showToast('CV must be a PDF, PNG or JPG file.');
+    return;
+  }
+  if (file.size > MAX_POOL_CV_BYTES) {
+    evt.target.value = '';
+    if (status) status.textContent = 'That file is too large. The maximum size is 3 MB.';
+    showToast('CV must be 3 MB or smaller.');
+    return;
+  }
+  window.pendingPoolCvFile = file;
+  if (status) status.textContent = file.name + ' selected (' + (file.size / 1024 / 1024).toFixed(2) + ' MB).';
+}
+async function uploadPoolCvIfAny() {
+  var file = window.pendingPoolCvFile;
+  if (!file) return null;
+  try {
+    var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-cv', {
+      method: 'POST',
+      headers: { 'Content-Type': file.type },
+      body: file
+    });
+    var data = await res.json();
+    if (!res.ok) { console.error('pool CV upload', data && data.error); showToast((data && data.error) || 'Could not upload your CV.'); return null; }
+    window.pendingPoolCvFile = null;
+    return data.url || null;
+  } catch (e) {
+    console.error('pool CV upload', e);
+    showToast('Could not upload your CV. Please try again.');
+    return null;
+  }
+}
 // Uploads the compressed pool photo (if one was chosen) to the
 // candidate-photos bucket and returns its public URL, or null if no
 // photo was selected or the bucket/policies haven't been set up yet
