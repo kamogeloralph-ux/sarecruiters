@@ -540,10 +540,6 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>CV preference</label><select id="a-cvpref"><option>Email</option><option>WhatsApp</option><option>Online form</option><option>Phone</option><option>Upload portal</option></select></div>
     <div class="field"><label>Agency photo / logo</label><input type="file" id="a-photo" accept="image/*" onchange="handlePhoto(event)"></div>
     <div id="a-photo-preview" style="display:none;margin-bottom:12px"><img id="a-photo-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></div>
-    <div class="toggle-row" style="margin-bottom:16px">
-      <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified agencies show a badge and rank higher</div></div>
-      <label class="switch"><input type="checkbox" id="a-verified"><span class="track"><span class="knob"></span></span></label>
-    </div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('agency-overlay')">Cancel</button>
       <button class="btn" onclick="saveAgency()">Save</button>
@@ -636,7 +632,6 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Destination URL *</label><input id="ha-target" type="url" placeholder="https://…"></div>
     <div class="pb-row"><div class="field"><label>Placement</label><select id="ha-placement"><option value="directories">Agencies + Employers + Candidates</option><option value="agencies">Agencies only</option><option value="employers">Employers only</option><option value="candidates">Candidates only</option></select></div><div class="field"><label>Display order</label><input id="ha-order" type="number" min="0" step="1" value="0"></div></div>
     <div class="pb-row"><div class="field"><label>Starts</label><input id="ha-starts" type="datetime-local"></div><div class="field"><label>Ends (optional)</label><input id="ha-ends" type="datetime-local"></div></div>
-    <div class="toggle-row" style="margin-bottom:16px"><div><div class="t-label">Active</div><div class="t-sub">Only active ads within their schedule are shown publicly.</div></div><label class="switch"><input type="checkbox" id="ha-active" checked><span class="track"><span class="knob"></span></span></label></div>
     <div class="sheet-actions"><button class="btn secondary" onclick="closeSheet('house-ad-overlay')">Cancel</button><button class="btn" onclick="saveHouseAd()">Save ad</button></div>
   </div>
 </div>
@@ -1895,13 +1890,12 @@ function openHouseAdSheet(id){
   document.getElementById('ha-order').value=ad?ad.sort_order||0:0;
   document.getElementById('ha-starts').value=ad?houseAdDateToInput(ad.starts_at):houseAdDateToInput(new Date().toISOString());
   document.getElementById('ha-ends').value=ad?houseAdDateToInput(ad.ends_at):'';
-  document.getElementById('ha-active').checked=ad?ad.is_active!==false:true;
   openSheet('house-ad-overlay');
 }
 async function saveHouseAd(){
   var advertiser=document.getElementById('ha-advertiser').value.trim(), title=document.getElementById('ha-title').value.trim(), image=document.getElementById('ha-image').value.trim(), target=document.getElementById('ha-target').value.trim();
   if(!advertiser||!title||!image||!target){ alert('Advertiser, headline, banner image URL and destination URL are required.'); return; }
-  var payload={advertiser_name:advertiser,title:title,message:document.getElementById('ha-message').value.trim(),image_url:image,target_url:target,placement:document.getElementById('ha-placement').value,sort_order:parseInt(document.getElementById('ha-order').value,10)||0,starts_at:houseAdInputToISO(document.getElementById('ha-starts').value)||new Date().toISOString(),ends_at:houseAdInputToISO(document.getElementById('ha-ends').value),is_active:document.getElementById('ha-active').checked,updated_at:new Date().toISOString()};
+  var payload={advertiser_name:advertiser,title:title,message:document.getElementById('ha-message').value.trim(),image_url:image,target_url:target,placement:document.getElementById('ha-placement').value,sort_order:parseInt(document.getElementById('ha-order').value,10)||0,starts_at:houseAdInputToISO(document.getElementById('ha-starts').value)||new Date().toISOString(),ends_at:houseAdInputToISO(document.getElementById('ha-ends').value),is_active:true,updated_at:new Date().toISOString()};
   var id=document.getElementById('ha-id').value; if(id) payload.id=id;
   var res=await supabaseClient.from('house_ads').upsert(payload);
   if(res.error){ alert('Could not save house ad: '+res.error.message); return; }
