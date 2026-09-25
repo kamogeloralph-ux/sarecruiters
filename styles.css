@@ -1853,3 +1853,13 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-copy strong{font-size:9.5px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .house-ad-copy small{font-size:8px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:1}
 @media(max-width:380px){.house-ad-copy{padding:3px 6px}.house-ad-copy strong{font-size:9px}.house-ad-copy small{font-size:7.5px}}
+
+
+/* Directory ad hierarchy: heading above image, short message below. */
+.house-ad-card{gap:0}
+.house-ad-heading{order:1;padding:4px 7px 3px;min-height:0;background:var(--card)}
+.house-ad-card img{order:2}
+.house-ad-message{order:3;padding:3px 7px 4px;min-height:0;background:var(--card)}
+.house-ad-heading strong{font-size:10px;line-height:1.1;text-align:left}
+.house-ad-message small{font-size:8px;line-height:1.1;text-align:left}
+@media(max-width:380px){.house-ad-heading{padding:3px 6px 2px}.house-ad-message{padding:2px 6px 3px}.house-ad-heading strong{font-size:9.5px}.house-ad-message small{font-size:7.5px}}
