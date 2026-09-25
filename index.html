@@ -1030,7 +1030,7 @@
         <div class="field"><label>Salary expectation</label><input id="pool-salary" placeholder="e.g. R12,000 per month"></div>
         <div class="field"><label>Legally eligible to work in South Africa?</label><select id="pool-work-authorized"><option value="">— Select —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
         <div class="field"><label>Sell yourself to employers <span class="field-optional">150 characters</span></label><textarea id="pool-about" maxlength="150" placeholder="A short statement about your strengths, experience, and what you can offer..."></textarea><small class="char-counter" data-for="pool-about">0 / 150</small></div>
-        <div class="field"><label>CV link</label><input id="pool-cv" type="url" placeholder="Google Drive / Dropbox share link"></div>
+        <div class="field"><label>Upload your C.V. <span class="field-optional">optional · PDF, PNG or JPG · max 3 MB</span></label><input id="pool-cv" type="file" accept="application/pdf,image/png,image/jpeg" onchange="handlePoolCv(event)"><small class="helper-note" id="pool-cv-status">Upload your latest CV so employers can be considered through SA Recruiters.</small></div>
       </div>
     </details>
 
