@@ -1775,3 +1775,11 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .cvb-template-executive .cvb-section-title { color: var(--brand-green-deep); }
 .contact-warning { background: linear-gradient(135deg, var(--brand-red), var(--brand-red-deep)); }
 .retry-banner button { background: var(--brand-gold); color: #211900; }
+
+/* Shareable deep-link controls for public directory sections. */
+.section-title-with-link{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;flex:1}
+.section-title-with-link .logo-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.section-share-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));border-radius:10px;background:var(--accent-soft);color:var(--accent);padding:7px 9px;font-size:11px;font-weight:750;cursor:pointer}
+.section-share-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.section-share-btn:active{background:var(--accent);color:#fff;transform:scale(.97)}
+@media (max-width:360px){.section-share-btn span{display:none}.section-share-btn{width:32px;height:32px;padding:0}}

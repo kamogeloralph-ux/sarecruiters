@@ -57,10 +57,10 @@ function restoredScreenName() {
   } catch(e) { return 'home'; }
 }
 function restoreActiveScreenBeforeReveal() {
-  // Manager links and PWA actions are URL-owned entry points; never let an
-  // old consumer section override those destinations on a refresh.
+  // Manager links, PWA actions and promoted section links are URL-owned entry
+  // points; never let an old consumer section override those destinations.
   var params = new URLSearchParams(window.location.search);
-  if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab')) return;
+  if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
   var name = restoredScreenName();
   var target = document.getElementById('screen-' + name);
   if (!target) return;
@@ -72,6 +72,46 @@ function restoreActiveScreenBeforeReveal() {
   window.__saRestoredScreen = name;
 }
 restoreActiveScreenBeforeReveal();
+
+// Public section links are intentionally query-based so Cloudflare Pages can
+// serve the normal PWA shell while the link remains stable and easy to share:
+// /?section=vacancies, /?section=agencies, /?section=candidates,
+// /?section=posters and /?section=employers.
+var SA_SECTION_LINKS = {
+  vacancies: { label: 'Vacancies', title: 'SA Recruiters — Vacancies' },
+  agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
+  candidates: { label: 'Candidates', title: 'SA Recruiters — Candidates' },
+  posters: { label: 'Vacancy posters', title: 'SA Recruiters — Vacancy Posters' },
+  employers: { label: 'Employers', title: 'SA Recruiters — Employers' }
+};
+function getSectionLink(section) {
+  if (!SA_SECTION_LINKS[section]) return '';
+  return window.location.origin + '/?section=' + encodeURIComponent(section);
+}
+function shareSectionLink(section) {
+  var meta = SA_SECTION_LINKS[section];
+  var link = getSectionLink(section);
+  if (!meta || !link) return;
+  var text = 'Explore ' + meta.label.toLowerCase() + ' on SA Recruiters: ' + link;
+  if (navigator.share) {
+    navigator.share({ title: meta.title, text: text, url: link }).catch(function() {});
+  } else {
+    copyText(link, null);
+    showToast(meta.label + ' link copied');
+  }
+}
+function openDeepLinkedSection() {
+  var section = new URLSearchParams(window.location.search).get('section');
+  if (!SA_SECTION_LINKS[section]) return;
+  if (section === 'vacancies') showAllVacancies('home');
+  else if (section === 'agencies') showAllAgencies('home');
+  else if (section === 'candidates') goPool('home');
+  else if (section === 'posters') showVacancyPosters('home');
+  else if (section === 'employers') showAllEmployers('home');
+}
+// Wait until the normal boot has painted the shell; the destination functions
+// then render from IndexedDB immediately and refresh from the network normally.
+
 // All navigation paths in this app eventually toggle a screen's `active`
 // class. Observing that single state change keeps refresh restoration in sync
 // without relying on every individual menu/card handler remembering to call a
