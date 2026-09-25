@@ -824,6 +824,33 @@ var ADMIN_WHATSAPP = '27715531005';
 // ===== State =====
 var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [] };
 var adminDataReady = false;
+var ADMIN_CACHE_DB = 'sa_data_cache_db';
+var ADMIN_CACHE_STORE = 'kv';
+var ADMIN_CACHE_KEY = 'sa_admin_directory_v1';
+function openAdminCacheDB(){
+  return new Promise(function(resolve,reject){
+    if(!window.indexedDB){ reject(new Error('IndexedDB unavailable')); return; }
+    var req=indexedDB.open(ADMIN_CACHE_DB,1);
+    req.onupgradeneeded=function(){ if(!req.result.objectStoreNames.contains(ADMIN_CACHE_STORE)) req.result.createObjectStore(ADMIN_CACHE_STORE); };
+    req.onsuccess=function(){ resolve(req.result); };
+    req.onerror=function(){ reject(req.error); };
+  });
+}
+async function restoreAdminDirectoryCache(){
+  try{
+    var db=await openAdminCacheDB();
+    var d=await new Promise(function(resolve,reject){ var r=db.transaction(ADMIN_CACHE_STORE,'readonly').objectStore(ADMIN_CACHE_STORE).get(ADMIN_CACHE_KEY); r.onsuccess=function(){resolve(r.result);}; r.onerror=function(){reject(r.error);}; });
+    if(!d || !Array.isArray(d.agencies)) return false;
+    cache.agencies=d.agencies||[]; cache.branches=d.branches||[]; cache.vacancies=d.vacancies||[]; cache.employers=d.employers||[];
+    return true;
+  }catch(e){ return false; }
+}
+async function saveAdminDirectoryCache(){
+  try{
+    var db=await openAdminCacheDB();
+    await new Promise(function(resolve,reject){ var tx=db.transaction(ADMIN_CACHE_STORE,'readwrite'); tx.objectStore(ADMIN_CACHE_STORE).put({agencies:cache.agencies,branches:cache.branches,vacancies:cache.vacancies,employers:cache.employers,savedAt:Date.now()},ADMIN_CACHE_KEY); tx.oncomplete=resolve; tx.onerror=function(){reject(tx.error);}; });
+  }catch(e){}
+}
 function debounce(fn, ms){
   var t = null;
   return function(){
@@ -965,9 +992,17 @@ async function enterConsole(user){
   // which made the admin page look stuck on slower mobile connections.
   renderNav();
   renderDashboard();
+  restoreAdminDirectoryCache().then(function(restored){
+    if(!restored) return;
+    adminDataReady = true;
+    renderNav();
+    renderDashboard();
+    renderAgencies(); renderBranches(); renderVacancies(); renderEmployers();
+  });
   loadAll().then(async function(){
     await checkTracksTable();
     adminDataReady = true;
+    saveAdminDirectoryCache();
     renderNav();
     renderDashboard();
   }).catch(function(error){

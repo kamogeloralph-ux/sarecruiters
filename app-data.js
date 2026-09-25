@@ -1012,6 +1012,31 @@ function getStartupData() {
   }, function(){ startupDataPromise = null; });
   return startupDataPromise;
 }
+async function refreshSecondaryStartupData() {
+  try {
+    var employerRows = await getEmployerVacancies();
+    var adzunaAgencyRows = await getAgencyAdzunaVacancies();
+    var merged = (vacanciesCache || []).concat(employerRows || [], adzunaAgencyRows || []);
+    var seen = {};
+    vacanciesCache = sortVacancies(merged.filter(function(v) {
+      if (!v || !v.id || seen[v.id]) return false;
+      seen[v.id] = true;
+      return !isGeneralDirectoryVacancy(v);
+    }));
+    matchVacanciesToAgencies(vacanciesCache, agenciesCache);
+    filterAndRenderCached();
+    saveDataCache();
+  } catch(e) { console.warn('secondary startup refresh', e); }
+  try {
+    var liveGeneralCount = await getGeneralVacancyCount();
+    if (typeof liveGeneralCount === 'number') {
+      generalVacancyCount = liveGeneralCount;
+      generalVacancyCountLoaded = true;
+      updateStats();
+      saveDataCache();
+    }
+  } catch(e) {}
+}
 
 // The Employer entry point on the sign-in gate (openEmployerGateSheet ->
 // openEmployerForm) is reachable BEFORE Google sign-in, so
@@ -1078,34 +1103,6 @@ async function loadAll() {
     getPoolCandidateCount(),
     getDedicatedVacancyCounts()
   ]);
-  if (startup) {
-    // The Worker intentionally excludes dedicated-source rows from its
-    // startup payload to keep the initial response small. Some rows are
-    // nevertheless assigned to employers or agencies, so fetch those subsets
-    // separately or their cards show a correct count but an empty vacancy list.
-    try {
-      var employerRows = await getEmployerVacancies();
-      var adzunaAgencyRows = await getAgencyAdzunaVacancies();
-      var startupRows = (results[2] || []).concat(employerRows || [], adzunaAgencyRows || []);
-      var seenEmployerRows = {};
-      results[2] = startupRows.filter(function(v) {
-        if (!v || !v.id) return false;
-        if (seenEmployerRows[v.id]) return false;
-        seenEmployerRows[v.id] = true;
-        return true;
-      });
-    } catch(e) {}
-  }
-  // The Worker startup payload may be served from its D1 mirror, which can
-  // briefly lag after a bulk purge or scraper run. Refresh this one exact,
-  // indexed head-count directly from Supabase so the General Vacancies card
-  // cannot display an obsolete mirror value such as 34.
-  if (startup) {
-    try {
-      var liveGeneralCount = await getGeneralVacancyCount();
-      if (typeof liveGeneralCount === 'number') results[4] = liveGeneralCount;
-    } catch(e) {}
-  }
   // If a fetch failed, keep whatever was already on screen (last good cache)
   // instead of wiping it to an empty list — a failed refresh should never
   // make the directory look emptier than it did a moment ago. Track whether
@@ -1164,6 +1161,7 @@ async function loadAll() {
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   loadFeaturedVacancies();
+  if (startup) refreshSecondaryStartupData();
   // Candidate spotlight is non-critical; fetch it after the first useful home render.
   loadCandidateSpotlight();
   // Poster feed is likewise non-critical to the first render.

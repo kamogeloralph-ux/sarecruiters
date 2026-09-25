@@ -450,7 +450,7 @@ async function loadStartupDataFromD1(env) {
     // AND source_type NOT IN (dedicated list) -- matches vacancyFilter +
     // the source_type=not.in.(...) param loadStartupData() used to send to
     // Supabase directly.
-    env.DB.prepare(`SELECT * FROM vacancies WHERE (agency_id IS NOT NULL AND agency_id != 'general' OR employer_id IS NOT NULL) AND (source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE * 10}`).bind(...dedicated).all(),
+    env.DB.prepare(`SELECT * FROM vacancies WHERE (agency_id IS NOT NULL AND agency_id != 'general' OR employer_id IS NOT NULL) AND (source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE}`).bind(...dedicated).all(),
     env.DB.prepare("SELECT * FROM employers ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT key, value FROM app_settings").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM pool_candidates WHERE status = 'active'").all(),
@@ -551,7 +551,10 @@ async function loadStartupData(env) {
     "salary",
     "start_date",
     "created_at",
-    "source_type"
+    "source_type",
+    "is_featured",
+    "featured_until",
+    "featured_order"
   ].join(",");
   const vacancyFilter = `(${[
     "agency_id.neq.general",
@@ -598,12 +601,13 @@ async function loadStartupData(env) {
     // lazily via fetchDedicatedVacancyPage() in app-data.js, the same
     // pattern the "General Vacancies" folder already used -- startup only
     // needs their counts (folderCounts below) to label the folder cards.
-    supabaseGetAll(env, "vacancies", {
+    supabaseGet(env, "vacancies", {
       select: vacancyColumns,
       or: vacancyFilter,
       source_type: `not.in.${dedicatedSources}`,
-      order: "created_at.desc"
-    }, STARTUP_VACANCY_PAGE_SIZE),
+      order: "created_at.desc",
+      limit: String(STARTUP_VACANCY_PAGE_SIZE)
+    }),
     supabaseGet(env, "employers", {
       select: "id,name,industry,website,contact,email,location,address,photo,verified",
       order: "created_at.desc"
@@ -735,7 +739,7 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v1", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v2", request.url), request);
 
   function buildResponse(payload) {
     return new Response(JSON.stringify(payload), {
@@ -751,7 +755,9 @@ async function startupResponse(request, env, ctx, origin) {
         // The Worker owns freshness via its internal Cache API and generated_at
         // checks. Do not let the outer CDN serve this aggregate for 24 hours
         // without executing the Worker freshness logic.
-        "Cache-Control": "public, max-age=0, s-maxage=0, must-revalidate",
+        // The Worker decides freshness from generated_at; a short edge cache
+        // prevents every browser open from forcing a D1 read on a cold colo.
+        "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
@@ -767,7 +773,7 @@ async function startupResponse(request, env, ctx, origin) {
   }
   __name(refreshAndCache, "refreshAndCache");
 
-  const cached = await cache.match(cacheKey);
+  const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) {
     try {
       const payload = await cached.clone().json();
