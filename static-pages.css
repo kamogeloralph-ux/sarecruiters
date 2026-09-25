@@ -1,17 +1,9 @@
-/* ================================================================
-   SA Recruiters — static listing pages (agency / vacancy / poster)
-   Shared visual language with the app's unified design system:
-   same soft-blue back control, same primary gradient button,
-   same form rhythm. Colors mirror --accent tokens in styles.css.
-   ================================================================ */
-:root{
-  --sp-accent:#5B4FE8;
-  --sp-accent-soft:rgba(91,79,232,.12);
-  --sp-accent-deep:#4a3fd1;
-}
 body{font-family:Inter,system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;line-height:1.6;color:#111}
 .sp-header,.sp-footer{padding:12px 0}
 .sp-header a,.sp-footer a{color:#0a66c2;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.sp-nav,.sp-footer-links{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 0 18px;font-size:.9rem}
+.sp-nav a,.sp-footer-links a{color:#0a66c2;text-decoration:none}
+.sp-nav a:hover,.sp-footer-links a:hover{text-decoration:underline}
 .sp-contact{margin-top:6px;font-size:.95rem}
 .sp-header img{border-radius:9px;display:block}
 h1{font-size:1.6rem;margin-bottom:.5rem}
@@ -20,12 +12,15 @@ h2{font-size:1.2rem;margin-top:1.5rem}
 .hub-list li{margin:.55rem 0}
 .muted{color:#667085}
 .hub-note{border-top:1px solid #e5e7eb;margin-top:2rem;padding-top:1rem}
-
-/* Unified back control — same soft accent tile + chevron as the app. */
-.sp-header a{color:var(--sp-accent);font-weight:750;font-size:14px}
-.sp-header a::before{content:"";width:34px;height:34px;border-radius:11px;display:inline-flex;flex-shrink:0;background:var(--sp-accent-soft);border:1px solid rgba(91,79,232,.22);margin-right:2px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235B4FE8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 18l-6-6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:17px 17px;box-sizing:border-box}
-.sp-header a span{display:inline-flex;align-items:center;height:34px}
-
-/* Unified primary button — the same gradient as the app's Apply actions. */
-.sp-apply{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:13px 22px;border-radius:14px;background:linear-gradient(135deg,var(--sp-accent) 0%,var(--sp-accent-deep) 100%);color:#fff !important;font-size:14.5px;font-weight:800;letter-spacing:-.01em;text-decoration:none;box-shadow:0 10px 22px -10px rgba(91,79,232,.7);transition:transform .18s ease,filter .18s}
-.sp-apply:active{transform:scale(.98);filter:brightness(1.06)}
+.pj-form{display:flex;flex-direction:column;gap:16px;margin-top:1.5rem}
+.pj-form label{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:700;color:#111}
+.pj-optional{font-size:.7rem;font-weight:500;color:#0a66c2;text-transform:none}
+.pj-form input,.pj-form select,.pj-form textarea{font:inherit;font-weight:400;min-height:48px;border:1px solid #d0d5dd;border-radius:12px;padding:11px 13px;background:#fff;color:#111}
+.pj-form textarea{min-height:84px;resize:vertical}
+.pj-roles{border:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.pj-roles legend{font-size:.85rem;font-weight:700;padding:0;margin-bottom:4px}
+.pj-role-check{flex-direction:row!important;align-items:center;gap:8px!important;font-weight:500!important}
+.pj-role-check input{min-height:auto;width:16px;height:16px}
+.pj-form button{min-height:50px;background:#0a66c2;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer}
+.pj-form button:disabled{opacity:.6;cursor:wait}
+#pj-status{font-size:.85rem;color:#0a66c2;min-height:1.2em}
