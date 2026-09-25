@@ -6,6 +6,7 @@ const generator = readFileSync(new URL('../generate-pages.js', import.meta.url),
 const homepage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const cards = readFileSync(new URL('../app-cards.js', import.meta.url), 'utf8');
 const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
+const privacy = readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
 
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
 
@@ -73,6 +74,18 @@ test('About page contains original SA Recruiters information sections', () => {
   assert.match(generator, /Quality, clarity and responsible browsing/);
   assert.match(generator, /page\.about \? 'AboutPage' : 'WebPage'/);
   assert.match(generator, /class="about-section"/);
+});
+
+test('privacy policy matches the guest app and current data providers', () => {
+  assert.match(privacy, /you can browse public listings as a guest/i);
+  assert.match(privacy, /IndexedDB/);
+  assert.match(privacy, /Google sign-in/);
+  assert.match(privacy, /Talent Pool/);
+  assert.match(privacy, /Cloudflare/);
+  assert.match(privacy, /BigDataCloud/);
+  assert.match(privacy, /Resend/);
+  assert.match(privacy, /Ask us to access, correct or delete/i);
+  assert.match(privacy, /Last updated: 25 September 2026/);
 });
 
 test('vacancy statistic uses the shared startup count path', () => {
