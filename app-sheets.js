@@ -875,7 +875,10 @@ function poolCandidateWhatsAppLink(c) {
 // register sheet is being used to create a brand-new candidate; a candidate
 // id = the sheet is editing (and will UPDATE, not INSERT) that owned row.
 var editingPoolCandidateId = null;
-
+function resetPoolTermsAcceptance() {
+  var input = document.getElementById('pool-terms-accept');
+  if (input) input.checked = false;
+}
 function setPoolSheetEditMode(isEdit) {
   var title = document.getElementById('pool-register-title');
   if (title) title.textContent = isEdit ? 'My Talent Pool Profile' : 'Join the Talent Pool';
@@ -930,6 +933,7 @@ function openPoolRegisterSheet() {
   document.getElementById('pool-cv').value = '';
   var alertOptIn = document.getElementById('pool-email-alerts');
   if (alertOptIn) alertOptIn.checked = false;
+  resetPoolTermsAcceptance();
   document.getElementById('pool-register-overlay').classList.add('open');
 }
 
@@ -989,6 +993,7 @@ async function openMyPoolProfile() {
     fillPoolFormFromCandidate(result.data);
     editingPoolCandidateId = result.data.id;
     setPoolSheetEditMode(true);
+    resetPoolTermsAcceptance();
     document.getElementById('pool-register-overlay').classList.add('open');
   } else {
     openPoolRegisterSheet();
@@ -1094,6 +1099,8 @@ async function submitPoolRegistration() {
   var email = document.getElementById('pool-email').value.trim();
   var alertOptIn = !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked);
   if (!name || !phone || !email || !sector || !location) { showToast('Please fill in name, email, phone, sector and location. Email is used for cross-device Talent Pool verification.'); return; }
+  var termsAccepted = document.getElementById('pool-terms-accept');
+  if (!termsAccepted || !termsAccepted.checked) { showToast('Please accept the SA Recruiters Terms and Conditions to continue.'); return; }
   if (alertOptIn && !email) { showToast('Add your email address to receive vacancy alerts.'); return; }
   if (!gender || !grade12 || !criminal || experience === '') { showToast('Please answer gender, Grade 12, criminal record and experience.'); return; }
 
