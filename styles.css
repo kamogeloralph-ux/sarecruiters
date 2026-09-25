@@ -1930,3 +1930,11 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-click{margin-left:auto;flex:0 0 auto;color:var(--accent);font-weight:700;white-space:nowrap}
 .house-ad-click span{font-size:13px;margin-left:1px}
 @media(max-width:380px){.house-ad-message small{gap:4px}.house-ad-click{font-size:10px}}
+
+
+/* Keep the advertiser message directly below the title; disclosure stays in the footer. */
+.house-ad-heading{flex-direction:column;gap:2px}
+.house-ad-heading-message{display:block;width:100%;font-size:11.5px;font-weight:400;line-height:1.25;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.house-ad-message-copy{display:none}
+.house-ad-message small{justify-content:space-between}
+@media(max-width:380px){.house-ad-heading-message{font-size:11px}}

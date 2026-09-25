@@ -103,12 +103,12 @@ function renderHouseAdSlot(targetId, placement) {
   if (!ad || !imageUrl || !targetUrl) { target.hidden = true; target.innerHTML = ''; return; }
   target.hidden = false;
   target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
-    '<div class="house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong></div>' +
+    '<div class="house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong><small class="house-ad-heading-message">' + escapeHtml(ad.message || '') + '</small></div>' +
     '<div class="house-ad-creative">' +
       '<img loading="lazy" width="1200" height="400" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
       '<span class="house-ad-bulb-glow" aria-hidden="true"></span><span class="house-ad-bulb-core" aria-hidden="true"></span><span class="house-ad-spark" aria-hidden="true"></span><span class="house-ad-tester-flicker" aria-hidden="true"></span>' +
     '</div>' +
-    '<div class="house-ad-message"><small><span class="house-ad-sponsored">Sponsored</span><span class="house-ad-message-copy">' + escapeHtml(ad.message || '') + '</span><span class="house-ad-click">Click here <span aria-hidden="true">→</span></span></small></div>' +
+    '<div class="house-ad-message"><small><span class="house-ad-sponsored">Sponsored</span><span class="house-ad-click">Click here <span aria-hidden="true">→</span></span></small></div>' +
   '</a>';
   trackHouseAdEvent(ad.id, 'impression');
 }
