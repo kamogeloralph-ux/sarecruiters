@@ -29,6 +29,11 @@ test('homepage exposes normal anchor links for Google discovery', () => {
     assert.match(homepage, new RegExp(`href="${slug}/"`));
   }
   assert.match(homepage, /class="seo-site-footer"/);
+  assert.match(homepage, /rel="canonical" href="https:\/\/sa-recruiters\.co\.za\/"/);
+  assert.match(homepage, /application\/ld\+json/);
+  assert.match(homepage, /"@type": "Organization"/);
+  assert.match(homepage, /<h1 class="sr-only">South African recruitment agencies and job vacancies<\/h1>/);
+  assert.ok(homepage.indexOf('<footer class="seo-site-footer"') < homepage.indexOf('</body>'));
 });
 
 test('landing pages link into existing vacancy and employer journeys', () => {
@@ -36,4 +41,11 @@ test('landing pages link into existing vacancy and employer journeys', () => {
   assert.match(generator, /\/browse\/category\/remote\//);
   assert.match(generator, /\/browse\/category\/government\//);
   assert.match(generator, /\/browse\/category\/internship\//);
+});
+
+test('generated listing output treats database values as untrusted', () => {
+  assert.match(generator, /serializeJsonLd/);
+  assert.match(generator, /replace\(\/</);
+  assert.match(generator, /safeHttpUrl\(vacancy\.link\)/);
+  assert.match(generator, /applicantLocationRequirements/);
 });
