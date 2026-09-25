@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.house_ads (
   message text NOT NULL DEFAULT '',
   image_url text NOT NULL,
   target_url text NOT NULL,
-  placement text NOT NULL DEFAULT 'home' CHECK (placement IN ('home', 'vacancies', 'both')),
+  placement text NOT NULL DEFAULT 'home' CHECK (placement IN ('directories', 'agencies', 'employers', 'candidates', 'home', 'vacancies', 'both')),
   starts_at timestamptz NOT NULL DEFAULT now(),
   ends_at timestamptz,
   is_active boolean NOT NULL DEFAULT true,

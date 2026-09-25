@@ -92,7 +92,7 @@ function safeHouseAdUrl(value) {
   } catch(e) { return ''; }
 }
 function houseAdPlacementMatches(ad, placement) {
-  return ad && (ad.placement === placement || ad.placement === 'both');
+  return ad && (ad.placement === placement || ad.placement === 'directories');
 }
 function renderHouseAdSlot(targetId, placement) {
   var target = document.getElementById(targetId);
@@ -109,8 +109,9 @@ function renderHouseAdSlot(targetId, placement) {
   trackHouseAdEvent(ad.id, 'impression');
 }
 function renderHouseAdSlots() {
-  renderHouseAdSlot('house-ad-home', 'home');
-  renderHouseAdSlot('house-ad-vacancies', 'vacancies');
+  renderHouseAdSlot('house-ad-agencies', 'agencies');
+  renderHouseAdSlot('house-ad-employers', 'employers');
+  renderHouseAdSlot('house-ad-candidates', 'candidates');
 }
 async function loadHouseAds() {
   try {
