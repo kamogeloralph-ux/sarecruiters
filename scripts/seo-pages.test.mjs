@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const generator = readFileSync(new URL('../generate-pages.js', import.meta.url), 'utf8');
 const homepage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const cards = readFileSync(new URL('../app-cards.js', import.meta.url), 'utf8');
 
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
 
@@ -48,4 +49,11 @@ test('generated listing output treats database values as untrusted', () => {
   assert.match(generator, /replace\(\/</);
   assert.match(generator, /safeHttpUrl\(vacancy\.link\)/);
   assert.match(generator, /applicantLocationRequirements/);
+});
+
+test('homepage search debounces keystroke renders', () => {
+  assert.match(homepage, /oninput="scheduleCachedSearch\(\)"/);
+  assert.match(cards, /function scheduleCachedSearch\(\)/);
+  assert.match(cards, /setTimeout\(function\(\)/);
+  assert.match(cards, /filterAndRenderCached\(\);/);
 });
