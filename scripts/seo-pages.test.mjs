@@ -38,6 +38,16 @@ test('static shell exposes the same primary navigation on every generated page',
   assert.match(generator, /class="sp-footer-links"/);
 });
 
+test('vacancy overview uses the three-card grouped browse structure', () => {
+  assert.match(appUi, /South African Jobs/);
+  assert.match(appUi, /Remote &amp; International Jobs/);
+  assert.match(appUi, /Featured vacancies/);
+  for (const source of ['General Vacancies', 'Agency Vacancies', 'Government Vacancies', 'Retail Vacancies', 'Learnerships', 'Himalayas Remote', 'Adzuna Vacancies', 'Cruise Careers']) {
+    assert.match(appUi, new RegExp(source.replace(/[&]/g, '&amp;')));
+  }
+  assert.match(appUi, /vacancy-group-grid/);
+  assert.doesNotMatch(appUi, /vac-folder-card[^\n]*Agency Vacancies/);
+});
 test('homepage exposes normal anchor links for Google discovery', () => {
   for (const slug of pages) {
     assert.match(homepage, new RegExp(`href="${slug}/"`));
