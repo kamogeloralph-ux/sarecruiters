@@ -377,12 +377,9 @@ function renderTrackReady() {
   if (t) t.textContent = todayTrack.title || 'Today\'s track';
   if (a) a.textContent = todayTrack.artist || '';
   if (btn) btn.disabled = false;
-  // Set audio source
+  // Keep the media element source-free until explicit play intent. Assigning
+  // src plus load() here eagerly downloads multi-megabyte audio on startup.
   trackAudio = document.getElementById('track-audio');
-  if (trackAudio && todayTrack.file_url) {
-    trackAudio.src = todayTrack.file_url;
-    trackAudio.load();
-  }
 }
 
 function toggleTrackPlay() {
@@ -390,6 +387,10 @@ function toggleTrackPlay() {
   if (trackIsPlaying) {
     trackAudio.pause();
   } else {
+    if (!trackAudio.src && todayTrack.file_url) {
+      trackAudio.src = todayTrack.file_url;
+      trackAudio.load();
+    }
     trackAudio.play().catch(function(){ /* autoplay blocked or load error */ });
   }
 }
@@ -670,6 +671,7 @@ async function fetchGeneralVacancyPage(state, page) {
     // Adzuna, DPSA, and retail feeds have dedicated folders.
     .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships,careers_page)')
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .range(from, from + generalVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);
   if (state.exp) query = query.eq('experience_level', state.exp);
@@ -679,7 +681,8 @@ async function fetchGeneralVacancyPage(state, page) {
   }
   var result = await query;
   if (result.error) throw result.error;
-  return filterExpiredVacancies(result.data || []);
+  // Return raw pages so expired rows do not make a full page look like EOF.
+  return result.data || [];
 }
 // Source-type groupings for the 5 dedicated-source folders, mirroring the
 // classifier functions in renderAllVacanciesList() (isHimalayasVacancy etc.)
@@ -705,6 +708,7 @@ async function fetchDedicatedVacancyPage(folder, state, page) {
   var query = supabaseClient.from('vacancies').select(columns)
     .in('source_type', sources)
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .range(from, from + dedicatedVacancyPageSize - 1);
   if (state.remote) query = query.eq('remote', state.remote);
   if (state.exp) query = query.eq('experience_level', state.exp);
@@ -714,7 +718,7 @@ async function fetchDedicatedVacancyPage(folder, state, page) {
   }
   var result = await query;
   if (result.error) throw result.error;
-  return filterExpiredVacancies(result.data || []);
+  return result.data || [];
 }
 async function upsertVacancy(v) {
   // First attempt: send all fields
@@ -951,7 +955,8 @@ async function loadDataCache() {
   return true;
 }
 
-async function getStartupData() {
+var startupDataPromise = null;
+async function fetchStartupDataOnce() {
   try {
     var controller = typeof AbortController === 'function' ? new AbortController() : null;
     var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
@@ -971,6 +976,15 @@ async function getStartupData() {
   } catch (e) {
     return null;
   }
+}
+
+function getStartupData() {
+  if (startupDataPromise) return startupDataPromise;
+  startupDataPromise = fetchStartupDataOnce();
+  startupDataPromise.then(function(payload){
+    if (!payload) startupDataPromise = null;
+  }, function(){ startupDataPromise = null; });
+  return startupDataPromise;
 }
 
 // The Employer entry point on the sign-in gate (openEmployerGateSheet ->

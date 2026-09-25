@@ -340,6 +340,18 @@ function activateAccountFromMenu(e) {
 }
 window.activateAccountFromMenu = activateAccountFromMenu;
 
+// Composite cards are retained for the mobile visual design, but they must
+// behave like native controls for keyboard and switch-device users.
+document.addEventListener('keydown', function(e) {
+  var el = e.target;
+  if (!el || !el.classList) return;
+  if ((el.classList.contains('stat-card') || el.classList.contains('vac-card')) &&
+      (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    el.click();
+  }
+});
+
 function goBackFromAccount() {
   var targetId = 'screen-' + (accountReturnScreen || 'profile');
   if (!document.getElementById(targetId)) targetId = 'screen-account';
@@ -975,7 +987,10 @@ function renderGeneralVacancyCards(append) {
   var loadMore = document.getElementById('allvacancies-loadmore');
   var countLabel = document.getElementById('allvacancies-result-count');
   if (!el) return;
-  if (generalVacancyLoading && !generalVacancyRows.length) {
+  if (generalVacancyError) {
+    el.dataset.state = 'error';
+    el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadGeneralVacancies(true)">Try again</button></div>';
+  } else if (generalVacancyLoading && !generalVacancyRows.length) {
     el.dataset.state = 'loading';
     el.innerHTML = '<div class="empty-state"><h3>Loading vacancies…</h3><p>Fetching the latest opportunities.</p></div>';
   } else if (!generalVacancyRows.length) {
@@ -1007,6 +1022,7 @@ async function loadGeneralVacancies(reset) {
     generalVacancyRows = [];
     generalVacancyHasMore = true;
     generalVacancyLoading = false;
+    generalVacancyError = false;
     var industrySel = document.getElementById('allvacancies-industry');
     if (industrySel) industrySel.style.display = 'none';
   }
@@ -1017,19 +1033,20 @@ async function loadGeneralVacancies(reset) {
   try {
     var page = await fetchGeneralVacancyPage(state, generalVacancyPage);
     if (requestId !== generalVacancyRequestId) return;
-    matchVacanciesToAgencies(page, agenciesCache);
-    page.forEach(function(v){
+    generalVacancyError = false;
+    var visiblePage = filterExpiredVacancies(page);
+    matchVacanciesToAgencies(visiblePage, agenciesCache);
+    visiblePage.forEach(function(v){
       if (v.agency_id && v.agency_id !== 'general' && !vacanciesCache.some(function(x){ return x.id === v.id; })) vacanciesCache.push(v);
     });
     // A matched record belongs in its agency section, not General Vacancies.
-    generalVacancyRows = generalVacancyRows.concat(page.filter(isGeneralDirectoryVacancy));
+    generalVacancyRows = generalVacancyRows.concat(visiblePage.filter(isGeneralDirectoryVacancy));
     generalVacancyHasMore = page.length === generalVacancyPageSize;
     generalVacancyPage += 1;
     renderGeneralVacancyCards(true);
   } catch(e) {
     if (requestId !== generalVacancyRequestId) return;
-    var el = document.getElementById('allvacancies-list');
-    if (el) el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadGeneralVacancies(true)">Try again</button></div>';
+    generalVacancyError = true;
     generalVacancyHasMore = true;
   } finally {
     if (requestId === generalVacancyRequestId) {
@@ -1058,7 +1075,10 @@ function renderDedicatedVacancyCards(append) {
   if (!el) return;
   var folderLabel = DEDICATED_VACANCY_FOLDER_LABELS[dedicatedVacancyFolder] || 'Vacancies';
   var folderCount = (dedicatedVacancyCounts && dedicatedVacancyCounts[dedicatedVacancyFolder]) || 0;
-  if (dedicatedVacancyLoading && !dedicatedVacancyRows.length) {
+  if (dedicatedVacancyError) {
+    el.dataset.state = 'error';
+    el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadDedicatedVacancies(true)">Try again</button></div>';
+  } else if (dedicatedVacancyLoading && !dedicatedVacancyRows.length) {
     el.dataset.state = 'loading';
     el.innerHTML = '<div class="empty-state"><h3>Loading vacancies…</h3><p>Fetching the latest opportunities.</p></div>';
   } else if (!dedicatedVacancyRows.length) {
@@ -1090,6 +1110,7 @@ async function loadDedicatedVacancies(reset) {
     dedicatedVacancyRows = [];
     dedicatedVacancyHasMore = true;
     dedicatedVacancyLoading = false;
+    dedicatedVacancyError = false;
   }
   if (dedicatedVacancyLoading || !dedicatedVacancyHasMore) { renderDedicatedVacancyCards(false); return; }
   var requestId = ++dedicatedVacancyRequestId;
@@ -1098,14 +1119,14 @@ async function loadDedicatedVacancies(reset) {
   try {
     var page = await fetchDedicatedVacancyPage(folder, state, dedicatedVacancyPage);
     if (requestId !== dedicatedVacancyRequestId) return;
-    dedicatedVacancyRows = dedicatedVacancyRows.concat(page);
+    dedicatedVacancyError = false;
+    dedicatedVacancyRows = dedicatedVacancyRows.concat(filterExpiredVacancies(page));
     dedicatedVacancyHasMore = page.length === dedicatedVacancyPageSize;
     dedicatedVacancyPage += 1;
     renderDedicatedVacancyCards(true);
   } catch(e) {
     if (requestId !== dedicatedVacancyRequestId) return;
-    var el = document.getElementById('allvacancies-list');
-    if (el) el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadDedicatedVacancies(true)">Try again</button></div>';
+    dedicatedVacancyError = true;
     dedicatedVacancyHasMore = true;
   } finally {
     if (requestId === dedicatedVacancyRequestId) {

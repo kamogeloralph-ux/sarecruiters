@@ -474,7 +474,10 @@ async function loadStartupDataFromD1(env) {
     counts: {
       agencies: n(agencyCountR),
       branches: n(branchCountR),
-      vacancies: n(generalCountR) + (vacanciesR.results || []).length + n(dedicatedCountR),
+      // Platform total includes the general pool, attributed/startup rows,
+      // and dedicated-source rows. Keep this mutually consistent with the
+      // public `general` bucket instead of omitting generalPoolCount.
+      vacancies: n(generalCountR) + n(generalPoolCountR) + (vacanciesR.results || []).length + n(dedicatedCountR),
       general: n(generalCountR) + n(generalPoolCountR),
       employers: n(employerCountR),
       candidates: n(poolCountR),
@@ -719,7 +722,10 @@ async function startupResponse(request, env, ctx, origin) {
         // otherwise drops an entry the instant its own max-age passes, so a
         // short max-age here just meant "block on a full Supabase re-scan
         // every N seconds", not real SWR).
-        "Cache-Control": `public, max-age=86400, s-maxage=86400`,
+        // The Worker owns freshness via its internal Cache API and generated_at
+        // checks. Do not let the outer CDN serve this aggregate for 24 hours
+        // without executing the Worker freshness logic.
+        "Cache-Control": "public, max-age=0, s-maxage=0, must-revalidate",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
