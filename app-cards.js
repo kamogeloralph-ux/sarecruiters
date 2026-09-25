@@ -455,6 +455,14 @@ window.toggleHub = function(id) {
 
 var AGENCY_RENDER_BATCH_SIZE = 20;
 var agencyRenderGeneration = 0;
+var homeSearchTimer = 0;
+function scheduleCachedSearch() {
+  if (homeSearchTimer) clearTimeout(homeSearchTimer);
+  homeSearchTimer = setTimeout(function() {
+    homeSearchTimer = 0;
+    filterAndRenderCached();
+  }, 80);
+}
 function renderAgencyBatch(list, generation, offset) {
   if (generation !== agencyRenderGeneration) return;
   var target = document.getElementById('hub-list');
