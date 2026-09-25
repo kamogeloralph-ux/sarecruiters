@@ -62,6 +62,8 @@
 
 <title>SA Recruiters — South African Recruitment Agencies Directory</title>
 <meta name="description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies, branches and vacancies.">
+<link rel="canonical" href="https://sa-recruiters.co.za/">
+<meta name="robots" content="index,follow,max-image-preview:large">
 
 <!-- Primary Meta Tags -->
 <meta name="application-name" content="SA Recruiters">
@@ -97,8 +99,10 @@
 
 <!-- Open Graph / social (helps App Capabilities + installability signals) -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="SA Recruiters">
 <meta property="og:title" content="SA Recruiters">
 <meta property="og:description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies.">
+<meta property="og:url" content="https://sa-recruiters.co.za/">
 <meta property="og:image" content="https://sa-recruiters.co.za/icons/v2-icon-512.png">
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
@@ -106,6 +110,37 @@
 <meta name="twitter:title" content="SA Recruiters">
 <meta name="twitter:description" content="Connecting South Africa's Recruitment Community.">
 <meta name="twitter:image" content="https://sa-recruiters.co.za/icons/v2-icon-512.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://sa-recruiters.co.za/#organization",
+      "name": "SA Recruiters",
+      "url": "https://sa-recruiters.co.za/",
+      "logo": "https://sa-recruiters.co.za/icons/v2-icon-512.png",
+      "description": "A free directory connecting South African candidates, recruitment agencies and employers.",
+      "areaServed": { "@type": "Country", "name": "South Africa" },
+      "sameAs": ["https://g.page/r/CbL3q0tBfGAsEBI"],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+27-71-553-1005",
+        "contactType": "customer service",
+        "areaServed": "ZA"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://sa-recruiters.co.za/#website",
+      "url": "https://sa-recruiters.co.za/",
+      "name": "SA Recruiters",
+      "publisher": { "@id": "https://sa-recruiters.co.za/#organization" },
+      "inLanguage": "en-ZA"
+    }
+  ]
+}
+</script>
 
 <!-- Warm up connections to the origins the app actually fetches from, so DNS
      lookup + TLS handshake happen in parallel with page load instead of
@@ -174,6 +209,7 @@
 
   <!-- ============ HOME ============ -->
   <div class="screen active" id="screen-home">
+    <h1 class="sr-only">South African recruitment agencies and job vacancies</h1>
     <div class="screen-fixed">
     <header>
       <div class="logo-wrap">
@@ -1311,8 +1347,6 @@
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
 <script src="app.bundle.min.js?v=f613dfd0b1" defer></script>
-</body>
-</html>
 <footer class="seo-site-footer" aria-label="SA Recruiters quick links">
   <strong>SA Recruiters</strong>
   <nav aria-label="Quick links">
@@ -1324,3 +1358,5 @@
     <a href="about/">About SA Recruiters</a>
   </nav>
 </footer>
+</body>
+</html>

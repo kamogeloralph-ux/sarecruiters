@@ -151,6 +151,22 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+function safeHttpUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+function serializeJsonLd(value) {
+  // Listing fields come from Supabase and may contain attacker-controlled
+  // text. Escape the HTML-sensitive character so </script> cannot terminate
+  // this JSON-LD element and become executable markup.
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -222,7 +238,7 @@ ${image ? '' : '<meta property="og:image:width" content="512">\n<meta property="
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/v2-icon-192.png">
 <link rel="apple-touch-icon" href="/icons/v2-icon-192.png">
 <link rel="stylesheet" href="/static-pages.css?v=${DEPLOY_VERSION}">
-${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : ''}
+${jsonLd ? `<script type="application/ld+json">${serializeJsonLd(jsonLd)}</script>` : ''}
 </head>
 <body>
 <header class="sp-header"><a href="/"><img src="/icons/v2-icon-192.png" alt="SA Recruiters logo" width="36" height="36"> <span>Back to SA Recruiters</span></a></header>
@@ -345,7 +361,7 @@ ${agency.verified ? '<p><em>✔ Verified agency</em></p>' : ''}
 ${agency.address ? `<strong>Address:</strong> ${escapeHtml(agency.address)}<br>` : ''}
 ${agency.contact ? `<strong>Contact:</strong> ${escapeHtml(agency.contact)}<br>` : ''}
 ${agency.email ? `<strong>Email:</strong> ${escapeHtml(agency.email)}<br>` : ''}
-${agency.website ? `<strong>Website:</strong> <a href="${escapeHtml(agency.website)}" rel="nofollow">${escapeHtml(agency.website)}</a><br>` : ''}
+ ${safeHttpUrl(agency.website) ? `<strong>Website:</strong> <a href="${escapeHtml(safeHttpUrl(agency.website))}" rel="nofollow">${escapeHtml(agency.website)}</a><br>` : ''}
 ${agency.trades ? `<strong>Trades / Industries:</strong> ${escapeHtml(agency.trades)}<br>` : ''}
 ${agency.companies ? `<strong>Companies:</strong> ${escapeHtml(agency.companies)}<br>` : ''}</p>
 ${branchesHtml}
@@ -394,7 +410,13 @@ function inferAddressRegion(locationText) {
 // street-level address - that gap is a real data limitation, not a bug.
 function buildJobLocationFields(vacancy) {
   if (vacancy.remote === 'Remote') {
-    return { jobLocationType: 'TELECOMMUTE' };
+    return {
+      jobLocationType: 'TELECOMMUTE',
+      applicantLocationRequirements: {
+        '@type': 'Country',
+        name: 'South Africa',
+      },
+    };
   }
 
   return {
@@ -470,6 +492,7 @@ function buildVacancyPage(vacancy, agency, slug) {
     description: vacancy.notes || description,
     datePosted: vacancy.created_at,
     validThrough: resolveValidThrough(vacancy),
+    url: canonical,
     employmentType: vacancy.employment_type || undefined,
     hiringOrganization: {
       '@type': 'Organization',
@@ -493,8 +516,8 @@ ${vacancy.experience_level ? `<strong>Experience level:</strong> ${escapeHtml(va
 ${vacancy.closing_date ? `<strong>Closing date:</strong> ${escapeHtml(vacancy.closing_date)}<br>` : ''}</p>
 ${vacancy.notes ? `<h2>Details</h2><p>${escapeHtml(vacancy.notes).replace(/\n/g, '<br>')}</p>` : ''}
 ${
-  vacancy.link
-    ? `<p><a class="sp-apply" href="${escapeHtml(vacancy.link)}" rel="nofollow">Apply for this role →</a></p>`
+  safeHttpUrl(vacancy.link)
+    ? `<p><a class="sp-apply" href="${escapeHtml(safeHttpUrl(vacancy.link))}" rel="nofollow">Apply for this role →</a></p>`
     : '<p>To apply, visit the SA Recruiters app and use the contact details on the agency listing.</p>'
 }
 `;
@@ -515,12 +538,13 @@ function buildPosterPage(poster, slug) {
   const heading = poster.caption || 'Vacancy poster';
   const title = `${heading} | SA Recruiters`;
   const description = `${heading} — recruitment poster on SA Recruiters, South Africa's recruitment directory.`;
+  const imageUrl = safeHttpUrl(poster.image_url);
   const body = `
 <h1>${escapeHtml(heading)}</h1>
-<p><img src="${escapeHtml(poster.image_url)}" alt="${escapeHtml(heading)}" style="max-width:100%;height:auto;border-radius:12px"></p>
+${imageUrl ? `<p><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(heading)}" style="max-width:100%;height:auto;border-radius:12px"></p>` : '<p>The poster image is unavailable.</p>'}
 <p class="hub-note"><a href="/">Browse all agencies and vacancies on SA Recruiters →</a></p>
 `;
-  return pageShell({ title, description, canonical, bodyHtml: body, image: poster.image_url });
+  return pageShell({ title, description, canonical, bodyHtml: body, image: imageUrl || undefined });
 }
 
 // ---------- location hub pages ----------
