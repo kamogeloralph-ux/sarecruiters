@@ -103,9 +103,9 @@ function renderHouseAdSlot(targetId, placement) {
   if (!ad || !imageUrl || !targetUrl) { target.hidden = true; target.innerHTML = ''; return; }
   target.hidden = false;
   target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
-    '<span class="house-ad-copy house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong></span>' +
+    '<div class="house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong></div>' +
     '<img loading="lazy" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
-    (ad.message ? '<span class="house-ad-copy house-ad-message"><small>' + escapeHtml(ad.message) + '</small></span>' : '') +
+    '<div class="house-ad-message"><small>' + escapeHtml(ad.message || '') + '</small></div>' +
   '</a>';
   trackHouseAdEvent(ad.id, 'impression');
 }
