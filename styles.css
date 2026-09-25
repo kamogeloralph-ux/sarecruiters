@@ -1901,3 +1901,9 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-slot{width:100%;max-width:none;margin:0 0 14px}
 .house-ad-card{width:100%;max-width:none;margin:0 0 14px;border-radius:var(--radius);overflow:hidden}
 @media(max-width:520px){.house-ad-card{border-radius:18px}}
+
+/* Prevent square corner layers from protruding behind the rounded directory ad. */
+.house-ad-slot{border-radius:var(--radius);overflow:hidden}
+.house-ad-card{border-radius:var(--radius);overflow:hidden}
+.house-ad-card img{border-radius:inherit}
+@media(max-width:520px){.house-ad-slot,.house-ad-card{border-radius:18px}}
