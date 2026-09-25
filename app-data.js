@@ -826,6 +826,7 @@ var DATA_CACHE_DB = 'sa_data_cache_db';
 var DATA_CACHE_STORE = 'kv';
 var DATA_CACHE_KEY = 'sa_data_cache_v1';
 var lastDataRefreshAt = null;
+var cachedVacancyTotal = null;
 
 function openDataCacheDB() {
   return new Promise(function(resolve, reject) {
@@ -911,6 +912,9 @@ async function saveDataCache() {
     branches: branchesCache,
     vacancies: vacanciesCache,
     generalVacancyCount: generalVacancyCount,
+    vacancyTotal: (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded)
+      ? generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal()
+      : cachedVacancyTotal,
     employers: employersCache,
     poolCount: poolCandidateCount,
     posterCount: posterTotalCount,
@@ -945,6 +949,7 @@ async function loadDataCache() {
   branchesCache = d.branches || [];
   vacanciesCache = d.vacancies || [];
   generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
+  cachedVacancyTotal = (typeof d.vacancyTotal === 'number') ? d.vacancyTotal : null;
   employersCache = d.employers || [];
   poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
   // Restore the cached poster total too, so the Posters stat card paints
@@ -1003,6 +1008,15 @@ function getStartupData() {
 
 async function loadAll() {
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
+  if (navigator.onLine === false) {
+    if (await loadDataCache()) {
+      updateStats();
+      filterAndRenderCached();
+      if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
+    }
+    setConnectionStatus('offline', lastDataRefreshAt);
+    return;
+  }
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
   // original independent Supabase reads so launch remains resilient.
   var startup = await getStartupData();
@@ -1093,6 +1107,9 @@ async function loadAll() {
   // cosmetic (they just label the folder cards), so a miss here shouldn't
   // trigger the retry banner the way a core data fetch failing would.
   if (results[9] && typeof results[9] === 'object') { dedicatedVacancyCounts = results[9]; dedicatedVacancyCountsLoaded = true; }
+  if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+    cachedVacancyTotal = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+  }
   setRetryBanner(hadLoadError);
   if (!hadLoadError) lastDataRefreshAt = Date.now();
   setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
@@ -1159,14 +1176,17 @@ function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   updatePosterStat();
   var vacancyStat = document.getElementById('stat-vacancies');
-  if (vacancyStat && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
-    vacancyStat.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+  if (vacancyStat) {
+    if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+      vacancyStat.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+    } else if (typeof cachedVacancyTotal === 'number') {
+      vacancyStat.textContent = cachedVacancyTotal;
+    }
   }
   var statEmployers = document.getElementById('stat-employers');
   if (statEmployers) statEmployers.textContent = employersCache.length;
   var statPool = document.getElementById('stat-pool');
   if (statPool) statPool.textContent = poolLoaded ? poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length : poolCandidateCount;
-  refreshGateStats();
   reorderStatCardsByCount();
 }
 
@@ -1241,40 +1261,6 @@ function gateVacancyTotal(agencies, vacancies, counts) {
   }
   return total;
 }
-function refreshGateStats() {
-  var elA = document.getElementById('stat-agencies');
-  if (elA && agenciesCache.length) elA.textContent = agenciesCache.length;
-  var elV = document.getElementById('stat-vacancies');
-  if (elV && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
-    elV.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
-  }
-}
-async function loadGateStats() {
-  try {
-    var url = (typeof R2_WORKER_URL === 'string' && R2_WORKER_URL ? R2_WORKER_URL : '') + '/api/startup';
-    if (!url || url === '/api/startup') return;
-    var controller = typeof AbortController === 'function' ? new AbortController() : null;
-    var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
-    var response = await fetch(url, { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller ? controller.signal : undefined });
-    if (timeout) clearTimeout(timeout);
-    if (!response.ok) return;
-    var payload = await response.json();
-    if (!payload || !Array.isArray(payload.agencies) || !payload.counts) return;
-    var elA = document.getElementById('stat-agencies');
-    if (elA) elA.textContent = payload.agencies.length;
-    var elV = document.getElementById('stat-vacancies');
-    // Use the same edge-cached startup count as the other cards. A separate
-    // Supabase COUNT(*) request made this card repaint after the other stats
-    // and caused unnecessary database traffic on every launch.
-    if (elV) elV.textContent = gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
-  } catch (e) { /* leave placeholders on failure */ }
-}
-// Paint the numbers instantly from whatever was cached on the last
-// successful visit (if any), so returning visitors see real figures right
-// away instead of sitting on the "…" placeholder while the network fetch
-// below is still in flight — the same instant-paint-from-cache pattern
-// bootAuthenticatedApp() uses for the main stat cards.
-loadGateStats();
 
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }

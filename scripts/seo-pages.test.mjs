@@ -68,6 +68,12 @@ test('homepage search debounces keystroke renders', () => {
 
 test('vacancy statistic uses the shared startup count path', () => {
   assert.doesNotMatch(appData, /fetchLiveVacancyTotal/);
-  assert.match(appData, /gateVacancyTotal\(payload\.agencies, payload\.vacancies, payload\.counts\)/);
-  assert.match(appData, /same edge-cached startup count as the other cards/);
+  assert.doesNotMatch(appData, /loadGateStats\(\);/);
+  assert.match(appData, /cachedVacancyTotal/);
+  assert.match(appData, /vacancyTotal:/);
+});
+
+test('offline launch bypasses network-only startup work', () => {
+  assert.match(appData, /if \(navigator\.onLine === false\)/);
+  assert.match(homepage, /<script async defer src="https:\/\/challenges\.cloudflare\.com\/turnstile/);
 });

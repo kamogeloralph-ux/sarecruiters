@@ -132,6 +132,10 @@ function startAuthenticatedApp(callback) {
     bootOnce();
     return;
   }
+  // Do not make an offline launch wait for Supabase's session request. The
+  // service-worker shell and IndexedDB directory cache are sufficient for a
+  // useful guest session; auth can resolve later when connectivity returns.
+  if (navigator.onLine === false) bootOnce();
   supabaseClient.auth.onAuthStateChange(function(event, session) {
     saAuthUser = session && session.user ? session.user : null;
     if (saAuthUser && !isGoogleUser(saAuthUser)) {
