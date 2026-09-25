@@ -618,7 +618,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">All Agencies</div>
+      <div class="section-title-with-link"><div class="logo-text">All Agencies</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('agencies')" aria-label="Share All Agencies link" title="Share All Agencies link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -670,7 +670,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" id="allvacancies-back" data-ripple onclick="handleVacanciesBack()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">All Vacancies</div>
+      <div class="section-title-with-link"><div class="logo-text">All Vacancies</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('vacancies')" aria-label="Share All Vacancies link" title="Share All Vacancies link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -693,7 +693,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">Vacancy Posters</div>
+      <div class="section-title-with-link"><div class="logo-text">Vacancy Posters</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('posters')" aria-label="Share Vacancy Posters link" title="Share Vacancy Posters link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -715,7 +715,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">Employers</div>
+      <div class="section-title-with-link"><div class="logo-text">Employers</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('employers')" aria-label="Share Employers link" title="Share Employers link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -744,7 +744,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="closeTalentPool()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">Talent Pool</div>
+      <div class="section-title-with-link"><div class="logo-text">Talent Pool</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('candidates')" aria-label="Share Talent Pool link" title="Share Talent Pool link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
     <div style="margin:0 16px 12px">
       <select id="pool-sector-filter" onchange="renderPoolList()" style="width:100%;height:44px;border-radius:12px;border:1px solid var(--border-strong);background:var(--card);color:var(--text);padding:0 12px;font-size:13.5px">
@@ -1353,7 +1353,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=be86b642c6" defer></script>
+<script src="app.bundle.min.js?v=a8a3966a26" defer></script>
 <footer class="seo-site-footer" aria-label="SA Recruiters quick links">
   <strong>SA Recruiters</strong>
   <nav aria-label="Quick links">

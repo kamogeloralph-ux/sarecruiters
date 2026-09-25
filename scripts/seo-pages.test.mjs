@@ -14,6 +14,9 @@ const rights = readFileSync(new URL('../know-your-rights/index.html', import.met
 const content = readFileSync(new URL('../content.js', import.meta.url), 'utf8');
 const contentManager = readFileSync(new URL('../content-manager.js', import.meta.url), 'utf8');
 const appForms = readFileSync(new URL('../app-forms.js', import.meta.url), 'utf8');
+const appUi = readFileSync(new URL('../app-ui.js', import.meta.url), 'utf8');
+const appCore = readFileSync(new URL('../app-core.js', import.meta.url), 'utf8');
+const appManagerEmployer = readFileSync(new URL('../app-manager-employer.js', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
@@ -147,6 +150,20 @@ test('app accent tokens are derived from the logo palette', () => {
   assert.match(styles, /--accent:\s*var\(--brand-blue\)/);
   assert.match(styles, /--success:\s*var\(--brand-green\)/);
   assert.match(styles, /--danger:\s*var\(--brand-red\)/);
+});
+
+test('public directory sections expose stable share links and deep-link routing', () => {
+  for (const section of ['vacancies', 'agencies', 'candidates', 'posters', 'employers']) {
+    assert.match(appUi, new RegExp(section));
+  }
+  assert.match(appUi, /getSectionLink/);
+  assert.match(appUi, /shareSectionLink/);
+  assert.match(appUi, /section=' \+ encodeURIComponent\(section\)/);
+  assert.match(appUi, /openDeepLinkedSection/);
+  assert.match(appManagerEmployer, /setTimeout\(openDeepLinkedSection, 120\)/);
+  for (const section of ['vacancies', 'agencies', 'candidates', 'posters', 'employers']) {
+    assert.ok(homepage.includes(`shareSectionLink('${section}')`), `missing ${section} share control`);
+  }
 });
 
 test('homepage exposes an About action in the bottom navigation', () => {
