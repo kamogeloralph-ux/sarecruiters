@@ -171,6 +171,154 @@ async function supabaseRpc(env, fnName, args) {
 __name(supabaseRpc, "supabaseRpc");
 
 // ============================================================
+//  Manual WhatsApp Channel queue.
+//  Meta's official Cloud API does not publish to Channels, so this feature
+//  prepares an admin-only batch for manual copy/paste instead. The selector
+//  is deliberately deterministic about eligibility and deliberately random
+//  about which eligible jobs it chooses.
+// ============================================================
+const WHATSAPP_SITE_URL = "https://sa-recruiters.co.za";
+const WHATSAPP_QUEUE_SIZE = 5;
+const WHATSAPP_LOOKBACK_DAYS = 14;
+function waSlugify(value) {
+  return String(value || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 80) || "listing";
+}
+__name(waSlugify, "waSlugify");
+function waExpired(value) {
+  const text = String(value || "").trim();
+  let m = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (!m) m = text.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+  if (!m) return false;
+  const year = m[1].length === 4 ? Number(m[1]) : Number(m[3]);
+  const month = m[1].length === 4 ? Number(m[2]) : Number(m[2]);
+  const day = m[1].length === 4 ? Number(m[3]) : Number(m[1]);
+  const closing = Date.UTC(year, month - 1, day);
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  return Number.isFinite(closing) && closing < todayUtc;
+}
+__name(waExpired, "waExpired");
+function waPublicUrls(rows) {
+  const counts = new Map();
+  rows.forEach((row) => {
+    const base = waSlugify(row.title);
+    counts.set(base, (counts.get(base) || 0) + 1);
+  });
+  return rows.map((row) => {
+    const base = waSlugify(row.title);
+    const suffix = counts.get(base) > 1 ? `-${String(row.id).slice(0, 6)}` : "";
+    return { ...row, public_url: `${WHATSAPP_SITE_URL}/vacancy/${base}${suffix}/` };
+  });
+}
+__name(waPublicUrls, "waPublicUrls");
+function shuffleRows(rows) {
+  const copy = rows.slice();
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+__name(shuffleRows, "shuffleRows");
+function whatsappPostText(items) {
+  const lines = ["NEW JOBS — SA RECRUITERS", "", "Five vacancies selected for this hour:", ""];
+  items.forEach((item, index) => {
+    lines.push(`${index + 1}. ${item.title || "Vacancy"}`);
+    if (item.company) lines.push(`Company: ${item.company}`);
+    if (item.location) lines.push(`Location: ${item.location}`);
+    if (item.application_url) lines.push(`Apply: ${item.application_url}`);
+    else lines.push(`View and apply: ${item.public_url}`);
+    lines.push("");
+  });
+  lines.push(`Browse all vacancies: ${WHATSAPP_SITE_URL}/`);
+  return lines.join("\n");
+}
+__name(whatsappPostText, "whatsappPostText");
+async function serviceJson(env, path, options = {}) {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Admin data access is not configured.");
+  const headers = {
+    apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+    "Content-Type": "application/json",
+    ...(options.headers || {})
+  };
+  const response = await fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...options, headers });
+  const text = await response.text();
+  let body = null;
+  try { body = text ? JSON.parse(text) : null; } catch (e) { body = text; }
+  if (!response.ok) throw new Error(`Supabase queue request failed (${response.status})`);
+  return body;
+}
+__name(serviceJson, "serviceJson");
+async function generateWhatsAppQueue(env, slotKey, forced = false) {
+  const slot = String(slotKey || "");
+  if (!forced && slot) {
+    const existing = await serviceJson(env, `whatsapp_queue_batches?select=id,slot_key,status,post_text,selected_count,created_at,posted_at&slot_key=eq.${encodeURIComponent(slot)}&limit=1`);
+    if (Array.isArray(existing) && existing[0]) return loadWhatsAppBatch(env, existing[0].id);
+  }
+  const columns = "id,title,company,location,closing_date,link,created_at";
+  const rows = await serviceJson(env, `vacancies?select=${columns}&order=created_at.desc&limit=1000`);
+  const since = new Date(Date.now() - WHATSAPP_LOOKBACK_DAYS * 86400000).toISOString();
+  const used = await serviceJson(env, `whatsapp_queue_items?select=vacancy_id&created_at=gte.${encodeURIComponent(since)}&limit=5000`);
+  const usedIds = new Set((used || []).map((row) => String(row.vacancy_id)));
+  const candidates = waPublicUrls((rows || []).filter((row) => row.id && row.title && !waExpired(row.closing_date) && !usedIds.has(String(row.id))));
+  const selected = shuffleRows(candidates).slice(0, WHATSAPP_QUEUE_SIZE).map((row) => ({
+    vacancy_id: String(row.id), title: String(row.title || ""), company: String(row.company || ""),
+    location: String(row.location || ""), public_url: row.public_url, application_url: String(row.link || "")
+  }));
+  const postText = whatsappPostText(selected);
+  const batchRows = await serviceJson(env, "whatsapp_queue_batches", {
+    method: "POST", headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ slot_key: slot || `manual-${Date.now()}`, status: "queued", post_text: postText, selected_count: selected.length })
+  });
+  const batch = Array.isArray(batchRows) ? batchRows[0] : batchRows;
+  if (!batch?.id) throw new Error("Queue batch was not created.");
+  if (selected.length) {
+    await serviceJson(env, "whatsapp_queue_items", {
+      method: "POST", headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(selected.map((item, index) => ({ ...item, batch_id: batch.id, position: index + 1 })))
+    });
+  }
+  return loadWhatsAppBatch(env, batch.id);
+}
+__name(generateWhatsAppQueue, "generateWhatsAppQueue");
+async function loadWhatsAppBatch(env, batchId) {
+  const batches = await serviceJson(env, `whatsapp_queue_batches?select=id,slot_key,status,post_text,selected_count,created_at,posted_at,posted_by&id=eq.${encodeURIComponent(batchId)}&limit=1`);
+  const batch = Array.isArray(batches) ? batches[0] : batches;
+  if (!batch) return null;
+  const items = await serviceJson(env, `whatsapp_queue_items?select=id,batch_id,vacancy_id,position,title,company,location,public_url,application_url,status,created_at,copied_at,posted_at,notes&batch_id=eq.${encodeURIComponent(batchId)}&order=position.asc`);
+  return { ...batch, items: items || [] };
+}
+__name(loadWhatsAppBatch, "loadWhatsAppBatch");
+async function loadWhatsAppQueue(env) {
+  const batches = await serviceJson(env, "whatsapp_queue_batches?select=id,slot_key,status,post_text,selected_count,created_at,posted_at,posted_by&order=created_at.desc&limit=12");
+  const ids = (batches || []).map((row) => row.id).filter(Boolean);
+  if (!ids.length) return [];
+  const items = await serviceJson(env, `whatsapp_queue_items?select=id,batch_id,vacancy_id,position,title,company,location,public_url,application_url,status,created_at,copied_at,posted_at,notes&batch_id=in.(${ids.map(encodeURIComponent).join(",")})&order=position.asc`);
+  return (batches || []).map((batch) => ({ ...batch, items: (items || []).filter((item) => item.batch_id === batch.id) }));
+}
+__name(loadWhatsAppQueue, "loadWhatsAppQueue");
+async function updateWhatsAppQueueItem(env, itemId, body) {
+  const status = ["queued", "copied", "posted", "skipped"].includes(body.status) ? body.status : null;
+  if (!status) throw new Error("Invalid queue item status.");
+  const patch = { status };
+  if (status === "copied") patch.copied_at = new Date().toISOString();
+  if (status === "posted") patch.posted_at = new Date().toISOString();
+  await serviceJson(env, `whatsapp_queue_items?id=eq.${encodeURIComponent(itemId)}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(patch) });
+  return { ok: true };
+}
+__name(updateWhatsAppQueueItem, "updateWhatsAppQueueItem");
+async function updateWhatsAppQueueBatch(env, batchId, body, userId) {
+  const status = ["queued", "posted", "archived"].includes(body.status) ? body.status : null;
+  if (!status) throw new Error("Invalid queue batch status.");
+  const patch = { status };
+  if (status === "posted") { patch.posted_at = new Date().toISOString(); patch.posted_by = userId || null; }
+  await serviceJson(env, `whatsapp_queue_batches?id=eq.${encodeURIComponent(batchId)}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(patch) });
+  return { ok: true };
+}
+__name(updateWhatsAppQueueBatch, "updateWhatsAppQueueBatch");
+
+// ============================================================
 //  Transactional email via Resend. RESEND_API_KEY is a wrangler secret; the
 //  browser never sees it. Email is best-effort: a failure is logged and
 //  reported in the response but never blocks the database insert.
@@ -1016,9 +1164,19 @@ var worker_default = {
   // per-visitor Supabase egress. ctx.waitUntil lets the sync finish even
   // though cron invocations don't wait on a returned Promise otherwise.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(syncD1FromSupabase(env).catch((e) => {
-      console.error("scheduled D1 sync failed", e);
+    const now = new Date();
+    const slotKey = now.toISOString().slice(0, 13);
+    ctx.waitUntil(generateWhatsAppQueue(env, slotKey).catch((e) => {
+      console.error("scheduled WhatsApp queue generation failed", e);
     }));
+    // The D1 mirror only needs its existing six-hour cadence. The Worker now
+    // wakes hourly for the queue, so retain the cheaper mirror schedule by
+    // running it only on UTC hours divisible by six.
+    if (now.getUTCHours() % 6 === 0) {
+      ctx.waitUntil(syncD1FromSupabase(env).catch((e) => {
+        console.error("scheduled D1 sync failed", e);
+      }));
+    }
   },
   async fetch(request, env, ctx) {
     const origin = request.headers.get("Origin");
@@ -1070,6 +1228,27 @@ var worker_default = {
           return json({ error: "Could not load submissions." }, 502, origin);
         }
         return json({ reports: await reportsRes.json(), suggestions: await suggestionsRes.json() }, 200, origin);
+      }
+      if (path === "/api/admin/whatsapp-queue" && request.method === "GET") {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        return json({ batches: await loadWhatsAppQueue(env) }, 200, origin);
+      }
+      if (path === "/api/admin/whatsapp-queue/generate" && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        const body = await request.json().catch(() => ({}));
+        const batch = await generateWhatsAppQueue(env, `manual-${Date.now()}`, true);
+        return json({ batch }, 200, origin);
+      }
+      const whatsappItemMatch = path.match(/^\/api\/admin\/whatsapp-queue\/items\/(\d+)$/);
+      if (whatsappItemMatch && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        return json(await updateWhatsAppQueueItem(env, whatsappItemMatch[1], await request.json().catch(() => ({}))), 200, origin);
+      }
+      const whatsappBatchMatch = path.match(/^\/api\/admin\/whatsapp-queue\/batches\/([0-9a-f-]+)$/i);
+      if (whatsappBatchMatch && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        const userId = await verifiedUserId(request, env);
+        return json(await updateWhatsAppQueueBatch(env, whatsappBatchMatch[1], await request.json().catch(() => ({})), userId), 200, origin);
       }
       const adminSubmissionMatch = path.match(/^\/api\/admin\/submissions\/(report|suggestion)\/(\d+)$/);
       if (adminSubmissionMatch && (request.method === "POST" || request.method === "DELETE")) {

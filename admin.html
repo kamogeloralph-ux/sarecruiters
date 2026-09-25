@@ -307,6 +307,18 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .pb-item.pb-failed{border-color:var(--danger)}
 .pb-status{font-size:12px;font-weight:600;margin-top:2px}
 .poster-thumb{width:48px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--card-2)}
+.wa-queue-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.wa-queue-toolbar .muted{flex:1;min-width:240px}
+.wa-batch{margin-bottom:16px}
+.wa-batch-head{display:flex;align-items:flex-start;gap:10px;justify-content:space-between;padding:15px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.wa-batch-title{font-weight:750;font-size:15px}.wa-batch-meta{font-size:12px;color:var(--text-2);margin-top:3px}
+.wa-batch-actions{display:flex;gap:7px;flex-wrap:wrap}
+.wa-post{margin:14px 16px;background:var(--card-2);border:1px solid var(--border);border-radius:11px;padding:12px;white-space:pre-wrap;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:310px;overflow:auto}
+.wa-item{display:flex;gap:11px;align-items:flex-start;padding:12px 16px;border-top:1px solid var(--border)}
+.wa-item-num{width:25px;height:25px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800;flex:0 0 25px}
+.wa-item-main{min-width:0;flex:1}.wa-item-title{font-weight:700}.wa-item-sub{font-size:12.5px;color:var(--text-2);margin-top:2px}.wa-item-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px;font-size:12px}.wa-item-links a{overflow-wrap:anywhere}.wa-item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.wa-status{font-size:11px;font-weight:700;border-radius:999px;padding:4px 8px;background:var(--card-2);color:var(--text-2);white-space:nowrap}.wa-status.posted{background:rgba(22,163,74,.14);color:var(--ok)}.wa-status.copied{background:var(--accent-soft);color:var(--accent)}.wa-status.skipped{background:rgba(217,119,6,.14);color:var(--warn)}
+@media(max-width:760px){.wa-item{flex-wrap:wrap}.wa-item-actions{width:100%;justify-content:flex-start}.wa-post{margin-left:12px;margin-right:12px}}
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
@@ -391,6 +403,15 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
         <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="debouncedRenderVacancies()">
         <div id="va-list"></div>
+      </div>
+
+      <!-- WHATSAPP QUEUE -->
+      <div class="section section-content" id="sec-whatsappqueue">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>WhatsApp Queue</h2></div>
+        <div class="card card-pad">
+          <div class="wa-queue-toolbar"><div class="muted">One batch of up to five fresh, non-expired vacancies is prepared every hour. Copy the post, open the channel, publish it manually, then mark the batch posted.</div><button class="minibtn" id="wa-refresh-btn" onclick="loadWhatsAppQueue(true)">Refresh</button><button class="minibtn ok" id="wa-generate-btn" onclick="generateWhatsAppQueueNow()">Generate now</button></div>
+          <div id="wa-queue-list"><div class="muted">Open this section to load the queue.</div></div>
+        </div>
       </div>
 
       <!-- EMPLOYERS -->
@@ -818,7 +839,7 @@ async function deleteR2Object(key) {
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [] };
+var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [], whatsappBatches: [] };
 var adminDataReady = false;
 function debounce(fn, ms){
   var t = null;
@@ -934,7 +955,7 @@ async function doLogout(){
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
-  cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[] };
+  cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[], whatsappBatches:[] };
   adminDataReady = false;
 }
 
@@ -944,7 +965,7 @@ if (supabaseClient && supabaseClient.auth) {
   supabaseClient.auth.onAuthStateChange(function(event, session){
     if (event === 'SIGNED_OUT' || !session) {
       adminDataReady = false;
-      cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[] };
+      cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[], whatsappBatches:[] };
       var app = document.getElementById('app');
       var login = document.getElementById('login-screen');
       if (app) app.style.display = 'none';
@@ -1047,6 +1068,78 @@ async function getAdminSubmissions(){
   var body = await res.json().catch(function(){ return {}; });
   if (!res.ok) throw new Error(body.error || 'Could not load submissions');
   return body;
+}
+async function getWhatsAppQueue(){
+  var authHdr = await r2AuthHeader();
+  if(!authHdr.Authorization) throw new Error('Admin session expired');
+  var res = await fetch(R2_WORKER_URL + '/api/admin/whatsapp-queue', { headers: authHdr });
+  var body = await res.json().catch(function(){ return {}; });
+  if(!res.ok) throw new Error(body.error || 'Could not load WhatsApp queue');
+  return Array.isArray(body.batches) ? body.batches : [];
+}
+function waEsc(value){
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+function waDate(value){
+  if(!value) return 'Unknown time';
+  try { return new Date(value).toLocaleString('en-ZA',{dateStyle:'medium',timeStyle:'short'}); } catch(e){ return value; }
+}
+function waJsArg(value){
+  return JSON.stringify(String(value || '')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function renderWhatsAppQueue(){
+  var el = document.getElementById('wa-queue-list');
+  if(!el) return;
+  var batches = cache.whatsappBatches || [];
+  if(!batches.length){ el.innerHTML = '<div class="muted">No batches yet. The hourly Worker will create one, or use Generate now.</div>'; return; }
+  el.innerHTML = batches.map(function(batch){
+    var items = Array.isArray(batch.items) ? batch.items : [];
+    var status = batch.status || 'queued';
+    var itemHtml = items.length ? items.map(function(item){
+      var itemStatus = item.status || 'queued';
+      var apply = item.application_url ? '<a href="'+waEsc(item.application_url)+'" target="_blank" rel="noopener">Original apply link ↗</a>' : '<span class="muted">No external apply link</span>';
+      return '<div class="wa-item"><div class="wa-item-num">'+waEsc(item.position)+'</div><div class="wa-item-main"><div class="wa-item-title">'+waEsc(item.title)+'</div><div class="wa-item-sub">'+waEsc([item.company,item.location].filter(Boolean).join(' · '))+'</div><div class="wa-item-links"><a href="'+waEsc(item.public_url)+'" target="_blank" rel="noopener">Public vacancy page ↗</a>'+apply+'</div></div><div class="wa-item-actions"><span class="wa-status '+waEsc(itemStatus)+'">'+waEsc(itemStatus)+'</span>'+(itemStatus !== 'posted' ? '<button class="minibtn" onclick="markWhatsAppItem('+item.id+',\'copied\')">Copied</button><button class="minibtn ok" onclick="markWhatsAppItem('+item.id+',\'posted\')">Posted</button>' : '')+'</div></div>';
+    }).join('') : '<div class="card-pad muted">No eligible vacancies were available for this batch.</div>';
+    return '<div class="card wa-batch"><div class="wa-batch-head"><div><div class="wa-batch-title">'+waEsc(waDate(batch.created_at))+' <span class="wa-status '+waEsc(status)+'">'+waEsc(status)+'</span></div><div class="wa-batch-meta">'+waEsc(items.length)+' of 5 vacancies · slot '+waEsc(batch.slot_key || 'manual')+'</div></div><div class="wa-batch-actions"><button class="minibtn" onclick="copyWhatsAppPost('+waJsArg(batch.post_text || '')+')">Copy post</button><a class="minibtn" href="https://whatsapp.com/channel/0029Vb3CYEGDuMRdY5Mlrx3E" target="_blank" rel="noopener">Open channel ↗</a>'+(status !== 'posted' ? '<button class="minibtn ok" onclick="markWhatsAppBatch(\''+waEsc(batch.id)+'\',\'posted\')">Mark batch posted</button>' : '')+'</div></div><pre class="wa-post">'+waEsc(batch.post_text || 'No post text generated.')+'</pre>'+itemHtml+'</div>';
+  }).join('');
+}
+async function loadWhatsAppQueue(showToastOnSuccess){
+  var el = document.getElementById('wa-queue-list');
+  if(el) el.innerHTML = '<div class="muted">Loading queue…</div>';
+  try { cache.whatsappBatches = await getWhatsAppQueue(); renderWhatsAppQueue(); if(showToastOnSuccess) showToast('WhatsApp queue refreshed'); }
+  catch(e){ if(el) el.innerHTML = '<div class="muted">Could not load the queue: '+waEsc(e.message)+'</div>'; showToast(e.message || 'Could not load queue'); }
+}
+async function generateWhatsAppQueueNow(){
+  var btn = document.getElementById('wa-generate-btn');
+  if(btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+  try{
+    var authHdr = await r2AuthHeader();
+    var res = await fetch(R2_WORKER_URL + '/api/admin/whatsapp-queue/generate', { method:'POST', headers:Object.assign({'Content-Type':'application/json'},authHdr) });
+    var body = await res.json().catch(function(){ return {}; });
+    if(!res.ok) throw new Error(body.error || 'Could not generate queue');
+    cache.whatsappBatches = await getWhatsAppQueue(); renderWhatsAppQueue(); showToast('New WhatsApp batch generated');
+  }catch(e){ showToast(e.message || 'Could not generate queue'); }
+  finally { if(btn) { btn.disabled = false; btn.textContent = 'Generate now'; } }
+}
+async function copyWhatsAppPost(text){
+  try { await navigator.clipboard.writeText(String(text || '')); showToast('Post copied — open the channel and paste it'); }
+  catch(e){ showToast('Copy failed. Select the post text and copy it manually.'); }
+}
+async function markWhatsAppItem(id,status){
+  try{
+    var authHdr = await r2AuthHeader(); authHdr['Content-Type'] = 'application/json';
+    var res = await fetch(R2_WORKER_URL + '/api/admin/whatsapp-queue/items/' + encodeURIComponent(id), { method:'POST', headers:authHdr, body:JSON.stringify({status:status}) });
+    var body = await res.json().catch(function(){ return {}; }); if(!res.ok) throw new Error(body.error || 'Could not update item');
+    await loadWhatsAppQueue(false); showToast('Queue item marked '+status);
+  }catch(e){ showToast(e.message || 'Could not update queue item'); }
+}
+async function markWhatsAppBatch(id,status){
+  try{
+    var authHdr = await r2AuthHeader(); authHdr['Content-Type'] = 'application/json';
+    var res = await fetch(R2_WORKER_URL + '/api/admin/whatsapp-queue/batches/' + encodeURIComponent(id), { method:'POST', headers:authHdr, body:JSON.stringify({status:status}) });
+    var body = await res.json().catch(function(){ return {}; }); if(!res.ok) throw new Error(body.error || 'Could not update batch');
+    await loadWhatsAppQueue(false); showToast('Batch marked posted');
+  }catch(e){ showToast(e.message || 'Could not update batch'); }
 }
 async function getReports(){
   try { var data = await getAdminSubmissions(); return Array.isArray(data.reports) ? data.reports : []; } catch(e) { console.error('admin reports', e); }
@@ -1385,7 +1478,7 @@ function renderDashboard(){
     // Group: Manage
     var manageItems = ['agencies','branches','vacancies','employers','posters'];
     var reviewItems = ['submissions','poolcandidates'];
-    var mediaItems = ['dailytrack','content'];
+    var mediaItems = ['dailytrack','content','whatsappqueue'];
     var configItems = ['settings'];
     var html = '';
     html += buildHomeGroup('Manage', manageItems);
@@ -2997,3 +3090,5 @@ document.getElementById('login-email').addEventListener('keydown', function(e){ 
   });
 })();
 </script>
+  { id:'whatsappqueue', label:'WhatsApp Queue', tile:'hc-tile-teal', sub:'Hourly copy-ready vacancy batches', icon:'<path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5z"/><path d="M8.5 9.2c.3 1.7 1.6 3 3.3 3.3l1.1-1.1 1.8.7c.2.1.3.3.2.5-.4 1-1.2 1.3-2.2.9-3.1-.5-1-1.7-2.2-2.7-2.7-.2-.1-.4 0-.5.2l-.7 1.8-1.1 1.1"/>' },
+  if(id==='whatsappqueue') loadWhatsAppQueue(false);

@@ -20,15 +20,11 @@ binding = "DB"
 database_name = "sarecruiters-d1"
 database_id = "7d1a4327-6056-45cf-ae62-b5b26a454627"
 
-# Keeps the D1 mirror of agencies/branches/vacancies/employers/pool_candidates
-# fresh so /api/startup (and, going forward, other read paths) can serve from
-# D1 instead of hitting Supabase on every cache expiry. D1 reads don't count
-# against the Supabase egress budget at all. The mirror replaces each table in
-# full, so this runs every six hours rather than every 30 minutes to stay well
-# below the Workers Free 100,000-row daily write quota. Use POST /api/sync-d1
-# after an important admin data change if an immediate refresh is needed.
+# The hourly trigger creates one five-vacancy manual WhatsApp queue batch. The
+# Worker keeps the D1 mirror on its existing six-hour cadence internally, and
+# POST /api/sync-d1 remains available for an immediate admin refresh.
 [triggers]
-crons = ["0 */6 * * *"]
+crons = ["0 * * * *"]
 
 [vars]
 SUPABASE_URL = "https://ythznnktswgymerdcxky.supabase.co"
