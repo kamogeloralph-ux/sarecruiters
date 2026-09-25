@@ -396,6 +396,14 @@ function inferAddressRegion(locationText) {
   return match ? (match.startsWith('Kwazulu') ? 'KwaZulu-Natal' : match) : undefined;
 }
 
+function inferAddressLocality(locationText) {
+  const text = String(locationText || '').replace(/\s+/g, ' ').trim();
+  if (!text) return 'South Africa';
+  const firstPart = text.split(',')[0].trim();
+  const locality = firstPart.split(/\s+-\s+/)[0].trim();
+  return locality || 'South Africa';
+}
+
 // Google requires every JobPosting to have EITHER a jobLocation with at
 // least addressCountry, OR jobLocationType: 'TELECOMMUTE' for fully
 // remote roles. Previously this was `undefined` whenever vacancy.location
@@ -424,7 +432,7 @@ function buildJobLocationFields(vacancy) {
       '@type': 'Place',
       address: {
         '@type': 'PostalAddress',
-        addressLocality: vacancy.location || undefined,
+        addressLocality: inferAddressLocality(vacancy.location),
         addressRegion: inferAddressRegion(vacancy.location),
         addressCountry: 'ZA',
       },
@@ -432,12 +440,24 @@ function buildJobLocationFields(vacancy) {
   };
 }
 
-// validThrough is only emitted when the source supplies a genuine closing
-// date. Never invent an expiry date from created_at: the application removes
-// vacancies when their explicit closing date has passed.
+const SCHEMA_MAX_AGE_DAYS = {
+  adzuna: 45,
+  himalayas: 45,
+  simplify: 45,
+  oracle: 60,
+  government: 90,
+};
+
+// Use the source's explicit closing date when available. For feeds without a
+// closing date, mirror the same maximum posting-age policy used by the app's
+// stale-vacancy cleanup rather than omitting Google's recommended field.
 function resolveValidThrough(vacancy) {
   if (vacancy.closing_date) return vacancy.closing_date;
-  return undefined;
+  const created = new Date(vacancy.created_at || '');
+  if (Number.isNaN(created.getTime())) return undefined;
+  const days = SCHEMA_MAX_AGE_DAYS[vacancy.source_type] || 60;
+  created.setUTCDate(created.getUTCDate() + days);
+  return created.toISOString().slice(0, 10);
 }
 
 // schema.org expects baseSalary.value.value to be a NUMBER, and
