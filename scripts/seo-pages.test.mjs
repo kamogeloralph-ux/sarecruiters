@@ -6,7 +6,9 @@ const generator = readFileSync(new URL('../generate-pages.js', import.meta.url),
 const homepage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const cards = readFileSync(new URL('../app-cards.js', import.meta.url), 'utf8');
 const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
-const privacy = readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
+const privacy = readFileSync(new URL('../privacy/index.html', import.meta.url), 'utf8');
+const legacyPrivacy = readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
+const faq = readFileSync(new URL('../faq/index.html', import.meta.url), 'utf8');
 const content = readFileSync(new URL('../content.js', import.meta.url), 'utf8');
 const contentManager = readFileSync(new URL('../content-manager.js', import.meta.url), 'utf8');
 const appForms = readFileSync(new URL('../app-forms.js', import.meta.url), 'utf8');
@@ -90,6 +92,16 @@ test('privacy policy matches the guest app and current data providers', () => {
   assert.match(privacy, /Resend/);
   assert.match(privacy, /Ask us to access, correct or delete/i);
   assert.match(privacy, /Last updated: 25 September 2026/);
+  assert.match(privacy, /canonical.*privacy\//i);
+  assert.match(legacyPrivacy, /location\.replace\('\/privacy\/'\)/);
+});
+
+test('FAQ and privacy are crawlable HTML routes', () => {
+  assert.match(faq, /<h1>Frequently Asked Questions<\/h1>/);
+  assert.match(faq, /Does the app work offline\?/);
+  assert.match(faq, /href="\/privacy\/"/);
+  assert.match(generator, /SITE_URL}\/privacy\//);
+  assert.match(generator, /SITE_URL}\/faq\//);
 });
 
 test('FAQ gives original safety, offline, Talent Pool and privacy guidance', () => {

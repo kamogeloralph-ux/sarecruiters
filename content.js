@@ -94,7 +94,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'faq-data',
       title: 'How is my data handled?',
-      body: '<p>You can browse as a guest. If you use Google sign-in, Talent Pool registration, saved jobs, reports or employer forms, we handle the information needed for that feature. Private notes and offline data remain in browser storage on your device. Public listing and approved Talent Pool information may be visible to other visitors. Read the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> for the full details.</p>'
+      body: '<p>You can browse as a guest. If you use Google sign-in, Talent Pool registration, saved jobs, reports or employer forms, we handle the information needed for that feature. Private notes and offline data remain in browser storage on your device. Public listing and approved Talent Pool information may be visible to other visitors. Read the <a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a> for the full details.</p>'
     },
     {
       id: 'faq-talent-pool',
