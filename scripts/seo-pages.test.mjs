@@ -139,6 +139,16 @@ test('Learning Hub includes the official gov.za job-search guide', () => {
   assert.match(contentManager, /store\['learning-hub'\] = learningArticles/);
 });
 
+test('app accent tokens are derived from the logo palette', () => {
+  assert.match(styles, /--brand-blue:\s*#0b348a/);
+  assert.match(styles, /--brand-green:\s*#007a5e/);
+  assert.match(styles, /--brand-red:\s*#e52420/);
+  assert.match(styles, /--brand-gold:\s*#f5b400/);
+  assert.match(styles, /--accent:\s*var\(--brand-blue\)/);
+  assert.match(styles, /--success:\s*var\(--brand-green\)/);
+  assert.match(styles, /--danger:\s*var\(--brand-red\)/);
+});
+
 test('homepage exposes an About action in the bottom navigation', () => {
   assert.match(homepage, /navbtn-about/);
   assert.match(homepage, /window\.open\('about\/',?'_blank',?'noopener'\)/);

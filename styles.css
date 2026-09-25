@@ -1703,3 +1703,75 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .app button:not(.social-link-btn):not(.gsi-material-button):not(.site-menu-nav button):not(.site-menu-action):not(.sheet-submit):not(.vac-apply):not(.employer-cta-action):not(.poster-cta button):active{
   background:var(--card-2) !important;
 }
+
+/* ===== SA Recruiters brand palette =====
+   Derived from the primary logo: deep blue, forest green, red and gold.
+   Third-party marks retain their own official colors. */
+:root, [data-theme="dark"] {
+  --brand-blue: #0b348a;
+  --brand-blue-deep: #06245f;
+  --brand-green: #007a5e;
+  --brand-green-deep: #005541;
+  --brand-red: #e52420;
+  --brand-red-deep: #b91512;
+  --brand-gold: #f5b400;
+  --brand-gold-deep: #c98100;
+  --accent: var(--brand-blue);
+  --accent-soft: rgba(11,52,138,.20);
+  --success: var(--brand-green);
+  --danger: var(--brand-red);
+  --warning: var(--brand-gold);
+  --badge-bg: rgba(11,52,138,.20);
+  --badge-text: #7ea1ef;
+}
+[data-theme="light"] {
+  --brand-blue: #0b348a;
+  --brand-blue-deep: #06245f;
+  --brand-green: #007a5e;
+  --brand-green-deep: #005541;
+  --brand-red: #e52420;
+  --brand-red-deep: #b91512;
+  --brand-gold: #f5b400;
+  --brand-gold-deep: #c98100;
+  --accent: var(--brand-blue);
+  --accent-soft: rgba(11,52,138,.12);
+  --success: var(--brand-green);
+  --danger: var(--brand-red);
+  --warning: var(--brand-gold-deep);
+  --badge-bg: rgba(11,52,138,.12);
+  --badge-text: var(--brand-blue);
+}
+/* Primary surfaces and controls use the same blue family as the logo. */
+#screen-home .screen-scroll { background: var(--bg); }
+#screen-home .quick-card-icon,
+#screen-home .spotlight-mini-head button,
+#screen-home .stat-card .stat-arrow { color: var(--brand-blue); }
+#screen-home .quick-card-employers .quick-card-icon { color: var(--brand-green); }
+#screen-home .quick-card-candidates .quick-card-icon { color: var(--brand-blue); }
+#screen-home .quick-card-employers .quick-card-icon,
+#screen-home .quick-card-candidates .quick-card-icon { background: color-mix(in srgb, currentColor 12%, transparent); }
+#screen-home .bottom-nav,
+.bottom-nav { background: var(--brand-blue-deep); }
+.bottom-nav .navbtn.active,
+.bottom-nav .navbtn.active svg { color: var(--brand-green); stroke: var(--brand-green); }
+#screen-home .menu-hero,
+#screen-menu .menu-hero {
+  background: radial-gradient(ellipse at 85% 10%, color-mix(in srgb, var(--brand-green) 45%, transparent), transparent 34%), linear-gradient(150deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+}
+.site-menu-drawer { background: linear-gradient(155deg, color-mix(in srgb, var(--brand-blue) 96%, #000), var(--brand-blue-deep)); }
+.site-menu-nav-icon { background: color-mix(in srgb, var(--brand-green) 22%, transparent); color: #b6f0dc; }
+/* Re-map generic avatar and template accents to the logo colors. */
+.grad-blue,.grad-indigo { background: linear-gradient(145deg, var(--brand-blue), var(--brand-blue-deep)); }
+.grad-green,.grad-teal,.grad-mint { background: linear-gradient(145deg, var(--brand-green), var(--brand-green-deep)); }
+.grad-orange,.grad-amber,.grad-brown { background: linear-gradient(145deg, var(--brand-gold), var(--brand-gold-deep)); color: #211900; }
+.grad-purple,.grad-pink,.grad-red { background: linear-gradient(145deg, var(--brand-red), var(--brand-red-deep)); }
+.cvb-template-modern { border-top-color: var(--brand-blue); }
+.cvb-template-modern .cvb-header { border-bottom-color: var(--brand-blue); }
+.cvb-template-modern .cvb-section-title { color: var(--brand-blue); }
+.cvb-template-trade { border-left-color: var(--brand-gold); }
+.cvb-template-trade .cvb-section-title { color: var(--brand-gold-deep); }
+.cvb-template-executive { border-top-color: var(--brand-green-deep); }
+.cvb-template-executive .cvb-header { border-bottom-color: var(--brand-green-deep); }
+.cvb-template-executive .cvb-section-title { color: var(--brand-green-deep); }
+.contact-warning { background: linear-gradient(135deg, var(--brand-red), var(--brand-red-deep)); }
+.retry-banner button { background: var(--brand-gold); color: #211900; }
