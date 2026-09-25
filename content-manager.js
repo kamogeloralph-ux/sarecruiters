@@ -54,6 +54,20 @@
       store.__interview_video_version = interviewVideoVersion;
       changed = true;
     }
+    // Add the official government job-search guide without overwriting
+    // other Learning Hub articles an admin may have edited or created.
+    var learningHubVersion = 'official-learning-hub-v1';
+    if (store.__learning_hub_version !== learningHubVersion && DEFAULT_CONTENT['learning-hub']) {
+      var govArticle = DEFAULT_CONTENT['learning-hub'].find(function(article){ return article.id === 'lh-govza-finding-job'; });
+      var learningArticles = Array.isArray(store['learning-hub']) ? store['learning-hub'] : [];
+      if (govArticle && !learningArticles.some(function(article){ return article.id === govArticle.id; })) {
+        learningArticles.push(JSON.parse(JSON.stringify(govArticle)));
+        store['learning-hub'] = learningArticles;
+        changed = true;
+      }
+      store.__learning_hub_version = learningHubVersion;
+      changed = true;
+    }
     // Add the first-CV video without overwriting other CV-preparation
     // articles an admin may have edited or created.
     var cvVideoVersion = 'official-cv-video-v1';
