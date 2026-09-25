@@ -40,6 +40,20 @@
       store.__faq_version = faqVersion;
       changed = true;
     }
+    // Add the interview video without overwriting any other interview-tip
+    // articles an admin may have edited or created.
+    var interviewVideoVersion = 'official-interview-video-v1';
+    if (store.__interview_video_version !== interviewVideoVersion && DEFAULT_CONTENT['interview-tips']) {
+      var videoArticle = DEFAULT_CONTENT['interview-tips'].find(function(article){ return article.id === 'iv-video-job-questions'; });
+      var interviewArticles = Array.isArray(store['interview-tips']) ? store['interview-tips'] : [];
+      if (videoArticle && !interviewArticles.some(function(article){ return article.id === videoArticle.id; })) {
+        interviewArticles.unshift(JSON.parse(JSON.stringify(videoArticle)));
+        store['interview-tips'] = interviewArticles;
+        changed = true;
+      }
+      store.__interview_video_version = interviewVideoVersion;
+      changed = true;
+    }
     Object.keys(DEFAULT_CONTENT).forEach(function(key){
       if (!store[key] || !Array.isArray(store[key]) || store[key].length === 0) {
         // deep clone defaults
