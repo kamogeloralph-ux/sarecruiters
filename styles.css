@@ -1793,6 +1793,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .featured-vacancies-grid{display:grid;gap:8px;margin-top:12px}
 .featured-vacancies-grid .vac-card{background:color-mix(in srgb,var(--card) 84%,var(--accent-soft)) !important;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important;border-radius:14px !important;box-shadow:none !important}
 .featured-vacancies-grid .vac-card:last-child{border-bottom:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important}
+.featured-vacancies-empty{margin-top:12px;padding:14px;border:1px dashed color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:12px;color:var(--text-2);font-size:12px;line-height:1.5;text-align:center;background:color-mix(in srgb,var(--card) 70%,transparent)}
 .vac-featured-badge{display:inline-flex;align-items:center;margin-left:6px;padding:3px 7px;border-radius:999px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
 .vac-card-featured .vac-title{font-weight:800}
 @media(max-width:520px){.featured-vacancies-section{padding:13px;border-radius:18px}.featured-vacancies-heading h2{font-size:18px}}

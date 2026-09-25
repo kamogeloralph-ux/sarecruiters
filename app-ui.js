@@ -1297,14 +1297,16 @@ function renderAllVacanciesList() {
     }).sort(function(a,b){
       return (Number(a.featured_order)||0) - (Number(b.featured_order)||0) || new Date(b.created_at||0) - new Date(a.created_at||0);
     }).slice(0, 6);
-    var featuredMarkup = featured.length ?
+    var featuredMarkup =
       '<section class="featured-vacancies-section" aria-labelledby="featured-vacancies-title">' +
         '<div class="featured-vacancies-heading"><div><span class="eyebrow">Priority opportunities</span><h2 id="featured-vacancies-title">Featured vacancies</h2><p>Selected roles with extra visibility from South African employers and recruitment agencies.</p></div></div>' +
-        '<div class="featured-vacancies-grid">' + featured.map(function(v){
-          var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
-          return vacancyCard(v, agency, { featured: true });
-        }).join('') + '</div>' +
-      '</section>' : '';
+        (featured.length ?
+          '<div class="featured-vacancies-grid">' + featured.map(function(v){
+            var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
+            return vacancyCard(v, agency, { featured: true });
+          }).join('') + '</div>' :
+          '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') +
+      '</section>';
     el.innerHTML = featuredMarkup +
       '<div class="vac-folder-grid" aria-label="Vacancy categories">' +
         '<button class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'agency\')" aria-label="Open agency vacancies">' +
