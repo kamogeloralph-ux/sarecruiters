@@ -38,6 +38,12 @@ test('static shell exposes the same primary navigation on every generated page',
   assert.match(generator, /class="sp-footer-links"/);
 });
 
+test('vacancy cards expose a local open and close toggle', () => {
+  assert.match(cards, /aria-expanded=\"false\" aria-controls=\"vd-' \+ key/);
+  assert.match(cards, /c\.setAttribute\('aria-expanded', opening \? 'true' : 'false'\)/);
+  assert.match(cards, /window\.closeVac = function\(target\)/);
+  assert.match(cards, /scrollIntoView\(\{ block: 'nearest'/);
+});
 test('vacancy overview uses the three-card grouped browse structure', () => {
   assert.match(appUi, /South African Jobs/);
   assert.match(appUi, /Remote &amp; International Jobs/);

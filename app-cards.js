@@ -696,7 +696,7 @@ function vacancyCard(v, agency, options) {
   }
 
   return '' +
-  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + (v.is_featured ? ' vac-card-featured' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
+  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + (v.is_featured ? ' vac-card-featured' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" aria-expanded="false" aria-controls="vd-' + key + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
     '<div class="vac-card-main">' +
       logo +
       '<div class="vac-body">' +
@@ -711,7 +711,7 @@ function vacancyCard(v, agency, options) {
         '<span class="chevron">' + ICON_CHEVRON + '</span>' +
       '</div>' +
     '</div>' +
-    '<div class="vac-detail"><div class="vac-detail-inner">' +
+    '<div class="vac-detail" id="vd-' + key + '"><div class="vac-detail-inner">' +
       detail + desc + saRecruitersAttribution + adzunaAttribution + himalayasAttribution + actions + admin +
     '</div></div>' +
   '</article>';
@@ -807,6 +807,13 @@ window.toggleVac = function(target) {
       }
     }
     c.classList.toggle('open');
+    c.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    if (!opening) {
+      // Closing is intentionally local: keep the user on the same vacancy
+      // card instead of sending them back to the category picker or the top
+      // of the list.
+      try { c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e) { c.scrollIntoView(); }
+    }
     if (opening && c.dataset.vacancyId) {
       var viewKey = 'sa_vacancy_viewed_' + c.dataset.vacancyId + '_' + analyticsSessionId;
       var alreadyViewed = false;
@@ -817,7 +824,11 @@ window.toggleVac = function(target) {
 };
 window.closeVac = function(target) {
   var c = target && target.closest ? target.closest('.vac-card') : document.getElementById('vc-' + target);
-  if (c) c.classList.remove('open');
+  if (c) {
+    c.classList.remove('open');
+    c.setAttribute('aria-expanded', 'false');
+    try { c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e) { c.scrollIntoView(); }
+  }
 };
 
 /* Toggle expand/collapse of a branch block/row (used by hub branch tab and the All Branches screen) */
