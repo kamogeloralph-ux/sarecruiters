@@ -2,8 +2,8 @@ name: Scrape Simplify Jobs vacancies
 
 on:
   schedule:
-    # Twice weekly: Tuesday and Saturday at 03:47 UTC.
-    - cron: "47 3 * * 2,6"
+    # Twice weekly: Monday and Friday at 03:47 UTC.
+    - cron: "47 3 * * 1,5"
   workflow_dispatch:
     inputs:
       max_pages:
