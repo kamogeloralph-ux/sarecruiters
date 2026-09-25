@@ -1863,3 +1863,11 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-heading strong{font-size:10px;line-height:1.1;text-align:left}
 .house-ad-message small{font-size:8px;line-height:1.1;text-align:left}
 @media(max-width:380px){.house-ad-heading{padding:3px 6px 2px}.house-ad-message{padding:2px 6px 3px}.house-ad-heading strong{font-size:9.5px}.house-ad-message small{font-size:7.5px}}
+
+/* Final directory-card alignment: same width as listing cards, centered heading. */
+.house-ad-slot{width:auto;margin:9px 0 10px}
+.house-ad-card{width:100%;box-sizing:border-box}
+.house-ad-heading{align-items:center;text-align:center}
+.house-ad-heading strong{display:block;width:100%;text-align:center}
+.house-ad-message{align-items:flex-start;text-align:left}
+.house-ad-message small{display:block;width:100%;text-align:left}
