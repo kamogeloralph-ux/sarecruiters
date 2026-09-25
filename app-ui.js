@@ -1186,26 +1186,6 @@ async function loadDedicatedVacancies(reset) {
     }
   }
 }
-function updateFeaturedSpotlight(track) {
-  if (!track || !track.clientWidth) return;
-  var index = Math.max(0, Math.min(track.children.length - 1, Math.round(track.scrollLeft / track.clientWidth)));
-  var section = track.closest('.featured-vacancies-section');
-  if (!section) return;
-  var counter = section.querySelector('.featured-spotlight-counter');
-  if (counter) counter.textContent = (index + 1) + ' / ' + track.children.length;
-  section.querySelectorAll('.featured-spotlight-dot').forEach(function(dot, dotIndex) {
-    var active = dotIndex === index;
-    dot.classList.toggle('active', active);
-    dot.setAttribute('aria-current', active ? 'true' : 'false');
-  });
-}
-window.updateFeaturedSpotlight = updateFeaturedSpotlight;
-window.scrollFeaturedSpotlight = function(index) {
-  var track = document.getElementById('featured-spotlight-track');
-  if (!track || !track.children[index]) return;
-  track.scrollTo({ left: index * track.clientWidth, behavior: 'smooth' });
-  updateFeaturedSpotlight(track);
-};
 function renderAllVacanciesList() {
   updateVacanciesBackButton();
 
@@ -1317,27 +1297,15 @@ function renderAllVacanciesList() {
     }).sort(function(a,b){
       return (Number(a.featured_order)||0) - (Number(b.featured_order)||0) || new Date(b.created_at||0) - new Date(a.created_at||0);
     }).slice(0, 6);
-    var featuredSpotlightCard = function(v, index) {
-      var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
-      var isGeneral = v.agency_id === 'general';
-      var orgName = isGeneral ? (v.company || 'South African opportunity') : (agency.name || v.company || 'Recruitment opportunity');
-      var location = v.location || 'South Africa';
-      return '<article class="featured-spotlight-slide" aria-label="Featured vacancy ' + (index + 1) + '">' +
-        '<div class="featured-spotlight-badge">★ Featured</div>' +
-        '<h3>' + escapeHtml(v.title || 'Untitled role') + '</h3>' +
-        '<div class="featured-spotlight-meta"><span>' + escapeHtml(orgName) + '</span><span aria-hidden="true">·</span><span>' + escapeHtml(location) + '</span></div>' +
-        '<a class="featured-spotlight-link" href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener">View role <span aria-hidden="true">→</span></a>' +
-      '</article>';
-    };
     var featuredMarkup =
       '<section class="featured-vacancies-section" aria-labelledby="featured-vacancies-title">' +
-        '<div class="featured-vacancies-heading"><h2 id="featured-vacancies-title">Featured vacancies</h2>' + (featured.length > 1 ? '<span class="featured-spotlight-counter" id="featured-spotlight-counter">1 / ' + featured.length + '</span>' : '') + '</div>' +
+        '<div class="featured-vacancies-heading"><div><h2 id="featured-vacancies-title">Featured vacancies</h2></div></div>' +
         (featured.length ?
-          '<div class="featured-spotlight-track" id="featured-spotlight-track" role="region" aria-label="Featured vacancies" onscroll="updateFeaturedSpotlight(this)">' +
-            featured.map(featuredSpotlightCard).join('') +
-          '</div>' +
-          (featured.length > 1 ? '<div class="featured-spotlight-pagination" aria-label="Featured vacancy pagination">' + featured.map(function(_, index){ return '<button type="button" class="featured-spotlight-dot' + (index === 0 ? ' active' : '') + '" data-ripple onclick="scrollFeaturedSpotlight(' + index + ')" aria-label="Show featured vacancy ' + (index + 1) + '" aria-current="' + (index === 0 ? 'true' : 'false') + '"></button>'; }).join('') + '</div>' : '') :
-          '<div class="featured-vacancies-empty">No featured vacancies are live right now.</div>') +
+          '<div class="featured-vacancies-grid">' + featured.map(function(v){
+            var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
+            return vacancyCard(v, agency, { featured: true });
+          }).join('') + '</div>' :
+          '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') +
       '</section>';
     var categoryRow = function(type, label, count) {
       return '<button class="vacancy-category-row" data-ripple onclick="openVacancyFolder(\'' + type + '\')" aria-label="Open ' + escapeHtml(label) + '">' +
