@@ -111,6 +111,11 @@ var DEFAULT_CONTENT = {
   /* ============ HOW TO PREPARE YOUR CV ============ */
   'cv-prep': [
     {
+      id: 'cv-video-first-cv',
+      title: 'Watch: how to write your first CV',
+      body: '<p>Starting your first CV or applying with little experience? Watch this practical guide for ideas on how to present your skills, education and potential clearly.</p><div class="content-video" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0;background:#000"><iframe src="https://www.youtube-nocookie.com/embed/JmWohrRhh-8?rel=0" title="How to Write Your First CV — CV Template Included" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div><p><a href="https://youtu.be/JmWohrRhh-8" target="_blank" rel="noopener noreferrer">Open this CV video on YouTube ↗</a></p>'
+    },
+    {
       id: 'cv-intro',
       title: 'Why your CV matters',
       body: '<p>Your CV (curriculum vitae) is usually the first thing a recruiter or employer sees. For most South African recruitment agencies, a clear, well-structured CV is what gets you shortlisted for an interview. A good CV does not list everything you have ever done — it tells a focused story of why you are the right person for the role you are applying for. Aim for two to three pages at most, keep it neat, and make sure every detail is accurate, because recruiters do check.</p>'
