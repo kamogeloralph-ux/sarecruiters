@@ -1947,3 +1947,12 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-heading-message{display:none}
 .house-ad-message small{display:block;text-align:left}
 .house-ad-click{display:none}
+
+
+/* Header at top; message and disclosure share the bottom row. */
+.house-ad-heading{flex-direction:row;justify-content:center;text-align:center}
+.house-ad-heading strong{width:100%;text-align:center}
+.house-ad-message small{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left}
+.house-ad-message-copy{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.house-ad-message .house-ad-sponsored{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--text-2);white-space:nowrap}
+.house-ad-heading .house-ad-sponsored,.house-ad-heading-message,.house-ad-click{display:none}
