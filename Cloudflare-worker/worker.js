@@ -355,6 +355,20 @@ async function syncD1FromSupabase(env) {
     "experience_level", "employment_type", "contract_type", "work_schedule",
     "hours", "salary", "start_date", "created_at", "source_type"
   ];
+  // The featured columns are additive and may lag behind this Worker while
+  // the production D1 quota is exhausted. Detect the schema so the mirror
+  // remains safe before migration and includes them automatically afterward.
+  let hasFeaturedColumns = false;
+  try {
+    const schema = await env.DB.prepare("PRAGMA table_info(vacancies)").all();
+    const names = new Set((schema.results || []).map((column) => column.name));
+    hasFeaturedColumns = names.has("is_featured") && names.has("featured_until") && names.has("featured_order");
+  } catch (e) {
+    console.warn("Could not inspect D1 vacancy schema; syncing legacy columns", e);
+  }
+  if (hasFeaturedColumns) {
+    vacancyColumns.push("is_featured", "featured_until", "featured_order");
+  }
   const [agencies, branches, vacancies, employers, pool, settings] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,created_at",
@@ -390,7 +404,7 @@ async function syncD1FromSupabase(env) {
   await replaceD1Table(env, "branches",
     ["id", "agency_id", "name", "location", "phone", "email"],
     branches.body || []);
-  await replaceD1Table(env, "vacancies", vacancyColumns, vacancies || []);
+  await replaceD1Table(env, "vacancies", vacancyColumns, vacancies || [], hasFeaturedColumns ? ["is_featured"] : []);
   await replaceD1Table(env, "employers",
     ["id", "name", "industry", "website", "contact", "email", "location", "address", "photo", "verified", "created_at"],
     employers.body || [], ["verified"]);
