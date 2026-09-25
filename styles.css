@@ -1921,3 +1921,12 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 @keyframes houseAdSparkFlash{0%,58%,100%{opacity:0;transform:scale(.5)}62%{opacity:1;transform:scale(1.1)}67%{opacity:.15;transform:scale(.75)}72%{opacity:.85;transform:scale(1)}}
 @keyframes houseAdTesterFlicker{0%,38%,46%,100%{opacity:0}40%{opacity:.65}42%{opacity:.15}44%{opacity:.85}}
 @media(prefers-reduced-motion:reduce){.house-ad-bulb-glow,.house-ad-bulb-core,.house-ad-spark,.house-ad-tester-flicker{animation:none}.house-ad-bulb-glow,.house-ad-bulb-core{opacity:.45}.house-ad-spark{opacity:.35}}
+
+
+/* Compact ad disclosure and click cue. */
+.house-ad-message small{display:flex;align-items:center;gap:6px}
+.house-ad-sponsored{font-weight:700;color:var(--text-2)}
+.house-ad-message-copy{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.house-ad-click{margin-left:auto;flex:0 0 auto;color:var(--accent);font-weight:700;white-space:nowrap}
+.house-ad-click span{font-size:13px;margin-left:1px}
+@media(max-width:380px){.house-ad-message small{gap:4px}.house-ad-click{font-size:10px}}
