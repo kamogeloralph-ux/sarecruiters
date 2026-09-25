@@ -144,7 +144,14 @@ async function getPublicPoolCandidatesFromWorker() {
 }
 async function loadCandidateSpotlight() {
   var target = document.getElementById('candidate-spotlight-deck');
-  if (!target) return;
+  // The spotlight deck belongs to the site-menu screen. Writing it while the
+  // user is elsewhere is exactly the background-write leak this pipeline
+  // removes, so the fetch is skipped outright unless its screen is visible.
+  if (!target || (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('candidate-spotlight-deck'))) return;
+  var spotlightToken = typeof saCurrentRefreshToken === 'function' ? saCurrentRefreshToken() : null;
+  var spotlightCurrent = function() {
+    return typeof saIsCurrentRefresh !== 'function' || saIsCurrentRefresh(spotlightToken);
+  };
   var list = [];
   try {
     var startup = await getPublicPoolCandidatesFromWorker();
@@ -159,6 +166,9 @@ async function loadCandidateSpotlight() {
       list = (result.data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
     }
   } catch (e) { console.warn('candidate spotlight load', e); list = []; }
+  // A newer refresh superseded this fetch, or the user left the screen while
+  // it was in flight: abandon it without writing to the DOM.
+  if (!spotlightCurrent() || (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('candidate-spotlight-deck'))) return;
   // Keep complete profiles ahead of partial profiles. A profile is considered
   // complete for the public spotlight when its useful professional summary is
   // present: name, position, sector, location, experience and about text.
@@ -899,13 +909,20 @@ function setConnectionStatus(state, timestamp) {
 
 function initConnectionStatus() {
   window.addEventListener('offline', function() { setConnectionStatus('offline', lastDataRefreshAt); });
-  window.addEventListener('online', function() {
-    setConnectionStatus('loading', lastDataRefreshAt);
-    loadAll();
-  });
+  // The 'online' handler deliberately lives in app-refresh.js now: it sets the
+  // same status and then refreshes through saRefreshAll(), so network recovery
+  // runs under the refresh epoch instead of starting an unguarded loadAll()
+  // that could commit a second generation over the visible screen.
   setConnectionStatus(navigator.onLine ? (lastDataRefreshAt ? 'cached' : 'loading') : 'offline', lastDataRefreshAt);
 }
 async function saveDataCache() {
+  // Refuse to persist from a superseded generation. getEmployerPosters() calls
+  // this again once the (deliberately deferred) poster count resolves, by which
+  // point a newer refresh may already have committed — writing here would
+  // overwrite the newer snapshot in IndexedDB with an older one, and the next
+  // boot would then restore that older snapshot as its instant-paint source.
+  if (typeof saIsCurrentRefresh === 'function' && typeof saCurrentRefreshToken === 'function' &&
+      saCurrentRefreshToken() !== saRefreshCommittedEpoch()) return;
   var payload = {
     agencies: agenciesCache,
     branches: branchesCache,
@@ -987,6 +1004,16 @@ function getStartupData() {
   return startupDataPromise;
 }
 
+// The memo above lives for the whole page lifetime on success, so an explicit
+// refresh would re-render the boot payload and then label it as freshly
+// fetched (loadAll sets lastDataRefreshAt = Date.now()). saRefreshAll() calls
+// this to force the next getStartupData() to hit the network again, so a
+// refresh shows the worker's current payload and its true generated_at age.
+function __saInvalidateStartupPayload() {
+  startupDataPromise = null;
+  if (typeof publicPoolStartupPromise !== 'undefined') publicPoolStartupPromise = null;
+}
+
 // The Employer entry point on the sign-in gate (openEmployerGateSheet ->
 // openEmployerForm) is reachable BEFORE Google sign-in, so
 // publicEmployerRegistrationOpen can't wait for the normal loadAll(), which
@@ -1001,11 +1028,32 @@ function getStartupData() {
   }).catch(function(){});
 })();
 
-async function loadAll() {
+async function loadAll(refreshToken) {
+  // Every hydration runs under a monotonic epoch token. loadAll() has several
+  // independent triggers (boot, the Home button, idle wake-up, pageshow
+  // restore, online recovery, the retry banner) and interleaves at every await
+  // below, so without a token two generations could commit their results into
+  // the same globals and the same screen — the mixed-generation render that
+  // made data appear to cross between screens. A superseded generation now
+  // returns without touching shared state or the DOM.
+  //
+  // saRefreshAll() passes its own token in, so a refresh and the loadAll() it
+  // awaits share one epoch instead of immediately superseding each other.
+  //
+  // The guard is deliberately tolerant of a missing pipeline: when
+  // app-refresh.js has not loaded, saIsCurrentRefresh is undefined and every
+  // check passes, so the app hydrates normally instead of silently doing
+  // nothing. app-refresh.js also re-registers this wrapper after load, which
+  // covers the reverse order (an index.html newer than the bundle).
+  if (typeof refreshToken !== 'number') {
+    refreshToken = typeof saBeginRefresh === 'function' ? saBeginRefresh('loadAll') : null;
+  }
+  var current = function() { return typeof saIsCurrentRefresh !== 'function' || saIsCurrentRefresh(refreshToken); };
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
   // original independent Supabase reads so launch remains resilient.
   var startup = await getStartupData();
+  if (!current()) return;
   window.__saStartupPayload = startup;
   var results = startup ? [
     startup.agencies, startup.branches, startup.vacancies, startup.employers,
@@ -1048,6 +1096,7 @@ async function loadAll() {
     try {
       var employerRows = await getEmployerVacancies();
       var adzunaAgencyRows = await getAgencyAdzunaVacancies();
+      if (!current()) return;
       var startupRows = (results[2] || []).concat(employerRows || [], adzunaAgencyRows || []);
       var seenEmployerRows = {};
       results[2] = startupRows.filter(function(v) {
@@ -1065,6 +1114,7 @@ async function loadAll() {
   if (startup) {
     try {
       var liveGeneralCount = await getGeneralVacancyCount();
+      if (!current()) return;
       if (typeof liveGeneralCount === 'number') results[4] = liveGeneralCount;
     } catch(e) {}
   }
@@ -1072,6 +1122,10 @@ async function loadAll() {
   // instead of wiping it to an empty list — a failed refresh should never
   // make the directory look emptier than it did a moment ago. Track whether
   // anything failed so we can surface the retry banner below.
+  // Only the newest generation may commit into the shared caches. From here to
+  // the end of the hydration every write is synchronous, so this single guard
+  // makes the whole commit atomic with respect to other generations.
+  if (!current()) return;
   var hadLoadError = false;
   if (results[0].__loadError) { hadLoadError = true; } else { agenciesCache = results[0]; }
   if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
@@ -1121,12 +1175,19 @@ async function loadAll() {
   rebuildPublicListingSlugs();
   updateStats();
   filterAndRenderCached();
-  if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
+  // Repaint the screen the user is ACTUALLY looking at. This previously called
+  // renderRestoredScreenContent(), which reads window.__saRestoredScreen — a
+  // name captured once at boot. After a refresh or an idle wake-up that marker
+  // is stale, so a hydration could redeploy the abandoned screen's folder
+  // listing (and its rows) over whatever the user had since navigated to, which
+  // is the cross-screen render contamination. saRenderActiveScreen() reads the
+  // live .active screen instead and never touches a screen that is not shown.
+  if (typeof saRenderActiveScreen === 'function') saRenderActiveScreen();
+  else if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   // Candidate spotlight is non-critical; fetch it after the first useful home render.
   loadCandidateSpotlight();
   // Poster feed is likewise non-critical to the first render.
   if (typeof loadPosterFeed === 'function') loadPosterFeed();
-  saveDataCache();
   updatePostingToggleUI();
   updateEmployerRegUI();
   // If in manager mode, re-render the manager panel with fresh data
@@ -1149,6 +1210,10 @@ async function loadAll() {
   if (typeof renderSmartManager === 'function' && document.getElementById('screen-smartmanager') && document.getElementById('screen-smartmanager').classList.contains('active')) {
     renderSmartManager();
   }
+  // This generation is now the committed one. Recording it lets
+  // saveDataCache() and any other late writer detect that a newer generation
+  // has landed rather than persisting or painting this one's data over it.
+  if (typeof saCommitRefresh === 'function') saCommitRefresh(refreshToken);
 }
 
 function dedicatedVacancyGrandTotal() {

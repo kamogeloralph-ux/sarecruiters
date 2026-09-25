@@ -181,10 +181,18 @@ function setCtaPanel(index) {
   if (carousel) carousel.addEventListener('scroll', updateCtaDots, { passive: true });
 })();
 function refreshHome() {
-  var home = document.getElementById('screen-home');
-  if (home) home.classList.add('active');
+  // The Home button is both "go home" and "refresh". It previously only ADDED
+  // .active to #screen-home, so tapping it from All Vacancies left two screens
+  // active at once — and because .screen.active is display:flex, both were laid
+  // out at the same time and could render on top of each other. Switch screens
+  // properly, then run a clean refresh: transient folder/pagination state is
+  // cleared, the memoised startup payload is dropped, and the whole thing runs
+  // under one refresh epoch so it cannot interleave with an idle wake-up.
+  saShowScreen('home');
+  resetActiveScreenScroll('screen-home');
   showToast('Refreshing…');
-  loadAll();
+  if (typeof saRefreshAll === 'function') saRefreshAll('home-button');
+  else loadAll();
 }
 
 // ===== Toast =====
@@ -238,7 +246,11 @@ function setRetryBanner(show) {
 function retryLoadAll() {
   var btn = document.querySelector('#retry-banner button');
   if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
-  loadAll().finally(function() {
+  // Retry is a full refresh, not a bare re-fetch: it drops the memoised
+  // payload (so a failure is actually retried rather than re-reading the same
+  // memoised rejection) and runs under one epoch like every other refresh.
+  var run = typeof saRefreshAll === 'function' ? saRefreshAll('retry-banner') : loadAll();
+  Promise.resolve(run).finally(function() {
     if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
   });
 }
@@ -855,6 +867,10 @@ function renderAllAgenciesList() {
   var q = ((document.getElementById('allagencies-search')||{}).value || '').trim().toLowerCase();
   syncPreciseLocationChip('allagencies', q);
   var el = document.getElementById('allagencies-list');
+  if (!el) return;
+  // Owned by the All Agencies screen: never repaint it from a hydration that
+  // runs while the user is on another screen.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('allagencies-list')) return;
   var list = agenciesCache.slice();
   if (q) {
     list = list.filter(function(a){
@@ -875,6 +891,9 @@ function renderAllBranchesList() {
   var q = ((document.getElementById('allbranches-search')||{}).value || '').trim().toLowerCase();
   syncPreciseLocationChip('allbranches', q);
   var el = document.getElementById('allbranches-list');
+  if (!el) return;
+  // Owned by the All Branches screen (see the allagencies-list guard above).
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('allbranches-list')) return;
   var list = branchesCache.slice().map(function(b){
     var agency = agenciesCache.find(function(a){ return a.id === b.agency_id; });
     b._agencyName = agency ? agency.name : '';
@@ -987,6 +1006,11 @@ function renderGeneralVacancyCards(append) {
   var loadMore = document.getElementById('allvacancies-loadmore');
   var countLabel = document.getElementById('allvacancies-result-count');
   if (!el) return;
+  // This list belongs to the All Vacancies screen. A hydration used to reach it
+  // through renderRestoredScreenContent() even when the user had navigated to
+  // Home or another screen, painting an abandoned folder's rows over whatever
+  // was visible. Render only while the owning screen is actually shown.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('allvacancies-list')) return;
   if (generalVacancyError) {
     el.dataset.state = 'error';
     el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadGeneralVacancies(true)">Try again</button></div>';
@@ -1073,6 +1097,9 @@ function renderDedicatedVacancyCards(append) {
   var loadMore = document.getElementById('allvacancies-loadmore');
   var countLabel = document.getElementById('allvacancies-result-count');
   if (!el) return;
+  // Same ownership rule as renderGeneralVacancyCards(): never write the folder
+  // listing while its screen is not the visible one.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('allvacancies-list')) return;
   var folderLabel = DEDICATED_VACANCY_FOLDER_LABELS[dedicatedVacancyFolder] || 'Vacancies';
   var folderCount = (dedicatedVacancyCounts && dedicatedVacancyCounts[dedicatedVacancyFolder]) || 0;
   if (dedicatedVacancyError) {
@@ -1137,6 +1164,14 @@ async function loadDedicatedVacancies(reset) {
 }
 function renderAllVacanciesList() {
   updateVacanciesBackButton();
+
+  // The overview branch below writes #allvacancies-list directly (the folder
+  // branches delegate to the already-guarded folder renderers). Without this
+  // guard the overview markup could be written while the user is on another
+  // screen — the same background-write leak, via the folder picker instead of
+  // an open folder. The back-button label above stays in sync either way, so
+  // the guard sits after it.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('allvacancies-list')) return;
 
   if (allVacanciesFolder === 'general') {
     loadGeneralVacancies(false);

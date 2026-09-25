@@ -345,6 +345,11 @@ function renderAllEmployersList() {
   var q = ((document.getElementById('allemployers-search')||{}).value || '').trim().toLowerCase();
   syncPreciseLocationChip('allemployers', q);
   var el = document.getElementById('allemployers-list');
+  if (!el) return;
+  // Owned by the All Employers screen. loadPosterFeed() re-renders this list
+  // when poster counts arrive, so the ownership check has to live in the
+  // renderer itself rather than only in its callers.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('allemployers-list')) return;
   var list = employersCache.slice();
   if (q) {
     list = list.filter(function(e){
@@ -524,7 +529,13 @@ window.toggleSave = function(btn, key) {
 function renderSaved() {
   var list = vacanciesCache.filter(function(v){ return savedSet.has(v.id); });
   var el = document.getElementById('saved-list');
-  if (el) el.dataset.state = list.length ? 'ready' : 'empty';
+  if (!el) return;
+  // saved-list is owned by the Saved screen, but renderSaved() is also called
+  // from the bottom-nav tab handler, from toggleSave(), and after the
+  // signed-in saved-vacancies sync — so the ownership check has to live in the
+  // renderer rather than only in those callers.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('saved-list')) return;
+  el.dataset.state = list.length ? 'ready' : 'empty';
   if (!list.length) {
     el.innerHTML = vacancyScreenStateMarkup('saved', false, false);
     return;
@@ -829,7 +840,13 @@ window.toggleSave = function(btn, key) {
 function renderSaved() {
   var list = vacanciesCache.filter(function(v){ return savedSet.has(v.id); });
   var el = document.getElementById('saved-list');
-  if (el) el.dataset.state = list.length ? 'ready' : 'empty';
+  if (!el) return;
+  // saved-list is owned by the Saved screen, but renderSaved() is also called
+  // from the bottom-nav tab handler, from toggleSave(), and after the
+  // signed-in saved-vacancies sync — so the ownership check has to live in the
+  // renderer rather than only in those callers.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('saved-list')) return;
+  el.dataset.state = list.length ? 'ready' : 'empty';
   if (!list.length) {
     el.innerHTML = vacancyScreenStateMarkup('saved', false, false);
     return;
@@ -865,6 +882,11 @@ function renderPosterFeed(posters) {
   var container = document.getElementById('poster-feed');
   postersCache = posters || [];
   if (!container) return;
+  // poster-feed lives on the Posters screen. loadPosterFeed() is fired by every
+  // hydration (it is deliberately deferred past the first paint), so without
+  // this guard an idle refresh could repaint the poster grid while the user was
+  // on Home — a background write into another screen's markup.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('poster-feed')) return;
   var q = ((document.getElementById('allposters-search') || {}).value || '').trim().toLowerCase();
   var list = q ? postersCache.filter(function(p){ return (p.caption || '').toLowerCase().indexOf(q) !== -1; }) : postersCache;
   if (!list.length) {

@@ -823,6 +823,10 @@ async function loadPoolCandidates() {
 function renderPoolList() {
   var listEl = document.getElementById('pool-list');
   if (!listEl) return;
+  // pool-list belongs to the Talent Pool screen. loadPoolCandidates() is
+  // reachable from hydration (via the restored-screen path) and refreshes
+  // poolCache/stat counts, so the render itself must stay scoped to its screen.
+  if (typeof saShouldRenderContainer === 'function' && !saShouldRenderContainer('pool-list')) return;
   var q = ((document.getElementById('pool-search')||{}).value || '').trim().toLowerCase();
   syncPreciseLocationChip('pool', q);
   var sector = ((document.getElementById('pool-sector-filter')||{}).value || '');

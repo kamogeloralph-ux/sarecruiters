@@ -32,6 +32,11 @@ const FILES = [
   'app-manager.js',
   'app-manager-employer.js',
   'app-pending-submissions.js',
+  // Epoch primitives only. The refresh pipeline itself (app-refresh.js) is
+  // deliberately NOT bundled: it is loaded as its own script after this bundle
+  // so it can wrap the functions defined here, and bundling it would make it
+  // execute twice.
+  'app-refresh-bundle.js',
 ];
 
 const BUNDLE_NAME = 'app.bundle.min.js';

@@ -34,14 +34,21 @@
  * (app-core.js, app-data.js, app-cards.js, app-forms.js, app-sheets.js,
  * app-ui.js, app-manager.js, app-manager-employer.js). generate-pages.js
  * calls scripts/bundle-app.js on every build, which bundles+minifies those
- * 8 files into app.bundle.min.js and rewrites index.html's script tag to
+ * files into app.bundle.min.js and rewrites index.html's script tag to
  * load that single bundle — so app.bundle.min.js below is the real,
  * actually-deployed file, not stale leftover naming. VERSION further below
  * is also auto-rewritten by generate-pages.js on every build; the literal
  * value here is just a placeholder that gets replaced at build time.
+ *
+ * app-refresh.js (2026-09-25, state-safe refresh pipeline) is the one app
+ * source file that is ALSO loaded as its own unversioned <script> after the
+ * bundle, so it is precached here by its bare path. Keeping it outside the
+ * bundle hash is deliberate: a client whose cached app.bundle.min.js is still
+ * the pre-fix generation (served by an older worker's navigation fallback)
+ * still receives the new refresh pipeline once this shell installs.
  */
 
-const VERSION = 'sa-recruiters-v167-employer-posters';
+const VERSION = 'sa-recruiters-4b3694f67e';
 const CORE_CACHE = VERSION + '-core';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const IMAGE_CACHE = VERSION + '-images';
@@ -52,6 +59,7 @@ const CORE_ASSETS = [
   './privacy.html',
   './styles.css',
   './app.bundle.min.js',
+  './scripts/app-refresh.js',
   './icons.svg',
   './offline.html',
   './manifest.json',

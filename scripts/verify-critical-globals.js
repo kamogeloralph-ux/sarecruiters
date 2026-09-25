@@ -121,8 +121,188 @@ function verifyManageTokenSelected(rootDir) {
   return problems;
 }
 
+// ============================================================
+//  State-safe refresh pipeline invariants (2026-09-25)
+// ============================================================
+//  The cross-screen render contamination was not one bug but four missing
+//  properties: no refresh epoch, no screen scoping, no transient-state reset,
+//  and no startup-memo invalidation. Each is invisible in a diff and each can
+//  be undone by an ordinary-looking refactor, so they are asserted here and the
+//  build fails if any of them goes missing. See docs/REFRESH_STATE_TRACE.md.
+const REFRESH_PIPELINE_FILE = 'scripts/app-refresh.js';
+const REFRESH_BRIDGE_FILE = 'app-refresh-bundle.js';
+// Transient containers that must only ever be painted while their own screen is
+// visible. Kept in sync with TRANSIENT_CONTAINERS in scripts/app-refresh.js.
+const OWNED_CONTAINER_CHECKS = [
+  ['app-ui.js', 'allvacancies-list', /saShouldRenderContainer\('allvacancies-list'\)/],
+  ['app-cards.js', 'poster-feed', /saShouldRenderContainer\('poster-feed'\)/],
+  ['app-sheets.js', 'pool-list', /saShouldRenderContainer\('pool-list'\)/],
+  ['app-cards.js', 'saved-list', /saShouldRenderContainer\('saved-list'\)/],
+  ['app-cards.js', 'allemployers-list', /saShouldRenderContainer\('allemployers-list'\)/],
+  ['app-ui.js', 'allagencies-list', /saShouldRenderContainer\('allagencies-list'\)/],
+  ['app-ui.js', 'allbranches-list', /saShouldRenderContainer\('allbranches-list'\)/],
+];
+function verifyRefreshPipeline(rootDir, bundleCode) {
+  const problems = [];
+  const read = (rel) => {
+    const p = path.join(rootDir, rel);
+    return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
+  };
+
+  // 1. The pipeline module must exist, must NOT be bundled (bundling it would
+  //    execute it twice and double-register every listener), and must actually
+  //    be loaded by index.html.
+  const pipeline = read(REFRESH_PIPELINE_FILE);
+  if (!pipeline) {
+    problems.push(
+      `${REFRESH_PIPELINE_FILE} is missing. It is the single authority for when a ` +
+      `data hydration may paint and which screen it may paint; without it the ` +
+      `cross-screen render contamination returns.`
+    );
+  }
+  const bridge = read(REFRESH_BRIDGE_FILE);
+  if (!bridge) {
+    problems.push(
+      `${REFRESH_BRIDGE_FILE} is missing. The bundle's guarded call sites resolve ` +
+      `the refresh-epoch primitives from it.`
+    );
+  }
+  if (bundleCode && /\bpayloadDataAsOf\b/.test(bundleCode)) {
+    problems.push(
+      `${REFRESH_PIPELINE_FILE} appears to be bundled into app.bundle.min.js as well ` +
+      `as loaded as its own script, which would execute the pipeline twice and ` +
+      `register duplicate visibilitychange/pageshow/online listeners.`
+    );
+  }
+  const html = read('index.html') || '';
+  if (!/<script src="scripts\/app-refresh\.js"[^>]*defer[^>]*><\/script>/.test(html)) {
+    problems.push(
+      `index.html must load scripts/app-refresh.js as its own deferred script AFTER ` +
+      `app.bundle.min.js (deferred scripts run in document order, and the pipeline ` +
+      `needs the bundle's loadAll/render definitions to already exist).`
+    );
+  }
+  if (pipeline) {
+    const bundleTag = html.indexOf('app.bundle.min.js');
+    const pipelineTag = html.indexOf('scripts/app-refresh.js');
+    if (bundleTag !== -1 && pipelineTag !== -1 && pipelineTag < bundleTag) {
+      problems.push(
+        `index.html loads scripts/app-refresh.js BEFORE app.bundle.min.js. ` +
+        `Document order is execution order for deferred scripts, so the pipeline ` +
+        `would evaluate before the functions it drives exist.`
+      );
+    }
+  }
+
+  // 2. The service worker must precache the pipeline so a client saddled with a
+  //    pre-fix bundle still receives it on the next shell install.
+  const sw = read('sw.js') || '';
+  if (!/['"]\.\/scripts\/app-refresh\.js['"]/.test(sw)) {
+    problems.push(
+      `sw.js must precache './scripts/app-refresh.js' in CORE_ASSETS. That is what ` +
+      `delivers the refresh pipeline to a client whose cached bundle is still the ` +
+      `pre-fix generation.`
+    );
+  }
+
+  // 3. The pipeline must be unversioned: generate-pages.js appends ?v=<hash> to
+  //    its STATIC_ASSETS list, and a versioned URL could not be precached by the
+  //    service worker under the bare path above.
+  const gen = read('generate-pages.js') || '';
+  const staticAssets = gen.match(/const STATIC_ASSETS\s*=\s*\[([\s\S]*?)\]/);
+  if (staticAssets && /app-refresh/.test(staticAssets[1])) {
+    problems.push(
+      `generate-pages.js must NOT list app-refresh in STATIC_ASSETS: the ?v= rewrite ` +
+      `would change the URL that sw.js precaches.`
+    );
+  }
+
+  // 4. Hydration must be epoch-guarded and must repaint the live screen instead
+  //    of the boot-time remembered one.
+  const data = read('app-data.js') || '';
+  if (!/async function loadAll\(refreshToken\)/.test(data)) {
+    problems.push(
+      `loadAll() must keep its refresh-epoch parameter; losing it removes the ` +
+      `newest-generation-wins guard that keeps concurrent hydrations from ` +
+      `committing into the same screen.`
+    );
+  }
+  if (!/saIsCurrentRefresh\(refreshToken\)/.test(data)) {
+    problems.push(
+      `loadAll() must still use saIsCurrentRefresh(refreshToken) as its write gate.`
+    );
+  }
+  const standaloneRestoredRepaint = new RegExp(
+    '(?<!else )\\bif \\(typeof renderRestoredScreenContent === \'function\'\\) renderRestoredScreenContent\\(\\);'
+  );
+  if (standaloneRestoredRepaint.test(data)) {
+    problems.push(
+      `loadAll() must not repaint via renderRestoredScreenContent() alone: that ` +
+      `renders the screen remembered at boot, not the visible one, which is the ` +
+      `cross-screen repaint. Use saRenderActiveScreen().`
+    );
+  }
+  if (!/saRenderActiveScreen/.test(data)) {
+    problems.push(
+      `app-data.js must call saRenderActiveScreen() at hydration time so renders ` +
+      `follow the visible screen.`
+    );
+  }
+
+  // 5. Transient containers must stay ownership-guarded.
+  for (const [file, container, re] of OWNED_CONTAINER_CHECKS) {
+    const src = read(file);
+    if (src && !re.test(src)) {
+      problems.push(
+        `${file} must guard writes to "${container}" with saShouldRenderContainer(). ` +
+        `Without it a hydration running while the user is on another screen can ` +
+        `still paint that container.`
+      );
+    }
+  }
+
+  // 6. Refresh entry points must run through the pipeline rather than starting a
+  //    bare, unguarded hydration.
+  const ui = read('app-ui.js') || '';
+  if (!/saRefreshAll\('home-button'\)/.test(ui)) {
+    problems.push(`refreshHome() must refresh through saRefreshAll('home-button').`);
+  }
+  if (!/saShowScreen\('home'\)/.test(ui)) {
+    problems.push(
+      `refreshHome() must switch screens with saShowScreen('home'). Adding .active ` +
+      `without clearing the current screen leaves two screens display:flex at ` +
+      `once, which renders them on top of each other.`
+    );
+  }
+  if (!/saRefreshAll\('retry-banner'\)/.test(ui)) {
+    problems.push(`retryLoadAll() must refresh through saRefreshAll('retry-banner').`);
+  }
+  const bridgeSrc = read('app-manager-employer.js') || '';
+  if (/initIdleResumeRefresh/.test(bridgeSrc)) {
+    problems.push(
+      `The idle-resume listeners must live in ${REFRESH_PIPELINE_FILE} only; a second ` +
+      `copy in app-manager-employer.js can start a duplicate hydration for one ` +
+      `wake-up.`
+    );
+  }
+  if (/window\.addEventListener\('online'/.test(data)) {
+    problems.push(
+      `app-data.js must not also register an 'online' refresh listener: ` +
+      `${REFRESH_PIPELINE_FILE} owns network recovery so it runs under the refresh epoch.`
+    );
+  }
+  return problems;
+}
+
 function verifyCriticalGlobals(rootDir, bundleCode) {
   const problems = [];
+
+  // 0. State-safe refresh pipeline invariants. These encode the fix for the
+  //    cross-screen render contamination, because every one of them is a
+  //    property that was silently absent before and would be silently absent
+  //    again after an innocent-looking refactor. See
+  //    docs/REFRESH_STATE_TRACE.md for the full trace.
+  problems.push(...verifyRefreshPipeline(rootDir, bundleCode));
 
   // index.html also loads content.js and content-manager.js separately
   // (outside the 8-file bundle) — some onclick handlers call functions

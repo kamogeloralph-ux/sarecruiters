@@ -228,12 +228,24 @@ function bootAuthenticatedApp() {
   if (await loadDataCache()) {
     updateStats();
     filterAndRenderCached();
-    if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
+    // Paint the screen the user is actually on (the restored one at boot).
+    // Using the live .active screen here instead of the remembered name keeps
+    // the cache-paint path consistent with the network path in loadAll().
+    if (typeof saRenderActiveScreen === 'function') saRenderActiveScreen();
+    else if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
     markAppDataReady();
   }
 })();
 
-loadAll().then(markAppDataReady);
+// Boot hydration. It takes its own epoch token like every other generation, and
+// reports the payload's OWN generated_at as the data age rather than the moment
+// this device happened to fetch it — the worker's /api/startup response can be
+// served from its D1 mirror with the worker's inner cache policy, so "just now"
+// would be a claim the data cannot support.
+loadAll().then(function() {
+  if (typeof markAppDataReady === 'function') markAppDataReady();
+  if (typeof syncDataFreshnessFromPayload === 'function') syncDataFreshnessFromPayload();
+});
 // Signed-in-only data sync; guests skip it (no session to sync against).
 if (saAuthUser) loadSavedVacanciesFromSupabase();
 initConnectionStatus();
@@ -252,32 +264,14 @@ loadSocialLinks();
 startAuthenticatedApp(bootAuthenticatedApp);
 
 // ===== Refresh data when the app comes back from being idle =====
-// A PWA that's been backgrounded (screen locked, app switched away from)
-// doesn't reload — the page just sits frozen with whatever it last had in
-// memory. Without this, reopening after a while shows stale counts/listings
-// until the user manually pulls to refresh. Re-fetch quietly once the tab
-// has been hidden for more than a couple of minutes and becomes visible again.
-(function initIdleResumeRefresh() {
-  var hiddenAt = null;
-  var MIN_HIDDEN_MS = 2 * 60 * 1000; // only refetch if it's been idle a while
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-      hiddenAt = Date.now();
-    } else if (hiddenAt && (Date.now() - hiddenAt) > MIN_HIDDEN_MS) {
-      hiddenAt = null;
-      if (typeof resetGuestQuotaIfNewDay === 'function') resetGuestQuotaIfNewDay();
-      loadAll();
-    }
-  });
-  // Covers the back/forward-cache restore case (Safari/iOS in particular),
-  // which visibilitychange doesn't always catch.
-  window.addEventListener('pageshow', function(e) {
-    if (e.persisted) {
-      if (typeof resetGuestQuotaIfNewDay === 'function') resetGuestQuotaIfNewDay();
-      loadAll();
-    }
-  });
-})();
+// A PWA that has been backgrounded (screen locked, app switched away from)
+// does not reload — the page sits frozen with whatever it last had in memory,
+// so reopening after a while would show stale counts and listings until the
+// user pulled to refresh. That wake-up handling now lives in app-refresh.js
+// (saInitRefreshLifecycle), together with the online-recovery path, so all
+// three of them run through saRefreshAll(): one refresh epoch, transient
+// screen state cleared, and the visible screen repainted instead of whichever
+// screen the page originally booted into.
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {

@@ -9,6 +9,8 @@
     "sync:oracle": "node scripts/sync-oracle.mjs",
     "sync:government": "node scripts/sync-government.mjs",
     "test": "node --test scripts/*.test.mjs",
+    "test:refresh": "node --test scripts/refresh-pipeline.test.mjs",
+    "verify:refresh": "node scripts/prove-regression-caught.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs",
     "scrape:pnet": "node scripts/scrape-pnet.mjs",
     "scrape:simplify": "node scripts/scrape-simplify.mjs",
@@ -20,5 +22,9 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2",
+    "jsdom": "^29.1.1"
   }
 }
