@@ -739,7 +739,7 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v2", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v3", request.url), request);
 
   async function buildResponse(payload) {
     const body = JSON.stringify(payload);
