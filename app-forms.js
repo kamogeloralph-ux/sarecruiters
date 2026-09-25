@@ -581,6 +581,48 @@ function setVacancySaveBusy(busy) {
     if (busy) btn.setAttribute('aria-busy', 'true'); else btn.removeAttribute('aria-busy');
   });
 }
+function alertPreferenceMatches(preference, value) {
+  var text = String(preference || '').trim().toLowerCase();
+  if (!text) return true;
+  var haystack = String(value || '').toLowerCase();
+  return text.split(/[,;|]/).map(function(part) { return part.trim(); }).filter(Boolean).some(function(part) {
+    return haystack.indexOf(part) !== -1;
+  });
+}
+async function sendTalentPoolVacancyAlerts(vacancy) {
+  if (!isAdmin || !supabaseClient || !vacancy || !vacancy.title) return;
+  try {
+    var candidatesResult = await supabaseClient.from('pool_candidates')
+      .select('id,contact_email,sector,location,email_alert_opt_in,alert_sectors,alert_locations')
+      .eq('email_alert_opt_in', true)
+      .eq('status', 'active')
+      .limit(200);
+    if (candidatesResult.error) throw candidatesResult.error;
+    var searchable = [vacancy.title, vacancy.company, vacancy.location, vacancy.notes, vacancy.employment_type].filter(Boolean).join(' ');
+    var recipients = (candidatesResult.data || []).filter(function(candidate) {
+      return candidate.contact_email &&
+        alertPreferenceMatches(candidate.alert_sectors || candidate.sector, searchable) &&
+        alertPreferenceMatches(candidate.alert_locations || candidate.location, vacancy.location || searchable);
+    }).map(function(candidate) {
+      return { candidate_id: candidate.id, email: candidate.contact_email };
+    });
+    if (!recipients.length) return;
+    var sessionResult = await supabaseClient.auth.getSession();
+    var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+    if (!token) return;
+    var response = await fetch(R2_WORKER_URL + '/api/admin/send-vacancy-alerts', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vacancy: vacancy, recipients: recipients })
+    });
+    var result = await response.json().catch(function() { return {}; });
+    if (!response.ok || !result.ok) throw new Error((result && result.error) || 'alert dispatch failed');
+    console.info('[SA Recruiters] Talent Pool vacancy alerts dispatched', result);
+  } catch (error) {
+    // Alert delivery must never make a successfully published vacancy fail.
+    console.warn('[SA Recruiters] Talent Pool alert dispatch failed', error);
+  }
+}
 
 async function saveVacancy() {
   var title = document.getElementById('v-title').value.trim();
@@ -610,6 +652,7 @@ async function saveVacancy() {
       live = await upsertVacancy(vacancy);
     }
     var termsRecorded = live ? await recordVacancyTermsAcceptance(id, managerMode && managerAgency ? managerAgency.id : pendingVacancyAgency, null) : false;
+    if (live && isAdmin && !managerMode) sendTalentPoolVacancyAlerts(vacancy);
     closeSheet('vacancy-overlay');
     showToast(live ? (termsRecorded ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
     await loadAll();
@@ -770,6 +813,7 @@ async function saveGeneralVacancy() {
       data.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
       var live3 = await upsertVacancy(data);
       termsRecordedGeneral = live3 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
+      if (live3 && isAdmin) sendTalentPoolVacancyAlerts(data);
       closeSheet('general-vacancy-overlay');
       showToast(live3 ? (termsRecordedGeneral ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
     }
