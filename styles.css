@@ -1956,3 +1956,13 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-message-copy{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .house-ad-message .house-ad-sponsored{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--text-2);white-space:nowrap}
 .house-ad-heading .house-ad-sponsored,.house-ad-heading-message,.house-ad-click{display:none}
+
+
+/* Explicit final house-ad order: title, artwork, then message/disclosure. */
+.house-ad-heading{order:1;display:flex;align-items:center;justify-content:center;flex-direction:row;text-align:center}
+.house-ad-heading strong{order:1;display:block;width:100%;text-align:center}
+.house-ad-creative{order:2;display:block}
+.house-ad-message{order:3;display:flex;align-items:center}
+.house-ad-message small{display:flex;align-items:center;justify-content:space-between;width:100%}
+.house-ad-message-copy{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.house-ad-message .house-ad-sponsored{display:block;order:2;flex:0 0 auto;margin-left:auto}
