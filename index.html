@@ -456,7 +456,7 @@
     <div class="pgrouped-list">
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="window.open('terms.html','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (HTML) or download the PDF</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('terms/','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (HTML) or download the PDF</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
     </div>
   </div>
@@ -962,7 +962,7 @@
     <div class="field"><label>Application link</label><input id="gv-link" type="url" placeholder="e.g. https://company.co.za/apply"></div>
     <div class="field"><label>Contact email (if no link)</label><input id="gv-email" type="email" placeholder="e.g. hr@company.co.za"></div>
     <div class="field"><label>Contact phone (if no link)</label><input id="gv-phone" type="tel" placeholder="e.g. 011 123 4567"></div>
-    <label class="terms-accept-row" for="general-vacancy-terms-accept"><input id="general-vacancy-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>SA Recruiters does not charge for listing vacancies or using the platform. <a href="terms.html" target="_blank" rel="noopener">Read the SA Recruiters Terms and Conditions</a>.</small></span></label>
+    <label class="terms-accept-row" for="general-vacancy-terms-accept"><input id="general-vacancy-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>SA Recruiters does not charge for listing vacancies or using the platform. <a href="terms/" target="_blank" rel="noopener">Read the SA Recruiters Terms and Conditions</a>.</small></span></label>
     <button class="sheet-submit" data-ripple onclick="saveGeneralVacancy()" id="gv-submit-btn">Publish vacancy</button>
   </div>
 </div>
@@ -1034,7 +1034,7 @@
       </div>
     </details>
 
-    <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the Talent Pool, you agree to the <a href="terms.html" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
+    <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the Talent Pool, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
     <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Submit registration</button>
     <button class="sheet-submit danger" data-ripple onclick="deleteMyPoolProfile()" id="pool-delete-btn" style="display:none">Remove my profile</button>
     <p class="pool-finish-later-note" id="pool-finish-later-note">You're almost in — add the Mini-CV now, or skip it and complete it anytime from “My Talent Pool Profile”.</p>
@@ -1102,7 +1102,7 @@
     </div>
     <div class="field"><label>Additional details <span class="field-optional">optional</span></label><textarea id="pj-details" placeholder="Anything else that helps us understand the roles..."></textarea></div>
     <div class="field"><label>Website <span class="field-optional">optional</span></label><input id="pj-website" placeholder="e.g. www.example.co.za"></div>
-    <label class="terms-accept-row" for="post-job-terms-accept"><input id="post-job-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By submitting this job request, you agree to the <a href="terms.html" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
+    <label class="terms-accept-row" for="post-job-terms-accept"><input id="post-job-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By submitting this job request, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
     <div id="post-job-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
     <button class="sheet-submit" data-ripple onclick="submitJobPostEnquiry()">Submit for admin review</button>
     <p style="font-size:11.5px;color:var(--text-3);text-align:center;margin-top:12px;">Prefer WhatsApp? <a href="#" id="post-job-wa-link" target="_blank" rel="noopener">Message the admin instead</a>.</p>
