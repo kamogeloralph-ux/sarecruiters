@@ -106,6 +106,15 @@ test('homepage exposes an About action in the bottom navigation', () => {
   assert.match(homepage, />About<\/span>/);
 });
 
+test('Interview Tips includes the supplied YouTube video for listening', () => {
+  assert.match(content, /id: 'iv-video-job-questions'/);
+  assert.match(content, /youtube-nocookie\.com\/embed\/XShx_KTJSB8/);
+  assert.match(content, /https:\/\/youtu\.be\/XShx_KTJSB8/);
+  assert.match(content, /allowfullscreen/);
+  assert.match(contentManager, /official-interview-video-v1/);
+  assert.match(contentManager, /iv-video-job-questions/);
+});
+
 test('vacancy statistic uses the shared startup count path', () => {
   assert.doesNotMatch(appData, /fetchLiveVacancyTotal/);
   assert.doesNotMatch(appData, /loadGateStats\(\);/);

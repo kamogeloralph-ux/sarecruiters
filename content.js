@@ -164,6 +164,11 @@ var DEFAULT_CONTENT = {
   /* ============ INTERVIEW TIPS ============ */
   'interview-tips': [
     {
+      id: 'iv-video-job-questions',
+      title: 'Listen: job interview questions and answers',
+      body: '<p>Prefer to listen and learn? Watch this interview-practice podcast for examples of common questions and useful answers. Use headphones if you are in a public place.</p><div class="content-video" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0;background:#000"><iframe src="https://www.youtube-nocookie.com/embed/XShx_KTJSB8?rel=0" title="Job Interview Questions And Answers — English Podcast for Learning English" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div><p><a href="https://youtu.be/XShx_KTJSB8" target="_blank" rel="noopener noreferrer">Open this interview video on YouTube ↗</a></p>'
+    },
+    {
       id: 'iv-prep',
       title: 'Before the interview: do your homework',
       body: '<p>The single most important part of any interview is preparation. Research the company before you go: visit their website, understand their core business, and learn what they do and who they serve. Read the job advert carefully and match your experience to what they are asking for. Make sure you know the exact address, the time, and the name of the person you should ask for when you arrive. Plan your route and aim to arrive about ten to fifteen minutes early — never late. If it is an online interview, test your camera, microphone, and internet connection beforehand and find a quiet, well-lit place to sit.</p>'
