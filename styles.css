@@ -1834,3 +1834,13 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-copy em{font-style:normal;color:var(--accent);font-size:10px;font-weight:800;margin-top:2px}
 .house-ad-card:active{transform:scale(.99)}
 @media(min-width:760px){.house-ad-slot{max-width:760px;margin-left:auto;margin-right:auto}}
+
+/* Compact agency-style house-ad rows: ads should support the directory, not dominate it. */
+.house-ad-slot{margin:6px 12px 10px}
+.house-ad-card{height:72px;min-height:72px;align-items:center;border-radius:12px;box-shadow:none}
+.house-ad-card img{width:86px;min-width:86px;height:72px;max-width:none;object-fit:cover;object-position:center;background:var(--card-2)}
+.house-ad-copy{padding:7px 9px;gap:2px}
+.house-ad-copy strong{font-size:11.5px;line-height:1.15}
+.house-ad-copy small{font-size:9.5px;line-height:1.15;-webkit-line-clamp:1}
+.house-ad-copy em{font-size:8px;line-height:1;margin-top:1px}
+@media(max-width:380px){.house-ad-card{height:64px;min-height:64px}.house-ad-card img{width:72px;min-width:72px;height:64px}.house-ad-copy{padding-left:8px}.house-ad-copy strong{font-size:10.5px}.house-ad-copy small{font-size:8.5px}.house-ad-copy em{font-size:7.5px}}
