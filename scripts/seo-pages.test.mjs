@@ -52,6 +52,9 @@ test('vacancy overview uses the three-card grouped browse structure', () => {
     assert.match(appUi, new RegExp(source.replace(/[&]/g, '&amp;')));
   }
   assert.match(appUi, /vacancy-group-grid/);
+  assert.match(appUi, /featured-spotlight-track/);
+  assert.match(appUi, /featured-spotlight-pagination/);
+  assert.match(appUi, /scrollFeaturedSpotlight/);
   assert.doesNotMatch(appUi, /vac-folder-card[^\n]*Agency Vacancies/);
 });
 test('homepage exposes normal anchor links for Google discovery', () => {

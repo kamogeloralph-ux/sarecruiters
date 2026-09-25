@@ -1822,3 +1822,23 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .vacancy-category-row .vac-folder-chevron{color:var(--text-2);display:flex}
 @media(min-width:760px){.vacancy-group-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:960px;margin-left:auto;margin-right:auto}.vacancy-browse-heading{max-width:960px;margin-left:auto;margin-right:auto}}
 @media(max-width:420px){.vacancy-group-grid{margin-left:10px;margin-right:10px}.vacancy-group-card-head{padding:15px 13px 13px}.vacancy-category-list{padding-left:10px;padding-right:10px}.vacancy-category-copy small{font-size:10px}}
+
+
+/* ===== COMPACT FEATURED VACANCY SPOTLIGHT ===== */
+.featured-vacancies-section{padding:13px 14px 12px;margin-bottom:16px;border-radius:18px}
+.featured-vacancies-heading{align-items:center;margin-bottom:9px}
+.featured-vacancies-heading h2{margin:0;font-size:18px}
+.featured-spotlight-counter{font-size:11px;color:var(--text-2);font-weight:700;white-space:nowrap}
+.featured-spotlight-track{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:13px;overscroll-behavior-x:contain}
+.featured-spotlight-track::-webkit-scrollbar{display:none}
+.featured-spotlight-slide{display:flex;flex:0 0 100%;min-width:0;min-height:126px;box-sizing:border-box;flex-direction:column;justify-content:center;padding:15px 16px;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border));border-radius:14px;background:color-mix(in srgb,var(--card) 84%,var(--accent-soft));scroll-snap-align:start}
+.featured-spotlight-badge{color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.featured-spotlight-slide h3{margin:5px 0 4px;font-size:16px;line-height:1.22;color:var(--text);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.featured-spotlight-meta{display:flex;gap:6px;min-width:0;color:var(--text-2);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.featured-spotlight-meta span{overflow:hidden;text-overflow:ellipsis}
+.featured-spotlight-link{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;margin-top:10px;color:var(--accent);font-size:12px;font-weight:800;text-decoration:none}
+.featured-spotlight-link:hover{text-decoration:underline}
+.featured-spotlight-pagination{display:flex;justify-content:center;gap:5px;margin-top:9px}
+.featured-spotlight-dot{width:7px;height:7px;padding:0;border:0;border-radius:999px;background:color-mix(in srgb,var(--text-2) 30%,transparent);transition:width .18s,background .18s}
+.featured-spotlight-dot.active{width:20px;background:var(--accent)}
+@media(min-width:760px){.featured-vacancies-section{max-width:680px;margin-left:auto;margin-right:auto}}
