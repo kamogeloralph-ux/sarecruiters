@@ -32,6 +32,14 @@
       store.__contact_details_version = contactVersion;
       changed = true;
     }
+    // v2: refresh the built-in FAQ so returning users receive the current
+    // SA Recruiters guidance instead of an older locally seeded copy.
+    var faqVersion = 'official-faq-v2';
+    if (store.__faq_version !== faqVersion && DEFAULT_CONTENT.faq) {
+      store.faq = JSON.parse(JSON.stringify(DEFAULT_CONTENT.faq));
+      store.__faq_version = faqVersion;
+      changed = true;
+    }
     Object.keys(DEFAULT_CONTENT).forEach(function(key){
       if (!store[key] || !Array.isArray(store[key]) || store[key].length === 0) {
         // deep clone defaults
