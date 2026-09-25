@@ -1307,49 +1307,36 @@ function renderAllVacanciesList() {
           }).join('') + '</div>' :
           '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') +
       '</section>';
+    var categoryRow = function(type, label, count, description) {
+      return '<button class="vacancy-category-row" data-ripple onclick="openVacancyFolder(\'' + type + '\')" aria-label="Open ' + escapeHtml(label) + '">' +
+        '<span class="vacancy-category-copy"><strong>' + escapeHtml(label) + '</strong><small>' + escapeHtml(description) + '</small></span>' +
+        '<span class="vac-folder-count">' + folderCountLabel(count) + '</span>' +
+        '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+      '</button>';
+    };
+    var southAfricanCard =
+      '<section class="vacancy-group-card vacancy-group-card-local" aria-labelledby="south-african-jobs-title">' +
+        '<div class="vacancy-group-card-head"><span class="vacancy-group-icon" aria-hidden="true">⌂</span><div><h2 id="south-african-jobs-title">South African Jobs</h2><p>General, agency, government, retail and learnership opportunities</p></div></div>' +
+        '<div class="vacancy-category-list">' +
+          categoryRow('general', 'General Vacancies', generalCount, 'Everyday opportunities across South Africa') +
+          categoryRow('agency', 'Agency Vacancies', agencyCount, 'Roles listed by recruitment agencies') +
+          categoryRow('government', 'Government Vacancies', governmentCount, 'Public-sector and DPSA opportunities') +
+          categoryRow('retail', 'Retail Vacancies', retailCount, 'Store, customer service and retail roles') +
+          categoryRow('learnerships', 'Learnerships', learnershipsCount, 'Entry-level training and work opportunities') +
+        '</div>' +
+      '</section>';
+    var remoteInternationalCard =
+      '<section class="vacancy-group-card vacancy-group-card-global" aria-labelledby="remote-international-jobs-title">' +
+        '<div class="vacancy-group-card-head"><span class="vacancy-group-icon" aria-hidden="true">↗</span><div><h2 id="remote-international-jobs-title">Remote &amp; International Jobs</h2><p>Remote, international and cruise-career opportunities</p></div></div>' +
+        '<div class="vacancy-category-list">' +
+          categoryRow('himalayas', 'Himalayas Remote', himalayasCount, 'Remote roles from a global job source') +
+          categoryRow('adzuna', 'Adzuna Vacancies', adzunaCount, 'Broad external job-search listings') +
+          categoryRow('careers_page', 'Cruise Careers', careersPageCount, 'International cruise and onboard roles') +
+        '</div>' +
+      '</section>';
     el.innerHTML = featuredMarkup +
-      '<div class="vac-folder-grid" aria-label="Vacancy categories">' +
-        '<button class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'agency\')" aria-label="Open agency vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Agency Vacancies</span><span class="vac-folder-count">' + folderCountLabel(agencyCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'general\')" aria-label="Open general vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">General Vacancies</span><span class="vac-folder-count">' + folderCountLabel(generalCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-himalayas" data-ripple onclick="openVacancyFolder(\'himalayas\')" aria-label="Open Himalayas remote vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9S14.5 18.5 12 21c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3z"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Himalayas Remote</span><span class="vac-folder-count">' + folderCountLabel(himalayasCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-adzuna" data-ripple onclick="openVacancyFolder(\'adzuna\')" aria-label="Open Adzuna vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 10.5 5h3L20 19M7 14h10"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Adzuna Vacancies</span><span class="vac-folder-count">' + folderCountLabel(adzunaCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-dpsa" data-ripple onclick="openVacancyFolder(\'government\')" aria-label="Open Government vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Government Vacancies</span><span class="vac-folder-count">' + folderCountLabel(governmentCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-retail" data-ripple onclick="openVacancyFolder(\'retail\')" aria-label="Open retail vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16M6 10v9h12v-9M5 10l1-5h12l1 5M9 19v-5h6v5"/><path d="M8 5V3h8v2"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Retail Vacancies</span><span class="vac-folder-count">' + folderCountLabel(retailCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-learnerships" data-ripple onclick="openVacancyFolder(\'learnerships\')" aria-label="Open Learnerships">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 10v6"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Learnerships</span><span class="vac-folder-count">' + folderCountLabel(learnershipsCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-careers" data-ripple onclick="openVacancyFolder(\'careers_page\')" aria-label="Open Cruise careers">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Cruise careers</span><span class="vac-folder-count">' + folderCountLabel(careersPageCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-      '</div>';
+      '<div class="vacancy-browse-heading"><span class="eyebrow">Explore by source</span><h2>Browse Vacancies</h2><p>Start with local opportunities or explore remote and international roles.</p></div>' +
+      '<div class="vacancy-group-grid" aria-label="Vacancy groups">' + southAfricanCard + remoteInternationalCard + '</div>';
     return;
   }
   if (!list.length) {
@@ -1419,7 +1406,7 @@ function renderAllVacanciesList() {
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'government' ? 'Government Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : 'Learnerships';
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'government' ? 'Government Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : allVacanciesFolder === 'careers_page' ? 'Cruise Careers' : 'Learnerships';
   el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);
