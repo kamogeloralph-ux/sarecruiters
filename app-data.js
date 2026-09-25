@@ -825,12 +825,13 @@ function markLoadError(arr) { try { arr.__loadError = true; } catch(e) {} return
 var DATA_CACHE_DB = 'sa_data_cache_db';
 var DATA_CACHE_STORE = 'kv';
 var DATA_CACHE_KEY = 'sa_data_cache_v1';
+var DATA_CACHE_SCHEMA_VERSION = 2;
 var lastDataRefreshAt = null;
 
 function openDataCacheDB() {
   return new Promise(function(resolve, reject) {
     if (!window.indexedDB) { reject(new Error('IndexedDB unavailable')); return; }
-    var req = indexedDB.open(DATA_CACHE_DB, 1);
+    var req = indexedDB.open(DATA_CACHE_DB, DATA_CACHE_SCHEMA_VERSION);
     req.onupgradeneeded = function() {
       if (!req.result.objectStoreNames.contains(DATA_CACHE_STORE)) req.result.createObjectStore(DATA_CACHE_STORE);
     };
@@ -907,11 +908,15 @@ function initConnectionStatus() {
 }
 async function saveDataCache() {
   var payload = {
+    schemaVersion: DATA_CACHE_SCHEMA_VERSION,
     agencies: agenciesCache,
     branches: branchesCache,
     vacancies: vacanciesCache,
     generalVacancyCount: generalVacancyCount,
     employers: employersCache,
+    // Keep all lazy rows the user has already seen, keyed by folder. This
+    // makes offline search useful beyond the compact startup payload.
+    lazyVacancies: offlineLazyVacancies || {},
     poolCount: poolCandidateCount,
     posterCount: posterTotalCount,
     savedAt: Date.now()
@@ -944,6 +949,9 @@ async function loadDataCache() {
   agenciesCache = d.agencies || [];
   branchesCache = d.branches || [];
   vacanciesCache = d.vacancies || [];
+  offlineLazyVacancies = (d.lazyVacancies && typeof d.lazyVacancies === 'object') ? d.lazyVacancies : {};
+  // Older snapshots remain valid; the next successful save upgrades them to
+  // schema version 2 without blocking startup.
   generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
   employersCache = d.employers || [];
   poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
@@ -954,6 +962,23 @@ async function loadDataCache() {
   lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
   return true;
 }
+
+// The local search index is simply the de-duplicated union of the startup
+// rows and every lazy page already viewed on this device. It deliberately
+// never performs a network request, so search/filtering remains responsive
+// and useful when navigator.onLine is false.
+function offlineVacancyRows() {
+  var byId = {};
+  function add(rows) {
+    (rows || []).forEach(function(row) {
+      if (row && row.id !== undefined && row.id !== null) byId[String(row.id)] = row;
+    });
+  }
+  add(vacanciesCache);
+  Object.keys(offlineLazyVacancies || {}).forEach(function(folder) { add(offlineLazyVacancies[folder]); });
+  return Object.keys(byId).map(function(id) { return byId[id]; });
+}
+window.offlineVacancyRows = offlineVacancyRows;
 
 var startupDataPromise = null;
 async function fetchStartupDataOnce() {
@@ -1003,6 +1028,15 @@ function getStartupData() {
 
 async function loadAll() {
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
+  // Do not spend the eight-second startup timeout probing Supabase when the
+  // browser already knows it is offline. bootAuthenticatedApp hydrates the
+  // IndexedDB snapshot in parallel; this branch keeps the app responsive and
+  // leaves the cached search index untouched until the connection returns.
+  if (!navigator.onLine) {
+    if (typeof filterAndRenderCached === 'function') filterAndRenderCached();
+    if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
+    return;
+  }
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
   // original independent Supabase reads so launch remains resilient.
   var startup = await getStartupData();
@@ -1326,3 +1360,32 @@ function sortVacancies(list) {
     return da - db;
   });
 }
+
+function rememberOfflineLazyVacancies(folder, rows) {
+  if (!folder || !Array.isArray(rows) || !rows.length) return;
+  var existing = Array.isArray(offlineLazyVacancies[folder]) ? offlineLazyVacancies[folder] : [];
+  var byId = {};
+  existing.concat(rows).forEach(function(row) {
+    if (row && row.id !== undefined && row.id !== null) byId[String(row.id)] = row;
+  });
+  offlineLazyVacancies[folder] = Object.keys(byId).map(function(id) { return byId[id]; });
+  // Saving is intentionally fire-and-forget; it must never delay a card render.
+  if (typeof saveDataCache === 'function') saveDataCache();
+}
+window.rememberOfflineLazyVacancies = rememberOfflineLazyVacancies;
+
+function filterOfflineVacancies(rows, state, folder) {
+  state = state || {};
+  var q = String(state.q || '').trim().toLowerCase();
+  var sources = (typeof DEDICATED_VACANCY_FOLDER_SOURCES !== 'undefined') ? DEDICATED_VACANCY_FOLDER_SOURCES[folder] : null;
+  return (rows || []).filter(function(v) {
+    if (!v || filterExpiredVacancies([v]).length === 0) return false;
+    if (folder === 'general' && typeof isGeneralDirectoryVacancy === 'function' && !isGeneralDirectoryVacancy(v)) return false;
+    if (sources && sources.indexOf(String(v.source_type || '')) === -1) return false;
+    if (state.remote && String(v.remote || '') !== String(state.remote)) return false;
+    if (state.exp && String(v.experience_level || '') !== String(state.exp)) return false;
+    if (!q) return true;
+    return [v.title, v.company, v.location, v.notes].join(' ').toLowerCase().indexOf(q) !== -1;
+  });
+}
+window.filterOfflineVacancies = filterOfflineVacancies;

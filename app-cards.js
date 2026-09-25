@@ -484,7 +484,7 @@ function filterAndRenderCached() {
     });
     // Build set of agency IDs whose vacancies match the query (title, notes, location)
     var vacancyMatchIds = {};
-    vacanciesCache.forEach(function(v) {
+    (typeof offlineVacancyRows === 'function' ? offlineVacancyRows() : vacanciesCache).forEach(function(v) {
       var hay = ((v.title||'') + ' ' + (v.notes||'') + ' ' + (v.location||'')).toLowerCase();
       if (hay.indexOf(q) !== -1 && v.agency_id) vacancyMatchIds[v.agency_id] = true;
     });
@@ -552,7 +552,7 @@ window.handleSearchScreen = function(val) {
     return hay.indexOf(q)!==-1 || branchMatchIds[a.id];
   });
   // Vacancies: match title, notes, location, or parent agency name/trades/companies/address
-  var vm = vacanciesCache.filter(function(v){
+  var vm = (typeof offlineVacancyRows === 'function' ? offlineVacancyRows() : vacanciesCache).filter(function(v){
     var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
     var hay = ((v.title||'') + ' ' + (v.notes||'') + ' ' + (v.location||'')).toLowerCase();
     if (hay.indexOf(q)!==-1) return true;

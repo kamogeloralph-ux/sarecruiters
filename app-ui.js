@@ -1026,6 +1026,14 @@ async function loadGeneralVacancies(reset) {
     var industrySel = document.getElementById('allvacancies-industry');
     if (industrySel) industrySel.style.display = 'none';
   }
+  if (!navigator.onLine) {
+    generalVacancyRows = filterOfflineVacancies((offlineLazyVacancies && offlineLazyVacancies.general) || [], state, 'general');
+    generalVacancyHasMore = false;
+    generalVacancyLoading = false;
+    generalVacancyError = false;
+    renderGeneralVacancyCards(false);
+    return;
+  }
   if (generalVacancyLoading || !generalVacancyHasMore) { renderGeneralVacancyCards(false); return; }
   var requestId = ++generalVacancyRequestId;
   generalVacancyLoading = true;
@@ -1041,6 +1049,7 @@ async function loadGeneralVacancies(reset) {
     });
     // A matched record belongs in its agency section, not General Vacancies.
     generalVacancyRows = generalVacancyRows.concat(visiblePage.filter(isGeneralDirectoryVacancy));
+    rememberOfflineLazyVacancies('general', visiblePage);
     generalVacancyHasMore = page.length === generalVacancyPageSize;
     generalVacancyPage += 1;
     renderGeneralVacancyCards(true);
@@ -1112,6 +1121,14 @@ async function loadDedicatedVacancies(reset) {
     dedicatedVacancyLoading = false;
     dedicatedVacancyError = false;
   }
+  if (!navigator.onLine) {
+    dedicatedVacancyRows = filterOfflineVacancies((offlineLazyVacancies && offlineLazyVacancies[folder]) || [], state, folder);
+    dedicatedVacancyHasMore = false;
+    dedicatedVacancyLoading = false;
+    dedicatedVacancyError = false;
+    renderDedicatedVacancyCards(false);
+    return;
+  }
   if (dedicatedVacancyLoading || !dedicatedVacancyHasMore) { renderDedicatedVacancyCards(false); return; }
   var requestId = ++dedicatedVacancyRequestId;
   dedicatedVacancyLoading = true;
@@ -1121,6 +1138,7 @@ async function loadDedicatedVacancies(reset) {
     if (requestId !== dedicatedVacancyRequestId) return;
     dedicatedVacancyError = false;
     dedicatedVacancyRows = dedicatedVacancyRows.concat(filterExpiredVacancies(page));
+    rememberOfflineLazyVacancies(folder, page);
     dedicatedVacancyHasMore = page.length === dedicatedVacancyPageSize;
     dedicatedVacancyPage += 1;
     renderDedicatedVacancyCards(true);

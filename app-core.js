@@ -261,6 +261,11 @@ var generalVacancyHasMore = false;
 var generalVacancyLoading = false;
 var generalVacancyError = false;
 var generalVacancyRows = [];
+// Rows fetched from lazy vacancy folders are retained in the offline snapshot
+// as well. This is intentionally separate from vacanciesCache: the latter is
+// the compact agency/employer startup set, while this map grows only as a user
+// visits a folder or loads another page.
+var offlineLazyVacancies = {};
 var generalVacancyQueryKey = '';
 var generalVacancyRequestId = 0;
 // Dedicated-source vacancy folders (Himalayas/Adzuna/Government/Retail/
