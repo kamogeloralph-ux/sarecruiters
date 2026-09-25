@@ -2,7 +2,7 @@
 
 ## Terms and Conditions of Use
 
-**Effective date:** 25 September 2026  |  **Contact:** admin@sarecruiters.co.za
+**Effective date:** 25 September 2026  |  **Email:** sarecruiters.directory@gmail.com  |  **WhatsApp:** 071 553 1005
 
 ### Overview
 This website is operated by SA Recruiters. Throughout the site, the terms “we”, “us” and “our” refer to SA Recruiters. SA Recruiters offers this website, including all information, tools and services available from this site to you, the user, conditioned upon your acceptance of all terms, conditions, policies and notices stated here.
@@ -149,4 +149,4 @@ We reserve the right, at our sole discretion, to update, change or replace any p
 
 ### Section 20 – CONTACT INFORMATION
 
-Questions about the Terms of Service should be sent to us at admin@sarecruiters.co.za
+Questions about the Terms of Service should be sent to us at sarecruiters.directory@gmail.com or WhatsApp 071 553 1005
