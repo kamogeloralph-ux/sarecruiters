@@ -1299,7 +1299,7 @@ function renderAllVacanciesList() {
     }).slice(0, 6);
     var featuredMarkup =
       '<section class="featured-vacancies-section" aria-labelledby="featured-vacancies-title">' +
-        '<div class="featured-vacancies-heading"><div><span class="eyebrow">Priority opportunities</span><h2 id="featured-vacancies-title">Featured vacancies</h2><p>Selected roles with extra visibility from South African employers and recruitment agencies.</p></div></div>' +
+        '<div class="featured-vacancies-heading"><div><h2 id="featured-vacancies-title">Featured vacancies</h2></div></div>' +
         (featured.length ?
           '<div class="featured-vacancies-grid">' + featured.map(function(v){
             var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
@@ -1307,35 +1307,35 @@ function renderAllVacanciesList() {
           }).join('') + '</div>' :
           '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') +
       '</section>';
-    var categoryRow = function(type, label, count, description) {
+    var categoryRow = function(type, label, count) {
       return '<button class="vacancy-category-row" data-ripple onclick="openVacancyFolder(\'' + type + '\')" aria-label="Open ' + escapeHtml(label) + '">' +
-        '<span class="vacancy-category-copy"><strong>' + escapeHtml(label) + '</strong><small>' + escapeHtml(description) + '</small></span>' +
+        '<span class="vacancy-category-copy"><strong>' + escapeHtml(label) + '</strong></span>' +
         '<span class="vac-folder-count">' + folderCountLabel(count) + '</span>' +
         '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
       '</button>';
     };
     var southAfricanCard =
       '<section class="vacancy-group-card vacancy-group-card-local" aria-labelledby="south-african-jobs-title">' +
-        '<div class="vacancy-group-card-head"><span class="vacancy-group-icon" aria-hidden="true">⌂</span><div><h2 id="south-african-jobs-title">South African Jobs</h2><p>General, agency, government, retail and learnership opportunities</p></div></div>' +
+        '<div class="vacancy-group-card-head"><span class="vacancy-group-icon" aria-hidden="true">⌂</span><div><h2 id="south-african-jobs-title">South African Jobs</h2></div></div>' +
         '<div class="vacancy-category-list">' +
-          categoryRow('general', 'General Vacancies', generalCount, 'Everyday opportunities across South Africa') +
-          categoryRow('agency', 'Agency Vacancies', agencyCount, 'Roles listed by recruitment agencies') +
-          categoryRow('government', 'Government Vacancies', governmentCount, 'Public-sector and DPSA opportunities') +
-          categoryRow('retail', 'Retail Vacancies', retailCount, 'Store, customer service and retail roles') +
-          categoryRow('learnerships', 'Learnerships', learnershipsCount, 'Entry-level training and work opportunities') +
+          categoryRow('general', 'General Vacancies', generalCount) +
+          categoryRow('agency', 'Agency Vacancies', agencyCount) +
+          categoryRow('government', 'Government Vacancies', governmentCount) +
+          categoryRow('retail', 'Retail Vacancies', retailCount) +
+          categoryRow('learnerships', 'Learnerships', learnershipsCount) +
         '</div>' +
       '</section>';
     var remoteInternationalCard =
       '<section class="vacancy-group-card vacancy-group-card-global" aria-labelledby="remote-international-jobs-title">' +
-        '<div class="vacancy-group-card-head"><span class="vacancy-group-icon" aria-hidden="true">↗</span><div><h2 id="remote-international-jobs-title">Remote &amp; International Jobs</h2><p>Remote, international and cruise-career opportunities</p></div></div>' +
+        '<div class="vacancy-group-card-head"><span class="vacancy-group-icon" aria-hidden="true">↗</span><div><h2 id="remote-international-jobs-title">Remote &amp; International Jobs</h2></div></div>' +
         '<div class="vacancy-category-list">' +
-          categoryRow('himalayas', 'Himalayas Remote', himalayasCount, 'Remote roles from a global job source') +
-          categoryRow('adzuna', 'Adzuna Vacancies', adzunaCount, 'Broad external job-search listings') +
-          categoryRow('careers_page', 'Cruise Careers', careersPageCount, 'International cruise and onboard roles') +
+          categoryRow('himalayas', 'Himalayas Remote', himalayasCount) +
+          categoryRow('adzuna', 'Adzuna Vacancies', adzunaCount) +
+          categoryRow('careers_page', 'Cruise Careers', careersPageCount) +
         '</div>' +
       '</section>';
     el.innerHTML = featuredMarkup +
-      '<div class="vacancy-browse-heading"><span class="eyebrow">Explore by source</span><h2>Browse Vacancies</h2><p>Start with local opportunities or explore remote and international roles.</p></div>' +
+      '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
       '<div class="vacancy-group-grid" aria-label="Vacancy groups">' + southAfricanCard + remoteInternationalCard + '</div>';
     return;
   }
