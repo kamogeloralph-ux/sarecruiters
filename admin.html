@@ -310,6 +310,11 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .poster-thumb{width:48px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--card-2)}
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+<style>
+.house-ad-admin-thumb{background:var(--card-2);border:1px solid var(--border)}
+.house-ad-admin-thumb img{width:100%;height:100%;object-fit:cover}
+.house-ad-admin-row .row-title .badge{margin-left:5px}
+</style>
 </head>
 <body class="admin-shell">
 
@@ -410,6 +415,12 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div id="po-list"></div>
       </div>
 
+      <!-- HOUSE ADS -->
+      <div class="section section-content" id="sec-houseads">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>House Ads</h2><div class="spacer"></div><button class="minibtn ok" onclick="openHouseAdSheet()">+ Create ad</button></div>
+        <div class="muted" style="margin-bottom:14px">Create your own sponsored banners, choose where they appear, and schedule them without third-party ad networks.</div>
+        <div id="house-ad-list"></div>
+      </div>
       <!-- SUBMISSIONS -->
       <div class="section section-review" id="sec-submissions">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Submissions</h2></div>
@@ -613,6 +624,22 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   </div>
 </div>
 
+<!-- ============ HOUSE ADS: CREATE / EDIT SHEET ============ -->
+<div class="scrim" id="house-ad-overlay">
+  <div class="sheet" style="max-width:640px">
+    <h3 id="house-ad-sheet-title">Create house ad</h3>
+    <input type="hidden" id="ha-id">
+    <div class="field"><label>Advertiser / business name *</label><input id="ha-advertiser" maxlength="120" placeholder="e.g. ABC Training Academy"></div>
+    <div class="field"><label>Headline *</label><input id="ha-title" maxlength="140" placeholder="e.g. Build your next career skill"></div>
+    <div class="field"><label>Short message</label><input id="ha-message" maxlength="220" placeholder="Optional supporting text"></div>
+    <div class="field"><label>Banner image URL *</label><input id="ha-image" type="url" placeholder="https://…"><small style="display:block;margin-top:5px;color:var(--text-2)">Use an image hosted on your own storage or CDN. Recommended: 1200 × 400 px.</small></div>
+    <div class="field"><label>Destination URL *</label><input id="ha-target" type="url" placeholder="https://…"></div>
+    <div class="pb-row"><div class="field"><label>Placement</label><select id="ha-placement"><option value="home">Homepage</option><option value="vacancies">Vacancies</option><option value="both">Homepage + Vacancies</option></select></div><div class="field"><label>Display order</label><input id="ha-order" type="number" min="0" step="1" value="0"></div></div>
+    <div class="pb-row"><div class="field"><label>Starts</label><input id="ha-starts" type="datetime-local"></div><div class="field"><label>Ends (optional)</label><input id="ha-ends" type="datetime-local"></div></div>
+    <div class="toggle-row" style="margin-bottom:16px"><div><div class="t-label">Active</div><div class="t-sub">Only active ads within their schedule are shown publicly.</div></div><label class="switch"><input type="checkbox" id="ha-active" checked><span class="track"><span class="knob"></span></span></label></div>
+    <div class="sheet-actions"><button class="btn secondary" onclick="closeSheet('house-ad-overlay')">Cancel</button><button class="btn" onclick="saveHouseAd()">Save ad</button></div>
+  </div>
+</div>
 <!-- ============ VACANCY POSTERS: BULK UPLOAD SHEET ============ -->
 <div class="scrim" id="poster-overlay">
   <div class="sheet" style="max-width:720px">
@@ -822,7 +849,7 @@ async function deleteR2Object(key) {
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [] };
+var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [], houseAds: [] };
 var adminDataReady = false;
 var ADMIN_CACHE_DB = 'sa_data_cache_db';
 var ADMIN_CACHE_STORE = 'kv';
@@ -1147,6 +1174,10 @@ async function getPosters(){
   try { var { data, error } = await supabaseClient.from('employer_posters').select('id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at').order('created_at',{ascending:false}).limit(500); if(!error) return data||[]; console.error('posters load',error); } catch(e){ console.error('posters load',e); }
   return [];
 }
+async function getHouseAds(){
+  try { var { data, error } = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at').order('sort_order',{ascending:true}).order('created_at',{ascending:false}); if(!error) return data||[]; console.error('house ads load',error); } catch(e){ console.error('house ads load',e); }
+  return [];
+}
 async function upsertEmployer(e){ var { error } = await supabaseClient.from('employers').upsert(e); if(error){ console.error('employer save',error); alert('Could not save employer: '+error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } }
 async function removeEmployer(id){ var { error } = await supabaseClient.from('employers').delete().eq('id',id); if(error){ console.error('employer del',error); alert('Could not delete: '+error.message); } }
 async function upsertBranch(b){ var { error } = await supabaseClient.from('branches').upsert(b); if(error){ console.error('branch save',error); alert('Could not save branch: '+error.message); } }
@@ -1297,7 +1328,7 @@ async function regenerateAllEmployerTokens(){
 async function loadAll(){
   var results = await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(),
-    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters(), getJobEnquiries()
+    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters(), getJobEnquiries(), getHouseAds()
   ]);
   cache.agencies = results[0] || [];
   cache.branches = results[1] || [];
@@ -1309,6 +1340,7 @@ async function loadAll(){
   cache.poolCandidates = results[7] || [];
   cache.posters = results[8] || [];
   cache.jobEnquiries = results[9] || [];
+  cache.houseAds = results[10] || [];
 
   var settings = await Promise.all([
     getAppSetting('public_vacancy_posting','false'),
@@ -1346,6 +1378,7 @@ var NAV = [
   { id:'vacancies', label:'Vacancies', tile:'hc-tile-amber', sub:'Job postings & vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
   { id:'employers', label:'Employers', tile:'hc-tile-indigo', sub:'Companies posting their own vacancies', icon:'<path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/>' },
   { id:'posters', label:'Vacancy Posters', tile:'hc-tile-pink', sub:'Upload & edit recruitment-ad posters', icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
+  { id:'houseads', label:'House Ads', tile:'hc-tile-teal', sub:'Create & schedule your own banners', icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5V3M16 5V3"/>' },
   { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
   { id:'poolcandidates', label:'Talent Pool', tile:'hc-tile-blue', sub:'Job seeker registrations & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
   { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
@@ -1361,10 +1394,11 @@ function renderNav(){
     if(adminDataReady && n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
     if(adminDataReady && n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
     if(adminDataReady && n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
+    if(adminDataReady && n.id==='houseads') badge = '<span class="nav-badge">'+cache.houseAds.length+'</span>';
     if(adminDataReady && n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
     if(adminDataReady && n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(adminDataReady && n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
-    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
+    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters','houseads'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
     return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
@@ -1375,6 +1409,7 @@ function navBadge(id){
   if(id==='vacancies') return cache.vacancies.length;
   if(id==='employers') return cache.employers.length;
   if(id==='posters') return cache.posters.length;
+  if(id==='houseads') return cache.houseAds.length;
   if(id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; return c; }
   if(id==='dailytrack') return cache.tracks.length;
   if(id==='poolcandidates'){ return cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; }
@@ -1389,6 +1424,7 @@ function goSection(id){
   if(id==='vacancies') renderVacancies();
   if(id==='employers') renderEmployers();
   if(id==='posters') renderPosters();
+  if(id==='houseads') renderHouseAds();
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
   if(id==='dailytrack') renderDailyTracks();
@@ -1842,6 +1878,41 @@ function posterOptions(list, selected, blankLabel){
 }
 function posterExpiryToInput(iso){ if(!iso) return ''; var d = new Date(iso); return isNaN(d) ? '' : d.toISOString().slice(0,10); }
 function posterInputToExpiry(val){ return val ? new Date(val+'T23:59:59').toISOString() : null; }
+
+function houseAdDateToInput(iso){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d)) return ''; var pad=function(n){return String(n).padStart(2,'0')}; return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+function houseAdInputToISO(value){ return value ? new Date(value).toISOString() : null; }
+function houseAdStatus(ad){ var now=Date.now(), start=new Date(ad.starts_at||0).getTime(), end=ad.ends_at?new Date(ad.ends_at).getTime():Infinity; if(!ad.is_active) return '<span class="badge unverified">Paused</span>'; if(start>now) return '<span class="badge open">Scheduled</span>'; if(end<=now) return '<span class="badge unverified">Expired</span>'; return '<span class="badge verified">Live</span>'; }
+function openHouseAdSheet(id){
+  var ad=id ? cache.houseAds.find(function(x){return x.id===id;}) : null;
+  document.getElementById('house-ad-sheet-title').textContent=ad?'Edit house ad':'Create house ad';
+  document.getElementById('ha-id').value=ad?ad.id:'';
+  document.getElementById('ha-advertiser').value=ad?ad.advertiser_name||'':'';
+  document.getElementById('ha-title').value=ad?ad.title||'':'';
+  document.getElementById('ha-message').value=ad?ad.message||'':'';
+  document.getElementById('ha-image').value=ad?ad.image_url||'':'';
+  document.getElementById('ha-target').value=ad?ad.target_url||'':'';
+  document.getElementById('ha-placement').value=ad?ad.placement||'home':'home';
+  document.getElementById('ha-order').value=ad?ad.sort_order||0:0;
+  document.getElementById('ha-starts').value=ad?houseAdDateToInput(ad.starts_at):houseAdDateToInput(new Date().toISOString());
+  document.getElementById('ha-ends').value=ad?houseAdDateToInput(ad.ends_at):'';
+  document.getElementById('ha-active').checked=ad?ad.is_active!==false:true;
+  openSheet('house-ad-overlay');
+}
+async function saveHouseAd(){
+  var advertiser=document.getElementById('ha-advertiser').value.trim(), title=document.getElementById('ha-title').value.trim(), image=document.getElementById('ha-image').value.trim(), target=document.getElementById('ha-target').value.trim();
+  if(!advertiser||!title||!image||!target){ alert('Advertiser, headline, banner image URL and destination URL are required.'); return; }
+  var payload={advertiser_name:advertiser,title:title,message:document.getElementById('ha-message').value.trim(),image_url:image,target_url:target,placement:document.getElementById('ha-placement').value,sort_order:parseInt(document.getElementById('ha-order').value,10)||0,starts_at:houseAdInputToISO(document.getElementById('ha-starts').value)||new Date().toISOString(),ends_at:houseAdInputToISO(document.getElementById('ha-ends').value),is_active:document.getElementById('ha-active').checked,updated_at:new Date().toISOString()};
+  var id=document.getElementById('ha-id').value; if(id) payload.id=id;
+  var res=await supabaseClient.from('house_ads').upsert(payload);
+  if(res.error){ alert('Could not save house ad: '+res.error.message); return; }
+  closeSheet('house-ad-overlay'); cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast(id?'House ad updated':'House ad created');
+}
+function renderHouseAds(){
+  var el=document.getElementById('house-ad-list'); if(!el) return;
+  if(!cache.houseAds.length){el.innerHTML='<div class="empty-state"><h3>No house ads yet</h3><p>Create a banner to promote your own services or partners.</p></div>';return;}
+  el.innerHTML=cache.houseAds.map(function(ad){ var ctr=ad.impressions?((ad.clicks||0)/ad.impressions*100).toFixed(1):'0.0'; return '<div class="row-item house-ad-admin-row" onclick="toggleRow(this)"><div class="row-avatar house-ad-admin-thumb"><img src="'+escapeHtml(ad.image_url)+'" alt=""></div><div class="row-main"><div class="row-title">'+escapeHtml(ad.title||'Untitled ad')+' '+houseAdStatus(ad)+'</div><div class="row-sub">'+escapeHtml(ad.advertiser_name||'')+' · '+escapeHtml(ad.placement||'home')+' · '+(ad.impressions||0)+' impressions · '+(ad.clicks||0)+' clicks ('+ctr+'% CTR)</div></div><span class="row-chevron">⌄</span></div><div class="row-details"><div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(houseAdDateToInput(ad.starts_at)||'Now')+' → '+escapeHtml(houseAdDateToInput(ad.ends_at)||'No expiry')+'</div><div class="det-row"><span class="det-label">Destination:</span> <a href="'+escapeHtml(ad.target_url)+'" target="_blank" rel="noopener">'+escapeHtml(ad.target_url)+'</a></div><div class="row-expanded-actions"><button class="minibtn full" onclick="event.stopPropagation();openHouseAdSheet(\''+ad.id+'\')">Edit</button><button class="minibtn full danger" onclick="event.stopPropagation();deleteHouseAd(\''+ad.id+'\')">Delete</button></div></div>'; }).join('');
+}
+async function deleteHouseAd(id){ var ad=cache.houseAds.find(function(x){return x.id===id;}); if(!confirm('Delete “'+((ad&&ad.title)||'this house ad')+'”?')) return; var res=await supabaseClient.from('house_ads').delete().eq('id',id); if(res.error){alert('Could not delete house ad: '+res.error.message);return;} cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast('House ad deleted'); }
 
 function renderPosters(){
   var q = (document.getElementById('po-search').value||'').trim().toLowerCase();
