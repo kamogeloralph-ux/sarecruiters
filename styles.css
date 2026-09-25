@@ -1844,3 +1844,12 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-copy small{font-size:9.5px;line-height:1.15;-webkit-line-clamp:1}
 .house-ad-copy em{font-size:8px;line-height:1;margin-top:1px}
 @media(max-width:380px){.house-ad-card{height:64px;min-height:64px}.house-ad-card img{width:72px;min-width:72px;height:64px}.house-ad-copy{padding-left:8px}.house-ad-copy strong{font-size:10.5px}.house-ad-copy small{font-size:8.5px}.house-ad-copy em{font-size:7.5px}}
+
+
+/* House-ad image stands alone; minimal copy sits beneath it. */
+.house-ad-card{display:flex;flex-direction:column;align-items:stretch;height:auto;min-height:0;border-radius:12px;overflow:hidden}
+.house-ad-card img{display:block;width:100%;min-width:0;max-width:none;height:auto;aspect-ratio:3 / 1;object-fit:cover;object-position:center}
+.house-ad-copy{display:flex;flex-direction:column;justify-content:center;gap:1px;padding:3px 7px 4px;min-height:0}
+.house-ad-copy strong{font-size:9.5px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.house-ad-copy small{font-size:8px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:1}
+@media(max-width:380px){.house-ad-copy{padding:3px 6px}.house-ad-copy strong{font-size:9px}.house-ad-copy small{font-size:7.5px}}
