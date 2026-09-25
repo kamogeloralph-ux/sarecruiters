@@ -741,9 +741,9 @@ async function startupResponse(request, env, ctx, origin) {
   // not receive an older cached startup response without employer counts.
   const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v2", request.url), request);
 
-  function buildResponse(payload) {
-    return new Response(JSON.stringify(payload), {
-      headers: {
+  async function buildResponse(payload) {
+    const body = JSON.stringify(payload);
+    const headers = {
         "Content-Type": "application/json; charset=utf-8",
         // Cached at a long max-age so Cloudflare's Cache API never silently
         // evicts this entry on its own -- freshness below is decided
@@ -761,14 +761,20 @@ async function startupResponse(request, env, ctx, origin) {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
-      }
-    });
+    };
+    if (typeof CompressionStream === "function") {
+      headers["Content-Encoding"] = "gzip";
+      const compressed = new Response(body).body.pipeThrough(new CompressionStream("gzip"));
+      return new Response(compressed, { headers });
+    }
+    return new Response(body, { headers });
   }
   __name(buildResponse, "buildResponse");
 
   async function refreshAndCache() {
     const payload = await loadStartupDataOrFallback(env);
-    await cache.put(cacheKey, buildResponse(payload).clone());
+    const response = await buildResponse(payload);
+    await cache.put(cacheKey, response.clone());
     return payload;
   }
   __name(refreshAndCache, "refreshAndCache");
@@ -796,7 +802,7 @@ async function startupResponse(request, env, ctx, origin) {
 
   try {
     const payload = await refreshAndCache();
-    return buildResponse(payload);
+    return await buildResponse(payload);
   } catch (error) {
     return json({ error: "Startup data unavailable", detail: error.message }, 502, origin);
   }

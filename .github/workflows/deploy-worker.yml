@@ -35,6 +35,7 @@ jobs:
           command: deploy --config wrangler.toml
 
       - name: Sync Worker secrets (RESEND + TURNSTILE) if provided
+        continue-on-error: true
         # Optional override path: add RESEND_API_KEY / TURNSTILE_SECRET_KEY
         # under repo Settings → Secrets and variables → Actions and they
         # are applied AFTER the deploy (so nothing can wipe them). Skipped
