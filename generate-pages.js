@@ -820,15 +820,36 @@ const SEO_LANDING_PAGES = [
   { slug: 'contact', title: 'Contact Us | SA Recruiters', description: 'Contact SA Recruiters about recruitment agencies, vacancies, candidate support and employer listings.', heading: 'Contact Us', intro: 'Need help with a listing, agency information or the SA Recruiters platform? Contact our team using the details below.', contact: true, links: [['/careers/', 'Browse vacancies'], ['/post-a-job/', 'Post a job'], ['/register/', 'Register as a candidate or employer']] },
   { slug: 'register', title: 'Register as a Candidate or Employer | SA Recruiters', description: 'Register with SA Recruiters to join the Talent Pool or submit recruitment opportunities for your company.', heading: 'Register with SA Recruiters', intro: 'Candidates can join the Talent Pool and employers can submit vacancies for consideration. Registration is free.', links: [['/candidates/', 'Join the Candidate Talent Pool'], ['/post-a-job/', 'Post a job as an employer'], ['/contact/', 'Contact us for registration help']] },
   { slug: 'candidates', title: 'Candidates and Talent Pool | SA Recruiters', description: 'Candidate resources, job-search guidance and Talent Pool registration for South African job seekers.', heading: 'Candidates', intro: 'Discover vacancies, prepare for your job search and make it easier for recruitment agencies and employers to find you.', links: [['/careers/', 'Search careers and vacancies'], ['/register/', 'Join the Talent Pool'], ['/browse/category/learnership/', 'Browse learnerships'], ['/browse/category/internship/', 'Browse internships']] },
-  { slug: 'about', title: 'About SA Recruiters | South African Recruitment Directory', description: 'Learn about SA Recruiters, a free directory connecting South African candidates, recruitment agencies and employers.', heading: 'About SA Recruiters', intro: 'SA Recruiters connects South African job seekers, recruitment agencies and employers through a free recruitment directory and vacancy platform.', links: [['/careers/', 'Browse vacancies'], ['/candidates/', 'Candidate resources'], ['/post-a-job/', 'Post a job'], ['/contact/', 'Contact Us']] },
+  { slug: 'about', title: 'About SA Recruiters | South African Recruitment Directory', description: 'Learn how SA Recruiters helps candidates, recruitment agencies and employers connect through a practical South African jobs directory.', heading: 'About SA Recruiters', intro: 'SA Recruiters is a practical starting point for South African hiring. We bring vacancies, recruitment agencies, employers and candidate resources together in one easy-to-use directory.', about: true, links: [['/careers/', 'Browse vacancies'], ['/candidates/', 'Candidate resources'], ['/post-a-job/', 'Post a job'], ['/contact/', 'Contact Us']] },
 ];
 
 function buildSeoLandingPage(page) {
   const canonical = `${SITE_URL}/${page.slug}/`;
   const contactHtml = page.contact ? '<h2>Contact details</h2><p><strong>Phone:</strong> <a href="tel:+27715531005">071 553 1005</a><br><strong>Email:</strong> <a href="mailto:sarecruiters.directory@gmail.com">sarecruiters.directory@gmail.com</a><br><strong>WhatsApp:</strong> <a href="https://wa.me/27715531005">Message SA Recruiters on WhatsApp</a></p>' : '';
   const linksHtml = page.links.map(([href, label]) => `<li><a href="${href}">${escapeHtml(label)}</a></li>`).join('');
-  const body = `<h1>${escapeHtml(page.heading)}</h1><p>${escapeHtml(page.intro)}</p>${contactHtml}<h2>Explore SA Recruiters</h2><ul class="hub-list">${linksHtml}</ul><p class="hub-note"><a href="/">Return to the SA Recruiters homepage →</a></p>`;
-  const jsonLd = { '@context': 'https://schema.org', '@type': 'WebPage', name: page.title, description: page.description, url: canonical, isPartOf: { '@type': 'WebSite', name: 'SA Recruiters', url: `${SITE_URL}/` } };
+  const aboutHtml = page.about ? `
+    <section class="about-section">
+      <h2>A better way to start your job search</h2>
+      <p>Finding the right opportunity can take time. Finding the right person can take even longer. SA Recruiters makes that first step simpler by giving candidates, agencies and employers a shared place to discover what is available across South Africa.</p>
+      <p>Whether you are searching for your next role, building a team or looking for a recruitment partner, the directory helps you move from scattered searches to a clearer shortlist.</p>
+    </section>
+    <section class="about-section">
+      <h2>For employers and hiring teams</h2>
+      <p>Reach people with experience across administration, finance, technology, sales, marketing, operations, retail, logistics, skilled trades and other fields. Use SA Recruiters to make your opportunity easier to find, then review applications through the contact or application instructions attached to each vacancy.</p>
+      <p>Our aim is to reduce the time spent searching in disconnected places. We help you put the opportunity in front of a broader South African audience while keeping the hiring decision in your hands.</p>
+    </section>
+    <section class="about-section">
+      <h2>For candidates</h2>
+      <p>Explore current vacancies by category, location and work style. Each listing should be read carefully because the relevant agency or employer sets the requirements, application process and closing date. When a role interests you, follow the application link or contact details shown on the vacancy page.</p>
+      <p>You can also use the Candidate Talent Pool to make your skills easier for participating recruiters and employers to discover.</p>
+    </section>
+    <section class="about-section">
+      <h2>Quality, clarity and responsible browsing</h2>
+      <p>SA Recruiters is a directory and connection platform. We organise publicly available recruitment information and submissions reviewed for publication; we do not promise employment, guarantee an interview or replace the agency or employer responsible for a vacancy.</p>
+      <p>Always confirm the company, role, location and application instructions before sharing personal information. Never pay a recruiter to apply for a job, and contact us if a listing appears inaccurate or suspicious.</p>
+    </section>` : '';
+  const body = `<h1>${escapeHtml(page.heading)}</h1><p>${escapeHtml(page.intro)}</p>${aboutHtml}${contactHtml}<h2>Explore SA Recruiters</h2><ul class="hub-list">${linksHtml}</ul><p class="hub-note"><a href="/">Return to the SA Recruiters homepage →</a></p>`;
+  const jsonLd = { '@context': 'https://schema.org', '@type': page.about ? 'AboutPage' : 'WebPage', name: page.title, description: page.description, url: canonical, isPartOf: { '@type': 'WebSite', name: 'SA Recruiters', url: `${SITE_URL}/` }, ...(page.about ? { about: { '@type': 'Organization', name: 'SA Recruiters', url: `${SITE_URL}/` } } : {}) };
   return pageShell({ title: page.title, description: page.description, canonical, bodyHtml: body, jsonLd });
 }
 

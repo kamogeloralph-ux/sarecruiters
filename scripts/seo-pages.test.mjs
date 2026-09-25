@@ -66,6 +66,15 @@ test('homepage search debounces keystroke renders', () => {
   assert.match(cards, /filterAndRenderCached\(\);/);
 });
 
+test('About page contains original SA Recruiters information sections', () => {
+  assert.match(generator, /A better way to start your job search/);
+  assert.match(generator, /For employers and hiring teams/);
+  assert.match(generator, /For candidates/);
+  assert.match(generator, /Quality, clarity and responsible browsing/);
+  assert.match(generator, /page\.about \? 'AboutPage' : 'WebPage'/);
+  assert.match(generator, /class="about-section"/);
+});
+
 test('vacancy statistic uses the shared startup count path', () => {
   assert.doesNotMatch(appData, /fetchLiveVacancyTotal/);
   assert.doesNotMatch(appData, /loadGateStats\(\);/);
