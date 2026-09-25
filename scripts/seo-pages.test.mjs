@@ -168,6 +168,12 @@ test('public directory sections expose stable share links and deep-link routing'
   }
 });
 
+test('candidate share copy promotes joining the Talent Pool', () => {
+  assert.match(appUi, /shareLabel = section === 'candidates' \? 'Join the Talent Pool'/);
+  assert.match(appUi, /section === 'talent-pool'/);
+  assert.match(appUi, /shareKey: 'talent-pool'/);
+});
+
 test('homepage exposes an About action in the bottom navigation', () => {
   assert.match(homepage, /navbtn-about/);
   assert.match(homepage, /window\.open\('about\/',?'_blank',?'noopener'\)/);
