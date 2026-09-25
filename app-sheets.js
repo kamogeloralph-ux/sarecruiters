@@ -682,6 +682,8 @@ function openPostJobSheet() {
   document.getElementById('pj-website').value = '';
   var group = document.getElementById('pj-role-types');
   if (group) group.querySelectorAll('.role-pill.active').forEach(function(b){ b.classList.remove('active'); });
+  var terms = document.getElementById('post-job-terms-accept');
+  if (terms) terms.checked = false;
   var err = document.getElementById('post-job-error');
   err.style.display = 'none'; err.textContent = '';
   var waLink = document.getElementById('post-job-wa-link');
@@ -701,6 +703,12 @@ async function submitJobPostEnquiry() {
   var website = document.getElementById('pj-website').value.trim();
   var err = document.getElementById('post-job-error');
   err.style.display = 'none'; err.textContent = '';
+  var terms = document.getElementById('post-job-terms-accept');
+  if (!terms || !terms.checked) {
+    err.textContent = 'Accept the SA Recruiters Terms and Conditions to continue.';
+    err.style.display = 'block';
+    return;
+  }
   if (!company || !email) {
     err.textContent = 'Add your company name and work email.'; err.style.display = 'block'; return;
   }
