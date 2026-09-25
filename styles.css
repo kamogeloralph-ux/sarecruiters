@@ -1871,3 +1871,13 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-heading strong{display:block;width:100%;text-align:center}
 .house-ad-message{align-items:flex-start;text-align:left}
 .house-ad-message small{display:block;width:100%;text-align:left}
+
+/* House ads use the same surface and type scale as agency directory cards. */
+.house-ad-slot{margin:0 0 14px;width:auto}
+.house-ad-card{display:flex;flex-direction:column;align-items:stretch;width:100%;margin:0 0 14px;overflow:hidden;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);text-decoration:none;color:var(--text)}
+.house-ad-heading{order:1;display:flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px 7px;background:var(--card);text-align:center}
+.house-ad-heading strong{display:block;width:100%;font-size:13.5px;font-weight:780;line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.house-ad-card img{order:2;display:block;width:100%;height:auto;aspect-ratio:3 / 1;object-fit:cover;object-position:center;border-radius:0}
+.house-ad-message{order:3;display:flex;align-items:center;min-height:36px;padding:7px 14px 9px;background:var(--card);text-align:left}
+.house-ad-message small{display:block;width:100%;font-size:11.5px;font-weight:400;line-height:1.25;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+@media(max-width:380px){.house-ad-heading{min-height:40px;padding:8px 12px 6px}.house-ad-heading strong{font-size:13px}.house-ad-message{min-height:32px;padding:6px 12px 8px}.house-ad-message small{font-size:11px}}
