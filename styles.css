@@ -1783,3 +1783,16 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .section-share-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .section-share-btn:active{background:var(--accent);color:#fff;transform:scale(.97)}
 @media (max-width:360px){.section-share-btn span{display:none}.section-share-btn{width:32px;height:32px;padding:0}}
+
+/* Featured vacancy placements: an optional, clearly labelled visibility tier. */
+.featured-vacancies-section{margin:0 0 18px;padding:16px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:20px;background:linear-gradient(145deg,color-mix(in srgb,var(--accent-soft) 72%,var(--card)),var(--card));box-shadow:var(--shadow-sm)}
+.featured-vacancies-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
+.featured-vacancies-heading .eyebrow{display:block;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.featured-vacancies-heading h2{margin:3px 0 2px;font-size:20px;line-height:1.15;color:var(--text)}
+.featured-vacancies-heading p{margin:0;color:var(--text-2);font-size:12px;line-height:1.45}
+.featured-vacancies-grid{display:grid;gap:8px;margin-top:12px}
+.featured-vacancies-grid .vac-card{background:color-mix(in srgb,var(--card) 84%,var(--accent-soft)) !important;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important;border-radius:14px !important;box-shadow:none !important}
+.featured-vacancies-grid .vac-card:last-child{border-bottom:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important}
+.vac-featured-badge{display:inline-flex;align-items:center;margin-left:6px;padding:3px 7px;border-radius:999px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
+.vac-card-featured .vac-title{font-weight:800}
+@media(max-width:520px){.featured-vacancies-section{padding:13px;border-radius:18px}.featured-vacancies-heading h2{font-size:18px}}
