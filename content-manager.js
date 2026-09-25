@@ -54,6 +54,20 @@
       store.__interview_video_version = interviewVideoVersion;
       changed = true;
     }
+    // Add the first-CV video without overwriting other CV-preparation
+    // articles an admin may have edited or created.
+    var cvVideoVersion = 'official-cv-video-v1';
+    if (store.__cv_video_version !== cvVideoVersion && DEFAULT_CONTENT['cv-prep']) {
+      var cvVideoArticle = DEFAULT_CONTENT['cv-prep'].find(function(article){ return article.id === 'cv-video-first-cv'; });
+      var cvArticles = Array.isArray(store['cv-prep']) ? store['cv-prep'] : [];
+      if (cvVideoArticle && !cvArticles.some(function(article){ return article.id === cvVideoArticle.id; })) {
+        cvArticles.unshift(JSON.parse(JSON.stringify(cvVideoArticle)));
+        store['cv-prep'] = cvArticles;
+        changed = true;
+      }
+      store.__cv_video_version = cvVideoVersion;
+      changed = true;
+    }
     Object.keys(DEFAULT_CONTENT).forEach(function(key){
       if (!store[key] || !Array.isArray(store[key]) || store[key].length === 0) {
         // deep clone defaults

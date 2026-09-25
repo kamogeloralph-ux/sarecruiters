@@ -115,6 +115,15 @@ test('Interview Tips includes the supplied YouTube video for listening', () => {
   assert.match(contentManager, /iv-video-job-questions/);
 });
 
+test('CV preparation includes the supplied first-CV video', () => {
+  assert.match(content, /id: 'cv-video-first-cv'/);
+  assert.match(content, /youtube-nocookie\.com\/embed\/JmWohrRhh-8/);
+  assert.match(content, /https:\/\/youtu\.be\/JmWohrRhh-8/);
+  assert.match(content, /How to Write Your First CV/);
+  assert.match(contentManager, /official-cv-video-v1/);
+  assert.match(contentManager, /cv-video-first-cv/);
+});
+
 test('vacancy statistic uses the shared startup count path', () => {
   assert.doesNotMatch(appData, /fetchLiveVacancyTotal/);
   assert.doesNotMatch(appData, /loadGateStats\(\);/);
