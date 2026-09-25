@@ -151,6 +151,22 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+function safeHttpUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+function serializeJsonLd(value) {
+  // Listing fields come from Supabase and may contain attacker-controlled
+  // text. Escape the HTML-sensitive character so </script> cannot terminate
+  // this JSON-LD element and become executable markup.
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -222,15 +238,19 @@ ${image ? '' : '<meta property="og:image:width" content="512">\n<meta property="
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/v2-icon-192.png">
 <link rel="apple-touch-icon" href="/icons/v2-icon-192.png">
 <link rel="stylesheet" href="/static-pages.css?v=${DEPLOY_VERSION}">
-${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : ''}
+${jsonLd ? `<script type="application/ld+json">${serializeJsonLd(jsonLd)}</script>` : ''}
 </head>
 <body>
 <header class="sp-header"><a href="/"><img src="/icons/v2-icon-192.png" alt="SA Recruiters logo" width="36" height="36"> <span>Back to SA Recruiters</span></a></header>
+<nav class="sp-nav" aria-label="SA Recruiters pages">
+<a href="/careers/">Careers</a><a href="/apply/">Apply for a vacancy</a><a href="/contact/">Contact Us</a><a href="/register/">Register</a><a href="/candidates/">Candidates</a><a href="/about/">About SA Recruiters</a>
+</nav>
 <main class="sp-main">
 ${bodyHtml}
 </main>
 <footer class="sp-footer">
 <a href="/">SA Recruiters — South African Recruitment Agencies Directory</a>
+<div class="sp-footer-links"><a href="/careers/">Careers</a><a href="/apply/">Apply</a><a href="/contact/">Contact</a><a href="/register/">Register</a><a href="/candidates/">Candidates</a><a href="/about/">About</a></div>
 <div class="sp-contact"><a href="tel:+27715531005">071 553 1005</a><span aria-hidden="true"> · </span><a href="https://g.page/r/CbL3q0tBfGAsEBI" target="_blank" rel="noopener noreferrer">Find us on Google</a></div>
 </footer>
 </body>
@@ -341,7 +361,7 @@ ${agency.verified ? '<p><em>✔ Verified agency</em></p>' : ''}
 ${agency.address ? `<strong>Address:</strong> ${escapeHtml(agency.address)}<br>` : ''}
 ${agency.contact ? `<strong>Contact:</strong> ${escapeHtml(agency.contact)}<br>` : ''}
 ${agency.email ? `<strong>Email:</strong> ${escapeHtml(agency.email)}<br>` : ''}
-${agency.website ? `<strong>Website:</strong> <a href="${escapeHtml(agency.website)}" rel="nofollow">${escapeHtml(agency.website)}</a><br>` : ''}
+ ${safeHttpUrl(agency.website) ? `<strong>Website:</strong> <a href="${escapeHtml(safeHttpUrl(agency.website))}" rel="nofollow">${escapeHtml(agency.website)}</a><br>` : ''}
 ${agency.trades ? `<strong>Trades / Industries:</strong> ${escapeHtml(agency.trades)}<br>` : ''}
 ${agency.companies ? `<strong>Companies:</strong> ${escapeHtml(agency.companies)}<br>` : ''}</p>
 ${branchesHtml}
@@ -376,6 +396,14 @@ function inferAddressRegion(locationText) {
   return match ? (match.startsWith('Kwazulu') ? 'KwaZulu-Natal' : match) : undefined;
 }
 
+function inferAddressLocality(locationText) {
+  const text = String(locationText || '').replace(/\s+/g, ' ').trim();
+  if (!text) return 'South Africa';
+  const firstPart = text.split(',')[0].trim();
+  const locality = firstPart.split(/\s+-\s+/)[0].trim();
+  return locality || 'South Africa';
+}
+
 // Google requires every JobPosting to have EITHER a jobLocation with at
 // least addressCountry, OR jobLocationType: 'TELECOMMUTE' for fully
 // remote roles. Previously this was `undefined` whenever vacancy.location
@@ -390,7 +418,13 @@ function inferAddressRegion(locationText) {
 // street-level address - that gap is a real data limitation, not a bug.
 function buildJobLocationFields(vacancy) {
   if (vacancy.remote === 'Remote') {
-    return { jobLocationType: 'TELECOMMUTE' };
+    return {
+      jobLocationType: 'TELECOMMUTE',
+      applicantLocationRequirements: {
+        '@type': 'Country',
+        name: 'South Africa',
+      },
+    };
   }
 
   return {
@@ -398,7 +432,7 @@ function buildJobLocationFields(vacancy) {
       '@type': 'Place',
       address: {
         '@type': 'PostalAddress',
-        addressLocality: vacancy.location || undefined,
+        addressLocality: inferAddressLocality(vacancy.location),
         addressRegion: inferAddressRegion(vacancy.location),
         addressCountry: 'ZA',
       },
@@ -406,12 +440,24 @@ function buildJobLocationFields(vacancy) {
   };
 }
 
-// validThrough is only emitted when the source supplies a genuine closing
-// date. Never invent an expiry date from created_at: the application removes
-// vacancies when their explicit closing date has passed.
+const SCHEMA_MAX_AGE_DAYS = {
+  adzuna: 45,
+  himalayas: 45,
+  simplify: 45,
+  oracle: 60,
+  government: 90,
+};
+
+// Use the source's explicit closing date when available. For feeds without a
+// closing date, mirror the same maximum posting-age policy used by the app's
+// stale-vacancy cleanup rather than omitting Google's recommended field.
 function resolveValidThrough(vacancy) {
   if (vacancy.closing_date) return vacancy.closing_date;
-  return undefined;
+  const created = new Date(vacancy.created_at || '');
+  if (Number.isNaN(created.getTime())) return undefined;
+  const days = SCHEMA_MAX_AGE_DAYS[vacancy.source_type] || 60;
+  created.setUTCDate(created.getUTCDate() + days);
+  return created.toISOString().slice(0, 10);
 }
 
 // schema.org expects baseSalary.value.value to be a NUMBER, and
@@ -466,6 +512,7 @@ function buildVacancyPage(vacancy, agency, slug) {
     description: vacancy.notes || description,
     datePosted: vacancy.created_at,
     validThrough: resolveValidThrough(vacancy),
+    url: canonical,
     employmentType: vacancy.employment_type || undefined,
     hiringOrganization: {
       '@type': 'Organization',
@@ -489,8 +536,8 @@ ${vacancy.experience_level ? `<strong>Experience level:</strong> ${escapeHtml(va
 ${vacancy.closing_date ? `<strong>Closing date:</strong> ${escapeHtml(vacancy.closing_date)}<br>` : ''}</p>
 ${vacancy.notes ? `<h2>Details</h2><p>${escapeHtml(vacancy.notes).replace(/\n/g, '<br>')}</p>` : ''}
 ${
-  vacancy.link
-    ? `<p><a class="sp-apply" href="${escapeHtml(vacancy.link)}" rel="nofollow">Apply for this role →</a></p>`
+  safeHttpUrl(vacancy.link)
+    ? `<p><a class="sp-apply" href="${escapeHtml(safeHttpUrl(vacancy.link))}" rel="nofollow">Apply for this role →</a></p>`
     : '<p>To apply, visit the SA Recruiters app and use the contact details on the agency listing.</p>'
 }
 `;
@@ -511,12 +558,13 @@ function buildPosterPage(poster, slug) {
   const heading = poster.caption || 'Vacancy poster';
   const title = `${heading} | SA Recruiters`;
   const description = `${heading} — recruitment poster on SA Recruiters, South Africa's recruitment directory.`;
+  const imageUrl = safeHttpUrl(poster.image_url);
   const body = `
 <h1>${escapeHtml(heading)}</h1>
-<p><img src="${escapeHtml(poster.image_url)}" alt="${escapeHtml(heading)}" style="max-width:100%;height:auto;border-radius:12px"></p>
+${imageUrl ? `<p><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(heading)}" style="max-width:100%;height:auto;border-radius:12px"></p>` : '<p>The poster image is unavailable.</p>'}
 <p class="hub-note"><a href="/">Browse all agencies and vacancies on SA Recruiters →</a></p>
 `;
-  return pageShell({ title, description, canonical, bodyHtml: body, image: poster.image_url });
+  return pageShell({ title, description, canonical, bodyHtml: body, image: imageUrl || undefined });
 }
 
 // ---------- location hub pages ----------
@@ -763,6 +811,27 @@ document.getElementById('pj-form').addEventListener('submit', async function(e){
   return pageShell({ title, description, canonical, bodyHtml: body, jsonLd });
 }
 
+// Permanent, crawlable landing pages for the site's primary user journeys.
+// These use normal anchor links instead of JavaScript-only actions so search
+// engines can discover a stable internal-link graph for sitelink candidates.
+const SEO_LANDING_PAGES = [
+  { slug: 'careers', title: 'Careers and Vacancies in South Africa | SA Recruiters', description: 'Browse current careers and job vacancies from recruitment agencies and employers across South Africa.', heading: 'Careers and Vacancies', intro: 'Find your next opportunity through SA Recruiters. Browse current vacancies by location, category and work style.', links: [['/jobs/gauteng/', 'Browse Gauteng vacancies'], ['/browse/category/remote/', 'Find remote and work-from-home jobs'], ['/browse/category/government/', 'Browse government vacancies'], ['/browse/category/learnership/', 'Find learnerships'], ['/candidates/', 'Candidate resources and Talent Pool']] },
+  { slug: 'apply', title: 'Apply for a Vacancy | SA Recruiters', description: 'Learn how to apply for jobs listed by South African recruitment agencies and employers on SA Recruiters.', heading: 'Apply for a Vacancy', intro: 'Open a vacancy, review the employer or agency instructions, and use the application link or contact details provided on the listing.', links: [['/careers/', 'Browse careers and vacancies'], ['/browse/category/remote/', 'Browse remote vacancies'], ['/contact/', 'Contact SA Recruiters']] },
+  { slug: 'contact', title: 'Contact Us | SA Recruiters', description: 'Contact SA Recruiters about recruitment agencies, vacancies, candidate support and employer listings.', heading: 'Contact Us', intro: 'Need help with a listing, agency information or the SA Recruiters platform? Contact our team using the details below.', contact: true, links: [['/careers/', 'Browse vacancies'], ['/post-a-job/', 'Post a job'], ['/register/', 'Register as a candidate or employer']] },
+  { slug: 'register', title: 'Register as a Candidate or Employer | SA Recruiters', description: 'Register with SA Recruiters to join the Talent Pool or submit recruitment opportunities for your company.', heading: 'Register with SA Recruiters', intro: 'Candidates can join the Talent Pool and employers can submit vacancies for consideration. Registration is free.', links: [['/candidates/', 'Join the Candidate Talent Pool'], ['/post-a-job/', 'Post a job as an employer'], ['/contact/', 'Contact us for registration help']] },
+  { slug: 'candidates', title: 'Candidates and Talent Pool | SA Recruiters', description: 'Candidate resources, job-search guidance and Talent Pool registration for South African job seekers.', heading: 'Candidates', intro: 'Discover vacancies, prepare for your job search and make it easier for recruitment agencies and employers to find you.', links: [['/careers/', 'Search careers and vacancies'], ['/register/', 'Join the Talent Pool'], ['/browse/category/learnership/', 'Browse learnerships'], ['/browse/category/internship/', 'Browse internships']] },
+  { slug: 'about', title: 'About SA Recruiters | South African Recruitment Directory', description: 'Learn about SA Recruiters, a free directory connecting South African candidates, recruitment agencies and employers.', heading: 'About SA Recruiters', intro: 'SA Recruiters connects South African job seekers, recruitment agencies and employers through a free recruitment directory and vacancy platform.', links: [['/careers/', 'Browse vacancies'], ['/candidates/', 'Candidate resources'], ['/post-a-job/', 'Post a job'], ['/contact/', 'Contact Us']] },
+];
+
+function buildSeoLandingPage(page) {
+  const canonical = `${SITE_URL}/${page.slug}/`;
+  const contactHtml = page.contact ? '<h2>Contact details</h2><p><strong>Phone:</strong> <a href="tel:+27715531005">071 553 1005</a><br><strong>Email:</strong> <a href="mailto:sarecruiters.directory@gmail.com">sarecruiters.directory@gmail.com</a><br><strong>WhatsApp:</strong> <a href="https://wa.me/27715531005">Message SA Recruiters on WhatsApp</a></p>' : '';
+  const linksHtml = page.links.map(([href, label]) => `<li><a href="${href}">${escapeHtml(label)}</a></li>`).join('');
+  const body = `<h1>${escapeHtml(page.heading)}</h1><p>${escapeHtml(page.intro)}</p>${contactHtml}<h2>Explore SA Recruiters</h2><ul class="hub-list">${linksHtml}</ul><p class="hub-note"><a href="/">Return to the SA Recruiters homepage →</a></p>`;
+  const jsonLd = { '@context': 'https://schema.org', '@type': 'WebPage', name: page.title, description: page.description, url: canonical, isPartOf: { '@type': 'WebSite', name: 'SA Recruiters', url: `${SITE_URL}/` } };
+  return pageShell({ title: page.title, description: page.description, canonical, bodyHtml: body, jsonLd });
+}
+
 // ---------- main ----------
 
 async function main() {
@@ -771,6 +840,15 @@ async function main() {
   console.log(`Fetched ${agencies.length} agencies, ${branches.length} branches, ${vacancies.length} vacancies.`);
 
   const sitemapUrls = [`${SITE_URL}/`];
+
+  // Permanent navigation pages are written on every build, independent of
+  // vacancy inventory, so their URLs stay indexable and stable.
+  SEO_LANDING_PAGES.forEach((page) => {
+    const dir = path.join(OUT_DIR, page.slug);
+    ensureDir(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), buildSeoLandingPage(page));
+    sitemapUrls.push(`${SITE_URL}/${page.slug}/`);
+  });
 
   // Location hubs: one per province (matches firstjobly.co.za/browse/province/*
   // coverage — previously only Gauteng was generated here).
@@ -903,6 +981,9 @@ ${sitemapUrls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
   const css = `body{font-family:Inter,system-ui,sans-serif;max-width:720px;margin:0 auto;padding:24px;line-height:1.6;color:#111}
 .sp-header,.sp-footer{padding:12px 0}
 .sp-header a,.sp-footer a{color:#0a66c2;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.sp-nav,.sp-footer-links{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 0 18px;font-size:.9rem}
+.sp-nav a,.sp-footer-links a{color:#0a66c2;text-decoration:none}
+.sp-nav a:hover,.sp-footer-links a:hover{text-decoration:underline}
 .sp-contact{margin-top:6px;font-size:.95rem}
 .sp-header img{border-radius:9px;display:block}
 h1{font-size:1.6rem;margin-bottom:.5rem}

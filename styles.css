@@ -1661,6 +1661,14 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #guest-limit-overlay .gsi-material-button{border-radius:999px;height:50px;margin-bottom:10px;font-size:15px}
 #guest-limit-overlay .gsi-material-button-contents{font-weight:600}
 
+/* Crawlable SEO navigation is visible to people and search engines without
+   changing the app's primary screen layout. */
+.seo-site-footer{max-width:760px;margin:20px auto 0;padding:22px 20px 28px;color:var(--text-2);text-align:center;border-top:1px solid var(--border);font-size:12px}
+.seo-site-footer strong{display:block;color:var(--text);font-size:13px;margin-bottom:10px}
+.seo-site-footer nav{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 16px}
+.seo-site-footer a{color:var(--accent);text-decoration:none}
+.seo-site-footer a:hover{text-decoration:underline}
+@media (max-width:480px){.seo-site-footer{padding-left:14px;padding-right:14px}.seo-site-footer nav{gap:8px 12px}}
 /* FINAL MENU CONTROL STANDARD: the home hamburger and every three-dot menu
    button must share one visible treatment, including the Menu hero override. */
 .site-menu-trigger,.menu-more-btn{
