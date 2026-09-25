@@ -7,6 +7,8 @@ const homepage = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 const cards = readFileSync(new URL('../app-cards.js', import.meta.url), 'utf8');
 const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
 const privacy = readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
+const content = readFileSync(new URL('../content.js', import.meta.url), 'utf8');
+const contentManager = readFileSync(new URL('../content-manager.js', import.meta.url), 'utf8');
 
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
 
@@ -86,6 +88,22 @@ test('privacy policy matches the guest app and current data providers', () => {
   assert.match(privacy, /Resend/);
   assert.match(privacy, /Ask us to access, correct or delete/i);
   assert.match(privacy, /Last updated: 25 September 2026/);
+});
+
+test('FAQ gives original safety, offline, Talent Pool and privacy guidance', () => {
+  assert.match(content, /South African recruitment directory and jobs platform/);
+  assert.match(content, /never pay someone just to apply/);
+  assert.match(content, /Offline mode cannot fetch new vacancies/);
+  assert.match(content, /What is the Talent Pool\?/);
+  assert.match(content, /Privacy Policy/);
+  assert.match(contentManager, /official-faq-v2/);
+  assert.match(contentManager, /store\.faq = JSON\.parse/);
+});
+
+test('homepage exposes an About action in the bottom navigation', () => {
+  assert.match(homepage, /navbtn-about/);
+  assert.match(homepage, /window\.open\('about\/',?'_blank',?'noopener'\)/);
+  assert.match(homepage, />About<\/span>/);
 });
 
 test('vacancy statistic uses the shared startup count path', () => {
