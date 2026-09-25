@@ -9,6 +9,7 @@ const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8')
 const privacy = readFileSync(new URL('../privacy/index.html', import.meta.url), 'utf8');
 const legacyPrivacy = readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
 const faq = readFileSync(new URL('../faq/index.html', import.meta.url), 'utf8');
+const terms = readFileSync(new URL('../terms/index.html', import.meta.url), 'utf8');
 const content = readFileSync(new URL('../content.js', import.meta.url), 'utf8');
 const contentManager = readFileSync(new URL('../content-manager.js', import.meta.url), 'utf8');
 const appForms = readFileSync(new URL('../app-forms.js', import.meta.url), 'utf8');
@@ -102,6 +103,13 @@ test('FAQ and privacy are crawlable HTML routes', () => {
   assert.match(faq, /href="\/privacy\/"/);
   assert.match(generator, /SITE_URL}\/privacy\//);
   assert.match(generator, /SITE_URL}\/faq\//);
+});
+
+test('Terms page shares the standard legal-page visual system', () => {
+  assert.match(terms, /<h1>Terms and Conditions<\/h1>/);
+  assert.match(terms, /background:#0e1214/);
+  assert.match(terms, /canonical.*terms\//i);
+  assert.match(terms, /href="\/privacy\/">Privacy Policy/);
 });
 
 test('FAQ gives original safety, offline, Talent Pool and privacy guidance', () => {
