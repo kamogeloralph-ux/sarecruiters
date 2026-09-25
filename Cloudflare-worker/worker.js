@@ -739,11 +739,11 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v3", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v4", request.url), request);
 
   async function buildResponse(payload) {
     const body = JSON.stringify(payload);
-    const headers = {
+    const headers = new Headers({
         "Content-Type": "application/json; charset=utf-8",
         // Cached at a long max-age so Cloudflare's Cache API never silently
         // evicts this entry on its own -- freshness below is decided
@@ -761,9 +761,9 @@ async function startupResponse(request, env, ctx, origin) {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
-    };
+    });
     if (typeof CompressionStream === "function") {
-      headers["Content-Encoding"] = "gzip";
+      headers.set("Content-Encoding", "gzip");
       const compressed = new Response(body).body.pipeThrough(new CompressionStream("gzip"));
       return new Response(compressed, { headers });
     }
