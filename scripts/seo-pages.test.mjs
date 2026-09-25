@@ -132,6 +132,13 @@ test('FAQ gives original safety, offline, Talent Pool and privacy guidance', () 
   assert.match(contentManager, /store\.faq = JSON\.parse/);
 });
 
+test('Learning Hub includes the official gov.za job-search guide', () => {
+  assert.match(content, /lh-govza-finding-job/);
+  assert.match(content, /https:\/\/www\.gov\.za\/issues\/finding-job-0/);
+  assert.match(contentManager, /official-learning-hub-v1/);
+  assert.match(contentManager, /store\['learning-hub'\] = learningArticles/);
+});
+
 test('homepage exposes an About action in the bottom navigation', () => {
   assert.match(homepage, /navbtn-about/);
   assert.match(homepage, /window\.open\('about\/',?'_blank',?'noopener'\)/);

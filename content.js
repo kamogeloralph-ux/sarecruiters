@@ -245,6 +245,11 @@ var DEFAULT_CONTENT = {
       id: 'lh-intro',
       title: 'Welcome to the Learning Hub',
       body: '<p>The Learning Hub is being built to host short, practical guides and resources that help South African job seekers build the skills employers are looking for. Over time this section will grow to cover topics such as basic computer skills, writing a cover letter, understanding workplace etiquette, and where to find free online courses and learnerships. Check back as new guides are added, and if there is a topic you would find useful, let us know through the "Suggest or comment" option in the Profile menu.</p>'
+    },
+    {
+      id: 'lh-govza-finding-job',
+      title: 'Official guide: Finding a job',
+      body: '<p>Read the South African Government’s practical guide to finding a job, including where to look for opportunities and how to get started.</p><p><a href="https://www.gov.za/issues/finding-job-0" target="_blank" rel="noopener noreferrer">Read the official gov.za Finding a job guide ↗</a></p>'
     }
   ],
 
