@@ -1891,3 +1891,8 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-message{order:3;display:flex;align-items:center;min-height:36px;padding:7px 14px 9px;background:#fff;text-align:left}
 .house-ad-message small{display:block;width:100%;font-size:11.5px;font-weight:400;line-height:1.25;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
 @media(max-width:380px){.house-ad-heading{min-height:40px;padding:8px 12px 6px}.house-ad-heading strong{font-size:13px}.house-ad-message{min-height:32px;padding:6px 12px 8px}.house-ad-message small{font-size:11px}}
+
+/* Keep the 1200x400 banner inside the directory content, never edge-to-edge. */
+.house-ad-slot{width:calc(100% - 24px);max-width:1200px;margin:0 auto 14px}
+.house-ad-card{width:100%;max-width:1200px;margin:0 auto 14px}
+.house-ad-card img{width:100%;max-width:1200px;max-height:400px;height:auto;aspect-ratio:1200 / 400;object-fit:contain;background:#fff}
