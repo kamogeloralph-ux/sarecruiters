@@ -104,7 +104,7 @@ function renderHouseAdSlot(targetId, placement) {
   target.hidden = false;
   target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
     '<img loading="lazy" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
-    '<span class="house-ad-copy"><strong>' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored') + '</strong>' + (ad.message ? '<small>' + escapeHtml(ad.message) + '</small>' : '') + '<em>Sponsored · View more →</em></span>' +
+    '<span class="house-ad-copy"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong>' + (ad.message ? '<small>' + escapeHtml(ad.message) + '</small>' : '') + '</span>' +
   '</a>';
   trackHouseAdEvent(ad.id, 'impression');
 }
