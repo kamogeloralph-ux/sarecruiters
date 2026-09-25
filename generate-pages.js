@@ -48,6 +48,7 @@ const STATIC_ASSETS = [
   'privacy.html',
   'privacy/index.html',
   'faq/index.html',
+  'know-your-rights/index.html',
   'offline.html',
   'styles.css',
   'content.js',
@@ -862,7 +863,7 @@ async function main() {
   const { agencies, branches, vacancies } = await fetchAll();
   console.log(`Fetched ${agencies.length} agencies, ${branches.length} branches, ${vacancies.length} vacancies.`);
 
-  const sitemapUrls = [`${SITE_URL}/`, `${SITE_URL}/privacy/`, `${SITE_URL}/faq/`];
+  const sitemapUrls = [`${SITE_URL}/`, `${SITE_URL}/privacy/`, `${SITE_URL}/faq/`, `${SITE_URL}/know-your-rights/`];
 
   // Permanent navigation pages are written on every build, independent of
   // vacancy inventory, so their URLs stay indexable and stable.
