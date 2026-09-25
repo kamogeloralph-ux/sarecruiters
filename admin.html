@@ -866,7 +866,13 @@ function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
 // ===== Helpers =====
 function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function initials(n){ return (n||'?').trim().split(/\s+/).map(function(w){return w[0];}).join('').slice(0,2).toUpperCase(); }
-function genToken(){ var c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',s=''; for(var i=0;i<12;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; }
+function genToken(){
+  var bytes = new Uint8Array(32);
+  if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+  else { for (var i=0;i<bytes.length;i++) bytes[i] = Math.floor(Math.random()*256); }
+  var binary = ''; for (var j=0;j<bytes.length;j++) binary += String.fromCharCode(bytes[j]);
+  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
 function newId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function fmtDate(s){ if(!s) return '—'; var d=new Date(s); if(isNaN(d)) return s; return d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}); }
 
@@ -929,6 +935,22 @@ async function doLogout(){
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
   cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[] };
+  adminDataReady = false;
+}
+
+// A session can end in another tab or expire while this console is open.
+// Never leave privileged controls visible after Supabase reports sign-out.
+if (supabaseClient && supabaseClient.auth) {
+  supabaseClient.auth.onAuthStateChange(function(event, session){
+    if (event === 'SIGNED_OUT' || !session) {
+      adminDataReady = false;
+      cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[] };
+      var app = document.getElementById('app');
+      var login = document.getElementById('login-screen');
+      if (app) app.style.display = 'none';
+      if (login) login.style.display = 'flex';
+    }
+  });
 }
 async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
@@ -941,7 +963,6 @@ async function enterConsole(user){
   renderDashboard();
   loadAll().then(async function(){
     await checkTracksTable();
-    await cleanupOldTracks();
     adminDataReady = true;
     renderNav();
     renderDashboard();
@@ -1184,8 +1205,9 @@ async function setAppSetting(key, value){ try{ var { error } = await supabaseCli
 // once the database is confirmed to hold the token we just tried to save.
 async function saveManagerToken(agencyId, token){
   try{
-    var { error } = await supabaseClient.from('agencies').update({manage_token:token}).eq('id',agencyId);
+    var { data: saved, error } = await supabaseClient.rpc('admin_set_manager_token', { p_agency_id: agencyId, p_token: token });
     if(error){ console.error('manage_token save', error); alert('Could not save the agency manager token (' + error.message + ').\n\nRun SMART_MANAGER_SETUP.sql, then try again.'); return false; }
+    if (saved === false) return false;
     var check = await supabaseClient.from('agencies').select('manage_token').eq('id',agencyId).maybeSingle();
     if (check.error || !check.data || check.data.manage_token !== token) {
       alert('The agency token save did not stick — likely a Row Level Security policy on agencies, or the column is missing. Run SMART_MANAGER_SETUP.sql and check RLS policies.');
@@ -1196,8 +1218,9 @@ async function saveManagerToken(agencyId, token){
 }
 async function saveEmployerManagerToken(employerId, token){
   try{
-    var { error } = await supabaseClient.from('employers').update({manage_token:token}).eq('id',employerId);
+    var { data: saved, error } = await supabaseClient.rpc('admin_set_employer_manager_token', { p_employer_id: employerId, p_token: token });
     if(error){ console.error('employer manage_token save', error); alert('Could not save the employer manager token (' + error.message + ').\n\nRun SMART_MANAGER_SETUP.sql — this usually means the `employers` table doesn\'t exist yet.'); return false; }
+    if (saved === false) return false;
     var check = await supabaseClient.from('employers').select('manage_token').eq('id',employerId).maybeSingle();
     if (check.error || !check.data || check.data.manage_token !== token) {
       alert('The employer token save did not stick — likely a Row Level Security policy on employers, or the column is missing. Run SMART_MANAGER_SETUP.sql and check RLS policies.');
@@ -1261,11 +1284,8 @@ async function loadAll(){
   updateEmployerDirectoryUI();
   fillAgencySelects();
 
-  // Best-effort cleanup: delete vacancies past their explicit closing date.
-  // Re-render the vacancies list/dashboard afterwards if anything was purged.
-  purgeExpiredVacancies().then(function(purged){
-    if(purged){ renderVacancies(); renderDashboard(); renderNav(); }
-  });
+  // Destructive expiry cleanup is intentionally not run during console startup.
+  // It now requires an explicit review/action or a server-side scheduled job.
 }
 
 // ===== Tap-to-open row toggle (mobile-friendly) =====
@@ -1628,7 +1648,7 @@ async function deleteAgency(id){
 }
 async function regenToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
-  var tok = genToken(); await saveManagerToken(id, tok);
+  var tok = genToken(); if (!await saveManagerToken(id, tok)) return;
   var a = agencyById(id); if(a) a.manage_token = tok;
   renderAgencies();
   showToast('New manager link generated');
@@ -1997,7 +2017,7 @@ async function deletePoster(id){
 }
 async function regenEmployerToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
-  var tok = genToken(); await saveEmployerManagerToken(id, tok);
+  var tok = genToken(); if (!await saveEmployerManagerToken(id, tok)) return;
   var e = employerById(id); if(e) e.manage_token = tok;
   renderEmployers();
   showToast('New manager link generated');
@@ -2546,17 +2566,17 @@ async function delReport(id){ if(!confirm('Delete this report?')) return; await 
 async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
 async function approveJobEnquiry(id){
   if(!confirm('Approve this request for posting? It will still need to be turned into a vacancy by an admin.')) return;
-  await updateJobEnquiryStatus(id,'approved'); showToast('Approved for posting'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard();
+  if(!await updateJobEnquiryStatus(id,'approved')) return; showToast('Approved for posting'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard();
 }
 async function rejectJobEnquiry(id){
   if(!confirm('Reject this job request? It will not be published.')) return;
-  await updateJobEnquiryStatus(id,'rejected'); showToast('Request rejected'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard();
+  if(!await updateJobEnquiryStatus(id,'rejected')) return; showToast('Request rejected'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard();
 }
-async function markJobEnquiryContacted(id){ await updateJobEnquiryStatus(id,'contacted'); showToast('Marked contacted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
-async function reopenJobEnquiry(id){ await updateJobEnquiryStatus(id,'new'); showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
-async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) return; await deleteJobEnquiry(id); showToast('Enquiry deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
-async function updateJobEnquiryStatus(id,status){ try{ await supabaseClient.from('job_post_enquiries').update({status:status}).eq('id',id); }catch(e){} }
-async function deleteJobEnquiry(id){ try{ await supabaseClient.from('job_post_enquiries').delete().eq('id',id); }catch(e){} }
+async function markJobEnquiryContacted(id){ if(!await updateJobEnquiryStatus(id,'contacted')) return; showToast('Marked contacted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function reopenJobEnquiry(id){ if(!await updateJobEnquiryStatus(id,'new')) return; showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) return; if(!await deleteJobEnquiry(id)) return; showToast('Enquiry deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function updateJobEnquiryStatus(id,status){ try{ var res=await supabaseClient.from('job_post_enquiries').update({status:status}).eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not update this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not update this enquiry. Check your connection.'); return false; } }
+async function deleteJobEnquiry(id){ try{ var res=await supabaseClient.from('job_post_enquiries').delete().eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not delete this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not delete this enquiry. Check your connection.'); return false; } }
 
 // ===== Settings =====
 async function loadPoolBankingDetails(){

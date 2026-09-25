@@ -107,12 +107,9 @@ self.addEventListener('install', function(event) {
           return fetch(asset, { cache: 'reload' }).then(function(response) {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             return cache.put(asset, response);
-          }).catch(function(err) {
-            console.warn('[sw] precache miss:', asset, err && err.message);
           });
         }));
       })
-      .then(function() { return self.skipWaiting(); })
   );
 });
 
@@ -132,8 +129,6 @@ self.addEventListener('activate', function(event) {
       return self.registration.navigationPreload
         ? self.registration.navigationPreload.disable().catch(function() {})
         : undefined;
-    }).then(function() {
-      return self.clients.claim();
     })
   );
 });
@@ -199,7 +194,9 @@ function cacheFirst(request, cacheName) {
       return fetch(request).then(function(response) {
         if (isCacheableSameOriginResponse(response) ||
             isCacheableCrossOriginResponse(response)) {
-          cache.put(request, response.clone());
+          cache.put(request, response.clone()).then(function() {
+            trimCache(cacheName, cacheName === IMAGE_CACHE ? 120 : 80);
+          }).catch(function() {});
         }
         return response;
       }).catch(function() {
@@ -214,6 +211,16 @@ function cacheFirst(request, cacheName) {
 // route is backed by the same index.html shell, and the app reads its own
 // query params on startup. Ignoring the query here is what lets a token URL
 // hit the cached shell instead of falling through to offline.html.
+function trimCache(cacheName, maxEntries) {
+  return caches.open(cacheName).then(function(cache) {
+    return cache.keys().then(function(keys) {
+      var excess = keys.length - maxEntries;
+      if (excess <= 0) return;
+      return Promise.all(keys.slice(0, excess).map(function(key) { return cache.delete(key); }));
+    });
+  }).catch(function() {});
+}
+
 function shellForNavigation(request) {
   var pathname = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
   return CORE_SHELLS[pathname] || './index.html';
@@ -225,9 +232,7 @@ function isPublicListingNavigation(request) {
 }
 
 function publicListingNavigation(request) {
-  return caches.match(request).then(function(cached) {
-    if (cached) return cached;
-    return fetch(request).then(function(response) {
+  return fetchWithTimeout(request, 4000).then(function(response) {
       if (!response || !response.ok) {
         throw new Error('Public listing response was not successful');
       }
@@ -236,14 +241,12 @@ function publicListingNavigation(request) {
       });
       return response;
     }).catch(function() {
-      // Never substitute the SPA shell for a public listing URL. If the page
-      // was visited before, an exact runtime-cached copy is valid; otherwise
-      // show the true offline page rather than a misleading empty home screen.
+      // Prefer the last exact listing only after a bounded network attempt;
+      // this prevents a visited listing from remaining frozen indefinitely.
       return caches.match(request).then(function(exactCached) {
         return exactCached || caches.match('./offline.html');
       });
     });
-  });
 }
 
 // Return a cached shell for a navigation, ignoring the query string so that
@@ -263,7 +266,7 @@ function cachedShellResponse(request) {
 // offline page": a reload now tries the network, and only falls back to the
 // cached shell (never offline.html) when the network is unavailable.
 function networkFirstNavigation(request) {
-  return fetch(request).then(function(response) {
+  return fetchWithTimeout(request, 4000).then(function(response) {
     if (response && response.ok) {
       // Keep the freshest shell in the core cache for offline use.
       var shell = shellForNavigation(request);

@@ -687,7 +687,7 @@ function vacancyCard(v, agency, options) {
   }
 
   return '' +
-  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
+  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
     '<div class="vac-card-main">' +
       logo +
       '<div class="vac-body">' +
