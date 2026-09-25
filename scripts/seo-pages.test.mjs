@@ -47,9 +47,16 @@ test('landing pages link into existing vacancy and employer journeys', () => {
 
 test('generated listing output treats database values as untrusted', () => {
   assert.match(generator, /serializeJsonLd/);
-  assert.match(generator, /replace\(\/</);
+  assert.match(generator, /replace\(\/<\//);
   assert.match(generator, /safeHttpUrl\(vacancy\.link\)/);
   assert.match(generator, /applicantLocationRequirements/);
+});
+
+test('JobPosting schema supplies validThrough and addressLocality fallbacks', () => {
+  assert.match(generator, /SCHEMA_MAX_AGE_DAYS/);
+  assert.match(generator, /created\.setUTCDate\(created\.getUTCDate\(\) \+ days\)/);
+  assert.match(generator, /addressLocality: inferAddressLocality\(vacancy\.location\)/);
+  assert.match(generator, /return 'South Africa';/);
 });
 
 test('homepage search debounces keystroke renders', () => {
