@@ -190,7 +190,7 @@
     <button type="button" data-ripple onclick="closeSiteMenu();goPool('profile')"><span class="site-menu-nav-icon">♙</span><span>Talent Pool<small>Meet candidates and join</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openMyPoolProfile()"><span class="site-menu-nav-icon">☺</span><span>My Talent Pool profile<small>Edit or remove your listing</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openMySubmissions()"><span class="site-menu-nav-icon">✉</span><span>My submissions<small>Track reports and suggestions you've sent</small></span><b>›</b></button>
-    <button type="button" data-ripple onclick="closeSiteMenu();openContentSheet('privacy')"><span class="site-menu-nav-icon">◌</span><span>Privacy policy<small>How your data is protected</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();window.open('/privacy/','_blank','noopener')"><span class="site-menu-nav-icon">◌</span><span>Privacy policy<small>How your data is protected</small></span><b>›</b></button>
   </nav>
   <div class="site-menu-section-label">Appearance</div>
   <button class="site-menu-action" type="button" data-ripple onclick="toggleTheme()"><span class="site-menu-nav-icon">◐</span><span id="site-menu-theme-label">Switch theme</span><b>›</b></button>
@@ -354,7 +354,7 @@
       <div class="pgroup-label">Preferences</div>
       <div class="pgrouped-list">
         <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray"><svg><use href="icons.svg#i52b638"/></svg></span><span>Switch theme<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-        <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="window.open('/privacy/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
         <button class="profile-menu-item" data-ripple onclick="window.open('docs/SA-Recruiters-Terms-and-Conditions.pdf','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (PDF)</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
 
@@ -485,12 +485,12 @@
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg><use href="icons.svg#ib745ad"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg><use href="icons.svg#i4ccc00"/></svg></span><span>Interview Tips<span class="mi-sub">Ace your next interview with confidence</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg><use href="icons.svg#i053685"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ie9938a"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('/faq/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ie9938a"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
 
     <div class="pgroup-label">&nbsp;</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('/privacy/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="window.open('terms/','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (HTML) or download the PDF</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
