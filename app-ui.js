@@ -1292,7 +1292,20 @@ function renderAllVacanciesList() {
       if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading…';
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
-    el.innerHTML =
+    var featured = (featuredVacanciesCache || []).filter(function(v){
+      return v && v.is_featured && (!v.featured_until || new Date(v.featured_until).getTime() >= Date.now()) && !isVacancyExpired(v);
+    }).sort(function(a,b){
+      return (Number(a.featured_order)||0) - (Number(b.featured_order)||0) || new Date(b.created_at||0) - new Date(a.created_at||0);
+    }).slice(0, 6);
+    var featuredMarkup = featured.length ?
+      '<section class="featured-vacancies-section" aria-labelledby="featured-vacancies-title">' +
+        '<div class="featured-vacancies-heading"><div><span class="eyebrow">Priority opportunities</span><h2 id="featured-vacancies-title">Featured vacancies</h2><p>Selected roles with extra visibility from South African employers and recruitment agencies.</p></div></div>' +
+        '<div class="featured-vacancies-grid">' + featured.map(function(v){
+          var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
+          return vacancyCard(v, agency, { featured: true });
+        }).join('') + '</div>' +
+      '</section>' : '';
+    el.innerHTML = featuredMarkup +
       '<div class="vac-folder-grid" aria-label="Vacancy categories">' +
         '<button class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'agency\')" aria-label="Open agency vacancies">' +
           '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>' +

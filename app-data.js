@@ -521,7 +521,7 @@ function filterExpiredVacancies(rows) {
   return (rows || []).filter(function(v) { return !isVacancyExpired(v); });
 }
 async function getVacancies() {
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var pageSize = 1000;
   var rows = [];
   try {
@@ -538,6 +538,27 @@ async function getVacancies() {
     }
   } catch(e){}
   return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
+}
+async function loadFeaturedVacancies() {
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
+  try {
+    var result = await supabaseClient.from('vacancies').select(columns)
+      .eq('is_featured', true)
+      .order('featured_order', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(12);
+    if (result.error) throw result.error;
+    featuredVacanciesCache = filterExpiredVacancies((result.data || []).filter(function(v){
+      return !v.featured_until || new Date(v.featured_until).getTime() >= Date.now();
+    }));
+  } catch(e) {
+    console.warn('featured vacancies load', e);
+    if (!featuredVacanciesCache.length && window.__saStartupPayload && Array.isArray(window.__saStartupPayload.featured_vacancies)) {
+      featuredVacanciesCache = filterExpiredVacancies(window.__saStartupPayload.featured_vacancies);
+    }
+  }
+  if (typeof renderAllVacanciesList === 'function' && document.getElementById('screen-allvacancies') && document.getElementById('screen-allvacancies').classList.contains('active')) renderAllVacanciesList();
+  return featuredVacanciesCache;
 }
 async function getEmployerVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
@@ -661,7 +682,7 @@ function generalVacancyQueryKeyFor(state) {
   return [state.q, state.remote, state.exp].join('|').toLowerCase();
 }
 async function fetchGeneralVacancyPage(state, page) {
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var from = page * generalVacancyPageSize;
   var query = supabaseClient.from('vacancies').select(columns)
     .or('agency_id.is.null,agency_id.eq.general')
@@ -703,7 +724,7 @@ var DEDICATED_VACANCY_FOLDER_SOURCES = {
 async function fetchDedicatedVacancyPage(folder, state, page) {
   var sources = DEDICATED_VACANCY_FOLDER_SOURCES[folder];
   if (!sources) return [];
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var from = page * dedicatedVacancyPageSize;
   var query = supabaseClient.from('vacancies').select(columns)
     .in('source_type', sources)
@@ -1021,6 +1042,9 @@ async function loadAll() {
   // original independent Supabase reads so launch remains resilient.
   var startup = await getStartupData();
   window.__saStartupPayload = startup;
+  if (startup && Array.isArray(startup.featured_vacancies)) {
+    featuredVacanciesCache = filterExpiredVacancies(startup.featured_vacancies);
+  }
   var results = startup ? [
     startup.agencies, startup.branches, startup.vacancies, startup.employers,
     // Prefer the worker's own counts.general (NULL-source rows + non-dedicated-
@@ -1139,6 +1163,7 @@ async function loadAll() {
   updateStats();
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
+  loadFeaturedVacancies();
   // Candidate spotlight is non-critical; fetch it after the first useful home render.
   loadCandidateSpotlight();
   // Poster feed is likewise non-critical to the first render.

@@ -429,7 +429,7 @@ async function loadStartupDataFromD1(env) {
     careers_page: ["careers_page"]
   };
 
-  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR, poolCandidatesR] = await Promise.all([
+  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR, poolCandidatesR, featuredVacanciesR] = await Promise.all([
     env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
     // Same filter as before: (agency_id != 'general' OR employer_id IS NOT NULL)
@@ -446,7 +446,11 @@ async function loadStartupDataFromD1(env) {
     env.DB.prepare("SELECT COUNT(*) AS n FROM agencies").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM branches").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM employers").all(),
-    env.DB.prepare("SELECT * FROM pool_candidates WHERE status = 'active' ORDER BY created_at DESC").all()
+    env.DB.prepare("SELECT * FROM pool_candidates WHERE status = 'active' ORDER BY created_at DESC").all(),
+    // Older D1 mirrors may not have the optional featured columns yet. Keep
+    // startup healthy and let the direct public Supabase refresh fill the
+    // Featured Vacancies section until the mirror schema is upgraded.
+    env.DB.prepare("SELECT * FROM vacancies WHERE is_featured = 1 ORDER BY featured_order ASC, created_at DESC LIMIT 12").all().catch(() => ({ results: [] }))
   ]);
 
   const folderCounts = await Promise.all(Object.entries(DEDICATED_FOLDERS).map(async ([key, sources]) => {
@@ -471,6 +475,7 @@ async function loadStartupDataFromD1(env) {
       vacancy_count: employerCountMap[employer.id] || 0
     })),
     pool_candidates: poolCandidatesR.results || [],
+    featured_vacancies: (featuredVacanciesR.results || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
     counts: {
       agencies: n(agencyCountR),
       branches: n(branchCountR),
@@ -556,7 +561,7 @@ async function loadStartupData(env) {
     learnerships: ["learnerships"],
     careers_page: ["careers_page"]
   };
-  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts, poolCandidates] = await Promise.all([
+  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
       order: "created_at.desc"
@@ -645,6 +650,12 @@ async function loadStartupData(env) {
     supabaseGet(env, "pool_candidates_public", {
       select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
       order: "created_at.desc"
+    }),
+    supabaseGet(env, "vacancies", {
+      select: vacancyColumns,
+      is_featured: "eq.true",
+      order: "featured_order.asc,created_at.desc",
+      limit: "12"
     })
   ]);
   // Keep employer card counts independent of the startup vacancy feed. The
@@ -679,6 +690,7 @@ async function loadStartupData(env) {
       vacancy_count: employerCountMap[employer.id] || 0
     })),
     pool_candidates: poolCandidates.body || [],
+    featured_vacancies: (featuredVacancies.body || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
@@ -709,7 +721,7 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=talent-pool-v1", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v1", request.url), request);
 
   function buildResponse(payload) {
     return new Response(JSON.stringify(payload), {

@@ -596,7 +596,8 @@ function vacancyCard(v, agency, options) {
   var isHimalayas = v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0;
   var isGovernment = ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || ''));
   var isLearnership = v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0;
-  var sourceBadge = options.hideBadges ? '' : (isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : isLearnership ? '<span class="vac-source-tag vac-source-tag-learnership">Learnership</span>' : '');
+  var featuredBadge = v.is_featured ? '<span class="vac-featured-badge">Featured</span>' : '';
+  var sourceBadge = (options.hideBadges ? '' : (isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : isLearnership ? '<span class="vac-source-tag vac-source-tag-learnership">Learnership</span>' : '')) + featuredBadge;
   var title = escapeHtml(v.title || 'Untitled role');
   var verifiedCheck = options.hideBadges ? '' : (((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '<span class="verified-check" title="' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '');
 
@@ -695,7 +696,7 @@ function vacancyCard(v, agency, options) {
   }
 
   return '' +
-  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
+  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + (v.is_featured ? ' vac-card-featured' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
     '<div class="vac-card-main">' +
       logo +
       '<div class="vac-body">' +
