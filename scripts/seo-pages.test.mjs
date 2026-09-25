@@ -10,6 +10,7 @@ const privacy = readFileSync(new URL('../privacy/index.html', import.meta.url), 
 const legacyPrivacy = readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
 const faq = readFileSync(new URL('../faq/index.html', import.meta.url), 'utf8');
 const terms = readFileSync(new URL('../terms/index.html', import.meta.url), 'utf8');
+const rights = readFileSync(new URL('../know-your-rights/index.html', import.meta.url), 'utf8');
 const content = readFileSync(new URL('../content.js', import.meta.url), 'utf8');
 const contentManager = readFileSync(new URL('../content-manager.js', import.meta.url), 'utf8');
 const appForms = readFileSync(new URL('../app-forms.js', import.meta.url), 'utf8');
@@ -103,6 +104,15 @@ test('FAQ and privacy are crawlable HTML routes', () => {
   assert.match(faq, /href="\/privacy\/"/);
   assert.match(generator, /SITE_URL}\/privacy\//);
   assert.match(generator, /SITE_URL}\/faq\//);
+});
+
+test('Know Your Rights is a crawlable HTML resource page', () => {
+  assert.match(rights, /<h1>Know Your Rights<\/h1>/);
+  assert.match(rights, /Basic Conditions of Employment Act/);
+  assert.match(rights, /Unemployment Insurance Fund/);
+  assert.match(rights, /CCMA/);
+  assert.match(homepage, /window.open\('\/know-your-rights\/',?'_blank',?'noopener'\)/);
+  assert.match(generator, /SITE_URL}\/know-your-rights\//);
 });
 
 test('Terms page shares the standard legal-page visual system', () => {
