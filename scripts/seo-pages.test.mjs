@@ -9,6 +9,8 @@ const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8')
 const privacy = readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
 const content = readFileSync(new URL('../content.js', import.meta.url), 'utf8');
 const contentManager = readFileSync(new URL('../content-manager.js', import.meta.url), 'utf8');
+const appForms = readFileSync(new URL('../app-forms.js', import.meta.url), 'utf8');
+const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
 
@@ -134,4 +136,16 @@ test('vacancy statistic uses the shared startup count path', () => {
 test('offline launch bypasses network-only startup work', () => {
   assert.match(appData, /if \(navigator\.onLine === false\)/);
   assert.match(homepage, /<script async defer src="https:\/\/challenges\.cloudflare\.com\/turnstile/);
+});
+
+test('CV Builder offers selectable templates without regenerating the CV', () => {
+  for (const template of ['ats', 'modern', 'graduate', 'trade', 'executive']) {
+    assert.match(homepage, new RegExp(`value="${template}"`));
+    assert.match(appForms, new RegExp(`${template}: true`));
+    assert.match(styles, template === 'ats' ? /\.cvb-preview/ : new RegExp(`cvb-template-${template}`));
+  }
+  assert.match(homepage, /cvBuilderTemplateChanged/);
+  assert.match(appForms, /renderCvBuilderResult\(window\.__cvBuilderLast\)/);
+  assert.match(appForms, /template: normaliseCvTemplate/);
+  assert.match(appForms, /provider: 'gemini'/);
 });
