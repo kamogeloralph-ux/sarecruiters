@@ -1550,6 +1550,21 @@ header{margin-bottom:18px}
 .cvb-action-btn{flex:1;min-width:120px;padding:12px 10px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:12.5px;font-weight:800;cursor:pointer;transition:transform .18s var(--ease),background .18s}
 .cvb-action-btn:active{transform:scale(.97)}
 .cvb-action-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.cvb-template-note{font-size:11.5px;color:var(--text-2);margin:-4px 0 12px;line-height:1.45}
+.cvb-result-toolbar{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:12px;font-weight:800;color:var(--text-2)}
+.cvb-result-toolbar select{flex:1;min-height:36px}
+.cvb-template-modern{border-top:5px solid #0a84ff}
+.cvb-template-modern .cvb-header{border-bottom-color:#0a84ff}
+.cvb-template-modern .cvb-section-title{color:#0a84ff}
+.cvb-template-graduate{background:linear-gradient(180deg,color-mix(in srgb,var(--accent-soft) 38%,var(--card)),var(--card) 150px)}
+.cvb-template-graduate .cvb-header{text-align:center;border-bottom-color:var(--accent)}
+.cvb-template-graduate .cvb-section-title{text-align:center}
+.cvb-template-trade{border-left:6px solid #e67e22}
+.cvb-template-trade .cvb-section-title{color:#c45d00}
+.cvb-template-executive{border-top:7px solid #1f2937}
+.cvb-template-executive .cvb-header{border-bottom-color:#1f2937}
+.cvb-template-executive .cvb-name{letter-spacing:.02em}
+.cvb-template-executive .cvb-section-title{color:#1f2937}
 
 /* ============ Employer poster feed (swipeable recruitment posters) ============ */
 .poster-feed{

@@ -1296,10 +1296,13 @@
       <div class="field"><label>Full name</label><input id="cvb-name" placeholder="e.g. Thandiwe Nkosi"></div>
       <div class="field"><label>Target role (optional)</label><input id="cvb-role" placeholder="e.g. Warehouse Supervisor"></div>
       <div class="field"><label>Your experience, skills &amp; education</label><textarea id="cvb-raw" placeholder="e.g. Worked as a cashier at Shoprite for 2 years, good with customers and cash handling. Matric certificate 2019. Can drive, have own transport. Looking for retail or admin work..." style="min-height:160px;font-family:inherit;font-size:13.5px"></textarea></div>
+      <div class="field"><label for="cvb-template">Choose a CV template</label><select id="cvb-template" onchange="cvBuilderTemplateChanged(this.value)"><option value="ats">Professional ATS — simple and application-friendly</option><option value="modern">Modern Professional — clean corporate style</option><option value="graduate">Graduate / First CV — skills and education focused</option><option value="trade">Trade &amp; General Worker — practical experience focused</option><option value="executive">Executive — achievement-led leadership style</option></select></div>
+      <p class="cvb-template-note">You can change the design after your CV is generated without using AI again.</p>
       <div id="cvbuilder-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
       <button class="sheet-submit" id="cvbuilder-generate-btn" data-ripple onclick="generateCv()">Generate my CV</button>
     </div>
     <div id="cvbuilder-result-view" style="display:none;">
+      <div class="cvb-result-toolbar"><label for="cvb-template-result">Template</label><select id="cvb-template-result" onchange="cvBuilderTemplateChanged(this.value)"><option value="ats">Professional ATS</option><option value="modern">Modern Professional</option><option value="graduate">Graduate / First CV</option><option value="trade">Trade &amp; General Worker</option><option value="executive">Executive</option></select></div>
       <div id="cvbuilder-preview" class="cvb-preview"></div>
       <div class="cvb-action-row">
         <button class="cvb-action-btn" data-ripple onclick="cvBuilderEditAgain()">← Edit &amp; regenerate</button>
@@ -1350,7 +1353,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=81baec0409" defer></script>
+<script src="app.bundle.min.js?v=be86b642c6" defer></script>
 <footer class="seo-site-footer" aria-label="SA Recruiters quick links">
   <strong>SA Recruiters</strong>
   <nav aria-label="Quick links">
