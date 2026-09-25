@@ -160,6 +160,8 @@ test('public directory sections expose stable share links and deep-link routing'
   assert.match(appUi, /shareSectionLink/);
   assert.match(appUi, /section=' \+ encodeURIComponent\(section\)/);
   assert.match(appUi, /openDeepLinkedSection/);
+  assert.match(appUi, /window\.__saRestoredScreen = screenBySection\[section\]/);
+  assert.match(appUi, /screenBySection = \{/);
   assert.match(appManagerEmployer, /setTimeout\(openDeepLinkedSection, 120\)/);
   for (const section of ['vacancies', 'agencies', 'candidates', 'posters', 'employers']) {
     assert.ok(homepage.includes(`shareSectionLink('${section}')`), `missing ${section} share control`);

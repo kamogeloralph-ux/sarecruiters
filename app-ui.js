@@ -103,6 +103,14 @@ function shareSectionLink(section) {
 function openDeepLinkedSection() {
   var section = new URLSearchParams(window.location.search).get('section');
   if (!SA_SECTION_LINKS[section]) return;
+  // Treat a promoted URL like a restored screen. loadAll() calls
+  // renderRestoredScreenContent() after IndexedDB/live data hydration, which
+  // prevents the destination from staying on an early loading/count state.
+  var screenBySection = {
+    vacancies: 'allvacancies', agencies: 'allagencies', candidates: 'pool',
+    posters: 'allposters', employers: 'allemployers'
+  };
+  window.__saRestoredScreen = screenBySection[section];
   if (section === 'vacancies') showAllVacancies('home');
   else if (section === 'agencies') showAllAgencies('home');
   else if (section === 'candidates') goPool('home');
