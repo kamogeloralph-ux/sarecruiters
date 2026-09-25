@@ -1938,3 +1938,12 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-message-copy{display:none}
 .house-ad-message small{justify-content:space-between}
 @media(max-width:380px){.house-ad-heading-message{font-size:11px}}
+
+
+/* Final compact header: advertiser on the left, Sponsored on the right. */
+.house-ad-heading{flex-direction:row;justify-content:space-between;gap:8px;text-align:left}
+.house-ad-heading strong{width:auto;min-width:0;text-align:left}
+.house-ad-heading .house-ad-sponsored{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--text-2);white-space:nowrap}
+.house-ad-heading-message{display:none}
+.house-ad-message small{display:block;text-align:left}
+.house-ad-click{display:none}
