@@ -702,7 +702,7 @@ async function loadStartupData(env) {
     generated_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: agencies.body || [],
     branches: branches.body || [],
-    vacancies: [...vacancies],
+    vacancies: vacancies.body || [],
     employers: (employers.body || []).map((employer) => ({
       ...employer,
       vacancy_count: employerCountMap[employer.id] || 0
@@ -712,7 +712,7 @@ async function loadStartupData(env) {
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
-      vacancies: (readCount(generalCount.headers) ?? 0) + vacancies.length + readCountHeader(dedicatedCount.headers),
+      vacancies: (readCount(generalCount.headers) ?? 0) + (Array.isArray(vacancies.body) ? vacancies.body.length : 0) + readCountHeader(dedicatedCount.headers),
       // The true "General Vacancies" tab size: NULL-source rows (generalCount)
       // plus non-dedicated-source rows (generalPoolCount). The client uses
       // this directly instead of inferring it from
