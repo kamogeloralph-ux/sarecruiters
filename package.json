@@ -8,6 +8,7 @@
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
     "sync:oracle": "node scripts/sync-oracle.mjs",
     "sync:government": "node scripts/sync-government.mjs",
+    "sync:phakisa": "node scripts/sync-phakisa.mjs",
     "test": "node --test scripts/*.test.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs",
     "scrape:pnet": "node scripts/scrape-pnet.mjs",
