@@ -1249,17 +1249,6 @@ function refreshGateStats() {
     elV.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
   }
 }
-// Live head-count of every vacancy row in the database — the same table
-// the app reads for the directory. Counting directly avoids under-counts
-// from an older deployed Worker aggregate whose counts lag the table.
-async function fetchLiveVacancyTotal() {
-  if (!supabaseClient) return null;
-  try {
-    var result = await supabaseClient.from('vacancies').select('id', { count: 'exact', head: true });
-    if (!result.error && typeof result.count === 'number') return result.count;
-  } catch(e) {}
-  return null;
-}
 async function loadGateStats() {
   try {
     var url = (typeof R2_WORKER_URL === 'string' && R2_WORKER_URL ? R2_WORKER_URL : '') + '/api/startup';
@@ -1274,10 +1263,10 @@ async function loadGateStats() {
     var elA = document.getElementById('stat-agencies');
     if (elA) elA.textContent = payload.agencies.length;
     var elV = document.getElementById('stat-vacancies');
-    // Prefer the direct database count; the Worker aggregate is only a
-    // fallback for when Supabase is unreachable from the client.
-    var liveTotal = await fetchLiveVacancyTotal();
-    if (elV) elV.textContent = liveTotal !== null ? liveTotal : gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
+    // Use the same edge-cached startup count as the other cards. A separate
+    // Supabase COUNT(*) request made this card repaint after the other stats
+    // and caused unnecessary database traffic on every launch.
+    if (elV) elV.textContent = gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
   } catch (e) { /* leave placeholders on failure */ }
 }
 // Paint the numbers instantly from whatever was cached on the last

@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const generator = readFileSync(new URL('../generate-pages.js', import.meta.url), 'utf8');
 const homepage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const cards = readFileSync(new URL('../app-cards.js', import.meta.url), 'utf8');
+const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
 
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
 
@@ -56,4 +57,10 @@ test('homepage search debounces keystroke renders', () => {
   assert.match(cards, /function scheduleCachedSearch\(\)/);
   assert.match(cards, /setTimeout\(function\(\)/);
   assert.match(cards, /filterAndRenderCached\(\);/);
+});
+
+test('vacancy statistic uses the shared startup count path', () => {
+  assert.doesNotMatch(appData, /fetchLiveVacancyTotal/);
+  assert.match(appData, /gateVacancyTotal\(payload\.agencies, payload\.vacancies, payload\.counts\)/);
+  assert.match(appData, /same edge-cached startup count as the other cards/);
 });
