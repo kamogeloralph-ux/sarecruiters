@@ -83,6 +83,53 @@ async function getEmployers() {
   } catch(err){}
   return markLoadError(readLocal('employers'));
 }
+// ===== First-party house ads =====
+var houseAdsCache = [];
+function safeHouseAdUrl(value) {
+  try {
+    var url = new URL(String(value || ''), window.location.href);
+    return /^https?:$/.test(url.protocol) ? url.href : '';
+  } catch(e) { return ''; }
+}
+function houseAdPlacementMatches(ad, placement) {
+  return ad && (ad.placement === placement || ad.placement === 'both');
+}
+function renderHouseAdSlot(targetId, placement) {
+  var target = document.getElementById(targetId);
+  if (!target) return;
+  var ad = (houseAdsCache || []).filter(function(item){ return houseAdPlacementMatches(item, placement); })[0];
+  var imageUrl = ad && safeHouseAdUrl(ad.image_url);
+  var targetUrl = ad && safeHouseAdUrl(ad.target_url);
+  if (!ad || !imageUrl || !targetUrl) { target.hidden = true; target.innerHTML = ''; return; }
+  target.hidden = false;
+  target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
+    '<img loading="lazy" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
+    '<span class="house-ad-copy"><strong>' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored') + '</strong>' + (ad.message ? '<small>' + escapeHtml(ad.message) + '</small>' : '') + '<em>Sponsored · View more →</em></span>' +
+  '</a>';
+  trackHouseAdEvent(ad.id, 'impression');
+}
+function renderHouseAdSlots() {
+  renderHouseAdSlot('house-ad-home', 'home');
+  renderHouseAdSlot('house-ad-vacancies', 'vacancies');
+}
+async function loadHouseAds() {
+  try {
+    var now = new Date().toISOString();
+    var result = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,starts_at,ends_at,sort_order').eq('is_active', true).lte('starts_at', now).or('ends_at.is.null,ends_at.gt.' + now).order('sort_order', { ascending: true }).order('created_at', { ascending: false }).limit(20);
+    if (result.error) throw result.error;
+    houseAdsCache = result.data || [];
+    renderHouseAdSlots();
+  } catch(e) { console.warn('house ads load', e); }
+}
+function trackHouseAdEvent(id, eventName) {
+  if (!id || !supabaseClient || ['impression','click'].indexOf(eventName) === -1) return;
+  var key = 'sa_house_ad_' + eventName + '_' + id;
+  if (eventName === 'impression') {
+    try { if (sessionStorage.getItem(key) === '1') return; sessionStorage.setItem(key, '1'); } catch(e) {}
+  }
+  supabaseClient.rpc('record_house_ad_event', { p_ad_id: id, p_event: eventName }).then(function(result){ if (result.error) console.warn('house ad tracking', result.error); });
+}
+
 async function getManagedPosters() {
   try {
     var { data, error } = await supabaseClient.from('posters').select('id,audience,title,subtitle,image_url,sort_order').eq('is_active', true).order('audience', { ascending: true }).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
@@ -1164,8 +1211,9 @@ async function loadAll() {
   if (startup) refreshSecondaryStartupData();
   // Candidate spotlight is non-critical; fetch it after the first useful home render.
   loadCandidateSpotlight();
-  // Poster feed is likewise non-critical to the first render.
+  // Poster feed and first-party ads are non-critical to the first render.
   if (typeof loadPosterFeed === 'function') loadPosterFeed();
+  loadHouseAds();
   saveDataCache();
   updatePostingToggleUI();
   updateEmployerRegUI();
