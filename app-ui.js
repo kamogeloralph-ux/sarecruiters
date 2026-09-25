@@ -80,19 +80,21 @@ restoreActiveScreenBeforeReveal();
 var SA_SECTION_LINKS = {
   vacancies: { label: 'Vacancies', title: 'SA Recruiters — Vacancies' },
   agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
-  candidates: { label: 'Candidates', title: 'SA Recruiters — Candidates' },
+  candidates: { label: 'Join the Talent Pool', title: 'SA Recruiters — Join the Talent Pool', shareKey: 'talent-pool' },
   posters: { label: 'Vacancy posters', title: 'SA Recruiters — Vacancy Posters' },
   employers: { label: 'Employers', title: 'SA Recruiters — Employers' }
 };
 function getSectionLink(section) {
   if (!SA_SECTION_LINKS[section]) return '';
-  return window.location.origin + '/?section=' + encodeURIComponent(section);
+  var key = SA_SECTION_LINKS[section].shareKey || section;
+  return window.location.origin + '/?section=' + encodeURIComponent(key);
 }
 function shareSectionLink(section) {
   var meta = SA_SECTION_LINKS[section];
   var link = getSectionLink(section);
   if (!meta || !link) return;
-  var text = 'Explore ' + meta.label.toLowerCase() + ' on SA Recruiters: ' + link;
+  var shareLabel = section === 'candidates' ? 'Join the Talent Pool' : meta.label;
+  var text = (section === 'candidates' ? shareLabel : 'Explore ' + shareLabel.toLowerCase()) + ' on SA Recruiters: ' + link;
   if (navigator.share) {
     navigator.share({ title: meta.title, text: text, url: link }).catch(function() {});
   } else {
@@ -102,6 +104,7 @@ function shareSectionLink(section) {
 }
 function openDeepLinkedSection() {
   var section = new URLSearchParams(window.location.search).get('section');
+  if (section === 'talent-pool') section = 'candidates';
   if (!SA_SECTION_LINKS[section]) return;
   // Treat a promoted URL like a restored screen. loadAll() calls
   // renderRestoredScreenContent() after IndexedDB/live data hydration, which

@@ -158,7 +158,7 @@ test('public directory sections expose stable share links and deep-link routing'
   }
   assert.match(appUi, /getSectionLink/);
   assert.match(appUi, /shareSectionLink/);
-  assert.match(appUi, /section=' \+ encodeURIComponent\(section\)/);
+  assert.match(appUi, /section=' \+ encodeURIComponent\(key\)/);
   assert.match(appUi, /openDeepLinkedSection/);
   assert.match(appUi, /window\.__saRestoredScreen = screenBySection\[section\]/);
   assert.match(appUi, /screenBySection = \{/);
