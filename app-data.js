@@ -91,13 +91,13 @@ function safeHouseAdUrl(value) {
     return /^https?:$/.test(url.protocol) ? url.href : '';
   } catch(e) { return ''; }
 }
-function houseAdPlacementMatches(ad, placement) {
-  return ad && (ad.placement === placement || ad.placement === 'directories');
+function houseAdPlacementMatches(ad, placement, slot) {
+  return ad && (ad.placement === placement || ad.placement === 'directories') && (ad.ad_slot || 'top') === slot;
 }
-function renderHouseAdSlot(targetId, placement) {
+function renderHouseAdSlot(targetId, placement, slot) {
   var target = document.getElementById(targetId);
   if (!target) return;
-  var ad = (houseAdsCache || []).filter(function(item){ return houseAdPlacementMatches(item, placement); })[0];
+  var ad = (houseAdsCache || []).filter(function(item){ return houseAdPlacementMatches(item, placement, slot || 'top'); })[0];
   var imageUrl = ad && safeHouseAdUrl(ad.image_url);
   var targetUrl = ad && safeHouseAdUrl(ad.target_url);
   if (!ad || !imageUrl || !targetUrl) { target.hidden = true; target.innerHTML = ''; return; }
@@ -113,14 +113,20 @@ function renderHouseAdSlot(targetId, placement) {
   trackHouseAdEvent(ad.id, 'impression');
 }
 function renderHouseAdSlots() {
-  renderHouseAdSlot('house-ad-agencies', 'agencies');
-  renderHouseAdSlot('house-ad-employers', 'employers');
-  renderHouseAdSlot('house-ad-candidates', 'candidates');
+  renderHouseAdSlot('house-ad-agencies-top', 'agencies', 'top');
+  renderHouseAdSlot('house-ad-agencies-middle', 'agencies', 'middle');
+  renderHouseAdSlot('house-ad-agencies-bottom', 'agencies', 'bottom');
+  renderHouseAdSlot('house-ad-employers-top', 'employers', 'top');
+  renderHouseAdSlot('house-ad-employers-middle', 'employers', 'middle');
+  renderHouseAdSlot('house-ad-employers-bottom', 'employers', 'bottom');
+  renderHouseAdSlot('house-ad-candidates-top', 'candidates', 'top');
+  renderHouseAdSlot('house-ad-candidates-middle', 'candidates', 'middle');
+  renderHouseAdSlot('house-ad-candidates-bottom', 'candidates', 'bottom');
 }
 async function loadHouseAds() {
   try {
     var now = new Date().toISOString();
-    var result = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,starts_at,ends_at,sort_order').eq('is_active', true).lte('starts_at', now).or('ends_at.is.null,ends_at.gt.' + now).order('sort_order', { ascending: true }).order('created_at', { ascending: false }).limit(20);
+    var result = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,ad_slot,starts_at,ends_at,sort_order').eq('is_active', true).lte('starts_at', now).or('ends_at.is.null,ends_at.gt.' + now).order('sort_order', { ascending: true }).order('created_at', { ascending: false }).limit(20);
     if (result.error) throw result.error;
     houseAdsCache = result.data || [];
     renderHouseAdSlots();

@@ -919,7 +919,9 @@ function renderAllAgenciesList() {
     return (a.name||'').localeCompare(b.name||'');
   });
   if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No agencies found</h3><p>Try a different search term.</p></div>'; return; }
-  el.innerHTML = list.map(hubCard).join('');
+  var middleAt = Math.max(1, Math.ceil(list.length / 2));
+  el.innerHTML = list.map(function(item, index){ return (index === middleAt ? '<div id="house-ad-agencies-middle" class="house-ad-slot" hidden></div>' : '') + hubCard(item); }).join('');
+  renderHouseAdSlots();
 }
 
 function renderAllBranchesList() {
