@@ -315,6 +315,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .house-ad-admin-thumb img{width:100%;height:100%;object-fit:cover}
 .house-ad-admin-row .row-title .badge{margin-left:5px}
 </style>
+<style>.house-ad-screen-options{display:flex;flex-wrap:wrap;gap:8px 14px;padding-top:6px}.house-ad-screen-options label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-2)}.house-ad-screen-options input{accent-color:var(--accent)}</style>
 </head>
 <body class="admin-shell">
 
@@ -630,7 +631,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Short message</label><input id="ha-message" maxlength="220" placeholder="Optional supporting text"></div>
     <div class="field"><label>Banner image URL *</label><input id="ha-image" type="url" placeholder="https://…"><small style="display:block;margin-top:5px;color:var(--text-2)">Use an image hosted on your own storage or CDN. Recommended: 1200 × 400 px.</small></div>
     <div class="field"><label>Destination URL *</label><input id="ha-target" type="url" placeholder="https://…"></div>
-    <div class="pb-row"><div class="field"><label>Placement</label><select id="ha-placement"><option value="directories">All directories: Agencies + Employers + Candidates + Posters</option></select></div><div class="field"><label>Ad slot</label><select id="ha-slot"><option value="top">Top</option><option value="middle">Middle</option><option value="bottom">Bottom</option></select></div><div class="field"><label>Display order</label><input id="ha-order" type="number" min="0" step="1" value="0"></div></div>
+    <div class="field"><label>Show this ad on</label><div id="ha-screens" class="house-ad-screen-options"><label><input type="checkbox" value="agencies"> Agencies</label><label><input type="checkbox" value="employers"> Employers</label><label><input type="checkbox" value="candidates"> Candidates</label><label><input type="checkbox" value="posters"> Posters</label></div></div><div class="pb-row"><div class="field"><label>Ad slot</label><select id="ha-slot"><option value="top">Top</option><option value="middle">Middle</option><option value="bottom">Bottom</option></select></div><div class="field"><label>Display order</label><input id="ha-order" type="number" min="0" step="1" value="0"></div></div>
     <div class="pb-row"><div class="field"><label>Starts</label><input id="ha-starts" type="datetime-local"></div><div class="field"><label>Ends (optional)</label><input id="ha-ends" type="datetime-local"></div></div>
     <div class="sheet-actions"><button class="btn secondary" onclick="closeSheet('house-ad-overlay')">Cancel</button><button class="btn" onclick="saveHouseAd()">Save ad</button></div>
   </div>
@@ -1170,7 +1171,7 @@ async function getPosters(){
   return [];
 }
 async function getHouseAds(){
-  try { var { data, error } = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,ad_slot,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at').order('sort_order',{ascending:true}).order('created_at',{ascending:false}); if(!error) return data||[]; console.error('house ads load',error); } catch(e){ console.error('house ads load',e); }
+  try { var { data, error } = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at').order('sort_order',{ascending:true}).order('created_at',{ascending:false}); if(!error) return data||[]; console.error('house ads load',error); } catch(e){ console.error('house ads load',e); }
   return [];
 }
 async function upsertEmployer(e){ var { error } = await supabaseClient.from('employers').upsert(e); if(error){ console.error('employer save',error); alert('Could not save employer: '+error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } }
@@ -1886,7 +1887,8 @@ function openHouseAdSheet(id){
   document.getElementById('ha-message').value=ad?ad.message||'':'';
   document.getElementById('ha-image').value=ad?ad.image_url||'':'';
   document.getElementById('ha-target').value=ad?ad.target_url||'':'';
-  document.getElementById('ha-placement').value=ad?ad.placement||'directories':'directories';
+  var screens = ad && Array.isArray(ad.target_screens) && ad.target_screens.length ? ad.target_screens : ['agencies','employers','candidates','posters'];
+  document.querySelectorAll('#ha-screens input').forEach(function(input){ input.checked = screens.indexOf(input.value) !== -1; });
   document.getElementById('ha-slot').value=ad?ad.ad_slot||'top':'top';
   document.getElementById('ha-order').value=ad?ad.sort_order||0:0;
   document.getElementById('ha-starts').value=ad?houseAdDateToInput(ad.starts_at):houseAdDateToInput(new Date().toISOString());
@@ -1896,7 +1898,9 @@ function openHouseAdSheet(id){
 async function saveHouseAd(){
   var advertiser=document.getElementById('ha-advertiser').value.trim(), title=document.getElementById('ha-title').value.trim(), image=document.getElementById('ha-image').value.trim(), target=document.getElementById('ha-target').value.trim();
   if(!advertiser||!title||!image||!target){ alert('Advertiser, headline, banner image URL and destination URL are required.'); return; }
-  var payload={advertiser_name:advertiser,title:title,message:document.getElementById('ha-message').value.trim(),image_url:image,target_url:target,placement:document.getElementById('ha-placement').value,ad_slot:document.getElementById('ha-slot').value,sort_order:parseInt(document.getElementById('ha-order').value,10)||0,starts_at:houseAdInputToISO(document.getElementById('ha-starts').value)||new Date().toISOString(),ends_at:houseAdInputToISO(document.getElementById('ha-ends').value),is_active:true,updated_at:new Date().toISOString()};
+  var screens=Array.from(document.querySelectorAll('#ha-screens input:checked')).map(function(input){return input.value;});
+  if(!screens.length){ alert('Choose at least one screen for this ad.'); return; }
+  var payload={advertiser_name:advertiser,title:title,message:document.getElementById('ha-message').value.trim(),image_url:image,target_url:target,placement:'directories',target_screens:screens,ad_slot:document.getElementById('ha-slot').value,sort_order:parseInt(document.getElementById('ha-order').value,10)||0,starts_at:houseAdInputToISO(document.getElementById('ha-starts').value)||new Date().toISOString(),ends_at:houseAdInputToISO(document.getElementById('ha-ends').value),is_active:true,updated_at:new Date().toISOString()};
   var id=document.getElementById('ha-id').value; if(id) payload.id=id;
   var res=await supabaseClient.from('house_ads').upsert(payload);
   if(res.error){ alert('Could not save house ad: '+res.error.message); return; }
@@ -1905,7 +1909,7 @@ async function saveHouseAd(){
 function renderHouseAds(){
   var el=document.getElementById('house-ad-list'); if(!el) return;
   if(!cache.houseAds.length){el.innerHTML='<div class="empty-state"><h3>No house ads yet</h3><p>Create a banner to promote your own services or partners.</p></div>';return;}
-  el.innerHTML=cache.houseAds.map(function(ad){ var ctr=ad.impressions?((ad.clicks||0)/ad.impressions*100).toFixed(1):'0.0'; return '<div class="row-item house-ad-admin-row" onclick="toggleRow(this)"><div class="row-avatar house-ad-admin-thumb"><img src="'+escapeHtml(ad.image_url)+'" alt=""></div><div class="row-main"><div class="row-title">'+escapeHtml(ad.title||'Untitled ad')+' '+houseAdStatus(ad)+'</div><div class="row-sub">'+escapeHtml(ad.advertiser_name||'')+' · '+escapeHtml(ad.placement||'directories')+' · '+escapeHtml(ad.ad_slot||'top')+' · '+(ad.impressions||0)+' impressions · '+(ad.clicks||0)+' clicks ('+ctr+'% CTR)</div></div><span class="row-chevron">⌄</span></div><div class="row-details"><div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(houseAdDateToInput(ad.starts_at)||'Now')+' → '+escapeHtml(houseAdDateToInput(ad.ends_at)||'No expiry')+'</div><div class="det-row"><span class="det-label">Destination:</span> <a href="'+escapeHtml(ad.target_url)+'" target="_blank" rel="noopener">'+escapeHtml(ad.target_url)+'</a></div><div class="row-expanded-actions"><button class="minibtn full" onclick="event.stopPropagation();openHouseAdSheet(\''+ad.id+'\')">Edit</button><button class="minibtn full danger" onclick="event.stopPropagation();deleteHouseAd(\''+ad.id+'\')">Delete</button></div></div>'; }).join('');
+  el.innerHTML=cache.houseAds.map(function(ad){ var ctr=ad.impressions?((ad.clicks||0)/ad.impressions*100).toFixed(1):'0.0'; return '<div class="row-item house-ad-admin-row" onclick="toggleRow(this)"><div class="row-avatar house-ad-admin-thumb"><img src="'+escapeHtml(ad.image_url)+'" alt=""></div><div class="row-main"><div class="row-title">'+escapeHtml(ad.title||'Untitled ad')+' '+houseAdStatus(ad)+'</div><div class="row-sub">'+escapeHtml(ad.advertiser_name||'')+' · '+(Array.isArray(ad.target_screens)?ad.target_screens.join(', '):'all screens')+' · '+escapeHtml(ad.ad_slot||'top')+' · '+(ad.impressions||0)+' impressions · '+(ad.clicks||0)+' clicks ('+ctr+'% CTR)</div></div><span class="row-chevron">⌄</span></div><div class="row-details"><div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(houseAdDateToInput(ad.starts_at)||'Now')+' → '+escapeHtml(houseAdDateToInput(ad.ends_at)||'No expiry')+'</div><div class="det-row"><span class="det-label">Destination:</span> <a href="'+escapeHtml(ad.target_url)+'" target="_blank" rel="noopener">'+escapeHtml(ad.target_url)+'</a></div><div class="row-expanded-actions"><button class="minibtn full" onclick="event.stopPropagation();openHouseAdSheet(\''+ad.id+'\')">Edit</button><button class="minibtn full danger" onclick="event.stopPropagation();deleteHouseAd(\''+ad.id+'\')">Delete</button></div></div>'; }).join('');
 }
 async function deleteHouseAd(id){ var ad=cache.houseAds.find(function(x){return x.id===id;}); if(!confirm('Delete “'+((ad&&ad.title)||'this house ad')+'”?')) return; var res=await supabaseClient.from('house_ads').delete().eq('id',id); if(res.error){alert('Could not delete house ad: '+res.error.message);return;} cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast('House ad deleted'); }
 
