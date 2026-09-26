@@ -122,6 +122,9 @@ function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-candidates-top', 'candidates', 'top');
   renderHouseAdSlot('house-ad-candidates-middle', 'candidates', 'middle');
   renderHouseAdSlot('house-ad-candidates-bottom', 'candidates', 'bottom');
+  renderHouseAdSlot('house-ad-posters-top', 'posters', 'top');
+  renderHouseAdSlot('house-ad-posters-middle', 'posters', 'middle');
+  renderHouseAdSlot('house-ad-posters-bottom', 'posters', 'bottom');
 }
 async function loadHouseAds() {
   try {
