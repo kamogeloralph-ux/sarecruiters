@@ -893,7 +893,9 @@ function renderPosterFeed(posters) {
     container.innerHTML = '<div class="poster-feed-empty">' + (q ? 'No posters match your search.' : 'No posters right now — check back soon.') + '</div>';
     return;
   }
-  container.innerHTML = list.map(posterCard).join('');
+  var middleAt = Math.max(1, Math.ceil(list.length / 2));
+  container.innerHTML = list.map(function(item, index){ return (index === middleAt ? '<div id="house-ad-posters-middle" class="house-ad-slot" hidden></div>' : '') + posterCard(item); }).join('');
+  renderHouseAdSlots();
 }
 
 async function loadPosterFeed() {
