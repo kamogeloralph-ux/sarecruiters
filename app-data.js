@@ -92,7 +92,9 @@ function safeHouseAdUrl(value) {
   } catch(e) { return ''; }
 }
 function houseAdPlacementMatches(ad, placement, slot) {
-  return ad && (ad.placement === placement || ad.placement === 'directories') && (ad.ad_slot || 'top') === slot;
+  var targets = Array.isArray(ad && ad.target_screens) ? ad.target_screens : null;
+  var screenMatch = targets && targets.length ? targets.indexOf(placement) !== -1 : (ad && (ad.placement === placement || ad.placement === 'directories'));
+  return !!ad && screenMatch && (ad.ad_slot || 'top') === slot;
 }
 function renderHouseAdSlot(targetId, placement, slot) {
   var target = document.getElementById(targetId);
@@ -129,7 +131,7 @@ function renderHouseAdSlots() {
 async function loadHouseAds() {
   try {
     var now = new Date().toISOString();
-    var result = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,ad_slot,starts_at,ends_at,sort_order').eq('is_active', true).lte('starts_at', now).or('ends_at.is.null,ends_at.gt.' + now).order('sort_order', { ascending: true }).order('created_at', { ascending: false }).limit(20);
+    var result = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,starts_at,ends_at,sort_order').eq('is_active', true).lte('starts_at', now).or('ends_at.is.null,ends_at.gt.' + now).order('sort_order', { ascending: true }).order('created_at', { ascending: false }).limit(20);
     if (result.error) throw result.error;
     houseAdsCache = result.data || [];
     renderHouseAdSlots();
