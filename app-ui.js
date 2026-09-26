@@ -1301,9 +1301,10 @@ function renderAllVacanciesList() {
     }).slice(0, 6);
     var featuredMarkup =
       '<section class="featured-vacancies-section" aria-labelledby="featured-vacancies-title">' +
-        '<div class="featured-vacancies-heading"><div><h2 id="featured-vacancies-title">Featured vacancies</h2></div></div>' +
+        '<div class="featured-vacancies-heading"><div><span class="featured-vacancies-eyebrow">Priority opportunities</span><h2 id="featured-vacancies-title">Featured vacancies</h2><p>Selected roles with extra visibility from South African employers and recruitment agencies.</p></div>' +
+          '<span class="featured-vacancies-count" aria-label="' + featured.length + ' featured vacancies">' + featured.length + '</span></div>' +
         (featured.length ?
-          '<div class="featured-vacancies-grid">' + featured.map(function(v){
+          '<div class="featured-vacancies-rail" aria-label="Featured vacancies">' + featured.map(function(v){
             var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
             return vacancyCard(v, agency, { featured: true });
           }).join('') + '</div>' :
@@ -1354,7 +1355,7 @@ function renderAllVacanciesList() {
         '</div>' +
       '</section>';
     el.innerHTML = featuredMarkup +
-      '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
+      '<div class="vacancy-browse-heading"><div><span class="vacancy-browse-eyebrow">Career directory</span><h2>Browse Vacancies</h2><p>Explore opportunities by source, then open a category for public vacancy pages.</p></div></div>' +
       sourceRail +
       categoryRail;
     return;
