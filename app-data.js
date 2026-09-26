@@ -978,7 +978,8 @@ async function fetchStartupDataOnce() {
   }
 }
 
-function getStartupData() {
+function getStartupData(forceFresh) {
+  if (forceFresh) startupDataPromise = null;
   if (startupDataPromise) return startupDataPromise;
   startupDataPromise = fetchStartupDataOnce();
   startupDataPromise.then(function(payload){
@@ -1001,11 +1002,14 @@ function getStartupData() {
   }).catch(function(){});
 })();
 
-async function loadAll() {
+var loadAllRequestId = 0;
+async function loadAll(options) {
+  var requestId = ++loadAllRequestId;
+  var forceFresh = !!(options && options.fresh);
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
   // original independent Supabase reads so launch remains resilient.
-  var startup = await getStartupData();
+  var startup = await getStartupData(forceFresh);
   window.__saStartupPayload = startup;
   var results = startup ? [
     startup.agencies, startup.branches, startup.vacancies, startup.employers,
@@ -1068,6 +1072,10 @@ async function loadAll() {
       if (typeof liveGeneralCount === 'number') results[4] = liveGeneralCount;
     } catch(e) {}
   }
+  // If another refresh started while this one was waiting on the network, this
+  // response is stale. Do not let an older idle/pull-refresh response overwrite
+  // the state produced by the newest request.
+  if (requestId !== loadAllRequestId) return;
   // If a fetch failed, keep whatever was already on screen (last good cache)
   // instead of wiping it to an empty list — a failed refresh should never
   // make the directory look emptier than it did a moment ago. Track whether
