@@ -1188,6 +1188,21 @@ async function loadDedicatedVacancies(reset) {
     }
   }
 }
+var vacancyOverviewFilter = 'All Roles';
+function setVacancyOverviewFilter(filter) {
+  vacancyOverviewFilter = filter || 'All Roles';
+  renderAllVacanciesList();
+}
+function vacancyMatchesOverviewFilter(v) {
+  if (vacancyOverviewFilter === 'All Roles') return true;
+  var source = String(v.source_type || '').toLowerCase();
+  var id = String(v.id || '').toLowerCase();
+  var isGovernment = ['government','dpsa'].indexOf(source) !== -1 || /^(government|dpsa)-/.test(id);
+  if (vacancyOverviewFilter === 'Government') return isGovernment;
+  if (vacancyOverviewFilter === 'Remote') return String(v.remote || '').toLowerCase() === 'remote' || source === 'himalayas' || id.indexOf('himalayas-') === 0;
+  if (vacancyOverviewFilter === 'Private Sector') return !isGovernment;
+  return true;
+}
 function renderAllVacanciesList() {
   updateVacanciesBackButton();
 
@@ -1301,15 +1316,20 @@ function renderAllVacanciesList() {
     }).slice(0, 6);
     var featuredTop = featured[0];
     var featuredTopAgency = featuredTop && featuredTop.agency_id && featuredTop.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === featuredTop.agency_id; }) || {}) : {};
+    var featuredPhoto = featuredTop && (featuredTop.company_photo || featuredTopAgency.photo || '');
+    var overviewFilters = ['All Roles', 'Government', 'Private Sector', 'Remote'];
+    var overviewFilterMarkup = '<div class="career-filter-scroller" aria-label="Vacancy filters"><div class="career-filter-chips">' + overviewFilters.map(function(filter){
+      return '<button class="career-filter-chip' + (vacancyOverviewFilter === filter ? ' is-active' : '') + '" aria-pressed="' + (vacancyOverviewFilter === filter ? 'true' : 'false') + '" onclick="setVacancyOverviewFilter(\'' + filter + '\')">' + escapeHtml(filter) + '</button>';
+    }).join('') + '</div></div>';
     var featuredMarkup =
       '<section class="career-featured-section" aria-labelledby="career-featured-title">' +
         '<h2 class="career-section-title" id="career-featured-title">Featured opportunity</h2>' +
         (featuredTop ?
           '<article class="career-featured-card">' +
-            '<div class="career-featured-top"><div class="career-featured-mark">' + escapeHtml(initials(featuredTop.company || featuredTopAgency.name || 'SA')) + '</div><span class="career-badge">Featured</span></div>' +
+            '<div class="career-featured-top"><div class="career-featured-mark">' + (featuredPhoto ? '<img src="' + escapeHtml(featuredPhoto) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : escapeHtml(initials(featuredTop.company || featuredTopAgency.name || 'SA'))) + '</div><span class="career-badge">Priority</span></div>' +
             '<h3>' + escapeHtml(featuredTop.title || 'Featured vacancy') + '</h3>' +
             '<p class="career-featured-sub">' + escapeHtml(featuredTop.company || featuredTopAgency.name || 'SA Recruiters') + '</p>' +
-            '<div class="career-featured-foot"><span>' + escapeHtml(featuredTop.location || featuredTop.remote || 'South Africa') + '</span><a class="career-primary-action" href="vacancy/' + publicVacancySlug(featuredTop) + '/" target="_blank" rel="noopener">View role <span aria-hidden="true">→</span></a></div>' +
+            '<div class="career-featured-foot"><span>' + escapeHtml(featuredTop.location || featuredTop.remote || 'South Africa') + '<small class="career-posted-time">Posted ' + escapeHtml(timeAgo(featuredTop.created_at) || 'recently') + '</small></span><a class="career-primary-action" href="vacancy/' + publicVacancySlug(featuredTop) + '/" target="_blank" rel="noopener">View role <span aria-hidden="true">→</span></a></div>' +
           '</article>' :
           '<div class="career-empty"><p>No featured roles are live</p><span>Check back soon for priority opportunities.</span></div>') +
         (featured.length > 1 ? '<div class="career-featured-dots" aria-label="' + featured.length + ' featured opportunities">' + featured.map(function(v, i){ return '<span class="' + (i === 0 ? 'is-active' : '') + '"></span>'; }).join('') + '</div>' : '') +
@@ -1360,14 +1380,18 @@ function renderAllVacanciesList() {
           }).join('') +
         '</div>' +
       '</section>';
-    var recentRows = vacanciesCache.filter(function(v){ return isGeneralDirectoryVacancy(v) && !isVacancyExpired(v); }).slice(0, 12);
+    var recentRows = vacanciesCache.filter(function(v){ return isGeneralDirectoryVacancy(v) && !isVacancyExpired(v) && vacancyMatchesOverviewFilter(v); }).slice(0, 12);
+    var statTiles = '<section class="career-stat-tiles" aria-label="Popular vacancy groups">' +
+      '<button class="career-stat-tile" onclick="openVacancyFolder(\'government\')"><strong>' + escapeHtml(folderCountLabel(governmentCount).replace(/ vacancies?$/, '')) + '</strong><span>Government roles</span></button>' +
+      '<button class="career-stat-tile" onclick="openVacancyFolder(\'learnerships\')"><strong>' + escapeHtml(folderCountLabel(learnershipsCount).replace(/ vacancies?$/, '')) + '</strong><span>Learnerships</span></button>' +
+      '</section>';
     var recentMarkup = '<section class="career-recent-section" aria-labelledby="career-recent-title"><div class="career-listings-head"><h2 class="career-section-title" id="career-recent-title">Recent listings</h2><span id="career-recent-count">' + recentRows.length + ' roles</span></div><div class="career-recent-list">' +
       (recentRows.length ? recentRows.map(function(v){
         var org = v.company || 'South African employer';
         return '<article class="career-role-row"><a class="career-role-main" href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener"><h3>' + escapeHtml(v.title || 'Untitled role') + '</h3><p>' + escapeHtml(org) + ' <span aria-hidden="true">·</span> ' + escapeHtml(v.location || 'South Africa') + '</p><small>' + escapeHtml(v.remote || v.employment_type || 'Vacancy') + ' <span aria-hidden="true">·</span> ' + escapeHtml(timeAgo(v.created_at) || 'Recently posted') + '</small></a><button class="career-save-button' + (savedSet.has(v.id) ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + escapeHtml(v.id) + '\')" aria-label="' + (savedSet.has(v.id) ? 'Remove' : 'Save') + ' ' + escapeHtml(v.title || 'vacancy') + '">' + STAR_SVG + '</button></article>';
       }).join('') : '<div class="career-empty"><p>No recent roles are loaded</p><span>Choose a source above to browse current vacancies.</span></div>') +
       '</div></section>';
-    el.innerHTML = featuredMarkup + sourceRail + categoryRail + recentMarkup;
+    el.innerHTML = overviewFilterMarkup + featuredMarkup + statTiles + sourceRail + categoryRail + recentMarkup;
     return;
   }
   if (!list.length) {
