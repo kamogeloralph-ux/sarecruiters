@@ -621,6 +621,24 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   </div>
 </div>
 
+<!-- ============ JOB ENQUIRY EDIT SHEET ============ -->
+<div class="scrim" id="job-enquiry-overlay">
+  <div class="sheet" style="max-width:640px">
+    <h3>Edit job enquiry</h3>
+    <input type="hidden" id="je-id">
+    <div class="field"><label>Company name *</label><input id="je-company"></div>
+    <div class="field"><label>Contact person</label><input id="je-contact"></div>
+    <div class="field"><label>Work email *</label><input id="je-email" type="email"></div>
+    <div class="field"><label>Phone</label><input id="je-phone" type="tel"></div>
+    <div class="field"><label>Industry</label><input id="je-industry"></div>
+    <div class="field"><label>Positions to fill</label><input id="je-positions"></div>
+    <div class="field"><label>Role types</label><input id="je-roles" placeholder="Separate roles with commas"></div>
+    <div class="field"><label>Additional details</label><textarea id="je-details"></textarea></div>
+    <div class="field"><label>Website</label><input id="je-website" type="url"></div>
+    <div class="sheet-actions"><button class="btn secondary" onclick="closeSheet('job-enquiry-overlay')">Cancel</button><button class="btn" onclick="saveJobEnquiryEdit()">Save changes</button></div>
+  </div>
+</div>
+
 <!-- ============ HOUSE ADS: CREATE / EDIT SHEET ============ -->
 <div class="scrim" id="house-ad-overlay">
   <div class="sheet" style="max-width:640px">
@@ -2666,6 +2684,7 @@ function renderSubmissions(){
         (j.website?'<div class="row-sub">Website: '+escapeHtml(j.website)+'</div>':'')+
         '<div class="muted" style="margin-top:3px">'+fmtDate(j.created_at)+'</div>'+
       '</div><div class="row-actions">'+
+        '<button class="minibtn" onclick="openJobEnquiryEditSheet(\''+j.id+'\')">Edit</button>'+
         (st==='new'?'<button class="minibtn ok" onclick="approveJobEnquiry('+"'"+j.id+"'"+')">Approve for posting</button><button class="minibtn danger" onclick="rejectJobEnquiry('+"'"+j.id+"'"+')">Reject</button>':'')+
         (st==='approved'?'<button class="minibtn ok" onclick="markJobEnquiryContacted('+"'"+j.id+"'"+')">Mark contacted</button>':'')+
         (st==='contacted'?'<button class="minibtn" onclick="reopenJobEnquiry('+"'"+j.id+"'"+')">Reopen</button>':'')+
@@ -2693,6 +2712,33 @@ async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) retur
 async function updateJobEnquiryStatus(id,status){ try{ var res=await supabaseClient.from('job_post_enquiries').update({status:status}).eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not update this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not update this enquiry. Check your connection.'); return false; } }
 async function deleteJobEnquiry(id){ try{ var res=await supabaseClient.from('job_post_enquiries').delete().eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not delete this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not delete this enquiry. Check your connection.'); return false; } }
 
+function openJobEnquiryEditSheet(id){
+  var j=cache.jobEnquiries.find(function(x){return String(x.id)===String(id);});
+  if(!j) return;
+  document.getElementById('je-id').value=j.id;
+  document.getElementById('je-company').value=j.company_name||'';
+  document.getElementById('je-contact').value=j.contact_person||'';
+  document.getElementById('je-email').value=j.work_email||'';
+  document.getElementById('je-phone').value=j.phone||'';
+  document.getElementById('je-industry').value=j.industry||'';
+  document.getElementById('je-positions').value=j.positions_to_fill||'';
+  document.getElementById('je-roles').value=Array.isArray(j.role_types)?j.role_types.join(', '):'';
+  document.getElementById('je-details').value=j.additional_details||'';
+  document.getElementById('je-website').value=j.website||'';
+  openSheet('job-enquiry-overlay');
+}
+async function saveJobEnquiryEdit(){
+  var id=document.getElementById('je-id').value;
+  var company=document.getElementById('je-company').value.trim();
+  var email=document.getElementById('je-email').value.trim();
+  if(!company||!email){ alert('Company name and work email are required.'); return; }
+  var payload={company_name:company,contact_person:document.getElementById('je-contact').value.trim(),work_email:email,phone:document.getElementById('je-phone').value.trim(),industry:document.getElementById('je-industry').value.trim(),positions_to_fill:document.getElementById('je-positions').value.trim(),role_types:document.getElementById('je-roles').value.split(',').map(function(x){return x.trim();}).filter(Boolean),additional_details:document.getElementById('je-details').value.trim(),website:document.getElementById('je-website').value.trim()};
+  var res=await supabaseClient.from('job_post_enquiries').update(payload).eq('id',id).select('id');
+  if(res.error || !(res.data&&res.data.length)){ alert('Could not save this enquiry: '+(res.error?res.error.message:'no matching record')); return; }
+  var i=cache.jobEnquiries.findIndex(function(x){return String(x.id)===String(id);});
+  if(i>=0) cache.jobEnquiries[i]=Object.assign({},cache.jobEnquiries[i],payload);
+  closeSheet('job-enquiry-overlay'); renderSubmissions(); renderNav(); showToast('Job enquiry updated');
+}
 // ===== Settings =====
 async function loadPoolBankingDetails(){
   var raw = await getAppSetting('pool_banking_details','');
