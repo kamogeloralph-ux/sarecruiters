@@ -358,7 +358,9 @@ function renderAllEmployersList() {
   });
   if (!list.length) { el.dataset.state = 'empty'; el.innerHTML = '<div class="empty-state"><h3>No employers yet</h3><p>Be the first company to register and post a vacancy.</p></div>'; return; }
   el.dataset.state = 'ready';
-  el.innerHTML = list.map(employerHubCard).join('');
+  var middleAt = Math.max(1, Math.ceil(list.length / 2));
+  el.innerHTML = list.map(function(item, index){ return (index === middleAt ? '<div id="house-ad-employers-middle" class="house-ad-slot" hidden></div>' : '') + employerHubCard(item); }).join('');
+  renderHouseAdSlots();
 }
 
 function prefIcon(pref) {
