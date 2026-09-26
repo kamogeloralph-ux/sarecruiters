@@ -245,6 +245,7 @@ if (typeof window.retryPendingSubmissions === 'function') window.retryPendingSub
 // included in loadAll, while the optional daily track loads just after paint.
 setTimeout(loadTodayTrack, 250);
 loadSocialLinks();
+setTimeout(openDeepLinkedSection, 120);
 }
 
 // No public data query or cached directory render runs until Google sign-in

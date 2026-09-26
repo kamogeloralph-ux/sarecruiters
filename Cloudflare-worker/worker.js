@@ -355,6 +355,20 @@ async function syncD1FromSupabase(env) {
     "experience_level", "employment_type", "contract_type", "work_schedule",
     "hours", "salary", "start_date", "created_at", "source_type"
   ];
+  // The featured columns are additive and may lag behind this Worker while
+  // the production D1 quota is exhausted. Detect the schema so the mirror
+  // remains safe before migration and includes them automatically afterward.
+  let hasFeaturedColumns = false;
+  try {
+    const schema = await env.DB.prepare("PRAGMA table_info(vacancies)").all();
+    const names = new Set((schema.results || []).map((column) => column.name));
+    hasFeaturedColumns = names.has("is_featured") && names.has("featured_until") && names.has("featured_order");
+  } catch (e) {
+    console.warn("Could not inspect D1 vacancy schema; syncing legacy columns", e);
+  }
+  if (hasFeaturedColumns) {
+    vacancyColumns.push("is_featured", "featured_until", "featured_order");
+  }
   const [agencies, branches, vacancies, employers, pool, settings] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,created_at",
@@ -390,7 +404,7 @@ async function syncD1FromSupabase(env) {
   await replaceD1Table(env, "branches",
     ["id", "agency_id", "name", "location", "phone", "email"],
     branches.body || []);
-  await replaceD1Table(env, "vacancies", vacancyColumns, vacancies || []);
+  await replaceD1Table(env, "vacancies", vacancyColumns, vacancies || [], hasFeaturedColumns ? ["is_featured"] : []);
   await replaceD1Table(env, "employers",
     ["id", "name", "industry", "website", "contact", "email", "location", "address", "photo", "verified", "created_at"],
     employers.body || [], ["verified"]);
@@ -429,14 +443,14 @@ async function loadStartupDataFromD1(env) {
     careers_page: ["careers_page"]
   };
 
-  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR, poolCandidatesR] = await Promise.all([
+  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR, poolCandidatesR, featuredVacanciesR] = await Promise.all([
     env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
     // Same filter as before: (agency_id != 'general' OR employer_id IS NOT NULL)
     // AND source_type NOT IN (dedicated list) -- matches vacancyFilter +
     // the source_type=not.in.(...) param loadStartupData() used to send to
     // Supabase directly.
-    env.DB.prepare(`SELECT * FROM vacancies WHERE (agency_id IS NOT NULL AND agency_id != 'general' OR employer_id IS NOT NULL) AND (source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE * 10}`).bind(...dedicated).all(),
+    env.DB.prepare(`SELECT * FROM vacancies WHERE (agency_id IS NOT NULL AND agency_id != 'general' OR employer_id IS NOT NULL) AND (source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE}`).bind(...dedicated).all(),
     env.DB.prepare("SELECT * FROM employers ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT key, value FROM app_settings").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM pool_candidates WHERE status = 'active'").all(),
@@ -446,7 +460,11 @@ async function loadStartupDataFromD1(env) {
     env.DB.prepare("SELECT COUNT(*) AS n FROM agencies").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM branches").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM employers").all(),
-    env.DB.prepare("SELECT * FROM pool_candidates WHERE status = 'active' ORDER BY created_at DESC").all()
+    env.DB.prepare("SELECT * FROM pool_candidates WHERE status = 'active' ORDER BY created_at DESC").all(),
+    // Older D1 mirrors may not have the optional featured columns yet. Keep
+    // startup healthy and let the direct public Supabase refresh fill the
+    // Featured Vacancies section until the mirror schema is upgraded.
+    env.DB.prepare("SELECT * FROM vacancies WHERE is_featured = 1 ORDER BY featured_order ASC, created_at DESC LIMIT 12").all().catch(() => ({ results: [] }))
   ]);
 
   const folderCounts = await Promise.all(Object.entries(DEDICATED_FOLDERS).map(async ([key, sources]) => {
@@ -471,6 +489,7 @@ async function loadStartupDataFromD1(env) {
       vacancy_count: employerCountMap[employer.id] || 0
     })),
     pool_candidates: poolCandidatesR.results || [],
+    featured_vacancies: (featuredVacanciesR.results || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
     counts: {
       agencies: n(agencyCountR),
       branches: n(branchCountR),
@@ -532,7 +551,10 @@ async function loadStartupData(env) {
     "salary",
     "start_date",
     "created_at",
-    "source_type"
+    "source_type",
+    "is_featured",
+    "featured_until",
+    "featured_order"
   ].join(",");
   const vacancyFilter = `(${[
     "agency_id.neq.general",
@@ -556,7 +578,7 @@ async function loadStartupData(env) {
     learnerships: ["learnerships"],
     careers_page: ["careers_page"]
   };
-  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts, poolCandidates] = await Promise.all([
+  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
       order: "created_at.desc"
@@ -579,12 +601,13 @@ async function loadStartupData(env) {
     // lazily via fetchDedicatedVacancyPage() in app-data.js, the same
     // pattern the "General Vacancies" folder already used -- startup only
     // needs their counts (folderCounts below) to label the folder cards.
-    supabaseGetAll(env, "vacancies", {
+    supabaseGet(env, "vacancies", {
       select: vacancyColumns,
       or: vacancyFilter,
       source_type: `not.in.${dedicatedSources}`,
-      order: "created_at.desc"
-    }, STARTUP_VACANCY_PAGE_SIZE),
+      order: "created_at.desc",
+      limit: String(STARTUP_VACANCY_PAGE_SIZE)
+    }),
     supabaseGet(env, "employers", {
       select: "id,name,industry,website,contact,email,location,address,photo,verified",
       order: "created_at.desc"
@@ -645,6 +668,12 @@ async function loadStartupData(env) {
     supabaseGet(env, "pool_candidates_public", {
       select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
       order: "created_at.desc"
+    }),
+    supabaseGet(env, "vacancies", {
+      select: vacancyColumns,
+      is_featured: "eq.true",
+      order: "featured_order.asc,created_at.desc",
+      limit: "12"
     })
   ]);
   // Keep employer card counts independent of the startup vacancy feed. The
@@ -673,16 +702,17 @@ async function loadStartupData(env) {
     generated_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: agencies.body || [],
     branches: branches.body || [],
-    vacancies: [...vacancies],
+    vacancies: vacancies.body || [],
     employers: (employers.body || []).map((employer) => ({
       ...employer,
       vacancy_count: employerCountMap[employer.id] || 0
     })),
     pool_candidates: poolCandidates.body || [],
+    featured_vacancies: (featuredVacancies.body || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
-      vacancies: (readCount(generalCount.headers) ?? 0) + vacancies.length + readCountHeader(dedicatedCount.headers),
+      vacancies: (readCount(generalCount.headers) ?? 0) + (Array.isArray(vacancies.body) ? vacancies.body.length : 0) + readCountHeader(dedicatedCount.headers),
       // The true "General Vacancies" tab size: NULL-source rows (generalCount)
       // plus non-dedicated-source rows (generalPoolCount). The client uses
       // this directly instead of inferring it from
@@ -709,11 +739,11 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=talent-pool-v1", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v4", request.url), request);
 
-  function buildResponse(payload) {
-    return new Response(JSON.stringify(payload), {
-      headers: {
+  async function buildResponse(payload) {
+    const body = JSON.stringify(payload);
+    const headers = new Headers({
         "Content-Type": "application/json; charset=utf-8",
         // Cached at a long max-age so Cloudflare's Cache API never silently
         // evicts this entry on its own -- freshness below is decided
@@ -725,23 +755,31 @@ async function startupResponse(request, env, ctx, origin) {
         // The Worker owns freshness via its internal Cache API and generated_at
         // checks. Do not let the outer CDN serve this aggregate for 24 hours
         // without executing the Worker freshness logic.
-        "Cache-Control": "public, max-age=0, s-maxage=0, must-revalidate",
+        // The Worker decides freshness from generated_at; a short edge cache
+        // prevents every browser open from forcing a D1 read on a cold colo.
+        "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
-      }
     });
+    if (typeof CompressionStream === "function") {
+      headers.set("Content-Encoding", "gzip");
+      const compressed = new Response(body).body.pipeThrough(new CompressionStream("gzip"));
+      return new Response(compressed, { headers });
+    }
+    return new Response(body, { headers });
   }
   __name(buildResponse, "buildResponse");
 
   async function refreshAndCache() {
     const payload = await loadStartupDataOrFallback(env);
-    await cache.put(cacheKey, buildResponse(payload).clone());
+    const response = await buildResponse(payload);
+    await cache.put(cacheKey, response.clone());
     return payload;
   }
   __name(refreshAndCache, "refreshAndCache");
 
-  const cached = await cache.match(cacheKey);
+  const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) {
     try {
       const payload = await cached.clone().json();
@@ -764,7 +802,7 @@ async function startupResponse(request, env, ctx, origin) {
 
   try {
     const payload = await refreshAndCache();
-    return buildResponse(payload);
+    return await buildResponse(payload);
   } catch (error) {
     return json({ error: "Startup data unavailable", detail: error.message }, 502, origin);
   }

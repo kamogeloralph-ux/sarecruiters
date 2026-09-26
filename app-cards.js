@@ -358,7 +358,9 @@ function renderAllEmployersList() {
   });
   if (!list.length) { el.dataset.state = 'empty'; el.innerHTML = '<div class="empty-state"><h3>No employers yet</h3><p>Be the first company to register and post a vacancy.</p></div>'; return; }
   el.dataset.state = 'ready';
-  el.innerHTML = list.map(employerHubCard).join('');
+  var middleAt = Math.max(1, Math.ceil(list.length / 2));
+  el.innerHTML = list.map(function(item, index){ return (index === middleAt ? '<div id="house-ad-employers-middle" class="house-ad-slot" hidden></div>' : '') + employerHubCard(item); }).join('');
+  renderHouseAdSlots();
 }
 
 function prefIcon(pref) {
@@ -455,6 +457,14 @@ window.toggleHub = function(id) {
 
 var AGENCY_RENDER_BATCH_SIZE = 20;
 var agencyRenderGeneration = 0;
+var homeSearchTimer = 0;
+function scheduleCachedSearch() {
+  if (homeSearchTimer) clearTimeout(homeSearchTimer);
+  homeSearchTimer = setTimeout(function() {
+    homeSearchTimer = 0;
+    filterAndRenderCached();
+  }, 80);
+}
 function renderAgencyBatch(list, generation, offset) {
   if (generation !== agencyRenderGeneration) return;
   var target = document.getElementById('hub-list');
@@ -588,7 +598,9 @@ function vacancyCard(v, agency, options) {
   var isHimalayas = v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0;
   var isGovernment = ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || ''));
   var isLearnership = v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0;
-  var sourceBadge = options.hideBadges ? '' : (isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : isLearnership ? '<span class="vac-source-tag vac-source-tag-learnership">Learnership</span>' : '');
+  var featuredBadge = '';
+  var featuredIcon = v.is_featured ? '<span class="vac-featured-icon" title="Featured vacancy" aria-label="Featured vacancy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3z"/></svg></span>' : '';
+  var sourceBadge = (options.hideBadges ? '' : (isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : isLearnership ? '<span class="vac-source-tag vac-source-tag-learnership">Learnership</span>' : '')) + featuredBadge;
   var title = escapeHtml(v.title || 'Untitled role');
   var verifiedCheck = options.hideBadges ? '' : (((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '<span class="verified-check" title="' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '');
 
@@ -609,7 +621,15 @@ function vacancyCard(v, agency, options) {
      Everything else (work arrangement, salary, closing date, contacts...) only
      shows once the card is tapped open. */
   var locLine = v.location ? ('<div class="vac-loc-line">' + VAC_ICONS.pin + escapeHtml(v.location) + '</div>') : '';
-  var postedLine = '<div class="vac-posted">' + timeAgo(v.created_at) + '</div>';
+  var previewText = v.notes ? v.notes.replace(/\s+/g, ' ').trim() : '';
+  var descPreview = previewText ? '<div class="vac-desc-preview">' + escapeHtml(previewText.length > 130 ? previewText.slice(0, 130).trim() + '…' : previewText) + '</div>' : '';
+  var pillsRow = (v.employment_type || v.remote) ? (
+    '<div class="vac-pills">' +
+    (v.employment_type ? '<span class="vac-pill vac-pill-type">' + escapeHtml(v.employment_type) + '</span>' : '') +
+    (v.remote ? '<span class="vac-pill vac-pill-remote">' + VAC_ICONS.wifi + escapeHtml(v.remote) + '</span>' : '') +
+    '</div>'
+  ) : '';
+  var postedLine = '<div class="vac-posted">' + VAC_ICONS.clock + timeAgo(v.created_at) + '</div>';
 
   /* Detail rows (inside expandable section) */
   var detail = '';
@@ -687,13 +707,16 @@ function vacancyCard(v, agency, options) {
   }
 
   return '' +
-  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
+  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + (v.is_featured ? ' vac-card-featured' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" aria-expanded="false" aria-controls="vd-' + key + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
     '<div class="vac-card-main">' +
+      featuredIcon +
       logo +
       '<div class="vac-body">' +
         '<div class="vac-title">' + title + '</div>' +
       '<div class="vac-company">' + verifiedCheck + escapeHtml(orgName) + sourceBadge + '</div>' +
         locLine +
+        descPreview +
+        pillsRow +
         postedLine +
       '</div>' +
       '<div class="vac-card-side">' +
@@ -702,7 +725,7 @@ function vacancyCard(v, agency, options) {
         '<span class="chevron">' + ICON_CHEVRON + '</span>' +
       '</div>' +
     '</div>' +
-    '<div class="vac-detail"><div class="vac-detail-inner">' +
+    '<div class="vac-detail" id="vd-' + key + '"><div class="vac-detail-inner">' +
       detail + desc + saRecruitersAttribution + adzunaAttribution + himalayasAttribution + actions + admin +
     '</div></div>' +
   '</article>';
@@ -767,6 +790,7 @@ var VAC_ICONS = {
   phone:'<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
   apply:'<svg viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></svg>',
   globe:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"/></svg>',
+  wifi:'<svg viewBox="0 0 24 24"><path d="M2 8.5a16 16 0 0 1 20 0"/><path d="M5 12.5a11 11 0 0 1 14 0"/><path d="M8.5 16.3a6 6 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
   star:'<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
   edit:'<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
@@ -798,6 +822,13 @@ window.toggleVac = function(target) {
       }
     }
     c.classList.toggle('open');
+    c.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    if (!opening) {
+      // Closing is intentionally local: keep the user on the same vacancy
+      // card instead of sending them back to the category picker or the top
+      // of the list.
+      try { c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e) { c.scrollIntoView(); }
+    }
     if (opening && c.dataset.vacancyId) {
       var viewKey = 'sa_vacancy_viewed_' + c.dataset.vacancyId + '_' + analyticsSessionId;
       var alreadyViewed = false;
@@ -808,7 +839,11 @@ window.toggleVac = function(target) {
 };
 window.closeVac = function(target) {
   var c = target && target.closest ? target.closest('.vac-card') : document.getElementById('vc-' + target);
-  if (c) c.classList.remove('open');
+  if (c) {
+    c.classList.remove('open');
+    c.setAttribute('aria-expanded', 'false');
+    try { c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e) { c.scrollIntoView(); }
+  }
 };
 
 /* Toggle expand/collapse of a branch block/row (used by hub branch tab and the All Branches screen) */
@@ -871,7 +906,9 @@ function renderPosterFeed(posters) {
     container.innerHTML = '<div class="poster-feed-empty">' + (q ? 'No posters match your search.' : 'No posters right now — check back soon.') + '</div>';
     return;
   }
-  container.innerHTML = list.map(posterCard).join('');
+  var middleAt = Math.max(1, Math.ceil(list.length / 2));
+  container.innerHTML = list.map(function(item, index){ return (index === middleAt ? '<div id="house-ad-posters-middle" class="house-ad-slot" hidden></div>' : '') + posterCard(item); }).join('');
+  renderHouseAdSlots();
 }
 
 async function loadPosterFeed() {

@@ -83,6 +83,71 @@ async function getEmployers() {
   } catch(err){}
   return markLoadError(readLocal('employers'));
 }
+// ===== First-party house ads =====
+var houseAdsCache = [];
+function safeHouseAdUrl(value) {
+  try {
+    var url = new URL(String(value || ''), window.location.href);
+    return /^https?:$/.test(url.protocol) ? url.href : '';
+  } catch(e) { return ''; }
+}
+function houseAdPlacementMatches(ad, placement, slot) {
+  var targets = Array.isArray(ad && ad.target_screens) ? ad.target_screens : null;
+  var screenMatch = targets && targets.length ? targets.indexOf(placement) !== -1 : (ad && (ad.placement === placement || ad.placement === 'directories'));
+  return !!ad && screenMatch && (ad.ad_slot || 'top') === slot;
+}
+function renderHouseAdSlot(targetId, placement, slot) {
+  var target = document.getElementById(targetId);
+  if (!target) return;
+  var ad = (houseAdsCache || []).filter(function(item){ return houseAdPlacementMatches(item, placement, slot || 'top'); })[0];
+  var imageUrl = ad && safeHouseAdUrl(ad.image_url);
+  var targetUrl = ad && safeHouseAdUrl(ad.target_url);
+  if (!ad || !imageUrl || !targetUrl) { target.hidden = true; target.innerHTML = ''; return; }
+  target.hidden = false;
+  var isRolazAd = /rolaz/i.test(String(ad.advertiser_name || '') + ' ' + String(ad.title || ''));
+  var motionOverlay = isRolazAd ? '<span class="house-ad-bulb-glow" aria-hidden="true"></span><span class="house-ad-bulb-core" aria-hidden="true"></span><span class="house-ad-spark" aria-hidden="true"></span><span class="house-ad-tester-flicker" aria-hidden="true"></span>' : '';
+  target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
+    '<div class="house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong></div>' +
+    '<div class="house-ad-creative">' +
+      '<img loading="lazy" width="1200" height="400" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
+      motionOverlay +
+    '</div>' +
+    '<div class="house-ad-message"><small><span class="house-ad-message-copy">' + escapeHtml(ad.message || ((ad.title || ad.advertiser_name || '').toLowerCase().includes('rolaz') ? 'Keeping your home brighter' : '')) + '</span><span class="house-ad-sponsored">Sponsored</span></small></div>' +
+  '</a>';
+  trackHouseAdEvent(ad.id, 'impression');
+}
+function renderHouseAdSlots() {
+  renderHouseAdSlot('house-ad-agencies-top', 'agencies', 'top');
+  renderHouseAdSlot('house-ad-agencies-middle', 'agencies', 'middle');
+  renderHouseAdSlot('house-ad-agencies-bottom', 'agencies', 'bottom');
+  renderHouseAdSlot('house-ad-employers-top', 'employers', 'top');
+  renderHouseAdSlot('house-ad-employers-middle', 'employers', 'middle');
+  renderHouseAdSlot('house-ad-employers-bottom', 'employers', 'bottom');
+  renderHouseAdSlot('house-ad-candidates-top', 'candidates', 'top');
+  renderHouseAdSlot('house-ad-candidates-middle', 'candidates', 'middle');
+  renderHouseAdSlot('house-ad-candidates-bottom', 'candidates', 'bottom');
+  renderHouseAdSlot('house-ad-posters-top', 'posters', 'top');
+  renderHouseAdSlot('house-ad-posters-middle', 'posters', 'middle');
+  renderHouseAdSlot('house-ad-posters-bottom', 'posters', 'bottom');
+}
+async function loadHouseAds() {
+  try {
+    var now = new Date().toISOString();
+    var result = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,starts_at,ends_at,sort_order').eq('is_active', true).lte('starts_at', now).or('ends_at.is.null,ends_at.gt.' + now).order('sort_order', { ascending: true }).order('created_at', { ascending: false }).limit(20);
+    if (result.error) throw result.error;
+    houseAdsCache = result.data || [];
+    renderHouseAdSlots();
+  } catch(e) { console.warn('house ads load', e); }
+}
+function trackHouseAdEvent(id, eventName) {
+  if (!id || !supabaseClient || ['impression','click'].indexOf(eventName) === -1) return;
+  var key = 'sa_house_ad_' + eventName + '_' + id;
+  if (eventName === 'impression') {
+    try { if (sessionStorage.getItem(key) === '1') return; sessionStorage.setItem(key, '1'); } catch(e) {}
+  }
+  supabaseClient.rpc('record_house_ad_event', { p_ad_id: id, p_event: eventName }).then(function(result){ if (result.error) console.warn('house ad tracking', result.error); });
+}
+
 async function getManagedPosters() {
   try {
     var { data, error } = await supabaseClient.from('posters').select('id,audience,title,subtitle,image_url,sort_order').eq('is_active', true).order('audience', { ascending: true }).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
@@ -521,7 +586,7 @@ function filterExpiredVacancies(rows) {
   return (rows || []).filter(function(v) { return !isVacancyExpired(v); });
 }
 async function getVacancies() {
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var pageSize = 1000;
   var rows = [];
   try {
@@ -538,6 +603,27 @@ async function getVacancies() {
     }
   } catch(e){}
   return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
+}
+async function loadFeaturedVacancies() {
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
+  try {
+    var result = await supabaseClient.from('vacancies').select(columns)
+      .eq('is_featured', true)
+      .order('featured_order', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(12);
+    if (result.error) throw result.error;
+    featuredVacanciesCache = filterExpiredVacancies((result.data || []).filter(function(v){
+      return !v.featured_until || new Date(v.featured_until).getTime() >= Date.now();
+    }));
+  } catch(e) {
+    console.warn('featured vacancies load', e);
+    if (!featuredVacanciesCache.length && window.__saStartupPayload && Array.isArray(window.__saStartupPayload.featured_vacancies)) {
+      featuredVacanciesCache = filterExpiredVacancies(window.__saStartupPayload.featured_vacancies);
+    }
+  }
+  if (typeof renderAllVacanciesList === 'function' && document.getElementById('screen-allvacancies') && document.getElementById('screen-allvacancies').classList.contains('active')) renderAllVacanciesList();
+  return featuredVacanciesCache;
 }
 async function getEmployerVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
@@ -661,7 +747,7 @@ function generalVacancyQueryKeyFor(state) {
   return [state.q, state.remote, state.exp].join('|').toLowerCase();
 }
 async function fetchGeneralVacancyPage(state, page) {
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var from = page * generalVacancyPageSize;
   var query = supabaseClient.from('vacancies').select(columns)
     .or('agency_id.is.null,agency_id.eq.general')
@@ -703,7 +789,7 @@ var DEDICATED_VACANCY_FOLDER_SOURCES = {
 async function fetchDedicatedVacancyPage(folder, state, page) {
   var sources = DEDICATED_VACANCY_FOLDER_SOURCES[folder];
   if (!sources) return [];
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var from = page * dedicatedVacancyPageSize;
   var query = supabaseClient.from('vacancies').select(columns)
     .in('source_type', sources)
@@ -826,6 +912,7 @@ var DATA_CACHE_DB = 'sa_data_cache_db';
 var DATA_CACHE_STORE = 'kv';
 var DATA_CACHE_KEY = 'sa_data_cache_v1';
 var lastDataRefreshAt = null;
+var cachedVacancyTotal = null;
 
 function openDataCacheDB() {
   return new Promise(function(resolve, reject) {
@@ -911,6 +998,9 @@ async function saveDataCache() {
     branches: branchesCache,
     vacancies: vacanciesCache,
     generalVacancyCount: generalVacancyCount,
+    vacancyTotal: (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded)
+      ? generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal()
+      : cachedVacancyTotal,
     employers: employersCache,
     poolCount: poolCandidateCount,
     posterCount: posterTotalCount,
@@ -945,6 +1035,7 @@ async function loadDataCache() {
   branchesCache = d.branches || [];
   vacanciesCache = d.vacancies || [];
   generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
+  cachedVacancyTotal = (typeof d.vacancyTotal === 'number') ? d.vacancyTotal : null;
   employersCache = d.employers || [];
   poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
   // Restore the cached poster total too, so the Posters stat card paints
@@ -987,6 +1078,31 @@ function getStartupData(forceFresh) {
   }, function(){ startupDataPromise = null; });
   return startupDataPromise;
 }
+async function refreshSecondaryStartupData() {
+  try {
+    var employerRows = await getEmployerVacancies();
+    var adzunaAgencyRows = await getAgencyAdzunaVacancies();
+    var merged = (vacanciesCache || []).concat(employerRows || [], adzunaAgencyRows || []);
+    var seen = {};
+    vacanciesCache = sortVacancies(merged.filter(function(v) {
+      if (!v || !v.id || seen[v.id]) return false;
+      seen[v.id] = true;
+      return !isGeneralDirectoryVacancy(v);
+    }));
+    matchVacanciesToAgencies(vacanciesCache, agenciesCache);
+    filterAndRenderCached();
+    saveDataCache();
+  } catch(e) { console.warn('secondary startup refresh', e); }
+  try {
+    var liveGeneralCount = await getGeneralVacancyCount();
+    if (typeof liveGeneralCount === 'number') {
+      generalVacancyCount = liveGeneralCount;
+      generalVacancyCountLoaded = true;
+      updateStats();
+      saveDataCache();
+    }
+  } catch(e) {}
+}
 
 // The Employer entry point on the sign-in gate (openEmployerGateSheet ->
 // openEmployerForm) is reachable BEFORE Google sign-in, so
@@ -1007,10 +1123,22 @@ async function loadAll(options) {
   var requestId = ++loadAllRequestId;
   var forceFresh = !!(options && options.fresh);
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
+  if (navigator.onLine === false) {
+    if (await loadDataCache()) {
+      updateStats();
+      filterAndRenderCached();
+      if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
+    }
+    setConnectionStatus('offline', lastDataRefreshAt);
+    return;
+  }
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
   // original independent Supabase reads so launch remains resilient.
   var startup = await getStartupData(forceFresh);
   window.__saStartupPayload = startup;
+  if (startup && Array.isArray(startup.featured_vacancies)) {
+    featuredVacanciesCache = filterExpiredVacancies(startup.featured_vacancies);
+  }
   var results = startup ? [
     startup.agencies, startup.branches, startup.vacancies, startup.employers,
     // Prefer the worker's own counts.general (NULL-source rows + non-dedicated-
@@ -1044,38 +1172,6 @@ async function loadAll(options) {
     getPoolCandidateCount(),
     getDedicatedVacancyCounts()
   ]);
-  if (startup) {
-    // The Worker intentionally excludes dedicated-source rows from its
-    // startup payload to keep the initial response small. Some rows are
-    // nevertheless assigned to employers or agencies, so fetch those subsets
-    // separately or their cards show a correct count but an empty vacancy list.
-    try {
-      var employerRows = await getEmployerVacancies();
-      var adzunaAgencyRows = await getAgencyAdzunaVacancies();
-      var startupRows = (results[2] || []).concat(employerRows || [], adzunaAgencyRows || []);
-      var seenEmployerRows = {};
-      results[2] = startupRows.filter(function(v) {
-        if (!v || !v.id) return false;
-        if (seenEmployerRows[v.id]) return false;
-        seenEmployerRows[v.id] = true;
-        return true;
-      });
-    } catch(e) {}
-  }
-  // The Worker startup payload may be served from its D1 mirror, which can
-  // briefly lag after a bulk purge or scraper run. Refresh this one exact,
-  // indexed head-count directly from Supabase so the General Vacancies card
-  // cannot display an obsolete mirror value such as 34.
-  if (startup) {
-    try {
-      var liveGeneralCount = await getGeneralVacancyCount();
-      if (typeof liveGeneralCount === 'number') results[4] = liveGeneralCount;
-    } catch(e) {}
-  }
-  // If another refresh started while this one was waiting on the network, this
-  // response is stale. Do not let an older idle/pull-refresh response overwrite
-  // the state produced by the newest request.
-  if (requestId !== loadAllRequestId) return;
   // If a fetch failed, keep whatever was already on screen (last good cache)
   // instead of wiping it to an empty list — a failed refresh should never
   // make the directory look emptier than it did a moment ago. Track whether
@@ -1101,6 +1197,9 @@ async function loadAll(options) {
   // cosmetic (they just label the folder cards), so a miss here shouldn't
   // trigger the retry banner the way a core data fetch failing would.
   if (results[9] && typeof results[9] === 'object') { dedicatedVacancyCounts = results[9]; dedicatedVacancyCountsLoaded = true; }
+  if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+    cachedVacancyTotal = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+  }
   setRetryBanner(hadLoadError);
   if (!hadLoadError) lastDataRefreshAt = Date.now();
   setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
@@ -1130,10 +1229,13 @@ async function loadAll(options) {
   updateStats();
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
+  loadFeaturedVacancies();
+  if (startup) refreshSecondaryStartupData();
   // Candidate spotlight is non-critical; fetch it after the first useful home render.
   loadCandidateSpotlight();
-  // Poster feed is likewise non-critical to the first render.
+  // Poster feed and first-party ads are non-critical to the first render.
   if (typeof loadPosterFeed === 'function') loadPosterFeed();
+  loadHouseAds();
   saveDataCache();
   updatePostingToggleUI();
   updateEmployerRegUI();
@@ -1167,14 +1269,17 @@ function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   updatePosterStat();
   var vacancyStat = document.getElementById('stat-vacancies');
-  if (vacancyStat && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
-    vacancyStat.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+  if (vacancyStat) {
+    if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+      vacancyStat.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+    } else if (typeof cachedVacancyTotal === 'number') {
+      vacancyStat.textContent = cachedVacancyTotal;
+    }
   }
   var statEmployers = document.getElementById('stat-employers');
   if (statEmployers) statEmployers.textContent = employersCache.length;
   var statPool = document.getElementById('stat-pool');
   if (statPool) statPool.textContent = poolLoaded ? poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length : poolCandidateCount;
-  refreshGateStats();
   reorderStatCardsByCount();
 }
 
@@ -1249,51 +1354,6 @@ function gateVacancyTotal(agencies, vacancies, counts) {
   }
   return total;
 }
-function refreshGateStats() {
-  var elA = document.getElementById('stat-agencies');
-  if (elA && agenciesCache.length) elA.textContent = agenciesCache.length;
-  var elV = document.getElementById('stat-vacancies');
-  if (elV && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
-    elV.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
-  }
-}
-// Live head-count of every vacancy row in the database — the same table
-// the app reads for the directory. Counting directly avoids under-counts
-// from an older deployed Worker aggregate whose counts lag the table.
-async function fetchLiveVacancyTotal() {
-  if (!supabaseClient) return null;
-  try {
-    var result = await supabaseClient.from('vacancies').select('id', { count: 'exact', head: true });
-    if (!result.error && typeof result.count === 'number') return result.count;
-  } catch(e) {}
-  return null;
-}
-async function loadGateStats() {
-  try {
-    var url = (typeof R2_WORKER_URL === 'string' && R2_WORKER_URL ? R2_WORKER_URL : '') + '/api/startup';
-    if (!url || url === '/api/startup') return;
-    var controller = typeof AbortController === 'function' ? new AbortController() : null;
-    var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
-    var response = await fetch(url, { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller ? controller.signal : undefined });
-    if (timeout) clearTimeout(timeout);
-    if (!response.ok) return;
-    var payload = await response.json();
-    if (!payload || !Array.isArray(payload.agencies) || !payload.counts) return;
-    var elA = document.getElementById('stat-agencies');
-    if (elA) elA.textContent = payload.agencies.length;
-    var elV = document.getElementById('stat-vacancies');
-    // Prefer the direct database count; the Worker aggregate is only a
-    // fallback for when Supabase is unreachable from the client.
-    var liveTotal = await fetchLiveVacancyTotal();
-    if (elV) elV.textContent = liveTotal !== null ? liveTotal : gateVacancyTotal(payload.agencies, payload.vacancies, payload.counts);
-  } catch (e) { /* leave placeholders on failure */ }
-}
-// Paint the numbers instantly from whatever was cached on the last
-// successful visit (if any), so returning visitors see real figures right
-// away instead of sitting on the "…" placeholder while the network fetch
-// below is still in flight — the same instant-paint-from-cache pattern
-// bootAuthenticatedApp() uses for the main stat cards.
-loadGateStats();
 
 
 function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }

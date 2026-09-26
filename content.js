@@ -54,52 +54,67 @@ var DEFAULT_CONTENT = {
     {
       id: 'faq-what',
       title: 'What is SA Recruiters?',
-      body: '<p>SA Recruiters is a free, community-maintained directory of South African recruitment agencies. It brings agencies, the companies they recruit for, and job seekers together in one place. You can browse agencies by trade or location, see their open vacancies, and contact them directly using their preferred method.</p>'
+      body: '<p>SA Recruiters is a South African recruitment directory and jobs platform. It helps job seekers discover vacancies, recruitment agencies and candidate resources, while giving agencies and employers a place to share opportunities with a wider audience.</p>'
     },
     {
       id: 'faq-free',
       title: 'Is it free to use?',
-      body: '<p>Yes. Searching agencies, viewing vacancies, and contacting agencies are completely free for job seekers. The directory is kept running through voluntary donations and community support.</p>'
+      body: '<p>Yes. Browsing public vacancies, exploring agencies and reading the candidate resources are free. Some features, such as saved jobs across devices and the Talent Pool, use an optional account. Always check the application instructions on the listing and never pay someone just to apply for a job.</p>'
     },
     {
       id: 'faq-listed',
-      title: 'How does an agency get listed?',
-      body: '<p>Anyone can suggest an agency through the "Suggest or comment" option in the Profile menu. The admin reviews the suggestion and, once verified, adds the agency with its contact details, trades, and the companies it recruits for. Agencies can also be given a private Smart Manager link so they can add their own branches and vacancies directly.</p>'
+      title: 'How does an agency or vacancy get listed?',
+      body: '<p>Agencies, employers and community members can suggest information through the app. Our team reviews submissions before publication and may add or correct agency, employer and vacancy details. A listing is not a guarantee that the role is still open, that the organisation is endorsed, or that an applicant will be successful.</p>'
     },
     {
       id: 'faq-verified',
       title: 'What does the "Verified" badge mean?',
-      body: '<p>A green Verified badge shows that the admin has confirmed the agency\'s contact details and that the agency is actively operating. It is not a guarantee of a job — it simply means the listing has been checked. If you spot wrong or outdated information on any listing, use "Report wrong info" on that agency\'s card so we can review it.</p>'
+      body: '<p>A Verified badge means that SA Recruiters has checked selected information at the time of review, such as an agency or employer contact detail. It is not a promise that a vacancy is current, a job is available, or an organisation is suitable for you. Report outdated, suspicious or incorrect information so we can investigate.</p>'
     },
     {
       id: 'faq-cv',
-      title: 'How do I send my CV to an agency?',
-      body: '<p>Open an agency\'s card and tap the Contact tab. The preferred contact method (Email, Website, WhatsApp, or Walk-in) is shown at the top. Follow that method and include a short, professional message with your CV attached. For tips on building a strong CV, see the "How to Prepare Your CV" section in the Profile menu.</p>'
+      title: 'How do I apply for a vacancy?',
+      body: '<p>Open the vacancy card and use the application link, email address or phone number shown by the relevant agency or employer. Follow their instructions, tailor your CV and verify the destination before sending personal documents. SA Recruiters helps you discover opportunities; the agency or employer usually handles the application.</p>'
     },
     {
       id: 'faq-save',
       title: 'Can I save vacancies to apply later?',
-      body: '<p>Yes. Tap the bookmark icon on any vacancy card to save it. Saved vacancies appear under the "Saved" tab in the bottom navigation so you can return to them even when you are offline. Because you sign in with Google, your saved list is synced to your account and follows you to any device you sign in on.</p>'
+      body: '<p>Yes. Tap the bookmark icon on a vacancy card. Saved vacancies appear in the Saved tab and can remain available on your device when you are offline. If you sign in with Google, supported account features can keep your saved list available across devices.</p>'
     },
     {
       id: 'faq-report',
       title: 'How do I report incorrect information?',
-      body: '<p>Every agency card has a "Report wrong info" button on its Contact tab. You can also use "Report a problem" in the Profile menu. Tell us which agency is affected, what is wrong, and how we can reach you if needed. We review every report and update listings accordingly.</p>'
+      body: '<p>Use Report a problem from the app menu, or the report action available on a listing where shown. Tell us which listing is affected and what needs attention. You may include contact details if you want us to follow up, but do not send passwords, identity numbers or banking information.</p>'
     },
     {
       id: 'faq-offline',
       title: 'Does the app work offline?',
-      body: '<p>SA Recruiters is a Progressive Web App (PWA). Once you have loaded it, you can install it to your home screen and it will continue to work offline for content you have already viewed. New agencies and vacancies appear once you are back online.</p>'
+      body: '<p>Yes, after the app has loaded successfully once. The installed PWA caches the app shell and stores previously loaded directory data on your device, so it can open and remain useful without a connection. Offline mode cannot fetch new vacancies, submit forms, sign in, send alerts or open external application websites; those features resume when you are online.</p>'
     },
     {
       id: 'faq-data',
       title: 'How is my data handled?',
-      body: '<p>We only store what is needed to make the directory work. Signing in with Google gives us your name, email and profile photo so the app can recognise your account and sync your saved vacancies. Agency listings, branches, and vacancies are stored securely, and notes stay on your device. See the Privacy Policy (linked in the app) for full details.</p>'
+      body: '<p>You can browse as a guest. If you use Google sign-in, Talent Pool registration, saved jobs, reports or employer forms, we handle the information needed for that feature. Private notes and offline data remain in browser storage on your device. Public listing and approved Talent Pool information may be visible to other visitors. Read the <a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a> for the full details.</p>'
+    },
+    {
+      id: 'faq-talent-pool',
+      title: 'What is the Talent Pool?',
+      body: '<p>The Talent Pool lets job seekers create an optional profile that can help employers discover their skills, experience, sector and location. Your public profile does not expose your phone number, email address or CV as direct contact details. Interested employers are directed to SA Recruiters so our team can help manage the introduction.</p>'
+    },
+    {
+      id: 'faq-safety',
+      title: 'How can I stay safe when applying?',
+      body: '<p>Check the employer or agency, read the application instructions carefully and be cautious with unexpected messages. Never pay a fee to apply, never share passwords or banking PINs, and do not send identity documents unless you have independently verified who is requesting them and why. Report suspicious listings to SA Recruiters and contact the relevant organisation through a trusted channel.</p>'
     }
   ],
 
   /* ============ HOW TO PREPARE YOUR CV ============ */
   'cv-prep': [
+    {
+      id: 'cv-video-first-cv',
+      title: 'Watch: how to write your first CV',
+      body: '<p>Starting your first CV or applying with little experience? Watch this practical guide for ideas on how to present your skills, education and potential clearly.</p><div class="content-video" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0;background:#000"><iframe src="https://www.youtube-nocookie.com/embed/JmWohrRhh-8?rel=0" title="How to Write Your First CV — CV Template Included" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div><p><a href="https://youtu.be/JmWohrRhh-8" target="_blank" rel="noopener noreferrer">Open this CV video on YouTube ↗</a></p>'
+    },
     {
       id: 'cv-intro',
       title: 'Why your CV matters',
@@ -153,6 +168,11 @@ var DEFAULT_CONTENT = {
 
   /* ============ INTERVIEW TIPS ============ */
   'interview-tips': [
+    {
+      id: 'iv-video-job-questions',
+      title: 'Listen: job interview questions and answers',
+      body: '<p>Prefer to listen and learn? Watch this interview-practice podcast for examples of common questions and useful answers. Use headphones if you are in a public place.</p><div class="content-video" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0;background:#000"><iframe src="https://www.youtube-nocookie.com/embed/XShx_KTJSB8?rel=0" title="Job Interview Questions And Answers — English Podcast for Learning English" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div><p><a href="https://youtu.be/XShx_KTJSB8" target="_blank" rel="noopener noreferrer">Open this interview video on YouTube ↗</a></p>'
+    },
     {
       id: 'iv-prep',
       title: 'Before the interview: do your homework',
@@ -225,6 +245,11 @@ var DEFAULT_CONTENT = {
       id: 'lh-intro',
       title: 'Welcome to the Learning Hub',
       body: '<p>The Learning Hub is being built to host short, practical guides and resources that help South African job seekers build the skills employers are looking for. Over time this section will grow to cover topics such as basic computer skills, writing a cover letter, understanding workplace etiquette, and where to find free online courses and learnerships. Check back as new guides are added, and if there is a topic you would find useful, let us know through the "Suggest or comment" option in the Profile menu.</p>'
+    },
+    {
+      id: 'lh-govza-finding-job',
+      title: 'Official guide: Finding a job',
+      body: '<p>Read the South African Government’s practical guide to finding a job, including where to look for opportunities and how to get started.</p><p><a href="https://www.gov.za/issues/finding-job-0" target="_blank" rel="noopener noreferrer">Read the official gov.za Finding a job guide ↗</a></p>'
     }
   ],
 
