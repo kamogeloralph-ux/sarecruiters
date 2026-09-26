@@ -1787,16 +1787,21 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 /* Featured vacancy placements: an optional, clearly labelled visibility tier. */
 .featured-vacancies-section{margin:0 0 18px;padding:16px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:20px;background:linear-gradient(145deg,color-mix(in srgb,var(--accent-soft) 72%,var(--card)),var(--card));box-shadow:var(--shadow-sm)}
 .featured-vacancies-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
-.featured-vacancies-heading .eyebrow{display:block;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.featured-vacancies-eyebrow,.vacancy-browse-eyebrow{display:block;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
 .featured-vacancies-heading h2{margin:3px 0 2px;font-size:20px;line-height:1.15;color:var(--text)}
 .featured-vacancies-heading p{margin:0;color:var(--text-2);font-size:12px;line-height:1.45}
-.featured-vacancies-grid{display:grid;gap:8px;margin-top:12px}
-.featured-vacancies-grid .vac-card{background:color-mix(in srgb,var(--card) 84%,var(--accent-soft)) !important;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important;border-radius:14px !important;box-shadow:none !important}
-.featured-vacancies-grid .vac-card:last-child{border-bottom:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important}
+.featured-vacancies-count{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:999px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;box-shadow:0 3px 8px color-mix(in srgb,var(--accent) 28%,transparent)}
+.featured-vacancies-rail{display:flex;gap:10px;overflow-x:auto;margin-top:12px;padding:1px 1px 8px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.featured-vacancies-rail::-webkit-scrollbar{display:none}
+.featured-vacancies-rail .vac-card{flex:0 0 min(100%,360px);scroll-snap-align:start;background:color-mix(in srgb,var(--card) 84%,var(--accent-soft)) !important;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important;border-radius:14px !important;box-shadow:none !important}
+.featured-vacancies-rail .vac-card:last-child{border-bottom:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important}
+.vacancy-browse-heading{display:flex;align-items:flex-start;gap:12px;padding:0 12px 8px}
+.vacancy-browse-heading h2{margin:3px 0 2px;font-size:18px;line-height:1.15;color:var(--text)}
+.vacancy-browse-heading p{margin:0;color:var(--text-2);font-size:11px;line-height:1.4}
 .featured-vacancies-empty{margin-top:12px;padding:14px;border:1px dashed color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:12px;color:var(--text-2);font-size:12px;line-height:1.5;text-align:center;background:color-mix(in srgb,var(--card) 70%,transparent)}
 .vac-featured-badge{display:inline-flex;align-items:center;margin-left:6px;padding:3px 7px;border-radius:999px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
 .vac-card-featured .vac-title{font-weight:800}
-@media(max-width:520px){.featured-vacancies-section{padding:13px;border-radius:18px}.featured-vacancies-heading h2{font-size:18px}}
+@media(max-width:520px){.featured-vacancies-section{padding:13px;border-radius:18px}.featured-vacancies-heading h2{font-size:18px}.featured-vacancies-rail .vac-card{flex-basis:calc(100vw - 54px)}}
 
 /* ===== GROUPED VACANCY BROWSE CARDS ===== */
 .vacancy-browse-heading{margin:22px 16px 10px}
