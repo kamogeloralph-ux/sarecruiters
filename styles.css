@@ -2003,3 +2003,42 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .vacancy-source-card{box-sizing:border-box!important;align-self:flex-start!important;flex:0 0 116px!important;width:116px!important;height:116px!important;min-width:116px!important;min-height:116px!important;max-width:116px!important;max-height:116px!important;aspect-ratio:1 / 1!important}
 @media(min-width:760px){.vacancy-source-card{flex-basis:124px!important;width:124px!important;height:124px!important;min-width:124px!important;min-height:124px!important;max-width:124px!important;max-height:124px!important}}
 @media(max-width:420px){.vacancy-source-card{flex-basis:108px!important;width:108px!important;height:108px!important;min-width:108px!important;min-height:108px!important;max-width:108px!important;max-height:108px!important}}
+
+/* Complete vacancy-directory layout inspired by vacancy-section.html, using SA Recruiters tokens. */
+.career-featured-section,.career-source-section,.career-category-section,.career-recent-section{margin:0 0 22px}
+.career-section-title{margin:0 0 10px;padding:0 12px;color:var(--text);font-size:18px;line-height:1.2;letter-spacing:-.025em}
+.career-featured-card{margin:0 12px;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--shadow-sm)}
+.career-featured-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.career-featured-mark{display:grid;place-items:center;width:52px;height:52px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:16px;font-weight:800}
+.career-badge{padding:5px 9px;border:1px solid color-mix(in srgb,var(--warning) 35%,var(--border));border-radius:999px;background:color-mix(in srgb,var(--warning) 12%,var(--card));color:var(--warning-text,var(--text));font-size:10px;font-weight:800}
+.career-featured-card h3{margin:0;color:var(--text);font-size:19px;line-height:1.25;letter-spacing:-.02em}
+.career-featured-sub{margin:4px 0 0;color:var(--text-2);font-size:13px;font-weight:600}
+.career-featured-foot{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:16px;color:var(--text-2);font-size:12px}
+.career-primary-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:8px 12px;border-radius:11px;background:var(--accent);color:#fff;text-decoration:none;font-size:12px;font-weight:800;box-shadow:0 3px 8px color-mix(in srgb,var(--accent) 24%,transparent)}
+.career-primary-action:active{transform:scale(.97)}
+.career-featured-dots{display:flex;justify-content:center;gap:5px;margin:10px 0 0}
+.career-featured-dots span{width:6px;height:6px;border-radius:999px;background:var(--border)}
+.career-featured-dots span.is-active{width:18px;background:var(--accent)}
+.career-source-section .vacancy-source-rail{padding-top:2px}
+.career-category-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 12px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.career-category-chips::-webkit-scrollbar{display:none}
+.career-category-chip{flex:0 0 auto;padding:9px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;transition:background .16s,border-color .16s,transform .16s}
+.career-category-chip:hover{border-color:var(--accent);background:var(--accent-soft)}
+.career-category-chip:active{transform:scale(.97)}
+.career-listings-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 12px;border-bottom:1px solid var(--separator);padding-bottom:9px}
+.career-listings-head .career-section-title{padding:0;margin:0}
+.career-listings-head>span{color:var(--text-2);font-size:11px;white-space:nowrap}
+.career-recent-list{margin:0 12px}
+.career-role-row{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:10px;padding:13px 0;border-bottom:1px solid var(--separator)}
+.career-role-row:last-child{border-bottom:0}
+.career-role-main{min-width:0;color:var(--text);text-decoration:none}
+.career-role-main h3{margin:0;font-size:14px;line-height:1.25;letter-spacing:-.01em}
+.career-role-main p{margin:4px 0 0;color:var(--text-2);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.career-role-main small{display:block;margin-top:6px;color:var(--text-2);font-size:10px}
+.career-save-button{display:grid;place-items:center;width:36px;height:36px;align-self:center;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--text-2);cursor:pointer}
+.career-save-button svg{width:17px;height:17px}
+.career-save-button.saved{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.career-empty{margin:0 12px;padding:28px 14px;border:1px dashed color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:14px;text-align:center;background:var(--card);color:var(--text-2)}
+.career-empty p{margin:0;color:var(--text);font-size:13px;font-weight:800}
+.career-empty span{display:block;margin-top:4px;font-size:11px}
+@media(max-width:420px){.career-featured-card{margin-left:10px;margin-right:10px;padding:14px}.career-section-title{padding-left:10px}.career-recent-list{margin-left:10px;margin-right:10px}.career-listings-head{margin-left:10px;margin-right:10px}}
