@@ -32,6 +32,56 @@
       store.__contact_details_version = contactVersion;
       changed = true;
     }
+    // v2: refresh the built-in FAQ so returning users receive the current
+    // SA Recruiters guidance instead of an older locally seeded copy.
+    var faqVersion = 'official-faq-v2';
+    if (store.__faq_version !== faqVersion && DEFAULT_CONTENT.faq) {
+      store.faq = JSON.parse(JSON.stringify(DEFAULT_CONTENT.faq));
+      store.__faq_version = faqVersion;
+      changed = true;
+    }
+    // Add the interview video without overwriting any other interview-tip
+    // articles an admin may have edited or created.
+    var interviewVideoVersion = 'official-interview-video-v1';
+    if (store.__interview_video_version !== interviewVideoVersion && DEFAULT_CONTENT['interview-tips']) {
+      var videoArticle = DEFAULT_CONTENT['interview-tips'].find(function(article){ return article.id === 'iv-video-job-questions'; });
+      var interviewArticles = Array.isArray(store['interview-tips']) ? store['interview-tips'] : [];
+      if (videoArticle && !interviewArticles.some(function(article){ return article.id === videoArticle.id; })) {
+        interviewArticles.unshift(JSON.parse(JSON.stringify(videoArticle)));
+        store['interview-tips'] = interviewArticles;
+        changed = true;
+      }
+      store.__interview_video_version = interviewVideoVersion;
+      changed = true;
+    }
+    // Add the official government job-search guide without overwriting
+    // other Learning Hub articles an admin may have edited or created.
+    var learningHubVersion = 'official-learning-hub-v1';
+    if (store.__learning_hub_version !== learningHubVersion && DEFAULT_CONTENT['learning-hub']) {
+      var govArticle = DEFAULT_CONTENT['learning-hub'].find(function(article){ return article.id === 'lh-govza-finding-job'; });
+      var learningArticles = Array.isArray(store['learning-hub']) ? store['learning-hub'] : [];
+      if (govArticle && !learningArticles.some(function(article){ return article.id === govArticle.id; })) {
+        learningArticles.push(JSON.parse(JSON.stringify(govArticle)));
+        store['learning-hub'] = learningArticles;
+        changed = true;
+      }
+      store.__learning_hub_version = learningHubVersion;
+      changed = true;
+    }
+    // Add the first-CV video without overwriting other CV-preparation
+    // articles an admin may have edited or created.
+    var cvVideoVersion = 'official-cv-video-v1';
+    if (store.__cv_video_version !== cvVideoVersion && DEFAULT_CONTENT['cv-prep']) {
+      var cvVideoArticle = DEFAULT_CONTENT['cv-prep'].find(function(article){ return article.id === 'cv-video-first-cv'; });
+      var cvArticles = Array.isArray(store['cv-prep']) ? store['cv-prep'] : [];
+      if (cvVideoArticle && !cvArticles.some(function(article){ return article.id === cvVideoArticle.id; })) {
+        cvArticles.unshift(JSON.parse(JSON.stringify(cvVideoArticle)));
+        store['cv-prep'] = cvArticles;
+        changed = true;
+      }
+      store.__cv_video_version = cvVideoVersion;
+      changed = true;
+    }
     Object.keys(DEFAULT_CONTENT).forEach(function(key){
       if (!store[key] || !Array.isArray(store[key]) || store[key].length === 0) {
         // deep clone defaults

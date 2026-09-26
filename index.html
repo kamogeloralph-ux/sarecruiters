@@ -37,9 +37,9 @@
   #app-splash .sa-splash-status.show{opacity:1}
   #app-splash .sa-splash-dots{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
   #app-splash .sa-splash-dots span{width:9px;height:9px;border-radius:50%;display:inline-block;animation:sa-dot-bounce 1.2s ease-in-out infinite}
-  #app-splash .sa-splash-dots span:nth-child(1){background:#FF2D78;animation-delay:0s}
-  #app-splash .sa-splash-dots span:nth-child(2){background:#7C4DFF;animation-delay:.15s}
-  #app-splash .sa-splash-dots span:nth-child(3){background:#0AB4D6;animation-delay:.3s}
+  #app-splash .sa-splash-dots span:nth-child(1){background:#E52420;animation-delay:0s}
+  #app-splash .sa-splash-dots span:nth-child(2){background:#007A5E;animation-delay:.15s}
+  #app-splash .sa-splash-dots span:nth-child(3){background:#F5B400;animation-delay:.3s}
   @keyframes sa-dot-bounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-6px);opacity:1}}
   #app-splash .sa-splash-title{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:18px;font-weight:800;margin:0 0 6px;color:#0A0A23}
   [data-theme="dark"] #app-splash .sa-splash-title{color:#F2F2F7}
@@ -62,6 +62,8 @@
 
 <title>SA Recruiters — South African Recruitment Agencies Directory</title>
 <meta name="description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies, branches and vacancies.">
+<link rel="canonical" href="https://sa-recruiters.co.za/">
+<meta name="robots" content="index,follow,max-image-preview:large">
 
 <!-- Primary Meta Tags -->
 <meta name="application-name" content="SA Recruiters">
@@ -97,8 +99,10 @@
 
 <!-- Open Graph / social (helps App Capabilities + installability signals) -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="SA Recruiters">
 <meta property="og:title" content="SA Recruiters">
 <meta property="og:description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies.">
+<meta property="og:url" content="https://sa-recruiters.co.za/">
 <meta property="og:image" content="https://sa-recruiters.co.za/icons/v2-icon-512.png">
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
@@ -106,6 +110,37 @@
 <meta name="twitter:title" content="SA Recruiters">
 <meta name="twitter:description" content="Connecting South Africa's Recruitment Community.">
 <meta name="twitter:image" content="https://sa-recruiters.co.za/icons/v2-icon-512.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://sa-recruiters.co.za/#organization",
+      "name": "SA Recruiters",
+      "url": "https://sa-recruiters.co.za/",
+      "logo": "https://sa-recruiters.co.za/icons/v2-icon-512.png",
+      "description": "A free directory connecting South African candidates, recruitment agencies and employers.",
+      "areaServed": { "@type": "Country", "name": "South Africa" },
+      "sameAs": ["https://g.page/r/CbL3q0tBfGAsEBI"],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+27-71-553-1005",
+        "contactType": "customer service",
+        "areaServed": "ZA"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://sa-recruiters.co.za/#website",
+      "url": "https://sa-recruiters.co.za/",
+      "name": "SA Recruiters",
+      "publisher": { "@id": "https://sa-recruiters.co.za/#organization" },
+      "inLanguage": "en-ZA"
+    }
+  ]
+}
+</script>
 
 <!-- Warm up connections to the origins the app actually fetches from, so DNS
      lookup + TLS handshake happen in parallel with page load instead of
@@ -117,10 +152,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
-<link rel="preload" as="style" href="styles.css">
-<link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-vacancy-redesign-1">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css">
-<noscript><link rel="stylesheet" href="styles.css"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-1"></noscript>
 </head>
 <body>
 
@@ -155,7 +190,7 @@
     <button type="button" data-ripple onclick="closeSiteMenu();goPool('profile')"><span class="site-menu-nav-icon">♙</span><span>Talent Pool<small>Meet candidates and join</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openMyPoolProfile()"><span class="site-menu-nav-icon">☺</span><span>My Talent Pool profile<small>Edit or remove your listing</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openMySubmissions()"><span class="site-menu-nav-icon">✉</span><span>My submissions<small>Track reports and suggestions you've sent</small></span><b>›</b></button>
-    <button type="button" data-ripple onclick="closeSiteMenu();openContentSheet('privacy')"><span class="site-menu-nav-icon">◌</span><span>Privacy policy<small>How your data is protected</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();window.open('/privacy/','_blank','noopener')"><span class="site-menu-nav-icon">◌</span><span>Privacy policy<small>How your data is protected</small></span><b>›</b></button>
   </nav>
   <div class="site-menu-section-label">Appearance</div>
   <button class="site-menu-action" type="button" data-ripple onclick="toggleTheme()"><span class="site-menu-nav-icon">◐</span><span id="site-menu-theme-label">Switch theme</span><b>›</b></button>
@@ -174,6 +209,7 @@
 
   <!-- ============ HOME ============ -->
   <div class="screen active" id="screen-home">
+    <h1 class="sr-only">South African recruitment agencies and job vacancies</h1>
     <div class="screen-fixed">
     <header>
       <div class="logo-wrap">
@@ -193,7 +229,7 @@
       <div class="search-inner">
         <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="home-search" class="sr-only">Search agencies or location</label>
-        <input id="home-search" type="search" placeholder="Search agencies, trades, jobs, locations..." oninput="filterAndRenderCached()">
+        <input id="home-search" type="search" placeholder="Search agencies, trades, jobs, locations..." oninput="scheduleCachedSearch()">
       </div>
     </div>
     <div class="stats-wrap">
@@ -318,7 +354,7 @@
       <div class="pgroup-label">Preferences</div>
       <div class="pgrouped-list">
         <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray"><svg><use href="icons.svg#i52b638"/></svg></span><span>Switch theme<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-        <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="window.open('/privacy/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
         <button class="profile-menu-item" data-ripple onclick="window.open('docs/SA-Recruiters-Terms-and-Conditions.pdf','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (PDF)</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
 
@@ -448,13 +484,13 @@
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg><use href="icons.svg#ia65142"/></svg></span><span>How to Prepare Your CV<span class="mi-sub">Step-by-step CV writing guide</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg><use href="icons.svg#ib745ad"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg><use href="icons.svg#i4ccc00"/></svg></span><span>Interview Tips<span class="mi-sub">Ace your next interview with confidence</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('know-your-rights')"><span class="mi-icon tile-brown"><svg><use href="icons.svg#i053685"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('faq')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ie9938a"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('/know-your-rights/','_blank','noopener')"><span class="mi-icon tile-brown"><svg><use href="icons.svg#i053685"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('/faq/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ie9938a"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
 
     <div class="pgroup-label">&nbsp;</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('privacy')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('/privacy/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="window.open('terms/','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (HTML) or download the PDF</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
@@ -582,7 +618,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">All Agencies</div>
+      <div class="section-title-with-link"><div class="logo-text">All Agencies</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('agencies')" aria-label="Share All Agencies link" title="Share All Agencies link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -597,7 +633,9 @@
       <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
       <span class="pl-text" id="allagencies-geo-text">Use precise location</span>
     </div>
+    <div id="house-ad-agencies-top" class="house-ad-slot" hidden></div>
     <div id="allagencies-list"></div>
+    <div id="house-ad-agencies-bottom" class="house-ad-slot" hidden></div>
     </div>
   </div>
 
@@ -629,14 +667,15 @@
 
   <!-- ============ ALL VACANCIES LIST ============ -->
   <div class="screen" id="screen-allvacancies">
-    <div class="screen-fixed vacancies-screen-fixed">
+    <div class="screen-scroll">
+    <div class="vacancies-screen-fixed">
     <header class="vac-simple-header">
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" id="allvacancies-back" data-ripple onclick="handleVacanciesBack()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">All Vacancies</div>
+      <div class="section-title-with-link"><div class="logo-text">All Vacancies</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('vacancies')" aria-label="Share All Vacancies link" title="Share All Vacancies link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
-    <div class="search search-mini" style="margin:0 16px 12px">
+    <div class="search search-mini" style="margin:0 0 12px">
       <div class="search-inner">
         <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="allvacancies-search" class="sr-only">Search vacancies</label>
@@ -644,7 +683,6 @@
       </div>
     </div>
     </div>
-    <div class="screen-scroll">
     <div id="allvacancies-list"></div>
     <button class="vac-load-more" id="allvacancies-loadmore" type="button" onclick="loadMoreGeneralVacancies()" style="display:none">Load more vacancies</button>
     </div>
@@ -657,7 +695,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">Vacancy Posters</div>
+      <div class="section-title-with-link"><div class="logo-text">Vacancy Posters</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('posters')" aria-label="Share Vacancy Posters link" title="Share Vacancy Posters link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -668,7 +706,9 @@
     </div>
     </div>
     <div class="screen-scroll">
+    <div id="house-ad-posters-top" class="house-ad-slot" hidden></div>
     <div class="poster-list" id="poster-feed" aria-label="Vacancy posters"></div>
+    <div id="house-ad-posters-bottom" class="house-ad-slot" hidden></div>
     </div>
   </div>
 
@@ -679,7 +719,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">Employers</div>
+      <div class="section-title-with-link"><div class="logo-text">Employers</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('employers')" aria-label="Share Employers link" title="Share Employers link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
     <div class="search search-mini" style="margin:0 16px 12px">
       <div class="search-inner">
@@ -697,7 +737,9 @@
     <div class="hub-admin-row" style="margin:0 16px 14px;">
       <button class="hub-add-btn" data-ripple onclick="openEmployerForm()">+ Register your company</button>
     </div>
+    <div id="house-ad-employers-top" class="house-ad-slot" hidden></div>
     <div id="allemployers-list"></div>
+    <div id="house-ad-employers-bottom" class="house-ad-slot" hidden></div>
     </div>
   </div>
 
@@ -708,7 +750,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="closeTalentPool()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="logo-text">Talent Pool</div>
+      <div class="section-title-with-link"><div class="logo-text">Talent Pool</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('candidates')" aria-label="Share Join the Talent Pool link" title="Share Join the Talent Pool link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Join the Talent Pool</span></button></div>
     </header>
     <div style="margin:0 16px 12px">
       <select id="pool-sector-filter" onchange="renderPoolList()" style="width:100%;height:44px;border-radius:12px;border:1px solid var(--border-strong);background:var(--card);color:var(--text);padding:0 12px;font-size:13.5px">
@@ -721,9 +763,11 @@
     <button data-ripple onclick="openMyPoolProfile()" style="display:block;margin:0 16px 16px;width:calc(100% - 32px);background:none;border:none;color:var(--accent);font-size:12.5px;font-weight:600;text-align:center;padding:4px">Already registered? Manage my profile</button>
     <div class="pool-privacy-notice">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-      <span><strong>Candidate contact details are kept private.</strong> You'll see each candidate's name, photo, position, location and experience here. To connect with someone, tap "Contact SA Recruiters" on their profile and our team will help set up the introduction.</span>
+      <span><strong>Candidate contact details are kept private. To connect with someone, tap "Contact SA Recruiters" on their profile and our team will help set up the introduction.</span>
     </div>
+    <div id="house-ad-candidates-top" class="house-ad-slot" hidden></div>
     <div id="pool-list"></div>
+    <div id="house-ad-candidates-bottom" class="house-ad-slot" hidden></div>
     </div>
   </div>
 
@@ -751,6 +795,10 @@
   <button class="navbtn" data-tab="menu" data-ripple aria-label="Menu">
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     <span class="navbtn-label">Menu</span>
+  </button>
+  <button class="navbtn navbtn-about" data-ripple onclick="window.open('about/','_blank','noopener')" aria-label="About SA Recruiters">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
+    <span class="navbtn-label">About</span>
   </button>
 </nav>
 
@@ -1256,10 +1304,13 @@
       <div class="field"><label>Full name</label><input id="cvb-name" placeholder="e.g. Thandiwe Nkosi"></div>
       <div class="field"><label>Target role (optional)</label><input id="cvb-role" placeholder="e.g. Warehouse Supervisor"></div>
       <div class="field"><label>Your experience, skills &amp; education</label><textarea id="cvb-raw" placeholder="e.g. Worked as a cashier at Shoprite for 2 years, good with customers and cash handling. Matric certificate 2019. Can drive, have own transport. Looking for retail or admin work..." style="min-height:160px;font-family:inherit;font-size:13.5px"></textarea></div>
+      <div class="field"><label for="cvb-template">Choose a CV template</label><select id="cvb-template" onchange="cvBuilderTemplateChanged(this.value)"><option value="ats">Professional ATS — simple and application-friendly</option><option value="modern">Modern Professional — clean corporate style</option><option value="graduate">Graduate / First CV — skills and education focused</option><option value="trade">Trade &amp; General Worker — practical experience focused</option><option value="executive">Executive — achievement-led leadership style</option></select></div>
+      <p class="cvb-template-note">You can change the design after your CV is generated without using AI again.</p>
       <div id="cvbuilder-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
       <button class="sheet-submit" id="cvbuilder-generate-btn" data-ripple onclick="generateCv()">Generate my CV</button>
     </div>
     <div id="cvbuilder-result-view" style="display:none;">
+      <div class="cvb-result-toolbar"><label for="cvb-template-result">Template</label><select id="cvb-template-result" onchange="cvBuilderTemplateChanged(this.value)"><option value="ats">Professional ATS</option><option value="modern">Modern Professional</option><option value="graduate">Graduate / First CV</option><option value="trade">Trade &amp; General Worker</option><option value="executive">Executive</option></select></div>
       <div id="cvbuilder-preview" class="cvb-preview"></div>
       <div class="cvb-action-row">
         <button class="cvb-action-btn" data-ripple onclick="cvBuilderEditAgain()">← Edit &amp; regenerate</button>
@@ -1296,12 +1347,12 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="content.js" defer></script>
-<script src="content-manager.js" defer></script>
+<script src="content.js?v=sa-recruiters-eac1068807" defer></script>
+<script src="content-manager.js?v=sa-recruiters-eac1068807" defer></script>
 <!-- Load Turnstile before the app bundle so public forms do not depend on a
      late, one-shot dynamic script load. app-sheets.js still has retries as a
      fallback for transient Cloudflare/network failures. -->
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+<script async defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
 <!-- app.js was split into 8 files for maintainability (2026-09-16 refactor):
      app-core, app-data, app-cards, app-forms, app-sheets, app-ui,
      app-manager, app-manager-employer. They're concatenated + minified
@@ -1310,6 +1361,17 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=7f9d8ddb05" defer></script>
+<script src="app.bundle.min.js?v=260e528473" defer></script>
+<footer class="seo-site-footer" aria-label="SA Recruiters quick links">
+  <strong>SA Recruiters</strong>
+  <nav aria-label="Quick links">
+    <a href="careers/">Careers</a>
+    <a href="apply/">Apply for a vacancy</a>
+    <a href="contact/">Contact Us</a>
+    <a href="register/">Register</a>
+    <a href="candidates/">Candidates</a>
+    <a href="about/">About SA Recruiters</a>
+  </nav>
+</footer>
 </body>
 </html>

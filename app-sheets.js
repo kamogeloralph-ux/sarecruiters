@@ -839,7 +839,9 @@ function renderPoolList() {
     listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>No candidates yet</h3><p>Be the first to join the Talent Pool.</p></div></div>';
     return;
   }
-  listEl.innerHTML = list.map(function(c){
+  var middleAt = Math.max(1, Math.ceil(list.length / 2));
+  listEl.innerHTML = list.map(function(c, index){
+    var middleAd = index === middleAt ? '<div id="house-ad-candidates-middle" class="house-ad-slot" hidden></div>' : '';
     var sub = [c.position, c.sector, c.location].filter(Boolean).join(' · ');
     var frontBits = [];
     if (c.position) frontBits.push(escapeHtml(c.position));
@@ -855,7 +857,7 @@ function renderPoolList() {
     // CREATE_POOL_PUBLIC_ACCESS.sql. Interested employers go through
     // SA Recruiters on WhatsApp rather than contacting candidates directly.
     detailBits.push('<div class="det-row pool-contact-row"><a class="pool-whatsapp-btn" href="'+poolCandidateWhatsAppLink(c)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg> Interested? Contact SA Recruiters</a></div>');
-    return '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" data-candidate-id="'+escapeHtml(c.id)+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
+    return middleAd + '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" data-candidate-id="'+escapeHtml(c.id)+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
       (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" alt=""></div>' : '<div class="avatar">'+initials(c.full_name)+'</div>') +
       '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</div>' +
       '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : 'Profile details available')+'</div>' +

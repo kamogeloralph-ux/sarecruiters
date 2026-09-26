@@ -185,6 +185,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .row-avatar img{width:100%;height:100%;object-fit:cover}
 .row-main{flex:1;min-width:0}
 .row-title{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-featured-badge{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;padding:2px 6px;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:1px}
 .row-sub{font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
 .row-chevron{flex-shrink:0;color:var(--text-2);transition:transform .2s ease}
 .row-chevron svg{width:18px;height:18px;display:block}
@@ -309,6 +310,12 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .poster-thumb{width:48px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--card-2)}
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+<style>
+.house-ad-admin-thumb{background:var(--card-2);border:1px solid var(--border)}
+.house-ad-admin-thumb img{width:100%;height:100%;object-fit:cover}
+.house-ad-admin-row .row-title .badge{margin-left:5px}
+</style>
+<style>.house-ad-screen-options{display:flex;flex-wrap:wrap;gap:8px 14px;padding-top:6px}.house-ad-screen-options label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-2)}.house-ad-screen-options input{accent-color:var(--accent)}</style>
 </head>
 <body class="admin-shell">
 
@@ -409,6 +416,12 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div id="po-list"></div>
       </div>
 
+      <!-- HOUSE ADS -->
+      <div class="section section-content" id="sec-houseads">
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>House Ads</h2><div class="spacer"></div><button class="minibtn ok" onclick="openHouseAdSheet()">+ Create ad</button></div>
+        <div class="muted" style="margin-bottom:14px">Create your own sponsored banners, choose where they appear, and schedule them without third-party ad networks.</div>
+        <div id="house-ad-list"></div>
+      </div>
       <!-- SUBMISSIONS -->
       <div class="section section-review" id="sec-submissions">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Submissions</h2></div>
@@ -528,10 +541,6 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>CV preference</label><select id="a-cvpref"><option>Email</option><option>WhatsApp</option><option>Online form</option><option>Phone</option><option>Upload portal</option></select></div>
     <div class="field"><label>Agency photo / logo</label><input type="file" id="a-photo" accept="image/*" onchange="handlePhoto(event)"></div>
     <div id="a-photo-preview" style="display:none;margin-bottom:12px"><img id="a-photo-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></div>
-    <div class="toggle-row" style="margin-bottom:16px">
-      <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified agencies show a badge and rank higher</div></div>
-      <label class="switch"><input type="checkbox" id="a-verified"><span class="track"><span class="knob"></span></span></label>
-    </div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('agency-overlay')">Cancel</button>
       <button class="btn" onclick="saveAgency()">Save</button>
@@ -574,6 +583,9 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Work schedule</label><input id="v-schedule" placeholder="e.g. Mon–Fri, shifts"></div>
     <div class="field"><label>Start date</label><input id="v-start" placeholder="e.g. ASAP or 1 Oct 2026"></div>
     <div class="field"><label>Closing date</label><input id="v-closing" placeholder="e.g. 30 Sep 2026"></div>
+    <label class="terms-accept-row" for="v-featured"><input id="v-featured" type="checkbox"><span><strong>Feature this vacancy</strong><small>Shows the vacancy in the Featured Vacancies section for extra visibility.</small></span></label>
+    <div class="field"><label>Featured until</label><input id="v-featured-until" type="date"><small style="display:block;margin-top:5px;color:var(--text-2)">Leave blank for no separate featured end date. The vacancy closing date still applies.</small></div>
+    <div class="field"><label>Featured order</label><input id="v-featured-order" type="number" min="0" step="1" value="0" placeholder="0 = first"></div>
     <div class="field"><label>Notes / description</label><textarea id="v-notes" placeholder="Job description, requirements…"></textarea></div>
     <div class="field"><label>Apply link</label><input id="v-link" placeholder="https://…"></div>
     <div class="field"><label>Contact email (if no link)</label><input id="v-email" type="email" placeholder="e.g. hr@company.co.za"></div>
@@ -609,6 +621,39 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   </div>
 </div>
 
+<!-- ============ JOB ENQUIRY EDIT SHEET ============ -->
+<div class="scrim" id="job-enquiry-overlay">
+  <div class="sheet" style="max-width:640px">
+    <h3>Edit job enquiry</h3>
+    <input type="hidden" id="je-id">
+    <div class="field"><label>Company name *</label><input id="je-company"></div>
+    <div class="field"><label>Contact person</label><input id="je-contact"></div>
+    <div class="field"><label>Work email *</label><input id="je-email" type="email"></div>
+    <div class="field"><label>Phone</label><input id="je-phone" type="tel"></div>
+    <div class="field"><label>Industry</label><input id="je-industry"></div>
+    <div class="field"><label>Positions to fill</label><input id="je-positions"></div>
+    <div class="field"><label>Role types</label><input id="je-roles" placeholder="Separate roles with commas"></div>
+    <div class="field"><label>Additional details</label><textarea id="je-details"></textarea></div>
+    <div class="field"><label>Website</label><input id="je-website" type="url"></div>
+    <div class="sheet-actions"><button class="btn secondary" onclick="closeSheet('job-enquiry-overlay')">Cancel</button><button class="btn" onclick="saveJobEnquiryEdit()">Save changes</button></div>
+  </div>
+</div>
+
+<!-- ============ HOUSE ADS: CREATE / EDIT SHEET ============ -->
+<div class="scrim" id="house-ad-overlay">
+  <div class="sheet" style="max-width:640px">
+    <h3 id="house-ad-sheet-title">Create house ad</h3>
+    <input type="hidden" id="ha-id">
+    <div class="field"><label>Advertiser / business name *</label><input id="ha-advertiser" maxlength="120" placeholder="e.g. ABC Training Academy"></div>
+    <div class="field"><label>Headline *</label><input id="ha-title" maxlength="140" placeholder="e.g. Build your next career skill"></div>
+    <div class="field"><label>Short message</label><input id="ha-message" maxlength="220" placeholder="Optional supporting text"></div>
+    <div class="field"><label>Banner image URL *</label><input id="ha-image" type="url" placeholder="https://…"><small style="display:block;margin-top:5px;color:var(--text-2)">Use an image hosted on your own storage or CDN. Recommended: 1200 × 400 px.</small></div>
+    <div class="field"><label>Destination URL *</label><input id="ha-target" type="url" placeholder="https://…"></div>
+    <div class="field"><label>Show this ad on</label><div id="ha-screens" class="house-ad-screen-options"><label><input type="checkbox" value="agencies"> Agencies</label><label><input type="checkbox" value="employers"> Employers</label><label><input type="checkbox" value="candidates"> Candidates</label><label><input type="checkbox" value="posters"> Posters</label></div></div><div class="pb-row"><div class="field"><label>Ad slot</label><select id="ha-slot"><option value="top">Top</option><option value="middle">Middle</option><option value="bottom">Bottom</option></select></div><div class="field"><label>Display order</label><input id="ha-order" type="number" min="0" step="1" value="0"></div></div>
+    <div class="pb-row"><div class="field"><label>Starts</label><input id="ha-starts" type="datetime-local"></div><div class="field"><label>Ends (optional)</label><input id="ha-ends" type="datetime-local"></div></div>
+    <div class="sheet-actions"><button class="btn secondary" onclick="closeSheet('house-ad-overlay')">Cancel</button><button class="btn" onclick="saveHouseAd()">Save ad</button></div>
+  </div>
+</div>
 <!-- ============ VACANCY POSTERS: BULK UPLOAD SHEET ============ -->
 <div class="scrim" id="poster-overlay">
   <div class="sheet" style="max-width:720px">
@@ -818,8 +863,35 @@ async function deleteR2Object(key) {
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [] };
+var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [], houseAds: [] };
 var adminDataReady = false;
+var ADMIN_CACHE_DB = 'sa_data_cache_db';
+var ADMIN_CACHE_STORE = 'kv';
+var ADMIN_CACHE_KEY = 'sa_admin_directory_v1';
+function openAdminCacheDB(){
+  return new Promise(function(resolve,reject){
+    if(!window.indexedDB){ reject(new Error('IndexedDB unavailable')); return; }
+    var req=indexedDB.open(ADMIN_CACHE_DB,1);
+    req.onupgradeneeded=function(){ if(!req.result.objectStoreNames.contains(ADMIN_CACHE_STORE)) req.result.createObjectStore(ADMIN_CACHE_STORE); };
+    req.onsuccess=function(){ resolve(req.result); };
+    req.onerror=function(){ reject(req.error); };
+  });
+}
+async function restoreAdminDirectoryCache(){
+  try{
+    var db=await openAdminCacheDB();
+    var d=await new Promise(function(resolve,reject){ var r=db.transaction(ADMIN_CACHE_STORE,'readonly').objectStore(ADMIN_CACHE_STORE).get(ADMIN_CACHE_KEY); r.onsuccess=function(){resolve(r.result);}; r.onerror=function(){reject(r.error);}; });
+    if(!d || !Array.isArray(d.agencies)) return false;
+    cache.agencies=d.agencies||[]; cache.branches=d.branches||[]; cache.vacancies=d.vacancies||[]; cache.employers=d.employers||[];
+    return true;
+  }catch(e){ return false; }
+}
+async function saveAdminDirectoryCache(){
+  try{
+    var db=await openAdminCacheDB();
+    await new Promise(function(resolve,reject){ var tx=db.transaction(ADMIN_CACHE_STORE,'readwrite'); tx.objectStore(ADMIN_CACHE_STORE).put({agencies:cache.agencies,branches:cache.branches,vacancies:cache.vacancies,employers:cache.employers,savedAt:Date.now()},ADMIN_CACHE_KEY); tx.oncomplete=resolve; tx.onerror=function(){reject(tx.error);}; });
+  }catch(e){}
+}
 function debounce(fn, ms){
   var t = null;
   return function(){
@@ -961,9 +1033,17 @@ async function enterConsole(user){
   // which made the admin page look stuck on slower mobile connections.
   renderNav();
   renderDashboard();
+  restoreAdminDirectoryCache().then(function(restored){
+    if(!restored) return;
+    adminDataReady = true;
+    renderNav();
+    renderDashboard();
+    renderAgencies(); renderBranches(); renderVacancies(); renderEmployers();
+  });
   loadAll().then(async function(){
     await checkTracksTable();
     adminDataReady = true;
+    saveAdminDirectoryCache();
     renderNav();
     renderDashboard();
   }).catch(function(error){
@@ -1025,7 +1105,7 @@ async function getVacancies(){
     var countRes = await supabaseClient.from('vacancies').select('id', { count: 'exact', head: true });
     if (countRes.error) throw countRes.error;
     var total = countRes.count || 0;
-    var cols = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
+    var cols = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
     var pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
     var pages = await Promise.all(Array.from({length: pageCount}, function(_, i){
       var from = i * PAGE_SIZE;
@@ -1106,6 +1186,10 @@ async function getEmployers(){
 }
 async function getPosters(){
   try { var { data, error } = await supabaseClient.from('employer_posters').select('id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at').order('created_at',{ascending:false}).limit(500); if(!error) return data||[]; console.error('posters load',error); } catch(e){ console.error('posters load',e); }
+  return [];
+}
+async function getHouseAds(){
+  try { var { data, error } = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at').order('sort_order',{ascending:true}).order('created_at',{ascending:false}); if(!error) return data||[]; console.error('house ads load',error); } catch(e){ console.error('house ads load',e); }
   return [];
 }
 async function upsertEmployer(e){ var { error } = await supabaseClient.from('employers').upsert(e); if(error){ console.error('employer save',error); alert('Could not save employer: '+error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } }
@@ -1258,7 +1342,7 @@ async function regenerateAllEmployerTokens(){
 async function loadAll(){
   var results = await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(),
-    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters(), getJobEnquiries()
+    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters(), getJobEnquiries(), getHouseAds()
   ]);
   cache.agencies = results[0] || [];
   cache.branches = results[1] || [];
@@ -1270,6 +1354,7 @@ async function loadAll(){
   cache.poolCandidates = results[7] || [];
   cache.posters = results[8] || [];
   cache.jobEnquiries = results[9] || [];
+  cache.houseAds = results[10] || [];
 
   var settings = await Promise.all([
     getAppSetting('public_vacancy_posting','false'),
@@ -1307,6 +1392,7 @@ var NAV = [
   { id:'vacancies', label:'Vacancies', tile:'hc-tile-amber', sub:'Job postings & vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
   { id:'employers', label:'Employers', tile:'hc-tile-indigo', sub:'Companies posting their own vacancies', icon:'<path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/>' },
   { id:'posters', label:'Vacancy Posters', tile:'hc-tile-pink', sub:'Upload & edit recruitment-ad posters', icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
+  { id:'houseads', label:'House Ads', tile:'hc-tile-teal', sub:'Create & schedule your own banners', icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5V3M16 5V3"/>' },
   { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
   { id:'poolcandidates', label:'Talent Pool', tile:'hc-tile-blue', sub:'Job seeker registrations & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
   { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
@@ -1322,10 +1408,11 @@ function renderNav(){
     if(adminDataReady && n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
     if(adminDataReady && n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
     if(adminDataReady && n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
+    if(adminDataReady && n.id==='houseads') badge = '<span class="nav-badge">'+cache.houseAds.length+'</span>';
     if(adminDataReady && n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
     if(adminDataReady && n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(adminDataReady && n.id==='dailytrack') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
-    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
+    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters','houseads'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','dailytrack'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
     return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
@@ -1336,6 +1423,7 @@ function navBadge(id){
   if(id==='vacancies') return cache.vacancies.length;
   if(id==='employers') return cache.employers.length;
   if(id==='posters') return cache.posters.length;
+  if(id==='houseads') return cache.houseAds.length;
   if(id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; return c; }
   if(id==='dailytrack') return cache.tracks.length;
   if(id==='poolcandidates'){ return cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; }
@@ -1350,6 +1438,7 @@ function goSection(id){
   if(id==='vacancies') renderVacancies();
   if(id==='employers') renderEmployers();
   if(id==='posters') renderPosters();
+  if(id==='houseads') renderHouseAds();
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
   if(id==='dailytrack') renderDailyTracks();
@@ -1383,7 +1472,7 @@ function renderDashboard(){
   var homeEl = document.getElementById('home-cards');
   if(homeEl){
     // Group: Manage
-    var manageItems = ['agencies','branches','vacancies','employers','posters'];
+    var manageItems = ['agencies','branches','vacancies','employers','posters','houseads'];
     var reviewItems = ['submissions','poolcandidates'];
     var mediaItems = ['dailytrack','content'];
     var configItems = ['settings'];
@@ -1804,6 +1893,44 @@ function posterOptions(list, selected, blankLabel){
 function posterExpiryToInput(iso){ if(!iso) return ''; var d = new Date(iso); return isNaN(d) ? '' : d.toISOString().slice(0,10); }
 function posterInputToExpiry(val){ return val ? new Date(val+'T23:59:59').toISOString() : null; }
 
+function houseAdDateToInput(iso){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d)) return ''; var pad=function(n){return String(n).padStart(2,'0')}; return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+function houseAdInputToISO(value){ return value ? new Date(value).toISOString() : null; }
+function houseAdStatus(ad){ var now=Date.now(), start=new Date(ad.starts_at||0).getTime(), end=ad.ends_at?new Date(ad.ends_at).getTime():Infinity; if(!ad.is_active) return '<span class="badge unverified">Paused</span>'; if(start>now) return '<span class="badge open">Scheduled</span>'; if(end<=now) return '<span class="badge unverified">Expired</span>'; return '<span class="badge verified">Live</span>'; }
+function openHouseAdSheet(id){
+  var ad=id ? cache.houseAds.find(function(x){return x.id===id;}) : null;
+  document.getElementById('house-ad-sheet-title').textContent=ad?'Edit house ad':'Create house ad';
+  document.getElementById('ha-id').value=ad?ad.id:'';
+  document.getElementById('ha-advertiser').value=ad?ad.advertiser_name||'':'';
+  document.getElementById('ha-title').value=ad?ad.title||'':'';
+  document.getElementById('ha-message').value=ad?ad.message||'':'';
+  document.getElementById('ha-image').value=ad?ad.image_url||'':'';
+  document.getElementById('ha-target').value=ad?ad.target_url||'':'';
+  var screens = ad && Array.isArray(ad.target_screens) && ad.target_screens.length ? ad.target_screens : ['agencies','employers','candidates','posters'];
+  document.querySelectorAll('#ha-screens input').forEach(function(input){ input.checked = screens.indexOf(input.value) !== -1; });
+  document.getElementById('ha-slot').value=ad?ad.ad_slot||'top':'top';
+  document.getElementById('ha-order').value=ad?ad.sort_order||0:0;
+  document.getElementById('ha-starts').value=ad?houseAdDateToInput(ad.starts_at):houseAdDateToInput(new Date().toISOString());
+  document.getElementById('ha-ends').value=ad?houseAdDateToInput(ad.ends_at):'';
+  openSheet('house-ad-overlay');
+}
+async function saveHouseAd(){
+  var advertiser=document.getElementById('ha-advertiser').value.trim(), title=document.getElementById('ha-title').value.trim(), image=document.getElementById('ha-image').value.trim(), target=document.getElementById('ha-target').value.trim();
+  if(!advertiser||!title||!image||!target){ alert('Advertiser, headline, banner image URL and destination URL are required.'); return; }
+  var screens=Array.from(document.querySelectorAll('#ha-screens input:checked')).map(function(input){return input.value;});
+  if(!screens.length){ alert('Choose at least one screen for this ad.'); return; }
+  var payload={advertiser_name:advertiser,title:title,message:document.getElementById('ha-message').value.trim(),image_url:image,target_url:target,placement:'directories',target_screens:screens,ad_slot:document.getElementById('ha-slot').value,sort_order:parseInt(document.getElementById('ha-order').value,10)||0,starts_at:houseAdInputToISO(document.getElementById('ha-starts').value)||new Date().toISOString(),ends_at:houseAdInputToISO(document.getElementById('ha-ends').value),is_active:true,updated_at:new Date().toISOString()};
+  var id=document.getElementById('ha-id').value; if(id) payload.id=id;
+  var res=await supabaseClient.from('house_ads').upsert(payload);
+  if(res.error){ alert('Could not save house ad: '+res.error.message); return; }
+  closeSheet('house-ad-overlay'); cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast(id?'House ad updated':'House ad created');
+}
+function renderHouseAds(){
+  var el=document.getElementById('house-ad-list'); if(!el) return;
+  if(!cache.houseAds.length){el.innerHTML='<div class="empty-state"><h3>No house ads yet</h3><p>Create a banner to promote your own services or partners.</p></div>';return;}
+  el.innerHTML=cache.houseAds.map(function(ad){ var ctr=ad.impressions?((ad.clicks||0)/ad.impressions*100).toFixed(1):'0.0'; return '<div class="row-item house-ad-admin-row" onclick="toggleRow(this)"><div class="row-avatar house-ad-admin-thumb"><img src="'+escapeHtml(ad.image_url)+'" alt=""></div><div class="row-main"><div class="row-title">'+escapeHtml(ad.title||'Untitled ad')+' '+houseAdStatus(ad)+'</div><div class="row-sub">'+escapeHtml(ad.advertiser_name||'')+' · '+(Array.isArray(ad.target_screens)?ad.target_screens.join(', '):'all screens')+' · '+escapeHtml(ad.ad_slot||'top')+' · '+(ad.impressions||0)+' impressions · '+(ad.clicks||0)+' clicks ('+ctr+'% CTR)</div></div><span class="row-chevron">⌄</span></div><div class="row-details"><div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(houseAdDateToInput(ad.starts_at)||'Now')+' → '+escapeHtml(houseAdDateToInput(ad.ends_at)||'No expiry')+'</div><div class="det-row"><span class="det-label">Destination:</span> <a href="'+escapeHtml(ad.target_url)+'" target="_blank" rel="noopener">'+escapeHtml(ad.target_url)+'</a></div><div class="row-expanded-actions"><button class="minibtn full" onclick="event.stopPropagation();openHouseAdSheet(\''+ad.id+'\')">Edit</button><button class="minibtn full danger" onclick="event.stopPropagation();deleteHouseAd(\''+ad.id+'\')">Delete</button></div></div>'; }).join('');
+}
+async function deleteHouseAd(id){ var ad=cache.houseAds.find(function(x){return x.id===id;}); if(!confirm('Delete “'+((ad&&ad.title)||'this house ad')+'”?')) return; var res=await supabaseClient.from('house_ads').delete().eq('id',id); if(res.error){alert('Could not delete house ad: '+res.error.message);return;} cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast('House ad deleted'); }
+
 function renderPosters(){
   var q = (document.getElementById('po-search').value||'').trim().toLowerCase();
   var list = cache.posters.slice();
@@ -2211,7 +2338,7 @@ function renderVacancies(){
     var sub = [v.location, v.company, (ag&&ag.name), (emp&&emp.name?emp.name+' (Employer)':null), v.closing_date?('closes '+v.closing_date):null].filter(Boolean).join(' · ');
     return '<div class="row-item" data-vid="'+v.id+'" onclick="toggleVacancyRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#d97706,#b45309)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>'+
-      '<div class="row-main"><div class="row-title">'+escapeHtml(v.title||'Untitled role')+' '+vacancyExpiryBadge(v)+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+'</div></div>'+
+      '<div class="row-main"><div class="row-title">'+escapeHtml(v.title||'Untitled role')+' '+(v.is_featured?'<span class="admin-featured-badge">Featured</span>':'')+' '+vacancyExpiryBadge(v)+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+'</div></div>'+
       '<div class="row-actions-inline">'+
         '<button class="minibtn" onclick="stopProp(event);openVacancySheet(\''+v.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
         '<button class="minibtn danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
@@ -2257,6 +2384,9 @@ function openVacancySheet(id, employerId){
   document.getElementById('v-schedule').value = v ? (v.work_schedule||'') : '';
   document.getElementById('v-start').value = v ? (v.start_date||'') : '';
   document.getElementById('v-closing').value = v ? (v.closing_date||'') : '';
+  document.getElementById('v-featured').checked = !!(v && v.is_featured);
+  document.getElementById('v-featured-until').value = v && v.featured_until ? String(v.featured_until).slice(0,10) : '';
+  document.getElementById('v-featured-order').value = v && v.featured_order !== null && v.featured_order !== undefined ? v.featured_order : 0;
   document.getElementById('v-notes').value = v ? (v.notes||'') : '';
   document.getElementById('v-link').value = v ? (v.link||'') : '';
   document.getElementById('v-email').value = v ? (v.email||'') : (emp ? (emp.email||'') : '');
@@ -2286,6 +2416,9 @@ async function saveVacancy(){
     work_schedule:document.getElementById('v-schedule').value.trim(),
     start_date:document.getElementById('v-start').value.trim(),
     closing_date:document.getElementById('v-closing').value.trim(),
+    is_featured:document.getElementById('v-featured').checked,
+    featured_until:document.getElementById('v-featured').checked ? (document.getElementById('v-featured-until').value || null) : null,
+    featured_order:document.getElementById('v-featured').checked ? Math.max(0, parseInt(document.getElementById('v-featured-order').value, 10) || 0) : 0,
     notes:document.getElementById('v-notes').value.trim(),
     link:document.getElementById('v-link').value.trim(),
     email:document.getElementById('v-email').value.trim(),
@@ -2551,6 +2684,7 @@ function renderSubmissions(){
         (j.website?'<div class="row-sub">Website: '+escapeHtml(j.website)+'</div>':'')+
         '<div class="muted" style="margin-top:3px">'+fmtDate(j.created_at)+'</div>'+
       '</div><div class="row-actions">'+
+        '<button class="minibtn" onclick="openJobEnquiryEditSheet(\''+j.id+'\')">Edit</button>'+
         (st==='new'?'<button class="minibtn ok" onclick="approveJobEnquiry('+"'"+j.id+"'"+')">Approve for posting</button><button class="minibtn danger" onclick="rejectJobEnquiry('+"'"+j.id+"'"+')">Reject</button>':'')+
         (st==='approved'?'<button class="minibtn ok" onclick="markJobEnquiryContacted('+"'"+j.id+"'"+')">Mark contacted</button>':'')+
         (st==='contacted'?'<button class="minibtn" onclick="reopenJobEnquiry('+"'"+j.id+"'"+')">Reopen</button>':'')+
@@ -2578,6 +2712,33 @@ async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) retur
 async function updateJobEnquiryStatus(id,status){ try{ var res=await supabaseClient.from('job_post_enquiries').update({status:status}).eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not update this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not update this enquiry. Check your connection.'); return false; } }
 async function deleteJobEnquiry(id){ try{ var res=await supabaseClient.from('job_post_enquiries').delete().eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not delete this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not delete this enquiry. Check your connection.'); return false; } }
 
+function openJobEnquiryEditSheet(id){
+  var j=cache.jobEnquiries.find(function(x){return String(x.id)===String(id);});
+  if(!j) return;
+  document.getElementById('je-id').value=j.id;
+  document.getElementById('je-company').value=j.company_name||'';
+  document.getElementById('je-contact').value=j.contact_person||'';
+  document.getElementById('je-email').value=j.work_email||'';
+  document.getElementById('je-phone').value=j.phone||'';
+  document.getElementById('je-industry').value=j.industry||'';
+  document.getElementById('je-positions').value=j.positions_to_fill||'';
+  document.getElementById('je-roles').value=Array.isArray(j.role_types)?j.role_types.join(', '):'';
+  document.getElementById('je-details').value=j.additional_details||'';
+  document.getElementById('je-website').value=j.website||'';
+  openSheet('job-enquiry-overlay');
+}
+async function saveJobEnquiryEdit(){
+  var id=document.getElementById('je-id').value;
+  var company=document.getElementById('je-company').value.trim();
+  var email=document.getElementById('je-email').value.trim();
+  if(!company||!email){ alert('Company name and work email are required.'); return; }
+  var payload={company_name:company,contact_person:document.getElementById('je-contact').value.trim(),work_email:email,phone:document.getElementById('je-phone').value.trim(),industry:document.getElementById('je-industry').value.trim(),positions_to_fill:document.getElementById('je-positions').value.trim(),role_types:document.getElementById('je-roles').value.split(',').map(function(x){return x.trim();}).filter(Boolean),additional_details:document.getElementById('je-details').value.trim(),website:document.getElementById('je-website').value.trim()};
+  var res=await supabaseClient.from('job_post_enquiries').update(payload).eq('id',id).select('id');
+  if(res.error || !(res.data&&res.data.length)){ alert('Could not save this enquiry: '+(res.error?res.error.message:'no matching record')); return; }
+  var i=cache.jobEnquiries.findIndex(function(x){return String(x.id)===String(id);});
+  if(i>=0) cache.jobEnquiries[i]=Object.assign({},cache.jobEnquiries[i],payload);
+  closeSheet('job-enquiry-overlay'); renderSubmissions(); renderNav(); showToast('Job enquiry updated');
+}
 // ===== Settings =====
 async function loadPoolBankingDetails(){
   var raw = await getAppSetting('pool_banking_details','');

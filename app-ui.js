@@ -57,10 +57,10 @@ function restoredScreenName() {
   } catch(e) { return 'home'; }
 }
 function restoreActiveScreenBeforeReveal() {
-  // Manager links and PWA actions are URL-owned entry points; never let an
-  // old consumer section override those destinations on a refresh.
+  // Manager links, PWA actions and promoted section links are URL-owned entry
+  // points; never let an old consumer section override those destinations.
   var params = new URLSearchParams(window.location.search);
-  if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab')) return;
+  if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
   var name = restoredScreenName();
   var target = document.getElementById('screen-' + name);
   if (!target) return;
@@ -72,6 +72,57 @@ function restoreActiveScreenBeforeReveal() {
   window.__saRestoredScreen = name;
 }
 restoreActiveScreenBeforeReveal();
+
+// Public section links are intentionally query-based so Cloudflare Pages can
+// serve the normal PWA shell while the link remains stable and easy to share:
+// /?section=vacancies, /?section=agencies, /?section=candidates,
+// /?section=posters and /?section=employers.
+var SA_SECTION_LINKS = {
+  vacancies: { label: 'Vacancies', title: 'SA Recruiters — Vacancies' },
+  agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
+  candidates: { label: 'Join the Talent Pool', title: 'SA Recruiters — Join the Talent Pool', shareKey: 'talent-pool' },
+  posters: { label: 'Vacancy posters', title: 'SA Recruiters — Vacancy Posters' },
+  employers: { label: 'Employers', title: 'SA Recruiters — Employers' }
+};
+function getSectionLink(section) {
+  if (!SA_SECTION_LINKS[section]) return '';
+  var key = SA_SECTION_LINKS[section].shareKey || section;
+  return window.location.origin + '/?section=' + encodeURIComponent(key);
+}
+function shareSectionLink(section) {
+  var meta = SA_SECTION_LINKS[section];
+  var link = getSectionLink(section);
+  if (!meta || !link) return;
+  var shareLabel = section === 'candidates' ? 'Join the Talent Pool' : meta.label;
+  var text = (section === 'candidates' ? shareLabel : 'Explore ' + shareLabel.toLowerCase()) + ' on SA Recruiters: ' + link;
+  if (navigator.share) {
+    navigator.share({ title: meta.title, text: text, url: link }).catch(function() {});
+  } else {
+    copyText(link, null);
+    showToast(meta.label + ' link copied');
+  }
+}
+function openDeepLinkedSection() {
+  var section = new URLSearchParams(window.location.search).get('section');
+  if (section === 'talent-pool') section = 'candidates';
+  if (!SA_SECTION_LINKS[section]) return;
+  // Treat a promoted URL like a restored screen. loadAll() calls
+  // renderRestoredScreenContent() after IndexedDB/live data hydration, which
+  // prevents the destination from staying on an early loading/count state.
+  var screenBySection = {
+    vacancies: 'allvacancies', agencies: 'allagencies', candidates: 'pool',
+    posters: 'allposters', employers: 'allemployers'
+  };
+  window.__saRestoredScreen = screenBySection[section];
+  if (section === 'vacancies') showAllVacancies('home');
+  else if (section === 'agencies') showAllAgencies('home');
+  else if (section === 'candidates') goPool('home');
+  else if (section === 'posters') showVacancyPosters('home');
+  else if (section === 'employers') showAllEmployers('home');
+}
+// Wait until the normal boot has painted the shell; the destination functions
+// then render from IndexedDB immediately and refresh from the network normally.
+
 // All navigation paths in this app eventually toggle a screen's `active`
 // class. Observing that single state change keeps refresh restoration in sync
 // without relying on every individual menu/card handler remembering to call a
@@ -848,7 +899,9 @@ function renderAllAgenciesList() {
     return (a.name||'').localeCompare(b.name||'');
   });
   if (!list.length) { el.innerHTML = '<div class="empty-state"><h3>No agencies found</h3><p>Try a different search term.</p></div>'; return; }
-  el.innerHTML = list.map(hubCard).join('');
+  var middleAt = Math.max(1, Math.ceil(list.length / 2));
+  el.innerHTML = list.map(function(item, index){ return (index === middleAt ? '<div id="house-ad-agencies-middle" class="house-ad-slot" hidden></div>' : '') + hubCard(item); }).join('');
+  renderHouseAdSlots();
 }
 
 function renderAllBranchesList() {
@@ -930,6 +983,29 @@ function handleVacanciesBack() {
   if (allVacanciesFolder) closeVacancyFolder();
   else goBackFromDirectory();
 }
+/* Numbered pagination bar shared by the General / Agency / dedicated-source
+   vacancy folders. gotoFn is the name of a global function accepting a
+   single 1-based page number (goToGeneralVacancyPage, etc). Shows at most
+   5 page numbers centred on the current page, plus prev/next arrows. */
+var VAC_PAGE_PREV_SVG = '<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>';
+var VAC_PAGE_NEXT_SVG = '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
+function vacPaginationBar(page, totalPages, gotoFn) {
+  totalPages = Math.max(1, totalPages || 1);
+  page = Math.max(1, Math.min(page || 1, totalPages));
+  if (totalPages <= 1) return '';
+  var windowSize = 5;
+  var start = Math.max(1, Math.min(page - 2, totalPages - windowSize + 1));
+  var end = Math.min(totalPages, start + windowSize - 1);
+  var nums = '';
+  for (var i = start; i <= end; i++) {
+    nums += '<button class="vac-page-num' + (i === page ? ' active' : '') + '"' + (i === page ? ' aria-current="page"' : '') + ' onclick="event.stopPropagation();' + gotoFn + '(' + i + ')">' + i + '</button>';
+  }
+  return '<nav class="vac-pagination" aria-label="Vacancy pages" onclick="event.stopPropagation()">' +
+    '<button class="vac-page-arrow" ' + (page <= 1 ? 'disabled' : '') + ' onclick="' + gotoFn + '(' + (page - 1) + ')" aria-label="Previous page">' + VAC_PAGE_PREV_SVG + '</button>' +
+    '<div class="vac-page-nums">' + nums + '</div>' +
+    '<button class="vac-page-arrow" ' + (page >= totalPages ? 'disabled' : '') + ' onclick="' + gotoFn + '(' + (page + 1) + ')" aria-label="Next page">' + VAC_PAGE_NEXT_SVG + '</button>' +
+  '</nav>';
+}
 function updateVacanciesBackButton() {
   var btn = document.getElementById('allvacancies-back');
   if (!btn) return;
@@ -940,6 +1016,9 @@ function openVacancyFolder(type) {
   allVacanciesFolder = type;
   vacancyFolderDisplayLimit = 30;
   vacancyFolderDisplayKey = '';
+  generalVacancyDisplayPage = 1;
+  dedicatedVacancyDisplayPage = 1;
+  agencyFolderDisplayPage = 1;
   if (type === 'general') {
     generalVacancyQueryKey = '__open__';
     generalVacancyHasMore = true;
@@ -959,6 +1038,9 @@ function closeVacancyFolder() {
   allVacanciesFolder = null;
   vacancyFolderDisplayLimit = 30;
   vacancyFolderDisplayKey = '';
+  generalVacancyDisplayPage = 1;
+  dedicatedVacancyDisplayPage = 1;
+  agencyFolderDisplayPage = 1;
   renderAllVacanciesList();
   resetActiveScreenScroll('screen-allvacancies');
 }
@@ -978,18 +1060,30 @@ function renderGeneralVacancyCards(append) {
     el.innerHTML = vacancyScreenStateMarkup('all', false, !!generalVacancyQueryKey);
   } else {
     el.dataset.state = 'ready';
-    var cards = generalVacancyRows.map(function(v){
+    var totalPages = Math.max(1, Math.ceil((generalVacancyCount || generalVacancyRows.length) / VAC_PAGE_SIZE));
+    if (generalVacancyDisplayPage > totalPages) generalVacancyDisplayPage = totalPages;
+    var pageStart = (generalVacancyDisplayPage - 1) * VAC_PAGE_SIZE;
+    var pageRows = generalVacancyRows.slice(pageStart, pageStart + VAC_PAGE_SIZE);
+    var cards = pageRows.map(function(v){
       var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
       return vacancyCard(v, agency, { hideBadges: true });
     }).join('');
-    el.innerHTML = '<div class="pgroup-label">General Vacancies</div>' + cards;
+    el.innerHTML = '<div class="pgroup-label">General Vacancies</div>' + (pageRows.length ? cards : '<div class="empty-state"><h3>Loading vacancies…</h3></div>') + vacPaginationBar(generalVacancyDisplayPage, totalPages, 'goToGeneralVacancyPage');
   }
   if (countLabel) countLabel.textContent = generalVacancyCount ? generalVacancyRows.length + ' of ' + generalVacancyCount + ' loaded' : generalVacancyRows.length + ' loaded';
-  if (loadMore) {
-    loadMore.style.display = generalVacancyHasMore ? 'block' : 'none';
-    loadMore.disabled = generalVacancyLoading;
-    loadMore.textContent = generalVacancyLoading ? 'Loading vacancies…' : 'Load more vacancies';
+  if (loadMore) loadMore.style.display = 'none';
+}
+async function goToGeneralVacancyPage(n) {
+  if (allVacanciesFolder !== 'general') return;
+  n = Math.max(1, n);
+  while (generalVacancyRows.length < n * VAC_PAGE_SIZE && generalVacancyHasMore && !generalVacancyLoading) {
+    await loadGeneralVacancies(false);
   }
+  var totalPages = Math.max(1, Math.ceil((generalVacancyCount || generalVacancyRows.length) / VAC_PAGE_SIZE));
+  generalVacancyDisplayPage = Math.max(1, Math.min(n, totalPages));
+  renderGeneralVacancyCards(false);
+  var listEl = document.getElementById('allvacancies-list');
+  if (listEl && listEl.scrollIntoView) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 async function loadGeneralVacancies(reset) {
   var state = generalVacancyQueryState();
@@ -1003,6 +1097,7 @@ async function loadGeneralVacancies(reset) {
     generalVacancyHasMore = true;
     generalVacancyLoading = false;
     generalVacancyError = false;
+    generalVacancyDisplayPage = 1;
     var industrySel = document.getElementById('allvacancies-industry');
     if (industrySel) industrySel.style.display = 'none';
   }
@@ -1066,15 +1161,29 @@ function renderDedicatedVacancyCards(append) {
     el.innerHTML = vacancyScreenStateMarkup('all', false, !!dedicatedVacancyQueryKey && dedicatedVacancyQueryKey !== '__open__');
   } else {
     el.dataset.state = 'ready';
-    var cards = dedicatedVacancyRows.map(function(v){ return vacancyCard(v, {}, { hideBadges: true }); }).join('');
-    el.innerHTML = '<div class="pgroup-label">' + escapeHtml(folderLabel) + '</div>' + cards;
+    var totalPages = Math.max(1, Math.ceil((folderCount || dedicatedVacancyRows.length) / VAC_PAGE_SIZE));
+    if (dedicatedVacancyDisplayPage > totalPages) dedicatedVacancyDisplayPage = totalPages;
+    var pageStart = (dedicatedVacancyDisplayPage - 1) * VAC_PAGE_SIZE;
+    var pageRows = dedicatedVacancyRows.slice(pageStart, pageStart + VAC_PAGE_SIZE);
+    var cards = pageRows.map(function(v){ return vacancyCard(v, {}, { hideBadges: true }); }).join('');
+    el.innerHTML = '<div class="pgroup-label">' + escapeHtml(folderLabel) + '</div>' + (pageRows.length ? cards : '<div class="empty-state"><h3>Loading vacancies…</h3></div>') + vacPaginationBar(dedicatedVacancyDisplayPage, totalPages, 'goToDedicatedVacancyPage');
   }
   if (countLabel) countLabel.textContent = folderCount ? dedicatedVacancyRows.length + ' of ' + folderCount + ' loaded' : dedicatedVacancyRows.length + ' loaded';
-  if (loadMore) {
-    loadMore.style.display = dedicatedVacancyHasMore ? 'block' : 'none';
-    loadMore.disabled = dedicatedVacancyLoading;
-    loadMore.textContent = dedicatedVacancyLoading ? 'Loading vacancies…' : 'Load more vacancies';
+  if (loadMore) loadMore.style.display = 'none';
+}
+async function goToDedicatedVacancyPage(n) {
+  var folder = allVacanciesFolder;
+  if (!DEDICATED_VACANCY_FOLDER_SOURCES[folder]) return;
+  n = Math.max(1, n);
+  var folderCount = (dedicatedVacancyCounts && dedicatedVacancyCounts[folder]) || 0;
+  while (dedicatedVacancyRows.length < n * VAC_PAGE_SIZE && dedicatedVacancyHasMore && !dedicatedVacancyLoading) {
+    await loadDedicatedVacancies(false);
   }
+  var totalPages = Math.max(1, Math.ceil((folderCount || dedicatedVacancyRows.length) / VAC_PAGE_SIZE));
+  dedicatedVacancyDisplayPage = Math.max(1, Math.min(n, totalPages));
+  renderDedicatedVacancyCards(false);
+  var listEl = document.getElementById('allvacancies-list');
+  if (listEl && listEl.scrollIntoView) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 async function loadDedicatedVacancies(reset) {
   var folder = allVacanciesFolder;
@@ -1091,6 +1200,7 @@ async function loadDedicatedVacancies(reset) {
     dedicatedVacancyHasMore = true;
     dedicatedVacancyLoading = false;
     dedicatedVacancyError = false;
+    dedicatedVacancyDisplayPage = 1;
   }
   if (dedicatedVacancyLoading || !dedicatedVacancyHasMore) { renderDedicatedVacancyCards(false); return; }
   var requestId = ++dedicatedVacancyRequestId;
@@ -1152,6 +1262,7 @@ function renderAllVacanciesList() {
   if (displayKey !== vacancyFolderDisplayKey) {
     vacancyFolderDisplayKey = displayKey;
     vacancyFolderDisplayLimit = 30;
+    agencyFolderDisplayPage = 1;
   }
   var list = allVacanciesFolder === 'agency'
     ? visible.filter(hasAssignedAgency)
@@ -1221,49 +1332,74 @@ function renderAllVacanciesList() {
       if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading…';
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
-    el.innerHTML =
-      '<div class="vac-folder-grid" aria-label="Vacancy categories">' +
-        '<button class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'agency\')" aria-label="Open agency vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Agency Vacancies</span><span class="vac-folder-count">' + folderCountLabel(agencyCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card" data-ripple onclick="openVacancyFolder(\'general\')" aria-label="Open general vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">General Vacancies</span><span class="vac-folder-count">' + folderCountLabel(generalCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-himalayas" data-ripple onclick="openVacancyFolder(\'himalayas\')" aria-label="Open Himalayas remote vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9S14.5 18.5 12 21c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3z"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Himalayas Remote</span><span class="vac-folder-count">' + folderCountLabel(himalayasCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-adzuna" data-ripple onclick="openVacancyFolder(\'adzuna\')" aria-label="Open Adzuna vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 10.5 5h3L20 19M7 14h10"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Adzuna Vacancies</span><span class="vac-folder-count">' + folderCountLabel(adzunaCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-dpsa" data-ripple onclick="openVacancyFolder(\'government\')" aria-label="Open Government vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Government Vacancies</span><span class="vac-folder-count">' + folderCountLabel(governmentCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-retail" data-ripple onclick="openVacancyFolder(\'retail\')" aria-label="Open retail vacancies">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16M6 10v9h12v-9M5 10l1-5h12l1 5M9 19v-5h6v5"/><path d="M8 5V3h8v2"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Retail Vacancies</span><span class="vac-folder-count">' + folderCountLabel(retailCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-learnerships" data-ripple onclick="openVacancyFolder(\'learnerships\')" aria-label="Open Learnerships">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 10v6"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Learnerships</span><span class="vac-folder-count">' + folderCountLabel(learnershipsCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-        '<button class="vac-folder-card vac-folder-card-careers" data-ripple onclick="openVacancyFolder(\'careers_page\')" aria-label="Open Cruise careers">' +
-          '<span class="vac-folder-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></span>' +
-          '<span class="vac-folder-copy"><span class="vac-folder-title">Cruise careers</span><span class="vac-folder-count">' + folderCountLabel(careersPageCount) + '</span></span>' +
-          '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
-        '</button>' +
-      '</div>';
+    var featured = (featuredVacanciesCache || []).filter(function(v){
+      return v && v.is_featured && (!v.featured_until || new Date(v.featured_until).getTime() >= Date.now()) && !isVacancyExpired(v);
+    }).sort(function(a,b){
+      return (Number(a.featured_order)||0) - (Number(b.featured_order)||0) || new Date(b.created_at||0) - new Date(a.created_at||0);
+    }).slice(0, 6);
+    var featuredMarkup =
+      '<div class="featured-vacancies-heading" aria-labelledby="featured-vacancies-title"><div><h2 id="featured-vacancies-title">Featured vacancies</h2></div></div>' +
+      (featured.length ?
+        featured.map(function(v){
+          var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
+          return vacancyCard(v, agency, { featured: true });
+        }).join('') :
+        '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>');
+    var sourceCards = [
+      { type:'general', label:'General Vacancies', short:'General', count:generalCount, icon:'⌕' },
+      { type:'agency', label:'Agency Vacancies', short:'Agency', count:agencyCount, icon:'▦' },
+      { type:'government', label:'Government Vacancies', short:'Government', count:governmentCount, icon:'⌂' },
+      { type:'retail', label:'Retail Vacancies', short:'Retail', count:retailCount, icon:'▤' },
+      { type:'learnerships', label:'Learnerships', short:'Learnerships', count:learnershipsCount, icon:'✦' },
+      { type:'himalayas', label:'Himalayas Remote', short:'Himalayas', count:himalayasCount, icon:'↗' },
+      { type:'adzuna', label:'Adzuna Vacancies', short:'Adzuna', count:adzunaCount, icon:'A' },
+      { type:'careers_page', label:'Cruise Careers', short:'Cruise', count:careersPageCount, icon:'⚓' }
+    ];
+    var sourceRow = function(item) {
+      return '<button class="vac-cat-row" data-ripple onclick="openVacancyFolder(\'' + item.type + '\')" aria-label="Open ' + escapeHtml(item.label) + '">' +
+        '<span class="vac-cat-row-left">' +
+          '<span class="vac-cat-icon" aria-hidden="true">' + item.icon + '</span>' +
+          '<span class="vac-cat-label">' + escapeHtml(item.label) + '</span>' +
+        '</span>' +
+        '<span class="vac-cat-count">' + folderCountLabel(item.count) + '</span>' +
+        '<span class="vac-cat-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+      '</button>';
+    };
+    var sourceRail =
+      '<section class="vacancy-categories-card" aria-labelledby="vacancy-categories-title">' +
+        '<div class="vacancy-categories-heading">' +
+          '<span class="vacancy-categories-heading-icon" aria-hidden="true">' + VAC_ICONS.briefcase + '</span>' +
+          '<h2 id="vacancy-categories-title">Vacancy Categories</h2>' +
+        '</div>' +
+        '<div class="vacancy-categories-list">' + sourceCards.map(sourceRow).join('') + '</div>' +
+      '</section>';
+    var publicCategories = [
+      ['government', 'Government', 'Public-sector roles'],
+      ['learnership', 'Learnerships', 'Training opportunities'],
+      ['internship', 'Internships', 'Student and graduate roles'],
+      ['graduate_programme', 'Graduate programmes', 'Graduate and trainee roles'],
+      ['bursary', 'Bursaries', 'Study funding opportunities'],
+      ['apprenticeship', 'Apprenticeships', 'Skilled-trade training'],
+      ['part_time', 'Part-time', 'Flexible roles'],
+      ['remote', 'Remote jobs', 'Work-from-home roles'],
+      ['permanent', 'Permanent roles', 'Long-term employment'],
+      ['contract', 'Contract roles', 'Fixed-term opportunities']
+    ];
+    var categoryRail =
+      '<section class="vacancy-category-section" aria-labelledby="vacancy-category-title">' +
+        '<div class="vacancy-category-heading"><h2 id="vacancy-category-title">Browse by category</h2><span>Public vacancy pages</span></div>' +
+        '<div class="vacancy-category-rail" aria-label="Public vacancy categories">' +
+          publicCategories.map(function(category){
+            return '<a class="vacancy-category-card" href="/browse/category/' + category[0] + '/">' +
+              '<strong>' + escapeHtml(category[1]) + '</strong><small>' + escapeHtml(category[2]) + '</small>' +
+            '</a>';
+          }).join('') +
+        '</div>' +
+      '</section>';
+    el.innerHTML = featuredMarkup +
+      '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
+      sourceRail +
+      categoryRail;
     return;
   }
   if (!list.length) {
@@ -1276,15 +1412,14 @@ function renderAllVacanciesList() {
   }
 
   var totalFolderRows = list.length;
-  var displayList = list.slice(0, vacancyFolderDisplayLimit);
+  var agencyTotalPages = Math.max(1, Math.ceil(totalFolderRows / VAC_PAGE_SIZE));
+  if (agencyFolderDisplayPage > agencyTotalPages) agencyFolderDisplayPage = agencyTotalPages;
+  var agencyPageStart = (agencyFolderDisplayPage - 1) * VAC_PAGE_SIZE;
+  var displayList = list.slice(agencyPageStart, agencyPageStart + VAC_PAGE_SIZE);
   var resultCount = document.getElementById('allvacancies-result-count');
   if (resultCount) resultCount.textContent = displayList.length + ' of ' + totalFolderRows + ' loaded';
   var folderLoadMore = document.getElementById('allvacancies-loadmore');
-  if (folderLoadMore) {
-    folderLoadMore.style.display = displayList.length < totalFolderRows ? 'block' : 'none';
-    folderLoadMore.disabled = false;
-    folderLoadMore.textContent = 'Load more vacancies';
-  }
+  if (folderLoadMore) folderLoadMore.style.display = 'none';
 
   var groups = {};
   displayList.forEach(function(v){
@@ -1333,7 +1468,7 @@ function renderAllVacanciesList() {
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'government' ? 'Government Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : 'Learnerships';
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'government' ? 'Government Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : allVacanciesFolder === 'careers_page' ? 'Cruise Careers' : 'Learnerships';
   el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);
@@ -1342,7 +1477,14 @@ function renderAllVacanciesList() {
     // Vacancies list exactly, so every folder's cards render identically
     // regardless of source.
     return group.items.map(function(v){ return vacancyCard(v, agency, { hideBadges: true }); }).join('');
-  }).join('');
+  }).join('') + vacPaginationBar(agencyFolderDisplayPage, agencyTotalPages, 'goToAgencyFolderPage');
+}
+function goToAgencyFolderPage(n) {
+  if (allVacanciesFolder !== 'agency') return;
+  agencyFolderDisplayPage = Math.max(1, n);
+  renderAllVacanciesList();
+  var listEl = document.getElementById('allvacancies-list');
+  if (listEl && listEl.scrollIntoView) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function switchSubTab(tab) {

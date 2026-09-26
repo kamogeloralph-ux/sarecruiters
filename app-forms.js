@@ -848,7 +848,19 @@ async function deleteGeneralVacancy(id) {
 
 // ===== Sheets / misc =====
 
-// ===== CV Builder (AI CV Revamp — Gemini via Cloudflare Worker) =====
+// ===== CV Builder (AI CV Revamp — provider-ready Worker contract) =====
+var CV_BUILDER_TEMPLATES = { ats: true, modern: true, graduate: true, trade: true, executive: true };
+function normaliseCvTemplate(value) {
+  return CV_BUILDER_TEMPLATES[value] ? value : 'ats';
+}
+function cvBuilderTemplateChanged(value) {
+  window.__cvBuilderTemplate = normaliseCvTemplate(value);
+  var formSelect = document.getElementById('cvb-template');
+  var resultSelect = document.getElementById('cvb-template-result');
+  if (formSelect) formSelect.value = window.__cvBuilderTemplate;
+  if (resultSelect) resultSelect.value = window.__cvBuilderTemplate;
+  if (window.__cvBuilderLast) renderCvBuilderResult(window.__cvBuilderLast);
+}
 function resetCvBuilderForm() {
   document.getElementById('cvb-name').value = '';
   document.getElementById('cvb-role').value = '';
@@ -856,6 +868,8 @@ function resetCvBuilderForm() {
   var err = document.getElementById('cvbuilder-error');
   err.style.display = 'none';
   err.textContent = '';
+  window.__cvBuilderTemplate = 'ats';
+  cvBuilderTemplateChanged('ats');
 }
 function showCvBuilderFormView() {
   document.getElementById('cvbuilder-form-view').style.display = '';
@@ -904,7 +918,13 @@ async function generateCv() {
   btn.textContent = 'Generating…';
   var result;
   try {
-    result = await submitViaWorker('/api/generate-cv', { fullName: fullName, targetRole: targetRole, rawInput: rawInput }, 'cvbuilder-turnstile');
+    result = await submitViaWorker('/api/generate-cv', {
+      fullName: fullName,
+      targetRole: targetRole,
+      rawInput: rawInput,
+      template: normaliseCvTemplate(window.__cvBuilderTemplate),
+      provider: 'gemini'
+    }, 'cvbuilder-turnstile');
   } catch (e) {
     result = { ok: false, error: 'Could not reach the CV Builder — please try again.' };
   }
@@ -953,7 +973,9 @@ function renderCvBuilderResult(cv) {
     });
     html += '</div>';
   }
-  document.getElementById('cvbuilder-preview').innerHTML = html;
+  var preview = document.getElementById('cvbuilder-preview');
+  preview.className = 'cvb-preview cvb-template-' + normaliseCvTemplate(window.__cvBuilderTemplate);
+  preview.innerHTML = html;
 }
 function cvToPlainText(cv) {
   var lines = [];
@@ -1002,6 +1024,10 @@ function printCvBuilder() {
     '.cvb-exp-item{margin-bottom:12px}.cvb-exp-head{font-size:14px}.cvb-exp-duration{float:right;color:#555;font-size:12.5px}' +
     '.cvb-exp-item ul{margin:6px 0 0 18px;padding:0}.cvb-exp-item li{margin-bottom:3px;font-size:13px}' +
     '.cvb-edu-item{font-size:13px;margin-bottom:4px}' +
+    '.cvb-template-modern{border-top:5px solid #0a84ff}.cvb-template-modern .cvb-header{border-bottom-color:#0a84ff}.cvb-template-modern .cvb-section-title{color:#0a84ff}' +
+    '.cvb-template-graduate{background:#f6f5ff}.cvb-template-graduate .cvb-header{text-align:center;border-bottom-color:#5b4fe8}.cvb-template-graduate .cvb-section-title{text-align:center}' +
+    '.cvb-template-trade{border-left:6px solid #e67e22}.cvb-template-trade .cvb-section-title{color:#c45d00}' +
+    '.cvb-template-executive{border-top:7px solid #1f2937}.cvb-template-executive .cvb-header{border-bottom-color:#1f2937}.cvb-template-executive .cvb-section-title{color:#1f2937}' +
     '@media print{body{margin:0;padding:24px}}' +
     '</style></head><body>' + previewHtml + '</body></html>');
   w.document.close();

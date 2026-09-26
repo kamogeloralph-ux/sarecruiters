@@ -179,7 +179,7 @@ export function buildVacancy(src, summary, detail, employerId, now = new Date())
     source_type: 'retail',
     source_checked_at: iso,
     last_verified_at: iso,
-    // postedText deliberately omitted -- see note in scrape-pnet.mjs;
+    // postedText deliberately omitted because vacancies has no such column;
     // 'vacancies' has no such column and PostgREST rejects the whole
     // upsert batch (PGRST204) if it's present in the payload.
   };
