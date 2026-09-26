@@ -152,10 +152,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-vacancy-look-5">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-look-5" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-vacancy-redesign-1">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-look-5"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-1"></noscript>
 </head>
 <body>
 
@@ -667,14 +667,15 @@
 
   <!-- ============ ALL VACANCIES LIST ============ -->
   <div class="screen" id="screen-allvacancies">
-    <div class="screen-fixed vacancies-screen-fixed">
+    <div class="screen-scroll">
+    <div class="vacancies-screen-fixed">
     <header class="vac-simple-header">
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" id="allvacancies-back" data-ripple onclick="handleVacanciesBack()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
       <div class="section-title-with-link"><div class="logo-text">All Vacancies</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('vacancies')" aria-label="Share All Vacancies link" title="Share All Vacancies link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
     </header>
-    <div class="search search-mini" style="margin:0 16px 12px">
+    <div class="search search-mini" style="margin:0 0 12px">
       <div class="search-inner">
         <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
         <label for="allvacancies-search" class="sr-only">Search vacancies</label>
@@ -682,7 +683,6 @@
       </div>
     </div>
     </div>
-    <div class="screen-scroll">
     <div id="allvacancies-list"></div>
     <button class="vac-load-more" id="allvacancies-loadmore" type="button" onclick="loadMoreGeneralVacancies()" style="display:none">Load more vacancies</button>
     </div>
@@ -1361,7 +1361,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=f8fced6a3b" defer></script>
+<script src="app.bundle.min.js?v=6f8828b2d1" defer></script>
 <footer class="seo-site-footer" aria-label="SA Recruiters quick links">
   <strong>SA Recruiters</strong>
   <nav aria-label="Quick links">

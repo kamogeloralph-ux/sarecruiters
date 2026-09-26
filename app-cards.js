@@ -620,7 +620,15 @@ function vacancyCard(v, agency, options) {
      Everything else (work arrangement, salary, closing date, contacts...) only
      shows once the card is tapped open. */
   var locLine = v.location ? ('<div class="vac-loc-line">' + VAC_ICONS.pin + escapeHtml(v.location) + '</div>') : '';
-  var postedLine = '<div class="vac-posted">' + timeAgo(v.created_at) + '</div>';
+  var previewText = v.notes ? v.notes.replace(/\s+/g, ' ').trim() : '';
+  var descPreview = previewText ? '<div class="vac-desc-preview">' + escapeHtml(previewText.length > 130 ? previewText.slice(0, 130).trim() + '…' : previewText) + '</div>' : '';
+  var pillsRow = (v.employment_type || v.remote) ? (
+    '<div class="vac-pills">' +
+    (v.employment_type ? '<span class="vac-pill vac-pill-type">' + escapeHtml(v.employment_type) + '</span>' : '') +
+    (v.remote ? '<span class="vac-pill vac-pill-remote">' + VAC_ICONS.wifi + escapeHtml(v.remote) + '</span>' : '') +
+    '</div>'
+  ) : '';
+  var postedLine = '<div class="vac-posted">' + VAC_ICONS.clock + timeAgo(v.created_at) + '</div>';
 
   /* Detail rows (inside expandable section) */
   var detail = '';
@@ -705,6 +713,8 @@ function vacancyCard(v, agency, options) {
         '<div class="vac-title">' + title + '</div>' +
       '<div class="vac-company">' + verifiedCheck + escapeHtml(orgName) + sourceBadge + '</div>' +
         locLine +
+        descPreview +
+        pillsRow +
         postedLine +
       '</div>' +
       '<div class="vac-card-side">' +
@@ -778,6 +788,7 @@ var VAC_ICONS = {
   phone:'<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
   apply:'<svg viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></svg>',
   globe:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"/></svg>',
+  wifi:'<svg viewBox="0 0 24 24"><path d="M2 8.5a16 16 0 0 1 20 0"/><path d="M5 12.5a11 11 0 0 1 14 0"/><path d="M8.5 16.3a6 6 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
   star:'<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
   edit:'<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'

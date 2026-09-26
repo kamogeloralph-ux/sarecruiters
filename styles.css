@@ -603,7 +603,14 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-source-tag-learnership{color:#7c3aed;background:rgba(124,58,237,.14)}
 .vac-loc-line{font-size:12.5px;color:var(--text-2);margin-top:4px;display:flex;align-items:center;gap:5px}
 .vac-loc-line svg{width:12px;height:12px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.vac-posted{font-size:11.5px;color:var(--text-2);margin-top:6px;opacity:.85}
+.vac-desc-preview{font-size:12.5px;line-height:1.5;color:var(--text-2);margin-top:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vac-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.vac-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.vac-pill svg{width:11px;height:11px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vac-pill-type{background:color-mix(in srgb,var(--text) 8%,var(--card-2));color:var(--text-2)}
+.vac-pill-remote{background:color-mix(in srgb,var(--accent) 15%,var(--card-2));color:var(--accent)}
+.vac-posted{font-size:11px;color:var(--text-2);margin-top:8px;opacity:.85;display:flex;align-items:center;gap:5px}
+.vac-posted svg{width:12px;height:12px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .vac-chip.green{color:var(--success);background:rgba(48,209,88,.14)}
 .vac-chip.red{color:var(--danger);background:rgba(255,69,58,.14)}
 .vac-card-side{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
@@ -1493,6 +1500,18 @@ header{margin-bottom:18px}
 .vac-load-more:disabled{opacity:.65;cursor:wait;transform:none}
 @media(max-width:420px){.vac-result-meta{padding-left:12px;padding-right:12px}.vac-load-more{width:calc(100% - 24px);margin-left:12px;margin-right:12px}}
 
+/* Numbered pagination bar under vacancy listings */
+.vac-pagination{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px 16px 24px;flex-wrap:wrap}
+.vac-page-arrow{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-2);cursor:pointer;transition:background .15s,border-color .15s,opacity .15s}
+.vac-page-arrow svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.vac-page-arrow:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.vac-page-arrow:disabled{opacity:.35;cursor:default}
+.vac-page-nums{display:flex;align-items:center;gap:6px}
+.vac-page-num{min-width:38px;height:38px;padding:0 4px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--text-2);font-size:14px;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
+.vac-page-num:hover{background:var(--card-2)}
+.vac-page-num.active{background:var(--accent);color:#fff;box-shadow:0 4px 10px color-mix(in srgb,var(--accent) 40%,transparent)}
+@media(max-width:420px){.vac-page-arrow{width:34px;height:34px;border-radius:10px}.vac-page-num{min-width:34px;height:34px;border-radius:10px;font-size:13px}.vac-pagination{gap:6px;margin:14px 10px 20px}}
+
 /* Vacancy cards and their expandable detail rows stay transparent across
    every folder; the shared page surface provides the visual background.
    All four box-forming properties are reset here (not just background),
@@ -1787,24 +1806,39 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 /* Featured vacancy placements: an optional, clearly labelled visibility tier. */
 .featured-vacancies-section{margin:0 0 18px;padding:16px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:20px;background:linear-gradient(145deg,color-mix(in srgb,var(--accent-soft) 72%,var(--card)),var(--card));box-shadow:var(--shadow-sm)}
 .featured-vacancies-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
-.featured-vacancies-eyebrow,.vacancy-browse-eyebrow{display:block;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.featured-vacancies-heading .eyebrow{display:block;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
 .featured-vacancies-heading h2{margin:3px 0 2px;font-size:20px;line-height:1.15;color:var(--text)}
 .featured-vacancies-heading p{margin:0;color:var(--text-2);font-size:12px;line-height:1.45}
-.featured-vacancies-count{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:999px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;box-shadow:0 3px 8px color-mix(in srgb,var(--accent) 28%,transparent)}
-.featured-vacancies-rail{display:flex;gap:10px;overflow-x:auto;margin-top:12px;padding:1px 1px 8px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
-.featured-vacancies-rail::-webkit-scrollbar{display:none}
-.featured-vacancies-rail .vac-card{flex:0 0 min(100%,360px);scroll-snap-align:start;background:color-mix(in srgb,var(--card) 84%,var(--accent-soft)) !important;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important;border-radius:14px !important;box-shadow:none !important}
-.featured-vacancies-rail .vac-card:last-child{border-bottom:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important}
-.vacancy-browse-heading{display:flex;align-items:flex-start;gap:12px;padding:0 12px 8px}
-.vacancy-browse-heading h2{margin:3px 0 2px;font-size:18px;line-height:1.15;color:var(--text)}
-.vacancy-browse-heading p{margin:0;color:var(--text-2);font-size:11px;line-height:1.4}
+.featured-vacancies-grid{display:grid;gap:8px;margin-top:12px}
+.featured-vacancies-grid .vac-card{background:color-mix(in srgb,var(--card) 84%,var(--accent-soft)) !important;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important;border-radius:14px !important;box-shadow:none !important}
+.featured-vacancies-grid .vac-card:last-child{border-bottom:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important}
 .featured-vacancies-empty{margin-top:12px;padding:14px;border:1px dashed color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:12px;color:var(--text-2);font-size:12px;line-height:1.5;text-align:center;background:color-mix(in srgb,var(--card) 70%,transparent)}
 .vac-featured-badge{display:inline-flex;align-items:center;margin-left:6px;padding:3px 7px;border-radius:999px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
 .vac-card-featured .vac-title{font-weight:800}
-@media(max-width:520px){.featured-vacancies-section{padding:13px;border-radius:18px}.featured-vacancies-heading h2{font-size:18px}.featured-vacancies-rail .vac-card{flex-basis:calc(100vw - 54px)}}
+@media(max-width:520px){.featured-vacancies-section{padding:13px;border-radius:18px}.featured-vacancies-heading h2{font-size:18px}}
 
 /* ===== GROUPED VACANCY BROWSE CARDS ===== */
 .vacancy-browse-heading{margin:22px 16px 10px}
+/* Professional "Vacancy Categories" list card — replaces the old
+   horizontal-scrolling colour-tile rail with a single card of rows
+   (label + live count), styled to match a polished job-board look. */
+.vacancy-categories-card{margin:2px 16px 20px;padding:6px 4px 8px;border:1px solid var(--border);border-radius:20px;background:var(--card);box-shadow:var(--shadow-sm)}
+.vacancy-categories-heading{display:flex;align-items:center;gap:10px;padding:12px 14px 10px}
+.vacancy-categories-heading-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:color-mix(in srgb,var(--accent) 16%,var(--card-2));color:var(--accent);flex-shrink:0}
+.vacancy-categories-heading-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vacancy-categories-heading h2{margin:0;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text)}
+.vacancy-categories-list{display:flex;flex-direction:column}
+.vac-cat-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:none;border-top:1px solid var(--separator);background:transparent;color:var(--text);text-align:left;cursor:pointer;transition:background .15s}
+.vac-cat-row:hover{background:var(--card-2)}
+.vac-cat-row:active{background:var(--accent-soft)}
+.vac-cat-row-left{display:flex;align-items:center;gap:11px;flex:1;min-width:0}
+.vac-cat-icon{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:var(--card-2);color:var(--text-2);font-size:14px;font-weight:800;flex-shrink:0}
+.vac-cat-label{font-size:13.5px;font-weight:650;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vac-cat-count{font-size:12px;font-weight:700;color:var(--text-2);white-space:nowrap;flex-shrink:0}
+.vac-cat-chevron{display:flex;flex-shrink:0;color:var(--text-2);opacity:.6}
+.vac-cat-chevron svg{width:14px;height:14px;transform:rotate(-90deg);stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media(min-width:760px){.vacancy-categories-card{max-width:960px;margin-left:auto;margin-right:auto}}
+@media(max-width:420px){.vacancy-categories-card{margin-left:10px;margin-right:10px;border-radius:17px}.vac-cat-row{padding:11px 11px}.vac-cat-label{font-size:13px}}
 .vacancy-browse-heading h2{margin:3px 0 4px;font-size:20px;letter-spacing:-.025em;color:var(--text)}
 .vacancy-browse-heading p{margin:0;color:var(--text-2);font-size:12.5px;line-height:1.45}
 .vacancy-group-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:0 12px 16px}
@@ -2003,44 +2037,3 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .vacancy-source-card{box-sizing:border-box!important;align-self:flex-start!important;flex:0 0 116px!important;width:116px!important;height:116px!important;min-width:116px!important;min-height:116px!important;max-width:116px!important;max-height:116px!important;aspect-ratio:1 / 1!important}
 @media(min-width:760px){.vacancy-source-card{flex-basis:124px!important;width:124px!important;height:124px!important;min-width:124px!important;min-height:124px!important;max-width:124px!important;max-height:124px!important}}
 @media(max-width:420px){.vacancy-source-card{flex-basis:108px!important;width:108px!important;height:108px!important;min-width:108px!important;min-height:108px!important;max-width:108px!important;max-height:108px!important}}
-
-/* Complete vacancy-directory layout inspired by vacancy-section.html, using SA Recruiters tokens. */
-.career-featured-section,.career-source-section,.career-category-section,.career-recent-section{margin:0 0 22px}
-.career-section-title{margin:0 0 10px;padding:0 12px;color:var(--text);font-size:18px;line-height:1.2;letter-spacing:-.025em}
-.career-featured-card{margin:0 12px;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--shadow-sm)}
-.career-featured-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
-.career-featured-mark{display:grid;place-items:center;width:52px;height:52px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:16px;font-weight:800}
-.career-badge{padding:5px 9px;border:1px solid color-mix(in srgb,var(--warning) 35%,var(--border));border-radius:999px;background:color-mix(in srgb,var(--warning) 12%,var(--card));color:var(--warning-text,var(--text));font-size:10px;font-weight:800}
-.career-featured-card h3{margin:0;color:var(--text);font-size:19px;line-height:1.25;letter-spacing:-.02em}
-.career-featured-sub{margin:4px 0 0;color:var(--text-2);font-size:13px;font-weight:600}
-.career-featured-foot{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:16px;color:var(--text-2);font-size:12px}
-.career-primary-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:8px 12px;border-radius:11px;background:var(--accent);color:#fff;text-decoration:none;font-size:12px;font-weight:800;box-shadow:0 3px 8px color-mix(in srgb,var(--accent) 24%,transparent)}
-.career-primary-action:active{transform:scale(.97)}
-.career-featured-dots{display:flex;justify-content:center;gap:5px;margin:10px 0 0}
-.career-featured-dots span{width:6px;height:6px;border-radius:999px;background:var(--border)}
-.career-featured-dots span.is-active{width:18px;background:var(--accent)}
-.career-source-section .vacancy-source-rail{padding-top:2px}
-.career-category-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 12px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
-.career-category-chips::-webkit-scrollbar{display:none}
-.career-category-chip{flex:0 0 auto;padding:9px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;transition:background .16s,border-color .16s,transform .16s}
-.career-category-chip:hover{border-color:var(--accent);background:var(--accent-soft)}
-.career-category-chip:active{transform:scale(.97)}
-.career-listings-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 12px;border-bottom:1px solid var(--separator);padding-bottom:9px}
-.career-listings-head .career-section-title{padding:0;margin:0}
-.career-listings-head>span{color:var(--text-2);font-size:11px;white-space:nowrap}
-.career-recent-list{margin:0 12px}
-.career-role-row{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:10px;padding:13px 0;border-bottom:1px solid var(--separator)}
-.career-role-row:last-child{border-bottom:0}
-.career-role-main{min-width:0;color:var(--text);text-decoration:none}
-.career-role-main h3{margin:0;font-size:14px;line-height:1.25;letter-spacing:-.01em}
-.career-role-main p{margin:4px 0 0;color:var(--text-2);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.career-role-main small{display:block;margin-top:6px;color:var(--text-2);font-size:10px}
-.career-save-button{display:grid;place-items:center;width:36px;height:36px;align-self:center;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--text-2);cursor:pointer}
-.career-save-button svg{width:17px;height:17px}
-.career-save-button.saved{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-.career-empty{margin:0 12px;padding:28px 14px;border:1px dashed color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:14px;text-align:center;background:var(--card);color:var(--text-2)}
-.career-empty p{margin:0;color:var(--text);font-size:13px;font-weight:800}
-.career-empty span{display:block;margin-top:4px;font-size:11px}
-@media(max-width:420px){.career-featured-card{margin-left:10px;margin-right:10px;padding:14px}.career-section-title{padding-left:10px}.career-recent-list{margin-left:10px;margin-right:10px}.career-listings-head{margin-left:10px;margin-right:10px}}
-.career-filter-scroller{overflow-x:auto;margin:0 -2px 20px;padding:0 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.career-filter-scroller::-webkit-scrollbar{display:none}.career-filter-chips{display:flex;gap:8px;width:max-content}.career-filter-chip{min-height:36px;padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:12px;font-weight:700;cursor:pointer;transition:background .16s,color .16s,transform .16s}.career-filter-chip.is-active{border-color:var(--accent);background:var(--accent);color:#fff}.career-filter-chip:active{transform:scale(.97)}.career-featured-mark img{width:100%;height:100%;border-radius:12px;object-fit:cover}.career-posted-time{display:block;margin-top:5px;color:var(--text-2);font-size:10px}.career-stat-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 22px}.career-stat-tile{display:flex;min-height:82px;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;padding:13px;border:1px solid var(--border);border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--card));color:var(--text);text-align:left;cursor:pointer;transition:background .16s,transform .16s}.career-stat-tile:active{transform:scale(.98);background:var(--accent-soft)}.career-stat-tile strong{color:var(--accent);font-size:20px;line-height:1;font-weight:800}.career-stat-tile span{font-size:11px;font-weight:700}@media(max-width:420px){.career-stat-tiles{margin-left:10px;margin-right:10px}.career-filter-scroller{padding-left:10px;padding-right:10px}}
-.career-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 12px}.career-source-grid .vacancy-source-card{width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;flex:none!important;aspect-ratio:1 / 1!important}.career-source-grid .vacancy-source-card strong{font-size:clamp(11px,2.6vw,14px)}@media(min-width:760px){.career-source-grid{grid-template-columns:repeat(4,minmax(0,1fr));max-width:960px;margin-left:auto;margin-right:auto}.career-source-grid .vacancy-source-card{width:100%!important}}
