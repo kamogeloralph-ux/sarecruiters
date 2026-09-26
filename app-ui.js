@@ -1354,30 +1354,7 @@ function renderAllVacanciesList() {
     var sourceRail =
       '<section class="career-source-section" aria-labelledby="career-source-title">' +
         '<h2 class="career-section-title" id="career-source-title">Browse by source</h2>' +
-        '<div class="vacancy-source-rail" aria-label="Vacancy sources">' + sourceCards.map(sourceTile).join('') +
-        '</div>' +
-      '</section>';
-    var publicCategories = [
-      ['government', 'Government', 'Public-sector roles'],
-      ['learnership', 'Learnerships', 'Training opportunities'],
-      ['internship', 'Internships', 'Student and graduate roles'],
-      ['graduate_programme', 'Graduate programmes', 'Graduate and trainee roles'],
-      ['bursary', 'Bursaries', 'Study funding opportunities'],
-      ['apprenticeship', 'Apprenticeships', 'Skilled-trade training'],
-      ['part_time', 'Part-time', 'Flexible roles'],
-      ['remote', 'Remote jobs', 'Work-from-home roles'],
-      ['permanent', 'Permanent roles', 'Long-term employment'],
-      ['contract', 'Contract roles', 'Fixed-term opportunities']
-    ];
-    var categoryRail =
-      '<section class="career-category-section" aria-labelledby="career-category-title">' +
-        '<h2 class="career-section-title" id="career-category-title">Browse by category</h2>' +
-        '<div class="career-category-chips" aria-label="Public vacancy categories">' +
-          publicCategories.map(function(category){
-            return '<a class="career-category-chip" href="/browse/category/' + category[0] + '/">' +
-              escapeHtml(category[1]) +
-            '</a>';
-          }).join('') +
+        '<div class="career-source-grid" aria-label="Vacancy sources">' + sourceCards.map(sourceTile).join('') +
         '</div>' +
       '</section>';
     var recentRows = vacanciesCache.filter(function(v){ return isGeneralDirectoryVacancy(v) && !isVacancyExpired(v) && vacancyMatchesOverviewFilter(v); }).slice(0, 12);
@@ -1391,7 +1368,7 @@ function renderAllVacanciesList() {
         return '<article class="career-role-row"><a class="career-role-main" href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener"><h3>' + escapeHtml(v.title || 'Untitled role') + '</h3><p>' + escapeHtml(org) + ' <span aria-hidden="true">·</span> ' + escapeHtml(v.location || 'South Africa') + '</p><small>' + escapeHtml(v.remote || v.employment_type || 'Vacancy') + ' <span aria-hidden="true">·</span> ' + escapeHtml(timeAgo(v.created_at) || 'Recently posted') + '</small></a><button class="career-save-button' + (savedSet.has(v.id) ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + escapeHtml(v.id) + '\')" aria-label="' + (savedSet.has(v.id) ? 'Remove' : 'Save') + ' ' + escapeHtml(v.title || 'vacancy') + '">' + STAR_SVG + '</button></article>';
       }).join('') : '<div class="career-empty"><p>No recent roles are loaded</p><span>Choose a source above to browse current vacancies.</span></div>') +
       '</div></section>';
-    el.innerHTML = overviewFilterMarkup + featuredMarkup + statTiles + sourceRail + categoryRail + recentMarkup;
+    el.innerHTML = overviewFilterMarkup + featuredMarkup + statTiles + sourceRail + recentMarkup;
     return;
   }
   if (!list.length) {
