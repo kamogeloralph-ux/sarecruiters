@@ -1323,7 +1323,7 @@ function renderAllVacanciesList() {
       return '<button class="vacancy-source-card vacancy-source-card-' + index + '" data-ripple onclick="openVacancyFolder(\'' + item.type + '\')" aria-label="Open ' + escapeHtml(item.label) + '">' +
         '<span class="vacancy-source-icon" aria-hidden="true">' + item.icon + '</span>' +
         '<strong>' + escapeHtml(item.label) + '</strong>' +
-        '<small class="vacancy-source-count">' + folderCountLabel(item.count) + '</small>' +
+        '<span class="vacancy-source-count" aria-label="' + escapeHtml(folderCountLabel(item.count)) + '">' + folderCountLabel(item.count) + '</span>' +
       '</button>';
     };
     var sourceRail =
