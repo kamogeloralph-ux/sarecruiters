@@ -52,6 +52,8 @@ test('vacancy overview uses eight square source tiles in a fixed grid', () => {
   assert.match(appUi, /career-source-grid/);
   assert.match(appUi, /career-featured-section/);
   assert.match(appUi, /career-recent-section/);
+  assert.match(appUi, /setVacancyOverviewSource/);
+  assert.match(appUi, /vacancyMatchesOverviewSource/);
   assert.doesNotMatch(appUi, /vacancy-source-rail/);
   assert.match(appUi, /sourceCards = \[/);
   assert.doesNotMatch(appUi, /vacancy-group-grid/);
