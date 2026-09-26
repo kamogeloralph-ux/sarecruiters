@@ -1309,36 +1309,30 @@ function renderAllVacanciesList() {
           }).join('') + '</div>' :
           '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') +
       '</section>';
-    var categoryRow = function(type, label, count) {
-      return '<button class="vacancy-category-row" data-ripple onclick="openVacancyFolder(\'' + type + '\')" aria-label="Open ' + escapeHtml(label) + '">' +
-        '<span class="vacancy-category-copy"><strong>' + escapeHtml(label) + '</strong></span>' +
-        '<span class="vac-folder-count">' + folderCountLabel(count) + '</span>' +
-        '<span class="vac-folder-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+    var sourceCards = [
+      { type:'general', label:'General Vacancies', short:'General', count:generalCount, icon:'⌕' },
+      { type:'agency', label:'Agency Vacancies', short:'Agency', count:agencyCount, icon:'▦' },
+      { type:'government', label:'Government Vacancies', short:'Government', count:governmentCount, icon:'⌂' },
+      { type:'retail', label:'Retail Vacancies', short:'Retail', count:retailCount, icon:'▤' },
+      { type:'learnerships', label:'Learnerships', short:'Learnerships', count:learnershipsCount, icon:'✦' },
+      { type:'himalayas', label:'Himalayas Remote', short:'Himalayas', count:himalayasCount, icon:'↗' },
+      { type:'adzuna', label:'Adzuna Vacancies', short:'Adzuna', count:adzunaCount, icon:'A' },
+      { type:'careers_page', label:'Cruise Careers', short:'Cruise', count:careersPageCount, icon:'⚓' }
+    ];
+    var sourceTile = function(item, index) {
+      return '<button class="vacancy-source-card vacancy-source-card-' + index + '" data-ripple onclick="openVacancyFolder(\'' + item.type + '\')" aria-label="Open ' + escapeHtml(item.label) + '">' +
+        '<span class="vacancy-source-icon" aria-hidden="true">' + item.icon + '</span>' +
+        '<strong>' + escapeHtml(item.short) + '</strong>' +
+        '<small>' + folderCountLabel(item.count) + '</small>' +
       '</button>';
     };
-    var southAfricanCard =
-      '<section class="vacancy-group-card vacancy-group-card-local" aria-labelledby="south-african-jobs-title">' +
-        '<div class="vacancy-group-card-head"><span class="vacancy-group-icon" aria-hidden="true">⌂</span><div><h2 id="south-african-jobs-title">South African Jobs</h2></div></div>' +
-        '<div class="vacancy-category-list">' +
-          categoryRow('general', 'General Vacancies', generalCount) +
-          categoryRow('agency', 'Agency Vacancies', agencyCount) +
-          categoryRow('government', 'Government Vacancies', governmentCount) +
-          categoryRow('retail', 'Retail Vacancies', retailCount) +
-          categoryRow('learnerships', 'Learnerships', learnershipsCount) +
-        '</div>' +
-      '</section>';
-    var remoteInternationalCard =
-      '<section class="vacancy-group-card vacancy-group-card-global" aria-labelledby="remote-international-jobs-title">' +
-        '<div class="vacancy-group-card-head"><span class="vacancy-group-icon" aria-hidden="true">↗</span><div><h2 id="remote-international-jobs-title">Remote &amp; International Jobs</h2></div></div>' +
-        '<div class="vacancy-category-list">' +
-          categoryRow('himalayas', 'Himalayas Remote', himalayasCount) +
-          categoryRow('adzuna', 'Adzuna Vacancies', adzunaCount) +
-          categoryRow('careers_page', 'Cruise Careers', careersPageCount) +
-        '</div>' +
-      '</section>';
+    var sourceRail =
+      '<div class="vacancy-source-rail" aria-label="Vacancy sources">' +
+        sourceCards.map(sourceTile).join('') +
+      '</div>';
     el.innerHTML = featuredMarkup +
       '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
-      '<div class="vacancy-group-grid" aria-label="Vacancy groups">' + southAfricanCard + remoteInternationalCard + '</div>';
+      sourceRail;
     return;
   }
   if (!list.length) {
