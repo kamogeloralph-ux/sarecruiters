@@ -288,6 +288,15 @@ var dedicatedVacancyRequestId = 0;
 // COUNT queries server-side, not the rows themselves.
 var dedicatedVacancyCounts = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0 };
 var dedicatedVacancyCountsLoaded = false;
+// Numbered-page browsing for vacancy listings (General/Agency/dedicated
+// source folders all share this one page size). Rows still load from the
+// server in batches behind the scenes -- see goToGeneralVacancyPage() /
+// goToDedicatedVacancyPage() / goToAgencyFolderPage() in app-ui.js -- but
+// the visible list only ever shows one page's worth of cards at a time.
+var VAC_PAGE_SIZE = 10;
+var generalVacancyDisplayPage = 1;
+var dedicatedVacancyDisplayPage = 1;
+var agencyFolderDisplayPage = 1;
 // Public static listing URLs are generated from the same deterministic maps
 // used by generate-pages.js. This keeps links correct when names repeat.
 var publicAgencySlugs = Object.create(null);
