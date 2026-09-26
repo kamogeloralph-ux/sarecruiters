@@ -1981,3 +1981,8 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .vacancy-source-card small{position:relative;z-index:1;max-width:100%;font-size:9.5px;line-height:1.1;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(min-width:760px){.vacancy-source-rail{max-width:960px;margin:0 auto;padding-left:0;padding-right:0}.vacancy-source-card{flex-basis:124px;width:124px;height:124px}}
 @media(max-width:420px){.vacancy-source-rail{gap:8px;padding-left:10px;padding-right:10px}.vacancy-source-card{flex-basis:108px;width:108px;height:108px;padding:11px 10px;border-radius:17px}.vacancy-source-card strong{font-size:12px}.vacancy-source-icon{width:28px;height:28px;font-size:16px}}
+
+/* Hard square geometry: keep every source tile equal on mobile and desktop. */
+.vacancy-source-card{box-sizing:border-box!important;align-self:flex-start!important;flex:0 0 116px!important;width:116px!important;height:116px!important;min-width:116px!important;min-height:116px!important;max-width:116px!important;max-height:116px!important;aspect-ratio:1 / 1!important}
+@media(min-width:760px){.vacancy-source-card{flex-basis:124px!important;width:124px!important;height:124px!important;min-width:124px!important;min-height:124px!important;max-width:124px!important;max-height:124px!important}}
+@media(max-width:420px){.vacancy-source-card{flex-basis:108px!important;width:108px!important;height:108px!important;min-width:108px!important;min-height:108px!important;max-width:108px!important;max-height:108px!important}}
