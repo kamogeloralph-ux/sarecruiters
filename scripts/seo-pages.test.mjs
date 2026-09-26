@@ -53,6 +53,14 @@ test('vacancy overview uses eight swipeable source tiles', () => {
   assert.match(appUi, /sourceCards = \[/);
   assert.doesNotMatch(appUi, /vacancy-group-grid/);
 });
+test('vacancy overview links to public category pages', () => {
+  assert.match(appUi, /vacancy-category-section/);
+  assert.match(appUi, /vacancy-category-rail/);
+  assert.match(appUi, /href="\/browse\/category\/['"] \+ category\[0\] \+ ['"]\//);
+  for (const slug of ['government', 'learnership', 'internship', 'graduate_programme', 'bursary', 'apprenticeship', 'part_time', 'remote', 'permanent', 'contract']) {
+    assert.match(generator, new RegExp("slug: '" + slug + "'"));
+  }
+});
 test('homepage exposes normal anchor links for Google discovery', () => {
   for (const slug of pages) {
     assert.match(homepage, new RegExp(`href="${slug}/"`));
