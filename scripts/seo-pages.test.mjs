@@ -79,6 +79,11 @@ test('landing pages link into existing vacancy and employer journeys', () => {
   assert.match(generator, /\/browse\/category\/government\//);
   assert.match(generator, /\/browse\/category\/internship\//);
 });
+test('public category vacancy entries link to generated vacancy pages', () => {
+  assert.match(generator, /buildCategoryHubPage\(\{ category, vacancies, vacancySlugById \}\)/);
+  assert.match(generator, /<a href="\/vacancy\/\$\{slug\}\/">/);
+  assert.match(generator, /url: `\$\{SITE_URL\}\/vacancy\/\$\{vacancySlugById/);
+});
 
 test('generated listing output treats database values as untrusted', () => {
   assert.match(generator, /serializeJsonLd/);

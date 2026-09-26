@@ -672,7 +672,7 @@ function vacancyMatchesCategory(vacancy, category) {
   return category.keywords.some((kw) => haystack.includes(kw));
 }
 
-function buildCategoryHubPage({ category, vacancies }) {
+function buildCategoryHubPage({ category, vacancies, vacancySlugById }) {
   const currentVacancies = vacancies
     .filter((vacancy) => isOpenVacancy(vacancy))
     .filter((vacancy) => vacancyMatchesCategory(vacancy, category));
@@ -687,13 +687,15 @@ function buildCategoryHubPage({ category, vacancies }) {
 
   const vacancyList = `<h2>Current ${escapeHtml(category.label)}</h2>
     <ul class="hub-list">${currentVacancies.slice(0, 50).map((vacancy) => {
-      return `<li><strong>${escapeHtml(vacancy.title || 'Untitled vacancy')}</strong>${vacancy.company ? ` — ${escapeHtml(vacancy.company)}` : ''}${vacancy.location ? ` <span class="muted">(${escapeHtml(vacancy.location)})</span>` : ''}</li>`;
+      const slug = vacancySlugById?.get(recordMapKey(vacancy, vacancies.indexOf(vacancy))) || slugify(vacancy.title);
+      return `<li><a href="/vacancy/${slug}/"><strong>${escapeHtml(vacancy.title || 'Untitled vacancy')}</strong></a>${vacancy.company ? ` — ${escapeHtml(vacancy.company)}` : ''}${vacancy.location ? ` <span class="muted">(${escapeHtml(vacancy.location)})</span>` : ''}</li>`;
     }).join('')}</ul>`;
 
   const itemList = currentVacancies.slice(0, 50).map((vacancy, index) => ({
     '@type': 'ListItem',
     position: index + 1,
     name: vacancy.title || 'Vacancy',
+    url: `${SITE_URL}/vacancy/${vacancySlugById?.get(recordMapKey(vacancy, vacancies.indexOf(vacancy))) || slugify(vacancy.title)}/`,
   }));
 
   const jsonLd = {
@@ -922,8 +924,9 @@ async function main() {
   ];
   const categoryDir = path.join(OUT_DIR, 'browse', 'category');
   ensureDir(categoryDir);
+  const vacancySlugById = buildPublicSlugMap(vacancies, (v) => v.title);
   categories.forEach((category) => {
-    const html = buildCategoryHubPage({ category, vacancies });
+    const html = buildCategoryHubPage({ category, vacancies, vacancySlugById });
     // No useful inventory means no page and no sitemap entry.
     if (!html) return;
     const dir = path.join(categoryDir, category.slug);
@@ -945,7 +948,6 @@ async function main() {
   // point at exactly these paths using the same slugify() + collision-suffix
   // logic as buildPublicSlugMap below, so the two stay in sync.
   const agencySlugById = buildPublicSlugMap(agencies, (a) => a.name);
-  const vacancySlugById = buildPublicSlugMap(vacancies, (v) => v.title);
 
   const agencyDir = path.join(OUT_DIR, 'agency');
   ensureDir(agencyDir);
@@ -1013,6 +1015,8 @@ ${sitemapUrls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
 h1{font-size:1.6rem;margin-bottom:.5rem}
 h2{font-size:1.2rem;margin-top:1.5rem}
 .hub-list{padding-left:1.25rem}
+.hub-list a{color:#0a66c2;text-decoration:none}
+.hub-list a:hover{text-decoration:underline}
 .hub-list li{margin:.55rem 0}
 .muted{color:#667085}
 .hub-note{border-top:1px solid #e5e7eb;margin-top:2rem;padding-top:1rem}
