@@ -181,10 +181,8 @@ function setCtaPanel(index) {
   if (carousel) carousel.addEventListener('scroll', updateCtaDots, { passive: true });
 })();
 function refreshHome() {
-  var home = document.getElementById('screen-home');
-  if (home) home.classList.add('active');
   showToast('Refreshing…');
-  loadAll();
+  loadAll({ fresh: true });
 }
 
 // ===== Toast =====
@@ -196,16 +194,18 @@ function showToast(msg) {
   toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
 
-// ===== Force update: clear all caches + unregister SW + hard reload =====
+// ===== Force update: clear only SA Recruiters caches + old app SW =====
 function forceUpdate() {
   showToast('Clearing cache and reloading…');
   if ('caches' in window) {
     caches.keys().then(function(names) {
-      return Promise.all(names.map(function(n) { return caches.delete(n); }));
+      return Promise.all(names.filter(function(n) { return n.indexOf('sa-recruiters-') === 0; }).map(function(n) { return caches.delete(n); }));
     }).then(function() {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
-          return Promise.all(regs.map(function(r) { return r.unregister(); }));
+          return Promise.all(regs.filter(function(r) {
+            return r.scope === window.location.origin + '/' && r.active && /\/sw\.js(?:\?|$)/.test(r.active.scriptURL);
+          }).map(function(r) { return r.unregister(); }));
         }).then(function() {
           // bust the browser HTTP cache too
           window.location.href = window.location.pathname + '?v=' + Date.now();
@@ -238,30 +238,10 @@ function setRetryBanner(show) {
 function retryLoadAll() {
   var btn = document.querySelector('#retry-banner button');
   if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
-  loadAll().finally(function() {
+  loadAll({ fresh: true }).finally(function() {
     if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
   });
 }
-
-// ===== Show the update version badge from SW =====
-(function showVersionBadge() {
-  var badge = document.getElementById('app-version-badge');
-  if (!badge || !('serviceWorker' in navigator)) return;
-  function askSW() {
-    if (navigator.serviceWorker.controller) {
-      var ch = new MessageChannel();
-      ch.port1.onmessage = function(e) {
-        if (e.data && e.data.version) badge.textContent = e.data.version.replace('sa-recruiters-', 'v');
-      };
-      navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [ch.port2]);
-    }
-  }
-  if (navigator.serviceWorker.controller) {
-    askSW();
-  } else {
-    navigator.serviceWorker.ready.then(askSW);
-  }
-})();
 
 // ===== Ripple =====
 document.addEventListener('pointerdown', function(e) {

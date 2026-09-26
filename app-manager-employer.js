@@ -266,7 +266,7 @@ startAuthenticatedApp(bootAuthenticatedApp);
     } else if (hiddenAt && (Date.now() - hiddenAt) > MIN_HIDDEN_MS) {
       hiddenAt = null;
       if (typeof resetGuestQuotaIfNewDay === 'function') resetGuestQuotaIfNewDay();
-      loadAll();
+      loadAll({ fresh: true });
     }
   });
   // Covers the back/forward-cache restore case (Safari/iOS in particular),
@@ -274,40 +274,15 @@ startAuthenticatedApp(bootAuthenticatedApp);
   window.addEventListener('pageshow', function(e) {
     if (e.persisted) {
       if (typeof resetGuestQuotaIfNewDay === 'function') resetGuestQuotaIfNewDay();
-      loadAll();
+      loadAll({ fresh: true });
     }
   });
 })();
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js', { scope: '/', updateViaCache: 'none' }).then(function(reg) {
-      // Force an update check so a normal refresh discovers a newly deployed
-      // bundle instead of remaining on the previous cached shell.
-      if (typeof reg.update === 'function') reg.update().catch(function() {});
-      // Listen for updates
-      reg.addEventListener('updatefound', function() {
-        var newWorker = reg.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', function() {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New content is available. Do not take over or reload automatically:
-            // an idle update must never interrupt the section the user is viewing.
-            // The existing update banner lets the user choose when to reload.
-            var banner = document.getElementById('update-banner');
-            if (banner) banner.classList.add('show');
-          }
-        });
-      });
-      // Check for new content without automatically reloading the current page.
-      // This preserves the user’s current section after the app has been idle.
-      reg.update();
-      setInterval(function() { reg.update(); }, 60000);
-    }).catch(function(err) {
-      console.warn('Service worker registration failed:', err);
-    });
-  });
-}
+// No application service worker is registered here. The former worker cached
+// navigations and runtime responses and could replay another screen's stale
+// state after an idle resume or pull-to-refresh. sw.js remains deployed only
+// as a one-release kill switch that removes the old registration and caches.
 
 // ===== PWA Shortcut / share_target param handling =====
 (function handlePwaParams() {
