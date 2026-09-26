@@ -746,7 +746,28 @@ function generalVacancyQueryState() {
 function generalVacancyQueryKeyFor(state) {
   return [state.q, state.remote, state.exp].join('|').toLowerCase();
 }
+async function fetchVacancyPageFromWorker(params) {
+  if (!R2_WORKER_URL) return null;
+  try {
+    var url = new URL(R2_WORKER_URL + '/api/vacancies');
+    Object.keys(params || {}).forEach(function(key) {
+      var value = params[key];
+      if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+    });
+    var response = await fetch(url.toString(), { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' } });
+    if (!response.ok) return null;
+    var payload = await response.json();
+    return payload && Array.isArray(payload.vacancies) ? payload.vacancies : null;
+  } catch(e) {
+    return null;
+  }
+}
 async function fetchGeneralVacancyPage(state, page) {
+  var workerPage = await fetchVacancyPageFromWorker({
+    scope: 'general', q: state.q, remote: state.remote, experience: state.exp,
+    limit: generalVacancyPageSize, offset: page * generalVacancyPageSize
+  });
+  if (workerPage) return workerPage;
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var from = page * generalVacancyPageSize;
   var query = supabaseClient.from('vacancies').select(columns)
@@ -789,6 +810,11 @@ var DEDICATED_VACANCY_FOLDER_SOURCES = {
 async function fetchDedicatedVacancyPage(folder, state, page) {
   var sources = DEDICATED_VACANCY_FOLDER_SOURCES[folder];
   if (!sources) return [];
+  var workerPage = await fetchVacancyPageFromWorker({
+    source: sources.join(','), q: state.q, remote: state.remote, experience: state.exp,
+    limit: dedicatedVacancyPageSize, offset: page * dedicatedVacancyPageSize
+  });
+  if (workerPage) return workerPage;
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var from = page * dedicatedVacancyPageSize;
   var query = supabaseClient.from('vacancies').select(columns)
