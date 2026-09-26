@@ -1966,3 +1966,18 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .house-ad-message small{display:flex;align-items:center;justify-content:space-between;width:100%}
 .house-ad-message-copy{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 .house-ad-message .house-ad-sponsored{display:block;order:2;flex:0 0 auto;margin-left:auto}
+
+
+/* Eight compact vacancy source tiles: swipe horizontally on every screen. */
+.vacancy-source-rail{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 12px 18px;margin:0;touch-action:pan-x}
+.vacancy-source-rail::-webkit-scrollbar{display:none}
+.vacancy-source-card{--source-color:#5271ff;position:relative;display:flex;flex:0 0 116px;width:116px;height:116px;scroll-snap-align:start;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:13px 12px;border:0;border-radius:20px;background:var(--source-color);color:#fff;text-align:left;box-shadow:0 5px 14px color-mix(in srgb,var(--source-color) 28%,transparent);cursor:pointer;overflow:hidden;transition:transform .16s ease,filter .16s ease}
+.vacancy-source-card::after{content:'';position:absolute;width:62px;height:62px;right:-21px;top:-20px;border-radius:50%;background:rgba(255,255,255,.18)}
+.vacancy-source-card:active{transform:scale(.96)}
+.vacancy-source-card:hover{filter:brightness(1.06)}
+.vacancy-source-card-0{--source-color:#2f6fed}.vacancy-source-card-1{--source-color:#8457e8}.vacancy-source-card-2{--source-color:#e05b62}.vacancy-source-card-3{--source-color:#ef9a3c}.vacancy-source-card-4{--source-color:#1c9b78}.vacancy-source-card-5{--source-color:#168caa}.vacancy-source-card-6{--source-color:#d45f9e}.vacancy-source-card-7{--source-color:#596273}
+.vacancy-source-icon{display:grid;place-items:center;width:31px;height:31px;border:1px solid rgba(255,255,255,.42);border-radius:10px;background:rgba(255,255,255,.16);font-size:18px;font-weight:800;line-height:1}
+.vacancy-source-card strong{position:relative;z-index:1;max-width:100%;font-size:13px;line-height:1.05;letter-spacing:-.02em;overflow-wrap:anywhere}
+.vacancy-source-card small{position:relative;z-index:1;max-width:100%;font-size:9.5px;line-height:1.1;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(min-width:760px){.vacancy-source-rail{max-width:960px;margin:0 auto;padding-left:0;padding-right:0}.vacancy-source-card{flex-basis:124px;width:124px;height:124px}}
+@media(max-width:420px){.vacancy-source-rail{gap:8px;padding-left:10px;padding-right:10px}.vacancy-source-card{flex-basis:108px;width:108px;height:108px;padding:11px 10px;border-radius:17px}.vacancy-source-card strong{font-size:12px}.vacancy-source-icon{width:28px;height:28px;font-size:16px}}

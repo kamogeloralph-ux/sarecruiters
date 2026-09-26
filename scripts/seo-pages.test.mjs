@@ -44,15 +44,14 @@ test('vacancy cards expose a local open and close toggle', () => {
   assert.match(cards, /window\.closeVac = function\(target\)/);
   assert.match(cards, /scrollIntoView\(\{ block: 'nearest'/);
 });
-test('vacancy overview uses the three-card grouped browse structure', () => {
-  assert.match(appUi, /South African Jobs/);
-  assert.match(appUi, /Remote &amp; International Jobs/);
+test('vacancy overview uses eight swipeable source tiles', () => {
   assert.match(appUi, /Featured vacancies/);
   for (const source of ['General Vacancies', 'Agency Vacancies', 'Government Vacancies', 'Retail Vacancies', 'Learnerships', 'Himalayas Remote', 'Adzuna Vacancies', 'Cruise Careers']) {
     assert.match(appUi, new RegExp(source.replace(/[&]/g, '&amp;')));
   }
-  assert.match(appUi, /vacancy-group-grid/);
-  assert.doesNotMatch(appUi, /vac-folder-card[^\n]*Agency Vacancies/);
+  assert.match(appUi, /vacancy-source-rail/);
+  assert.match(appUi, /sourceCards = \[/);
+  assert.doesNotMatch(appUi, /vacancy-group-grid/);
 });
 test('homepage exposes normal anchor links for Google discovery', () => {
   for (const slug of pages) {
