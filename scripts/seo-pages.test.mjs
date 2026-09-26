@@ -45,17 +45,19 @@ test('vacancy cards expose a local open and close toggle', () => {
   assert.match(cards, /scrollIntoView\(\{ block: 'nearest'/);
 });
 test('vacancy overview uses eight swipeable source tiles', () => {
-  assert.match(appUi, /Featured vacancies/);
+  assert.match(appUi, /Featured opportunity/);
   for (const source of ['General Vacancies', 'Agency Vacancies', 'Government Vacancies', 'Retail Vacancies', 'Learnerships', 'Himalayas Remote', 'Adzuna Vacancies', 'Cruise Careers']) {
     assert.match(appUi, new RegExp(source.replace(/[&]/g, '&amp;')));
   }
   assert.match(appUi, /vacancy-source-rail/);
+  assert.match(appUi, /career-featured-section/);
+  assert.match(appUi, /career-recent-section/);
   assert.match(appUi, /sourceCards = \[/);
   assert.doesNotMatch(appUi, /vacancy-group-grid/);
 });
 test('vacancy overview links to public category pages', () => {
-  assert.match(appUi, /vacancy-category-section/);
-  assert.match(appUi, /vacancy-category-rail/);
+  assert.match(appUi, /career-category-section/);
+  assert.match(appUi, /career-category-chips/);
   assert.match(appUi, /href="\/browse\/category\/['"] \+ category\[0\] \+ ['"]\//);
   for (const slug of ['government', 'learnership', 'internship', 'graduate_programme', 'bursary', 'apprenticeship', 'part_time', 'remote', 'permanent', 'contract']) {
     assert.match(generator, new RegExp("slug: '" + slug + "'"));
