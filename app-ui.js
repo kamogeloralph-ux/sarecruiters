@@ -1330,9 +1330,33 @@ function renderAllVacanciesList() {
       '<div class="vacancy-source-rail" aria-label="Vacancy sources">' +
         sourceCards.map(sourceTile).join('') +
       '</div>';
+    var publicCategories = [
+      ['government', 'Government', 'Public-sector roles'],
+      ['learnership', 'Learnerships', 'Training opportunities'],
+      ['internship', 'Internships', 'Student and graduate roles'],
+      ['graduate_programme', 'Graduate programmes', 'Graduate and trainee roles'],
+      ['bursary', 'Bursaries', 'Study funding opportunities'],
+      ['apprenticeship', 'Apprenticeships', 'Skilled-trade training'],
+      ['part_time', 'Part-time', 'Flexible roles'],
+      ['remote', 'Remote jobs', 'Work-from-home roles'],
+      ['permanent', 'Permanent roles', 'Long-term employment'],
+      ['contract', 'Contract roles', 'Fixed-term opportunities']
+    ];
+    var categoryRail =
+      '<section class="vacancy-category-section" aria-labelledby="vacancy-category-title">' +
+        '<div class="vacancy-category-heading"><h2 id="vacancy-category-title">Browse by category</h2><span>Public vacancy pages</span></div>' +
+        '<div class="vacancy-category-rail" aria-label="Public vacancy categories">' +
+          publicCategories.map(function(category){
+            return '<a class="vacancy-category-card" href="/browse/category/' + category[0] + '/">' +
+              '<strong>' + escapeHtml(category[1]) + '</strong><small>' + escapeHtml(category[2]) + '</small>' +
+            '</a>';
+          }).join('') +
+        '</div>' +
+      '</section>';
     el.innerHTML = featuredMarkup +
       '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
-      sourceRail;
+      sourceRail +
+      categoryRail;
     return;
   }
   if (!list.length) {

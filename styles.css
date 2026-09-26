@@ -1980,6 +1980,17 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .vacancy-source-card strong{position:relative;z-index:1;max-width:100%;font-size:13px;line-height:1.05;letter-spacing:-.02em;overflow-wrap:anywhere}
 .vacancy-source-card small{position:relative;z-index:1;max-width:100%;font-size:9.5px;line-height:1.1;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vacancy-source-card .vacancy-source-count{display:inline-flex!important;align-self:flex-start;max-width:100%;margin-top:auto;padding:4px 7px;border:1px solid rgba(255,255,255,.68);border-radius:999px;background:#0a84ff;color:#fff!important;opacity:1!important;visibility:visible!important;font-size:11px;font-weight:800;line-height:1.05;letter-spacing:-.01em;text-shadow:0 1px 2px rgba(0,0,0,.28);box-shadow:0 2px 6px rgba(10,132,255,.38)}
+.vacancy-category-section{margin:4px 0 18px;padding:0 10px}
+.vacancy-category-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 2px 8px}
+.vacancy-category-heading h2{font-size:16px;letter-spacing:-.02em}
+.vacancy-category-heading span{font-size:10px;color:var(--text-2);white-space:nowrap}
+.vacancy-category-rail{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.vacancy-category-rail::-webkit-scrollbar{display:none}
+.vacancy-category-card{display:flex;flex:0 0 148px;min-height:70px;scroll-snap-align:start;flex-direction:column;justify-content:center;gap:5px;padding:11px 12px;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--text);box-shadow:var(--shadow-sm);text-decoration:none;transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.vacancy-category-card:active{transform:scale(.97)}
+.vacancy-category-card:hover{border-color:var(--accent);background:var(--accent-soft)}
+.vacancy-category-card strong{font-size:12px;line-height:1.1;letter-spacing:-.015em}
+.vacancy-category-card small{font-size:10px;line-height:1.15;color:var(--text-2)}
 @media(min-width:760px){.vacancy-source-rail{max-width:960px;margin:0 auto;padding-left:0;padding-right:0}.vacancy-source-card{flex-basis:124px;width:124px;height:124px}}
 @media(max-width:420px){.vacancy-source-rail{gap:8px;padding-left:10px;padding-right:10px}.vacancy-source-card{flex-basis:108px;width:108px;height:108px;padding:11px 10px;border-radius:17px}.vacancy-source-card strong{font-size:12px}.vacancy-source-icon{width:28px;height:28px;font-size:16px}}
 
