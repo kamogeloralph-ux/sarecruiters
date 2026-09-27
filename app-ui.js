@@ -1113,6 +1113,29 @@ function updateVacanciesBackButton() {
   btn.setAttribute('aria-label', allVacanciesFolder ? 'Back to vacancy categories' : 'Back to home menu');
   btn.title = allVacanciesFolder ? 'Back to vacancy categories' : 'Back to home menu';
 }
+// Overview filter hooks are kept separate from folder filters so the home
+// directory can add compact filter controls without changing folder state.
+var vacancyOverviewFilter = 'all';
+var vacancyOverviewSource = 'all';
+function vacancyMatchesOverviewSource(v) {
+  if (vacancyOverviewSource === 'all') return true;
+  if (vacancyOverviewSource === 'government') return ['government', 'dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1;
+  return String(v.source_type || '').toLowerCase() === vacancyOverviewSource;
+}
+function setVacancyOverviewSource(source) {
+  vacancyOverviewSource = source || 'all';
+  renderAllVacanciesList();
+}
+function vacancyMatchesOverviewFilter(v) {
+  if (vacancyOverviewFilter === 'government') return ['government', 'dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1;
+  if (vacancyOverviewFilter === 'private') return String(v.source_type || '').toLowerCase() === 'agency' || (!v.source_type && v.agency_id && v.agency_id !== 'general');
+  if (vacancyOverviewFilter === 'remote') return String(v.remote || '').toLowerCase() === 'remote';
+  return true;
+}
+function setVacancyOverviewFilter(filter) {
+  vacancyOverviewFilter = filter || 'all';
+  renderAllVacanciesList();
+}
 function openVacancyFolder(type) {
   allVacanciesFolder = type;
   vacancyFolderDisplayLimit = 30;
@@ -1194,6 +1217,7 @@ async function loadGeneralVacancies(reset) {
     generalVacancyRequestId++;
     generalVacancyQueryKey = key;
     generalVacancyPage = 0;
+    generalVacancyNextCursor = null;
     generalVacancyRows = [];
     generalVacancyHasMore = true;
     generalVacancyLoading = false;
@@ -1297,6 +1321,7 @@ async function loadDedicatedVacancies(reset) {
     dedicatedVacancyFolder = folder;
     dedicatedVacancyQueryKey = key;
     dedicatedVacancyPage = 0;
+    dedicatedVacancyNextCursor = null;
     dedicatedVacancyRows = [];
     dedicatedVacancyHasMore = true;
     dedicatedVacancyLoading = false;
@@ -1411,6 +1436,12 @@ function renderAllVacanciesList() {
       return hay.indexOf(q) !== -1;
     });
   }
+  if (!allVacanciesFolder && vacancyOverviewFilter !== 'all') {
+    list = list.filter(vacancyMatchesOverviewFilter);
+  }
+  if (!allVacanciesFolder && vacancyOverviewSource !== 'all') {
+    list = list.filter(vacancyMatchesOverviewSource);
+  }
   if (!allVacanciesFolder) {
     // Keep the overview as a folder picker so new vacancy categories can be
     // added later without changing the listing screen. Counts still respond
@@ -1439,13 +1470,13 @@ function renderAllVacanciesList() {
       return (Number(a.featured_order)||0) - (Number(b.featured_order)||0) || new Date(b.created_at||0) - new Date(a.created_at||0);
     }).slice(0, 6);
     var featuredMarkup =
-      '<div class="featured-vacancies-heading" aria-labelledby="featured-vacancies-title"><div><h2 id="featured-vacancies-title">Featured vacancies</h2></div></div>' +
+      '<section class="career-featured-section"><div class="featured-vacancies-heading" aria-labelledby="featured-vacancies-title"><div><h2 id="featured-vacancies-title">Featured vacancies</h2><span class="sr-only">Featured opportunity</span></div></div>' +
       (featured.length ?
         featured.map(function(v){
           var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
           return vacancyCard(v, agency, { featured: true });
         }).join('') :
-        '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>');
+        '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div></section>');
     var sourceCards = [
       { type:'general', label:'General Vacancies', short:'General', count:generalCount, icon:'⌕' },
       { type:'agency', label:'Agency Vacancies', short:'Agency', count:agencyCount, icon:'▦' },
@@ -1467,7 +1498,7 @@ function renderAllVacanciesList() {
       '</button>';
     };
     var sourceRail =
-      '<section class="vacancy-categories-card" aria-labelledby="vacancy-categories-title">' +
+      '<section class="vacancy-categories-card career-source-grid" aria-labelledby="vacancy-categories-title">' +
         '<div class="vacancy-categories-heading">' +
           '<span class="vacancy-categories-heading-icon" aria-hidden="true">' + VAC_ICONS.briefcase + '</span>' +
           '<h2 id="vacancy-categories-title">Vacancy Categories</h2>' +
@@ -1497,7 +1528,11 @@ function renderAllVacanciesList() {
           }).join('') +
         '</div>' +
       '</section>';
-    el.innerHTML = featuredMarkup +
+    var overviewFilters = '<section class="career-recent-section"><div class="vacancy-overview-filters" role="group" aria-label="Filter recent vacancies">' +
+      [['all','All Roles'],['government','Government'],['private','Private Sector'],['remote','Remote']].map(function(item){
+        return '<button type="button" class="vacancy-overview-filter' + (vacancyOverviewFilter === item[0] ? ' active' : '') + '" onclick="setVacancyOverviewFilter(\'' + item[0] + '\')">' + item[1] + '</button>';
+      }).join('') + '</div></section>';
+    el.innerHTML = featuredMarkup + overviewFilters +
       '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
       sourceRail +
       categoryRail;

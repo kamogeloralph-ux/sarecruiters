@@ -271,7 +271,7 @@ async function fetchAllRows(table) {
   const COLUMNS = {
     agencies: 'id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified',
     branches: 'id,agency_id,name,location,phone,email',
-    vacancies: 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type',
+    vacancies: 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,updated_at,source_type',
   };
   const pageSize = 1000;
   const rows = [];
@@ -971,7 +971,9 @@ async function main() {
     const dir = path.join(vacancyDir, slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), html);
-    sitemapUrls.push(`${SITE_URL}/vacancy/${slug}/`);
+    const lastmodSource = vacancy.updated_at || vacancy.created_at;
+    const lastmod = lastmodSource ? new Date(lastmodSource).toISOString().slice(0, 10) : '';
+    sitemapUrls.push({ loc: `${SITE_URL}/vacancy/${slug}/`, lastmod });
   });
 
   // Poster pages: one shareable page per active poster. A failed/missing
@@ -997,9 +999,15 @@ async function main() {
   });
 
   // Sitemap
+  const sitemapEntries = sitemapUrls.map((entry) => {
+    if (typeof entry === 'string') return `  <url><loc>${entry}</loc></url>`;
+    const loc = entry.loc;
+    const lastmod = entry.lastmod ? `<lastmod>${entry.lastmod}</lastmod>` : '';
+    return `  <url><loc>${loc}</loc>${lastmod}</url>`;
+  }).join('\n');
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapUrls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
+${sitemapEntries}
 </urlset>`;
   fs.writeFileSync(path.join(OUT_DIR, 'sitemap.xml'), sitemap);
 

@@ -2036,12 +2036,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 @media(min-width:760px){.vacancy-source-card{flex-basis:124px!important;width:124px!important;height:124px!important;min-width:124px!important;min-height:124px!important;max-width:124px!important;max-height:124px!important}}
 @media(max-width:420px){.vacancy-source-card{flex-basis:108px!important;width:108px!important;height:108px!important;min-width:108px!important;min-height:108px!important;max-width:108px!important;max-height:108px!important}}
 
-/* ============ Nearby-vacancies home CTA (reuses .pl-icon look) ============ */
-.nearby-vacancies-cta{
-  display:flex;align-items:center;gap:10px;width:calc(100% - 32px);margin:0 16px 14px;
-  padding:12px 16px;border-radius:var(--radius-md);background:var(--accent-soft);
-  border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent);
-  font-size:14px;font-weight:600;cursor:pointer;
-}
-.nearby-vacancies-cta .pl-icon svg{width:18px;height:18px;display:block}
-.nearby-vacancies-cta:active{transform:scale(.985)}
+/* Vacancy overview filters */
+.vacancy-overview-filters{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px}
+.vacancy-overview-filter{border:1px solid var(--line,#d7dee8);background:var(--surface,#fff);color:var(--text,#1f2937);border-radius:999px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
+.vacancy-overview-filter.active{background:var(--accent,#0f766e);border-color:var(--accent,#0f766e);color:#fff}
