@@ -343,6 +343,42 @@ async function replaceD1Table(env, table, columns, rows, boolCols = []) {
 }
 __name(replaceD1Table, "replaceD1Table");
 
+// Incremental mirror writer. Unlike replaceD1Table, this never deletes the
+// table and only writes rows returned by the updated_at watermark query.
+async function upsertD1Rows(env, table, columns, rows, boolCols = []) {
+  if (!rows.length) return 0;
+  const placeholders = `(${columns.map(() => "?").join(",")})`;
+  const updateColumns = columns.filter((column) => column !== "id");
+  const upsertSql = `INSERT INTO ${table} (${columns.join(",")}) VALUES ${placeholders} ON CONFLICT(id) DO UPDATE SET ${updateColumns.map((column) => `${column}=excluded.${column}`).join(",")}`;
+  const CHUNK = 200;
+  let written = 0;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    const stmts = chunk.map((row) => {
+      const values = columns.map((col) => {
+        const v = row[col];
+        if (boolCols.includes(col)) return v ? 1 : 0;
+        if (v === void 0) return null;
+        if (v !== null && typeof v === "object") return JSON.stringify(v);
+        return v;
+      });
+      return env.DB.prepare(upsertSql).bind(...values);
+    });
+    if (stmts.length) {
+      await env.DB.batch(stmts);
+      written += stmts.length;
+    }
+  }
+  return written;
+}
+__name(upsertD1Rows, "upsertD1Rows");
+
+async function readSyncMeta(env, key) {
+  const result = await env.DB.prepare("SELECT value FROM sync_meta WHERE key = ? LIMIT 1").bind(key).all();
+  return result.results?.[0]?.value || null;
+}
+__name(readSyncMeta, "readSyncMeta");
+
 // Pulls the full current state of every table the app reads for browsing
 // (not just the startup-filtered subset) from Supabase and mirrors it into
 // D1. This is the ONLY thing that still costs Supabase egress for these
@@ -353,7 +389,7 @@ async function syncD1FromSupabase(env) {
     "id", "agency_id", "employer_id", "title", "company", "company_photo",
     "location", "closing_date", "notes", "link", "email", "phone", "remote",
     "experience_level", "employment_type", "contract_type", "work_schedule",
-    "hours", "salary", "start_date", "created_at", "source_type"
+    "hours", "salary", "start_date", "created_at", "updated_at", "source_type"
   ];
   // The featured columns are additive and may lag behind this Worker while
   // the production D1 quota is exhausted. Detect the schema so the mirror
@@ -378,11 +414,9 @@ async function syncD1FromSupabase(env) {
       select: "id,agency_id,name,location,phone,email",
       order: "name.asc"
     }),
-    // Full mirror -- every vacancy row, not just the agency/employer-linked
-    // subset the startup payload itself needs -- so this same D1 table can
-    // also back the general-directory and dedicated-source folder pages
-    // (currently direct-to-Supabase, paginated) once those are migrated too.
-    supabaseGetAll(env, "vacancies", { select: vacancyColumns.join(","), order: "created_at.desc" }, 1000),
+    // Vacancies are mirrored incrementally below using updated_at. The other
+    // directory tables remain full-replaced for now because they are small.
+    Promise.resolve(null),
     supabaseGet(env, "employers", {
       select: "id,name,industry,website,contact,email,location,address,photo,verified,created_at",
       order: "created_at.desc"
@@ -404,7 +438,21 @@ async function syncD1FromSupabase(env) {
   await replaceD1Table(env, "branches",
     ["id", "agency_id", "name", "location", "phone", "email"],
     branches.body || []);
-  await replaceD1Table(env, "vacancies", vacancyColumns, vacancies || [], hasFeaturedColumns ? ["is_featured"] : []);
+  const previousVacancySync = await readSyncMeta(env, "vacancies_updated_through");
+  const vacancyParams = { select: vacancyColumns.join(","), order: "updated_at.asc,id.asc" };
+  if (previousVacancySync) {
+    vacancyParams.updated_at = `gt.${previousVacancySync}`;
+  }
+  const vacancyResult = await supabaseGetAll(env, "vacancies", vacancyParams, 1000);
+  const changedVacancies = vacancyResult || [];
+  const vacancyWrites = await upsertD1Rows(env, "vacancies", vacancyColumns, changedVacancies, hasFeaturedColumns ? ["is_featured"] : []);
+  const vacancyWatermark = changedVacancies.length
+    ? changedVacancies[changedVacancies.length - 1].updated_at
+    : previousVacancySync;
+  if (vacancyWatermark) {
+    await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
+      .bind("vacancies_updated_through", vacancyWatermark).run();
+  }
   await replaceD1Table(env, "employers",
     ["id", "name", "industry", "website", "contact", "email", "location", "address", "photo", "verified", "created_at"],
     employers.body || [], ["verified"]);
@@ -417,7 +465,8 @@ async function syncD1FromSupabase(env) {
     synced_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: (agencies.body || []).length,
     branches: (branches.body || []).length,
-    vacancies: (vacancies || []).length,
+    vacancies: changedVacancies.length,
+    vacancy_writes: vacancyWrites,
     employers: (employers.body || []).length,
     pool_candidates: (pool.body || []).length
   };
@@ -808,6 +857,71 @@ async function startupResponse(request, env, ctx, origin) {
   }
 }
 __name(startupResponse, "startupResponse");
+async function vacanciesResponse(request, env, origin) {
+  if (!env.DB) return json({ error: "D1 not bound" }, 503, origin);
+  const url = new URL(request.url);
+  const q = String(url.searchParams.get("q") || "").trim().slice(0, 120);
+  const location = String(url.searchParams.get("location") || "").trim().slice(0, 120);
+  const source = String(url.searchParams.get("source") || "").trim().slice(0, 240);
+  const scope = String(url.searchParams.get("scope") || "").trim();
+  const remote = String(url.searchParams.get("remote") || "").trim().slice(0, 30);
+  const experience = String(url.searchParams.get("experience") || "").trim().slice(0, 60);
+  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 20) || 20, 1), 50);
+  const offset = Math.max(Number(url.searchParams.get("offset") || 0) || 0, 0);
+  const cursor = String(url.searchParams.get("cursor") || "");
+  const conditions = ["(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now'))"];
+  const values = [];
+  if (q) {
+    conditions.push("(title LIKE ? OR company LIKE ? OR location LIKE ? OR notes LIKE ?)");
+    const pattern = `%${q}%`;
+    values.push(pattern, pattern, pattern, pattern);
+  }
+  if (location) {
+    conditions.push("location LIKE ?");
+    values.push(`%${location}%`);
+  }
+  if (scope === "general") {
+    conditions.push("(agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND (source_type IS NULL OR source_type NOT IN ('himalayas','adzuna','government','dpsa','retail','shoprite','picknpay','woolworths','truworths','spar','career_board','learnerships','careers_page'))");
+  }
+  if (source) {
+    const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
+    if (sources.length === 1) {
+      conditions.push("source_type = ?");
+      values.push(sources[0]);
+    } else if (sources.length > 1) {
+      conditions.push(`source_type IN (${sources.map(() => "?").join(",")})`);
+      values.push(...sources);
+    }
+  }
+  if (remote) {
+    conditions.push("remote = ?");
+    values.push(remote);
+  }
+  if (experience) {
+    conditions.push("experience_level = ?");
+    values.push(experience);
+  }
+  if (cursor) {
+    const separator = cursor.indexOf("|");
+    const createdAt = separator >= 0 ? cursor.slice(0, separator) : cursor;
+    const id = separator >= 0 ? cursor.slice(separator + 1) : "";
+    if (createdAt) {
+      conditions.push("(created_at < ? OR (created_at = ? AND id < ?))");
+      values.push(createdAt, createdAt, id);
+    }
+  }
+  const columns = ["id", "agency_id", "employer_id", "title", "company", "company_photo", "location", "closing_date", "notes", "link", "email", "phone", "remote", "experience_level", "employment_type", "contract_type", "work_schedule", "hours", "salary", "start_date", "created_at", "source_type"];
+  const useOffset = url.searchParams.has("offset");
+  const query = `SELECT ${columns.join(",")} FROM vacancies WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC, id DESC LIMIT ?${useOffset ? " OFFSET ?" : ""}`;
+  const result = await env.DB.prepare(query).bind(...values, limit + 1, ...(useOffset ? [offset] : [])).all();
+  const rows = result.results || [];
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last ? `${last.created_at || ""}|${last.id || ""}` : null;
+  return json({ vacancies: page, next_cursor: nextCursor, limit }, 200, origin);
+}
+__name(vacanciesResponse, "vacanciesResponse");
 var PHOTO_BATCH_SIZE = 20;
 async function migratePhotos(request, env, origin) {
   const authHeader = request.headers.get("Authorization") || "";
@@ -1068,6 +1182,9 @@ var worker_default = {
     try {
       if (path === "/api/startup" && request.method === "GET") {
         return await startupResponse(request, env, ctx, origin);
+      }
+      if (path === "/api/vacancies" && request.method === "GET") {
+        return await vacanciesResponse(request, env, origin);
       }
 
       // Manual trigger for the D1 mirror sync -- same auth as the other
