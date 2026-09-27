@@ -379,12 +379,37 @@ async function readSyncMeta(env, key) {
 }
 __name(readSyncMeta, "readSyncMeta");
 
+async function reconcileDeletedVacancies(env) {
+  const liveRows = await supabaseGetAll(env, "vacancies", { select: "id", order: "id.asc" }, 1000);
+  const liveIds = new Set((liveRows || []).map((row) => String(row.id)));
+  const local = await env.DB.prepare("SELECT id FROM vacancies").all();
+  const staleIds = (local.results || []).map((row) => String(row.id)).filter((id) => !liveIds.has(id));
+  for (let i = 0; i < staleIds.length; i += 200) {
+    const chunk = staleIds.slice(i, i + 200);
+    await env.DB.batch(chunk.map((id) => env.DB.prepare("DELETE FROM vacancies WHERE id = ?").bind(id)));
+  }
+  return staleIds.length;
+}
+__name(reconcileDeletedVacancies, "reconcileDeletedVacancies");
+async function recordSyncFailure(env, error) {
+  try {
+    await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
+      .bind("sync_status", JSON.stringify({ status: "failed", failed_at: (/* @__PURE__ */ new Date()).toISOString(), error: String(error?.message || error).slice(0, 500) })).run();
+  } catch (metaError) {
+    console.error("Could not record sync failure", metaError);
+  }
+}
+__name(recordSyncFailure, "recordSyncFailure");
+
 // Pulls the full current state of every table the app reads for browsing
 // (not just the startup-filtered subset) from Supabase and mirrors it into
 // D1. This is the ONLY thing that still costs Supabase egress for these
 // tables -- it runs on the cron schedule in wrangler.toml (and can be
 // triggered manually via POST /api/sync-d1), not on every visitor request.
 async function syncD1FromSupabase(env) {
+  const startedAt = (/* @__PURE__ */ new Date()).toISOString();
+  await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
+    .bind("sync_status", JSON.stringify({ status: "running", started_at: startedAt })).run();
   const vacancyColumns = [
     "id", "agency_id", "employer_id", "title", "company", "company_photo",
     "location", "closing_date", "notes", "link", "email", "phone", "remote",
@@ -446,6 +471,7 @@ async function syncD1FromSupabase(env) {
   const vacancyResult = await supabaseGetAll(env, "vacancies", vacancyParams, 1000);
   const changedVacancies = vacancyResult || [];
   const vacancyWrites = await upsertD1Rows(env, "vacancies", vacancyColumns, changedVacancies, hasFeaturedColumns ? ["is_featured"] : []);
+  const vacancyDeletes = await reconcileDeletedVacancies(env);
   const vacancyWatermark = changedVacancies.length
     ? changedVacancies[changedVacancies.length - 1].updated_at
     : previousVacancySync;
@@ -467,11 +493,14 @@ async function syncD1FromSupabase(env) {
     branches: (branches.body || []).length,
     vacancies: changedVacancies.length,
     vacancy_writes: vacancyWrites,
+    vacancy_deletes: vacancyDeletes,
     employers: (employers.body || []).length,
     pool_candidates: (pool.body || []).length
   };
   await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
     .bind("last_sync", JSON.stringify(summary)).run();
+  await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
+    .bind("sync_status", JSON.stringify({ status: "success", ...summary })).run();
   return summary;
 }
 __name(syncD1FromSupabase, "syncD1FromSupabase");
@@ -867,7 +896,7 @@ async function vacanciesResponse(request, env, origin) {
   const remote = String(url.searchParams.get("remote") || "").trim().slice(0, 30);
   const experience = String(url.searchParams.get("experience") || "").trim().slice(0, 60);
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 20) || 20, 1), 50);
-  const offset = Math.max(Number(url.searchParams.get("offset") || 0) || 0, 0);
+  const offset = Math.min(Math.max(Number(url.searchParams.get("offset") || 0) || 0, 0), 5000);
   const cursor = String(url.searchParams.get("cursor") || "");
   const conditions = ["(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now'))"];
   const values = [];
@@ -919,9 +948,19 @@ async function vacanciesResponse(request, env, origin) {
   const page = hasMore ? rows.slice(0, limit) : rows;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? `${last.created_at || ""}|${last.id || ""}` : null;
-  return json({ vacancies: page, next_cursor: nextCursor, limit }, 200, origin);
+  const response = json({ vacancies: page, next_cursor: nextCursor, limit }, 200, origin);
+  response.headers.set("Cache-Control", "public, max-age=30, s-maxage=60, stale-while-revalidate=300");
+  return response;
 }
 __name(vacanciesResponse, "vacanciesResponse");
+async function syncStatusResponse(request, env, origin) {
+  if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+  const status = await readSyncMeta(env, "sync_status");
+  const lastSync = await readSyncMeta(env, "last_sync");
+  const watermark = await readSyncMeta(env, "vacancies_updated_through");
+  return json({ status: status ? JSON.parse(status) : null, last_sync: lastSync ? JSON.parse(lastSync) : null, vacancies_updated_through: watermark }, 200, origin);
+}
+__name(syncStatusResponse, "syncStatusResponse");
 var PHOTO_BATCH_SIZE = 20;
 async function migratePhotos(request, env, origin) {
   const authHeader = request.headers.get("Authorization") || "";
@@ -1168,8 +1207,9 @@ var worker_default = {
   // per-visitor Supabase egress. ctx.waitUntil lets the sync finish even
   // though cron invocations don't wait on a returned Promise otherwise.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(syncD1FromSupabase(env).catch((e) => {
+    ctx.waitUntil(syncD1FromSupabase(env).catch(async (e) => {
       console.error("scheduled D1 sync failed", e);
+      await recordSyncFailure(env, e);
     }));
   },
   async fetch(request, env, ctx) {
@@ -1186,6 +1226,9 @@ var worker_default = {
       if (path === "/api/vacancies" && request.method === "GET") {
         return await vacanciesResponse(request, env, origin);
       }
+      if (path === "/api/sync-status" && request.method === "GET") {
+        return await syncStatusResponse(request, env, origin);
+      }
 
       // Manual trigger for the D1 mirror sync -- same auth as the other
       // admin-only endpoints. The scheduled() export above runs this
@@ -1201,6 +1244,7 @@ var worker_default = {
           const summary = await syncD1FromSupabase(env);
           return json({ ok: true, ...summary }, 200, origin);
         } catch (error) {
+          await recordSyncFailure(env, error);
           return json({ error: "Sync failed", detail: error.message }, 500, origin);
         }
       }
