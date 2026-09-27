@@ -466,6 +466,14 @@
         </div>
       </div>
     </section>
+    <section class="spotlight-mini" id="nearby-vacancies-section" aria-labelledby="nearby-vacancies-title" style="display:none">
+      <div class="spotlight-mini-head"><div><div class="quick-access-label" id="nearby-vacancies-label">Near you</div><h2 id="nearby-vacancies-title">Jobs near you</h2></div><button data-ripple onclick="showAllVacancies()">See all &#8594;</button></div>
+      <div id="nearby-vacancies-list"></div>
+    </section>
+    <button class="nearby-vacancies-cta" id="nearby-vacancies-cta" data-ripple onclick="enableNearbyVacancies()" style="display:none">
+      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <span>See jobs near you</span>
+    </button>
     <section class="spotlight-mini" aria-labelledby="spotlight-mini-title">
       <div class="spotlight-mini-head"><div><div class="quick-access-label">Talent Pool spotlight</div><h2 id="spotlight-mini-title">Meet our candidates</h2></div><button data-ripple onclick="goPool('profile')">See all &#8594;</button></div>
       <div class="spotlight-deck" id="candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"></div>
@@ -682,6 +690,10 @@
         <input id="allvacancies-search" type="search" placeholder="Search job title, role, location..." oninput="renderAllVacanciesList()">
       </div>
     </div>
+    </div>
+    <div class="precise-location-chip" id="allvacancies-geo-chip" data-ripple onclick="usePreciseLocation('allvacancies')" role="button" tabindex="0" aria-label="Filter vacancies near your precise location">
+      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <span class="pl-text" id="allvacancies-geo-text">Use precise location</span>
     </div>
     <div id="allvacancies-list"></div>
     <button class="vac-load-more" id="allvacancies-loadmore" type="button" onclick="loadMoreGeneralVacancies()" style="display:none">Load more vacancies</button>
