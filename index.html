@@ -667,28 +667,40 @@
 
   <!-- ============ ALL VACANCIES LIST ============ -->
   <div class="screen" id="screen-allvacancies">
-    <div class="screen-scroll">
-    <div class="vacancies-screen-fixed">
-    <header class="vac-simple-header">
-      <button class="vac-folder-back-btn vac-simple-back screen-back-btn" id="allvacancies-back" data-ripple onclick="handleVacanciesBack()" aria-label="Back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div class="section-title-with-link"><div class="logo-text">All Vacancies</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('vacancies')" aria-label="Share All Vacancies link" title="Share All Vacancies link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
-    </header>
-    <div class="search search-mini" style="margin:0 0 12px">
-      <div class="search-inner">
-        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
-        <label for="allvacancies-search" class="sr-only">Search vacancies</label>
-        <input id="allvacancies-search" type="search" placeholder="Search job title, role, location..." oninput="renderAllVacanciesList()">
-      </div>
-    </div>
-    </div>
-    <div class="precise-location-chip" id="allvacancies-geo-chip" data-ripple onclick="usePreciseLocation('allvacancies')" role="button" tabindex="0" aria-label="Filter vacancies near your precise location">
-      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
-      <span class="pl-text" id="allvacancies-geo-text">Use precise location</span>
-    </div>
-    <div id="allvacancies-list"></div>
-    <button class="vac-load-more" id="allvacancies-loadmore" type="button" onclick="loadMoreGeneralVacancies()" style="display:none">Load more vacancies</button>
+    <div class="screen-scroll vacancy-market-screen">
+      <section class="vacancy-market-hero" aria-labelledby="vacancy-market-title">
+        <header class="vacancy-market-topbar">
+          <button class="vac-folder-back-btn vac-simple-back screen-back-btn" id="allvacancies-back" data-ripple onclick="handleVacanciesBack()" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div class="vacancy-market-brand"><span class="vacancy-market-kicker">SA RECRUITERS</span><h1 id="vacancy-market-title">Find work that moves you</h1></div>
+          <button class="section-share-btn vacancy-market-share" type="button" data-ripple onclick="shareSectionLink('vacancies')" aria-label="Share vacancies link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 10.51 6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share</span></button>
+        </header>
+        <p class="vacancy-market-subtitle">Search thousands of South African opportunities from trusted agencies, employers and career sources.</p>
+        <div class="vacancy-market-stats" aria-label="Vacancy marketplace summary"><div><strong id="vacancy-market-count">—</strong><span>live roles</span></div><div><strong>8</strong><span>career sources</span></div><div><strong>1 tap</strong><span>to save a job</span></div></div>
+      </section>
+
+      <section class="vacancy-market-search-panel" aria-label="Search and filter vacancies">
+        <div class="vacancy-market-search-row">
+          <div class="vacancy-market-search-field"><span aria-hidden="true">⌕</span><label class="sr-only" for="allvacancies-search">Search by job title, skill or company</label><input id="allvacancies-search" type="search" placeholder="Job title, skill or company" oninput="renderAllVacanciesList()"></div>
+          <div class="vacancy-market-search-field vacancy-location-field"><span aria-hidden="true">⌖</span><label class="sr-only" for="allvacancies-location">Search by location</label><input id="allvacancies-location" type="search" placeholder="Location or province"><button type="button" class="vacancy-location-use" onclick="usePreciseLocation('allvacancies')" aria-label="Use precise location">Use my location</button></div>
+          <button class="vacancy-search-button" type="button" onclick="renderAllVacanciesList()">Search roles</button>
+        </div>
+        <div class="vacancy-market-filter-row">
+          <label class="vacancy-filter-control"><span>Industry</span><select id="allvacancies-industry" aria-label="Filter by industry"><option value="">All industries</option></select></label>
+          <label class="vacancy-filter-control"><span>Work mode</span><select id="allvacancies-remote" onchange="renderAllVacanciesList()"><option value="">Any work mode</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">On-site</option></select></label>
+          <label class="vacancy-filter-control"><span>Experience</span><select id="allvacancies-exp" onchange="renderAllVacanciesList()"><option value="">Any experience</option><option value="entry">Entry level</option><option value="mid">Mid level</option><option value="senior">Senior level</option></select></label>
+          <label class="vacancy-filter-control vacancy-sort-control"><span>Sort by</span><select id="allvacancies-sort" aria-label="Sort vacancies"><option value="newest">Newest first</option><option value="relevance">Most relevant</option><option value="industry">Industry A–Z</option><option value="salary">Salary high–low</option><option value="title">Title A–Z</option></select></label>
+          <button id="vacancy-clear-filters" class="vacancy-clear-button" type="button">Clear all</button>
+        </div>
+        <div class="vacancy-filter-status"><span id="vacancy-filter-summary">All roles</span><span class="vacancy-filter-status-dot" aria-hidden="true"></span><span id="allvacancies-result-count">Browse the latest opportunities</span></div>
+      </section>
+
+      <section class="vacancy-industry-section" aria-labelledby="vacancy-industry-title"><div class="vacancy-section-heading"><div><span class="vacancy-section-eyebrow">Explore by focus</span><h2 id="vacancy-industry-title">What kind of work are you looking for?</h2></div><span class="vacancy-section-hint">Swipe to explore</span></div><div id="vacancy-industry-rail" class="vacancy-industry-rail" aria-label="Popular industries"></div></section>
+
+      <div class="precise-location-chip" id="allvacancies-geo-chip" data-ripple onclick="usePreciseLocation('allvacancies')" role="button" tabindex="0" aria-label="Filter vacancies near your precise location"><span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span><span class="pl-text" id="allvacancies-geo-text">Use precise location</span></div>
+      <div id="allvacancies-list" class="vacancy-market-results"></div>
+      <button class="vac-load-more" id="allvacancies-loadmore" type="button" onclick="loadMoreGeneralVacancies()" style="display:none">Load more vacancies</button>
     </div>
   </div>
 
@@ -1365,7 +1377,8 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=d15dcc245a" defer></script>
+<script src="app.bundle.min.js?v=17597ea0e1" defer></script>
+<script src="app-vacancy-redesign.js?v=vacancy-market-1" defer></script>
 <footer class="seo-site-footer" aria-label="SA Recruiters quick links">
   <strong>SA Recruiters</strong>
   <nav aria-label="Quick links">
