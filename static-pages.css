@@ -24,3 +24,5 @@ h2{font-size:1.2rem;margin-top:1.5rem}
 .pj-form button{min-height:50px;background:#0a66c2;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer}
 .pj-form button:disabled{opacity:.6;cursor:wait}
 #pj-status{font-size:.85rem;color:#0a66c2;min-height:1.2em}
+.verified-line{display:flex;align-items:center;gap:5px;margin:.25rem 0;color:#0a66c2;font-weight:700;font-size:.85rem}
+.verified-seal{flex:none}

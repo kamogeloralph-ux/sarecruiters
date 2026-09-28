@@ -192,8 +192,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .pool-privacy-notice strong{color:var(--text)}
 .spotlight-copy{display:flex;flex-direction:column;gap:2px;padding:8px 9px 10px}
 .spotlight-copy strong{font-size:12.5px;line-height:1.25;color:var(--text);display:flex;align-items:center;gap:3px}
-.spotlight-copy strong .verified-check{width:13px;height:13px;flex:none}
-.spotlight-copy strong .verified-check svg{width:100%;height:100%}
+/* (spotlight seal now uses the shared 15px size defined with .verified-check below) */
 .spotlight-copy span{font-size:11px;color:var(--text-2);line-height:1.3}
 .spotlight-more{width:96px;align-items:center;justify-content:center;background:linear-gradient(145deg,var(--accent-soft),color-mix(in srgb,var(--accent) 14%,var(--card)));border-color:color-mix(in srgb,var(--accent) 30%,var(--border))}
 .spotlight-more-copy{padding:0 10px;font-size:12.5px;font-weight:700;color:var(--accent);text-align:center;line-height:1.35}
@@ -221,13 +220,15 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .avatar{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:var(--text);flex-shrink:0;letter-spacing:-0.01em;background:var(--card-2);border:1px solid var(--border);overflow:hidden}
 .avatar img{width:100%;height:100%;object-fit:cover}
 /* Verified badge — one seal look everywhere (cards, vacancies, spotlight, manager, pool) */
-.verified-check{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:var(--accent);background:none;border-radius:0;flex-shrink:0;vertical-align:-3px}
+/* Shared look = the Vacancies section: 15px accent seal sitting right after the name */
+.verified-check{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;color:var(--accent);background:none;border-radius:0;flex-shrink:0;vertical-align:-3px}
+.vac-company .verified-check,.sm-card-name .verified-check,.spotlight-copy strong .verified-check,.manager-item-title .verified-check,.vx-fact b .verified-check,.det-label .verified-check{margin-left:5px}
 .verified-check svg{width:100%;height:100%;fill:currentColor;stroke:none;display:block}
 .verified-tag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:var(--accent);vertical-align:middle}
-.verified-tag .verified-check{width:14px;height:14px;vertical-align:0}
-/* Agency name + badge row — verified badge pinned at far left, name truncates with ellipsis if too long */
-.agency-name-row{display:flex;align-items:center;gap:8px;min-width:0}
-.agency-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.verified-tag .verified-check{width:15px;height:15px;vertical-align:0}
+/* Agency name + badge row — verified seal sits right after the name (same as Vacancies); name truncates with ellipsis if too long */
+.agency-name-row{display:flex;align-items:center;gap:5px;min-width:0}
+.agency-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
 .badge{display:inline-flex;align-items:center;gap:3px;background:var(--badge-bg);color:var(--badge-text);font-size:10px;font-weight:600;padding:3px 9px;border-radius:var(--radius-pill);flex-shrink:0;line-height:1.4}
 .badge svg{width:9px;height:9px}
 .badge.count{background:var(--badge-bg);color:var(--badge-text)}
@@ -1230,6 +1231,9 @@ header{margin-bottom:18px}
 #screen-home .hub-summary-desc{font-size:11px;margin-top:5px;color:var(--text-2)}
 #screen-home .hub-branch-badge{background:transparent;color:var(--text-2);box-shadow:none;font-size:11px;padding:0;min-width:22px}
 #screen-home .hub-branch-badge svg{color:var(--accent)}
+/* Agencies section: branch / vacancy counts match Home — no filled colour, grey text */
+#screen-allagencies .hub-branch-badge{background:transparent;color:var(--text-2);box-shadow:none;font-size:11px;padding:0;min-width:22px}
+#screen-allagencies .hub-branch-badge svg{color:var(--accent)}
 #screen-home .hub-card>.hub-summary>.chevron{color:var(--text-2);width:15px;height:15px}
 
 /* Skeleton placeholders shown in #hub-list before any real or cached data

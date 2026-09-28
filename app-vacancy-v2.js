@@ -69,7 +69,7 @@
     var facts = fact('Location', esc(v.location)) + fact('Work mode', esc(v.remote)) + fact('Experience', esc(v.experience_level)) +
       fact('Type', esc((v.employment_type || '') + (v.contract_type ? ' — ' + v.contract_type : ''))) + fact('Salary', esc(v.salary)) + fact('Hours', esc(v.hours)) +
       fact('Schedule', esc(v.work_schedule)) + fact('Start date', esc(v.start_date)) + fact('Closing date', esc(v.closing_date)) +
-      fact(employer ? 'Employer' : isGeneral ? 'Company' : 'Agency', esc(org) + (verified ? ' ✓' : '')) +
+      fact(employer ? 'Employer' : isGeneral ? 'Company' : 'Agency', esc(org) + (verified ? verifiedBadge(employer ? 'Verified employer' : 'Verified agency') : '')) +
       fact('Email', v.email ? mailLink(v.email) : '') + fact('Phone', v.phone ? telLink(v.phone) : '');
     var desc = v.notes ? '<div class="vx-desc"><h4>About the role</h4><p>' + esc(v.notes) + '</p></div>' : '';
     var attr = '';

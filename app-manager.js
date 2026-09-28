@@ -360,7 +360,7 @@ function renderManagerAgencyProfile() {
     '<div class="sm-card-head">' +
       '<div class="sm-card-avatar">' + (a.photo ? '<img src="' + a.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : initials(a.name)) + '</div>' +
       '<div style="flex:1;min-width:0">' +
-        '<div class="sm-card-name">' + escapeHtml(a.name || 'Agency') + (a.verified ? ' ' + verifiedBadge('Verified', true) : '') + '</div>' +
+        '<div class="sm-card-name">' + escapeHtml(a.name || 'Agency') + (a.verified ? ' ' + verifiedBadge('Verified') : '') + '</div>' +
       '</div>' +
     '</div>' +
     (rows || '<div class="manager-item-sub">No contact details on file yet.</div>');
