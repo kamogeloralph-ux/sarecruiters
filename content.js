@@ -306,7 +306,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'priv-storage',
       title: 'Data storage &amp; third parties',
-      body: '<p>Data is stored by our database provider, <strong>Supabase</strong> (accounts, directory, Talent Pool, saved vacancies, analytics), and by <strong>Cloudflare</strong> (hosting, photo storage, spam-protected forms and manager-link changes). <strong>Google</strong> is the sign-in provider, and a location lookup service receives your coordinates only when you tap "Use precise location". Data is transmitted over HTTPS. Smart Manager links are private tokens verified on our server \u2014 agency managers can only add to their own listing, never edit or delete.</p>'
+      body: '<p>Data is stored by our database provider, <strong>Supabase</strong> (accounts, directory, Talent Pool, saved vacancies, analytics), and by <strong>Cloudflare</strong> (hosting, photo storage, spam-protected forms and manager-link changes). Messages you send in the live chat assistant are processed by <strong>SendPulse</strong>. <strong>Google</strong> is the sign-in provider, and a location lookup service receives your coordinates only when you tap "Use precise location". Data is transmitted over HTTPS. Smart Manager links are private tokens verified on our server \u2014 agency managers can only add to their own listing, never edit or delete.</p>'
     },
     {
       id: 'priv-choices',
