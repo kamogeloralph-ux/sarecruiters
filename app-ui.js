@@ -1127,13 +1127,32 @@ function setVacancyOverviewSource(source) {
   renderAllVacanciesList();
 }
 function vacancyMatchesOverviewFilter(v) {
-  if (vacancyOverviewFilter === 'government') return ['government', 'dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1;
-  if (vacancyOverviewFilter === 'private') return String(v.source_type || '').toLowerCase() === 'agency' || (!v.source_type && v.agency_id && v.agency_id !== 'general');
-  if (vacancyOverviewFilter === 'remote') return String(v.remote || '').toLowerCase() === 'remote';
+  var source = String(v.source_type || '').toLowerCase();
+  var id = String(v.id || '');
+  var government = ['government', 'dpsa'].indexOf(source) !== -1 || /^(government|dpsa)-/i.test(id);
+  var remote = /remote|work[ -]?from[ -]?home|telecommute/i.test(String(v.remote || '') + ' ' + source + ' ' + id);
+  if (vacancyOverviewFilter === 'government') return government;
+  if (vacancyOverviewFilter === 'private') return !government && !remote;
+  if (vacancyOverviewFilter === 'remote') return remote;
   return true;
 }
-function setVacancyOverviewFilter(filter) {
+var vacancyOverviewExtraRows = [];
+var vacancyOverviewLoading = false;
+async function setVacancyOverviewFilter(filter) {
   vacancyOverviewFilter = filter || 'all';
+  vacancyOverviewExtraRows = [];
+  if (vacancyOverviewFilter === 'government' || vacancyOverviewFilter === 'remote') {
+    vacancyOverviewLoading = true;
+    renderAllVacanciesList();
+    try {
+      var folder = vacancyOverviewFilter === 'government' ? 'government' : 'himalayas';
+      vacancyOverviewExtraRows = filterExpiredVacancies(await fetchDedicatedVacancyPage(folder, generalVacancyQueryState(), 0));
+    } catch (e) {
+      vacancyOverviewExtraRows = [];
+    } finally {
+      vacancyOverviewLoading = false;
+    }
+  }
   renderAllVacanciesList();
 }
 function openVacancyFolder(type) {
@@ -1372,6 +1391,9 @@ function renderAllVacanciesList() {
   // matched agency or employer. Keep source rows visible in Adzuna/Retail
   // even after they have been assigned to an organization.
   var visible = vacanciesCache.slice();
+  (vacancyOverviewExtraRows || []).forEach(function(v) {
+    if (v && !visible.some(function(existing) { return existing.id === v.id; })) visible.push(v);
+  });
   var isHimalayasVacancy = function(v){ return v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0; };
   var isAdzunaVacancy = function(v){ return v.source_type === 'adzuna' || String(v.id || '').indexOf('adzuna-') === 0; };
   var isGovernmentVacancy = function(v){ return ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || '')); };
@@ -1531,7 +1553,14 @@ function renderAllVacanciesList() {
     var overviewFilters = '<section class="career-recent-section"><div class="vacancy-overview-filters" role="group" aria-label="Filter recent vacancies">' +
       [['all','All Roles'],['government','Government'],['private','Private Sector'],['remote','Remote']].map(function(item){
         return '<button type="button" class="vacancy-overview-filter' + (vacancyOverviewFilter === item[0] ? ' active' : '') + '" onclick="setVacancyOverviewFilter(\'' + item[0] + '\')">' + item[1] + '</button>';
-      }).join('') + '</div></section>';
+      }).join('') + '</div>' +
+      '<div class="career-recent-results" aria-live="polite">' +
+        (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
+          (list.length ? list.slice(0, 12).map(function(v) {
+            var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
+            return vacancyCard(v, agency, { hideBadges: true });
+          }).join('') : '<div class="empty-state"><p>No vacancies match this filter yet.</p></div>')) +
+      '</div></section>';
     el.innerHTML = featuredMarkup + overviewFilters +
       '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
       sourceRail +

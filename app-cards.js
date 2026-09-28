@@ -599,7 +599,6 @@ function vacancyCard(v, agency, options) {
   var isGovernment = ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || ''));
   var isLearnership = v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0;
   var featuredBadge = '';
-  var featuredIcon = v.is_featured ? '<span class="vac-featured-icon" title="Featured vacancy" aria-label="Featured vacancy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3z"/></svg></span>' : '';
   var sourceBadge = (options.hideBadges ? '' : (isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : isLearnership ? '<span class="vac-source-tag vac-source-tag-learnership">Learnership</span>' : '')) + featuredBadge;
   var title = escapeHtml(v.title || 'Untitled role');
   var verifiedCheck = options.hideBadges ? '' : (((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '<span class="verified-check" title="' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '');
@@ -709,7 +708,6 @@ function vacancyCard(v, agency, options) {
   return '' +
   '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + (v.is_featured ? ' vac-card-featured' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" aria-expanded="false" aria-controls="vd-' + key + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
     '<div class="vac-card-main">' +
-      featuredIcon +
       logo +
       '<div class="vac-body">' +
         '<div class="vac-title">' + title + '</div>' +
