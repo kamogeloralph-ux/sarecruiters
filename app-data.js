@@ -1268,14 +1268,6 @@ async function loadAll(options) {
   // Poster feed and first-party ads are non-critical to the first render.
   if (typeof loadPosterFeed === 'function') loadPosterFeed();
   loadHouseAds();
-  // "Jobs near you" only auto-runs if location permission was already
-  // granted previously; otherwise it just shows the one-tap CTA. Re-render
-  // (not re-detect) on every refresh so a newly loaded vacancy shows up
-  // without asking for location again.
-  if (typeof checkNearbyVacanciesPermission === 'function') {
-    if (nearbyVacanciesArea) renderNearbyVacanciesHome();
-    else checkNearbyVacanciesPermission();
-  }
   saveDataCache();
   updatePostingToggleUI();
   updateEmployerRegUI();

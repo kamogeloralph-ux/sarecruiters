@@ -865,10 +865,7 @@ function reverseGeocodeArea(key, lat, lon) {
     });
 }
 
-// Shared by reverseGeocodeArea (the per-screen "Use precise location" chips)
-// and the home-screen "Jobs near you" section below -- both need the same
-// coords -> locality lookup, just with different things done once it
-// resolves.
+// Shared by the per-screen "Use precise location" chips.
 function detectAreaFromCoords(lat, lon) {
   return fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en')
     .then(function(r) { return r.json(); })
@@ -879,94 +876,6 @@ function detectAreaFromCoords(lat, lon) {
       if (!query) throw new Error('No area found');
       return { area: area, region: region, query: query };
     });
-}
-
-// ---- "Jobs near you" home section ----
-// Google sign-in doesn't carry the person's physical location (Google
-// never shares that from a login) -- this uses the same browser-geolocation
-// + free reverse-geocode lookup as the "precise location" chips above,
-// surfaced proactively on the home screen instead of behind a manual tap.
-// Browsers require a user gesture the first time to show the location
-// permission prompt (silently requesting it on page load is against
-// browser policy and often just ignored), so on load this only
-// auto-detects when permission was already granted in a previous visit;
-// otherwise it shows a one-tap "See jobs near you" button.
-var nearbyVacanciesArea = null;
-
-function checkNearbyVacanciesPermission() {
-  if (!('geolocation' in navigator)) return;
-  if (navigator.permissions && navigator.permissions.query) {
-    navigator.permissions.query({ name: 'geolocation' }).then(function(status) {
-      if (status.state === 'granted') detectNearbyVacancies(true);
-      else showNearbyVacanciesCta();
-    }).catch(showNearbyVacanciesCta);
-  } else {
-    showNearbyVacanciesCta();
-  }
-}
-
-function showNearbyVacanciesCta() {
-  var cta = document.getElementById('nearby-vacancies-cta');
-  if (cta) { cta.style.display = 'flex'; cta.querySelector('span:last-child').textContent = 'See jobs near you'; }
-}
-
-function enableNearbyVacancies() {
-  detectNearbyVacancies(false);
-}
-
-function detectNearbyVacancies(silent) {
-  var cta = document.getElementById('nearby-vacancies-cta');
-  if (!silent && cta) cta.querySelector('span:last-child').textContent = 'Locating…';
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    detectAreaFromCoords(pos.coords.latitude, pos.coords.longitude).then(function(loc) {
-      nearbyVacanciesArea = loc;
-      if (cta) cta.style.display = 'none';
-      renderNearbyVacanciesHome();
-    }).catch(function() {
-      if (!silent) showToast("Couldn't detect your area — try searching manually");
-      if (cta) cta.querySelector('span:last-child').textContent = 'See jobs near you';
-    });
-  }, function(err) {
-    if (!silent) {
-      var msg = "Couldn't get your location";
-      if (err && err.code === err.PERMISSION_DENIED) msg = 'Location permission denied';
-      else if (err && err.code === err.TIMEOUT) msg = 'Location request timed out';
-      showToast(msg);
-    }
-    if (cta) cta.querySelector('span:last-child').textContent = 'See jobs near you';
-  }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 });
-}
-
-// Re-run after vacanciesCache refreshes so the section reflects newly
-// loaded postings too, not just whatever was cached the moment location
-// was first detected.
-function renderNearbyVacanciesHome() {
-  var section = document.getElementById('nearby-vacancies-section');
-  var list = document.getElementById('nearby-vacancies-list');
-  var label = document.getElementById('nearby-vacancies-label');
-  if (!section || !list || !nearbyVacanciesArea) return;
-  var areaOnly = (nearbyVacanciesArea.area || '').toLowerCase();
-  var matches = areaOnly ? vacanciesCache.filter(function(v) {
-    return (v.location || '').toLowerCase().indexOf(areaOnly) !== -1;
-  }) : [];
-  // Fall back to the wider region (e.g. "Gauteng") when the specific
-  // suburb/town has nothing yet, so the section isn't just empty --
-  // still narrower than "every vacancy in the country".
-  var usedRegionFallback = false;
-  if (!matches.length && nearbyVacanciesArea.region) {
-    var regionOnly = nearbyVacanciesArea.region.toLowerCase();
-    matches = vacanciesCache.filter(function(v) {
-      return (v.location || '').toLowerCase().indexOf(regionOnly) !== -1;
-    });
-    usedRegionFallback = true;
-  }
-  if (!matches.length) { section.style.display = 'none'; return; }
-  if (label) label.textContent = usedRegionFallback ? ('Near ' + nearbyVacanciesArea.region) : ('Near ' + nearbyVacanciesArea.area);
-  list.innerHTML = matches.slice(0, 8).map(function(v) {
-    var agency = agenciesCache.find(function(a) { return a.id === v.agency_id; }) || {};
-    return vacancyCard(v, agency, { hideBadges: true });
-  }).join('');
-  section.style.display = '';
 }
 
 function applyPreciseLocation(key, query) {
