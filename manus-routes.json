@@ -1,0 +1,23 @@
+{
+  "routes": [
+    { "path": "/", "title": "SA Recruiters" },
+    { "path": "/?section=vacancies", "title": "SA Recruiters — Vacancies" },
+    { "path": "/?section=agencies", "title": "SA Recruiters — Recruitment Agencies" },
+    { "path": "/?section=talent-pool", "title": "SA Recruiters — Talent Pool" },
+    { "path": "/?section=posters", "title": "SA Recruiters — Vacancy Posters" },
+    { "path": "/?section=employers", "title": "SA Recruiters — Employers" },
+    { "path": "/admin", "title": "SA Recruiters — Admin" },
+    { "path": "/faq/", "title": "SA Recruiters — FAQ" },
+    { "path": "/privacy/", "title": "SA Recruiters — Privacy" },
+    { "path": "/know-your-rights/", "title": "SA Recruiters — Know Your Rights" },
+    { "path": "/careers/", "title": "SA Recruiters — Careers" },
+    { "path": "/apply/", "title": "SA Recruiters — Apply" },
+    { "path": "/contact/", "title": "SA Recruiters — Contact" },
+    { "path": "/register/", "title": "SA Recruiters — Register" },
+    { "path": "/candidates/", "title": "SA Recruiters — Candidates" },
+    { "path": "/about/", "title": "SA Recruiters — About" },
+    { "path": "/agency/:slug/", "title": "SA Recruiters — Agency" },
+    { "path": "/vacancy/:slug/", "title": "SA Recruiters — Vacancy" },
+    { "path": "/browse/category/:category/", "title": "SA Recruiters — Vacancy Category" }
+  ]
+}

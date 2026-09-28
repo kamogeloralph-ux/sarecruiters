@@ -1312,10 +1312,11 @@ function renderAllVacanciesList() {
   var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isGovernmentVacancy(v) || isRetailVacancy(v) || isLearnershipVacancy(v) || isCareersPageVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
+  var locationFilter = ((document.getElementById('allvacancies-location')||{}).value || '').trim().toLowerCase();
   var remoteFilter = ((document.getElementById('allvacancies-remote')||{}).value || '');
   var expFilter = ((document.getElementById('allvacancies-exp')||{}).value || '');
   var industryFilter = ((document.getElementById('allvacancies-industry')||{}).value || '');
-  var displayKey = [allVacanciesFolder || 'overview', q, remoteFilter, expFilter, industryFilter].join('|').toLowerCase();
+  var displayKey = [allVacanciesFolder || 'overview', q, locationFilter, remoteFilter, expFilter, industryFilter].join('|').toLowerCase();
   if (displayKey !== vacancyFolderDisplayKey) {
     vacancyFolderDisplayKey = displayKey;
     vacancyFolderDisplayLimit = 30;
@@ -1351,12 +1352,13 @@ function renderAllVacanciesList() {
     industrySel.value = sortedIndustries.indexOf(current) !== -1 ? current : '';
     industryFilter = industrySel.value;
   }
+  if (locationFilter) list = list.filter(function(v){ return ((v.location||'') + ' ' + (v.address||'') + ' ' + (v.province||'')).toLowerCase().indexOf(locationFilter) !== -1; });
   if (remoteFilter) list = list.filter(function(v){ return (v.remote||'') === remoteFilter; });
   if (expFilter) list = list.filter(function(v){ return (v.experience_level||'') === expFilter; });
   if (industryFilter) {
     list = list.filter(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
-      var hay = (agency && agency.trades) || '';
+      var hay = [(agency && agency.trades) || '', v.industry || '', v.sector || '', v.category || '', v.notes || ''].join(' ');
       return hay.toLowerCase().indexOf(industryFilter.toLowerCase()) !== -1;
     });
   }
@@ -1482,7 +1484,7 @@ function renderAllVacanciesList() {
     return;
   }
   if (!list.length) {
-    var hasFilters = !!(q || remoteFilter || expFilter || industryFilter);
+    var hasFilters = !!(q || locationFilter || remoteFilter || expFilter || industryFilter);
     el.dataset.state = 'empty';
     el.innerHTML = vacancyScreenStateMarkup('all', false, hasFilters);
     var emptyLoadMore = document.getElementById('allvacancies-loadmore');
