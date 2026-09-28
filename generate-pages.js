@@ -228,8 +228,10 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd, image }) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
+<meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="${canonical}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="SA Recruiters">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
@@ -500,6 +502,26 @@ function buildBaseSalary(vacancy) {
   };
 }
 
+function buildJobDescriptionHtml(vacancy, companyName) {
+  const paragraphs = [
+    vacancy.notes,
+    vacancy.location ? `Location: ${vacancy.location}` : '',
+    vacancy.employment_type ? `Employment type: ${vacancy.employment_type}` : '',
+    vacancy.contract_type ? `Contract type: ${vacancy.contract_type}` : '',
+    vacancy.hours ? `Hours: ${vacancy.hours}` : '',
+    vacancy.work_schedule ? `Schedule: ${vacancy.work_schedule}` : '',
+    vacancy.remote ? `Work style: ${vacancy.remote}` : '',
+    vacancy.experience_level ? `Experience level: ${vacancy.experience_level}` : '',
+    vacancy.salary ? `Salary: ${vacancy.salary}` : '',
+    vacancy.closing_date ? `Closing date: ${vacancy.closing_date}` : '',
+    vacancy.email ? `Application email: ${vacancy.email}` : '',
+    vacancy.phone ? `Application phone: ${vacancy.phone}` : '',
+    safeHttpUrl(vacancy.link) ? `Application link: ${safeHttpUrl(vacancy.link)}` : '',
+  ].filter(Boolean).map((value) => `<p>${escapeHtml(String(value)).replace(/\n+/g, '</p><p>')}</p>`);
+  if (!paragraphs.length) paragraphs.push(`<p>${escapeHtml(vacancy.title)} at ${escapeHtml(companyName)}. See the application instructions below.</p>`);
+  return paragraphs.join('');
+}
+
 function buildVacancyPage(vacancy, agency, slug) {
   const canonical = `${SITE_URL}/vacancy/${slug}/`;
   const companyName = vacancy.company || (agency && agency.name) || 'A South African employer';
@@ -508,26 +530,32 @@ function buildVacancyPage(vacancy, agency, slug) {
     vacancy.location ? ` in ${vacancy.location}` : ''
   }. ${vacancy.employment_type || ''} ${vacancy.contract_type || ''}`.trim();
 
+  const applyUrl = safeHttpUrl(vacancy.link);
+  const hiringOrganization = {
+    '@type': 'Organization',
+    name: companyName,
+    ...(safeHttpUrl(agency?.website) ? { sameAs: safeHttpUrl(agency.website) } : {}),
+    ...(safeHttpUrl(vacancy.company_photo) ? { logo: safeHttpUrl(vacancy.company_photo) } : {}),
+  };
   const jsonLd = {
     '@context': 'https://schema.org/',
     '@type': 'JobPosting',
     title: vacancy.title,
-    description: vacancy.notes || description,
+    description: buildJobDescriptionHtml(vacancy, companyName),
     datePosted: vacancy.created_at,
+    dateModified: vacancy.updated_at || vacancy.created_at,
     validThrough: resolveValidThrough(vacancy),
     url: canonical,
     employmentType: vacancy.employment_type || undefined,
-    hiringOrganization: {
-      '@type': 'Organization',
-      name: companyName,
-    },
+    hiringOrganization,
+    directApply: Boolean(applyUrl || vacancy.email || vacancy.phone),
     ...buildJobLocationFields(vacancy),
     baseSalary: buildBaseSalary(vacancy),
   };
 
   const body = `
 <h1>${escapeHtml(vacancy.title)}</h1>
-<p><strong>Company:</strong> ${escapeHtml(companyName)}<br>
+<p><strong>Company:</strong> ${escapeHtml(companyName)}${agency ? ` — <a href="/agency/${escapeHtml(slugify(agency.name))}/">View agency profile</a>` : ''}<br>
 ${vacancy.location ? `<strong>Location:</strong> ${escapeHtml(vacancy.location)}<br>` : ''}
 ${vacancy.employment_type ? `<strong>Employment type:</strong> ${escapeHtml(vacancy.employment_type)}<br>` : ''}
 ${vacancy.contract_type ? `<strong>Contract type:</strong> ${escapeHtml(vacancy.contract_type)}<br>` : ''}
@@ -536,7 +564,9 @@ ${vacancy.hours ? `<strong>Hours:</strong> ${escapeHtml(vacancy.hours)}<br>` : '
 ${vacancy.work_schedule ? `<strong>Schedule:</strong> ${escapeHtml(vacancy.work_schedule)}<br>` : ''}
 ${vacancy.remote ? `<strong>Work style:</strong> ${escapeHtml(vacancy.remote)}<br>` : ''}
 ${vacancy.experience_level ? `<strong>Experience level:</strong> ${escapeHtml(vacancy.experience_level)}<br>` : ''}
-${vacancy.closing_date ? `<strong>Closing date:</strong> ${escapeHtml(vacancy.closing_date)}<br>` : ''}</p>
+${vacancy.closing_date ? `<strong>Closing date:</strong> ${escapeHtml(vacancy.closing_date)}<br>` : ''}
+${vacancy.email ? `<strong>Application email:</strong> <a href="mailto:${escapeHtml(vacancy.email)}">${escapeHtml(vacancy.email)}</a><br>` : ''}
+${vacancy.phone ? `<strong>Application phone:</strong> ${escapeHtml(vacancy.phone)}<br>` : ''}</p>
 ${vacancy.notes ? `<h2>Details</h2><p>${escapeHtml(vacancy.notes).replace(/\n/g, '<br>')}</p>` : ''}
 ${
   safeHttpUrl(vacancy.link)
