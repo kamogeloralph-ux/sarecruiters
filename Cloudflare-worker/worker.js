@@ -263,6 +263,28 @@ __name(publicUrlFor, "publicUrlFor");
 // degree, not a new kind of staleness.
 var STARTUP_CACHE_TTL = 3600;
 var STARTUP_STALE_TTL = 10800;
+var PUBLIC_STARTUP_SNAPSHOT_KEY = "snapshots/public-startup-v1.json";
+async function readPublicStartupSnapshot(env) {
+  if (!env.MEDIA_BUCKET) return null;
+  try {
+    const object = await env.MEDIA_BUCKET.get(PUBLIC_STARTUP_SNAPSHOT_KEY);
+    if (!object) return null;
+    return JSON.parse(await object.text());
+  } catch (e) {
+    console.warn("Could not read public R2 startup snapshot", e);
+    return null;
+  }
+}
+__name(readPublicStartupSnapshot, "readPublicStartupSnapshot");
+async function writePublicStartupSnapshot(env, payload) {
+  if (!env.MEDIA_BUCKET) return false;
+  await env.MEDIA_BUCKET.put(PUBLIC_STARTUP_SNAPSHOT_KEY, JSON.stringify(payload), {
+    httpMetadata: { contentType: "application/json; charset=utf-8", cacheControl: "public, max-age=300" },
+    customMetadata: { generated_at: payload.generated_at || new Date().toISOString() }
+  });
+  return true;
+}
+__name(writePublicStartupSnapshot, "writePublicStartupSnapshot");
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
@@ -504,6 +526,13 @@ async function syncD1FromSupabase(env) {
   return summary;
 }
 __name(syncD1FromSupabase, "syncD1FromSupabase");
+async function syncD1AndPublishSnapshot(env) {
+  const summary = await syncD1FromSupabase(env);
+  const payload = env.DB ? await loadStartupDataFromD1(env) : await loadStartupData(env);
+  await writePublicStartupSnapshot(env, payload);
+  return { ...summary, snapshot: "r2", snapshot_generated_at: payload.generated_at };
+}
+__name(syncD1AndPublishSnapshot, "syncD1AndPublishSnapshot");
 
 // Same STARTUP_DEDICATED_SOURCES exclusion loadStartupData() applies via
 // Supabase's `source_type=not.in.(...)`, replicated as a SQL WHERE clause
@@ -521,7 +550,7 @@ async function loadStartupDataFromD1(env) {
     careers_page: ["careers_page"]
   };
 
-  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, agencyCountR, branchCountR, employerCountR, poolCandidatesR, featuredVacanciesR] = await Promise.all([
+  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR] = await Promise.all([
     env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
     // Same filter as before: (agency_id != 'general' OR employer_id IS NOT NULL)
@@ -535,9 +564,7 @@ async function loadStartupDataFromD1(env) {
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL").all(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NOT NULL AND source_type NOT IN (${dedicatedPlaceholders})`).bind(...dedicated).all(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${dedicatedPlaceholders})`).bind(...dedicated).all(),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM agencies").all(),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM branches").all(),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM employers").all(),
+    env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id").all(),
     env.DB.prepare("SELECT * FROM pool_candidates WHERE status = 'active' ORDER BY created_at DESC").all(),
     // Older D1 mirrors may not have the optional featured columns yet. Keep
     // startup healthy and let the direct public Supabase refresh fill the
@@ -549,11 +576,7 @@ async function loadStartupDataFromD1(env) {
     const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${sources.map(() => "?").join(",")})`).bind(...sources).all();
     return [key, r.results[0]?.n || 0];
   }));
-  const employerVacancyCounts = await Promise.all((employersR.results || []).map(async (employer) => {
-    const r = await env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE employer_id = ?").bind(employer.id).all();
-    return [employer.id, r.results[0]?.n || 0];
-  }));
-  const employerCountMap = Object.fromEntries(employerVacancyCounts);
+  const employerCountMap = Object.fromEntries((employerCountsR.results || []).map((row) => [row.employer_id, row.n || 0]));
 
   const n = (r) => r.results[0]?.n || 0;
   const settingMap = Object.fromEntries((settingsR.results || []).map((row) => [row.key, row.value]));
@@ -569,14 +592,14 @@ async function loadStartupDataFromD1(env) {
     pool_candidates: poolCandidatesR.results || [],
     featured_vacancies: (featuredVacanciesR.results || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
     counts: {
-      agencies: n(agencyCountR),
-      branches: n(branchCountR),
+      agencies: (agenciesR.results || []).length,
+      branches: (branchesR.results || []).length,
       // Platform total includes the general pool, attributed/startup rows,
       // and dedicated-source rows. Keep this mutually consistent with the
       // public `general` bucket instead of omitting generalPoolCount.
       vacancies: n(generalCountR) + n(generalPoolCountR) + (vacanciesR.results || []).length + n(dedicatedCountR),
       general: n(generalCountR) + n(generalPoolCountR),
-      employers: n(employerCountR),
+      employers: (employersR.results || []).length,
       candidates: n(poolCountR),
       dedicated: Object.fromEntries(folderCounts)
     },
@@ -850,7 +873,14 @@ async function startupResponse(request, env, ctx, origin) {
   __name(buildResponse, "buildResponse");
 
   async function refreshAndCache() {
+    const snapshot = await readPublicStartupSnapshot(env);
+    if (snapshot) {
+      const response = await buildResponse(snapshot);
+      await cache.put(cacheKey, response.clone());
+      return snapshot;
+    }
     const payload = await loadStartupDataOrFallback(env);
+    ctx.waitUntil(writePublicStartupSnapshot(env, payload).catch((e) => console.warn("Could not seed public R2 startup snapshot", e)));
     const response = await buildResponse(payload);
     await cache.put(cacheKey, response.clone());
     return payload;
@@ -1207,7 +1237,7 @@ var worker_default = {
   // per-visitor Supabase egress. ctx.waitUntil lets the sync finish even
   // though cron invocations don't wait on a returned Promise otherwise.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(syncD1FromSupabase(env).catch(async (e) => {
+    ctx.waitUntil(syncD1AndPublishSnapshot(env).catch(async (e) => {
       console.error("scheduled D1 sync failed", e);
       await recordSyncFailure(env, e);
     }));
@@ -1241,7 +1271,7 @@ var worker_default = {
         }
         if (!env.DB) return json({ error: "D1 not bound" }, 500, origin);
         try {
-          const summary = await syncD1FromSupabase(env);
+          const summary = await syncD1AndPublishSnapshot(env);
           return json({ ok: true, ...summary }, 200, origin);
         } catch (error) {
           await recordSyncFailure(env, error);
