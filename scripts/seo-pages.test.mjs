@@ -78,6 +78,13 @@ test('homepage exposes normal anchor links for Google discovery', () => {
   assert.ok(homepage.indexOf('<footer class="seo-site-footer"') < homepage.indexOf('</body>'));
 });
 
+test('Google sign-in and Profile Terms links use the current legal pages', () => {
+  assert.doesNotMatch(homepage, /docs\/SA-Recruiters-Terms-and-Conditions\.pdf/);
+  assert.match(homepage, /window\.open\('terms\/',\s*'_blank',\s*'noopener'\)/);
+  assert.match(homepage, /window\.open\('privacy\/',\s*'_blank',\s*'noopener'\)/);
+  assert.match(homepage, /Read the current platform terms/);
+});
+
 test('landing pages link into existing vacancy and employer journeys', () => {
   assert.match(generator, /\/post-a-job\//);
   assert.match(generator, /\/browse\/category\/remote\//);
