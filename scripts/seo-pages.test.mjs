@@ -64,7 +64,12 @@ test('vacancy overview filters are wired to live recent listings', () => {
     assert.match(appUi, new RegExp(filter));
   }
   assert.match(appUi, /vacancyMatchesOverviewFilter/);
+  assert.match(appUi, /career-recent-results/);
+  assert.match(appUi, /vacancyOverviewExtraRows/);
+  assert.match(appUi, /remote\|work\[ -\]\?from\[ -\]\?home\|telecommute/);
+  assert.match(appUi, /if \(vacancyOverviewFilter === 'government' \|\| vacancyOverviewFilter === 'remote'\)/);
   assert.doesNotMatch(appUi, /career-category-section/);
+  assert.doesNotMatch(cards, /vac-featured-icon/);
 });
 test('homepage exposes normal anchor links for Google discovery', () => {
   for (const slug of pages) {
