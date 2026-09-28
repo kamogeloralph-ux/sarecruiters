@@ -3,9 +3,11 @@ import crypto from 'node:crypto';
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
 
-// Public Careers Page portals used by Crew Life at Sea and Gourmet Recruitment
-// International. The portals render stable /job/{id} links and JobPosting
-// JSON-LD on each detail page, so this scraper uses ordinary GET requests only.
+// Public Careers Page portals used by Crew Life at Sea, Gourmet Recruitment
+// International, and Waitre d' Recruitment. The portals render stable /job/{id}
+// links and JobPosting JSON-LD on each detail page, so this scraper uses
+// ordinary GET requests only. Waitred's public site is the listing page, while
+// its detail pages are hosted on its Careers-Page portal.
 // It never submits /apply or /refer forms and stops rather than deleting records
 // when the listing page or detail pages look unexpectedly empty.
 
@@ -30,6 +32,16 @@ export const SOURCES = {
     label: 'Gourmet Recruitment International',
     url: 'https://careers-page.com/gourmet-recruitment-international',
     company: 'Gourmet Recruitment International',
+  },
+  waitred: {
+    key: 'waitred-recruitment',
+    label: "Waitre d' Recruitment",
+    url: 'https://waitred.co.za/current-positions-available/',
+    jobOrigin: 'https://www.careers-page.com',
+    jobPath: '/waitred-recruitment',
+    company: "Waitre d' Recruitment",
+    defaultLocation: 'Cape Town, South Africa',
+    defaultEmploymentType: 'Contract',
   },
 };
 
@@ -96,10 +108,10 @@ function findJobPosting(html) {
     return type === 'JobPosting' || (Array.isArray(type) && type.includes('JobPosting'));
   }) || null;
 }
-function extractJobLinks(html, sourceUrl) {
+function extractJobLinks(html, sourceUrl, source = {}) {
   const $ = cheerio.load(html || '');
-  const base = new URL(sourceUrl);
-  const sourcePath = base.pathname.replace(/\/$/, '');
+  const base = new URL(source.jobOrigin || sourceUrl);
+  const sourcePath = (source.jobPath || base.pathname).replace(/\/$/, '');
   const links = new Map();
   const escapedSourcePath = sourcePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   $('a[href]').each((_, anchor) => {
@@ -129,7 +141,7 @@ function parseDetail(html, summary, source) {
   const title = clean(jsonJob?.title || $('h1').first().text() || summary.listingTitle);
   if (!title || title.length < 3) return null;
   const descriptionHtml = jsonJob?.description || $('h4.redactor-styles').first().html() || $('main').first().html() || '';
-  const location = addressFor(jsonJob) || clean($('body').text().match(/Working Place:\s*([^\n]+)/i)?.[1]);
+  const location = addressFor(jsonJob) || clean($('body').text().match(/Working Place:\s*([^\n]+)/i)?.[1]) || source.defaultLocation || '';
   const organization = typeof jsonJob?.hiringOrganization === 'object' ? jsonJob.hiringOrganization.name : '';
   const link = summary.link;
   return {
@@ -145,7 +157,7 @@ function parseDetail(html, summary, source) {
     link,
     email: '', phone: '', remote: null,
     experience_level: '',
-    employment_type: clean(jsonJob?.employmentType || ''),
+    employment_type: clean(jsonJob?.employmentType || source.defaultEmploymentType || ''),
     contract_type: '', work_schedule: '', hours: '', salary: '', start_date: '',
     source_type: 'careers_page',
     source_checked_at: new Date().toISOString(),
@@ -154,7 +166,7 @@ function parseDetail(html, summary, source) {
 }
 
 export function parseListing(html, source) {
-  return extractJobLinks(html, source.url);
+  return extractJobLinks(html, source.url, source);
 }
 export function parseJobDetail(html, summary, source) {
   return parseDetail(html, summary, source);
@@ -162,7 +174,7 @@ export function parseJobDetail(html, summary, source) {
 
 async function fetchSource(source) {
   const listingHtml = await fetchText(source.url);
-  const summaries = extractJobLinks(listingHtml, source.url);
+  const summaries = extractJobLinks(listingHtml, source.url, source);
   if (!summaries.length) throw new Error(`${source.label}: no public /job/{id} links found`);
   const selected = summaries.slice(0, MAX_JOBS);
   if (summaries.length > selected.length) {

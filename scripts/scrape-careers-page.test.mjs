@@ -26,3 +26,18 @@ test('parses public JobPosting detail data into a vacancy row', () => {
   assert.match(row.notes, /Provide technical support/);
   assert.match(row.id, /^careers-page-crew-life-at-sea-/);
 });
+
+test('extracts Waitred jobs from its public site into Careers-Page detail links', () => {
+  const waitredListing = '<a href="https://www.careers-page.com/waitred-recruitment/job/L67VR77R">Executive Chef</a><a href="https://www.careers-page.com/waitred-recruitment/job/L67VR77R/apply">Apply</a>';
+  const rows = parseListing(waitredListing, SOURCES.waitred);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].link, 'https://www.careers-page.com/waitred-recruitment/job/L67VR77R');
+});
+
+test('uses Waitred published defaults when detail metadata omits summary fields', () => {
+  const summary = { link: 'https://www.careers-page.com/waitred-recruitment/job/L67VR77R', listingTitle: 'Executive Chef' };
+  const row = parseJobDetail('<h1>Executive Chef</h1><div class="redactor-styles">Cruise role.</div>', summary, SOURCES.waitred);
+  assert.equal(row.location, 'Cape Town, South Africa');
+  assert.equal(row.employment_type, 'Contract');
+  assert.equal(row.company, "Waitre d' Recruitment");
+});
