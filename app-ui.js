@@ -1566,9 +1566,10 @@ function renderAllVacanciesList() {
             return vacancyCard(v, agency, { hideBadges: true });
           }).join('') : '<div class="empty-state"><p>No vacancies match this filter yet.</p></div>')) +
       '</div></section>';
-    el.innerHTML = featuredMarkup + overviewFilters +
-      '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
+    el.innerHTML = featuredMarkup +
       sourceRail +
+      overviewFilters +
+      '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
       categoryRail;
     return;
   }

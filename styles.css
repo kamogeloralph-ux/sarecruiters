@@ -2060,3 +2060,13 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .vacancy-categories-list.vacancy-swipe-rail>.vac-cat-row{position:relative}
 @media(min-width:900px){.vacancy-swipe-rail>.vac-card{flex-basis:min(48%,420px);width:min(48%,420px)}.vacancy-categories-list.vacancy-swipe-rail>.vac-cat-row{flex-basis:260px;width:260px}}
 @media(max-width:520px){.vacancy-swipe-rail>.vac-card{flex-basis:calc(100vw - 48px);width:calc(100vw - 48px)}.vacancy-categories-list.vacancy-swipe-rail>.vac-cat-row{flex-basis:calc(100vw - 76px);width:calc(100vw - 76px)}}
+
+/* Jobs Near You: keep the heading, remove the enclosing panel, and let the
+   vacancy cards scroll horizontally so the home menu stays compact. */
+.nearby-vacancies-flat{margin:15px 0 18px;padding:0;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important}
+.nearby-vacancies-flat .spotlight-mini-head{padding:0 2px;margin-bottom:10px}
+.nearby-vacancies-rail{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 2px 10px}
+.nearby-vacancies-rail::-webkit-scrollbar{display:none}
+.nearby-vacancies-rail>.vac-card{flex:0 0 min(88vw,420px);width:min(88vw,420px);margin:0!important;scroll-snap-align:start}
+@media(min-width:900px){.nearby-vacancies-rail>.vac-card{flex-basis:min(48%,420px);width:min(48%,420px)}}
+@media(max-width:520px){.nearby-vacancies-rail>.vac-card{flex-basis:calc(100vw - 48px);width:calc(100vw - 48px)}}
