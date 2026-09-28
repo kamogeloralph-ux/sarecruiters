@@ -1808,12 +1808,19 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .featured-vacancies-heading .eyebrow{display:block;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
 .featured-vacancies-heading h2{margin:3px 0 2px;font-size:20px;line-height:1.15;color:var(--text)}
 .featured-vacancies-heading p{margin:0;color:var(--text-2);font-size:12px;line-height:1.45}
+.featured-vacancies-controls{display:flex;gap:6px;flex:0 0 auto}
+.featured-vacancies-controls button{width:32px;height:32px;padding:0;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--accent);font-size:24px;line-height:26px;cursor:pointer}
+.featured-vacancies-controls button:active{background:var(--accent-soft);transform:scale(.95)}
+.featured-vacancies-rail{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 2px 8px}
+.featured-vacancies-rail::-webkit-scrollbar{display:none}
+.featured-vacancies-rail>.vac-card{flex:0 0 min(88vw,420px);width:min(88vw,420px);margin:0!important;scroll-snap-align:start}
 .featured-vacancies-empty{margin-top:12px;padding:14px;border:1px dashed color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:12px;color:var(--text-2);font-size:12px;line-height:1.5;text-align:center;background:color-mix(in srgb,var(--card) 70%,transparent)}
 .vac-card-featured{position:relative;margin:8px 0 !important;background:color-mix(in srgb,var(--card) 84%,var(--accent-soft)) !important;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important;border-radius:14px !important;box-shadow:none !important}
 .vac-card-featured .vac-title{font-weight:800}
 .vac-featured-icon{position:absolute;top:8px;right:8px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;background:var(--accent);color:#fff;pointer-events:none}
 .vac-featured-icon svg{width:13px;height:13px;fill:currentColor;stroke:currentColor;stroke-width:1.2;stroke-linejoin:round}
-@media(max-width:520px){.featured-vacancies-heading h2{font-size:18px}}
+@media(min-width:900px){.featured-vacancies-rail>.vac-card{flex-basis:min(48%,420px);width:min(48%,420px)}}
+@media(max-width:520px){.featured-vacancies-heading h2{font-size:18px}.featured-vacancies-rail>.vac-card{flex-basis:calc(100vw - 48px);width:calc(100vw - 48px)}}
 
 /* ===== GROUPED VACANCY BROWSE CARDS ===== */
 .vacancy-browse-heading{margin:22px 16px 10px}
