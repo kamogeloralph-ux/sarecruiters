@@ -98,10 +98,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .social-link-btn.social-instagram{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
 .social-link-btn.social-whatsapp{background:#25D366}
 .social-link-btn.social-x{background:#000}
-.floating-whatsapp{position:fixed;right:max(18px,calc((100vw - 520px)/2 + 18px));bottom:calc(90px + env(safe-area-inset-bottom));z-index:55;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#25D366;color:#fff;box-shadow:0 8px 22px rgba(0,0,0,.24),0 2px 5px rgba(0,0,0,.16);text-decoration:none;transition:transform .2s ease,box-shadow .2s ease}
-.floating-whatsapp:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 11px 26px rgba(0,0,0,.28),0 3px 7px rgba(0,0,0,.18)}
-.floating-whatsapp:active{transform:scale(.94)}
-.floating-whatsapp .wa-glyph{width:23px;height:23px;fill:#fff;stroke:none}
 [data-theme="light"] .social-link-btn.social-x{background:#111}
 .social-links-empty{font-size:12.5px;color:var(--text-2);padding:6px 0}
 .theme-toggle .sun,.theme-toggle .moon{position:absolute;transition:transform .18s var(--ease),opacity .16s ease}
