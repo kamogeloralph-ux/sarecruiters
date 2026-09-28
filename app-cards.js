@@ -8,6 +8,14 @@
  * exactly as before. Do not reorder these files relative to one another.
  */
 
+// ===== Shared verified badge (one look for every section) =====
+var VERIFIED_SEAL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2l2.4 2.1 3.2-.2 1 3 2.7 1.8-.9 3.1.9 3.1-2.7 1.8-1 3-3.2-.2L12 22l-2.4-2.1-3.2.2-1-3-2.7-1.8.9-3.1-.9-3.1 2.7-1.8 1-3 3.2.2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function verifiedBadge(title, withLabel) {
+  title = title || 'Verified';
+  var badge = '<span class="verified-check" role="img" title="' + title + '" aria-label="' + title + '">' + VERIFIED_SEAL_SVG + '</span>';
+  return withLabel ? '<span class="verified-tag">' + badge + '<span>' + (withLabel === true ? 'Verified' : withLabel) + '</span></span>' : badge;
+}
+
 // ===== Hub card (agency) =====
 function avatarHtml(a) {
   if (a.photo) return '<div class="avatar"><img src="' + a.photo + '" alt="" loading="lazy" width="42" height="42"></div>';
@@ -17,9 +25,12 @@ function avatarHtml(a) {
 function hubCard(a) {
   var bCount = branchesFor(a.id).length;
   var headOfficeLocation = (a.location || a.address || '').trim();
-  var verifiedCheck = a.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
+  var verifiedCheck = a.verified ? '' + verifiedBadge('Verified') + '' : '';
   // Compact notification-style badge showing the agency's branch count.
   var branchBadge = bCount > 0 ? hubCountBadge(VAC_ICONS.pin, bCount, 'branch') : '';
+  // Total live vacancies for this agency, shown the same way as the branch count.
+  var vTotal = typeof a.vacancy_count === 'number' ? a.vacancy_count : vacanciesFor(a.id).length;
+  var vacancyBadge = vTotal > 0 ? hubCountBadge(VAC_ICONS.briefcase || VAC_ICONS.building, vTotal, 'vacancy') : '';
   return '' +
   '<div class="hub-card" id="hub-' + a.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleHub(\'' + a.id + '\')" aria-expanded="false">' +
@@ -28,6 +39,7 @@ function hubCard(a) {
         '<div class="agency-name-row">' + verifiedCheck + '<span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span></div>' +
         (headOfficeLocation ? '<div class="hub-summary-desc hub-head-office-location">' + VAC_ICONS.pin + '<span>' + escapeHtml(headOfficeLocation) + '</span></div>' : '') +
       '</div>' +
+      vacancyBadge +
       branchBadge +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</button>' +
@@ -138,6 +150,7 @@ function hubContact(a) {
 
 function hubCountBadge(icon, count, noun) {
   var label = count + ' ' + noun + (count === 1 ? '' : noun === 'branch' ? 'es' : 's');
+  if (noun === 'vacancy') label = count + (count === 1 ? ' vacancy' : ' vacancies');
   var employerClass = (noun === 'job' || noun === 'poster') ? ' hub-employer-count' : '';
   return '<span class="hub-branch-badge' + employerClass + '" title="' + label + '" aria-label="' + label + '"><span class="hub-branch-pin" aria-hidden="true">' + icon + '</span><span>' + count + '</span></span>';
 }
@@ -150,7 +163,7 @@ function hubCountBadge(icon, count, noun) {
 function employerHubCard(e) {
   var vCount = typeof e.vacancy_count === 'number' ? e.vacancy_count : vacanciesForEmployer(e.id).length;
   var pCount = postersForEmployer(e.id).length;
-  var verifiedCheck = e.verified ? '<span class="verified-check" title="Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '';
+  var verifiedCheck = e.verified ? '' + verifiedBadge('Verified') + '' : '';
   var jobsBadge = vCount > 0 ? hubCountBadge('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>', vCount, 'job') : '';
   var postersBadge = pCount > 0 ? hubCountBadge('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>', pCount, 'poster') : '';
   return '' +
@@ -601,7 +614,7 @@ function vacancyCard(v, agency, options) {
   var featuredBadge = '';
   var sourceBadge = (options.hideBadges ? '' : (isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : isLearnership ? '<span class="vac-source-tag vac-source-tag-learnership">Learnership</span>' : '')) + featuredBadge;
   var title = escapeHtml(v.title || 'Untitled role');
-  var verifiedCheck = options.hideBadges ? '' : (((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '<span class="verified-check" title="' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>' : '');
+  var verifiedCheck = options.hideBadges ? '' : (((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '' + verifiedBadge('' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '') + '' : '');
 
   /* Logo tile: employer/agency photo -> img; else company/agency initials on a gradient */
   var logo;
@@ -641,7 +654,7 @@ function vacancyCard(v, agency, options) {
   if (v.work_schedule) detail += vacDetRow(VAC_ICONS.calendar, 'Work Schedule', escapeHtml(v.work_schedule));
   if (v.start_date) detail += vacDetRow(VAC_ICONS.calendar, 'Start Date', escapeHtml(v.start_date));
   if (v.closing_date) detail += vacDetRow(VAC_ICONS.calendar, 'Closing Date', escapeHtml(v.closing_date));
-  if (orgName) detail += vacDetRow(VAC_ICONS.building, isEmployerPost ? 'Employer' + (employer.verified ? ' \u2713 Verified' : '') : (isGeneral ? 'Company' : 'Agency' + ((agency && agency.verified) ? ' \u2713 Verified' : '')), escapeHtml(orgName));
+  if (orgName) detail += vacDetRow(VAC_ICONS.building, isEmployerPost ? 'Employer' + (employer.verified ? ' ' + verifiedBadge('Verified', true) : '') : (isGeneral ? 'Company' : 'Agency' + ((agency && agency.verified) ? ' ' + verifiedBadge('Verified', true) : '')), escapeHtml(orgName));
   /* Email and phone detail rows with clickable links */
   if (v.email) detail += vacDetRow(VAC_ICONS.mail, 'Contact Email', mailLink(v.email));
   if (v.phone) detail += vacDetRow(VAC_ICONS.phone, 'Contact Phone', telLink(v.phone));

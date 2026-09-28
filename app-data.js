@@ -263,7 +263,7 @@ function renderCandidateSpotlight(list) {
     var subtitle = [c.position, expText].filter(Boolean).join(' · ') || 'Looking for opportunities';
     return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\',\''+escapeHtml(c.id)+'\')">' +
       (c.photo_url ? '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' : '<span class="spotlight-photo spotlight-initials">'+initials(c.full_name)+'</span>') +
-      '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' <span class="verified-check" title="Screened & Verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>':'')+'</strong>' +
+      '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</strong>' +
       '<span>'+escapeHtml(subtitle)+'</span></span></button>';
   }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
 }

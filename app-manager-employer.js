@@ -128,7 +128,7 @@ function renderManagerEmployerProfile() {
     '<div class="sm-card-head">' +
       '<div class="sm-card-avatar">' + (e.photo ? '<img src="' + e.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : initials(e.name)) + '</div>' +
       '<div style="flex:1;min-width:0">' +
-        '<div class="sm-card-name">' + escapeHtml(e.name || 'Company') + (e.verified ? ' <span style="color:var(--accent);font-size:11px;font-weight:700">✓ Verified</span>' : '') + '</div>' +
+        '<div class="sm-card-name">' + escapeHtml(e.name || 'Company') + (e.verified ? ' ' + verifiedBadge('Verified', true) : '') + '</div>' +
       '</div>' +
     '</div>' +
     (rows || '<div class="manager-item-sub">No contact details on file yet.</div>');
