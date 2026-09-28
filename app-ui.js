@@ -1545,8 +1545,7 @@ function renderAllVacanciesList() {
       ['contract', 'Contract roles', 'Fixed-term opportunities']
     ];
     var categoryRail =
-      '<section class="vacancy-category-section" aria-labelledby="vacancy-category-title">' +
-        '<div class="vacancy-category-heading"><h2 id="vacancy-category-title">Browse by category</h2><span>Public vacancy pages</span></div>' +
+      '<section class="vacancy-category-section" aria-label="Public vacancy categories">' +
         '<div class="vacancy-category-rail" aria-label="Public vacancy categories">' +
           publicCategories.map(function(category){
             return '<a class="vacancy-category-card" href="/browse/category/' + category[0] + '/">' +
