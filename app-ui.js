@@ -1530,7 +1530,7 @@ function renderAllVacanciesList() {
           '<span class="vacancy-categories-heading-icon" aria-hidden="true">' + VAC_ICONS.briefcase + '</span>' +
           '<h2 id="vacancy-categories-title">Vacancy Categories</h2>' +
         '</div>' +
-        '<div class="vacancy-categories-list">' + sourceCards.map(sourceRow).join('') + '</div>' +
+        '<div class="vacancy-categories-list vacancy-swipe-rail" tabindex="0" aria-label="Vacancy categories, swipe left or right">' + sourceCards.map(sourceRow).join('') + '</div>' +
       '</section>';
     var publicCategories = [
       ['government', 'Government', 'Public-sector roles'],
@@ -1559,7 +1559,7 @@ function renderAllVacanciesList() {
       [['all','All Roles'],['government','Government'],['private','Private Sector'],['remote','Remote']].map(function(item){
         return '<button type="button" class="vacancy-overview-filter' + (vacancyOverviewFilter === item[0] ? ' active' : '') + '" onclick="setVacancyOverviewFilter(\'' + item[0] + '\')">' + item[1] + '</button>';
       }).join('') + '</div>' +
-      '<div class="career-recent-results" aria-live="polite">' +
+      '<div class="career-recent-results vacancy-swipe-rail" tabindex="0" aria-label="Recent vacancies, swipe left or right" aria-live="polite">' +
         (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
           (list.length ? list.slice(0, 12).map(function(v) {
             var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
