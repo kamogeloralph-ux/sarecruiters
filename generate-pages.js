@@ -361,7 +361,7 @@ function buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancyS
 
   const body = `
 <h1>${escapeHtml(agency.name)}</h1>
-${agency.verified ? '<p><em>✔ Verified agency</em></p>' : ''}
+${agency.verified ? '<p class="verified-line"><svg class="verified-seal" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2l2.4 2.1 3.2-.2 1 3 2.7 1.8-.9 3.1.9 3.1-2.7 1.8-1 3-3.2-.2L12 22l-2.4-2.1-3.2.2-1-3-2.7-1.8.9-3.1-.9-3.1 2.7-1.8 1-3 3.2.2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Verified agency</p>' : ''}
 <p>${agency.location ? `<strong>Location:</strong> ${escapeHtml(agency.location)}<br>` : ''}
 ${agency.address ? `<strong>Address:</strong> ${escapeHtml(agency.address)}<br>` : ''}
 ${agency.contact ? `<strong>Contact:</strong> ${escapeHtml(agency.contact)}<br>` : ''}
@@ -1069,7 +1069,9 @@ h2{font-size:1.2rem;margin-top:1.5rem}
 .pj-role-check input{min-height:auto;width:16px;height:16px}
 .pj-form button{min-height:50px;background:#0a66c2;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer}
 .pj-form button:disabled{opacity:.6;cursor:wait}
-#pj-status{font-size:.85rem;color:#0a66c2;min-height:1.2em}`;
+#pj-status{font-size:.85rem;color:#0a66c2;min-height:1.2em}
+.verified-line{display:flex;align-items:center;gap:5px;margin:.25rem 0;color:#0a66c2;font-weight:700;font-size:.85rem}
+.verified-seal{flex:none}`;
   fs.writeFileSync(path.join(OUT_DIR, 'static-pages.css'), css);
 
   console.log(`Done. Wrote ${agencies.length} agency page(s), ${vacancies.length} vacancy page(s), ${locationHubs.length} province hub(s), ${categories.length} category hub(s) (thin/empty ones skipped), the /post-a-job/ page, and sitemap.xml.`);

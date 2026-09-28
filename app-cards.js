@@ -36,7 +36,7 @@ function hubCard(a) {
     '<button class="hub-summary" data-ripple onclick="toggleHub(\'' + a.id + '\')" aria-expanded="false">' +
       avatarHtml(a) +
       '<div class="hub-summary-body">' +
-        '<div class="agency-name-row">' + verifiedCheck + '<span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span></div>' +
+        '<div class="agency-name-row"><span class="agency-name">' + escapeHtml(a.name || 'Unnamed agency') + '</span>' + verifiedCheck + '</div>' +
         (headOfficeLocation ? '<div class="hub-summary-desc hub-head-office-location">' + VAC_ICONS.pin + '<span>' + escapeHtml(headOfficeLocation) + '</span></div>' : '') +
       '</div>' +
       vacancyBadge +
@@ -171,7 +171,7 @@ function employerHubCard(e) {
     '<button class="hub-summary" data-ripple onclick="toggleEmpHub(\'' + e.id + '\')" aria-expanded="false">' +
       avatarHtml(e) +
       '<div class="hub-summary-body">' +
-        '<div class="agency-name-row">' + verifiedCheck + '<span class="agency-name">' + escapeHtml(e.name || 'Unnamed company') + '</span></div>' +
+        '<div class="agency-name-row"><span class="agency-name">' + escapeHtml(e.name || 'Unnamed company') + '</span>' + verifiedCheck + '</div>' +
         (e.industry ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Industry:</span> ' + escapeHtml(e.industry) + '</div>' : (e.location ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Location:</span> ' + escapeHtml(e.location) + '</div>' : '')) +
       '</div>' +
       jobsBadge +
@@ -654,7 +654,7 @@ function vacancyCard(v, agency, options) {
   if (v.work_schedule) detail += vacDetRow(VAC_ICONS.calendar, 'Work Schedule', escapeHtml(v.work_schedule));
   if (v.start_date) detail += vacDetRow(VAC_ICONS.calendar, 'Start Date', escapeHtml(v.start_date));
   if (v.closing_date) detail += vacDetRow(VAC_ICONS.calendar, 'Closing Date', escapeHtml(v.closing_date));
-  if (orgName) detail += vacDetRow(VAC_ICONS.building, isEmployerPost ? 'Employer' + (employer.verified ? ' ' + verifiedBadge('Verified', true) : '') : (isGeneral ? 'Company' : 'Agency' + ((agency && agency.verified) ? ' ' + verifiedBadge('Verified', true) : '')), escapeHtml(orgName));
+  if (orgName) detail += vacDetRow(VAC_ICONS.building, isEmployerPost ? 'Employer' + (employer.verified ? ' ' + verifiedBadge('Verified employer') : '') : (isGeneral ? 'Company' : 'Agency' + ((agency && agency.verified) ? ' ' + verifiedBadge('Verified agency') : '')), escapeHtml(orgName));
   /* Email and phone detail rows with clickable links */
   if (v.email) detail += vacDetRow(VAC_ICONS.mail, 'Contact Email', mailLink(v.email));
   if (v.phone) detail += vacDetRow(VAC_ICONS.phone, 'Contact Phone', telLink(v.phone));
@@ -724,7 +724,7 @@ function vacancyCard(v, agency, options) {
       logo +
       '<div class="vac-body">' +
         '<div class="vac-title">' + title + '</div>' +
-      '<div class="vac-company">' + verifiedCheck + escapeHtml(orgName) + sourceBadge + '</div>' +
+      '<div class="vac-company">' + escapeHtml(orgName) + verifiedCheck + sourceBadge + '</div>' +
         locLine +
         descPreview +
         pillsRow +
