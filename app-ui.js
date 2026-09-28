@@ -1491,14 +1491,19 @@ function renderAllVacanciesList() {
     }).sort(function(a,b){
       return (Number(a.featured_order)||0) - (Number(b.featured_order)||0) || new Date(b.created_at||0) - new Date(a.created_at||0);
     }).slice(0, 6);
+    function scrollFeaturedVacancies(direction) {
+      var rail = document.getElementById('featured-vacancies-rail');
+      if (rail) rail.scrollBy({ left: direction * Math.max(260, rail.clientWidth * 0.86), behavior: 'smooth' });
+    }
+    window.scrollFeaturedVacancies = scrollFeaturedVacancies;
     var featuredMarkup =
-      '<section class="career-featured-section"><div class="featured-vacancies-heading" aria-labelledby="featured-vacancies-title"><div><h2 id="featured-vacancies-title">Featured vacancies</h2><span class="sr-only">Featured opportunity</span></div></div>' +
+      '<section class="career-featured-section"><div class="featured-vacancies-heading" aria-labelledby="featured-vacancies-title"><div><h2 id="featured-vacancies-title">Featured vacancies</h2><span class="sr-only">Featured opportunity</span></div><div class="featured-vacancies-controls" aria-label="Featured vacancies carousel controls"><button type="button" onclick="scrollFeaturedVacancies(-1)" aria-label="Show previous featured vacancies">‹</button><button type="button" onclick="scrollFeaturedVacancies(1)" aria-label="Show next featured vacancies">›</button></div></div>' +
       (featured.length ?
-        featured.map(function(v){
+        '<div id="featured-vacancies-rail" class="featured-vacancies-rail" tabindex="0" aria-label="Featured vacancies, swipe left or right">' + featured.map(function(v){
           var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
           return vacancyCard(v, agency, { featured: true });
-        }).join('') :
-        '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div></section>');
+        }).join('') + '</div>' :
+        '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') + '</section>';
     var sourceCards = [
       { type:'general', label:'General Vacancies', short:'General', count:generalCount, icon:'⌕' },
       { type:'agency', label:'Agency Vacancies', short:'Agency', count:agencyCount, icon:'▦' },

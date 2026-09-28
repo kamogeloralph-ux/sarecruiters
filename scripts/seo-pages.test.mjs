@@ -71,6 +71,13 @@ test('vacancy overview filters are wired to live recent listings', () => {
   assert.doesNotMatch(appUi, /career-category-section/);
   assert.doesNotMatch(cards, /vac-featured-icon/);
 });
+test('featured vacancies render as a horizontal carousel', () => {
+  assert.match(appUi, /featured-vacancies-rail/);
+  assert.match(appUi, /scrollFeaturedVacancies\(-1\)/);
+  assert.match(appUi, /scrollFeaturedVacancies\(1\)/);
+  assert.match(styles, /scroll-snap-type:x mandatory/);
+  assert.match(styles, /featured-vacancies-rail>\.vac-card/);
+});
 test('homepage exposes normal anchor links for Google discovery', () => {
   for (const slug of pages) {
     assert.match(homepage, new RegExp(`href="${slug}/"`));
