@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: "Only sync crew or gourmet; leave empty for both"
+        description: "Only sync crew, gourmet, or waitred; leave empty for all"
         required: false
         default: ""
         type: string
