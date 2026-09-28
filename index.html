@@ -152,11 +152,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-vacancy-redesign-3">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-3" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-vacancy-redesign-4">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-4" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-2">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-3"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-4"></noscript>
 </head>
 <body>
 
@@ -797,9 +797,6 @@
   </div>
 
 </div>
-<a id="floating-whatsapp" class="floating-whatsapp" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open SA Recruiters WhatsApp channel" title="WhatsApp channel" style="display:none">
-  <svg class="wa-glyph" aria-hidden="true"><use href="icons.svg#i7ebf0f"></use></svg>
-</a>
 <nav class="bottom-nav">
   <button class="navbtn active" data-tab="home" data-ripple onclick="refreshHome()" aria-label="Home">
     <svg><use href="icons.svg#i36f2ce"/></svg>
@@ -1386,7 +1383,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=622c2fe24f" defer></script>
+<script src="app.bundle.min.js?v=4a5b1a4e39" defer></script>
 <script src="app-vacancy-v2.js?v=vx-2" defer></script>
 <footer class="seo-site-footer" aria-label="SA Recruiters quick links">
   <strong>SA Recruiters</strong>
@@ -1400,7 +1397,30 @@
   </nav>
 </footer>
 
-<!-- SendPulse live chat widget -->
+<!-- SendPulse live chat widget: sits where the old floating WhatsApp button was
+     (bottom-right, 90px up so it clears the bottom nav; right edge follows the 520px app column on wide screens) -->
+<script>
+(function () {
+  var done = false;
+  function place() {
+    if (!(window.sp && window.sp.liveChat && window.sp.liveChat.config)) return false;
+    var right = Math.max(18, (window.innerWidth - 520) / 2 + 18);
+    window.sp.liveChat.config({ chatPosition: { bottom: '90px', right: right + 'px' } });
+    return true;
+  }
+  function init() {
+    if (done) return; done = true;
+    place();
+    window.addEventListener('resize', place);
+  }
+  document.addEventListener('spLiveChatLoaded', init);
+  // Fallback in case the loaded event fired before this listener existed
+  var tries = 0, t = setInterval(function () {
+    if (done || ++tries > 40) return clearInterval(t);
+    if (window.sp && window.sp.liveChat) { clearInterval(t); init(); }
+  }, 250);
+})();
+</script>
 <script src="https://cdn.pulse.is/livechat/loader.js" data-live-chat-id="6abae6321b15f81d2b07a64b" async></script>
 </body>
 </html>
