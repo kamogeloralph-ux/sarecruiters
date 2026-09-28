@@ -95,6 +95,7 @@
       if (sortState === 'title') return String(av.title || '').localeCompare(String(bv.title || ''));
       if (sortState === 'salary') return salaryValue(bv) - salaryValue(av) || dateValue(bv) - dateValue(av);
       if (sortState === 'industry') return industriesFor(av)[0].localeCompare(industriesFor(bv)[0]) || dateValue(bv) - dateValue(av);
+      if (sortState === 'relevance') return (Number(!!bv.is_featured) - Number(!!av.is_featured)) || dateValue(bv) - dateValue(av);
       return dateValue(bv) - dateValue(av);
     });
     cards.forEach(function (card) { list.appendChild(card); });
