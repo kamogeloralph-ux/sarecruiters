@@ -97,6 +97,15 @@ test('generated listing output treats database values as untrusted', () => {
   assert.match(generator, /applicantLocationRequirements/);
 });
 
+test('generated vacancy pages provide complete JobPosting metadata', () => {
+  assert.match(generator, /buildJobDescriptionHtml/);
+  assert.match(generator, /dateModified: vacancy\.updated_at \|\| vacancy\.created_at/);
+  assert.match(generator, /directApply: Boolean/);
+  assert.match(generator, /hiringOrganization/);
+  assert.match(generator, /meta name="robots" content="index,follow,max-image-preview:large"/);
+  assert.match(generator, /View agency profile/);
+});
+
 test('JobPosting schema supplies validThrough and addressLocality fallbacks', () => {
   assert.match(generator, /SCHEMA_MAX_AGE_DAYS/);
   assert.match(generator, /created\.setUTCDate\(created\.getUTCDate\(\) \+ days\)/);
