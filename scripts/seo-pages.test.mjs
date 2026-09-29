@@ -235,10 +235,11 @@ test('candidate share copy promotes joining the Talent Pool', () => {
   assert.match(appUi, /shareKey: 'talent-pool'/);
 });
 
-test('homepage exposes an About action in the bottom navigation', () => {
-  assert.match(homepage, /navbtn-about/);
+test('Menu exposes an About action outside the bottom navigation', () => {
+  assert.doesNotMatch(homepage, /navbtn-about/);
+  assert.match(homepage, /class="pgroup-label">Resources<\/div>[\s\S]*About SA Recruiters/);
   assert.match(homepage, /window\.open\('about\/',?'_blank',?'noopener'\)/);
-  assert.match(homepage, />About<\/span>/);
+  assert.match(homepage, />About SA Recruiters<span class="mi-sub">/);
 });
 
 test('Interview Tips includes the supplied YouTube video for listening', () => {
