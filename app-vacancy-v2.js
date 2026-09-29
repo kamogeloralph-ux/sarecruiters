@@ -150,7 +150,7 @@
     if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading live roles…';
     var d = dedicatedVacancyCounts, n = (generalVacancyCount || 0) + vacanciesCache.filter(hasAssignedAgency).length;
     Object.keys(d).forEach(function (k) { n += d[k] || 0; });
-    return Number(n).toLocaleString() + ' live roles across ' + Object.keys(LABELS).length + ' sources';
+    return (window.formatCompactCount ? window.formatCompactCount(n) : Number(n).toLocaleString()) + ' live roles across ' + Object.keys(LABELS).length + ' sources';
   }
 
   /* ---------- overview ---------- */
