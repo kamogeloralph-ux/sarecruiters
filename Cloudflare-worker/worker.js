@@ -372,6 +372,14 @@ async function supabaseGetAll(env, table, params = {}, pageSize = 1000) {
 }
 __name(supabaseGetAll, "supabaseGetAll");
 
+async function authoritativeVacancyCount(env) {
+  const result = await supabaseGet(env, "vacancies", { select: "id", limit: "1" }, { prefer: "count=exact" });
+  const range = result.headers.get("content-range") || "";
+  const match = range.match(/\/(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+__name(authoritativeVacancyCount, "authoritativeVacancyCount");
+
 // Incremental mirror writer. It writes in bounded D1 batches and suppresses
 // no-op updates so unchanged rows do not consume write quota.
 async function upsertD1Rows(env, table, columns, rows, boolCols = [], conflictColumn = "id") {
@@ -589,7 +597,7 @@ async function loadStartupDataFromD1(env) {
     careers_page: ["careers_page"]
   };
 
-  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR] = await Promise.all([
+  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR, sourceVacancyCountR] = await Promise.all([
     env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
     // Same filter as before: (agency_id != 'general' OR employer_id IS NOT NULL)
@@ -608,7 +616,8 @@ async function loadStartupDataFromD1(env) {
     // Older D1 mirrors may not have the optional featured columns yet. Keep
     // startup healthy and let the direct public Supabase refresh fill the
     // Featured Vacancies section until the mirror schema is upgraded.
-    env.DB.prepare("SELECT * FROM vacancies WHERE is_featured = 1 ORDER BY featured_order ASC, created_at DESC LIMIT 12").all().catch(() => ({ results: [] }))
+    env.DB.prepare("SELECT * FROM vacancies WHERE is_featured = 1 ORDER BY featured_order ASC, created_at DESC LIMIT 12").all().catch(() => ({ results: [] })),
+    authoritativeVacancyCount(env).catch(() => null)
   ]);
 
   const folderCounts = await Promise.all(Object.entries(DEDICATED_FOLDERS).map(async ([key, sources]) => {
@@ -636,7 +645,12 @@ async function loadStartupDataFromD1(env) {
       // Platform total includes the general pool, attributed/startup rows,
       // and dedicated-source rows. Keep this mutually consistent with the
       // public `general` bucket instead of omitting generalPoolCount.
-      vacancies: n(generalCountR) + n(generalPoolCountR) + (vacanciesR.results || []).length + n(dedicatedCountR),
+      // D1 can temporarily contain rows from a failed/stalled reconciliation.
+      // Use Supabase's exact source count for the headline total so the app
+      // never presents stale mirror rows as currently available inventory.
+      vacancies: typeof sourceVacancyCountR === "number"
+        ? sourceVacancyCountR
+        : n(generalCountR) + n(generalPoolCountR) + (vacanciesR.results || []).length + n(dedicatedCountR),
       general: n(generalCountR) + n(generalPoolCountR),
       employers: (employersR.results || []).length,
       candidates: n(poolCountR),
@@ -879,7 +893,7 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v4", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v5-authoritative-count", request.url), request);
 
   async function buildResponse(payload) {
     const body = JSON.stringify(payload);
@@ -912,8 +926,13 @@ async function startupResponse(request, env, ctx, origin) {
   __name(buildResponse, "buildResponse");
 
   async function refreshAndCache() {
-    const snapshot = await readPublicStartupSnapshot(env);
+    let snapshot = await readPublicStartupSnapshot(env);
     if (snapshot) {
+      const sourceVacancyCount = await authoritativeVacancyCount(env).catch(() => null);
+      if (typeof sourceVacancyCount === "number") {
+        snapshot = { ...snapshot, counts: { ...snapshot.counts, vacancies: sourceVacancyCount } };
+        ctx.waitUntil(writePublicStartupSnapshot(env, snapshot).catch((e) => console.warn("Could not refresh startup count snapshot", e)));
+      }
       const response = await buildResponse(snapshot);
       await cache.put(cacheKey, response.clone());
       return snapshot;
