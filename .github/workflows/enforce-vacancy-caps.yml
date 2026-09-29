@@ -1,9 +1,12 @@
-name: Enforce per-agency/employer vacancy caps
+name: Enforce per-agency/employer/company vacancy caps
 on:
-  # Keeps every agency, company and employer down to their 50 most recent
-  # vacancies. Runs daily — new postings from scrapers and the self-service
-  # dashboards accumulate slowly enough that once a day is plenty, and it
-  # keeps this off the Supabase/D1 write budget the 6-hourly D1 sync uses.
+  # Keeps every agency, employer, and unlinked company (grouped by
+  # normalized company name -- the scrapers with no agency_id/employer_id
+  # attached, e.g. Simplify, Adzuna, careers-page, government sync) down to
+  # their 50 most recent vacancies. Runs daily — new postings from scrapers
+  # and the self-service dashboards accumulate slowly enough that once a
+  # day is plenty, and it keeps this off the Supabase/D1 write budget the
+  # 6-hourly D1 sync uses.
   schedule:
     - cron: "30 2 * * *"
   workflow_dispatch: {}
