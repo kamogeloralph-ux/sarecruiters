@@ -25,3 +25,10 @@ test('D1 vacancy indexes cover sync watermarks, sources, owners, remote roles, a
     assert.match(migration, new RegExp(`CREATE INDEX IF NOT EXISTS ${index}`));
   }
 });
+
+test('startup headline count comes from the authoritative Supabase source', () => {
+  assert.match(worker, /async function authoritativeVacancyCount\(env\)/);
+  assert.match(worker, /prefer: "count=exact"/);
+  assert.match(worker, /vacancies: typeof sourceVacancyCountR === "number"/);
+  assert.match(worker, /snapshot = \{ \.\.\.snapshot, counts: \{ \.\.\.snapshot\.counts, vacancies: sourceVacancyCount \} \}/);
+});

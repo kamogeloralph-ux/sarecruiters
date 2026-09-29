@@ -1200,6 +1200,9 @@ async function loadAll(options) {
   window.__saStartupPayload = startup;
   window.__saStaticData = (startup && startup.schema === 1 && Array.isArray(startup.vacancies)) ? startup : null;
   if (window.__saStaticData) staticVacanciesCache = filterExpiredVacancies(startup.vacancies || []);
+  var authoritativeStartupVacancyTotal = startup && startup.counts && typeof startup.counts.vacancies === 'number'
+    ? startup.counts.vacancies : null;
+  if (authoritativeStartupVacancyTotal !== null) cachedVacancyTotal = authoritativeStartupVacancyTotal;
   if (startup && Array.isArray(startup.featured_vacancies)) {
     featuredVacanciesCache = filterExpiredVacancies(startup.featured_vacancies);
   }
@@ -1261,7 +1264,7 @@ async function loadAll(options) {
   // cosmetic (they just label the folder cards), so a miss here shouldn't
   // trigger the retry banner the way a core data fetch failing would.
   if (results[9] && typeof results[9] === 'object') { dedicatedVacancyCounts = results[9]; dedicatedVacancyCountsLoaded = true; }
-  if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+  if (authoritativeStartupVacancyTotal === null && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
     cachedVacancyTotal = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
   }
   setRetryBanner(hadLoadError);
@@ -1352,10 +1355,10 @@ function updateStats() {
   if (vacancyStat) {
     if (window.__saStaticData && window.__saStaticData.counts && typeof window.__saStaticData.counts.vacancies === 'number') {
       setVacancyStat(vacancyStat, window.__saStaticData.counts.vacancies);
-    } else if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
-      setVacancyStat(vacancyStat, generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal());
     } else if (typeof cachedVacancyTotal === 'number') {
       setVacancyStat(vacancyStat, cachedVacancyTotal);
+    } else if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+      setVacancyStat(vacancyStat, generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal());
     }
   }
   var statEmployers = document.getElementById('stat-employers');
