@@ -545,7 +545,8 @@ window.toggleSave = function(btn, key) {
 };
 
 function renderSaved() {
-  var list = vacanciesCache.filter(function(v){ return savedSet.has(v.id); });
+  var source = (window.__saStaticData && staticVacanciesCache.length) ? staticVacanciesCache : vacanciesCache;
+  var list = source.filter(function(v){ return savedSet.has(v.id) && !isVacancyExpired(v); });
   var el = document.getElementById('saved-list');
   if (el) el.dataset.state = list.length ? 'ready' : 'empty';
   if (!list.length) {
@@ -873,7 +874,8 @@ window.toggleSave = function(btn, key) {
 };
 
 function renderSaved() {
-  var list = vacanciesCache.filter(function(v){ return savedSet.has(v.id); });
+  var source = (window.__saStaticData && staticVacanciesCache.length) ? staticVacanciesCache : vacanciesCache;
+  var list = source.filter(function(v){ return savedSet.has(v.id) && !isVacancyExpired(v); });
   var el = document.getElementById('saved-list');
   if (el) el.dataset.state = list.length ? 'ready' : 'empty';
   if (!list.length) {
