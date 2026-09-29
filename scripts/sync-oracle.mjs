@@ -33,6 +33,11 @@ const DETAIL_CONCURRENCY = Math.min(Math.max(Number.parseInt(process.env.ORACLE_
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.ORACLE_REQUEST_TIMEOUT_MS || '60000', 10);
 const FETCH_ATTEMPTS = Number.parseInt(process.env.ORACLE_FETCH_ATTEMPTS || '3', 10);
 const MAX_JOBS = Number.parseInt(process.env.ORACLE_MAX_JOBS || '1500', 10);
+// Employers may only list their 50 most recent vacancies (see
+// scripts/enforce-vacancy-caps.mjs, which enforces this DB-wide as a
+// safety net). Sorting + trimming here too means we never fetch job
+// details for postings we'd just delete again afterwards.
+const MAX_PER_EMPLOYER = Math.max(1, Number.parseInt(process.env.ORACLE_MAX_PER_EMPLOYER || '50', 10));
 const DRY_RUN = /^(1|true|yes)$/i.test(process.env.DRY_RUN || '');
 const DEBUG_RAW = /^(1|true|yes)$/i.test(process.env.DEBUG_RAW || '');
 const USER_AGENT = 'SA-Recruiters-Oracle-Sync/1.0 (+https://sa-recruiters.co.za/)';
@@ -317,7 +322,19 @@ export async function runSource(src, supabase) {
   const { summaries, expected } = await fetchAllSummaries(src);
   if (!summaries.length) throw new Error('Search returned no jobs -- refusing to continue (API shape may have changed). Re-run with DEBUG_RAW=1 DRY_RUN=1.');
   const employerId = supabase ? await resolveEmployerId(supabase, src) : null;
-  const { jobs, detailFailures } = await fetchDetails(src, summaries, employerId);
+
+  // Newest postedDate first, then only take the top MAX_PER_EMPLOYER —
+  // removeClosed() below deletes any existing row for this employer that
+  // isn't in that set, so this is what actually enforces the 50-latest cap
+  // for this source (in addition to the DB-wide safety net script).
+  const summariesToFetch = [...summaries]
+    .sort((a, b) => (b.postedDate || '').localeCompare(a.postedDate || ''))
+    .slice(0, MAX_PER_EMPLOYER);
+  if (summariesToFetch.length < summaries.length) {
+    console.log(`${tag} ${summaries.length} live postings found; keeping newest ${summariesToFetch.length} (cap ${MAX_PER_EMPLOYER})`);
+  }
+
+  const { jobs, detailFailures } = await fetchDetails(src, summariesToFetch, employerId);
   console.log(`${tag} built ${jobs.length} vacancies (${detailFailures} detail fetch failures)`);
 
   if (DRY_RUN) {
