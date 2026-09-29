@@ -338,40 +338,14 @@ async function supabaseGetAll(env, table, params = {}, pageSize = 1000) {
 }
 __name(supabaseGetAll, "supabaseGetAll");
 
-// Writes `rows` into D1 table `table` as (DELETE all, then batched INSERT),
-// chunked to keep each env.DB.batch() call comfortably under D1's batch
-// limits even for the ~9,000-row vacancies table. `columns` controls both
-// the column order and (via `boolCols`) which fields get coerced from a
-// Postgres boolean to D1's 0/1 integer convention.
-async function replaceD1Table(env, table, columns, rows, boolCols = []) {
-  const placeholders = `(${columns.map(() => "?").join(",")})`;
-  const insertSql = `INSERT INTO ${table} (${columns.join(",")}) VALUES ${placeholders}`;
-  await env.DB.prepare(`DELETE FROM ${table}`).run();
-  const CHUNK = 200;
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const chunk = rows.slice(i, i + CHUNK);
-    const stmts = chunk.map((row) => {
-      const values = columns.map((col) => {
-        const v = row[col];
-        if (boolCols.includes(col)) return v ? 1 : 0;
-        if (v === void 0) return null;
-        if (v !== null && typeof v === "object") return JSON.stringify(v);
-        return v;
-      });
-      return env.DB.prepare(insertSql).bind(...values);
-    });
-    if (stmts.length) await env.DB.batch(stmts);
-  }
-}
-__name(replaceD1Table, "replaceD1Table");
-
-// Incremental mirror writer. Unlike replaceD1Table, this never deletes the
-// table and only writes rows returned by the updated_at watermark query.
-async function upsertD1Rows(env, table, columns, rows, boolCols = []) {
+// Incremental mirror writer. It writes in bounded D1 batches and suppresses
+// no-op updates so unchanged rows do not consume write quota.
+async function upsertD1Rows(env, table, columns, rows, boolCols = [], conflictColumn = "id") {
   if (!rows.length) return 0;
   const placeholders = `(${columns.map(() => "?").join(",")})`;
-  const updateColumns = columns.filter((column) => column !== "id");
-  const upsertSql = `INSERT INTO ${table} (${columns.join(",")}) VALUES ${placeholders} ON CONFLICT(id) DO UPDATE SET ${updateColumns.map((column) => `${column}=excluded.${column}`).join(",")}`;
+  const updateColumns = columns.filter((column) => column !== conflictColumn);
+  const changedPredicate = updateColumns.map((column) => `${column} IS NOT excluded.${column}`).join(" OR ");
+  const upsertSql = `INSERT INTO ${table} (${columns.join(",")}) VALUES ${placeholders} ON CONFLICT(${conflictColumn}) DO UPDATE SET ${updateColumns.map((column) => `${column}=excluded.${column}`).join(",")} WHERE ${changedPredicate}`;
   const CHUNK = 200;
   let written = 0;
   for (let i = 0; i < rows.length; i += CHUNK) {
@@ -394,6 +368,23 @@ async function upsertD1Rows(env, table, columns, rows, boolCols = []) {
   return written;
 }
 __name(upsertD1Rows, "upsertD1Rows");
+
+// Synchronizes a keyed table without deleting and reinserting unchanged rows.
+// The local-key read is intentionally narrow; it lets us remove records that
+// disappeared from Supabase while keeping normal sync cycles write-efficient.
+async function syncD1Table(env, table, columns, rows, boolCols = [], keyColumn = "id") {
+  const incoming = rows || [];
+  const incomingKeys = new Set(incoming.map((row) => String(row[keyColumn])));
+  const local = await env.DB.prepare(`SELECT ${keyColumn} FROM ${table}`).all();
+  const staleKeys = (local.results || []).map((row) => String(row[keyColumn])).filter((key) => !incomingKeys.has(key));
+  for (let i = 0; i < staleKeys.length; i += 200) {
+    const chunk = staleKeys.slice(i, i + 200);
+    await env.DB.batch(chunk.map((key) => env.DB.prepare(`DELETE FROM ${table} WHERE ${keyColumn} = ?`).bind(key)));
+  }
+  const written = await upsertD1Rows(env, table, columns, incoming, boolCols, keyColumn);
+  return { written, deleted: staleKeys.length };
+}
+__name(syncD1Table, "syncD1Table");
 
 async function readSyncMeta(env, key) {
   const result = await env.DB.prepare("SELECT value FROM sync_meta WHERE key = ? LIMIT 1").bind(key).all();
@@ -479,10 +470,10 @@ async function syncD1FromSupabase(env) {
     supabaseGet(env, "app_settings", { select: "key,value" })
   ]);
 
-  await replaceD1Table(env, "agencies",
+  const agenciesSync = await syncD1Table(env, "agencies",
     ["id", "name", "website", "contact", "email", "location", "address", "cvpref", "photo", "companies", "trades", "verified", "created_at"],
     agencies.body || [], ["verified"]);
-  await replaceD1Table(env, "branches",
+  const branchesSync = await syncD1Table(env, "branches",
     ["id", "agency_id", "name", "location", "phone", "email"],
     branches.body || []);
   const previousVacancySync = await readSyncMeta(env, "vacancies_updated_through");
@@ -501,23 +492,33 @@ async function syncD1FromSupabase(env) {
     await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
       .bind("vacancies_updated_through", vacancyWatermark).run();
   }
-  await replaceD1Table(env, "employers",
+  const employersSync = await syncD1Table(env, "employers",
     ["id", "name", "industry", "website", "contact", "email", "location", "address", "photo", "verified", "created_at"],
     employers.body || [], ["verified"]);
-  await replaceD1Table(env, "pool_candidates",
+  const poolSync = await syncD1Table(env, "pool_candidates",
     ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"],
     pool.body || [], ["verified"]);
-  await replaceD1Table(env, "app_settings", ["key", "value"], settings.body || []);
+  const settingsSync = await syncD1Table(env, "app_settings", ["key", "value"], settings.body || [], [], "key");
 
   const summary = {
     synced_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: (agencies.body || []).length,
+    agency_writes: agenciesSync.written,
+    agency_deletes: agenciesSync.deleted,
     branches: (branches.body || []).length,
+    branch_writes: branchesSync.written,
+    branch_deletes: branchesSync.deleted,
     vacancies: changedVacancies.length,
     vacancy_writes: vacancyWrites,
     vacancy_deletes: vacancyDeletes,
     employers: (employers.body || []).length,
-    pool_candidates: (pool.body || []).length
+    employer_writes: employersSync.written,
+    employer_deletes: employersSync.deleted,
+    pool_candidates: (pool.body || []).length,
+    pool_candidate_writes: poolSync.written,
+    pool_candidate_deletes: poolSync.deleted,
+    settings_writes: settingsSync.written,
+    settings_deletes: settingsSync.deleted
   };
   await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
     .bind("last_sync", JSON.stringify(summary)).run();
