@@ -1297,15 +1297,31 @@ function dedicatedVacancyGrandTotal() {
   var c = dedicatedVacancyCounts || {};
   return (c.himalayas||0) + (c.adzuna||0) + (c.government||0) + (c.retail||0) + (c.learnerships||0) + (c.careers_page||0);
 }
+// Compact display for big totals: 16861 -> "16k", 1530 -> "1.5k". Rounds DOWN so the label never
+// overstates the real total. (To round to the nearest thousand instead, change Math.floor to Math.round.)
+function formatCompactCount(n) {
+  n = Number(n) || 0;
+  if (n < 1000) return String(n);
+  if (n < 10000) return (Math.floor(n / 100) / 10) + 'k';
+  return Math.floor(n / 1000) + 'k';
+}
+window.formatCompactCount = formatCompactCount;
+
+function setVacancyStat(el, total) {
+  el.textContent = formatCompactCount(total);
+  el.setAttribute('data-count', total);          // exact number kept for card sorting
+  el.title = Number(total).toLocaleString() + ' vacancies';
+}
+
 function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   updatePosterStat();
   var vacancyStat = document.getElementById('stat-vacancies');
   if (vacancyStat) {
     if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
-      vacancyStat.textContent = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
+      setVacancyStat(vacancyStat, generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal());
     } else if (typeof cachedVacancyTotal === 'number') {
-      vacancyStat.textContent = cachedVacancyTotal;
+      setVacancyStat(vacancyStat, cachedVacancyTotal);
     }
   }
   var statEmployers = document.getElementById('stat-employers');
@@ -1334,7 +1350,7 @@ function reorderStatCardsByCount() {
   // (stable sort) so cards don't jitter on every refresh when unchanged.
   var withCounts = cards.map(function(card, i) {
     var valueEl = card.querySelector('.stat-value');
-    var n = valueEl ? parseInt(valueEl.textContent, 10) : NaN;
+    var n = valueEl ? parseInt(valueEl.getAttribute('data-count') || valueEl.textContent, 10) : NaN;
     return { card: card, count: isNaN(n) ? -1 : n, i: i };
   });
   withCounts.sort(function(a, b) { return b.count - a.count || a.i - b.i; });
