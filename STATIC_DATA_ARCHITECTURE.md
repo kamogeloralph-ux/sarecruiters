@@ -27,6 +27,10 @@ The source scrapers use Supabase as a short-lived staging/upsert layer for compa
 3. Run the refresh workflow once manually, then verify `data/startup.json` changes.
 4. The Pages deployment runs on every data commit and code push.
 
+## Counts match what the app keeps live
+
+`scripts/export-static-data.mjs` runs every row through `scripts/static-vacancy-filter.mjs` before writing the snapshot: closed listings (past `closing_date`) are dropped and each real agency, employer and normalized unlinked company keeps only its newest 50, exactly like the daily `enforce-vacancy-caps` job. `counts` (which drives the home "Available Vacancies" tile) is computed from those filtered rows, so it can't include rows the caps job would delete.
+
 ## Snapshot contract
 
 `data/startup.json` contains `schema`, `updated_at`, public `agencies`, `branches`, `employers`, `vacancies`, `featured_vacancies`, `counts`, and safe public settings. Manager tokens and other private fields are explicitly omitted by the exporter.
