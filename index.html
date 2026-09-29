@@ -1394,50 +1394,65 @@
   </nav>
 </footer>
 
-<!-- SendPulse live chat widget: sits where the old floating WhatsApp button was
-     (bottom-right, 90px up so it clears the bottom nav; right edge follows the 520px app column on wide screens) -->
+<!-- SendPulse live chat widget: shown on the Home section only, locked just above the bottom navigation bar -->
+<style id="sendpulse-home-only">
+/* The widget mounts as a single <sp-live-chat> element. Hidden by default; shown only while
+   the Home screen is active, and hidden again behind any open sheet/overlay.
+   (Wrapped in @supports so a browser without :has() simply shows it everywhere instead of nowhere.) */
+@supports selector(:has(*)){
+  sp-live-chat{display:none!important}
+  body:has(#screen-home.active) sp-live-chat{display:block!important}
+  body:has(#screen-home.active):has(.sheet-scrim.open) sp-live-chat{display:none!important}
+}
+</style>
 <script>
 (function () {
-  var done = false;
-  var observer = null;
-  function isHomeActive() {
-    var home = document.getElementById('screen-home');
-    return !!(home && home.classList.contains('active'));
+  var GAP = 16;            // px between the chat button and the top of the nav bar
+  var timer = null;
+
+  function navHeight() {
+    var nav = document.querySelector('.bottom-nav');
+    var h = nav ? nav.getBoundingClientRect().height : 0;
+    return h >= 40 ? h : 76;   // fall back to the nav's normal height if it is not laid out yet
   }
-  function syncVisibility() {
-    var home = isHomeActive();
-    document.documentElement.classList.toggle('sendpulse-home-active', home);
-    document.querySelectorAll('iframe[src*="pulse.is"],iframe[src*="sendpulse"],[id*="sendpulse" i],[id*="sp-live" i],[class*="sendpulse" i],[class*="sp-live" i]').forEach(function (el) {
-      var visibility = home ? '' : 'hidden';
-      var pointerEvents = home ? '' : 'none';
-      if (el.style.visibility !== visibility) el.style.visibility = visibility;
-      if (el.style.pointerEvents !== pointerEvents) el.style.pointerEvents = pointerEvents;
-    });
-  }
+
   function place() {
-    if (!(window.sp && window.sp.liveChat && window.sp.liveChat.config)) return false;
+    var lc = window.sp && window.sp.liveChat;
+    if (!lc || typeof lc.config !== 'function') return false;   // widget bundle not ready yet
     var right = Math.max(18, (window.innerWidth - 520) / 2 + 18);
-    window.sp.liveChat.config({ chatPosition: { bottom: '90px', right: right + 'px' } });
-    syncVisibility();
+    try {
+      lc.config({ chatPosition: { bottom: Math.round(navHeight() + GAP) + 'px', right: right + 'px' } });
+    } catch (e) { return false; }
     return true;
   }
-  function init() {
-    if (done) return; done = true;
-    place();
-    window.addEventListener('resize', place);
-    observer = new MutationObserver(syncVisibility);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
-    syncVisibility();
+
+  // Apply now, and again shortly after in case the widget re-renders while mounting.
+  function lock() {
+    if (place()) { setTimeout(place, 600); setTimeout(place, 2000); }
   }
-  document.addEventListener('spLiveChatLoaded', init);
-  // Fallback in case the loaded event fired before this listener existed
-  var tries = 0, t = setInterval(function () {
-    if (done || ++tries > 40) return clearInterval(t);
-    if (window.sp && window.sp.liveChat) { clearInterval(t); init(); }
+
+  // The widget bundle can finish after the loaded event, so keep retrying until config() exists.
+  var tries = 0, poll = setInterval(function () {
+    if (place()) { clearInterval(poll); setTimeout(place, 600); setTimeout(place, 2000); }
+    else if (++tries > 80) clearInterval(poll);
   }, 250);
-  // Navigation can run before the widget finishes loading, so keep the
-  // visibility state in sync from the first paint as well.
-  document.addEventListener('DOMContentLoaded', syncVisibility);
+
+  document.addEventListener('spLiveChatLoaded', lock);
+
+  function later() { clearTimeout(timer); timer = setTimeout(place, 150); }
+  window.addEventListener('resize', later);
+  window.addEventListener('orientationchange', later);
+  window.addEventListener('pageshow', later);
+
+  // Re-apply whenever the Home screen becomes active again (cheap: watches one element's class only).
+  function watchHome() {
+    var home = document.getElementById('screen-home');
+    if (!home || !window.MutationObserver) return;
+    new MutationObserver(function () { if (home.classList.contains('active')) later(); })
+      .observe(home, { attributes: true, attributeFilter: ['class'] });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchHome);
+  else watchHome();
 })();
 </script>
 <script src="https://cdn.pulse.is/livechat/loader.js" data-live-chat-id="6abae6321b15f81d2b07a64b" async></script>
