@@ -264,6 +264,7 @@ __name(publicUrlFor, "publicUrlFor");
 var STARTUP_CACHE_TTL = 3600;
 var STARTUP_STALE_TTL = 10800;
 var PUBLIC_STARTUP_SNAPSHOT_KEY = "snapshots/public-startup-v1.json";
+var PUBLIC_VACANCY_SNAPSHOT_KEY = "snapshots/public-vacancies-v1.json";
 async function readPublicStartupSnapshot(env) {
   if (!env.MEDIA_BUCKET) return null;
   try {
@@ -285,6 +286,39 @@ async function writePublicStartupSnapshot(env, payload) {
   return true;
 }
 __name(writePublicStartupSnapshot, "writePublicStartupSnapshot");
+async function readPublicVacancySnapshot(env) {
+  if (!env.MEDIA_BUCKET) return null;
+  try {
+    const object = await env.MEDIA_BUCKET.get(PUBLIC_VACANCY_SNAPSHOT_KEY);
+    if (!object) return null;
+    const payload = JSON.parse(await object.text());
+    return payload && Array.isArray(payload.vacancies) ? payload : null;
+  } catch (e) {
+    console.warn("Could not read public R2 vacancy snapshot", e);
+    return null;
+  }
+}
+__name(readPublicVacancySnapshot, "readPublicVacancySnapshot");
+async function writePublicVacancySnapshot(env, payload) {
+  if (!env.MEDIA_BUCKET) return false;
+  await env.MEDIA_BUCKET.put(PUBLIC_VACANCY_SNAPSHOT_KEY, JSON.stringify(payload), {
+    httpMetadata: { contentType: "application/json; charset=utf-8", cacheControl: "public, max-age=300" },
+    customMetadata: { generated_at: payload.generated_at || new Date().toISOString() }
+  });
+  return true;
+}
+__name(writePublicVacancySnapshot, "writePublicVacancySnapshot");
+async function buildPublicVacancySnapshot(env) {
+  const columns = [
+    "id", "agency_id", "employer_id", "title", "company", "company_photo",
+    "location", "closing_date", "notes", "link", "email", "phone", "remote",
+    "experience_level", "employment_type", "contract_type", "work_schedule",
+    "hours", "salary", "start_date", "created_at", "source_type"
+  ];
+  const result = await env.DB.prepare(`SELECT ${columns.join(",")} FROM vacancies WHERE closing_date IS NULL OR closing_date = '' OR closing_date >= date('now') ORDER BY created_at DESC, id DESC`).all();
+  return { generated_at: new Date().toISOString(), vacancies: result.results || [] };
+}
+__name(buildPublicVacancySnapshot, "buildPublicVacancySnapshot");
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
@@ -530,8 +564,12 @@ __name(syncD1FromSupabase, "syncD1FromSupabase");
 async function syncD1AndPublishSnapshot(env) {
   const summary = await syncD1FromSupabase(env);
   const payload = env.DB ? await loadStartupDataFromD1(env) : await loadStartupData(env);
-  await writePublicStartupSnapshot(env, payload);
-  return { ...summary, snapshot: "r2", snapshot_generated_at: payload.generated_at };
+  const vacancySnapshot = env.DB ? await buildPublicVacancySnapshot(env) : null;
+  await Promise.all([
+    writePublicStartupSnapshot(env, payload),
+    vacancySnapshot ? writePublicVacancySnapshot(env, vacancySnapshot) : Promise.resolve(false)
+  ]);
+  return { ...summary, snapshot: "r2", snapshot_generated_at: payload.generated_at, vacancy_snapshot_rows: vacancySnapshot?.vacancies?.length || 0 };
 }
 __name(syncD1AndPublishSnapshot, "syncD1AndPublishSnapshot");
 
@@ -917,8 +955,7 @@ async function startupResponse(request, env, ctx, origin) {
   }
 }
 __name(startupResponse, "startupResponse");
-async function vacanciesResponse(request, env, origin) {
-  if (!env.DB) return json({ error: "D1 not bound" }, 503, origin);
+async function vacanciesResponse(request, env, ctx, origin) {
   const url = new URL(request.url);
   const q = String(url.searchParams.get("q") || "").trim().slice(0, 120);
   const location = String(url.searchParams.get("location") || "").trim().slice(0, 120);
@@ -929,58 +966,61 @@ async function vacanciesResponse(request, env, origin) {
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 20) || 20, 1), 50);
   const offset = Math.min(Math.max(Number(url.searchParams.get("offset") || 0) || 0, 0), 5000);
   const cursor = String(url.searchParams.get("cursor") || "");
-  const conditions = ["(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now'))"];
-  const values = [];
-  if (q) {
-    conditions.push("(title LIKE ? OR company LIKE ? OR location LIKE ? OR notes LIKE ?)");
-    const pattern = `%${q}%`;
-    values.push(pattern, pattern, pattern, pattern);
-  }
-  if (location) {
-    conditions.push("location LIKE ?");
-    values.push(`%${location}%`);
-  }
-  if (scope === "general") {
-    conditions.push("(agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND (source_type IS NULL OR source_type NOT IN ('himalayas','adzuna','government','dpsa','retail','shoprite','picknpay','woolworths','truworths','spar','career_board','learnerships','careers_page'))");
-  }
-  if (source) {
+  const snapshot = await readPublicVacancySnapshot(env);
+  const filterRows = (allRows) => {
+    const dedicated = new Set(["himalayas", "adzuna", "government", "dpsa", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "learnerships", "careers_page"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
-    if (sources.length === 1) {
-      conditions.push("source_type = ?");
-      values.push(sources[0]);
-    } else if (sources.length > 1) {
+    const cursorSeparator = cursor.indexOf("|");
+    const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;
+    const cursorId = cursorSeparator >= 0 ? cursor.slice(cursorSeparator + 1) : "";
+    return (allRows || []).filter((row) => {
+      if (row.closing_date && row.closing_date < new Date().toISOString().slice(0, 10)) return false;
+      if (q && ![row.title, row.company, row.location, row.notes].some((value) => String(value || "").toLowerCase().includes(q.toLowerCase()))) return false;
+      if (location && !String(row.location || "").toLowerCase().includes(location.toLowerCase())) return false;
+      if (remote && String(row.remote || "") !== remote) return false;
+      if (experience && String(row.experience_level || "") !== experience) return false;
+      if (scope === "general" && !((!row.agency_id || row.agency_id === "general") && !row.employer_id && !dedicated.has(String(row.source_type || "")))) return false;
+      if (sources.length && !sources.includes(String(row.source_type || ""))) return false;
+      if (cursorCreated && !(
+        String(row.created_at || "") < cursorCreated ||
+        (String(row.created_at || "") === cursorCreated && String(row.id || "") < cursorId)
+      )) return false;
+      return true;
+    });
+  };
+  let rows;
+  if (snapshot) {
+    rows = filterRows(snapshot.vacancies);
+  } else if (env.DB) {
+    // Compatibility fallback for the first deployment before the scheduled
+    // sync has published the R2 vacancy snapshot.
+    const conditions = ["(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now'))"];
+    const values = [];
+    if (scope === "general") conditions.push("(agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND (source_type IS NULL OR source_type NOT IN ('himalayas','adzuna','government','dpsa','retail','shoprite','picknpay','woolworths','truworths','spar','career_board','learnerships','careers_page'))");
+    if (source) {
+      const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
       conditions.push(`source_type IN (${sources.map(() => "?").join(",")})`);
       values.push(...sources);
     }
+    if (remote) { conditions.push("remote = ?"); values.push(remote); }
+    if (experience) { conditions.push("experience_level = ?"); values.push(experience); }
+    const columns = ["id", "agency_id", "employer_id", "title", "company", "company_photo", "location", "closing_date", "notes", "link", "email", "phone", "remote", "experience_level", "employment_type", "contract_type", "work_schedule", "hours", "salary", "start_date", "created_at", "source_type"];
+    const result = await env.DB.prepare(`SELECT ${columns.join(",")} FROM vacancies WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`).bind(...values, limit + 1, offset).all();
+    rows = result.results || [];
+    // Do not build the full snapshot from a visitor request. Until the first
+    // scheduled/admin sync publishes it, this bounded fallback keeps the
+    // remaining D1 cost predictable instead of allowing every visitor to
+    // trigger a full-table read.
+  } else {
+    return json({ error: "Public vacancy snapshot unavailable" }, 503, origin);
   }
-  if (remote) {
-    conditions.push("remote = ?");
-    values.push(remote);
-  }
-  if (experience) {
-    conditions.push("experience_level = ?");
-    values.push(experience);
-  }
-  if (cursor) {
-    const separator = cursor.indexOf("|");
-    const createdAt = separator >= 0 ? cursor.slice(0, separator) : cursor;
-    const id = separator >= 0 ? cursor.slice(separator + 1) : "";
-    if (createdAt) {
-      conditions.push("(created_at < ? OR (created_at = ? AND id < ?))");
-      values.push(createdAt, createdAt, id);
-    }
-  }
-  const columns = ["id", "agency_id", "employer_id", "title", "company", "company_photo", "location", "closing_date", "notes", "link", "email", "phone", "remote", "experience_level", "employment_type", "contract_type", "work_schedule", "hours", "salary", "start_date", "created_at", "source_type"];
-  const useOffset = url.searchParams.has("offset");
-  const query = `SELECT ${columns.join(",")} FROM vacancies WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC, id DESC LIMIT ?${useOffset ? " OFFSET ?" : ""}`;
-  const result = await env.DB.prepare(query).bind(...values, limit + 1, ...(useOffset ? [offset] : [])).all();
-  const rows = result.results || [];
-  const hasMore = rows.length > limit;
-  const page = hasMore ? rows.slice(0, limit) : rows;
+  const paged = cursor || url.searchParams.has("offset") ? rows.slice(offset, offset + limit + 1) : rows.slice(0, limit + 1);
+  const hasMore = paged.length > limit;
+  const page = hasMore ? paged.slice(0, limit) : paged;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? `${last.created_at || ""}|${last.id || ""}` : null;
   const response = json({ vacancies: page, next_cursor: nextCursor, limit }, 200, origin);
-  response.headers.set("Cache-Control", "public, max-age=30, s-maxage=60, stale-while-revalidate=300");
+  response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=3600");
   return response;
 }
 __name(vacanciesResponse, "vacanciesResponse");
@@ -1255,7 +1295,7 @@ var worker_default = {
         return await startupResponse(request, env, ctx, origin);
       }
       if (path === "/api/vacancies" && request.method === "GET") {
-        return await vacanciesResponse(request, env, origin);
+        return await vacanciesResponse(request, env, ctx, origin);
       }
       if (path === "/api/sync-status" && request.method === "GET") {
         return await syncStatusResponse(request, env, origin);
