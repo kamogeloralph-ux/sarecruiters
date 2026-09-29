@@ -1705,12 +1705,9 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 
 /* Crawlable SEO navigation is visible to people and search engines without
    changing the app's primary screen layout. */
-.seo-site-footer{max-width:760px;margin:20px auto 0;padding:22px 20px 28px;color:var(--text-2);text-align:center;border-top:1px solid var(--border);font-size:12px}
-.seo-site-footer strong{display:block;color:var(--text);font-size:13px;margin-bottom:10px}
-.seo-site-footer nav{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 16px}
-.seo-site-footer a{color:var(--accent);text-decoration:none}
-.seo-site-footer a:hover{text-decoration:underline}
-@media (max-width:480px){.seo-site-footer{padding-left:14px;padding-right:14px}.seo-site-footer nav{gap:8px 12px}}
+/* SEO quick-links footer: kept in the HTML so search engines and screen readers still find the links,
+   but visually hidden so no grey extra band appears above the bottom navigation. */
+.seo-site-footer{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;border:0!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important}
 /* FINAL MENU CONTROL STANDARD: the home hamburger and every three-dot menu
    button must share one visible treatment, including the Menu hero override. */
 .site-menu-trigger,.menu-more-btn{
