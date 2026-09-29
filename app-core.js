@@ -17,6 +17,11 @@ var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 // 'https://sarecruiters-uploader.<your-subdomain>.workers.dev'
 var R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
 var STARTUP_DATA_URL = R2_WORKER_URL + '/api/startup';
+// Public reads use the repository snapshot on GitHub Pages. Supabase remains
+// available for authentication and admin/employer writes, but the directory
+// no longer depends on a database or edge worker being online.
+var STATIC_DATA_URL = 'data/startup.json';
+var staticDataEnabled = true;
 var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
@@ -256,6 +261,7 @@ var editingId = null;
 var agenciesCache = [];
 var branchesCache = [];
 var vacanciesCache = [];
+var staticVacanciesCache = [];
 var featuredVacanciesCache = [];
 var employersCache = [];
 var generalVacancyCount = 0;

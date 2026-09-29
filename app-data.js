@@ -605,6 +605,10 @@ async function getVacancies() {
   return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
 }
 async function loadFeaturedVacancies() {
+  if (window.__saStaticData) {
+    featuredVacanciesCache = filterExpiredVacancies(window.__saStaticData.featured_vacancies || []);
+    return featuredVacanciesCache;
+  }
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   try {
     var result = await supabaseClient.from('vacancies').select(columns)
@@ -747,6 +751,21 @@ function generalVacancyQueryKeyFor(state) {
   return [state.q, state.remote, state.exp].join('|').toLowerCase();
 }
 async function fetchVacancyPageFromWorker(params) {
+  if (window.__saStaticData) {
+    var sourceNames = params && params.source ? String(params.source).split(',') : null;
+    var rows = (staticVacanciesCache || []).filter(function(v) {
+      if (sourceNames && sourceNames.length && sourceNames.indexOf(String(v.source_type || '')) === -1) return false;
+      if (params.scope === 'general' && !isGeneralDirectoryVacancy(v)) return false;
+      if (params.remote && String(v.remote || '') !== String(params.remote)) return false;
+      if (params.experience && String(v.experience_level || '') !== String(params.experience)) return false;
+      if (params.q && [v.title, v.company, v.location, v.notes].join(' ').toLowerCase().indexOf(String(params.q).toLowerCase()) === -1) return false;
+      return !isVacancyExpired(v);
+    });
+    rows.sort(function(a, b) { return new Date(b.created_at || 0) - new Date(a.created_at || 0) || String(b.id).localeCompare(String(a.id)); });
+    var limit = Number(params.limit) || 30;
+    var offset = Number(params.cursor) || 0;
+    return { vacancies: rows.slice(offset * limit, (offset + 1) * limit), next_cursor: (offset + 1) * limit < rows.length ? String(offset + 1) : null, total: rows.length };
+  }
   if (!R2_WORKER_URL) return null;
   try {
     var url = new URL(R2_WORKER_URL + '/api/vacancies');
@@ -1029,6 +1048,7 @@ async function saveDataCache() {
     agencies: agenciesCache,
     branches: branchesCache,
     vacancies: vacanciesCache,
+    allVacancies: staticVacanciesCache.length ? staticVacanciesCache : vacanciesCache,
     generalVacancyCount: generalVacancyCount,
     vacancyTotal: (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded)
       ? generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal()
@@ -1066,6 +1086,7 @@ async function loadDataCache() {
   agenciesCache = d.agencies || [];
   branchesCache = d.branches || [];
   vacanciesCache = d.vacancies || [];
+  staticVacanciesCache = d.allVacancies || d.vacancies || [];
   generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
   cachedVacancyTotal = (typeof d.vacancyTotal === 'number') ? d.vacancyTotal : null;
   employersCache = d.employers || [];
@@ -1080,6 +1101,15 @@ async function loadDataCache() {
 
 var startupDataPromise = null;
 async function fetchStartupDataOnce() {
+  if (staticDataEnabled) {
+    try {
+      var staticResponse = await fetch(STATIC_DATA_URL, { method: 'GET', cache: 'no-cache', headers: { Accept: 'application/json' } });
+      if (staticResponse.ok) {
+        var staticPayload = await staticResponse.json();
+        if (staticPayload && Array.isArray(staticPayload.agencies) && Array.isArray(staticPayload.branches) && Array.isArray(staticPayload.vacancies) && Array.isArray(staticPayload.employers) && staticPayload.counts && staticPayload.settings) return staticPayload;
+      }
+    } catch (e) { console.warn('static data load', e); }
+  }
   try {
     var controller = typeof AbortController === 'function' ? new AbortController() : null;
     var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
@@ -1168,6 +1198,8 @@ async function loadAll(options) {
   // original independent Supabase reads so launch remains resilient.
   var startup = await getStartupData(forceFresh);
   window.__saStartupPayload = startup;
+  window.__saStaticData = (startup && startup.schema === 1 && Array.isArray(startup.vacancies)) ? startup : null;
+  if (window.__saStaticData) staticVacanciesCache = filterExpiredVacancies(startup.vacancies || []);
   if (startup && Array.isArray(startup.featured_vacancies)) {
     featuredVacanciesCache = filterExpiredVacancies(startup.featured_vacancies);
   }
@@ -1216,11 +1248,11 @@ async function loadAll(options) {
     // splitting the startup cache from the lazy General Vacancies feed.
     results[2] = filterExpiredVacancies(results[2]);
     matchVacanciesToAgencies(results[2], agenciesCache);
-    vacanciesCache = sortVacancies(results[2].filter(function(v){
+    vacanciesCache = sortVacancies((window.__saStaticData ? results[2] : results[2].filter(function(v){
       // General-folder rows are loaded lazily. Do not retain them here or
       // updateStats() would add them a second time to generalVacancyCount.
       return !isGeneralDirectoryVacancy(v);
-    }));
+    })));
   }
   if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
   if (typeof results[4] === 'number') { generalVacancyCount = results[4]; generalVacancyCountLoaded = true; }
@@ -1262,7 +1294,7 @@ async function loadAll(options) {
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   loadFeaturedVacancies();
-  if (startup) refreshSecondaryStartupData();
+  if (startup && !window.__saStaticData) refreshSecondaryStartupData();
   // Candidate spotlight is non-critical; fetch it after the first useful home render.
   loadCandidateSpotlight();
   // Poster feed and first-party ads are non-critical to the first render.
@@ -1318,7 +1350,9 @@ function updateStats() {
   updatePosterStat();
   var vacancyStat = document.getElementById('stat-vacancies');
   if (vacancyStat) {
-    if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
+    if (window.__saStaticData && window.__saStaticData.counts && typeof window.__saStaticData.counts.vacancies === 'number') {
+      setVacancyStat(vacancyStat, window.__saStaticData.counts.vacancies);
+    } else if (generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
       setVacancyStat(vacancyStat, generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal());
     } else if (typeof cachedVacancyTotal === 'number') {
       setVacancyStat(vacancyStat, cachedVacancyTotal);

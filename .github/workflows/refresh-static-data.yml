@@ -1,0 +1,78 @@
+name: Refresh static job data
+
+on:
+  schedule:
+    # Monday and Friday at 03:30 UTC.
+    - cron: "30 3 * * 1,5"
+  workflow_dispatch:
+    inputs:
+      years:
+        description: "Government publication years to scan"
+        required: false
+        default: "2026"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-static-data
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22"
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+  ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  GOVERNMENT_YEARS: ${{ inputs.years || '2026' }}
+  GOVERNMENT_MAX_CIRCULAR: "60"
+  ADZUNA_PAGES: "3"
+  HIMALAYAS_PAGES: "5"
+  GRADUATES24_PAGES: "10"
+  SIMPLIFY_MAX_PAGES: "100"
+  SIMPLIFY_PAGE_SIZE: "100"
+  SIMPLIFY_REQUEST_DELAY_MS: "750"
+  CAREERS_PAGE_ONLY: ""
+  ORACLE_ONLY: ""
+  RETAIL_PAGE_SIZE: "20"
+  RETAIL_DETAIL_CONCURRENCY: "4"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install PDF text extraction
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Run source scrapers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run sync:adzuna
+          npm run sync:himalayas
+          npm run sync:oracle
+          npm run sync:government
+          npm run scrape:retail
+          npm run scrape:simplify
+          npm run scrape:graduates24
+          npm run scrape:careers-page
+      - name: Export public snapshot
+        run: node scripts/export-static-data.mjs
+      - name: Commit updated JSON when data changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/startup.json
+          git diff --cached --quiet && echo "No public data changes" || git commit -m "chore(data): refresh static vacancy snapshot"
+          git push
