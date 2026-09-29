@@ -1,0 +1,33 @@
+name: Enforce per-agency/employer vacancy caps
+on:
+  # Keeps every agency, company and employer down to their 50 most recent
+  # vacancies. Runs daily — new postings from scrapers and the self-service
+  # dashboards accumulate slowly enough that once a day is plenty, and it
+  # keeps this off the Supabase/D1 write budget the 6-hourly D1 sync uses.
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: enforce-vacancy-caps
+  cancel-in-progress: false
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Enforce vacancy caps
+        run: npm run enforce:vacancy-caps
