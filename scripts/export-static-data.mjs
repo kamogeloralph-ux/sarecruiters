@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { filterLiveVacancies } from './static-vacancy-filter.mjs';
 
 const root = path.resolve(new URL('..', import.meta.url).pathname);
 const output = path.join(root, 'data', 'startup.json');
@@ -31,7 +32,11 @@ const [agencies, branches, employers, rawVacancies] = await Promise.all([
   readAll('employers', 'id,name,industry,website,contact,email,location,address,photo,verified,created_at', 'created_at'),
   readAll('vacancies', 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order', 'created_at'),
 ]);
-const vacancies = rawVacancies.map(publicVacancy).filter((row) => row.id && row.title && row.link);
+const publicRows = rawVacancies.map(publicVacancy).filter((row) => row.id && row.title && row.link);
+// Only publish (and count) what the app keeps live: drop closed listings and apply the same
+// newest-50-per-poster cap the daily enforce-vacancy-caps job applies to the database.
+const vacancies = filterLiveVacancies(publicRows);
+console.log(`[static-data] ${publicRows.length} rows read, ${vacancies.length} live after expiry + per-poster caps`);
 const dedicated = {
   himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government', 'dpsa'],
   retail: ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'],
