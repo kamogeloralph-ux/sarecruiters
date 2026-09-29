@@ -481,6 +481,7 @@
 
     <div class="pgroup-label">Resources</div>
     <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="window.open('about/','_blank','noopener')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg></span><span>About SA Recruiters<span class="mi-sub">Our mission and recruitment community</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Learning Hub<span class="mi-sub">Guides &amp; resources for job seekers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg><use href="icons.svg#ia65142"/></svg></span><span>How to Prepare Your CV<span class="mi-sub">Step-by-step CV writing guide</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg><use href="icons.svg#ib745ad"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -817,10 +818,6 @@
   <button class="navbtn" data-tab="menu" data-ripple aria-label="Menu">
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     <span class="navbtn-label">Menu</span>
-  </button>
-  <button class="navbtn navbtn-about" data-ripple onclick="window.open('about/','_blank','noopener')" aria-label="About SA Recruiters">
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
-    <span class="navbtn-label">About</span>
   </button>
 </nav>
 
@@ -1402,16 +1399,35 @@
 <script>
 (function () {
   var done = false;
+  var observer = null;
+  function isHomeActive() {
+    var home = document.getElementById('screen-home');
+    return !!(home && home.classList.contains('active'));
+  }
+  function syncVisibility() {
+    var home = isHomeActive();
+    document.documentElement.classList.toggle('sendpulse-home-active', home);
+    document.querySelectorAll('iframe[src*="pulse.is"],iframe[src*="sendpulse"],[id*="sendpulse" i],[id*="sp-live" i],[class*="sendpulse" i],[class*="sp-live" i]').forEach(function (el) {
+      var visibility = home ? '' : 'hidden';
+      var pointerEvents = home ? '' : 'none';
+      if (el.style.visibility !== visibility) el.style.visibility = visibility;
+      if (el.style.pointerEvents !== pointerEvents) el.style.pointerEvents = pointerEvents;
+    });
+  }
   function place() {
     if (!(window.sp && window.sp.liveChat && window.sp.liveChat.config)) return false;
     var right = Math.max(18, (window.innerWidth - 520) / 2 + 18);
     window.sp.liveChat.config({ chatPosition: { bottom: '90px', right: right + 'px' } });
+    syncVisibility();
     return true;
   }
   function init() {
     if (done) return; done = true;
     place();
     window.addEventListener('resize', place);
+    observer = new MutationObserver(syncVisibility);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+    syncVisibility();
   }
   document.addEventListener('spLiveChatLoaded', init);
   // Fallback in case the loaded event fired before this listener existed
@@ -1419,6 +1435,9 @@
     if (done || ++tries > 40) return clearInterval(t);
     if (window.sp && window.sp.liveChat) { clearInterval(t); init(); }
   }, 250);
+  // Navigation can run before the widget finishes loading, so keep the
+  // visibility state in sync from the first paint as well.
+  document.addEventListener('DOMContentLoaded', syncVisibility);
 })();
 </script>
 <script src="https://cdn.pulse.is/livechat/loader.js" data-live-chat-id="6abae6321b15f81d2b07a64b" async></script>
