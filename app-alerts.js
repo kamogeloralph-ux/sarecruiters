@@ -18,8 +18,25 @@
     var list = document.getElementById('allvacancies-list');
     if (!list || document.getElementById('sa-alert-btn')) return;
     var b = document.createElement('button');
-    b.id = 'sa-alert-btn'; b.type = 'button'; b.className = 'vx-more';
-    b.style.margin = '8px 0'; b.textContent = '\uD83D\uDD14 Email me new jobs matching this search';
+    b.id = 'sa-alert-btn'; b.type = 'button'; b.className = 'sa-alert-cta';
+    b.setAttribute('aria-label', 'Email me new jobs matching this search');
+    // Modern inline CTA: a tinted card with a bell badge, a two-line label and
+    // a trailing affordance. Styled in vacancy-v2.css (.sa-alert-cta) so it
+    // adapts to the light/dark theme tokens instead of a bare emoji button.
+    b.innerHTML =
+      '<span class="sa-alert-cta-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>' +
+          '<path d="M13.7 21a2 2 0 0 1-3.4 0"/>' +
+        '</svg>' +
+      '</span>' +
+      '<span class="sa-alert-cta-body">' +
+        '<span class="sa-alert-cta-title">Email me new jobs</span>' +
+        '<span class="sa-alert-cta-sub">Get an alert when roles match this search</span>' +
+      '</span>' +
+      '<span class="sa-alert-cta-go" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' +
+      '</span>';
     b.addEventListener('click', saveSearch);
     list.insertAdjacentElement('beforebegin', b);
   }

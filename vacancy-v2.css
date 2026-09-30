@@ -61,6 +61,21 @@
 @keyframes vxsh{to{background-position:-200% 0}}
 .vx-more{width:100%;height:48px;margin-top:14px;border-radius:14px;border:1px solid var(--border-strong);background:var(--card);color:var(--accent);font-weight:700;cursor:pointer}
 
+/* Saved-search alert CTA (injected by app-alerts.js just above the results list) */
+.sa-alert-cta{display:flex;align-items:center;gap:12px;width:100%;margin:2px 0 14px;padding:12px 14px;border:1px solid var(--card-border-strong,var(--border-strong));border-radius:var(--vx-r);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--card)),var(--card) 62%);color:var(--text);text-align:left;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .15s var(--ease),border-color .15s,box-shadow .2s}
+.sa-alert-cta:hover{border-color:var(--accent);box-shadow:var(--card-shadow-hover,var(--shadow-sm))}
+.sa-alert-cta:active{transform:scale(.985)}
+.sa-alert-cta:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sa-alert-cta-icon{flex:0 0 auto;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 58%,#000));color:#fff;box-shadow:0 8px 18px -8px color-mix(in srgb,var(--accent) 75%,transparent)}
+.sa-alert-cta-icon svg{width:21px;height:21px}
+.sa-alert-cta-body{flex:1 1 auto;min-width:0;display:grid;gap:2px}
+.sa-alert-cta-title{font-size:14.5px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.sa-alert-cta-sub{font-size:12px;color:var(--text-2);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sa-alert-cta-go{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);transition:background .15s,color .15s,transform .15s var(--ease)}
+.sa-alert-cta-go svg{width:16px;height:16px}
+.sa-alert-cta:hover .sa-alert-cta-go{background:var(--accent);color:#fff;transform:translateX(1px)}
+@media (max-width:360px){.sa-alert-cta-sub{display:none}}
+
 /* Overview blocks */
 .vx-block{display:grid;gap:10px}
 .vx-block+.vx-block{margin-top:14px}
