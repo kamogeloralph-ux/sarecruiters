@@ -77,3 +77,16 @@ export function filterLiveVacancies(rows, opts = {}) {
   const companyCap = Math.max(1, Number.parseInt(opts.companyCap ?? process.env.MAX_PER_COMPANY ?? String(cap), 10));
   return applyPosterCaps(dropExpired(rows, opts.now), cap, companyCap);
 }
+
+// Job descriptions (`notes`) are ~half of the snapshot's bytes but are not needed to paint the
+// first screen. Split them out: the lean rows go in data/startup.json, and a { id: notes } map goes
+// in data/vacancy-notes.json which the app fetches at idle and merges back in (see
+// scheduleDeferredVacancyNotes in app-data.js).
+export function splitVacancyNotes(rows) {
+  const notes = {};
+  const lean = rows.map((row) => {
+    if (row.notes) notes[row.id] = row.notes;
+    return { ...row, notes: null };
+  });
+  return { lean, notes };
+}
