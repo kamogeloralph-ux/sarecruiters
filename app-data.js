@@ -605,18 +605,29 @@ async function getVacancies() {
   return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
 }
 async function loadFeaturedVacancies() {
+  // Paint instantly from the committed snapshot (if present) so the rail is
+  // never blank on first render while the live refresh below is in flight.
   if (window.__saStaticData) {
     featuredVacanciesCache = filterExpiredVacancies(window.__saStaticData.featured_vacancies || []);
-    return featuredVacanciesCache;
   }
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   try {
+    if (!supabaseClient) throw new Error('Supabase client unavailable');
     var result = await supabaseClient.from('vacancies').select(columns)
       .eq('is_featured', true)
       .order('featured_order', { ascending: true })
       .order('created_at', { ascending: false })
       .limit(12);
     if (result.error) throw result.error;
+    // The live read is authoritative. When an admin ticks "Feature this
+    // vacancy" the change lands in Supabase immediately, so refresh the rail
+    // from there even though the repo snapshot is enabled — otherwise the
+    // section stays frozen on whatever the snapshot captured until the next
+    // scheduled static-data rebuild. The snapshot above only bridges the gap
+    // until this resolves, and remains the offline fallback if it fails. This
+    // is the client half of the worker's "direct public Supabase refresh" for
+    // the Featured Vacancies section (the D1 mirror still lacks the featured
+    // columns, so its copy of this list is always empty).
     featuredVacanciesCache = filterExpiredVacancies((result.data || []).filter(function(v){
       return !v.featured_until || new Date(v.featured_until).getTime() >= Date.now();
     }));
