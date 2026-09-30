@@ -27,6 +27,7 @@
      stops the raw unstyled shell (zeroed stat cards, plain-text banners)
      from ever being visible on load / refresh / relaunch from idle. -->
 <style id="critical-shell-css">
+  @font-face{font-family:'Inter Fallback';src:local('Arial'),local('Helvetica');size-adjust:107.4%;ascent-override:90.2%;descent-override:22.5%;line-gap-override:0%;font-display:swap}
   html,body{margin:0;min-height:100%}
   [data-theme="light"] body{background:#F2F2F7}
   [data-theme="dark"] body{background:#000000}
@@ -171,7 +172,7 @@
 
 <div id="app-splash" aria-hidden="true">
   <div class="sa-splash-inner">
-    <img src="icons/logo-152.webp" alt="" width="76" height="76" fetchpriority="high" decoding="async">
+    <img src="icons/logo-152.webp" srcset="icons/logo-96.webp 96w, icons/logo-152.webp 152w" sizes="76px" alt="" width="76" height="76" fetchpriority="high" decoding="async">
     <div class="sa-splash-status" id="app-splash-status">
       <div class="sa-splash-dots"><span></span><span></span><span></span></div>
       <p class="sa-splash-title" id="app-splash-title">Getting things ready…</p>
@@ -223,7 +224,7 @@
     <div class="screen-fixed">
     <header>
       <div class="logo-wrap">
-        <img class="logo-svg" src="icons/logo-96.webp" alt="SA Recruiters logo" width="42" height="42" fetchpriority="high" decoding="async">
+        <img class="logo-svg" src="icons/logo-96.webp" srcset="icons/logo-96.webp 96w, icons/logo-152.webp 152w" sizes="42px" alt="SA Recruiters logo" width="42" height="42" fetchpriority="high" decoding="async">
         <div class="logo-text-wrap">
           <div class="logo-text">SA Recruiters</div>
           <div class="logo-slogan">Connecting South Africa's Recruitment Community.</div>
@@ -1407,7 +1408,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=09ce1db97f" defer></script>
+<script src="app.bundle.min.js?v=362cee16ad" defer></script>
 <script src="app-vacancy-v2.js?v=vx-3" defer></script>
 <script src="app-alerts.js?v=al-1" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
