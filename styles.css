@@ -1777,7 +1777,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #screen-home .bottom-nav,
 .bottom-nav { background: var(--brand-blue-deep); }
 .bottom-nav .navbtn.active,
-.bottom-nav .navbtn.active svg { color: var(--brand-green); stroke: var(--brand-green); }
+.bottom-nav .navbtn.active svg { color: #22d66d; stroke: #22d66d; }
 #screen-home .menu-hero,
 #screen-menu .menu-hero {
   background: radial-gradient(ellipse at 85% 10%, color-mix(in srgb, var(--brand-green) 45%, transparent), transparent 34%), linear-gradient(150deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);

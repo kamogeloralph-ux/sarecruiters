@@ -153,7 +153,7 @@ function closeSiteMenu() {
   var drawer = document.getElementById('site-menu-drawer');
   var backdrop = document.getElementById('site-menu-backdrop');
   var trigger = document.getElementById('site-menu-trigger');
-  if (drawer) { drawer.classList.remove('is-open'); drawer.setAttribute('aria-hidden', 'true'); }
+  if (drawer) { drawer.classList.remove('is-open'); drawer.setAttribute('aria-hidden', 'true'); drawer.setAttribute('inert', ''); }
   if (backdrop) { backdrop.classList.remove('is-visible'); backdrop.setAttribute('aria-hidden', 'true'); }
   // The trigger exists in every screen's header (the iOS-style site menu update);
   // return focus to the one on the screen the user is actually viewing.

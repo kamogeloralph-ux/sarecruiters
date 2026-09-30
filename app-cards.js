@@ -18,7 +18,7 @@ function verifiedBadge(title, withLabel) {
 
 // ===== Hub card (agency) =====
 function avatarHtml(a) {
-  if (a.photo) return '<div class="avatar"><img src="' + a.photo + '" alt="" loading="lazy" decoding="async" width="42" height="42"></div>';
+  if (a.photo) return '<div class="avatar"><img src="' + escapeHtml(sizedPhotoUrl(a.photo, 84, 84)) + '" data-fallback="' + escapeHtml(a.photo) + '" onerror="this.onerror=null;var f=this.getAttribute(\'data-fallback\');if(f&&this.src.indexOf(f)===-1){this.src=f}else{this.remove()}" alt="" loading="lazy" decoding="async" width="42" height="42"></div>';
   return '<div class="avatar">' + initials(a.name) + '</div>';
 }
 
