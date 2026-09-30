@@ -1364,7 +1364,9 @@ async function loadAll(options) {
   saveDataCache();
   scheduleDeferredVacancyNotes(startup);
   updatePostingToggleUI();
-  updateEmployerRegUI();
+  // updateEmployerRegUI() lives in admin.html (the admin console only); the
+  // public app never defines it, so guard the call to avoid a ReferenceError.
+  if (typeof updateEmployerRegUI === 'function') updateEmployerRegUI();
   // If in manager mode, re-render the manager panel with fresh data
   if (managerMode) renderManagerMode();
   if (employerManagerMode) renderEmployerManagerMode();
