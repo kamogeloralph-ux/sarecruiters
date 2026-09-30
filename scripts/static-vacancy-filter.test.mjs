@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dropExpired, applyPosterCaps, filterLiveVacancies, splitVacancyNotes } from './static-vacancy-filter.mjs';
+import { dropExpired, applyPosterCaps, filterLiveVacancies, splitVacancyNotes, activePoolCandidates } from './static-vacancy-filter.mjs';
 
 const row = (id, extra = {}) => ({ id, created_at: `2026-09-${String(10 + (Number(id.replace(/\D/g, '')) % 18)).padStart(2, '0')}`, ...extra });
 
@@ -39,4 +39,17 @@ test('splitVacancyNotes strips descriptions from rows and returns an id -> notes
   assert.deepEqual(notes, { a: 'Long text' });
   assert.ok(lean.every((r) => r.notes === null));
   assert.equal(rows[0].notes, 'Long text', 'input rows are not mutated');
+});
+
+test('activePoolCandidates keeps only active rows (missing status counts as pending)', () => {
+  const rows = [
+    { id: 'a', status: 'active' },
+    { id: 'b', status: 'pending' },
+    { id: 'c' },
+    { id: 'd', status: 'inactive' },
+    { id: 'e', status: 'Active' },
+  ];
+  assert.deepEqual(activePoolCandidates(rows).map((r) => r.id), ['a']);
+  assert.deepEqual(activePoolCandidates(null), []);
+  assert.deepEqual(activePoolCandidates(undefined), []);
 });

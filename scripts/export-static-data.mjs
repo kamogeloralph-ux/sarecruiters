@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { filterLiveVacancies, splitVacancyNotes } from './static-vacancy-filter.mjs';
+import { filterLiveVacancies, splitVacancyNotes, activePoolCandidates } from './static-vacancy-filter.mjs';
 
 const root = path.resolve(new URL('..', import.meta.url).pathname);
 const output = path.join(root, 'data', 'startup.json');
@@ -27,11 +27,24 @@ function publicVacancy(row) {
   return Object.fromEntries(allowed.map((key) => [key, row[key] ?? null]));
 }
 
-const [agencies, branches, employers, rawVacancies] = await Promise.all([
+const [agencies, branches, employers, rawVacancies, poolCandidates] = await Promise.all([
   readAll('agencies', 'id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,created_at', 'created_at'),
   readAll('branches', 'id,agency_id,name,location,phone,email', 'name'),
   readAll('employers', 'id,name,industry,website,contact,email,location,address,photo,verified,created_at', 'created_at'),
   readAll('vacancies', 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order', 'created_at'),
+  // The public, already-redacted Talent Pool view -- the same source the
+  // Worker's /api/startup and the client's getPoolCandidateCount() read. It
+  // used to be omitted here (counts.candidates was hard-coded to 0), so the
+  // home "Talent Pool Candidates" card showed 0 on first paint until the
+  // visitor opened the Talent Pool screen. Include it so the committed
+  // snapshot is self-consistent. A miss here must not fail the whole export --
+  // fall back to an empty pool (count 0) rather than aborting the vacancy
+  // refresh.
+  readAll('pool_candidates_public', 'id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at', 'created_at')
+    .catch((error) => {
+      console.warn(`[static-data] pool_candidates_public read failed (${error.message}); exporting 0 candidates`);
+      return [];
+    }),
 ]);
 const publicRows = rawVacancies.map(publicVacancy).filter((row) => row.id && row.title && row.link);
 // Only publish (and count) what the app keeps live: drop closed listings and apply the same
@@ -48,7 +61,8 @@ const dedicated = {
 const isDedicated = (row) => Object.values(dedicated).some((types) => types.includes(String(row.source_type || '').toLowerCase()));
 const isGeneral = (row) => !row.employer_id && (!row.agency_id || row.agency_id === 'general') && !isDedicated(row);
 const featured = vacancies.filter((row) => row.is_featured && (!row.featured_until || new Date(row.featured_until).getTime() >= Date.now())).sort((a, b) => (Number(a.featured_order) || 0) - (Number(b.featured_order) || 0) || String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
-const counts = { vacancies: vacancies.length, general: vacancies.filter(isGeneral).length, dedicated: {}, employers: employers.length, agencies: agencies.length, candidates: 0 };
+const livePoolCandidates = activePoolCandidates(poolCandidates);
+const counts = { vacancies: vacancies.length, general: vacancies.filter(isGeneral).length, dedicated: {}, employers: employers.length, agencies: agencies.length, candidates: livePoolCandidates.length };
 for (const [name, types] of Object.entries(dedicated)) counts.dedicated[name] = vacancies.filter((row) => types.includes(String(row.source_type || '').toLowerCase())).length;
 const payload = {
   schema: 1,
@@ -57,6 +71,7 @@ const payload = {
   branches,
   employers: employers.map(({ manage_token, ...row }) => row),
   vacancies,
+  pool_candidates: livePoolCandidates,
   featured_vacancies: featured,
   counts,
   notes_url: 'data/vacancy-notes.json',
@@ -65,4 +80,4 @@ const payload = {
 await fs.mkdir(path.dirname(output), { recursive: true });
 await fs.writeFile(output, JSON.stringify(payload));
 await fs.writeFile(notesOutput, JSON.stringify(vacancyNotes));
-console.log(`[static-data] wrote ${vacancies.length} vacancies, ${agencies.length} agencies, ${employers.length} employers to ${output}`);
+console.log(`[static-data] wrote ${vacancies.length} vacancies, ${agencies.length} agencies, ${employers.length} employers, ${livePoolCandidates.length} pool candidates to ${output}`);
