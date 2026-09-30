@@ -18,7 +18,7 @@ function verifiedBadge(title, withLabel) {
 
 // ===== Hub card (agency) =====
 function avatarHtml(a) {
-  if (a.photo) return '<div class="avatar"><img src="' + a.photo + '" alt="" loading="lazy" width="42" height="42"></div>';
+  if (a.photo) return '<div class="avatar"><img src="' + a.photo + '" alt="" loading="lazy" decoding="async" width="42" height="42"></div>';
   return '<div class="avatar">' + initials(a.name) + '</div>';
 }
 
@@ -620,11 +620,11 @@ function vacancyCard(v, agency, options) {
   /* Logo tile: employer/agency photo -> img; else company/agency initials on a gradient */
   var logo;
   if (isEmployerPost && employer.photo) {
-    logo = '<div class="vac-logo"><img src="' + escapeHtml(employer.photo) + '" alt="" loading="lazy" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(employer.photo) + '" alt="" loading="lazy" decoding="async" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
   } else if (isGeneral && v.company_photo) {
-    logo = '<div class="vac-logo"><img src="' + escapeHtml(v.company_photo) + '" alt="" loading="lazy" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(v.company_photo) + '" alt="" loading="lazy" decoding="async" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
   } else if (!isEmployerPost && !isGeneral && agency && agency.photo) {
-    logo = '<div class="vac-logo"><img src="' + escapeHtml(agency.photo) + '" alt="" loading="lazy" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
+    logo = '<div class="vac-logo"><img src="' + escapeHtml(agency.photo) + '" alt="" loading="lazy" decoding="async" width="46" height="46" onerror="this.style.display=\'none\'"></div>';
   } else {
     var grad = vacGradFor(orgName);
     logo = '<div class="vac-logo ' + grad + '">' + escapeHtml(initials(orgName)) + '</div>';
@@ -665,7 +665,7 @@ function vacancyCard(v, agency, options) {
   var saRecruitersAttribution = !isHimalayas && !isAdzuna && (isGovernment || isGeneral || (!isEmployerPost && !isGeneral && agency))
     ? '<div class="sa-recruiters-attribution" aria-label="Jobs by SA Recruiters">' +
         '<a href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" title="Jobs by SA Recruiters" onclick="event.stopPropagation()">' +
-          '<img src="/icons/v2-icon-192.png" alt="SA Recruiters logo" loading="lazy" width="20" height="20">' +
+          '<img src="/icons/logo-96.webp" alt="SA Recruiters logo" loading="lazy" decoding="async" width="20" height="20">' +
           '<span>Jobs by SA Recruiters</span>' +
         '</a>' +
       '</div>'
@@ -902,7 +902,7 @@ function posterCard(p) {
   var caption = p.caption ? '<div class="poster-caption-text">' + escapeHtml(p.caption) + '</div>' : '<div class="poster-caption-text"></div>';
   return '<div class="poster-card" data-poster-id="' + escapeHtml(p.id) + '" ' +
     'onclick="openPosterLightbox(\'' + escapeHtml(p.image_url) + '\')">' +
-    '<img src="' + escapeHtml(p.image_url) + '" alt="' + escapeHtml(p.caption || 'Vacancy poster') + '" loading="lazy" ' +
+    '<img src="' + escapeHtml(p.image_url) + '" alt="' + escapeHtml(p.caption || 'Vacancy poster') + '" loading="lazy" decoding="async" ' +
     'onerror="this.closest(\'.poster-card\').remove()">' +
     '<div class="poster-caption">' + caption +
     '<button class="vac-share" type="button" onclick="event.stopPropagation();sharePoster(\'' + escapeHtml(p.id) + '\')" aria-label="Share poster">' + SHARE_SVG + '</button>' +

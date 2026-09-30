@@ -69,7 +69,7 @@ function renderAuthUser(user) {
   if (modeLabel) modeLabel.textContent = user ? 'Signed in with Google' : 'Browsing as a guest';
   var authAvatar = document.getElementById('welcome-user-avatar');
   if (authAvatar) {
-    authAvatar.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((user ? name : 'A').charAt(0).toUpperCase()) + '</span>';
+    authAvatar.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" decoding="async" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((user ? name : 'A').charAt(0).toUpperCase()) + '</span>';
   }
   // Keep the My Account screen in sync with the identity (guest or signed in).
   if (typeof renderAccountIdentity === 'function') renderAccountIdentity(user);

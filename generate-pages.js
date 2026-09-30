@@ -18,7 +18,7 @@ const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { runBundle } = require('./scripts/bundle-app');
+const { runBundle, buildSupabaseVendor } = require('./scripts/bundle-app');
 
 // Bundle + minify the 8 app-*.js files into app.bundle.min.js and
 // rewrite index.html's script tag, before anything else runs. Doing
@@ -26,6 +26,7 @@ const { runBundle } = require('./scripts/bundle-app');
 // Cloudflare Pages build command — "npm install && node
 // generate-pages.js" — doesn't need to change to pick this up.
 runBundle(__dirname);
+buildSupabaseVendor(__dirname);
 
 // ------------------------------------------------------------
 // Freshness: per-deploy cache busting

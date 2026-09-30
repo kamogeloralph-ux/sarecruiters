@@ -109,7 +109,7 @@ function renderHouseAdSlot(targetId, placement, slot) {
   target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
     '<div class="house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong></div>' +
     '<div class="house-ad-creative">' +
-      '<img loading="lazy" width="1200" height="400" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
+      '<img loading="lazy" decoding="async" width="1200" height="400" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
       motionOverlay +
     '</div>' +
     '<div class="house-ad-message"><small><span class="house-ad-message-copy">' + escapeHtml(ad.message || ((ad.title || ad.advertiser_name || '').toLowerCase().includes('rolaz') ? 'Keeping your home brighter' : '')) + '</span><span class="house-ad-sponsored">Sponsored</span></small></div>' +
@@ -161,7 +161,7 @@ function renderManagedPoster(poster, targetId) {
   if (!target) return;
   if (!poster || !poster.image_url) { target.hidden = true; target.innerHTML = ''; return; }
   target.hidden = false;
-  target.innerHTML = '<img loading="lazy" src="'+escapeHtml(poster.image_url)+'" alt="'+escapeHtml(poster.title || '')+'" onerror="this.closest(\'.managed-poster\').hidden=true">' +
+  target.innerHTML = '<img loading="lazy" decoding="async" src="'+escapeHtml(poster.image_url)+'" alt="'+escapeHtml(poster.title || '')+'" onerror="this.closest(\'.managed-poster\').hidden=true">' +
     ((poster.title || poster.subtitle) ? '<div class="managed-poster-copy">'+(poster.title?'<strong>'+escapeHtml(poster.title)+'</strong>':'')+(poster.subtitle?'<span>'+escapeHtml(poster.subtitle)+'</span>':'')+'</div>' : '');
 }
 function renderManagedPosters(posters) {
@@ -176,7 +176,7 @@ function renderManagedPosters(posters) {
   // which active poster is shown, while the fixed frame prevents layout shifts.
   var p = posters[0];
   var label = p.audience === 'employers' ? 'For Employers' : 'For Candidates';
-  target.innerHTML = '<article class="managed-poster poster-page-card"><img loading="lazy" src="'+escapeHtml(p.image_url)+'" alt="'+escapeHtml(p.title || label+' campaign poster')+'" onerror="this.closest(\'.poster-page-card\').remove()">'+
+  target.innerHTML = '<article class="managed-poster poster-page-card"><img loading="lazy" decoding="async" src="'+escapeHtml(p.image_url)+'" alt="'+escapeHtml(p.title || label+' campaign poster')+'" onerror="this.closest(\'.poster-page-card\').remove()">'+
     '<div class="managed-poster-copy"><strong>'+escapeHtml(p.title || label)+'</strong>'+(p.subtitle?'<span>'+escapeHtml(p.subtitle)+'</span>':'')+'</div></article>';
 }
 
@@ -262,7 +262,7 @@ function renderCandidateSpotlight(list) {
       : '';
     var subtitle = [c.position, expText].filter(Boolean).join(' · ') || 'Looking for opportunities';
     return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\',\''+escapeHtml(c.id)+'\')">' +
-      (c.photo_url ? '<span class="spotlight-photo"><img loading="lazy" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' : '<span class="spotlight-photo spotlight-initials">'+initials(c.full_name)+'</span>') +
+      (c.photo_url ? '<span class="spotlight-photo"><img loading="lazy" decoding="async" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' : '<span class="spotlight-photo spotlight-initials">'+initials(c.full_name)+'</span>') +
       '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</strong>' +
       '<span>'+escapeHtml(subtitle)+'</span></span></button>';
   }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
@@ -1103,9 +1103,18 @@ var startupDataPromise = null;
 async function fetchStartupDataOnce() {
   if (staticDataEnabled) {
     try {
-      var staticResponse = await fetch(STATIC_DATA_URL, { method: 'GET', cache: 'no-cache', headers: { Accept: 'application/json' } });
-      if (staticResponse.ok) {
-        var staticPayload = await staticResponse.json();
+      // index.html starts this download at HTML-parse time (window.__saStartupEarly) so the
+      // 5-8 MB snapshot is already in flight while the JS bundle downloads. Use it once; any
+      // later/forced refresh does its own fetch.
+      var staticPayload = null;
+      var earlyStartup = window.__saStartupEarly;
+      window.__saStartupEarly = null;
+      if (earlyStartup) { try { staticPayload = await earlyStartup; } catch (e) { staticPayload = null; } }
+      if (!staticPayload) {
+        var staticResponse = await fetch(STATIC_DATA_URL, { method: 'GET', cache: 'no-cache', headers: { Accept: 'application/json' } });
+        if (staticResponse.ok) staticPayload = await staticResponse.json();
+      }
+      {
         if (staticPayload && Array.isArray(staticPayload.agencies) && Array.isArray(staticPayload.branches) && Array.isArray(staticPayload.vacancies) && Array.isArray(staticPayload.employers) && staticPayload.counts && staticPayload.settings) return staticPayload;
       }
     } catch (e) { console.warn('static data load', e); }

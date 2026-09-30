@@ -407,7 +407,7 @@ function renderAccountIdentity(user) {
   if (nameEl) nameEl.textContent = user ? name : 'Guest';
   if (emailEl) emailEl.textContent = user ? (user.email || '—') : 'Browsing as a guest';
   if (avatarEl) {
-    avatarEl.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((name || 'A').charAt(0).toUpperCase()) + '</span>';
+    avatarEl.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" decoding="async" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((name || 'A').charAt(0).toUpperCase()) + '</span>';
   }
   if (providerEl) providerEl.style.display = user ? 'inline-flex' : 'none';
   // Guest chrome: sign-in card + quota meter. Signed-in chrome: sign-out.
