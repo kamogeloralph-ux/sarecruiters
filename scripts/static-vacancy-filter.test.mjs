@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dropExpired, applyPosterCaps, filterLiveVacancies } from './static-vacancy-filter.mjs';
+import { dropExpired, applyPosterCaps, filterLiveVacancies, splitVacancyNotes } from './static-vacancy-filter.mjs';
 
 const row = (id, extra = {}) => ({ id, created_at: `2026-09-${String(10 + (Number(id.replace(/\D/g, '')) % 18)).padStart(2, '0')}`, ...extra });
 
@@ -31,4 +31,12 @@ test('applyPosterCaps caps real agencies and employers separately and leaves bla
 test('filterLiveVacancies combines expiry and caps', () => {
   const rows = [row('k1', { company: 'Acme', closing_date: '2020-01-01' }), row('k2', { company: 'Acme' }), row('k3', { company: 'Acme' })];
   assert.deepEqual(filterLiveVacancies(rows, { cap: 1, now: new Date('2026-09-30') }).length, 1);
+});
+
+test('splitVacancyNotes strips descriptions from rows and returns an id -> notes map', () => {
+  const rows = [{ id: 'a', title: 'A', notes: 'Long text' }, { id: 'b', title: 'B', notes: '' }, { id: 'c', title: 'C', notes: null }];
+  const { lean, notes } = splitVacancyNotes(rows);
+  assert.deepEqual(notes, { a: 'Long text' });
+  assert.ok(lean.every((r) => r.notes === null));
+  assert.equal(rows[0].notes, 'Long text', 'input rows are not mutated');
 });

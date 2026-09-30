@@ -1,10 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { filterLiveVacancies } from './static-vacancy-filter.mjs';
+import { filterLiveVacancies, splitVacancyNotes } from './static-vacancy-filter.mjs';
 
 const root = path.resolve(new URL('..', import.meta.url).pathname);
 const output = path.join(root, 'data', 'startup.json');
+const notesOutput = path.join(root, 'data', 'vacancy-notes.json');
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
@@ -35,7 +36,9 @@ const [agencies, branches, employers, rawVacancies] = await Promise.all([
 const publicRows = rawVacancies.map(publicVacancy).filter((row) => row.id && row.title && row.link);
 // Only publish (and count) what the app keeps live: drop closed listings and apply the same
 // newest-50-per-poster cap the daily enforce-vacancy-caps job applies to the database.
-const vacancies = filterLiveVacancies(publicRows);
+const liveVacancies = filterLiveVacancies(publicRows);
+// Descriptions are shipped separately (data/vacancy-notes.json) so the startup payload stays small.
+const { lean: vacancies, notes: vacancyNotes } = splitVacancyNotes(liveVacancies);
 console.log(`[static-data] ${publicRows.length} rows read, ${vacancies.length} live after expiry + per-poster caps`);
 const dedicated = {
   himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government', 'dpsa'],
@@ -56,8 +59,10 @@ const payload = {
   vacancies,
   featured_vacancies: featured,
   counts,
+  notes_url: 'data/vacancy-notes.json',
   settings: { public_vacancy_posting: false, public_employer_registration: false, public_employer_directory: true },
 };
 await fs.mkdir(path.dirname(output), { recursive: true });
 await fs.writeFile(output, JSON.stringify(payload));
+await fs.writeFile(notesOutput, JSON.stringify(vacancyNotes));
 console.log(`[static-data] wrote ${vacancies.length} vacancies, ${agencies.length} agencies, ${employers.length} employers to ${output}`);

@@ -44,3 +44,27 @@ test('below-the-fold images in index.html are lazy + async-decoded', () => {
   const imgs = (html.match(/<img\b[^>]*src="[^"]+"[^>]*>/g) || []).filter((t) => !/fetchpriority="high"/.test(t));
   for (const t of imgs) assert.ok(/loading="lazy"/.test(t) && /decoding="async"/.test(t), t.slice(0, 90));
 });
+
+test('logos ship a WebP srcset and are never lazy', () => {
+  const hdr = html.match(/<img class="logo-svg"[^>]*>/)[0];
+  assert.ok(/srcset="icons\/logo-96\.webp 96w, icons\/logo-152\.webp 152w"/.test(hdr) && /sizes="42px"/.test(hdr));
+  assert.ok(!/loading="lazy"/.test(hdr) && /fetchpriority="high"/.test(hdr));
+});
+
+test('metric-matched fallback font is defined and used, and Google Fonts uses display=swap', () => {
+  assert.ok(/font-family:'Inter Fallback'[^}]*font-display:swap/.test(html));
+  assert.ok(/family=Inter:[^"]*display=swap/.test(html));
+  assert.ok(/'Inter','Inter Fallback'/.test(fs.readFileSync(new URL('../styles.css', import.meta.url), 'utf8')));
+});
+
+test('supabase + upload origins are preconnected', () => {
+  assert.ok(/<link rel="preconnect" href="https:\/\/ythznnktswgymerdcxky\.supabase\.co">/.test(html));
+});
+
+test('startup snapshot is lean and points at the deferred notes file', () => {
+  const d = JSON.parse(fs.readFileSync(new URL('../data/startup.json', import.meta.url), 'utf8'));
+  assert.equal(d.notes_url, 'data/vacancy-notes.json');
+  assert.ok(d.vacancies.every((v) => !v.notes));
+  const notes = JSON.parse(fs.readFileSync(new URL('../data/vacancy-notes.json', import.meta.url), 'utf8'));
+  assert.ok(Object.keys(notes).length > 0);
+});
