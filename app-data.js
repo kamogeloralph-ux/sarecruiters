@@ -1352,6 +1352,20 @@ async function loadAll(options) {
   // which uses the authenticated admin_set_manager_token RPC.
   rebuildPublicListingSlugs();
   updateStats();
+  // The committed static snapshot (data/startup.json) historically omitted the
+  // Talent Pool rows and hard-coded counts.candidates = 0, so the home
+  // "Talent Pool Candidates" card sat at 0 until the visitor opened the Talent
+  // Pool screen (which fetches the live count). When the snapshot doesn't carry
+  // its own pool_candidates, backfill the real number from the Worker so the
+  // card is correct on first paint. Once the snapshot ships pool_candidates
+  // (see scripts/export-static-data.mjs) this is a no-op. Reuses the same
+  // Worker fetch loadCandidateSpotlight() already makes, so there's no extra
+  // request.
+  if (window.__saStaticData && !Array.isArray(startup.pool_candidates)) {
+    getPoolCandidateCount().then(function (n) {
+      if (typeof n === 'number') { poolCandidateCount = n; updateStats(); }
+    }).catch(function () {});
+  }
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   loadFeaturedVacancies();

@@ -90,3 +90,14 @@ export function splitVacancyNotes(rows) {
   });
   return { lean, notes };
 }
+
+// The public Talent Pool view (pool_candidates_public) is already redacted by
+// RLS, but the app only ever renders/counts rows whose status is "active"
+// (see loadPoolCandidates()/getPoolCandidateCount() in app-sheets.js). Keep the
+// same subset in the committed snapshot so counts.candidates matches exactly
+// what the home "Talent Pool Candidates" card shows on first paint instead of
+// the 0 the snapshot used to hard-code (which forced a click on the card to
+// fetch the real number from the Worker).
+export function activePoolCandidates(rows) {
+  return (rows || []).filter((row) => (row.status || 'pending') === 'active');
+}
