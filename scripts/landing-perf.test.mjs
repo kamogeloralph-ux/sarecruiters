@@ -10,10 +10,13 @@ test('no third-party CDN script is fetched for Supabase', () => {
   assert.ok(scriptTags.some((t) => /src="vendor\/supabase\.min\.js\?v=[^"]*"/.test(t) && /\bdefer\b/.test(t)), 'self-hosted supabase bundle with defer');
 });
 
-test('Turnstile is deferred (not async) and queued after the app bundle', () => {
-  const ts = scriptTags.find((t) => /challenges\.cloudflare\.com\/turnstile/.test(t));
-  assert.ok(ts && /\bdefer\b/.test(ts) && !/\basync\b/.test(ts));
-  assert.ok(html.indexOf('challenges.cloudflare.com/turnstile') > html.indexOf('app.bundle.min.js'));
+test('Turnstile is not shipped in the initial HTML and is loaded on demand', () => {
+  // The ~25KB Turnstile runtime is unused on first paint (it is only needed once a
+  // protected form opens), so it must not be a static script tag in the shell.
+  assert.ok(!scriptTags.some((t) => /challenges\.cloudflare\.com\/turnstile/.test(t)), 'Turnstile must not ship as a static script tag');
+  const sheets = fs.readFileSync(new URL('../app-sheets.js', import.meta.url), 'utf8');
+  assert.ok(/challenges\.cloudflare\.com\/turnstile\/v0\/api\.js/.test(sheets), 'app-sheets.js loads Turnstile on demand');
+  assert.ok(/function loadTurnstile\(/.test(sheets), 'loadTurnstile() helper exists');
 });
 
 test('live chat is not in the initial HTML as a static script tag', () => {

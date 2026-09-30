@@ -269,7 +269,9 @@ test('vacancy statistic uses the shared startup count path', () => {
 
 test('offline launch bypasses network-only startup work', () => {
   assert.match(appData, /if \(navigator\.onLine === false\)/);
-  assert.match(homepage, /<script async defer src="https:\/\/challenges\.cloudflare\.com\/turnstile/);
+  // Turnstile is network-only and is no longer a static script in the shell, so an offline
+  // launch never waits on it; app-sheets.js loads it on demand when a protected form opens.
+  assert.ok(!/<script[^>]+challenges\.cloudflare\.com\/turnstile/.test(homepage));
 });
 
 test('CV Builder offers selectable templates without regenerating the CV', () => {

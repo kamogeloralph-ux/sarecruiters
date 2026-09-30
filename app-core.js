@@ -694,3 +694,21 @@ function escapeHtml(s) {
 function initials(n) {
   return (n || '?').trim().split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
 }
+
+// ===== Remote image downscaling =====
+// Supabase Storage exposes an on-the-fly transform endpoint (render/image).
+// Rewrite public object URLs to request a thumbnail-sized copy so avatars and
+// logos are not downloaded at full resolution. URLs from any other host (the
+// R2 public bucket, etc.) are returned unchanged. Callers keep the original
+// URL in data-fallback so a failed transform still shows the image.
+function sizedPhotoUrl(url, w, h) {
+  if (!url || typeof url !== 'string') return url;
+  var marker = '/storage/v1/object/public/';
+  if (url.indexOf(marker) !== -1) {
+    var out = url.replace(marker, '/storage/v1/render/image/public/');
+    out += (out.indexOf('?') === -1 ? '?' : '&') + 'width=' + w + '&height=' + h + '&resize=cover&quality=72';
+    return out;
+  }
+  return url;
+}
+

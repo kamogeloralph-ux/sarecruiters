@@ -130,7 +130,7 @@
 .vx-fact small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--text-2)}
 .vx-fact b{display:block;margin-top:3px;font-size:13.5px;font-weight:700;color:var(--text);overflow-wrap:anywhere}
 .vx-fact b a{color:var(--accent);text-decoration:none}
-.vx-desc h4{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--text)}
+.vx-desc h3{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--text)}
 .vx-desc p{margin:0;font-size:14px;line-height:1.6;color:var(--text-2);white-space:pre-wrap;overflow-wrap:anywhere}
 .vx-attr{margin-top:12px;font-size:12px;color:var(--text-2)}
 .vx-attr a{color:var(--accent);font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px}

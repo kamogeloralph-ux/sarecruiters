@@ -52,7 +52,7 @@
     var src = srcOf(v), verified = (employer && employer.verified) || (!employer && !isGeneral && agency.verified);
     var photo = employer && employer.photo || (isGeneral && v.company_photo) || (!employer && !isGeneral && agency.photo) || '';
     var logo = photo
-      ? '<div class="vx-logo"><img src="' + esc(photo) + '" alt="" loading="lazy" decoding="async" width="48" height="48" onerror="this.remove()"></div>'
+      ? '<div class="vx-logo"><img src="' + esc(sizedPhotoUrl(photo, 96, 96)) + '" data-fallback="' + esc(photo) + '" alt="" loading="lazy" decoding="async" width="48" height="48" onerror="this.onerror=null;var f=this.getAttribute(\'data-fallback\');if(f&&this.src.indexOf(f)===-1){this.src=f}else{this.remove()}"></div>'
       : '<div class="vx-logo ' + vacGradFor(org) + '">' + esc(initials(org)) + '</div>';
     var age = (Date.now() - ts(v.created_at)) / DAY, left = closingIn(v);
     var tags = '';
@@ -71,9 +71,9 @@
       fact('Schedule', esc(v.work_schedule)) + fact('Start date', esc(v.start_date)) + fact('Closing date', esc(v.closing_date)) +
       fact(employer ? 'Employer' : isGeneral ? 'Company' : 'Agency', esc(org) + (verified ? verifiedBadge(employer ? 'Verified employer' : 'Verified agency') : '')) +
       fact('Email', v.email ? mailLink(v.email) : '') + fact('Phone', v.phone ? telLink(v.phone) : '');
-    var desc = v.notes ? '<div class="vx-desc"><h4>About the role</h4><p>' + esc(v.notes) + '</p></div>' : '';
+    var desc = v.notes ? '<div class="vx-desc"><h3>About the role</h3><p>' + esc(v.notes) + '</p></div>' : '';
     var attr = '';
-    if (!isHim && !isAdz && (isGov || isGeneral || (!employer && !isGeneral && agency.id))) attr = '<div class="vx-attr"><a href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation()"><img src="/icons/v2-icon-192.png" alt="" width="18" height="18" loading="lazy" decoding="async">Jobs by SA Recruiters</a></div>';
+    if (!isHim && !isAdz && (isGov || isGeneral || (!employer && !isGeneral && agency.id))) attr = '<div class="vx-attr"><a href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation()"><img src="/icons/v2-icon-48.png" alt="" width="18" height="18" loading="lazy" decoding="async">Jobs by SA Recruiters</a></div>';
     if (isAdz) attr = '<div class="vx-attr adzuna-attribution">Jobs by <a href="https://www.adzuna.co.za/" target="_blank" rel="noopener">Adzuna</a></div>';
     if (isHim) attr = '<div class="vx-attr himalayas-attribution"><a href="https://himalayas.app/" target="_blank" rel="noopener">Remote jobs by Himalayas</a></div>';
 
