@@ -126,7 +126,7 @@ function renderManagerEmployerProfile() {
   if (e.industry) rows += '<div class="manager-item-sub" style="margin-top:2px">' + escapeHtml(e.industry) + '</div>';
   el.innerHTML =
     '<div class="sm-card-head">' +
-      '<div class="sm-card-avatar">' + (e.photo ? '<img src="' + e.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : initials(e.name)) + '</div>' +
+      '<div class="sm-card-avatar">' + (e.photo ? '<img loading="lazy" decoding="async" src="' + e.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : initials(e.name)) + '</div>' +
       '<div style="flex:1;min-width:0">' +
         '<div class="sm-card-name">' + escapeHtml(e.name || 'Company') + (e.verified ? ' ' + verifiedBadge('Verified') : '') + '</div>' +
       '</div>' +

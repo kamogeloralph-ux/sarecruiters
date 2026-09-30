@@ -358,7 +358,7 @@ function renderManagerAgencyProfile() {
   if (a.website) rows += '<div class="manager-item-sub" style="margin-top:2px">' + ICON_LINK.replace('<svg ', '<svg style="width:13px;height:13px;vertical-align:-2px;margin-right:4px" ') + escapeHtml(a.website) + '</div>';
   el.innerHTML =
     '<div class="sm-card-head">' +
-      '<div class="sm-card-avatar">' + (a.photo ? '<img src="' + a.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : initials(a.name)) + '</div>' +
+      '<div class="sm-card-avatar">' + (a.photo ? '<img loading="lazy" decoding="async" src="' + a.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : initials(a.name)) + '</div>' +
       '<div style="flex:1;min-width:0">' +
         '<div class="sm-card-name">' + escapeHtml(a.name || 'Agency') + (a.verified ? ' ' + verifiedBadge('Verified') : '') + '</div>' +
       '</div>' +
