@@ -1378,7 +1378,13 @@ async function loadAll(options) {
   saveDataCache();
   scheduleDeferredVacancyNotes(startup);
   updatePostingToggleUI();
-  updateEmployerRegUI();
+  // updateEmployerRegUI() lives in admin.html, not this public bundle. Calling
+  // it unguarded threw "ReferenceError: updateEmployerRegUI is not defined" on
+  // every public loadAll() and aborted the rest of this function (manager-mode
+  // re-render, restoreTalentPoolMembership(), autoClaimGateRegistration(),
+  // pending manager-token handling). Guard it like the other cross-file calls
+  // above so the public app continues past this point.
+  if (typeof updateEmployerRegUI === 'function') updateEmployerRegUI();
   // If in manager mode, re-render the manager panel with fresh data
   if (managerMode) renderManagerMode();
   if (employerManagerMode) renderEmployerManagerMode();
