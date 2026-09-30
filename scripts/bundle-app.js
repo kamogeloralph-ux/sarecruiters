@@ -123,9 +123,53 @@ function runBundle(rootDir) {
   return { outPath, hash, minified, rawBytes, outBytes };
 }
 
-module.exports = { runBundle, FILES, BUNDLE_NAME };
+// ---- Self-hosted Supabase client (replaces the unpkg.com <script>) ----
+const VENDOR_REL = 'vendor/supabase.min.js';
+const VENDOR_TAG_RE = /<script src="vendor\/supabase\.min\.js\?v=[^"]*" defer><\/script>/;
+
+function buildSupabaseVendor(rootDir) {
+  const outFile = path.join(rootDir, VENDOR_REL);
+  try {
+    const esbuild = require('esbuild');
+    fs.mkdirSync(path.dirname(outFile), { recursive: true });
+    esbuild.buildSync({
+      entryPoints: [path.join(__dirname, 'supabase-entry.js')],
+      bundle: true,
+      minify: true,
+      format: 'iife',
+      platform: 'browser',
+      target: 'es2018',
+      legalComments: 'none',
+      outfile: outFile,
+      absWorkingDir: rootDir,
+      logLevel: 'error',
+    });
+  } catch (err) {
+    const msg = err && err.message ? err.message : String(err);
+    if (!fs.existsSync(outFile)) {
+      // Never ship an index.html that points at a file that does not exist: without it there is no
+      // Supabase client (sign-in and every write break). Fail the build loudly instead.
+      throw new Error('[bundle-app] Could not build ' + VENDOR_REL + ' (' + msg + '). Run "npm ci" first so esbuild and @supabase/supabase-js are installed.');
+    }
+    console.warn('[bundle-app] Supabase vendor rebuild failed, keeping the existing ' + VENDOR_REL + ':', msg);
+  }
+  const bytes = fs.readFileSync(outFile);
+  const hash = crypto.createHash('sha1').update(bytes).digest('hex').slice(0, 10);
+  const indexPath = path.join(rootDir, 'index.html');
+  const html = fs.readFileSync(indexPath, 'utf8');
+  if (!VENDOR_TAG_RE.test(html)) {
+    throw new Error('[bundle-app] Could not find the vendor/supabase.min.js script tag in index.html.');
+  }
+  fs.writeFileSync(indexPath, html.replace(VENDOR_TAG_RE, '<script src="' + VENDOR_REL + '?v=' + hash + '" defer></script>'));
+  console.log('[bundle-app] Built ' + VENDOR_REL + ' (' + (bytes.length / 1024).toFixed(1) + 'KB) [v=' + hash + ']');
+  return { outFile, hash, bytes: bytes.length };
+}
+
+module.exports = { runBundle, buildSupabaseVendor, FILES, BUNDLE_NAME };
 
 // Allow running directly: node scripts/bundle-app.js
 if (require.main === module) {
-  runBundle(path.join(__dirname, '..'));
+  const root = path.join(__dirname, '..');
+  runBundle(root);
+  buildSupabaseVendor(root);
 }
