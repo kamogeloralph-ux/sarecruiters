@@ -149,7 +149,7 @@ function buildSupabaseVendor(rootDir) {
     if (!fs.existsSync(outFile)) {
       // Never ship an index.html that points at a file that does not exist: without it there is no
       // Supabase client (sign-in and every write break). Fail the build loudly instead.
-      throw new Error('[bundle-app] Could not build ' + VENDOR_REL + ' (' + msg + '). Run "npm ci" first so esbuild and @supabase/supabase-js are installed.');
+      throw new Error('[bundle-app] Could not build ' + VENDOR_REL + ' (' + msg + '). esbuild must be listed in devDependencies in package.json and installed with "npm ci" (do not use --omit=dev / NODE_ENV=production for this build step).');
     }
     console.warn('[bundle-app] Supabase vendor rebuild failed, keeping the existing ' + VENDOR_REL + ':', msg);
   }
