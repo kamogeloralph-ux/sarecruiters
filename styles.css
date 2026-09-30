@@ -49,7 +49,7 @@
   --shadow-lg:0 22px 54px -24px rgba(20,10,60,.18);
   --sheet-bg:#FFFFFF;
 }
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter','Inter Fallback',-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 button{font-family:inherit;cursor:pointer;color:inherit}
