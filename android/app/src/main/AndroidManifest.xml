@@ -39,7 +39,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Required for PushNotifications.requestPermissions() to work on
-         Android 13+ (API 33) -- not auto-merged from the plugin's own
+         Android 13+ (API 33); not auto-merged from the plugin's own
          manifest, has to be declared here explicitly. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
