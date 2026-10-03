@@ -1,0 +1,12 @@
+{
+	"appId": "za.co.sa_recruiters.app",
+	"appName": "SA Recruiters",
+	"webDir": "www",
+	"server": {
+		"url": "https://sa-recruiters.co.za",
+		"androidScheme": "https"
+	},
+	"android": {
+		"allowMixedContent": false
+	}
+}
