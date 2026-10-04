@@ -782,7 +782,12 @@ async function loadPoolCandidates() {
       if (result.error) throw result.error;
       data = result.data || [];
     }
-    poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){ return (b.verified?1:0) - (a.verified?1:0); });
+    poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){
+      var aPhoto = String(a.photo_url || '').trim() ? 1 : 0;
+      var bPhoto = String(b.photo_url || '').trim() ? 1 : 0;
+      if (aPhoto !== bPhoto) return bPhoto - aPhoto;
+      return (b.verified?1:0) - (a.verified?1:0);
+    });
   } catch(e) { console.error('pool load', e); poolCache = []; }
   poolLoaded = true;
   poolCandidateCount = poolCache.length;
@@ -824,6 +829,10 @@ function renderPoolList() {
       return hay.indexOf(q) !== -1;
     });
   }
+  // Keep photo profiles above initials-only cards in every filtered pool view.
+  list.sort(function(a,b){
+    return (String(b.photo_url || '').trim() ? 1 : 0) - (String(a.photo_url || '').trim() ? 1 : 0);
+  });
   if (!list.length) {
     listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>No candidates yet</h3><p>Be the first to join the Talent Pool.</p></div></div>';
     return;

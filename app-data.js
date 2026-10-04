@@ -207,24 +207,27 @@ async function getPublicPoolCandidatesFromWorker() {
     return null;
   }
 }
+var candidateSpotlightLoaded = false;
 async function loadCandidateSpotlight() {
   var target = document.getElementById('candidate-spotlight-deck');
-  if (!target) return;
+  if (!target || candidateSpotlightLoaded) return;
+  candidateSpotlightLoaded = true;
   var list = [];
   try {
     var startup = await getPublicPoolCandidatesFromWorker();
     if (startup && Array.isArray(startup.pool_candidates)) {
-      list = startup.pool_candidates.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice(0, 30);
+      list = startup.pool_candidates.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice(0, 12);
     } else {
       // Resilience fallback for a temporary Worker/D1 outage.
       var result = await supabaseClient.from('pool_candidates_public')
         .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
-        .order('created_at', { ascending: false }).limit(30);
+        .order('created_at', { ascending: false }).limit(12);
       if (result.error) throw result.error;
       list = (result.data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
     }
   } catch (e) { console.warn('candidate spotlight load', e); list = []; }
-  // Keep complete profiles ahead of partial profiles. A profile is considered
+  // Keep photo profiles ahead of no-photo profiles. Within those groups, keep
+  // complete profiles ahead of partial profiles. A profile is considered
   // complete for the public spotlight when its useful professional summary is
   // present: name, position, sector, location, experience and about text.
   // Photo is intentionally optional and does not make a candidate look
@@ -240,6 +243,9 @@ async function loadCandidateSpotlight() {
     return score;
   }
   list.sort(function(a, b) {
+    var aPhoto = String(a.photo_url || '').trim() ? 1 : 0;
+    var bPhoto = String(b.photo_url || '').trim() ? 1 : 0;
+    if (aPhoto !== bPhoto) return bPhoto - aPhoto;
     var aScore = spotlightCompleteness(a), bScore = spotlightCompleteness(b);
     var aComplete = aScore === 6, bComplete = bScore === 6;
     if (aComplete !== bComplete) return aComplete ? -1 : 1;
@@ -1381,8 +1387,7 @@ async function loadAll(options) {
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   loadFeaturedVacancies();
   if (startup && !window.__saStaticData) refreshSecondaryStartupData();
-  // Candidate spotlight is non-critical; fetch it after the first useful home render.
-  loadCandidateSpotlight();
+  // Candidate spotlight is loaded on demand when the Menu is opened.
   // Poster feed and first-party ads are non-critical to the first render.
   if (typeof loadPosterFeed === 'function') loadPosterFeed();
   loadHouseAds();
