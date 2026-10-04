@@ -82,9 +82,9 @@
 .vx-block-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .vx-block-head h2{margin:0;font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
 .vx-block-head a,.vx-block-head button{border:0;background:none;color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;padding:4px 0}
-.vx-rail{display:flex;gap:12px;overflow-x:auto;margin:0 -16px;padding:2px 16px 8px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.vx-rail{display:flex;flex-wrap:nowrap;gap:12px;width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;margin:0 -16px;padding:2px 16px 8px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain}
 .vx-rail::-webkit-scrollbar{display:none}
-.vx-rail>.vx-card{flex:0 0 min(84%,320px);scroll-snap-align:start}
+.vx-rail>.vx-card{flex:0 0 min(84%,320px);width:min(84%,320px);min-width:min(84%,320px);scroll-snap-align:start}
 .vx-sources{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .vx-source{display:grid;gap:10px;text-align:left;padding:14px;border-radius:var(--vx-r);border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;transition:transform .15s var(--ease),border-color .15s}
 .vx-source:active{transform:scale(.97)}

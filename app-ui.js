@@ -175,6 +175,7 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
     window.scrollTo({ top: 0 });
     if (btn.dataset.tab === 'saved') renderSaved();
     if (btn.dataset.tab === 'account') renderAccountDetails();
+    if (btn.dataset.tab === 'menu' && typeof loadCandidateSpotlight === 'function') loadCandidateSpotlight();
   });
 });
 

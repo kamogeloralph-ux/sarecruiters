@@ -1262,6 +1262,7 @@ header{margin-bottom:18px}
 .bottom-nav .navbtn.active{color:#22d66d;background:rgba(255,255,255,.08)}
 .bottom-nav .navbtn.active svg{stroke:#22d66d}
 .bottom-nav .navbtn:not(.active) svg{stroke:rgba(255,255,255,.78)}
+.bottom-nav .navbtn svg{display:block;width:24px!important;height:24px!important;max-width:24px!important;max-height:24px!important;min-width:24px;min-height:24px;aspect-ratio:1 / 1;flex:0 0 24px;overflow:visible}
 .bottom-nav .navbtn-label{font-size:10px;font-weight:650}
 [data-theme="dark"] #screen-home .screen-scroll{background:#071426}
 [data-theme="dark"] #screen-home .hub-card{background:#10233c;border-color:rgba(143,190,240,.14);box-shadow:0 5px 15px rgba(0,0,0,.24)}
