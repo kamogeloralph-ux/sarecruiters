@@ -54,7 +54,7 @@ test('builds a retail vacancy linked to the employer and Mr Price apply page', (
   assert.match(job.notes, /Help customers & keep the floor tidy\./);
   assert.match(job.notes, /• Friendly/);
   assert.match(job.notes, /Qualifications\nMatric/);
-  assert.equal(job.remote, false); // 'On-site' workplace type
+  assert.equal(job.remote, 'On-site'); // production vacancies.remote constraint
 });
 
 test('still produces a listing from search data when the detail call failed', () => {

@@ -2,8 +2,8 @@ name: Refresh static job data
 
 on:
   schedule:
-    # Monday and Friday at 03:30 UTC.
-    - cron: "30 3 * * 1,5"
+    # Twice daily so source changes reach the app promptly.
+    - cron: "30 3,15 * * *"
   workflow_dispatch:
     inputs:
       years:
@@ -58,15 +58,24 @@ jobs:
       - name: Run source scrapers
         shell: bash
         run: |
-          set -euo pipefail
-          npm run sync:adzuna
-          npm run sync:himalayas
-          npm run sync:oracle
-          npm run sync:government
-          npm run scrape:retail
-          npm run scrape:simplify
-          npm run scrape:graduates24
-          npm run scrape:careers-page
+          set -uo pipefail
+          failures=0
+          run_source() {
+            echo "--- running $* ---"
+            if ! "$@"; then
+              echo "Source failed but refresh will continue: $*" >&2
+              failures=$((failures + 1))
+            fi
+          }
+          run_source npm run sync:adzuna
+          run_source npm run sync:himalayas
+          run_source npm run sync:oracle
+          run_source npm run sync:government
+          run_source npm run scrape:retail
+          run_source npm run scrape:simplify
+          run_source npm run scrape:graduates24
+          run_source npm run scrape:careers-page
+          echo "$failures" > scraper-failures.txt
       - name: Export public snapshot
         run: node scripts/export-static-data.mjs
       - name: Commit updated JSON when data changed
@@ -76,3 +85,10 @@ jobs:
           git add data/startup.json
           git diff --cached --quiet && echo "No public data changes" || git commit -m "chore(data): refresh static vacancy snapshot"
           git push
+      - name: Report isolated scraper failures
+        if: always()
+        run: |
+          failures=$(cat scraper-failures.txt 2>/dev/null || echo 0)
+          if [ "$failures" -gt 0 ]; then
+            echo "$failures source scraper(s) failed; successful sources were still published." >&2
+          fi

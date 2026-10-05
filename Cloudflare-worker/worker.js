@@ -1785,6 +1785,31 @@ var worker_default = {
         await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
       }
+      if (path === "/api/submit/poster" && request.method === "POST") {
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const contentType = request.headers.get("Content-Type") || "";
+        if (!contentType.startsWith("image/")) {
+          return json({ error: "Only image uploads are allowed." }, 400, origin);
+        }
+        const bytes = await request.arrayBuffer();
+        if (bytes.byteLength === 0) return json({ error: "Choose a poster image first." }, 400, origin);
+        if (bytes.byteLength > MAX_POSTER_BYTES) return json({ error: "Poster too large (max 5MB)." }, 413, origin);
+        const key = `employer-posters/${randomKey()}.jpg`;
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
+        const imageUrl = publicUrlFor(env, key);
+        const caption = url.searchParams.get("caption") || "";
+        try {
+          const posterId = await supabaseRpc(env, "public_submit_poster", {
+            p_image_url: imageUrl,
+            p_caption: caption.slice(0, 500)
+          });
+          return json({ ok: true, id: posterId, url: imageUrl }, 200, origin);
+        } catch (e) {
+          try { await env.MEDIA_BUCKET.delete(key); } catch (_) {}
+          return json({ error: "Could not publish the poster." }, 502, origin);
+        }
+      }
       if (path === "/api/upload/employer-poster" && request.method === "POST") {
         const posterUserId = await verifiedUserId(request, env);
         if (!posterUserId) {

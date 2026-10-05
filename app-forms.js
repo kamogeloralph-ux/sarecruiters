@@ -236,7 +236,7 @@ function handleEmployerPhoto(evt) {
 // ----- Employer poster upload (full recruitment-ad image) -----
 // Unlike handleEmployerPhoto, this keeps the original aspect ratio (posters
 // are portrait, like a printed flyer) instead of square-cropping.
-function handlePosterPhoto(evt) {
+function processPosterPhoto(evt, blobKey, previewId, fallbackId) {
   var file = evt.target.files[0];
   if (!file) return;
   var reader = new FileReader();
@@ -250,9 +250,9 @@ function handlePosterPhoto(evt) {
       canvas.height = img.height * scale;
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(function(blob) {
-        window.pendingPosterBlob = blob;
-        var preview = document.getElementById('poster-preview');
-        var fallback = document.getElementById('poster-fallback');
+        window[blobKey] = blob;
+        var preview = document.getElementById(previewId);
+        var fallback = document.getElementById(fallbackId);
         if (preview) { preview.src = URL.createObjectURL(blob); preview.style.display = 'block'; }
         if (fallback) fallback.style.display = 'none';
       }, 'image/jpeg', 0.85);
@@ -260,6 +260,40 @@ function handlePosterPhoto(evt) {
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+function handlePosterPhoto(evt) { processPosterPhoto(evt, 'pendingPosterBlob', 'poster-preview', 'poster-fallback'); }
+function handlePublicPosterPhoto(evt) { processPosterPhoto(evt, 'publicPosterBlob', 'public-poster-preview', 'public-poster-fallback'); }
+async function submitPublicPoster() {
+  if (!window.publicPosterBlob) { showToast('Choose a poster image first.'); return; }
+  var token = getTurnstileResponse('public-poster-turnstile');
+  if (turnstileConfigured() && !token) { showToast('Please complete the spam check first.'); return; }
+  var caption = ((document.getElementById('public-poster-caption') || {}).value || '').trim();
+  var submit = document.getElementById('public-poster-submit');
+  if (submit) { submit.disabled = true; submit.textContent = 'Publishing…'; }
+  try {
+    var query = caption ? '?caption=' + encodeURIComponent(caption) : '';
+    var headers = { 'Content-Type': 'image/jpeg' };
+    if (token) headers['cf-turnstile-response'] = token;
+    var res = await fetch(R2_WORKER_URL + '/api/submit/poster' + query, { method: 'POST', headers: headers, body: window.publicPosterBlob });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok) { showToast(data.error || 'Could not publish poster. Please try again.'); return; }
+    closeSheet('public-poster-overlay');
+    showToast('Poster posted successfully');
+    if (typeof loadPosterFeed === 'function') loadPosterFeed();
+  } catch (e) { showToast('Could not reach SA Recruiters — please try again.'); }
+  finally { if (submit) { submit.disabled = false; submit.textContent = 'Post poster'; } }
+}
+function openPublicPosterSheet() {
+  window.publicPosterBlob = null;
+  var preview = document.getElementById('public-poster-preview');
+  var fallback = document.getElementById('public-poster-fallback');
+  if (preview) { preview.src = ''; preview.style.display = 'none'; }
+  if (fallback) fallback.style.display = 'flex';
+  var caption = document.getElementById('public-poster-caption');
+  if (caption) caption.value = '';
+  var overlay = document.getElementById('public-poster-overlay');
+  if (overlay) overlay.classList.add('open');
+  renderTurnstile('public-poster-turnstile', 'public-poster-overlay');
 }
 
 async function uploadPosterIfAny() {

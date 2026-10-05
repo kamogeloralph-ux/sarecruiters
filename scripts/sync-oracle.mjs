@@ -150,6 +150,10 @@ export function buildVacancy(src, summary, detail, employerId, now = new Date())
   const notes = sections.map((s, i) => (i === 0 ? htmlToText(s) : s)).join('\n\n').slice(0, 20_000);
   const iso = now.toISOString();
   const workplace = clean(d.WorkplaceType || summary.workplaceType).toLowerCase();
+  // Production stores workplace as constrained text, not a boolean.
+  const remote = workplace.includes('remote') ? 'Remote'
+    : workplace.includes('hybrid') ? 'Hybrid'
+      : workplace.includes('on-site') || workplace.includes('onsite') ? 'On-site' : null;
   const closingDate = toDateOnly(d.ExternalPostedEndDate);
   // summary.postedDate comes straight from the search API's own PostedDate
   // field (see parseSearchPage) -- always fetched, previously never used
@@ -173,7 +177,7 @@ export function buildVacancy(src, summary, detail, employerId, now = new Date())
     link: publicJobUrl(src, summary.reqId),
     email: '',
     phone: '',
-    remote: workplace ? /remote/.test(workplace) : null,
+    remote,
     experience_level: '',
     employment_type: clean(d.JobSchedule || d.ContractType),
     contract_type: clean(d.ContractType),
