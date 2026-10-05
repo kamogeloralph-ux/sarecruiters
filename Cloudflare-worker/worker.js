@@ -5,6 +5,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 var MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 var MAX_TRACK_BYTES = 25 * 1024 * 1024;
 var MAX_POSTER_BYTES = 5 * 1024 * 1024;
+var VACANCY_RECONCILE_INTERVAL_SECONDS = 86400;
 function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin || "*",
@@ -372,14 +373,6 @@ async function supabaseGetAll(env, table, params = {}, pageSize = 1000) {
 }
 __name(supabaseGetAll, "supabaseGetAll");
 
-async function authoritativeVacancyCount(env) {
-  const result = await supabaseGet(env, "vacancies", { select: "id", limit: "1" }, { prefer: "count=exact" });
-  const range = result.headers.get("content-range") || "";
-  const match = range.match(/\/(\d+)$/);
-  return match ? Number(match[1]) : null;
-}
-__name(authoritativeVacancyCount, "authoritativeVacancyCount");
-
 // Incremental mirror writer. It writes in bounded D1 batches and suppresses
 // no-op updates so unchanged rows do not consume write quota.
 async function upsertD1Rows(env, table, columns, rows, boolCols = [], conflictColumn = "id") {
@@ -485,7 +478,7 @@ async function syncD1FromSupabase(env) {
   if (hasFeaturedColumns) {
     vacancyColumns.push("is_featured", "featured_until", "featured_order");
   }
-  const [agencies, branches, vacancies, employers, pool, settings] = await Promise.all([
+  const [agencies, branches, vacancies, employers, pool, settings, posters] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,created_at",
       order: "created_at.desc"
@@ -509,7 +502,12 @@ async function syncD1FromSupabase(env) {
       select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
       order: "created_at.desc"
     }),
-    supabaseGet(env, "app_settings", { select: "key,value" })
+    supabaseGet(env, "app_settings", { select: "key,value" }),
+    supabaseGet(env, "employer_posters", {
+      select: "id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at",
+      order: "created_at.desc",
+      limit: "500"
+    })
   ]);
 
   const agenciesSync = await syncD1Table(env, "agencies",
@@ -526,7 +524,13 @@ async function syncD1FromSupabase(env) {
   const vacancyResult = await supabaseGetAll(env, "vacancies", vacancyParams, 1000);
   const changedVacancies = vacancyResult || [];
   const vacancyWrites = await upsertD1Rows(env, "vacancies", vacancyColumns, changedVacancies, hasFeaturedColumns ? ["is_featured"] : []);
-  const vacancyDeletes = await reconcileDeletedVacancies(env);
+  const lastReconciledAt = Number(await readSyncMeta(env, "vacancies_last_reconciled_at") || 0);
+  const shouldReconcileVacancies = !lastReconciledAt || (Date.now() - lastReconciledAt) >= VACANCY_RECONCILE_INTERVAL_SECONDS * 1000;
+  const vacancyDeletes = shouldReconcileVacancies ? await reconcileDeletedVacancies(env) : 0;
+  if (shouldReconcileVacancies) {
+    await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
+      .bind("vacancies_last_reconciled_at", String(Date.now())).run();
+  }
   const vacancyWatermark = changedVacancies.length
     ? changedVacancies[changedVacancies.length - 1].updated_at
     : previousVacancySync;
@@ -541,6 +545,9 @@ async function syncD1FromSupabase(env) {
     ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"],
     pool.body || [], ["verified"]);
   const settingsSync = await syncD1Table(env, "app_settings", ["key", "value"], settings.body || [], [], "key");
+  const postersSync = await syncD1Table(env, "employer_posters",
+    ["id", "employer_id", "agency_id", "image_url", "caption", "vacancy_id", "created_at", "expires_at"],
+    posters.body || []);
 
   const summary = {
     synced_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -560,7 +567,10 @@ async function syncD1FromSupabase(env) {
     pool_candidate_writes: poolSync.written,
     pool_candidate_deletes: poolSync.deleted,
     settings_writes: settingsSync.written,
-    settings_deletes: settingsSync.deleted
+    settings_deletes: settingsSync.deleted,
+    posters: (posters.body || []).length,
+    poster_writes: postersSync.written,
+    poster_deletes: postersSync.deleted
   };
   await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
     .bind("last_sync", JSON.stringify(summary)).run();
@@ -614,10 +624,9 @@ async function loadStartupDataFromD1(env) {
     env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id").all(),
     env.DB.prepare("SELECT * FROM pool_candidates WHERE status = 'active' ORDER BY created_at DESC").all(),
     // Older D1 mirrors may not have the optional featured columns yet. Keep
-    // startup healthy and let the direct public Supabase refresh fill the
-    // Featured Vacancies section until the mirror schema is upgraded.
+    // startup healthy until the mirror schema is upgraded.
     env.DB.prepare("SELECT * FROM vacancies WHERE is_featured = 1 ORDER BY featured_order ASC, created_at DESC LIMIT 12").all().catch(() => ({ results: [] })),
-    authoritativeVacancyCount(env).catch(() => null)
+    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies").all()
   ]);
 
   const folderCounts = await Promise.all(Object.entries(DEDICATED_FOLDERS).map(async ([key, sources]) => {
@@ -645,12 +654,9 @@ async function loadStartupDataFromD1(env) {
       // Platform total includes the general pool, attributed/startup rows,
       // and dedicated-source rows. Keep this mutually consistent with the
       // public `general` bucket instead of omitting generalPoolCount.
-      // D1 can temporarily contain rows from a failed/stalled reconciliation.
-      // Use Supabase's exact source count for the headline total so the app
-      // never presents stale mirror rows as currently available inventory.
-      vacancies: typeof sourceVacancyCountR === "number"
-        ? sourceVacancyCountR
-        : n(generalCountR) + n(generalPoolCountR) + (vacanciesR.results || []).length + n(dedicatedCountR),
+      // The active D1 mirror is the public read source. Do not query Supabase
+      // just to refresh this headline count on every startup request.
+      vacancies: n(sourceVacancyCountR),
       general: n(generalCountR) + n(generalPoolCountR),
       employers: (employersR.results || []).length,
       candidates: n(poolCountR),
@@ -893,7 +899,7 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v5-authoritative-count", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v6-d1-count", request.url), request);
 
   async function buildResponse(payload) {
     const body = JSON.stringify(payload);
@@ -928,11 +934,6 @@ async function startupResponse(request, env, ctx, origin) {
   async function refreshAndCache() {
     let snapshot = await readPublicStartupSnapshot(env);
     if (snapshot) {
-      const sourceVacancyCount = await authoritativeVacancyCount(env).catch(() => null);
-      if (typeof sourceVacancyCount === "number") {
-        snapshot = { ...snapshot, counts: { ...snapshot.counts, vacancies: sourceVacancyCount } };
-        ctx.waitUntil(writePublicStartupSnapshot(env, snapshot).catch((e) => console.warn("Could not refresh startup count snapshot", e)));
-      }
       const response = await buildResponse(snapshot);
       await cache.put(cacheKey, response.clone());
       return snapshot;
@@ -1051,6 +1052,17 @@ async function syncStatusResponse(request, env, origin) {
   return json({ status: status ? JSON.parse(status) : null, last_sync: lastSync ? JSON.parse(lastSync) : null, vacancies_updated_through: watermark }, 200, origin);
 }
 __name(syncStatusResponse, "syncStatusResponse");
+async function postersResponse(request, env, origin) {
+  if (!env.DB) return json({ error: "Public poster mirror unavailable" }, 503, origin);
+  const [rows, count] = await Promise.all([
+    env.DB.prepare("SELECT id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now') ORDER BY created_at DESC LIMIT 200").all(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now')").all()
+  ]);
+  const response = json({ posters: rows.results || [], count: count.results?.[0]?.n || 0 }, 200, origin);
+  response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=3600");
+  return response;
+}
+__name(postersResponse, "postersResponse");
 var PHOTO_BATCH_SIZE = 20;
 async function migratePhotos(request, env, origin) {
   const authHeader = request.headers.get("Authorization") || "";
@@ -1315,6 +1327,9 @@ var worker_default = {
       }
       if (path === "/api/vacancies" && request.method === "GET") {
         return await vacanciesResponse(request, env, ctx, origin);
+      }
+      if (path === "/api/posters" && request.method === "GET") {
+        return await postersResponse(request, env, origin);
       }
       if (path === "/api/sync-status" && request.method === "GET") {
         return await syncStatusResponse(request, env, origin);
