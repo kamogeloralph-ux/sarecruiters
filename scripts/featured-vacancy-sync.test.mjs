@@ -81,18 +81,12 @@ test('loadFeaturedVacancies seeds from the snapshot, then refreshes live and re-
   );
 });
 
-test('vacancy overview fills eight cards and preserves featured rail sizing', () => {
-  assert.match(vacancyRendererSrc, /var feat = featuredOnly\.slice\(0, 8\)/, 'featured roles must be capped at eight');
-  assert.match(vacancyRendererSrc, /if \(feat\.length < 8\)/, 'live-role fallbacks must fill missing featured slots');
-  assert.match(vacancyRendererSrc, /list\.slice\(0, 24\)\.map\(function \(v\) \{ return card\(v, agencyOf\(v\)\); \}\)/, 'the overview must also render the latest vacancy cards');
-
-  const resetAt = vacancyCss.indexOf('.vx-card.vac-card{all:unset');
-  const sizingAt = vacancyCss.indexOf('.vx-rail>.vx-card.vac-card{');
-  assert.ok(resetAt >= 0 && sizingAt > resetAt, 'rail flex sizing must follow the card all:unset reset');
-  const sizingRule = vacancyCss.slice(sizingAt, vacancyCss.indexOf('}', sizingAt) + 1);
-  assert.match(sizingRule, /flex:0 0 min\(84%,320px\)/, 'featured cards must keep a stable mobile width');
-  assert.match(vacancyCss, /@media \(min-width:720px\)[\s\S]*?\.vx-rail>\.vx-card\.vac-card\{flex-basis:340px;width:340px;min-width:340px\}/, 'desktop rail cards must keep their fixed width too');
-  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-4/, 'the stylesheet cache key must be refreshed');
+test('vacancy overview shows sources first, then latest roles, with no featured rail', () => {
+  assert.doesNotMatch(vacancyRendererSrc, /Featured vacancies/, 'the featured rail must be gone from the overview');
+  assert.match(vacancyRendererSrc, /list\.slice\(0, 24\)\.map\(function \(v\) \{ return card\(v, agencyOf\(v\)\); \}\)/, 'the overview must render the latest vacancy cards');
+  const sourcesAt = vacancyRendererSrc.indexOf('Browse by source');
+  const latestAt = vacancyRendererSrc.indexOf("'Latest roles'");
+  assert.ok(sourcesAt > 0 && latestAt > sourcesAt, 'source cards must render above the latest roles');
 });
 
 test('the saved-search CTA is the modern card, not a bare emoji button', () => {
