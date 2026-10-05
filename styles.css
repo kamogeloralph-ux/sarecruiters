@@ -1817,7 +1817,8 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .featured-vacancies-controls{display:flex;gap:6px;flex:0 0 auto}
 .featured-vacancies-controls button{width:32px;height:32px;padding:0;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--accent);font-size:24px;line-height:26px;cursor:pointer}
 .featured-vacancies-controls button:active{background:var(--accent-soft);transform:scale(.95)}
-.featured-vacancies-rail{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-y;cursor:grab;padding:2px 2px 8px}
+	.featured-vacancies-rail{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-y;cursor:grab;padding:2px 2px 8px;user-select:none}
+	.featured-vacancies-rail img{pointer-events:none}
 .featured-vacancies-rail::-webkit-scrollbar{display:none}
 .featured-vacancies-rail.is-dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
 .featured-vacancies-rail>.vac-card{flex:0 0 min(88vw,420px);width:min(88vw,420px);margin:0!important;scroll-snap-align:start}

@@ -114,13 +114,17 @@ async function fetchPage(page) {
 }
 
 async function upsertJobs(mappedJobs) {
-  const links = mappedJobs.map((job) => job.link);
+  // The API can repeat a job across adjacent country/pagination results.
+  // PostgREST rejects one upsert statement when the same conflict key occurs
+  // twice in that statement, so collapse duplicates before writing.
+  const uniqueMappedJobs = [...new Map((mappedJobs || []).map((job) => [job.id, job])).values()];
+  const links = uniqueMappedJobs.map((job) => job.link);
   const { data: existingJobs, error: existingError } = links.length
     ? await supabase.from('vacancies').select('id,link').in('link', links).limit(500)
     : { data: [], error: null };
   if (existingError) throw existingError;
   const existingByLink = new Map((existingJobs || []).map((job) => [job.link, job.id]));
-  const jobs = mappedJobs.map((job) => ({
+  const jobs = uniqueMappedJobs.map((job) => ({
     ...job,
     id: existingByLink.get(job.link) || job.id,
     agency_id: 'general',
