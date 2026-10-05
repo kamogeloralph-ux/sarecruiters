@@ -1128,7 +1128,11 @@ async function fetchStartupDataOnce() {
       window.__saStartupEarly = null;
       if (earlyStartup) { try { staticPayload = await earlyStartup; } catch (e) { staticPayload = null; } }
       if (!staticPayload) {
-        var staticResponse = await fetch(STATIC_DATA_URL, { method: 'GET', cache: 'no-cache', headers: { Accept: 'application/json' } });
+        // Ensure a fresh GitHub Pages/CDN object after the scheduled scraper
+        // commits a new snapshot; returning PWAs must not stay on an older
+        // revalidated response.
+        var staticUrl = STATIC_DATA_URL + (STATIC_DATA_URL.indexOf('?') === -1 ? '?' : '&') + 'v=' + Date.now();
+        var staticResponse = await fetch(staticUrl, { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' } });
         if (staticResponse.ok) staticPayload = await staticResponse.json();
       }
       {

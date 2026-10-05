@@ -339,9 +339,13 @@ async function fetchCashbuildJobs() {
 
 async function upsertJobs(jobs) {
   if (!jobs.length) return 0;
-  const { error } = await supabase.from('vacancies').upsert(jobs, { onConflict: 'id' });
+  // Cashbuild occasionally repeats a listing across page boundaries. A
+  // duplicate id in one PostgREST upsert aborts the entire batch, making the
+  // source look completely broken even though most pages were fetched.
+  const uniqueJobs = [...new Map(jobs.filter((job) => job && job.id).map((job) => [job.id, job])).values()];
+  const { error } = await supabase.from('vacancies').upsert(uniqueJobs, { onConflict: 'id' });
   if (error) throw error;
-  return jobs.length;
+  return uniqueJobs.length;
 }
 
 export async function runRetailGroupScraper() {
