@@ -2088,3 +2088,17 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 @media(prefers-reduced-motion:reduce){.vacancy-market-results>.vac-card,.vac-industry-chip,.vacancy-search-button{transition:none}.vacancy-market-results>.vac-card:hover,.vac-industry-chip:hover,.vacancy-search-button:hover{transform:none}}
 
 .section-title-actions{display:flex;align-items:center;gap:8px}.poster-post-btn{border:0;border-radius:999px;padding:8px 12px;background:var(--accent);color:#fff;font-weight:800;font-size:12px;cursor:pointer}.poster-post-btn:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:2px}.sheet-help-text{margin:-4px 0 14px;color:var(--text-2);font-size:13px;line-height:1.45}
+
+/* Home feed: jobs-first landing */
+#home-feed{padding-top:4px}
+.hf-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 14px}
+.hf-actions button{display:flex;flex-direction:column;gap:2px;text-align:left;padding:12px;border:1px solid var(--border,rgba(128,128,128,.25));border-radius:14px;background:var(--card,transparent);color:inherit;font:inherit;cursor:pointer}
+.hf-actions strong{font-size:13px}.hf-actions span{font-size:11px;opacity:.7}
+.hf-section{margin:0 0 16px}.hf-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
+.hf-head h2{font-size:17px;margin:0}.hf-link{background:none;border:0;color:var(--accent);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.hf-chips,.hf-advice{display:flex;flex-wrap:wrap;gap:8px}
+.hf-chips button,.hf-advice button{padding:8px 12px;border:1px solid var(--border,rgba(128,128,128,.25));border-radius:999px;background:var(--card,transparent);color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.hf-chips small{opacity:.6;margin-left:2px}.hf-empty{opacity:.7;font-size:13px}
+.hf-sponsor{display:flex;flex-direction:column;gap:4px;margin:0 0 16px;padding:14px;border:1px dashed var(--border,rgba(128,128,128,.4));border-radius:14px}
+.hf-sponsor span{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.6}.hf-sponsor a{color:var(--accent);font-size:13px;font-weight:600}
+@media(max-width:380px){.hf-actions{grid-template-columns:1fr}}
