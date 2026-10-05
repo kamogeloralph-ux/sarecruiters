@@ -84,7 +84,6 @@
 .vx-block-head a,.vx-block-head button{border:0;background:none;color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;padding:4px 0}
 .vx-rail{display:flex;flex-wrap:nowrap;gap:12px;width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;margin:0 -16px;padding:2px 16px 8px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain}
 .vx-rail::-webkit-scrollbar{display:none}
-.vx-rail>.vx-card{flex:0 0 min(84%,320px);width:min(84%,320px);min-width:min(84%,320px);scroll-snap-align:start}
 .vx-sources{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .vx-source{display:grid;gap:10px;text-align:left;padding:14px;border-radius:var(--vx-r);border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;transition:transform .15s var(--ease),border-color .15s}
 .vx-source:active{transform:scale(.97)}
@@ -102,6 +101,8 @@
 
 /* Vacancy card */
 .vx-card.vac-card{all:unset;box-sizing:border-box;display:block;position:relative;border-radius:var(--vx-r);border:1px solid var(--border);background:var(--card);color:var(--text);overflow:hidden;transition:border-color .15s,box-shadow .2s}
+/* `all:unset` above resets flex sizing too; restore fixed rail cards after that reset. */
+.vx-rail>.vx-card.vac-card{flex:0 0 min(84%,320px);width:min(84%,320px);min-width:min(84%,320px);scroll-snap-align:start}
 .vx-card.vac-card:hover{border-color:var(--border-strong)}
 .vx-card.open{border-color:var(--accent);box-shadow:0 10px 28px -14px color-mix(in srgb,var(--accent) 60%,transparent)}
 .vx-results.vx-grid .vx-card.open{grid-column:1/-1}
@@ -162,7 +163,7 @@
   .vx-filters{grid-template-columns:repeat(4,1fr)}
   .vx-clear{grid-column:auto;align-self:end}
   .vx-sources{grid-template-columns:repeat(4,1fr)}
-  .vx-rail>.vx-card{flex-basis:340px}
+  .vx-rail>.vx-card.vac-card{flex-basis:340px;width:340px;min-width:340px}
   .vx-facts{grid-template-columns:repeat(3,1fr)}
 }
 @media (prefers-reduced-motion:reduce){.vx *{transition:none!important;animation:none!important}}
