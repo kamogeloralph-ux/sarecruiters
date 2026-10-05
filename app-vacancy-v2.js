@@ -186,8 +186,20 @@
     var counts = { general: generalVacancyCount || 0, agency: vacanciesCache.filter(hasAssignedAgency).length, government: d.government || 0, retail: d.retail || 0, learnerships: d.learnerships || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, careers_page: d.careers_page || 0 };
     var order = ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
     var searching = !!(val('allvacancies-search') || val('allvacancies-location') || activeList().length);
-    var feat = (featuredVacanciesCache || []).filter(function (v) { return v && v.is_featured && (!v.featured_until || ts(v.featured_until) >= Date.now()) && !isVacancyExpired(v); })
-      .sort(function (a, b) { return (Number(a.featured_order) || 0) - (Number(b.featured_order) || 0) || ts(b.created_at) - ts(a.created_at); }).slice(0, 8);
+    // Keep the rail useful even when fewer than eight roles are actively
+    // featured. Expired feature flags are excluded; the remaining slots are
+    // filled with the newest live roles rather than leaving a broken-looking
+    // one- or two-card rail. Featured roles always retain priority.
+    var featuredOnly = (featuredVacanciesCache || []).filter(function (v) { return v && v.is_featured && (!v.featured_until || ts(v.featured_until) >= Date.now()) && !isVacancyExpired(v); })
+      .sort(function (a, b) { return (Number(a.featured_order) || 0) - (Number(b.featured_order) || 0) || ts(b.created_at) - ts(a.created_at); });
+    var feat = featuredOnly.slice(0, 8);
+    if (feat.length < 8) {
+      var seen = {}; feat.forEach(function (v) { seen[v.id] = true; });
+      var fallbackPool = (staticVacanciesCache && staticVacanciesCache.length ? staticVacanciesCache : vacanciesCache).slice()
+        .filter(function (v) { return v && !seen[v.id] && !isVacancyExpired(v); })
+        .sort(function (a, b) { return ts(b.created_at) - ts(a.created_at); });
+      fallbackPool.some(function (v) { feat.push(v); return feat.length >= 8; });
+    }
     var html = '';
     if (searching) {
       var q = val('allvacancies-search');
@@ -195,11 +207,11 @@
         order.map(function (t) { return '<button type="button" class="vx-chip" data-open="' + t + '">' + esc(LABELS[t]) + (ready ? ' · ' + counts[t].toLocaleString() : '') + '</button>'; }).join('') +
         '</div><p style="margin:0;font-size:12px;color:var(--text-2)">' + (q ? 'Open a source to search all of its listings for “' + esc(q) + '”.' : 'Open a source to apply these filters to all of its listings.') + '</p></div>';
     } else if (feat.length) {
-      html += '<div class="vx-block"><div class="vx-block-head"><h2>Featured</h2><span style="font-size:12px;color:var(--text-2)">Swipe →</span></div><div class="vx-rail" tabindex="0" aria-label="Featured vacancies">' +
+      html += '<div class="vx-block"><div class="vx-block-head"><h2>Featured vacancies</h2><span style="font-size:12px;color:var(--text-2)">' + feat.length + ' roles · Swipe →</span></div><div class="vx-rail" tabindex="0" aria-label="Featured vacancies">' +
         feat.map(function (v) { return card(v, agencyOf(v), { featured: true }); }).join('') + '</div></div>';
     }
     var list = poolFiltered();
-    html += '<div class="vx-block"><div class="vx-block-head"><h2>' + (searching ? 'Matches' : 'Latest roles') + '</h2>' + (searching ? '' : '<button type="button" data-open="general">See all →</button>') + '</div>' +
+    html += '<div class="vx-block"><div class="vx-block-head"><h2>' + (searching ? 'Matches' : 'Latest roles') + '</h2>' + (searching ? '' : '<button type="button" onclick="showAllVacancies(\'home\')">Browse all →</button>') + '</div>' +
       '<div class="vx-seg" role="group" aria-label="Filter latest roles">' + [['all', 'All'], ['government', 'Government'], ['private', 'Private'], ['remote', 'Remote']].map(function (x) { return '<button type="button" data-ov="' + x[0] + '" class="' + (vacancyOverviewFilter === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       '<div class="vx-list-slot" aria-live="polite" style="display:contents">' + (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
         list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or open a source above.</p></div>') + '</div></div>';
