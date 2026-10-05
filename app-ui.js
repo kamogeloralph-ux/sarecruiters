@@ -1408,6 +1408,34 @@ function renderAllVacanciesList() {
       if (rail) rail.scrollBy({ left: direction * Math.max(260, rail.clientWidth * 0.86), behavior: 'smooth' });
     }
     window.scrollFeaturedVacancies = scrollFeaturedVacancies;
+    function wireFeaturedRailGestures() {
+      var rail = document.getElementById('featured-vacancies-rail');
+      if (!rail || rail.dataset.gesturesReady === '1') return;
+      rail.dataset.gesturesReady = '1';
+      var startX = 0, startScroll = 0, dragging = false, moved = false;
+      rail.addEventListener('pointerdown', function(e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        startX = e.clientX; startScroll = rail.scrollLeft; dragging = true; moved = false;
+        rail.classList.add('is-dragging');
+        try { rail.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+      rail.addEventListener('pointermove', function(e) {
+        if (!dragging) return;
+        var dx = e.clientX - startX;
+        if (Math.abs(dx) > 6) moved = true;
+        if (moved) { e.preventDefault(); rail.scrollLeft = startScroll - dx; }
+      });
+      var endDrag = function() {
+        if (!dragging) return;
+        dragging = false; rail.classList.remove('is-dragging');
+        if (moved) { rail.dataset.suppressClick = '1'; setTimeout(function(){ delete rail.dataset.suppressClick; }, 80); }
+      };
+      rail.addEventListener('pointerup', endDrag);
+      rail.addEventListener('pointercancel', endDrag);
+      rail.addEventListener('click', function(e) {
+        if (rail.dataset.suppressClick === '1') { e.preventDefault(); e.stopImmediatePropagation(); }
+      }, true);
+    }
     var featuredMarkup =
       '<section class="career-featured-section"><div class="featured-vacancies-heading" aria-labelledby="featured-vacancies-title"><div><h2 id="featured-vacancies-title">Featured vacancies</h2><span class="sr-only">Featured opportunity</span></div><div class="featured-vacancies-controls" aria-label="Featured vacancies carousel controls"><button type="button" onclick="scrollFeaturedVacancies(-1)" aria-label="Show previous featured vacancies">‹</button><button type="button" onclick="scrollFeaturedVacancies(1)" aria-label="Show next featured vacancies">›</button></div></div>' +
       (featured.length ?
@@ -1482,6 +1510,7 @@ function renderAllVacanciesList() {
       overviewFilters +
       '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
       categoryRail;
+    wireFeaturedRailGestures();
     return;
   }
   if (!list.length) {
