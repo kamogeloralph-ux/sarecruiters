@@ -38,7 +38,7 @@ buildSupabaseVendor(__dirname);
 //    next visit with zero manual version bumps.
 //    Hash (not timestamp) so the 3-hourly cron rebuilds with no source
 //    changes keep the same VERSION and don't needlessly wipe caches.
-// 2) Append ?v=<same hash> to every unversioned same-origin asset
+// 2) Set ?v=<same hash> on every same-origin asset URL
 //    (styles.css, content.js, content-manager.js, static-pages.css)
 //    so stale-while-revalidate style caches treat each deploy as a new
 //    resource and can never answer with a stale copy.
@@ -72,14 +72,13 @@ function computeDeployVersion() {
 }
 
 function rewriteAssetUrls(html, version) {
-  // Only same-origin assets that have NO ?v= already get the hash.
+  // Replace an existing ?v= as well as versioning an unversioned asset.
   // The bundle script tag is already rewritten by bundle-app.js.
   // Handles relative (styles.css), ./relative (./styles.css) and
   // root-absolute (/static-pages.css) references.
   return html.replace(
-    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|content\.js|content-manager\.js|static-pages\.css)(\?|")/g,
-    (match, attr, base, file, suffix) =>
-      suffix === '?' ? match : `${attr}${base}${file}?v=${version}${suffix}`,
+    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|content\.js|content-manager\.js|static-pages\.css)(?:\?v=[^"]*)?("?)/g,
+    (match, attr, base, file, suffix) => `${attr}${base}${file}?v=${version}${suffix}`,
   );
 }
 
