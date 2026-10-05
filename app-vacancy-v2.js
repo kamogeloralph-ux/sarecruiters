@@ -198,13 +198,13 @@
       html += '<div class="vx-block"><div class="vx-block-head"><h2>Featured</h2><span style="font-size:12px;color:var(--text-2)">Swipe →</span></div><div class="vx-rail" tabindex="0" aria-label="Featured vacancies">' +
         feat.map(function (v) { return card(v, agencyOf(v), { featured: true }); }).join('') + '</div></div>';
     }
-    html += '<div class="vx-block"><div class="vx-block-head"><h2>Browse by source</h2></div><div class="vx-sources">' +
-      order.map(function (t) { return '<button type="button" class="vx-source" data-open="' + t + '"><span class="vx-source-ic">' + SRC_ICON[t] + '</span><span><strong>' + esc(LABELS[t]) + '</strong><small>' + (ready ? counts[t].toLocaleString() + ' role' + (counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></div>';
     var list = poolFiltered();
     html += '<div class="vx-block"><div class="vx-block-head"><h2>' + (searching ? 'Matches' : 'Latest roles') + '</h2>' + (searching ? '' : '<button type="button" data-open="general">See all →</button>') + '</div>' +
       '<div class="vx-seg" role="group" aria-label="Filter latest roles">' + [['all', 'All'], ['government', 'Government'], ['private', 'Private'], ['remote', 'Remote']].map(function (x) { return '<button type="button" data-ov="' + x[0] + '" class="' + (vacancyOverviewFilter === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       '<div class="vx-list-slot" aria-live="polite" style="display:contents">' + (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
         list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or open a source above.</p></div>') + '</div></div>';
+    html += '<div class="vx-block"><div class="vx-block-head"><h2>Browse by source</h2></div><div class="vx-sources">' +
+      order.map(function (t) { return '<button type="button" class="vx-source" data-open="' + t + '"><span class="vx-source-ic">' + SRC_ICON[t] + '</span><span><strong>' + esc(LABELS[t]) + '</strong><small>' + (ready ? counts[t].toLocaleString() + ' role' + (counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></div>';
     html += '<div class="vx-block"><div class="vx-block-head"><h2>Popular categories</h2></div><div class="vx-cats">' +
       [['government', 'Government'], ['learnership', 'Learnerships'], ['internship', 'Internships'], ['graduate_programme', 'Graduate programmes'], ['bursary', 'Bursaries'], ['apprenticeship', 'Apprenticeships'], ['part_time', 'Part-time'], ['remote', 'Remote'], ['permanent', 'Permanent'], ['contract', 'Contract']]
         .map(function (c) { return '<a href="/browse/category/' + c[0] + '/">' + c[1] + '</a>'; }).join('') + '</div></div>';
