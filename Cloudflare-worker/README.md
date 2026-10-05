@@ -38,6 +38,23 @@ step 1. Then:
 wrangler deploy
 ```
 
+### Automatic deployment from GitHub Actions
+
+The repository includes `.github/workflows/deploy-worker.yml`. It deploys the
+Worker automatically when changes are pushed to `main` under
+`Cloudflare-worker/**`, and it can also be started manually from the Actions
+tab with **Run workflow**.
+
+Add these repository secrets in GitHub before the first automated deployment:
+
+- `CLOUDFLARE_API_TOKEN` — an API token with permission to edit Workers Scripts
+- `CLOUDFLARE_ACCOUNT_ID` — the Cloudflare account ID that owns the Worker
+
+The workflow uses the `keep_vars = true` setting in `wrangler.toml`, so
+dashboard-configured Worker variables and secrets such as
+`TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, and `GEMINI_API_KEY` are retained
+when a deployment runs.
+
 This prints your Worker's URL, e.g.
 `https://sarecruiters-uploader.<your-subdomain>.workers.dev`.
 
