@@ -73,6 +73,180 @@ function restoreActiveScreenBeforeReveal() {
 }
 restoreActiveScreenBeforeReveal();
 
+// ===== Vacancy-first home feed =====
+var homeLocationFilter = '';
+var homeCategoryFilter = '';
+var HOME_VACANCY_CARD_LIMIT = 8;
+var HOME_JOB_CATEGORIES = [
+  { key: 'finance', label: 'Finance & accounting', sub: 'Accounts, audit and finance', icon: 'R' },
+  { key: 'technology', label: 'IT & technology', sub: 'Software, data and digital', icon: 'IT' },
+  { key: 'trades', label: 'Trades & engineering', sub: 'Technical and skilled work', icon: '+' },
+  { key: 'sales', label: 'Sales & marketing', sub: 'Sales, brand and growth', icon: '↗' }
+];
+
+function setHomeLocationFilter(filter) {
+  filter = filter || '';
+  homeLocationFilter = homeLocationFilter === filter && filter ? '' : filter;
+  filterAndRenderCached();
+}
+
+function setHomeCategoryFilter(filter) {
+  homeCategoryFilter = homeCategoryFilter === filter ? '' : filter;
+  filterAndRenderCached();
+}
+
+function clearHomeFeedFilters() {
+  homeLocationFilter = '';
+  homeCategoryFilter = '';
+  var search = document.getElementById('home-search');
+  if (search) search.value = '';
+  filterAndRenderCached();
+}
+
+function openHomeTalentPoolProfile() {
+  if (typeof saAuthUser !== 'undefined' && saAuthUser) {
+    openMyPoolProfile();
+    return;
+  }
+  openPoolRegisterSheet();
+}
+
+function homeSourceVacancies() {
+  var rows = [], seen = {};
+  function add(list) {
+    if (!Array.isArray(list)) return;
+    list.forEach(function (v) {
+      if (!v || !v.id || seen[v.id]) return;
+      if (typeof isVacancyExpired === 'function' && isVacancyExpired(v)) return;
+      seen[v.id] = true;
+      rows.push(v);
+    });
+  }
+  add(typeof featuredVacanciesCache !== 'undefined' ? featuredVacanciesCache : null);
+  add(typeof vacanciesCache !== 'undefined' ? vacanciesCache : null);
+  add(typeof staticVacanciesCache !== 'undefined' ? staticVacanciesCache : null);
+  add(typeof vacancyOverviewExtraRows !== 'undefined' ? vacancyOverviewExtraRows : null);
+  return rows;
+}
+
+function homeVacancyText(v) {
+  var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
+    ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
+  var employer = v.employer_id && typeof employersCache !== 'undefined'
+    ? (employersCache.find(function (e) { return e.id === v.employer_id; }) || {}) : {};
+  return [v.title, v.notes, v.location, v.address, v.province, v.company, v.category, v.industry,
+    v.sector, v.remote, v.employment_type, agency.name, agency.trades, employer.name, employer.industry]
+    .join(' ').toLowerCase();
+}
+
+function homeVacancyMatchesLocation(v, filter) {
+  if (!filter) return true;
+  var text = [v.location, v.address, v.province, v.remote, v.work_arrangement].join(' ').toLowerCase();
+  var patterns = {
+    gauteng: /gauteng|johannesburg|joburg|pretoria|centurion|sandton|randburg|midrand|benoni|kempton park|eastrand|roodepoort|krugersdorp/i,
+    'western-cape': /western cape|cape town|stellenbosch|paarl|george|mossel bay|bellville|worcester/i,
+    'kwazulu-natal': /kwazulu[\s-]?natal|durban|pietermaritzburg|richards bay|newcastle|ballito/i,
+    remote: /remote|hybrid|work[ -]from[ -]home|anywhere|distributed/i
+  };
+  return !!(patterns[filter] && patterns[filter].test(text));
+}
+
+function homeVacancyMatchesCategory(v, filter) {
+  if (!filter) return true;
+  var text = homeVacancyText(v);
+  var patterns = {
+    finance: /\b(finance|financial|accounting|accountant|bookkeeper|audit|payroll|tax|banking|banker|investment|actuarial|treasury)\b/i,
+    technology: /\b(it|software|developer|technology|data|cyber|network|devops|cloud|systems?|computer)\b/i,
+    trades: /\b(trade|trades|artisan|technician|electrician|plumber|weld(?:er|ing)?|fitter|mechanic|millwright|construction|maintenance|engineering|engineer)\b/i,
+    sales: /\b(sales|marketing|business development|account manager|brand|digital marketing|social media|communications|crm)\b/i
+  };
+  return !!(patterns[filter] && patterns[filter].test(text));
+}
+
+function openCompanyFeatureInquiry() {
+  if (typeof openSuggestionSheet !== 'function') return;
+  openSuggestionSheet();
+  var type = document.getElementById('s-type');
+  if (type) type.value = 'Feature request';
+}
+
+function renderHomeFeed() {
+  var target = document.getElementById('home-feed');
+  if (!target) return;
+  var previouslyOpen = target.querySelector('.vac-card.open');
+  var previouslyOpenId = previouslyOpen && previouslyOpen.getAttribute('data-vacancy-id');
+  var searchInput = document.getElementById('home-search');
+  var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  var rows = homeSourceVacancies().filter(function (v) {
+    return (!query || homeVacancyText(v).indexOf(query) !== -1) &&
+      homeVacancyMatchesLocation(v, homeLocationFilter) &&
+      homeVacancyMatchesCategory(v, homeCategoryFilter);
+  });
+  rows.sort(function (a, b) {
+    var af = a.is_featured && (!a.featured_until || new Date(a.featured_until).getTime() >= Date.now());
+    var bf = b.is_featured && (!b.featured_until || new Date(b.featured_until).getTime() >= Date.now());
+    if (af !== bf) return bf ? 1 : -1;
+    if (af && bf) {
+      var orderDiff = (Number(a.featured_order) || 0) - (Number(b.featured_order) || 0);
+      if (orderDiff) return orderDiff;
+    }
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  });
+
+  var categoryMarkup = HOME_JOB_CATEGORIES.map(function (category) {
+    var active = homeCategoryFilter === category.key;
+    return '<button type="button" class="home-category-chip' + (active ? ' active' : '') + '" onclick="setHomeCategoryFilter(\'' + category.key + '\')" aria-pressed="' + active + '">' +
+      '<span class="home-category-icon" aria-hidden="true">' + category.icon + '</span>' +
+      '<span class="home-category-copy"><strong>' + category.label + '</strong><small>' + category.sub + '</small></span></button>';
+  }).join('');
+  var cards = rows.slice(0, HOME_VACANCY_CARD_LIMIT).map(function (v) {
+    var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
+      ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
+    return vacancyCard(v, agency, { homePreview: true });
+  }).join('');
+  var totalNode = document.getElementById('stat-vacancies');
+  var totalLabel = totalNode && totalNode.textContent.trim() && totalNode.textContent.trim() !== '…'
+    ? totalNode.textContent.trim() : 'all';
+  var filtering = !!(query || homeLocationFilter || homeCategoryFilter);
+  var empty = rows.length ? '' : '<div class="home-feed-empty" role="status"><strong>' +
+    (filtering ? 'No vacancies match those filters yet.' : 'The latest vacancies are loading or none are available right now.') +
+    '</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
+
+  target.innerHTML =
+    '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
+      '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Featured &amp; latest vacancies</h2><p>Featured roles first, followed by the newest live listings.</p></div>' +
+      '<button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + '<span aria-hidden="true"> →</span></button></div>' +
+      '<div class="home-vacancy-grid" aria-live="polite">' + (cards || empty) + '</div>' +
+    '</section>' +
+    '<section class="home-categories-section" aria-labelledby="home-categories-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Find your next move</span><h2 id="home-categories-title">Explore top job categories</h2></div></div>' +
+      '<div class="home-category-grid">' + categoryMarkup + '</div></section>' +
+    '<section class="home-sponsored" aria-label="Feature your company"><img class="home-sponsored-art" src="/jw-aluminium-banner.webp" alt="JW Aluminium advertisement for custom glass and aluminium products" width="1200" height="400" loading="lazy" decoding="async"><div class="home-sponsored-content"><div class="home-sponsored-copy"><span class="home-sponsored-mark">FEATURED COMPANY</span><h2>Feature your company here</h2><p>Showcase your brand to South Africa’s job seekers and employers.</p></div><button type="button" onclick="openCompanyFeatureInquiry()">Ask about advertising</button></div></section>' +
+    '<section class="home-tools-section" aria-labelledby="home-tools-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Quick actions</span><h2 id="home-tools-title">Tools for job seekers &amp; recruiters</h2></div></div>' +
+      '<div class="home-tools-grid">' +
+        '<article class="home-tool-card home-tool-card--seeker"><div class="home-tool-icon" aria-hidden="true">CV</div><div><h3>For job seekers</h3><p>Upload or update your CV and get discovered by recruitment agencies.</p></div><div class="home-tool-actions"><button type="button" onclick="openHomeTalentPoolProfile()">Upload / update CV</button><button type="button" class="secondary" onclick="showAllVacancies(\'home\')">Browse vacancies</button></div></article>' +
+        '<article class="home-tool-card home-tool-card--employer"><div class="home-tool-icon" aria-hidden="true">+</div><div><h3>For employers</h3><p>Reach active applicants and browse the public Talent Pool.</p></div><div class="home-tool-actions"><button type="button" onclick="openGeneralVacancySheet()">Post a vacancy</button><button type="button" class="secondary" onclick="openPublicPosterSheet()">Post a poster</button><button type="button" class="secondary" onclick="goPool(\'profile\')">Browse candidates</button></div></article>' +
+      '</div></section>';
+
+  target.setAttribute('aria-busy', 'false');
+  if (previouslyOpenId) {
+    target.querySelectorAll('.vac-card').forEach(function (card) {
+      if (card.getAttribute('data-vacancy-id') === previouslyOpenId) {
+        card.classList.add('open');
+        card.setAttribute('aria-expanded', 'true');
+        var trigger = card.querySelector('[aria-controls]');
+        if (trigger) trigger.setAttribute('aria-expanded', 'true');
+      }
+    });
+  }
+  document.querySelectorAll('.home-filter-chip').forEach(function (button) {
+    var value = button.getAttribute('data-home-location') || '';
+    if (value === 'all') value = '';
+    var active = value === (homeLocationFilter || '');
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
 // Public section links are intentionally query-based so Cloudflare Pages can
 // serve the normal PWA shell while the link remains stable and easy to share:
 // /?section=vacancies, /?section=agencies, /?section=candidates,

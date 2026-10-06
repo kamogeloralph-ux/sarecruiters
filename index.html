@@ -162,11 +162,11 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-vacancy-redesign-5">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-5" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
-<link rel="stylesheet" href="ios-blue-ui.css" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="vacancy-v2.css?v=vx-4" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-5"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-4"></noscript>
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-home-feed-3">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-home-feed-3" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="vacancy-v2.css?v=vx-source-first-1" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-home-feed-3"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-source-first-1"></noscript>
 </head>
 <body>
 
@@ -239,9 +239,16 @@
     <div class="search search-mini">
       <div class="search-inner">
         <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
-        <label for="home-search" class="sr-only">Search jobs, titles, skills or locations</label>
-        <input id="home-search" type="search" placeholder="Search jobs, titles, skills, locations..." oninput="scheduleCachedSearch()">
+        <label for="home-search" class="sr-only">Search vacancies by job title, skill, company, or location</label>
+        <input id="home-search" type="search" placeholder="Job title, skill, company, or location…" oninput="scheduleCachedSearch()">
       </div>
+    </div>
+    <div class="home-filter-row" role="group" aria-label="Quick vacancy location filters">
+      <button type="button" class="home-filter-chip active" data-home-location="all" aria-pressed="true" onclick="setHomeLocationFilter('')">All South Africa</button>
+      <button type="button" class="home-filter-chip" data-home-location="gauteng" aria-pressed="false" onclick="setHomeLocationFilter('gauteng')">Gauteng</button>
+      <button type="button" class="home-filter-chip" data-home-location="western-cape" aria-pressed="false" onclick="setHomeLocationFilter('western-cape')">Western Cape</button>
+      <button type="button" class="home-filter-chip" data-home-location="kwazulu-natal" aria-pressed="false" onclick="setHomeLocationFilter('kwazulu-natal')">KwaZulu-Natal</button>
+      <button type="button" class="home-filter-chip" data-home-location="remote" aria-pressed="false" onclick="setHomeLocationFilter('remote')">Remote</button>
     </div>
     <div class="stats-wrap">
       <button class="stats-scroll-btn stats-scroll-prev" type="button" data-ripple onclick="scrollStats(-1)" aria-label="Show previous statistics">‹</button>
@@ -257,24 +264,15 @@
     </div>
 
     <div class="screen-scroll">
-
-    <p class="browse-jobs-row"><span class="browse-jobs-scroll">
-      <a href="/jobs/gauteng/">Gauteng</a>
-      <a href="/jobs/western-cape/">Western Cape</a>
-      <a href="/jobs/kwazulu-natal/">KwaZulu-Natal</a>
-      <a href="/jobs/eastern-cape/">Eastern Cape</a>
-      <a href="/jobs/free-state/">Free State</a>
-      <a href="/jobs/limpopo/">Limpopo</a>
-      <a href="/jobs/mpumalanga/">Mpumalanga</a>
-      <a href="/jobs/north-west/">North West</a>
-      <a href="/jobs/northern-cape/">Northern Cape</a>
-    </span></p>
-
-    <div id="home-feed"></div>
-    <div id="hub-list"></div>
-    <div class="empty" id="empty-msg" style="display:none;">
-      <div class="empty-state"><h3>No agencies yet</h3><p>Tap + to add the first one.</p></div>
-    </div>
+    <div id="home-feed" aria-live="polite" aria-busy="true"></div>
+    <section class="home-province-section" aria-labelledby="home-province-title">
+      <div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Across the country</span><h2 id="home-province-title">Browse jobs by province</h2></div></div>
+      <nav class="home-province-links" aria-label="Job vacancies by province">
+        <a href="/jobs/gauteng/">Gauteng</a><a href="/jobs/western-cape/">Western Cape</a><a href="/jobs/kwazulu-natal/">KwaZulu-Natal</a>
+        <a href="/jobs/eastern-cape/">Eastern Cape</a><a href="/jobs/free-state/">Free State</a><a href="/jobs/limpopo/">Limpopo</a>
+        <a href="/jobs/mpumalanga/">Mpumalanga</a><a href="/jobs/north-west/">North West</a><a href="/jobs/northern-cape/">Northern Cape</a>
+      </nav>
+    </section>
     </div>
   </div>
 
@@ -1424,9 +1422,9 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=12578a8c23" defer></script>
-<script src="app-vacancy-v2.js?v=vx-4" defer></script>
-<script src="app-alerts.js?v=al-2" defer></script>
+<script src="app.bundle.min.js?v=d846731317" defer></script>
+<script src="app-vacancy-v2.js?v=vx-source-first-1" defer></script>
+<script src="app-alerts.js?v=al-3" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
      still loads/retries it on demand if it is not ready when a form opens. -->
 <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
@@ -1442,21 +1440,16 @@
   </nav>
 </footer>
 
-<!-- SendPulse live chat widget: shown on the Home section only, locked just above the bottom navigation bar -->
-<style id="sendpulse-home-only">
-/* The widget mounts as a single <sp-live-chat> element. Hidden by default; shown only while
-   the Home screen is active, and hidden again behind any open sheet/overlay.
-   (Wrapped in @supports so a browser without :has() simply shows it everywhere instead of nowhere.) */
-@supports selector(:has(*)){
-  sp-live-chat{display:none!important}
-  body:has(#screen-home.active) sp-live-chat{display:block!important}
-  body:has(#screen-home.active):has(.sheet-scrim.open) sp-live-chat{display:none!important}
-}
+<!-- SendPulse live chat: only available while the feedback sheet is open -->
+<style id="sendpulse-feedback-only">
+sp-live-chat{display:none!important}
+body.sendpulse-feedback-open sp-live-chat{display:block!important}
 </style>
 <script>
 (function () {
   var GAP = 16;            // px between the chat button and the top of the nav bar
   var timer = null;
+  var feedbackObserver = null;
 
   function navHeight() {
     var nav = document.querySelector('.bottom-nav');
@@ -1465,6 +1458,8 @@
   }
 
   function place() {
+    var feedback = document.getElementById('suggestion-overlay');
+    if (!feedback || !feedback.classList.contains('open') || !document.body.classList.contains('sendpulse-feedback-open')) return false;
     var lc = window.sp && window.sp.liveChat;
     if (!lc || typeof lc.config !== 'function') return false;   // widget bundle not ready yet
     var right = Math.max(18, (window.innerWidth - 520) / 2 + 18);
@@ -1498,25 +1493,39 @@
   window.addEventListener('orientationchange', later);
   window.addEventListener('pageshow', later);
 
-  // Re-apply whenever the Home screen becomes active again (cheap: watches one element's class only).
-  function watchHome() {
-    var home = document.getElementById('screen-home');
-    if (!home || !window.MutationObserver) return;
-    new MutationObserver(function () { if (home.classList.contains('active')) later(); })
-      .observe(home, { attributes: true, attributeFilter: ['class'] });
+  // Show/load chat only while the feedback sheet is the active sheet.
+  function syncFeedback() {
+    var feedback = document.getElementById('suggestion-overlay');
+    if (!feedback || !document.body) return;
+    var otherSheetOpen = Array.prototype.some.call(document.querySelectorAll('.sheet-scrim.open'), function (sheet) { return sheet !== feedback; });
+    var active = feedback.classList.contains('open') && !otherSheetOpen;
+    document.body.classList.toggle('sendpulse-feedback-open', active);
+    if (active) {
+      if (window.__saStartSendPulse) window.__saStartSendPulse();
+      later();
+    }
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchHome);
-  else watchHome();
+  function watchFeedback() {
+    var overlays = document.querySelectorAll('.sheet-scrim');
+    if (window.MutationObserver) {
+      feedbackObserver = new MutationObserver(syncFeedback);
+      overlays.forEach(function (overlay) { feedbackObserver.observe(overlay, { attributes: true, attributeFilter: ['class'] }); });
+    }
+    syncFeedback();
+  }
+  window.__saSyncFeedbackChat = syncFeedback;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchFeedback);
+  else watchFeedback();
 })();
 </script>
 <script>
-/* SendPulse live chat, loaded lazily: on the first real user interaction, or when the browser
-   is idle a few seconds after the page has loaded — never during initial render. */
+/* Load SendPulse only after the user opens the feedback sheet. */
 (function () {
-  var started = false, EVENTS = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+  var started = false;
   function start() {
-    if (started) return; started = true;
-    EVENTS.forEach(function (e) { window.removeEventListener(e, start, true); });
+    var feedback = document.getElementById('suggestion-overlay');
+    if (started || !feedback || !feedback.classList.contains('open')) return;
+    started = true;
     var s = document.createElement('script');
     s.src = 'https://cdn.pulse.is/livechat/loader.js';
     s.async = true;
@@ -1524,10 +1533,7 @@
     document.body.appendChild(s);
     if (window.__saStartChatPlacement) window.__saStartChatPlacement();
   }
-  EVENTS.forEach(function (e) { window.addEventListener(e, start, { capture: true, passive: true, once: true }); });
-  function whenIdle() { (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(start, { timeout: 8000 }); }
-  if (document.readyState === 'complete') setTimeout(whenIdle, 3000);
-  else window.addEventListener('load', function () { setTimeout(whenIdle, 3000); });
+  window.__saStartSendPulse = start;
 })();
 </script>
 </body>
