@@ -1054,12 +1054,37 @@ async function syncStatusResponse(request, env, origin) {
 __name(syncStatusResponse, "syncStatusResponse");
 async function postersResponse(request, env, origin) {
   if (!env.DB) return json({ error: "Public poster mirror unavailable" }, 503, origin);
-  const [rows, count] = await Promise.all([
-    env.DB.prepare("SELECT id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now') ORDER BY created_at DESC LIMIT 200").all(),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now')").all()
-  ]);
-  const response = json({ posters: rows.results || [], count: count.results?.[0]?.n || 0 }, 200, origin);
+  const cache = caches.default;
+  const cacheKey = new Request(new URL("/api/posters?schema=d1-v1", request.url), request);
+  const cached = await cache.match(cacheKey, { ignoreMethod: true });
+  if (cached) return cached;
+  let posters = [];
+  let count = 0;
+  try {
+    const [rows, total] = await Promise.all([
+      env.DB.prepare("SELECT id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now') ORDER BY created_at DESC LIMIT 200").all(),
+      env.DB.prepare("SELECT COUNT(*) AS n FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now')").all()
+    ]);
+    posters = rows.results || [];
+    count = total.results?.[0]?.n || 0;
+  } catch (d1Error) {
+    // The D1 mirror is preferred. During a first-time migration or a D1 write
+    // limit window, serve the same public Supabase rows through this Worker
+    // cache instead of making every browser fetch Supabase independently.
+    const now = new Date().toISOString();
+    const url = `${env.SUPABASE_URL}/rest/v1/employer_posters?select=id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at&or=(expires_at.is.null,expires_at.gt.${encodeURIComponent(now)})&order=created_at.desc&limit=200`;
+    const result = await fetch(url, {
+      headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`, Prefer: "count=exact" }
+    });
+    if (!result.ok) return json({ error: "Public poster feed unavailable" }, 502, origin);
+    posters = await result.json();
+    const range = result.headers.get("content-range") || "";
+    const match = range.match(/\/(\d+)$/);
+    count = match ? Number(match[1]) : posters.length;
+  }
+  const response = json({ posters, count }, 200, origin);
   response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=3600");
+  await cache.put(cacheKey, response.clone());
   return response;
 }
 __name(postersResponse, "postersResponse");

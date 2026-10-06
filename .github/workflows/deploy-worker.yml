@@ -47,6 +47,10 @@ jobs:
         working-directory: Cloudflare-worker
         run: npx --yes wrangler@4.147.0 deploy --config wrangler.toml
 
-      - name: Apply remote D1 migrations
+      - name: Apply remote D1 migrations when quota permits
+        continue-on-error: true
         working-directory: Cloudflare-worker
-        run: npx --yes wrangler@4.147.0 d1 migrations apply sarecruiters-d1 --remote --config wrangler.toml
+        run: |
+          if ! npx --yes wrangler@4.147.0 d1 migrations apply sarecruiters-d1 --remote --config wrangler.toml; then
+            echo "D1 migration was not applied. The Worker has a cached Supabase fallback and will retry on the next deployment."
+          fi
