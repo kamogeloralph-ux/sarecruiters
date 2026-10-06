@@ -193,14 +193,22 @@
     sel.innerHTML = '<option value="">Any industry</option>' + names.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('');
     sel.value = names.indexOf(cur) > -1 ? cur : '';
   }
+  function sourceSummary() {
+    var d = dedicatedVacancyCounts || {};
+    return {
+      ready: !!(generalVacancyCountLoaded && dedicatedVacancyCountsLoaded),
+      order: ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'],
+      labels: LABELS, icons: SRC_ICON,
+      counts: { general: generalVacancyCount || 0, agency: vacanciesCache.filter(hasAssignedAgency).length, government: d.government || 0, retail: d.retail || 0, learnerships: d.learnerships || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, careers_page: d.careers_page || 0 }
+    };
+  }
+  window.vacancySourceSummary = sourceSummary;
   function renderOverview() {
     var el = $('allvacancies-list'); if (!el) return;
     el.dataset.state = 'ready';
     var lm = $('allvacancies-loadmore'); if (lm) lm.style.display = 'none';
     fillIndustries();
-    var d = dedicatedVacancyCounts || {}, ready = generalVacancyCountLoaded && dedicatedVacancyCountsLoaded;
-    var counts = { general: generalVacancyCount || 0, agency: vacanciesCache.filter(hasAssignedAgency).length, government: d.government || 0, retail: d.retail || 0, learnerships: d.learnerships || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, careers_page: d.careers_page || 0 };
-    var order = ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
+    var sum = sourceSummary(), counts = sum.counts, ready = sum.ready, order = sum.order;
     var searching = !!(val('allvacancies-search') || val('allvacancies-location') || activeList().length);
     var list = poolFiltered();
     var html = '';

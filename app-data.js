@@ -538,15 +538,15 @@ function updatePosterStat() {
   if (el && posterTotalCount !== null) el.textContent = posterTotalCount;
 }
 async function getEmployerPosters() {
-  var columns = 'id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at';
   try {
-    var result = await supabaseClient.from('employer_posters').select(columns, { count: 'exact' })
-      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(200);
-    if (result.error) { console.error('getEmployerPosters', result.error); return []; }
+    var response = await fetch(R2_WORKER_URL + '/api/posters', {
+      method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }
+    });
+    if (!response.ok) throw new Error('Poster Worker request failed');
+    var payload = await response.json();
+    var data = Array.isArray(payload.posters) ? payload.posters : [];
     // Real total (not capped by the 50-row feed limit) for the home stat card.
-    posterTotalCount = typeof result.count === 'number' ? result.count : (result.data || []).length;
+    posterTotalCount = typeof payload.count === 'number' ? payload.count : data.length;
     updatePosterStat();
     // The live count can differ from whatever was restored from cache —
     // re-sort in case it now belongs in a different spot (updateStats()'s
@@ -563,7 +563,7 @@ async function getEmployerPosters() {
     // of null — without this, the earlier cache/restore plumbing had
     // nothing correct to save in the first place.
     if (typeof saveDataCache === 'function') saveDataCache();
-    return result.data || [];
+    return data;
   } catch(e) { console.error('getEmployerPosters', e); return []; }
 }
 

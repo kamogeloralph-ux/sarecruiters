@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const worker = readFileSync(new URL('../Cloudflare-worker/worker.js', import.meta.url), 'utf8');
 const migration = readFileSync(new URL('../Cloudflare-worker/migrations/0003_d1_sync_indexes.sql', import.meta.url), 'utf8');
+const postersMigration = readFileSync(new URL('../Cloudflare-worker/migrations/0004_public_posters.sql', import.meta.url), 'utf8');
 
 test('D1 sync uses batched keyed upserts and stale-key cleanup', () => {
   assert.match(worker, /async function syncD1Table\(/);
@@ -26,9 +27,21 @@ test('D1 vacancy indexes cover sync watermarks, sources, owners, remote roles, a
   }
 });
 
-test('startup headline count comes from the authoritative Supabase source', () => {
-  assert.match(worker, /async function authoritativeVacancyCount\(env\)/);
-  assert.match(worker, /prefer: "count=exact"/);
-  assert.match(worker, /vacancies: typeof sourceVacancyCountR === "number"/);
-  assert.match(worker, /snapshot = \{ \.\.\.snapshot, counts: \{ \.\.\.snapshot\.counts, vacancies: sourceVacancyCount \} \}/);
+test('startup headline count comes from D1 without a per-request Supabase count', () => {
+  assert.match(worker, /env\.DB\.prepare\("SELECT COUNT\(\*\) AS n FROM vacancies"\)/);
+  assert.doesNotMatch(worker, /authoritativeVacancyCount/);
+  assert.doesNotMatch(worker, /snapshot = \{ \.\.\.snapshot, counts: \{ \.\.\.snapshot\.counts, vacancies:/);
+});
+
+test('public posters are mirrored to D1 and served by the Worker', () => {
+  assert.match(worker, /async function postersResponse\(request, env, origin\)/);
+  assert.match(worker, /path === "\/api\/posters"/);
+  assert.match(worker, /syncD1Table\(env, "employer_posters"/);
+  assert.match(postersMigration, /CREATE TABLE IF NOT EXISTS employer_posters/);
+  assert.match(postersMigration, /employer_posters_expires_at_idx/);
+});
+
+test('vacancy deletion reconciliation is not run on every six-hour sync', () => {
+  assert.match(worker, /VACANCY_RECONCILE_INTERVAL_SECONDS = 86400/);
+  assert.match(worker, /vacancies_last_reconciled_at/);
 });
