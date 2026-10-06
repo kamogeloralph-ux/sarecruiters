@@ -40,14 +40,14 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /function renderHomeFeed\(/);
 });
 
-test('the homepage shows eight live vacancy cards and the vacancy overview shows all eight sources before roles', () => {
+test('the homepage shows eight live vacancy cards and the vacancy overview shows roles before source browsing', () => {
   assert.match(ui, /HOME_VACANCY_CARD_LIMIT = 8/);
   assert.match(ui, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
   assert.match(ui, /vacancyCard\(v, agency, \{ homePreview: true \}\)/);
   const overview = vacancyV2.slice(vacancyV2.indexOf('function renderOverview()'), vacancyV2.indexOf('/* ---------- folder post-processing'));
   const sourcesPosition = overview.indexOf('vx-source-section');
   const rolesPosition = overview.indexOf('vx-available-roles');
-  assert.ok(sourcesPosition >= 0 && rolesPosition > sourcesPosition, 'source cards should appear above available roles');
+  assert.ok(rolesPosition >= 0 && sourcesPosition > rolesPosition, 'available roles should appear before source browsing');
   assert.match(overview, /Browse jobs by source/);
   assert.match(overview, /Available roles/);
   assert.doesNotMatch(overview, /Featured vacancies|vx-rail/);
@@ -59,7 +59,7 @@ test('home vacancy cards expose an application action, and the home search uses 
   assert.match(vacancyV2, /if \(o\.homePreview\)/);
   assert.match(vacancyV2, /class="home-vacancy-apply"/);
   assert.match(vacancyV2, /homePreviewMarkup \+/);
-  assert.match(html, /app-vacancy-v2\.js\?v=vx-source-first-1/);
+  assert.match(html, /app-vacancy-v2\.js\?v=vx-scan-2/);
   assert.match(cards, /if \(typeof renderHomeFeed === 'function'\) \{\s*renderHomeFeed\(\);\s*return;/);
   assert.match(ui, /onclick="openHomeTalentPoolProfile\(\)"/);
   assert.match(ui, /onclick="openGeneralVacancySheet\(\)"/);
@@ -90,5 +90,5 @@ test('the homepage hero is square and compact, with a smaller search field and t
   assert.match(css, /#screen-home \.screen-fixed header\{padding:0 0 9px\}/);
   assert.match(css, /#screen-home \.search-mini \.search-inner\{height:48px/);
   assert.match(css, /#screen-home \.home-filter-row\{margin-bottom:7px/);
-  assert.match(html, /styles\.css\?v=sa-recruiters-home-feed-4/);
+  assert.match(html, /styles\.css\?v=sa-recruiters-ui-5/);
 });

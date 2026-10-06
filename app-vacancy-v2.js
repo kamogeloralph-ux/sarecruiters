@@ -55,6 +55,10 @@
       ? '<div class="vx-logo"><img src="' + esc(photo) + '" alt="" loading="lazy" decoding="async" width="48" height="48" onerror="this.remove()"></div>'
       : '<div class="vx-logo ' + vacGradFor(org) + '">' + esc(initials(org)) + '</div>';
     var age = (Date.now() - ts(v.created_at)) / DAY, left = closingIn(v);
+    var previewText = String(v.notes || '').replace(/\s+/g, ' ').trim();
+    var previewMarkup = !o.homePreview && previewText
+      ? '<span class="vx-preview">' + esc(previewText.length > 180 ? previewText.slice(0, 177).trim() + '…' : previewText) + '</span>'
+      : '';
     var tags = '';
     if (v.is_featured) tags += '<span class="vx-tag vx-tag--feat">★ Featured</span>';
     if (ts(v.created_at) && age < 3) tags += '<span class="vx-tag vx-tag--new">New</span>';
@@ -88,6 +92,23 @@
     else cta = '<button type="button" class="vx-btn vx-btn--primary" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId);showToast(&#39;Contact the agency or company directly to apply.&#39;)">Contact to apply</button>';
     cta += '<a class="vx-btn" href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" ' + track + '>Public listing ↗</a>';
     cta += '<button type="button" class="vx-btn vx-btn--ghost" onclick="event.stopPropagation();closeVac(this)">Close</button>';
+
+    var inlineHref = '', inlineLabel = 'Apply', inlineTarget = '';
+    if (v.link) { inlineHref = esc(v.link); inlineTarget = ' target="_blank" rel="noopener"'; }
+    else if (v.email) { inlineHref = 'mailto:' + esc(v.email); inlineLabel = 'Email to apply'; }
+    else if (v.phone) { inlineHref = 'tel:' + esc(String(v.phone).replace(/\s/g, '')); inlineLabel = 'Call to apply'; }
+    else if (employer && (employer.website || employer.email || employer.contact)) {
+      if (employer.website) { inlineHref = esc(employer.website); inlineTarget = ' target="_blank" rel="noopener"'; inlineLabel = 'Contact employer'; }
+      else if (employer.email) { inlineHref = 'mailto:' + esc(employer.email); inlineLabel = 'Email employer'; }
+      else { inlineHref = 'tel:' + esc(String(employer.contact).replace(/\s/g, '')); inlineLabel = 'Call employer'; }
+    } else if (agency.id && (agency.website || agency.email || agency.contact)) {
+      if (agency.website) { inlineHref = esc(agency.website); inlineTarget = ' target="_blank" rel="noopener"'; inlineLabel = 'Contact agency'; }
+      else if (agency.email) { inlineHref = 'mailto:' + esc(agency.email); inlineLabel = 'Email agency'; }
+      else { inlineHref = 'tel:' + esc(String(agency.contact).replace(/\s/g, '')); inlineLabel = 'Call agency'; }
+    }
+    var inlineApplyMarkup = !o.homePreview && inlineHref
+      ? '<a class="vx-inline-apply" href="' + inlineHref + '"' + inlineTarget + ' ' + track + '>' + esc(inlineLabel) + '</a>'
+      : '';
     var admin = (isAdmin && (isGeneral || employer))
       ? '<div class="vx-admin"><button type="button" class="vx-btn" onclick="event.stopPropagation();openEditGeneralVacancySheet(\'' + jsq(v.id) + '\')">' + VAC_ICONS.edit + ' Edit</button><button type="button" class="vx-btn" onclick="event.stopPropagation();deleteGeneralVacancy(\'' + jsq(v.id) + '\')">' + VAC_ICONS.trash + ' Delete</button></div>' : '';
 
@@ -113,10 +134,11 @@
         '<span class="vx-main"><span class="vx-title" style="display:-webkit-box">' + esc(v.title || 'Untitled role') + '</span>' +
           '<span class="vx-org"><span>' + esc(org) + '</span>' + (verified ? verifiedBadge(employer ? 'Verified employer' : 'Verified agency') : '') + '</span>' +
           (tags ? '<span class="vx-meta">' + tags + '</span>' : '') +
-          '<span class="vx-foot">' + (loc ? I.pin + '<span>' + esc(loc) + '</span><i>•</i>' : '') + I.clock + '<span>' + esc(timeAgo(v.created_at) || 'Recently') + '</span></span></span></button>' +
+          '<span class="vx-foot">' + (loc ? I.pin + '<span>' + esc(loc) + '</span><i>•</i>' : '') + I.clock + '<span>' + esc(timeAgo(v.created_at) || 'Recently') + '</span></span>' + previewMarkup + '</span></button>' +
         '<div class="vx-tools-col"><button type="button" class="vx-tool vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + jsq(key) + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button>' +
         '<button type="button" class="vx-tool vac-share" onclick="event.stopPropagation();shareVacancy(\'' + jsq(key) + '\')" aria-label="Share vacancy">' + SHARE_SVG + '</button></div>' +
       '</div>' +
+      (inlineApplyMarkup ? '<div class="vx-summary-action">' + inlineApplyMarkup + '</div>' : '') +
       homePreviewMarkup +
       '<div class="vx-detail" id="vd-' + esc(key) + '"><div><div class="vx-detail-in"><div class="vx-facts">' + facts + '</div>' + desc + attr + '<div class="vx-cta">' + cta + '</div>' + admin + '</div></div></div>' +
     '</article>';
@@ -212,13 +234,13 @@
     var searching = !!(val('allvacancies-search') || val('allvacancies-location') || activeList().length);
     var list = poolFiltered();
     var html = '';
-    html += '<section class="vx-block vx-source-section" aria-labelledby="vx-sources-title"><div class="vx-block-head"><div><h2 id="vx-sources-title">Browse jobs by source</h2><span class="vx-source-hint">Choose a source to browse its full listings.</span></div><span class="vx-source-count">8 sources</span></div><div class="vx-sources">' +
-      order.map(function (t) { return '<button type="button" class="vx-source" data-open="' + t + '"><span class="vx-source-ic">' + SRC_ICON[t] + '</span><span><strong>' + esc(LABELS[t]) + '</strong><small>' + (ready ? counts[t].toLocaleString() + ' role' + (counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></section>';
-    if (searching) html += '<p class="vx-search-note" role="status">Loaded matches appear below. Open a source above to search its full listings.</p>';
+    if (searching) html += '<p class="vx-search-note" role="status">Showing loaded matches. Choose a source below to browse more.</p>';
     html += '<section class="vx-block vx-available-roles" aria-labelledby="vx-available-roles-title"><div class="vx-block-head"><h2 id="vx-available-roles-title">Available roles</h2></div>' +
       '<div class="vx-seg" role="group" aria-label="Filter latest roles">' + [['all', 'All'], ['government', 'Government'], ['private', 'Private'], ['remote', 'Remote']].map(function (x) { return '<button type="button" data-ov="' + x[0] + '" class="' + (vacancyOverviewFilter === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       '<div class="vx-list-slot" aria-live="polite" style="display:contents">' + (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
-        list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or choose another source above.</p></div>') + '</div></section>';
+        list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or choose another source below.</p></div>') + '</div></section>';
+    html += '<section class="vx-block vx-source-section" aria-labelledby="vx-sources-title"><div class="vx-block-head"><div><h2 id="vx-sources-title">Browse jobs by source</h2><span class="vx-source-hint">Choose a source to browse its full listings.</span></div><span class="vx-source-count">8 sources</span></div><div class="vx-sources">' +
+      order.map(function (t) { return '<button type="button" class="vx-source" data-open="' + t + '"><span class="vx-source-ic">' + SRC_ICON[t] + '</span><span><strong>' + esc(LABELS[t]) + '</strong><small>' + (ready ? counts[t].toLocaleString() + ' role' + (counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></section>';
     html += '<div class="vx-block"><div class="vx-block-head"><h2>Popular categories</h2></div><div class="vx-cats">' +
       [['government', 'Government'], ['learnership', 'Learnerships'], ['internship', 'Internships'], ['graduate_programme', 'Graduate programmes'], ['bursary', 'Bursaries'], ['apprenticeship', 'Apprenticeships'], ['part_time', 'Part-time'], ['remote', 'Remote'], ['permanent', 'Permanent'], ['contract', 'Contract']]
         .map(function (c) { return '<a href="/browse/category/' + c[0] + '/">' + c[1] + '</a>'; }).join('') + '</div></div>';
