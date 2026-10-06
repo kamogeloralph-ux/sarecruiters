@@ -18,6 +18,7 @@ function closeSheet(id) {
   // is hidden while mandatory — see the CSS rule), so stripping it here is
   // safe and keeps every existing call site working unchanged.
   el.classList.remove('gate-mandatory');
+  if (window.__saSyncFeedbackChat) window.__saSyncFeedbackChat();
 }
 function openSupportSheet() { document.getElementById('support-overlay').classList.add('open'); }
 // ===== Private device Notes =====
@@ -576,6 +577,7 @@ function openSuggestionSheet() {
   var err = document.getElementById('suggestion-error');
   err.style.display = 'none'; err.textContent = '';
   document.getElementById('suggestion-overlay').classList.add('open');
+  if (window.__saSyncFeedbackChat) window.__saSyncFeedbackChat();
   renderTurnstile('suggestion-turnstile', 'suggestion-overlay');
 }
 async function submitSuggestion() {

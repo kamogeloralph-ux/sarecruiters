@@ -560,6 +560,10 @@ function renderHomeFeed() {
 }
 
 function filterAndRenderCached() {
+  if (typeof renderHomeFeed === 'function') {
+    renderHomeFeed();
+    return;
+  }
   var generation = ++agencyRenderGeneration;
   var q = (document.getElementById('home-search').value || '').trim().toLowerCase();
   var list = agenciesCache;
@@ -788,6 +792,21 @@ function vacancyCard(v, agency, options) {
     '</div>';
   }
 
+  var homePreviewMarkup = '';
+  if (options.homePreview) {
+    var homeApplyHref, homeApplyLabel, homeApplyTarget = ' target="_blank" rel="noopener"';
+    if (v.link) { homeApplyHref = escapeHtml(v.link); homeApplyLabel = 'Apply now'; }
+    else if (v.email) { homeApplyHref = 'mailto:' + escapeHtml(v.email); homeApplyLabel = 'Email to apply'; homeApplyTarget = ''; }
+    else if (v.phone) { homeApplyHref = 'tel:' + escapeHtml(v.phone.replace(/\s/g, '')); homeApplyLabel = 'Call to apply'; homeApplyTarget = ''; }
+    else { homeApplyHref = 'vacancy/' + publicVacancySlug(v) + '/'; homeApplyLabel = 'View vacancy'; }
+    var homeMeta = '';
+    if (v.salary) homeMeta += '<span class="home-vacancy-salary">' + escapeHtml(v.salary) + '</span>';
+    if (v.employment_type) homeMeta += '<span>' + escapeHtml(v.employment_type) + '</span>';
+    if (!homeMeta) homeMeta = '<span>' + escapeHtml(timeAgo(v.created_at) || 'Live opportunity') + '</span>';
+    homePreviewMarkup = '<div class="home-vacancy-footer"><div class="home-vacancy-meta">' + homeMeta + '</div>' +
+      '<a class="home-vacancy-apply" href="' + homeApplyHref + '"' + homeApplyTarget + ' aria-label="' + homeApplyLabel + ' for ' + escapeHtml(v.title || 'this vacancy') + '" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + homeApplyLabel + '</a></div>';
+  }
+
   return '' +
   '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + (v.is_featured ? ' vac-card-featured' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" aria-expanded="false" aria-controls="vd-' + key + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
     '<div class="vac-card-main">' +
@@ -806,6 +825,7 @@ function vacancyCard(v, agency, options) {
         '<span class="chevron">' + ICON_CHEVRON + '</span>' +
       '</div>' +
     '</div>' +
+    homePreviewMarkup +
     '<div class="vac-detail" id="vd-' + key + '"><div class="vac-detail-inner">' +
       detail + desc + saRecruitersAttribution + adzunaAttribution + himalayasAttribution + actions + admin +
     '</div></div>' +

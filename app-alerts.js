@@ -21,8 +21,8 @@
     b.id = 'sa-alert-btn'; b.type = 'button'; b.className = 'sa-alert-cta';
     b.setAttribute('aria-label', 'Email me new jobs matching this search');
     // Modern inline CTA: a tinted card with a bell badge, a two-line label and
-    // a trailing affordance. Styled in vacancy-v2.css (.sa-alert-cta) so it
-    // adapts to the light/dark theme tokens instead of a bare emoji button.
+    // a trailing affordance. Keep it after the overview so job sources and
+    // available roles remain the first content in the vacancy section.
     b.innerHTML =
       '<span class="sa-alert-cta-icon" aria-hidden="true">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
@@ -38,7 +38,7 @@
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' +
       '</span>';
     b.addEventListener('click', saveSearch);
-    list.insertAdjacentElement('beforebegin', b);
+    list.appendChild(b);
   }
 
   // Apply clicks: track + mark as applied for signed-in users (never overwrites a later status).
