@@ -1055,7 +1055,10 @@ __name(syncStatusResponse, "syncStatusResponse");
 async function postersResponse(request, env, origin) {
   if (!env.DB) return json({ error: "Public poster mirror unavailable" }, 503, origin);
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/posters?schema=d1-v1", request.url), request);
+  // Bump this whenever the response source or shape changes; otherwise an
+  // earlier empty fallback response can survive a Worker deployment at the
+  // edge for its configured s-maxage window.
+  const cacheKey = new Request(new URL("/api/posters?schema=d1-v2", request.url), request);
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) return cached;
   let posters = [];
