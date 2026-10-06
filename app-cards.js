@@ -525,24 +525,21 @@ function renderHomeFeed() {
   if (!el) return;
   var jobs = homeFeedJobs();
   var cats = homeFeedCategories();
-  var activeCount = (vacanciesCache || []).filter(function(v){ return v && !isVacancyExpired(v); }).length;
-  var featured = (featuredVacanciesCache || []).filter(function(v){ return v && !isVacancyExpired(v); }).slice(0, 6);
-  if (!featured.length) featured = jobs.slice(0, 6);
-  var html = '<section class="hf-section hf-featured" aria-labelledby="home-featured-title">' +
-    '<div class="hf-head"><h2 id="home-featured-title">Featured Vacancies <span>(' + activeCount + ' Active)</span></h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div>';
-  html += featured.length ? '<div class="hf-vacancy-rail">' + featured.map(function(v) {
+  var html = '<section class="hf-actions" aria-label="Quick actions">' +
+    '<button type="button" data-ripple onclick="openPoolRegisterSheet()"><strong>Upload your CV</strong><span>Join the Talent Pool</span></button>' +
+    '<button type="button" data-ripple onclick="goPool(\'home\')"><strong>Browse talent</strong><span>Find candidates</span></button>' +
+    '<button type="button" data-ripple onclick="openGeneralVacancySheet()"><strong>Post a vacancy</strong><span>Free to list</span></button></section>';
+  html += '<section class="hf-section"><div class="hf-head"><h2>Latest vacancies</h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div>';
+  html += jobs.length ? jobs.map(function(v) {
     var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
     return vacancyCard(v, agency);
-  }).join('') + '</div>' : '<p class="hf-empty">Loading live vacancies…</p>';
+  }).join('') : '<p class="hf-empty">Loading live vacancies…</p>';
   html += '</section>';
-  html += '<section class="hf-actions" aria-label="Quick actions">' +
-    '<button type="button" data-ripple onclick="openPoolRegisterSheet()"><span class="hf-action-icon">▤</span><strong>Upload your CV</strong></button>' +
-    '<button type="button" data-ripple onclick="openGeneralVacancySheet()"><span class="hf-action-icon">⚑</span><strong>Post a Vacancy</strong></button></section>';
   if (cats.length) {
-    html += '<section class="hf-section hf-categories"><div class="hf-head"><h2>Top Categories</h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div><div class="hf-chips">' +
-      cats.slice(0, 6).map(function(c){ return '<button type="button" data-ripple onclick="openHomeCategory(' + escapeHtml(JSON.stringify(c.name)).replace(/"/g, '&quot;') + ')"><span class="hf-category-icon">⌘</span><span><strong>' + escapeHtml(c.name) + '</strong><small>' + c.n + ' Jobs</small></span></button>'; }).join('') + '</div></section>';
+    html += '<section class="hf-section"><div class="hf-head"><h2>Popular categories</h2></div><div class="hf-chips">' +
+      cats.map(function(c){ return '<button type="button" data-ripple onclick="openHomeCategory(' + escapeHtml(JSON.stringify(c.name)).replace(/"/g, '&quot;') + ')">' + escapeHtml(c.name) + ' <small>' + c.n + '</small></button>'; }).join('') + '</div></section>';
   }
-  html += '<aside class="hf-sponsor" aria-label="Sponsored"><span>Sponsored Content</span><strong>Feature your company here</strong><a href="mailto:info@sa-recruiters.co.za?subject=Advertising%20on%20SA%20Recruiters">Advertise with us</a></aside>';
+  html += '<aside class="hf-sponsor" aria-label="Sponsored"><span>Sponsored slot</span><strong>Feature your company here</strong><a href="mailto:info@sa-recruiters.co.za?subject=Advertising%20on%20SA%20Recruiters">Advertise with us</a></aside>';
   html += '<section class="hf-section"><div class="hf-head"><h2>Career advice</h2><button type="button" class="hf-link" onclick="openContentSheet(\'learning-hub\')">Learning Hub →</button></div><div class="hf-advice">' +
     '<button type="button" data-ripple onclick="openContentSheet(\'interview-tips\')">Interview tips</button>' +
     '<button type="button" data-ripple onclick="openContentSheet(\'cv-prep\')">Prepare your CV</button>' +
