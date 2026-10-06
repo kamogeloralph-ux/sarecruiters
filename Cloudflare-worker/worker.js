@@ -1058,11 +1058,12 @@ async function postersResponse(request, env, origin) {
   // Bump this whenever the response source or shape changes; otherwise an
   // earlier empty fallback response can survive a Worker deployment at the
   // edge for its configured s-maxage window.
-  const cacheKey = new Request(new URL("/api/posters?schema=d1-v3", request.url), request);
+  const cacheKey = new Request(new URL("/api/posters?schema=d1-v4", request.url), request);
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) return cached;
   let posters = [];
   let count = 0;
+  let source = "d1";
   try {
     const [rows, total] = await Promise.all([
       env.DB.prepare("SELECT id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now') ORDER BY created_at DESC LIMIT 200").all(),
@@ -1073,7 +1074,7 @@ async function postersResponse(request, env, origin) {
   } catch (d1Error) {
     count = -1;
   }
-  if (count <= 0) {
+  if (posters.length === 0) {
     // The D1 mirror is preferred. During a first-time migration, before its
     // first sync, or during a D1 write-limit window, serve the same public
     // Supabase rows through this Worker cache instead of making every browser
@@ -1085,11 +1086,12 @@ async function postersResponse(request, env, origin) {
     });
     if (!result.ok) return json({ error: "Public poster feed unavailable" }, 502, origin);
     posters = await result.json();
+    source = "supabase-cache-fallback";
     const range = result.headers.get("content-range") || "";
     const match = range.match(/\/(\d+)$/);
     count = match ? Number(match[1]) : posters.length;
   }
-  const response = json({ posters, count }, 200, origin);
+  const response = json({ posters, count, source }, 200, origin);
   response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=3600");
   await cache.put(cacheKey, response.clone());
   return response;
