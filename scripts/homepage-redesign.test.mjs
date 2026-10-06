@@ -84,3 +84,11 @@ test('responsive styles cover the vacancy cards, categories, sponsored slot, and
   assert.match(css, /@media\(min-width:760px\)\{[\s\S]*\.home-vacancy-grid\{grid-template-columns:repeat\(2/);
   assert.match(vacancyCss, /\.vx-source\{display:flex;align-items:center/);
 });
+
+test('the homepage hero is square and compact, with a smaller search field and tighter spacing', () => {
+  assert.match(css, /#screen-home \.screen-fixed\{\s*padding:12px 16px 16px;[\s\S]*?border-radius:0;/);
+  assert.match(css, /#screen-home \.screen-fixed header\{padding:0 0 9px\}/);
+  assert.match(css, /#screen-home \.search-mini \.search-inner\{height:48px/);
+  assert.match(css, /#screen-home \.home-filter-row\{margin-bottom:7px/);
+  assert.match(html, /styles\.css\?v=sa-recruiters-home-feed-4/);
+});

@@ -2189,26 +2189,27 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
    action/category cards. */
 #screen-home{background:#f7faff}
 #screen-home .screen-fixed{
-  padding:16px 16px 24px;
+  padding:12px 16px 16px;
   background:linear-gradient(155deg,#0b4eaa 0%,#0a3e8f 52%,#062d72 100%);
-  border-radius:0 0 38px 38px;
+  border-radius:0;
   box-shadow:0 12px 30px rgba(4,43,102,.22);
 }
-#screen-home .screen-fixed header{padding:0 0 14px}
+#screen-home .screen-fixed header{padding:0 0 9px}
 #screen-home .logo-text{color:#fff}
 #screen-home .logo-slogan{color:rgba(255,255,255,.78)}
 #screen-home .site-menu-trigger{background:#fff!important;border-color:rgba(255,255,255,.7)!important;color:#14243d!important;box-shadow:0 8px 20px rgba(0,0,0,.15)!important}
 #screen-home .site-menu-trigger span{background:currentColor}
 #screen-home .connection-status{color:rgba(255,255,255,.78);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18)}
-#screen-home .search-mini{margin:0 0 14px}
-#screen-home .search-mini .search-inner{height:58px;border:0;border-radius:32px;background:#fff;box-shadow:0 8px 20px rgba(0,24,72,.16);padding:0 18px}
-#screen-home .search-mini .search-inner svg{width:22px;height:22px;color:#173f77;opacity:.8}
-#screen-home .search-mini input{font-size:16px;color:#263c5b}
+#screen-home .search-mini{margin:0 0 9px}
+#screen-home .search-mini .search-inner{height:48px;border:0;border-radius:24px;background:#fff;box-shadow:0 5px 14px rgba(0,24,72,.16);padding:0 14px}
+#screen-home .search-mini .search-inner svg{width:19px;height:19px;color:#173f77;opacity:.8}
+#screen-home .search-mini input{font-size:15px;color:#263c5b}
 #screen-home .search-mini input::placeholder{color:#71809a}
+#screen-home .home-filter-row{margin-bottom:7px;padding-bottom:2px}
 #screen-home .stats-wrap{margin:0 -2px;gap:0}
 #screen-home .stats-wrap .stats-scroll-btn{display:none}
 #screen-home .stats{gap:6px;padding:0 0 2px;overflow:hidden}
-#screen-home .stat-card{flex:1 1 0;min-width:0;padding:12px 3px 11px;border:1px solid rgba(255,255,255,.08);border-radius:19px;background:rgba(3,53,125,.78);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+#screen-home .stat-card{flex:1 1 0;min-width:0;padding:9px 3px 8px;border:1px solid rgba(255,255,255,.08);border-radius:19px;background:rgba(3,53,125,.78);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 #screen-home .stat-card-vacancies{order:1}
 #screen-home .stat-card-agencies{order:2}
 #screen-home .stat-card-pool{order:3}
