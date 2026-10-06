@@ -21,6 +21,7 @@ const appDataSrc = read('../app-data.js');
 const alertsSrc = read('../app-alerts.js');
 const vacancyCss = read('../vacancy-v2.css');
 const vacancyRendererSrc = read('../app-vacancy-v2.js');
+const homeCardsSrc = read('../app-cards.js');
 const indexSrc = read('../index.html');
 
 // Extract a top-level function body by name (brace-matched) so the assertions
@@ -87,6 +88,14 @@ test('vacancy overview shows sources first, then latest roles, with no featured 
   const sourcesAt = vacancyRendererSrc.indexOf('Browse by source');
   const latestAt = vacancyRendererSrc.indexOf("'Latest roles'");
   assert.ok(sourcesAt > 0 && latestAt > sourcesAt, 'source cards must render above the latest roles');
+});
+
+test('home vacancy section shows eight source cards before available roles', () => {
+  assert.doesNotMatch(homeCardsSrc, /Featured Vacancies/, 'the home feed must not render a featured vacancy section');
+  assert.match(homeCardsSrc, /class="hf-source-grid"/, 'the home feed must use the eight-card source grid');
+  const sourcesAt = homeCardsSrc.indexOf('Browse by source');
+  const rolesAt = homeCardsSrc.indexOf('Available roles');
+  assert.ok(sourcesAt > 0 && rolesAt > sourcesAt, 'source cards must render above available roles');
 });
 
 test('the saved-search CTA is the modern card, not a bare emoji button', () => {

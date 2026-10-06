@@ -2151,6 +2151,14 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #screen-home .hf-vacancy-rail{display:flex;gap:12px;overflow-x:auto;padding:0 2px 8px;margin:0 -2px;scroll-snap-type:x mandatory;scrollbar-width:none}
 #screen-home .hf-vacancy-rail::-webkit-scrollbar{display:none}
 #screen-home .hf-vacancy-rail>.vac-card{flex:0 0 calc(100vw - 70px);max-width:380px;margin:0!important;scroll-snap-align:start;border-radius:16px!important;background:#fff!important;border:1px solid #e0e8f1!important;box-shadow:0 7px 18px rgba(23,59,105,.1)!important}
+#screen-home .hf-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#screen-home .hf-source-card{display:flex;align-items:center;gap:9px;min-width:0;min-height:76px;padding:11px 10px;border:1px solid #e0e8f1;border-radius:16px;background:#fff;box-shadow:0 5px 14px rgba(23,59,105,.06);color:#182b47;text-align:left;cursor:pointer}
+#screen-home .hf-source-card:active{transform:scale(.985)}
+#screen-home .hf-source-card .hf-category-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#eaf3ff;color:#0758ad;font-size:17px;font-weight:800}
+#screen-home .hf-source-card>span:last-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+#screen-home .hf-source-card strong{font-size:12px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#screen-home .hf-source-card small{font-size:10px;opacity:.7;white-space:nowrap}
+#screen-home .hf-available{margin-top:22px!important}
 #screen-home .hf-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 20px}
 #screen-home .hf-actions button{min-height:92px;align-items:flex-start;justify-content:center;gap:8px;padding:15px;border:1px solid #e0e8f1!important;border-radius:17px;background:#fff!important;box-shadow:0 6px 16px rgba(23,59,105,.08);color:#101b2c!important}
 #screen-home .hf-actions strong{font-size:15px}
@@ -2169,4 +2177,4 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 
 /* Home: 8 source cards + category cards (same card size as before) */
 #screen-home .hf-categories .hf-chips{grid-template-columns:repeat(2,minmax(0,1fr))}
-@media(min-width:431px){#screen-home .hf-sources .hf-chips{grid-template-columns:repeat(4,minmax(0,1fr))}#screen-home .hf-categories:not(.hf-sources) .hf-chips{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:431px){#screen-home .hf-source-grid{grid-template-columns:repeat(4,minmax(0,1fr))}#screen-home .hf-categories .hf-chips{grid-template-columns:repeat(3,minmax(0,1fr))}}
