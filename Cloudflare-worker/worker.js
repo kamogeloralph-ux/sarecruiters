@@ -1058,7 +1058,7 @@ async function postersResponse(request, env, origin) {
   // Bump this whenever the response source or shape changes; otherwise an
   // earlier empty fallback response can survive a Worker deployment at the
   // edge for its configured s-maxage window.
-  const cacheKey = new Request(new URL("/api/posters?schema=d1-v2", request.url), request);
+  const cacheKey = new Request(new URL("/api/posters?schema=d1-v3", request.url), request);
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) return cached;
   let posters = [];
@@ -1071,9 +1071,13 @@ async function postersResponse(request, env, origin) {
     posters = rows.results || [];
     count = total.results?.[0]?.n || 0;
   } catch (d1Error) {
-    // The D1 mirror is preferred. During a first-time migration or a D1 write
-    // limit window, serve the same public Supabase rows through this Worker
-    // cache instead of making every browser fetch Supabase independently.
+    count = -1;
+  }
+  if (count <= 0) {
+    // The D1 mirror is preferred. During a first-time migration, before its
+    // first sync, or during a D1 write-limit window, serve the same public
+    // Supabase rows through this Worker cache instead of making every browser
+    // fetch Supabase independently.
     const now = new Date().toISOString();
     const url = `${env.SUPABASE_URL}/rest/v1/employer_posters?select=id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at&or=(expires_at.is.null,expires_at.gt.${encodeURIComponent(now)})&order=created_at.desc&limit=200`;
     const result = await fetch(url, {
