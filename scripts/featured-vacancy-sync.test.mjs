@@ -81,7 +81,7 @@ test('loadFeaturedVacancies seeds from the snapshot, then refreshes live and re-
   );
 });
 
-test('vacancy overview shows all eight sources before available roles and removes the featured rail', () => {
+test('vacancy overview shows available roles before all eight sources and removes the featured rail', () => {
   const summaryStart = vacancyRendererSrc.indexOf('function sourceSummary()');
   const summaryEnd = vacancyRendererSrc.indexOf('function renderOverview()', summaryStart);
   const summary = vacancyRendererSrc.slice(summaryStart, summaryEnd);
@@ -94,17 +94,23 @@ test('vacancy overview shows all eight sources before available roles and remove
   const overview = vacancyRendererSrc.slice(start, end);
   const sourcesAt = overview.indexOf('vx-source-section');
   const rolesAt = overview.indexOf('vx-available-roles');
-  assert.ok(sourcesAt >= 0 && rolesAt > sourcesAt, 'the eight sources must appear above available roles');
+  assert.ok(rolesAt >= 0 && sourcesAt > rolesAt, 'available roles must appear before the eight source tiles');
   assert.match(overview, /Browse jobs by source/);
   assert.match(overview, /Available roles/);
-  assert.match(overview, /list\.slice\(0, 24\)\.map\(function \(v\) \{ return card\(v, agencyOf\(v\)\); \}\)/, 'available vacancy cards must remain visible below the sources');
+  assert.match(overview, /list\.slice\(0, 24\)\.map\(function \(v\) \{ return card\(v, agencyOf\(v\)\); \}\)/, 'available vacancy cards must remain visible in the first overview section');
   assert.doesNotMatch(overview, /Featured vacancies|vx-rail/, 'the vacancy overview must not render a featured rail');
 
   assert.match(vacancyCss, /\.vx-sources\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'mobile source cards must use a compact two-column grid');
   assert.match(vacancyCss, /\.vx-source\{display:flex;align-items:center/, 'source cards must use a clean compact row layout');
   assert.match(vacancyCss, /@media \(min-width:720px\)[\s\S]*?\.vx-sources\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/, 'desktop source cards must use four columns');
-  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-source-first-1/, 'the vacancy stylesheet cache key must be refreshed');
-  assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-source-first-1/, 'the vacancy renderer cache key must be refreshed');
+  assert.match(vacancyRendererSrc, /class="vx-preview"/, 'vacancy summaries should expose a short job-description preview');
+  assert.match(vacancyRendererSrc, /class="vx-inline-apply"/, 'vacancies with a direct route should expose an apply action in the summary');
+  assert.match(vacancyCss, /\.vx-org\{order:0/);
+  assert.match(vacancyCss, /\.vx-inline-apply\{display:inline-flex/);
+  assert.match(read('../styles.css'), /#screen-allagencies #allagencies-list \.hub-summary/, 'agency typography and spacing should be scoped to the agency directory');
+  assert.match(indexSrc, /styles\.css\?v=sa-recruiters-ui-5/, 'the shared stylesheet cache key must be refreshed');
+  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-scan-2/, 'the vacancy stylesheet cache key must be refreshed');
+  assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-scan-2/, 'the vacancy renderer cache key must be refreshed');
   assert.match(indexSrc, /app-alerts\.js\?v=al-3/, 'the saved-search CTA script cache key must be refreshed');
 });
 

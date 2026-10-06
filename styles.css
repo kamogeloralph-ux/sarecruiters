@@ -2259,3 +2259,18 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 /* Home: 8 source cards + category cards (same card size as before) */
 #screen-home .hf-categories .hf-chips{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:431px){#screen-home .hf-source-grid{grid-template-columns:repeat(4,minmax(0,1fr))}#screen-home .hf-categories .hf-chips{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Agency directory: lighter card rhythm and more legible identity/location hierarchy. */
+#screen-allagencies #allagencies-list .hub-card{margin:0 0 10px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+#screen-allagencies #allagencies-list .hub-card.open{border-color:color-mix(in srgb,var(--accent) 34%,var(--border));box-shadow:var(--card-shadow)}
+#screen-allagencies #allagencies-list .hub-summary{min-height:74px;padding:13px 14px;gap:12px}
+#screen-allagencies #allagencies-list .avatar{width:46px;height:46px;border-radius:13px}
+#screen-allagencies #allagencies-list .agency-name-row{gap:6px}
+#screen-allagencies #allagencies-list .agency-name{font-size:15.5px;line-height:1.28;font-weight:780;letter-spacing:-.018em;color:var(--text)}
+#screen-allagencies #allagencies-list .hub-head-office-location{margin-top:5px;font-size:12px;line-height:1.35}
+#screen-allagencies #allagencies-list .hub-branch-badge{min-width:26px;height:26px;padding:0 7px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--border);box-shadow:none;font-size:10.5px}
+#screen-allagencies #allagencies-list .chevron{width:16px;height:16px;opacity:.72}
+#screen-allagencies #allagencies-list .hub-panel-inner{padding:0 14px 16px}
+#screen-allagencies #allagencies-list .hub-tabs{gap:7px;margin-bottom:12px}
+#screen-allagencies #allagencies-list .hub-tab{padding:8px 13px;border-radius:10px;font-size:12px}
+@media(max-width:380px){#screen-allagencies #allagencies-list .hub-summary{gap:9px;padding:12px}#screen-allagencies #allagencies-list .agency-name{font-size:15px}}
