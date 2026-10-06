@@ -504,7 +504,7 @@ function homeFeedIndustry(v) {
 }
 function homeFeedJobs() {
   var seen = {}, out = [];
-  (featuredVacanciesCache || []).concat(vacanciesCache || []).forEach(function(v) {
+  (vacanciesCache || []).forEach(function(v) {
     if (!v || seen[v.id] || isVacancyExpired(v)) return;
     seen[v.id] = true; out.push(v);
   });
@@ -532,11 +532,16 @@ function renderHomeFeed() {
   if (!el) return;
   var jobs = homeFeedJobs();
   var activeCount = (vacanciesCache || []).filter(function(v){ return v && !isVacancyExpired(v); }).length;
-  var featured = (featuredVacanciesCache || []).filter(function(v){ return v && !isVacancyExpired(v); }).slice(0, 6);
-  if (!featured.length) featured = jobs.slice(0, 6);
-  var html = '<section class="hf-section hf-featured" aria-labelledby="home-featured-title">' +
-    '<div class="hf-head"><h2 id="home-featured-title">Featured Vacancies <span>(' + activeCount + ' Active)</span></h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div>';
-  html += featured.length ? '<div class="hf-vacancy-rail">' + featured.map(function(v) {
+  var sum = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
+  var html = '';
+  if (sum) {
+    html += '<section class="hf-section hf-sources" aria-labelledby="home-sources-title"><div class="hf-head"><h2 id="home-sources-title">Browse by source</h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div><div class="hf-source-grid">' +
+      sum.order.map(function(t){ return '<button type="button" class="hf-source-card" data-ripple onclick="openVacancyFolder(\'' + t + '\')"><span class="hf-category-icon">' + sum.icons[t] + '</span><span><strong>' + escapeHtml(sum.labels[t]) + '</strong><small>' + (sum.ready ? sum.counts[t].toLocaleString() + ' role' + (sum.counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></section>';
+    if (!sum.ready && homeFeedRetry++ < 12) setTimeout(function(){ if (!document.getElementById('home-search').value) renderHomeFeed(); }, 1500);
+  }
+  html += '<section class="hf-section hf-available" aria-labelledby="home-available-title">' +
+    '<div class="hf-head"><h2 id="home-available-title">Available roles <span>(' + activeCount + ' active)</span></h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div>';
+  html += jobs.length ? '<div class="hf-vacancy-rail">' + jobs.map(function(v) {
     var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
     return vacancyCard(v, agency);
   }).join('') + '</div>' : '<p class="hf-empty">Loading live vacancies…</p>';
@@ -544,12 +549,6 @@ function renderHomeFeed() {
   html += '<section class="hf-actions" aria-label="Quick actions">' +
     '<button type="button" data-ripple onclick="openPoolRegisterSheet()"><span class="hf-action-icon">▤</span><strong>Upload your CV</strong></button>' +
     '<button type="button" data-ripple onclick="openGeneralVacancySheet()"><span class="hf-action-icon">⚑</span><strong>Post a Vacancy</strong></button></section>';
-  var sum = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
-  if (sum) {
-    html += '<section class="hf-section hf-categories hf-sources"><div class="hf-head"><h2>Vacancy Sources</h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div><div class="hf-chips">' +
-      sum.order.map(function(t){ return '<button type="button" data-ripple onclick="openVacancyFolder(\'' + t + '\')"><span class="hf-category-icon">' + sum.icons[t] + '</span><span><strong>' + escapeHtml(sum.labels[t]) + '</strong><small>' + (sum.ready ? sum.counts[t].toLocaleString() + ' Jobs' : 'Loading…') + '</small></span></button>'; }).join('') + '</div></section>';
-    if (!sum.ready && homeFeedRetry++ < 12) setTimeout(function(){ if (!document.getElementById('home-search').value) renderHomeFeed(); }, 1500);
-  }
   html += '<section class="hf-section hf-categories"><div class="hf-head"><h2>Top Categories</h2></div><div class="hf-chips">' +
     HOME_CATEGORIES.map(function(c, i){ return '<button type="button" data-ripple onclick="openHomeCategory(' + i + ')"><span class="hf-category-icon">' + c.icon + '</span><span><strong>' + escapeHtml(c.name) + '</strong><small>' + escapeHtml(c.hint) + '</small></span></button>'; }).join('') + '</div></section>';
   html += '<aside class="hf-sponsor" aria-label="Sponsored"><span>Sponsored Content</span><strong>Feature your company here</strong><a href="mailto:info@sa-recruiters.co.za?subject=Advertising%20on%20SA%20Recruiters">Advertise with us</a></aside>';
