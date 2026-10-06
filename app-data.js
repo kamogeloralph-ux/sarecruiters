@@ -643,6 +643,7 @@ async function loadFeaturedVacancies() {
       featuredVacanciesCache = filterExpiredVacancies(window.__saStartupPayload.featured_vacancies);
     }
   }
+  if (typeof filterAndRenderCached === 'function') filterAndRenderCached();
   if (typeof renderAllVacanciesList === 'function' && document.getElementById('screen-allvacancies') && document.getElementById('screen-allvacancies').classList.contains('active')) renderAllVacanciesList();
   return featuredVacanciesCache;
 }

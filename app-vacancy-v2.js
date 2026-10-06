@@ -91,17 +91,33 @@
     var admin = (isAdmin && (isGeneral || employer))
       ? '<div class="vx-admin"><button type="button" class="vx-btn" onclick="event.stopPropagation();openEditGeneralVacancySheet(\'' + jsq(v.id) + '\')">' + VAC_ICONS.edit + ' Edit</button><button type="button" class="vx-btn" onclick="event.stopPropagation();deleteGeneralVacancy(\'' + jsq(v.id) + '\')">' + VAC_ICONS.trash + ' Delete</button></div>' : '';
 
+    var homePreviewMarkup = '';
+    if (o.homePreview) {
+      var homeApplyHref, homeApplyLabel, homeApplyTarget = '';
+      if (v.link) { homeApplyHref = esc(v.link); homeApplyLabel = 'Apply now'; homeApplyTarget = 'target="_blank" rel="noopener"'; }
+      else if (v.email) { homeApplyHref = 'mailto:' + esc(v.email); homeApplyLabel = 'Email to apply'; }
+      else if (v.phone) { homeApplyHref = 'tel:' + esc(String(v.phone).replace(/\s/g, '')); homeApplyLabel = 'Call to apply'; }
+      else { homeApplyHref = 'vacancy/' + publicVacancySlug(v) + '/'; homeApplyLabel = 'View vacancy'; homeApplyTarget = 'target="_blank" rel="noopener"'; }
+      var homeMeta = '';
+      if (v.salary) homeMeta += '<span class="home-vacancy-salary">' + esc(v.salary) + '</span>';
+      if (v.employment_type) homeMeta += '<span>' + esc(v.employment_type) + '</span>';
+      if (!homeMeta) homeMeta = '<span>' + esc(timeAgo(v.created_at) || 'Live opportunity') + '</span>';
+      homePreviewMarkup = '<div class="home-vacancy-footer"><div class="home-vacancy-meta">' + homeMeta + '</div>' +
+        '<a class="home-vacancy-apply" href="' + homeApplyHref + '" ' + homeApplyTarget + ' ' + track + ' aria-label="' + homeApplyLabel + ' for ' + esc(v.title || 'this vacancy') + '">' + homeApplyLabel + '</a></div>';
+    }
+
     var loc = v.location ? shortLocation(v.location) : '';
     return '<article class="vx-card vac-card' + (o.featured || v.is_featured ? ' vx-card--feat' : '') + (locked ? ' vx-card--locked' : '') + '" id="vc-' + esc(key) + '" data-vacancy-id="' + esc(v.id) + '" data-posted="' + ts(v.created_at) + '" data-closing="' + ts(v.closing_date) + '" data-salary="' + salaryNum(v) + '" data-title="' + esc(String(v.title || '').toLowerCase()) + '" data-loc="' + esc(String(v.location || v.province || '').toLowerCase()) + '">' +
       '<div class="vx-top">' +
         '<button type="button" class="vx-head" aria-expanded="false" aria-controls="vd-' + esc(key) + '" onclick="' + (locked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' + logo +
-          '<span class="vx-main"><span class="vx-title" style="display:-webkit-box">' + esc(v.title || 'Untitled role') + '</span>' +
+        '<span class="vx-main"><span class="vx-title" style="display:-webkit-box">' + esc(v.title || 'Untitled role') + '</span>' +
           '<span class="vx-org"><span>' + esc(org) + '</span>' + (verified ? verifiedBadge(employer ? 'Verified employer' : 'Verified agency') : '') + '</span>' +
           (tags ? '<span class="vx-meta">' + tags + '</span>' : '') +
           '<span class="vx-foot">' + (loc ? I.pin + '<span>' + esc(loc) + '</span><i>•</i>' : '') + I.clock + '<span>' + esc(timeAgo(v.created_at) || 'Recently') + '</span></span></span></button>' +
         '<div class="vx-tools-col"><button type="button" class="vx-tool vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + jsq(key) + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button>' +
         '<button type="button" class="vx-tool vac-share" onclick="event.stopPropagation();shareVacancy(\'' + jsq(key) + '\')" aria-label="Share vacancy">' + SHARE_SVG + '</button></div>' +
       '</div>' +
+      homePreviewMarkup +
       '<div class="vx-detail" id="vd-' + esc(key) + '"><div><div class="vx-detail-in"><div class="vx-facts">' + facts + '</div>' + desc + attr + '<div class="vx-cta">' + cta + '</div>' + admin + '</div></div></div>' +
     '</article>';
   }
@@ -186,42 +202,20 @@
     var counts = { general: generalVacancyCount || 0, agency: vacanciesCache.filter(hasAssignedAgency).length, government: d.government || 0, retail: d.retail || 0, learnerships: d.learnerships || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, careers_page: d.careers_page || 0 };
     var order = ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
     var searching = !!(val('allvacancies-search') || val('allvacancies-location') || activeList().length);
-    // Keep the rail useful even when fewer than eight roles are actively
-    // featured. Expired feature flags are excluded; the remaining slots are
-    // filled with the newest live roles rather than leaving a broken-looking
-    // one- or two-card rail. Featured roles always retain priority.
-    var featuredOnly = (featuredVacanciesCache || []).filter(function (v) { return v && v.is_featured && (!v.featured_until || ts(v.featured_until) >= Date.now()) && !isVacancyExpired(v); })
-      .sort(function (a, b) { return (Number(a.featured_order) || 0) - (Number(b.featured_order) || 0) || ts(b.created_at) - ts(a.created_at); });
-    var feat = featuredOnly.slice(0, 8);
-    if (feat.length < 8) {
-      var seen = {}; feat.forEach(function (v) { seen[v.id] = true; });
-      var fallbackPool = (staticVacanciesCache && staticVacanciesCache.length ? staticVacanciesCache : vacanciesCache).slice()
-        .filter(function (v) { return v && !seen[v.id] && !isVacancyExpired(v); })
-        .sort(function (a, b) { return ts(b.created_at) - ts(a.created_at); });
-      fallbackPool.some(function (v) { feat.push(v); return feat.length >= 8; });
-    }
-    var html = '';
-    if (searching) {
-      var q = val('allvacancies-search');
-      html += '<div class="vx-block"><div class="vx-block-head"><h2>Keep searching</h2></div><div class="vx-cont">' +
-        order.map(function (t) { return '<button type="button" class="vx-chip" data-open="' + t + '">' + esc(LABELS[t]) + (ready ? ' · ' + counts[t].toLocaleString() : '') + '</button>'; }).join('') +
-        '</div><p style="margin:0;font-size:12px;color:var(--text-2)">' + (q ? 'Open a source to search all of its listings for “' + esc(q) + '”.' : 'Open a source to apply these filters to all of its listings.') + '</p></div>';
-    } else if (feat.length) {
-      html += '<div class="vx-block"><div class="vx-block-head"><h2>Featured vacancies</h2><span style="font-size:12px;color:var(--text-2)">' + feat.length + ' roles · Swipe →</span></div><div class="vx-rail" tabindex="0" aria-label="Featured vacancies">' +
-        feat.map(function (v) { return card(v, agencyOf(v), { featured: true }); }).join('') + '</div></div>';
-    }
     var list = poolFiltered();
-    html += '<div class="vx-block"><div class="vx-block-head"><h2>' + (searching ? 'Matches' : 'Latest roles') + '</h2>' + (searching ? '' : '<button type="button" onclick="showAllVacancies(\'home\')">Browse all →</button>') + '</div>' +
+    var html = '';
+    html += '<section class="vx-block vx-source-section" aria-labelledby="vx-sources-title"><div class="vx-block-head"><div><h2 id="vx-sources-title">Browse jobs by source</h2><span class="vx-source-hint">Choose a source to browse its full listings.</span></div><span class="vx-source-count">8 sources</span></div><div class="vx-sources">' +
+      order.map(function (t) { return '<button type="button" class="vx-source" data-open="' + t + '"><span class="vx-source-ic">' + SRC_ICON[t] + '</span><span><strong>' + esc(LABELS[t]) + '</strong><small>' + (ready ? counts[t].toLocaleString() + ' role' + (counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></section>';
+    if (searching) html += '<p class="vx-search-note" role="status">Loaded matches appear below. Open a source above to search its full listings.</p>';
+    html += '<section class="vx-block vx-available-roles" aria-labelledby="vx-available-roles-title"><div class="vx-block-head"><h2 id="vx-available-roles-title">Available roles</h2></div>' +
       '<div class="vx-seg" role="group" aria-label="Filter latest roles">' + [['all', 'All'], ['government', 'Government'], ['private', 'Private'], ['remote', 'Remote']].map(function (x) { return '<button type="button" data-ov="' + x[0] + '" class="' + (vacancyOverviewFilter === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       '<div class="vx-list-slot" aria-live="polite" style="display:contents">' + (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
-        list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or open a source above.</p></div>') + '</div></div>';
-    html += '<div class="vx-block"><div class="vx-block-head"><h2>Browse by source</h2></div><div class="vx-sources">' +
-      order.map(function (t) { return '<button type="button" class="vx-source" data-open="' + t + '"><span class="vx-source-ic">' + SRC_ICON[t] + '</span><span><strong>' + esc(LABELS[t]) + '</strong><small>' + (ready ? counts[t].toLocaleString() + ' role' + (counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></div>';
+        list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or choose another source above.</p></div>') + '</div></section>';
     html += '<div class="vx-block"><div class="vx-block-head"><h2>Popular categories</h2></div><div class="vx-cats">' +
       [['government', 'Government'], ['learnership', 'Learnerships'], ['internship', 'Internships'], ['graduate_programme', 'Graduate programmes'], ['bursary', 'Bursaries'], ['apprenticeship', 'Apprenticeships'], ['part_time', 'Part-time'], ['remote', 'Remote'], ['permanent', 'Permanent'], ['contract', 'Contract']]
         .map(function (c) { return '<a href="/browse/category/' + c[0] + '/">' + c[1] + '</a>'; }).join('') + '</div></div>';
     el.innerHTML = '<div class="vx-block" style="display:contents">' + html + '</div>';
-    var rc = $('allvacancies-result-count'); if (rc) rc.textContent = searching ? list.length + ' match' + (list.length === 1 ? '' : 'es') + ' in loaded roles' : totalLabel();
+    var rc = $('allvacancies-result-count'); if (rc) rc.textContent = searching ? list.length + ' match' + (list.length === 1 ? '' : 'es') + ' in loaded roles' : Math.min(list.length, 24).toLocaleString() + ' roles shown';
   }
 
   /* ---------- folder post-processing (works after async page loads too) ---------- */

@@ -81,22 +81,32 @@ test('loadFeaturedVacancies seeds from the snapshot, then refreshes live and re-
   );
 });
 
-test('vacancy overview fills eight cards and preserves featured rail sizing', () => {
-  assert.match(vacancyRendererSrc, /var feat = featuredOnly\.slice\(0, 8\)/, 'featured roles must be capped at eight');
-  assert.match(vacancyRendererSrc, /if \(feat\.length < 8\)/, 'live-role fallbacks must fill missing featured slots');
-  assert.match(vacancyRendererSrc, /list\.slice\(0, 24\)\.map\(function \(v\) \{ return card\(v, agencyOf\(v\)\); \}\)/, 'the overview must also render the latest vacancy cards');
+test('vacancy overview shows all eight sources before available roles and removes the featured rail', () => {
+  const start = vacancyRendererSrc.indexOf('function renderOverview()');
+  const end = vacancyRendererSrc.indexOf('/* ---------- folder post-processing', start);
+  const overview = vacancyRendererSrc.slice(start, end);
+  const orderMatch = overview.match(/var order = \[([^\]]+)\]/);
+  assert.ok(orderMatch, 'the overview must define the source order');
+  assert.equal(orderMatch[1].split(',').length, 8, 'the overview must offer exactly eight sources');
+  const sourcesAt = overview.indexOf('vx-source-section');
+  const rolesAt = overview.indexOf('vx-available-roles');
+  assert.ok(sourcesAt >= 0 && rolesAt > sourcesAt, 'the eight sources must appear above available roles');
+  assert.match(overview, /Browse jobs by source/);
+  assert.match(overview, /Available roles/);
+  assert.match(overview, /list\.slice\(0, 24\)\.map\(function \(v\) \{ return card\(v, agencyOf\(v\)\); \}\)/, 'available vacancy cards must remain visible below the sources');
+  assert.doesNotMatch(overview, /Featured vacancies|vx-rail/, 'the vacancy overview must not render a featured rail');
 
-  const resetAt = vacancyCss.indexOf('.vx-card.vac-card{all:unset');
-  const sizingAt = vacancyCss.indexOf('.vx-rail>.vx-card.vac-card{');
-  assert.ok(resetAt >= 0 && sizingAt > resetAt, 'rail flex sizing must follow the card all:unset reset');
-  const sizingRule = vacancyCss.slice(sizingAt, vacancyCss.indexOf('}', sizingAt) + 1);
-  assert.match(sizingRule, /flex:0 0 min\(84%,320px\)/, 'featured cards must keep a stable mobile width');
-  assert.match(vacancyCss, /@media \(min-width:720px\)[\s\S]*?\.vx-rail>\.vx-card\.vac-card\{flex-basis:340px;width:340px;min-width:340px\}/, 'desktop rail cards must keep their fixed width too');
-  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-4/, 'the stylesheet cache key must be refreshed');
+  assert.match(vacancyCss, /\.vx-sources\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'mobile source cards must use a compact two-column grid');
+  assert.match(vacancyCss, /\.vx-source\{display:flex;align-items:center/, 'source cards must use a clean compact row layout');
+  assert.match(vacancyCss, /@media \(min-width:720px\)[\s\S]*?\.vx-sources\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/, 'desktop source cards must use four columns');
+  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-source-first-1/, 'the vacancy stylesheet cache key must be refreshed');
+  assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-source-first-1/, 'the vacancy renderer cache key must be refreshed');
+  assert.match(indexSrc, /app-alerts\.js\?v=al-3/, 'the saved-search CTA script cache key must be refreshed');
 });
 
 test('the saved-search CTA is the modern card, not a bare emoji button', () => {
   assert.match(alertsSrc, /className = 'sa-alert-cta'/, 'app-alerts.js must use the sa-alert-cta class');
+  assert.match(alertsSrc, /list\.appendChild\(b\)/, 'the alert CTA must stay below the source-first overview');
   assert.match(alertsSrc, /sa-alert-cta-icon/, 'the CTA must render an icon badge');
   assert.match(alertsSrc, /sa-alert-cta-title[^]*Email me new jobs/, 'the CTA must render a titled label');
   assert.doesNotMatch(alertsSrc, /className = 'vx-more'/, 'the CTA must not reuse the plain load-more button class');
