@@ -220,14 +220,30 @@ async function communitySubmitPost(event) {
   if (event) event.preventDefault();
   if (!communityRequireSignIn()) return false;
   if (!communityMvp.joined) { communityToast('Join Interview Tips before posting.'); return false; }
+  if (!communityMvp.group) { communityStatus('Interview Tips is still loading. Please try again in a moment.', 'error'); return false; }
   var field = document.getElementById('community-post-body');
   var body = field ? field.value.trim() : '';
   if (body.length < 12 || body.length > 3000) { communityStatus('Write between 12 and 3,000 characters.', 'error'); return false; }
   var button = document.getElementById('community-post-submit');
   if (button) button.disabled = true;
-  var result = await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
+  var result;
+  try {
+    result = await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
+  } catch (error) {
+    result = { error: error };
+  }
   if (button) button.disabled = false;
-  if (result.error) { console.error(result.error); communityStatus('Your post was not sent. Please check your connection and try again.', 'error'); return false; }
+  if (result.error) {
+    console.error('community post insert', result.error);
+    var errorCode = String(result.error.code || result.error.status || '');
+    var errorMessage = errorCode === '401' || errorCode === 'PGRST301'
+      ? 'Your sign-in may have expired. Sign in again, then retry; your draft remains in the box.'
+      : errorCode === '403' || errorCode === '42501'
+        ? 'The post was blocked by group permissions. Check that you are still joined; your draft remains in the box.'
+        : 'Your post could not be sent. Your draft remains in the box; check your connection and try again.';
+    communityStatus(errorMessage, 'error');
+    return false;
+  }
   if (field) field.value = '';
   communityStatus('Thanks — your post is awaiting moderator review. Your account is not shown publicly.', 'success');
   communityRenderGroup();

@@ -195,6 +195,7 @@
   function poolFiltered() {
     var pool = vacanciesCache.slice();
     (vacancyOverviewExtraRows || []).forEach(function (v) { if (v && !pool.some(function (x) { return x.id === v.id; })) pool.push(v); });
+    (window.retailPriorityPreviewRows || []).forEach(function (v) { if (v && !pool.some(function (x) { return x.id === v.id; })) pool.push(v); });
     var q = val('allvacancies-search').toLowerCase(), loc = val('allvacancies-location').toLowerCase(), rem = val('allvacancies-remote'), ex = val('allvacancies-exp'), ind = val('allvacancies-industry').toLowerCase();
     return pool.filter(function (v) {
       if (isVacancyExpired(v)) return false;
@@ -228,19 +229,27 @@
   function renderOverview() {
     var el = $('allvacancies-list'); if (!el) return;
     el.dataset.state = 'ready';
+    if (typeof window.ensureRetailPriorityVacancies === 'function') window.ensureRetailPriorityVacancies();
     var lm = $('allvacancies-loadmore'); if (lm) lm.style.display = 'none';
     fillIndustries();
     var sum = sourceSummary(), counts = sum.counts, ready = sum.ready, order = sum.order;
     var searching = !!(val('allvacancies-search') || val('allvacancies-location') || activeList().length);
     var list = poolFiltered();
+    list.sort(function (a, b) {
+      var isRetail = window.isRetailPriorityVacancy;
+      var retailOrder = Number(typeof isRetail === 'function' && isRetail(b)) - Number(typeof isRetail === 'function' && isRetail(a));
+      var aDate = new Date(a.created_at || 0).getTime() || 0, bDate = new Date(b.created_at || 0).getTime() || 0;
+      return retailOrder || bDate - aDate;
+    });
     var html = '';
     if (searching) html += '<p class="vx-search-note" role="status">Showing loaded matches. Choose a source below to browse more.</p>';
-    html += '<section class="vx-block vx-available-roles" aria-labelledby="vx-available-roles-title"><div class="vx-block-head"><h2 id="vx-available-roles-title">Available roles</h2></div>' +
+    var rolesMarkup = '<section class="vx-block vx-available-roles" aria-labelledby="vx-available-roles-title"><div class="vx-block-head"><h2 id="vx-available-roles-title">Available roles</h2></div>' +
       '<div class="vx-seg" role="group" aria-label="Filter latest roles">' + [['all', 'All'], ['government', 'Government'], ['private', 'Private'], ['remote', 'Remote']].map(function (x) { return '<button type="button" data-ov="' + x[0] + '" class="' + (vacancyOverviewFilter === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       '<div class="vx-list-slot" aria-live="polite" style="display:contents">' + (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
         list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or choose another source below.</p></div>') + '</div></section>';
-    html += '<section class="vx-block vx-source-section" aria-labelledby="vx-sources-title"><div class="vx-block-head"><div><h2 id="vx-sources-title">Browse jobs by source</h2><span class="vx-source-hint">Choose a source to browse its full listings.</span></div><span class="vx-source-count">8 sources</span></div><div class="vx-sources">' +
+    var sourcesMarkup = '<section class="vx-block vx-source-section" aria-labelledby="vx-sources-title"><div class="vx-block-head"><div><h2 id="vx-sources-title">Browse jobs by source</h2><span class="vx-source-hint">Choose a source to browse its full listings.</span></div><span class="vx-source-count">8 sources</span></div><div class="vx-sources">' +
       order.map(function (t) { return '<button type="button" class="vx-source" data-open="' + t + '"><span class="vx-source-ic">' + SRC_ICON[t] + '</span><span><strong>' + esc(LABELS[t]) + '</strong><small>' + (ready ? counts[t].toLocaleString() + ' role' + (counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></section>';
+    html += sourcesMarkup + rolesMarkup;
     html += '<div class="vx-block"><div class="vx-block-head"><h2>Popular categories</h2></div><div class="vx-cats">' +
       [['government', 'Government'], ['learnership', 'Learnerships'], ['internship', 'Internships'], ['graduate_programme', 'Graduate programmes'], ['bursary', 'Bursaries'], ['apprenticeship', 'Apprenticeships'], ['part_time', 'Part-time'], ['remote', 'Remote'], ['permanent', 'Permanent'], ['contract', 'Contract']]
         .map(function (c) { return '<a href="/browse/category/' + c[0] + '/">' + c[1] + '</a>'; }).join('') + '</div></div>';
