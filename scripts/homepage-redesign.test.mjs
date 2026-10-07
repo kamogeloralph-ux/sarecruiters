@@ -23,15 +23,19 @@ test('home replaces the direct agency feed with the job-search feed while retain
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(html, /onclick="showAllAgencies\(\)"/);
-  for (const slug of ['gauteng', 'western-cape', 'kwazulu-natal', 'eastern-cape', 'free-state', 'limpopo', 'mpumalanga', 'north-west', 'northern-cape']) {
-    assert.match(html, new RegExp(`href="/jobs/${slug}/"`));
-  }
+  assert.doesNotMatch(html, /Browse jobs by province|home-province-section|home-province-links/);
 });
 
 test('location filters and category shortcuts feed real vacancy results', () => {
-  for (const location of ['gauteng', 'western-cape', 'kwazulu-natal', 'remote']) {
+  const provinces = ['gauteng', 'western-cape', 'kwazulu-natal', 'eastern-cape', 'free-state', 'limpopo', 'mpumalanga', 'north-west', 'northern-cape'];
+  for (const location of [...provinces, 'remote']) {
     assert.match(html, new RegExp(`data-home-location="${location}"`));
+    if (location !== 'remote') {
+      assert.match(html, new RegExp(`onclick="setHomeLocationFilter\\('${location}'\\)"`));
+      assert.match(ui, new RegExp(`['"]?${location}['"]?\\s*:`));
+    }
   }
+  assert.equal((html.match(/data-home-location="(?:gauteng|western-cape|kwazulu-natal|eastern-cape|free-state|limpopo|mpumalanga|north-west|northern-cape)"/g) || []).length, 9);
   assert.match(ui, /function setHomeLocationFilter\(/);
   assert.match(ui, /function homeVacancyMatchesLocation\(/);
   assert.match(ui, /function setHomeCategoryFilter\(/);

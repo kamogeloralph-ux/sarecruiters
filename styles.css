@@ -2075,8 +2075,9 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 
 
 /* ===== Vacancy-first home feed ===== */
-#screen-home .home-filter-row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:1px 1px 4px;margin:0 0 11px;overscroll-behavior-x:contain}
-#screen-home .home-filter-row::-webkit-scrollbar{display:none}
+#screen-home .home-filter-row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.45) transparent;-webkit-overflow-scrolling:touch;padding:1px 1px 4px;margin:0 0 11px;overscroll-behavior-x:contain}
+#screen-home .home-filter-row::-webkit-scrollbar{height:3px}
+#screen-home .home-filter-row::-webkit-scrollbar-thumb{background:rgba(255,255,255,.45);border-radius:3px}
 #screen-home .home-filter-chip{flex:0 0 auto;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 12px;background:rgba(255,255,255,.12);color:#fff;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;transition:background .15s,transform .15s}
 #screen-home .home-filter-chip:active{transform:scale(.97)}
 #screen-home .home-filter-chip.active{background:#0a84ff;border-color:#4b9eff;color:#fff;box-shadow:0 4px 12px rgba(0,35,90,.2)}
@@ -2145,10 +2146,6 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .home-tool-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:7px;margin-top:3px}
 .home-tool-actions button{border:0;border-radius:10px;padding:9px 11px;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;cursor:pointer}
 .home-tool-actions button.secondary{border:1px solid var(--border);background:var(--card-2);color:var(--text)}
-.home-province-section{margin:0 0 24px}
-.home-province-links{display:flex;flex-wrap:wrap;gap:7px}
-.home-province-links a{display:inline-flex;align-items:center;min-height:31px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--accent);text-decoration:none;font-size:10px;font-weight:700}
-.home-province-links a:hover,.home-province-links a:focus-visible{border-color:var(--accent);background:var(--accent-soft)}
 @container (min-width:760px){
   #screen-home .home-source-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
