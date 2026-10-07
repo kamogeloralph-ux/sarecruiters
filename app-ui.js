@@ -77,6 +77,9 @@ restoreActiveScreenBeforeReveal();
 var homeLocationFilter = '';
 var homeCategoryFilter = '';
 var HOME_VACANCY_CARD_LIMIT = 8;
+if (!Array.isArray(window.retailPriorityPreviewRows)) window.retailPriorityPreviewRows = [];
+var retailPriorityPreviewPromise = null;
+var retailPriorityPreviewLoaded = false;
 var HOME_JOB_CATEGORIES = [
   { key: 'finance', label: 'Finance & accounting', sub: 'Accounts, audit and finance', icon: 'R' },
   { key: 'technology', label: 'IT & technology', sub: 'Software, data and digital', icon: 'IT' },
@@ -126,8 +129,51 @@ function homeSourceVacancies() {
   add(typeof vacanciesCache !== 'undefined' ? vacanciesCache : null);
   add(typeof staticVacanciesCache !== 'undefined' ? staticVacanciesCache : null);
   add(typeof vacancyOverviewExtraRows !== 'undefined' ? vacancyOverviewExtraRows : null);
+  add(window.retailPriorityPreviewRows);
   return rows;
 }
+
+function isRetailPriorityVacancy(v) {
+  if (!v) return false;
+  var source = String(v.source_type || '').toLowerCase();
+  var id = String(v.id || '').toLowerCase();
+  if (['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'].indexOf(source) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/.test(id)) return true;
+  var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
+    ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
+  var employer = v.employer_id && typeof employersCache !== 'undefined'
+    ? (employersCache.find(function (e) { return e.id === v.employer_id; }) || {}) : {};
+  var brandText = [v.company, v.employer_name, employer.name, agency.name].join(' ');
+  if (/\b(shoprite|checkers|pick\s*'?n?\s*pay|woolworths|spar|boxer|truworths|pep\b|clicks|dis[\s-]?chem|mr\s*price|makro|game\b|cashbuild|ackermans|builders\s*warehouse|food\s*lover)/i.test(brandText)) return true;
+  var roleText = [v.title, v.category, v.industry, v.sector, agency.trades].join(' ');
+  return /\b(retail|cashier|till operator|store manager|store supervisor|shop assistant|sales assistant|merchandiser|stock controller|stockroom assistant|shelf packer|grocery|supermarket)\b/i.test(roleText);
+}
+window.isRetailPriorityVacancy = isRetailPriorityVacancy;
+
+function ensureRetailPriorityVacancies() {
+  if (retailPriorityPreviewLoaded || retailPriorityPreviewPromise || typeof supabaseClient === 'undefined' || !supabaseClient) return retailPriorityPreviewPromise;
+  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
+  retailPriorityPreviewPromise = supabaseClient.from('vacancies').select(columns)
+    .in('source_type', ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'])
+    .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(60)
+    .then(function (result) {
+      if (result.error) throw result.error;
+      window.retailPriorityPreviewRows = filterExpiredVacancies(result.data || []);
+      retailPriorityPreviewLoaded = true;
+      retailPriorityPreviewPromise = null;
+      var home = document.getElementById('screen-home');
+      if (home && home.classList.contains('active') && typeof filterAndRenderCached === 'function') filterAndRenderCached();
+      var vacancies = document.getElementById('screen-allvacancies');
+      if (vacancies && vacancies.classList.contains('active') && typeof renderAllVacanciesList === 'function') renderAllVacanciesList();
+      return window.retailPriorityPreviewRows;
+    })
+    .catch(function (error) {
+      console.warn('retail vacancy preview', error);
+      retailPriorityPreviewPromise = null;
+      return [];
+    });
+  return retailPriorityPreviewPromise;
+}
+window.ensureRetailPriorityVacancies = ensureRetailPriorityVacancies;
 
 function homeVacancyText(v) {
   var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
@@ -170,27 +216,66 @@ function openCompanyFeatureInquiry() {
   if (type) type.value = 'Feature request';
 }
 
+function homeVacancyIsFeatured(v) {
+  return !!(v && v.is_featured && (!v.featured_until || new Date(v.featured_until).getTime() >= Date.now()));
+}
+
+function scrollHomeFeaturedVacancies(direction) {
+  var rail = document.getElementById('home-featured-vacancies-rail');
+  if (rail) rail.scrollBy({ left: direction * Math.max(260, rail.clientWidth * 0.86), behavior: 'smooth' });
+}
+window.scrollHomeFeaturedVacancies = scrollHomeFeaturedVacancies;
+
+function wireHomeFeaturedRailGestures() {
+  var rail = document.getElementById('home-featured-vacancies-rail');
+  if (!rail || rail.dataset.gesturesReady === '1') return;
+  rail.dataset.gesturesReady = '1';
+  var startX = 0, startScroll = 0, dragging = false, moved = false;
+  rail.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    startX = e.clientX; startScroll = rail.scrollLeft; dragging = true; moved = false;
+    rail.classList.add('is-dragging');
+    try { rail.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  rail.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - startX;
+    if (Math.abs(dx) > 6) moved = true;
+    if (moved) { e.preventDefault(); rail.scrollLeft = startScroll - dx; }
+  });
+  var endDrag = function () {
+    if (!dragging) return;
+    dragging = false; rail.classList.remove('is-dragging');
+    if (moved) { rail.dataset.suppressClick = '1'; setTimeout(function () { delete rail.dataset.suppressClick; }, 80); }
+  };
+  rail.addEventListener('pointerup', endDrag);
+  rail.addEventListener('pointercancel', endDrag);
+  rail.addEventListener('click', function (e) {
+    if (rail.dataset.suppressClick === '1') { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+}
+
 function renderHomeFeed() {
   var target = document.getElementById('home-feed');
   if (!target) return;
+  ensureRetailPriorityVacancies();
   var previouslyOpen = target.querySelector('.vac-card.open');
   var previouslyOpenId = previouslyOpen && previouslyOpen.getAttribute('data-vacancy-id');
   var searchInput = document.getElementById('home-search');
   var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
-  var rows = homeSourceVacancies().filter(function (v) {
+  var matchingRows = homeSourceVacancies().filter(function (v) {
     return (!query || homeVacancyText(v).indexOf(query) !== -1) &&
       homeVacancyMatchesLocation(v, homeLocationFilter) &&
       homeVacancyMatchesCategory(v, homeCategoryFilter);
   });
+  var featuredRows = matchingRows.filter(homeVacancyIsFeatured).sort(function (a, b) {
+    return (Number(a.featured_order) || 0) - (Number(b.featured_order) || 0) ||
+      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  });
+  var rows = matchingRows.filter(function (v) { return !homeVacancyIsFeatured(v); });
   rows.sort(function (a, b) {
-    var af = a.is_featured && (!a.featured_until || new Date(a.featured_until).getTime() >= Date.now());
-    var bf = b.is_featured && (!b.featured_until || new Date(b.featured_until).getTime() >= Date.now());
-    if (af !== bf) return bf ? 1 : -1;
-    if (af && bf) {
-      var orderDiff = (Number(a.featured_order) || 0) - (Number(b.featured_order) || 0);
-      if (orderDiff) return orderDiff;
-    }
-    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    var retailOrder = Number(isRetailPriorityVacancy(b)) - Number(isRetailPriorityVacancy(a));
+    return retailOrder || new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
   });
 
   var categoryMarkup = HOME_JOB_CATEGORIES.map(function (category) {
@@ -199,6 +284,13 @@ function renderHomeFeed() {
       '<span class="home-category-icon" aria-hidden="true">' + category.icon + '</span>' +
       '<span class="home-category-copy"><strong>' + category.label + '</strong><small>' + category.sub + '</small></span></button>';
   }).join('');
+  var featuredCards = featuredRows.map(function (v) {
+    var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
+      ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
+    return vacancyCard(v, agency, { featured: true, homePreview: true });
+  }).join('');
+  var featuredMarkup = '<section class="career-featured-section home-featured-section" aria-labelledby="home-featured-title"><div class="featured-vacancies-heading home-featured-heading"><div><span class="eyebrow">Priority opportunities</span><h2 id="home-featured-title">Featured vacancies</h2><p>Swipe left or right to explore featured roles.</p></div><div class="featured-vacancies-controls" aria-label="Featured vacancies carousel controls"><button type="button" onclick="scrollHomeFeaturedVacancies(-1)" aria-label="Show previous featured vacancies">‹</button><button type="button" onclick="scrollHomeFeaturedVacancies(1)" aria-label="Show next featured vacancies">›</button></div></div>' +
+    (featuredCards ? '<div id="home-featured-vacancies-rail" class="featured-vacancies-rail home-featured-rail" tabindex="0" aria-label="Featured vacancies, swipe left or right">' + featuredCards + '</div>' : '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') + '</section>';
   var cards = rows.slice(0, HOME_VACANCY_CARD_LIMIT).map(function (v) {
     var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
       ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
@@ -212,12 +304,13 @@ function renderHomeFeed() {
     (filtering ? 'No vacancies match those filters yet.' : 'The latest vacancies are loading or none are available right now.') +
     '</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
 
-  target.innerHTML =
+  target.innerHTML = featuredMarkup +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
-      '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Featured &amp; latest vacancies</h2><p>Featured roles first, followed by the newest live listings.</p></div>' +
+      '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Available roles</h2><p>Retail vacancies first, followed by the newest live listings.</p></div>' +
       '<button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + '<span aria-hidden="true"> →</span></button></div>' +
       '<div class="home-vacancy-grid" aria-live="polite">' + (cards || empty) + '</div>' +
     '</section>' +
+    '<section class="home-community-card" aria-labelledby="home-community-title"><span class="home-community-icon" aria-hidden="true">✦</span><div class="home-community-copy"><span class="home-community-kicker">Community discussion</span><h2 id="home-community-title">Interview Tips</h2><p>Ask questions and share interview advice with South African job seekers.</p></div><button type="button" onclick="openCommunity()">Join the conversation <span aria-hidden="true">→</span></button></section>' +
     '<section class="home-categories-section" aria-labelledby="home-categories-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Find your next move</span><h2 id="home-categories-title">Explore top job categories</h2></div></div>' +
       '<div class="home-category-grid">' + categoryMarkup + '</div></section>' +
     '<section class="home-sponsored" aria-label="Feature your company"><img class="home-sponsored-art" src="/jw-aluminium-banner.webp" alt="JW Aluminium advertisement for custom glass and aluminium products" width="1200" height="400" loading="lazy" decoding="async"><div class="home-sponsored-content"><div class="home-sponsored-copy"><span class="home-sponsored-mark">FEATURED COMPANY</span><h2>Feature your company here</h2><p>Showcase your brand to South Africa’s job seekers and employers.</p></div><button type="button" onclick="openCompanyFeatureInquiry()">Ask about advertising</button></div></section>' +
@@ -228,6 +321,7 @@ function renderHomeFeed() {
       '</div></section>';
 
   target.setAttribute('aria-busy', 'false');
+  wireHomeFeaturedRailGestures();
   if (previouslyOpenId) {
     target.querySelectorAll('.vac-card').forEach(function (card) {
       if (card.getAttribute('data-vacancy-id') === previouslyOpenId) {

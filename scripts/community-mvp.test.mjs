@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
 const migration = read('supabase/migrations/20261006_community_interview_tips.sql');
+const policyFix = read('supabase/migrations/20261007_community_membership_policy_fix.sql');
 const app = read('app-community.js');
 const html = read('index.html');
 const bundle = read('scripts/bundle-app.js');
@@ -36,6 +37,21 @@ test('member posts and comments default to pending review and fixed pseudonymous
   assert.match(migration, /community_comments_insert_member[\s\S]*?status = 'pending'/);
   assert.match(migration, /community_posts_admin_moderate/);
   assert.match(migration, /community_comments_admin_moderate/);
+});
+
+test('participation insert policies use a private current-user membership verifier', () => {
+  assert.match(policyFix, /create or replace function public\.community_is_current_member\(p_group_id uuid\)[\s\S]*?security definer/i);
+  assert.match(policyFix, /where m\.group_id = p_group_id[\s\S]*?m\.user_id = auth\.uid\(\)/i);
+  assert.match(policyFix, /revoke all on function public\.community_is_current_member\(uuid\)[\s\S]*?from public, anon, authenticated/i);
+  assert.match(policyFix, /grant execute on function public\.community_is_current_member\(uuid\)[\s\S]*?to authenticated/i);
+  for (const name of ['community_posts_insert_member', 'community_comments_insert_member', 'community_reactions_insert_member']) {
+    assert.match(policyFix, new RegExp(`drop policy if exists ${name}`));
+  }
+  const policies = policyFix.slice(policyFix.indexOf('create policy community_posts_insert_member'));
+  assert.match(policies, /community_is_current_member/g);
+  assert.doesNotMatch(policies, /from public\.community_memberships/i, 'RLS checks must not directly SELECT the private memberships table');
+  assert.match(app, /Your draft remains in the box/);
+  assert.match(app, /catch \(error\) \{\s*result = \{ error: error \};/);
 });
 
 test('client uses only approved content for feeds and includes join, report, and moderation flows', () => {

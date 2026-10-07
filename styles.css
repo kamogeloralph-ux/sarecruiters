@@ -2260,6 +2260,21 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #screen-home .hf-categories .hf-chips{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:431px){#screen-home .hf-source-grid{grid-template-columns:repeat(4,minmax(0,1fr))}#screen-home .hf-categories .hf-chips{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
+/* Home: swipeable featured rail and a direct path into Interview Tips. */
+#screen-home .home-featured-section{margin:0 0 18px}
+#screen-home .home-featured-heading{margin:0 0 8px}
+#screen-home .home-featured-rail{margin:0 -2px}
+#screen-home .home-featured-rail>.vac-card{flex:0 0 min(88%,420px);width:min(88%,420px)}
+#screen-home .home-community-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;margin:0 0 20px;padding:15px;border:1px solid #d9e5f2;border-radius:18px;background:#fff;box-shadow:0 6px 16px rgba(23,59,105,.07);color:#14243d}
+#screen-home .home-community-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:#eaf2ff;color:#0b4eaa;font-size:22px;font-weight:800}
+#screen-home .home-community-copy{min-width:0}
+#screen-home .home-community-kicker{display:block;margin-bottom:3px;color:#0b4eaa;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+#screen-home .home-community-copy h2{margin:0;color:#14243d;font-size:16px;line-height:1.2}
+#screen-home .home-community-copy p{margin:4px 0 0;color:#637590;font-size:11px;line-height:1.4}
+#screen-home .home-community-card>button{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border:0;border-radius:999px;background:#0b4eaa;color:#fff;font:inherit;font-size:11px;font-weight:750;white-space:nowrap;cursor:pointer}
+#screen-home .home-community-card>button:active{transform:scale(.97)}
+@media(max-width:430px){#screen-home .home-community-card{grid-template-columns:36px minmax(0,1fr);gap:10px;padding:13px}#screen-home .home-community-icon{width:36px;height:36px}#screen-home .home-community-card>button{grid-column:1/-1;justify-self:stretch}}
+
 /* Agency directory: lighter card rhythm and more legible identity/location hierarchy. */
 #screen-allagencies #allagencies-list .hub-card{margin:0 0 10px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
 #screen-allagencies #allagencies-list .hub-card.open{border-color:color-mix(in srgb,var(--accent) 34%,var(--border));box-shadow:var(--card-shadow)}

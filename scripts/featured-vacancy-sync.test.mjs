@@ -81,7 +81,7 @@ test('loadFeaturedVacancies seeds from the snapshot, then refreshes live and re-
   );
 });
 
-test('vacancy overview shows available roles before all eight sources and removes the featured rail', () => {
+test('vacancy overview shows all eight sources before retail-prioritized roles and removes the featured rail', () => {
   const summaryStart = vacancyRendererSrc.indexOf('function sourceSummary()');
   const summaryEnd = vacancyRendererSrc.indexOf('function renderOverview()', summaryStart);
   const summary = vacancyRendererSrc.slice(summaryStart, summaryEnd);
@@ -94,7 +94,11 @@ test('vacancy overview shows available roles before all eight sources and remove
   const overview = vacancyRendererSrc.slice(start, end);
   const sourcesAt = overview.indexOf('vx-source-section');
   const rolesAt = overview.indexOf('vx-available-roles');
-  assert.ok(rolesAt >= 0 && sourcesAt > rolesAt, 'available roles must appear before the eight source tiles');
+  assert.ok(rolesAt >= 0 && sourcesAt >= 0, 'the overview must contain the source grid and available roles');
+  assert.match(overview, /html \+= sourcesMarkup \+ rolesMarkup;/, 'the eight source tiles must be rendered before available roles');
+  assert.match(overview, /window\.ensureRetailPriorityVacancies\(\)/, 'the overview must load retail rows for prioritization');
+  assert.match(overview, /isRetailPriorityVacancy/, 'retail roles must be sorted ahead of other roles');
+  assert.match(vacancyRendererSrc, /window\.retailPriorityPreviewRows/);
   assert.match(overview, /Browse jobs by source/);
   assert.match(overview, /Available roles/);
   assert.match(overview, /list\.slice\(0, 24\)\.map\(function \(v\) \{ return card\(v, agencyOf\(v\)\); \}\)/, 'available vacancy cards must remain visible in the first overview section');
@@ -110,7 +114,7 @@ test('vacancy overview shows available roles before all eight sources and remove
   assert.match(read('../styles.css'), /#screen-allagencies #allagencies-list \.hub-summary/, 'agency typography and spacing should be scoped to the agency directory');
   assert.match(indexSrc, /styles\.css\?v=[^"]+/, 'the shared stylesheet cache key must be refreshed');
   assert.match(indexSrc, /vacancy-v2\.css\?v=vx-scan-2/, 'the vacancy stylesheet cache key must be refreshed');
-  assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-scan-2/, 'the vacancy renderer cache key must be refreshed');
+  assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-retail-3/, 'the vacancy renderer cache key must be refreshed');
   assert.match(indexSrc, /app-alerts\.js\?v=al-3/, 'the saved-search CTA script cache key must be refreshed');
 });
 

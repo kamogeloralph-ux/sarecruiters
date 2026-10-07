@@ -40,14 +40,28 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /function renderHomeFeed\(/);
 });
 
-test('the homepage shows eight live vacancy cards and the vacancy overview shows roles before source browsing', () => {
+test('the homepage shows a swipeable featured rail and eight retail-first roles, while vacancy sources appear first', () => {
   assert.match(ui, /HOME_VACANCY_CARD_LIMIT = 8/);
+  const homeRender = ui.slice(ui.indexOf('function renderHomeFeed()'), ui.indexOf('// Public section links'));
+  const featuredPosition = homeRender.indexOf('home-featured-vacancies-rail');
+  const homeRolesPosition = homeRender.indexOf('home-jobs-section');
+  assert.ok(featuredPosition >= 0 && homeRolesPosition > featuredPosition, 'the featured carousel must immediately precede the eight role cards');
+  assert.match(homeRender, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
+  assert.match(ui, /function wireHomeFeaturedRailGestures\(/);
+  assert.match(ui, /rail\.scrollLeft = startScroll - dx/);
+  assert.match(ui, /function ensureRetailPriorityVacancies\(/);
+  assert.match(ui, /\.in\('source_type', \['retail'/);
+  assert.match(ui, /isRetailPriorityVacancy\(b\)/);
+  assert.match(homeRender, /onclick="openCommunity\(\)"/);
   assert.match(ui, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
   assert.match(ui, /vacancyCard\(v, agency, \{ homePreview: true \}\)/);
   const overview = vacancyV2.slice(vacancyV2.indexOf('function renderOverview()'), vacancyV2.indexOf('/* ---------- folder post-processing'));
   const sourcesPosition = overview.indexOf('vx-source-section');
   const rolesPosition = overview.indexOf('vx-available-roles');
-  assert.ok(rolesPosition >= 0 && sourcesPosition > rolesPosition, 'available roles should appear before source browsing');
+  assert.ok(rolesPosition >= 0 && sourcesPosition >= 0, 'the vacancy overview must render both source cards and roles');
+  assert.match(overview, /html \+= sourcesMarkup \+ rolesMarkup;/, 'all eight sources must appear before available roles');
+  assert.match(vacancyV2, /window\.retailPriorityPreviewRows/);
+  assert.match(overview, /isRetailPriorityVacancy/);
   assert.match(overview, /Browse jobs by source/);
   assert.match(overview, /Available roles/);
   assert.doesNotMatch(overview, /Featured vacancies|vx-rail/);
@@ -59,7 +73,7 @@ test('home vacancy cards expose an application action, and the home search uses 
   assert.match(vacancyV2, /if \(o\.homePreview\)/);
   assert.match(vacancyV2, /class="home-vacancy-apply"/);
   assert.match(vacancyV2, /homePreviewMarkup \+/);
-  assert.match(html, /app-vacancy-v2\.js\?v=vx-scan-2/);
+  assert.match(html, /app-vacancy-v2\.js\?v=vx-retail-3/);
   assert.match(cards, /if \(typeof renderHomeFeed === 'function'\) \{\s*renderHomeFeed\(\);\s*return;/);
   assert.match(ui, /onclick="openHomeTalentPoolProfile\(\)"/);
   assert.match(ui, /onclick="openGeneralVacancySheet\(\)"/);
@@ -81,6 +95,7 @@ test('responsive styles cover the vacancy cards, categories, sponsored slot, and
     assert.ok(css.includes(selector), `Missing homepage style: ${selector}`);
   }
   assert.match(css, /\.home-sponsored-art\{[^}]*height:auto/);
+  assert.match(css, /#screen-home \.home-featured-rail>\.vac-card\{flex:0 0 min\(88%,420px\)/);
   assert.match(css, /@media\(min-width:760px\)\{[\s\S]*\.home-vacancy-grid\{grid-template-columns:repeat\(2/);
   assert.match(vacancyCss, /\.vx-source\{display:flex;align-items:center/);
 });
