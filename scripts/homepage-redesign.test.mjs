@@ -29,13 +29,11 @@ test('home replaces the direct agency feed with the job-search feed while retain
 test('location filters and category shortcuts feed real vacancy results', () => {
   const provinces = ['gauteng', 'western-cape', 'kwazulu-natal', 'eastern-cape', 'free-state', 'limpopo', 'mpumalanga', 'north-west', 'northern-cape'];
   for (const location of [...provinces, 'remote']) {
-    assert.match(html, new RegExp(`data-home-location="${location}"`));
-    if (location !== 'remote') {
-      assert.match(html, new RegExp(`onclick="setHomeLocationFilter\\('${location}'\\)"`));
-      assert.match(ui, new RegExp(`['"]?${location}['"]?\\s*:`));
-    }
+    if (location === 'remote') assert.match(html, /data-home-location="remote"/);
+    else assert.match(html, new RegExp(`<a class="home-filter-chip" href="/jobs/${location}/" aria-label="View [^"]+ public job listings">`));
   }
-  assert.equal((html.match(/data-home-location="(?:gauteng|western-cape|kwazulu-natal|eastern-cape|free-state|limpopo|mpumalanga|north-west|northern-cape)"/g) || []).length, 9);
+  assert.equal((html.match(/<a class="home-filter-chip" href="\/jobs\/(?:gauteng|western-cape|kwazulu-natal|eastern-cape|free-state|limpopo|mpumalanga|north-west|northern-cape)\/"/g) || []).length, 9);
+  assert.match(ui, /querySelectorAll\('\.home-filter-chip\[data-home-location\]'\)/);
   assert.match(ui, /function setHomeLocationFilter\(/);
   assert.match(ui, /function homeVacancyMatchesLocation\(/);
   assert.match(ui, /function setHomeCategoryFilter\(/);
