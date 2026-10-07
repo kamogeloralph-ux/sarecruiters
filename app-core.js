@@ -262,7 +262,6 @@ var agenciesCache = [];
 var branchesCache = [];
 var vacanciesCache = [];
 var staticVacanciesCache = [];
-var featuredVacanciesCache = [];
 var employersCache = [];
 var generalVacancyCount = 0;
 var generalVacancyCountLoaded = false;

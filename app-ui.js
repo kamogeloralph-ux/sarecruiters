@@ -125,7 +125,6 @@ function homeSourceVacancies() {
       rows.push(v);
     });
   }
-  add(typeof featuredVacanciesCache !== 'undefined' ? featuredVacanciesCache : null);
   add(typeof vacanciesCache !== 'undefined' ? vacanciesCache : null);
   add(typeof staticVacanciesCache !== 'undefined' ? staticVacanciesCache : null);
   add(typeof vacancyOverviewExtraRows !== 'undefined' ? vacancyOverviewExtraRows : null);
@@ -216,45 +215,6 @@ function openCompanyFeatureInquiry() {
   if (type) type.value = 'Feature request';
 }
 
-function homeVacancyIsFeatured(v) {
-  return !!(v && v.is_featured && (!v.featured_until || new Date(v.featured_until).getTime() >= Date.now()));
-}
-
-function scrollHomeFeaturedVacancies(direction) {
-  var rail = document.getElementById('home-featured-vacancies-rail');
-  if (rail) rail.scrollBy({ left: direction * Math.max(260, rail.clientWidth * 0.86), behavior: 'smooth' });
-}
-window.scrollHomeFeaturedVacancies = scrollHomeFeaturedVacancies;
-
-function wireHomeFeaturedRailGestures() {
-  var rail = document.getElementById('home-featured-vacancies-rail');
-  if (!rail || rail.dataset.gesturesReady === '1') return;
-  rail.dataset.gesturesReady = '1';
-  var startX = 0, startScroll = 0, dragging = false, moved = false;
-  rail.addEventListener('pointerdown', function (e) {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    startX = e.clientX; startScroll = rail.scrollLeft; dragging = true; moved = false;
-    rail.classList.add('is-dragging');
-    try { rail.setPointerCapture(e.pointerId); } catch (_) {}
-  });
-  rail.addEventListener('pointermove', function (e) {
-    if (!dragging) return;
-    var dx = e.clientX - startX;
-    if (Math.abs(dx) > 6) moved = true;
-    if (moved) { e.preventDefault(); rail.scrollLeft = startScroll - dx; }
-  });
-  var endDrag = function () {
-    if (!dragging) return;
-    dragging = false; rail.classList.remove('is-dragging');
-    if (moved) { rail.dataset.suppressClick = '1'; setTimeout(function () { delete rail.dataset.suppressClick; }, 80); }
-  };
-  rail.addEventListener('pointerup', endDrag);
-  rail.addEventListener('pointercancel', endDrag);
-  rail.addEventListener('click', function (e) {
-    if (rail.dataset.suppressClick === '1') { e.preventDefault(); e.stopImmediatePropagation(); }
-  }, true);
-}
-
 function renderHomeFeed() {
   var target = document.getElementById('home-feed');
   if (!target) return;
@@ -268,11 +228,7 @@ function renderHomeFeed() {
       homeVacancyMatchesLocation(v, homeLocationFilter) &&
       homeVacancyMatchesCategory(v, homeCategoryFilter);
   });
-  var featuredRows = matchingRows.filter(homeVacancyIsFeatured).sort(function (a, b) {
-    return (Number(a.featured_order) || 0) - (Number(b.featured_order) || 0) ||
-      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-  });
-  var rows = matchingRows.filter(function (v) { return !homeVacancyIsFeatured(v); });
+  var rows = matchingRows;
   rows.sort(function (a, b) {
     var retailOrder = Number(isRetailPriorityVacancy(b)) - Number(isRetailPriorityVacancy(a));
     return retailOrder || new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
@@ -284,13 +240,6 @@ function renderHomeFeed() {
       '<span class="home-category-icon" aria-hidden="true">' + category.icon + '</span>' +
       '<span class="home-category-copy"><strong>' + category.label + '</strong><small>' + category.sub + '</small></span></button>';
   }).join('');
-  var featuredCards = featuredRows.map(function (v) {
-    var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
-      ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
-    return vacancyCard(v, agency, { featured: true, homePreview: true });
-  }).join('');
-  var featuredMarkup = '<section class="career-featured-section home-featured-section" aria-labelledby="home-featured-title"><div class="featured-vacancies-heading home-featured-heading"><div><span class="eyebrow">Priority opportunities</span><h2 id="home-featured-title">Featured vacancies</h2><p>Swipe left or right to explore featured roles.</p></div><div class="featured-vacancies-controls" aria-label="Featured vacancies carousel controls"><button type="button" onclick="scrollHomeFeaturedVacancies(-1)" aria-label="Show previous featured vacancies">‹</button><button type="button" onclick="scrollHomeFeaturedVacancies(1)" aria-label="Show next featured vacancies">›</button></div></div>' +
-    (featuredCards ? '<div id="home-featured-vacancies-rail" class="featured-vacancies-rail home-featured-rail" tabindex="0" aria-label="Featured vacancies, swipe left or right">' + featuredCards + '</div>' : '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') + '</section>';
   var cards = rows.slice(0, HOME_VACANCY_CARD_LIMIT).map(function (v) {
     var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
       ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
@@ -304,8 +253,7 @@ function renderHomeFeed() {
     (filtering ? 'No vacancies match those filters yet.' : 'The latest vacancies are loading or none are available right now.') +
     '</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
 
-  target.innerHTML = featuredMarkup +
-    '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
+  target.innerHTML = '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
       '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Available roles</h2><p>Retail vacancies first, followed by the newest live listings.</p></div>' +
       '<button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + '<span aria-hidden="true"> →</span></button></div>' +
       '<div class="home-vacancy-grid" aria-live="polite">' + (cards || empty) + '</div>' +
@@ -321,7 +269,6 @@ function renderHomeFeed() {
       '</div></section>';
 
   target.setAttribute('aria-busy', 'false');
-  wireHomeFeaturedRailGestures();
   if (previouslyOpenId) {
     target.querySelectorAll('.vac-card').forEach(function (card) {
       if (card.getAttribute('data-vacancy-id') === previouslyOpenId) {
@@ -1666,52 +1613,6 @@ function renderAllVacanciesList() {
       if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading…';
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
     };
-    var featured = (featuredVacanciesCache || []).filter(function(v){
-      return v && v.is_featured && (!v.featured_until || new Date(v.featured_until).getTime() >= Date.now()) && !isVacancyExpired(v);
-    }).sort(function(a,b){
-      return (Number(a.featured_order)||0) - (Number(b.featured_order)||0) || new Date(b.created_at||0) - new Date(a.created_at||0);
-    }).slice(0, 6);
-    function scrollFeaturedVacancies(direction) {
-      var rail = document.getElementById('featured-vacancies-rail');
-      if (rail) rail.scrollBy({ left: direction * Math.max(260, rail.clientWidth * 0.86), behavior: 'smooth' });
-    }
-    window.scrollFeaturedVacancies = scrollFeaturedVacancies;
-    function wireFeaturedRailGestures() {
-      var rail = document.getElementById('featured-vacancies-rail');
-      if (!rail || rail.dataset.gesturesReady === '1') return;
-      rail.dataset.gesturesReady = '1';
-      var startX = 0, startScroll = 0, dragging = false, moved = false;
-      rail.addEventListener('pointerdown', function(e) {
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-        startX = e.clientX; startScroll = rail.scrollLeft; dragging = true; moved = false;
-        rail.classList.add('is-dragging');
-        try { rail.setPointerCapture(e.pointerId); } catch (_) {}
-      });
-      rail.addEventListener('pointermove', function(e) {
-        if (!dragging) return;
-        var dx = e.clientX - startX;
-        if (Math.abs(dx) > 6) moved = true;
-        if (moved) { e.preventDefault(); rail.scrollLeft = startScroll - dx; }
-      });
-      var endDrag = function() {
-        if (!dragging) return;
-        dragging = false; rail.classList.remove('is-dragging');
-        if (moved) { rail.dataset.suppressClick = '1'; setTimeout(function(){ delete rail.dataset.suppressClick; }, 80); }
-      };
-      rail.addEventListener('pointerup', endDrag);
-      rail.addEventListener('pointercancel', endDrag);
-      rail.addEventListener('click', function(e) {
-        if (rail.dataset.suppressClick === '1') { e.preventDefault(); e.stopImmediatePropagation(); }
-      }, true);
-    }
-    var featuredMarkup =
-      '<section class="career-featured-section"><div class="featured-vacancies-heading" aria-labelledby="featured-vacancies-title"><div><h2 id="featured-vacancies-title">Featured vacancies</h2><span class="sr-only">Featured opportunity</span></div><div class="featured-vacancies-controls" aria-label="Featured vacancies carousel controls"><button type="button" onclick="scrollFeaturedVacancies(-1)" aria-label="Show previous featured vacancies">‹</button><button type="button" onclick="scrollFeaturedVacancies(1)" aria-label="Show next featured vacancies">›</button></div></div>' +
-      (featured.length ?
-        '<div id="featured-vacancies-rail" class="featured-vacancies-rail" tabindex="0" aria-label="Featured vacancies, swipe left or right">' + featured.map(function(v){
-          var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
-          return vacancyCard(v, agency, { featured: true });
-        }).join('') + '</div>' :
-        '<div class="featured-vacancies-empty">No featured vacancies are live right now. Check back soon for priority opportunities.</div>') + '</section>';
     var sourceCards = [
       { type:'general', label:'General Vacancies', short:'General', count:generalCount, icon:'⌕' },
       { type:'agency', label:'Agency Vacancies', short:'Agency', count:agencyCount, icon:'▦' },
@@ -1773,12 +1674,10 @@ function renderAllVacanciesList() {
             return vacancyCard(v, agency, { hideBadges: true });
           }).join('') : '<div class="empty-state"><p>No vacancies match this filter yet.</p></div>')) +
       '</div></section>';
-    el.innerHTML = featuredMarkup +
-      sourceRail +
+    el.innerHTML = sourceRail +
       overviewFilters +
       '<div class="vacancy-browse-heading"><h2>Browse Vacancies</h2></div>' +
       categoryRail;
-    wireFeaturedRailGestures();
     return;
   }
   if (!list.length) {

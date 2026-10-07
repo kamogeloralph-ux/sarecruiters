@@ -1,16 +1,5 @@
-// Regression guard for the "admin featured a vacancy but it never shows in the
-// main app" bug.
-//
-// The public app paints from the committed static snapshot (data/startup.json)
-// when staticDataEnabled is true. loadFeaturedVacancies() used to short-circuit
-// on that snapshot — `if (window.__saStaticData) { ...; return; }` — so the
-// Featured Vacancies rail stayed frozen on whatever the snapshot captured until
-// the next scheduled static-data rebuild (Mon/Fri). An admin ticking "Feature
-// this vacancy" writes straight to Supabase, so the change never surfaced.
-//
-// The fix seeds the rail from the snapshot for instant first paint, then always
-// refreshes from the live database and re-renders. These source-level
-// assertions catch a regression back to the early return.
+// Regression guard for removing the dedicated featured-vacancy sections and
+// their redundant live query from the public app.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,13 +7,14 @@ import fs from 'node:fs';
 
 const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
 const appDataSrc = read('../app-data.js');
+const appCoreSrc = read('../app-core.js');
+const uiSrc = read('../app-ui.js');
 const alertsSrc = read('../app-alerts.js');
 const vacancyCss = read('../vacancy-v2.css');
+const sharedCss = read('../styles.css');
 const vacancyRendererSrc = read('../app-vacancy-v2.js');
 const indexSrc = read('../index.html');
 
-// Extract a top-level function body by name (brace-matched) so the assertions
-// can't be satisfied by unrelated code elsewhere in the file.
 function functionBody(src, name) {
   const start = src.indexOf('function ' + name + '(');
   if (start < 0) return '';
@@ -39,49 +29,22 @@ function functionBody(src, name) {
   return '';
 }
 
-const featuredFn = functionBody(appDataSrc, 'loadFeaturedVacancies');
+test('dedicated featured-vacancy sections and their extra startup query are removed', () => {
+  const home = functionBody(uiSrc, 'renderHomeFeed');
+  assert.ok(home, 'the home vacancy renderer must remain present');
+  assert.doesNotMatch(home, /Featured vacancies|home-featured|featuredMarkup|homeVacancyIsFeatured/);
+  assert.match(home, /target\.innerHTML = '<section class="home-jobs-section"/);
+  assert.match(home, /var rows = matchingRows;/, 'featured listings remain eligible for normal retail-first role ordering');
+  assert.match(home, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
+  assert.match(home, /onclick="openCommunity\(\)"/, 'the Interview Tips shortcut must remain on the home screen');
 
-test('loadFeaturedVacancies exists and is async', () => {
-  assert.ok(featuredFn, 'loadFeaturedVacancies must be present in app-data.js');
-  assert.match(appDataSrc, /async function loadFeaturedVacancies\(\)/);
+  assert.doesNotMatch(uiSrc, /career-featured-section|featured-vacancies-(?:heading|controls|rail|empty)|wireFeaturedRailGestures/);
+  assert.doesNotMatch(sharedCss, /featured-vacancies-(?:heading|controls|rail|empty)|home-featured-/);
+  assert.doesNotMatch(appDataSrc, /loadFeaturedVacancies|featuredVacanciesCache|featured_vacancies/);
+  assert.doesNotMatch(appCoreSrc, /featuredVacanciesCache/);
 });
 
-test('loadFeaturedVacancies no longer early-returns the static snapshot', () => {
-  assert.ok(featuredFn, 'loadFeaturedVacancies must be present');
-  const returns = (featuredFn.match(/return featuredVacanciesCache;/g) || []).length;
-  assert.equal(
-    returns,
-    1,
-    'there must be exactly one return (at the end), not an early return right after the static seed'
-  );
-  const liveReadAt = featuredFn.indexOf(".from('vacancies')");
-  const returnAt = featuredFn.indexOf('return featuredVacanciesCache;');
-  assert.ok(
-    liveReadAt > -1 && returnAt > liveReadAt,
-    'the live Supabase read must run before returning (even when the snapshot is enabled)'
-  );
-});
-
-test('loadFeaturedVacancies seeds from the snapshot, then refreshes live and re-renders', () => {
-  assert.ok(featuredFn, 'loadFeaturedVacancies must be present');
-  // Instant first paint from the committed snapshot…
-  assert.match(
-    featuredFn,
-    /if \(window\.__saStaticData\) \{\s*featuredVacanciesCache = filterExpiredVacancies\(window\.__saStaticData\.featured_vacancies \|\| \[\]\);/,
-    'the snapshot must still seed the cache for instant paint'
-  );
-  // …then the authoritative live read (featured = true, ordered)…
-  assert.match(featuredFn, /\.eq\('is_featured', true\)/, 'must query is_featured = true');
-  assert.match(featuredFn, /\.order\('featured_order'/, 'must honour featured_order');
-  // …and a re-render of the rail once it resolves.
-  assert.match(
-    featuredFn,
-    /renderAllVacanciesList\(\)/,
-    'must re-render the overview so the freshly loaded featured rows appear'
-  );
-});
-
-test('vacancy overview shows all eight sources before retail-prioritized roles and removes the featured rail', () => {
+test('vacancy overview shows all eight sources before retail-prioritized roles', () => {
   const summaryStart = vacancyRendererSrc.indexOf('function sourceSummary()');
   const summaryEnd = vacancyRendererSrc.indexOf('function renderOverview()', summaryStart);
   const summary = vacancyRendererSrc.slice(summaryStart, summaryEnd);
@@ -111,7 +74,7 @@ test('vacancy overview shows all eight sources before retail-prioritized roles a
   assert.match(vacancyRendererSrc, /class="vx-inline-apply"/, 'vacancies with a direct route should expose an apply action in the summary');
   assert.match(vacancyCss, /\.vx-org\{order:0/);
   assert.match(vacancyCss, /\.vx-inline-apply\{display:inline-flex/);
-  assert.match(read('../styles.css'), /#screen-allagencies #allagencies-list \.hub-summary/, 'agency typography and spacing should be scoped to the agency directory');
+  assert.match(sharedCss, /#screen-allagencies #allagencies-list \.hub-summary/, 'agency typography and spacing should be scoped to the agency directory');
   assert.match(indexSrc, /styles\.css\?v=[^"]+/, 'the shared stylesheet cache key must be refreshed');
   assert.match(indexSrc, /vacancy-v2\.css\?v=vx-scan-2/, 'the vacancy stylesheet cache key must be refreshed');
   assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-retail-3/, 'the vacancy renderer cache key must be refreshed');
@@ -120,14 +83,14 @@ test('vacancy overview shows all eight sources before retail-prioritized roles a
 
 test('the saved-search CTA is the modern card, not a bare emoji button', () => {
   assert.match(alertsSrc, /className = 'sa-alert-cta'/, 'app-alerts.js must use the sa-alert-cta class');
-  assert.match(alertsSrc, /list\.appendChild\(b\)/, 'the alert CTA must stay below the source-first overview');
+  assert.match(alertsSrc, /list\.appendChild\(b\)/, 'the CTA must stay below the source-first overview');
   assert.match(alertsSrc, /sa-alert-cta-icon/, 'the CTA must render an icon badge');
   assert.match(alertsSrc, /sa-alert-cta-title[^]*Email me new jobs/, 'the CTA must render a titled label');
   assert.doesNotMatch(alertsSrc, /className = 'vx-more'/, 'the CTA must not reuse the plain load-more button class');
 });
 
 test('vacancy-v2.css styles the saved-search CTA for both themes', () => {
-  assert.match(vacancyCss, /\.sa-alert-cta\{/, 'the CTA base style must exist');
-  assert.match(vacancyCss, /\.sa-alert-cta-icon\{/, 'the icon badge style must exist');
-  assert.match(vacancyCss, /\.sa-alert-cta:focus-visible/, 'the CTA must keep a visible focus ring');
+  assert.match(vacancyCss, /\.sa-alert-cta\{/);
+  assert.match(vacancyCss, /\.sa-alert-cta-icon\{/);
+  assert.match(vacancyCss, /\.sa-alert-cta:focus-visible/);
 });

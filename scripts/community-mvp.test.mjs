@@ -10,6 +10,8 @@ const migration = read('supabase/migrations/20261006_community_interview_tips.sq
 const policyFix = read('supabase/migrations/20261007_community_membership_policy_fix.sql');
 const app = read('app-community.js');
 const html = read('index.html');
+const communityCss = read('community.css');
+const sharedCss = read('styles.css');
 const bundle = read('scripts/bundle-app.js');
 const build = read('generate-pages.js');
 
@@ -65,6 +67,33 @@ test('client uses only approved content for feeds and includes join, report, and
   assert.match(html, /id="screen-community"/);
   assert.match(html, /onclick="openCommunity\(\)"/);
   assert.match(html, /id="community-report-overlay"/);
+});
+
+test('Interview Tips keeps all content below its title bar in one scrollable pane', () => {
+  const start = html.indexOf('<div class="screen" id="screen-community">');
+  const end = html.indexOf('<!-- ============ SMART MANAGER', start);
+  const screen = html.slice(start, end);
+  const scrollAt = screen.indexOf('<div class="screen-scroll">');
+  assert.match(screen, /<div class="screen-fixed">\s*<header class="community-header">[\s\S]*?<\/header>\s*<\/div>\s*<div class="screen-scroll">\s*<section class="community-group-banner"/);
+  assert.ok(scrollAt >= 0, 'community screen must expose its scroll region');
+  const divTags = /<\/?div\b[^>]*>/gi;
+  divTags.lastIndex = scrollAt;
+  let depth = 0, scrollEnd = -1, match;
+  while ((match = divTags.exec(screen))) {
+    if (match[0].startsWith('</')) {
+      depth--;
+      if (depth === 0) { scrollEnd = match.index; break; }
+    } else {
+      depth++;
+    }
+  }
+  assert.ok(scrollEnd > scrollAt, 'community scroll region must close after its full contents');
+  for (const marker of ['community-group-banner', 'community-safety-note', 'community-compose', 'community-admin-panel', 'community-feed-toolbar', 'community-feed']) {
+    const markerAt = screen.indexOf(marker);
+    assert.ok(markerAt > scrollAt && markerAt < scrollEnd, `${marker} must remain reachable inside the scroll pane`);
+  }
+  assert.match(sharedCss, /\.screen-scroll\{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch/);
+  assert.match(communityCss, /#screen-community \.screen-scroll\{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 16px 112px;overscroll-behavior-y:contain\}/);
 });
 
 test('community code and stylesheet participate in normal cache-busted builds', () => {

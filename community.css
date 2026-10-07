@@ -45,7 +45,7 @@
 .community-review-actions .community-secondary-btn{background:var(--card-2);color:var(--text)}
 .community-review-actions .community-danger-btn{background:var(--danger);color:#fff}
 .community-review-empty{color:var(--text-2);font-size:11px;padding:5px 0}
-#screen-community .screen-scroll{padding:0 16px 112px;overscroll-behavior-y:contain}
+#screen-community .screen-scroll{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 16px 112px;overscroll-behavior-y:contain}
 .community-feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 1px 10px}
 .community-feed-toolbar h2{font-size:14px;font-weight:800;color:var(--text)}
 .community-sort{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--border);border-radius:11px;background:var(--card)}

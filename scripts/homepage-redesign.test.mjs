@@ -40,15 +40,13 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /function renderHomeFeed\(/);
 });
 
-test('the homepage shows a swipeable featured rail and eight retail-first roles, while vacancy sources appear first', () => {
+test('the homepage removes the featured section and keeps eight retail-first roles, while vacancy sources appear first', () => {
   assert.match(ui, /HOME_VACANCY_CARD_LIMIT = 8/);
   const homeRender = ui.slice(ui.indexOf('function renderHomeFeed()'), ui.indexOf('// Public section links'));
-  const featuredPosition = homeRender.indexOf('home-featured-vacancies-rail');
   const homeRolesPosition = homeRender.indexOf('home-jobs-section');
-  assert.ok(featuredPosition >= 0 && homeRolesPosition > featuredPosition, 'the featured carousel must immediately precede the eight role cards');
+  assert.ok(homeRolesPosition >= 0, 'the eight role cards must remain on the home screen');
+  assert.doesNotMatch(homeRender, /Featured vacancies|home-featured|featuredMarkup|wireHomeFeaturedRailGestures/);
   assert.match(homeRender, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
-  assert.match(ui, /function wireHomeFeaturedRailGestures\(/);
-  assert.match(ui, /rail\.scrollLeft = startScroll - dx/);
   assert.match(ui, /function ensureRetailPriorityVacancies\(/);
   assert.match(ui, /\.in\('source_type', \['retail'/);
   assert.match(ui, /isRetailPriorityVacancy\(b\)/);
@@ -95,7 +93,7 @@ test('responsive styles cover the vacancy cards, categories, sponsored slot, and
     assert.ok(css.includes(selector), `Missing homepage style: ${selector}`);
   }
   assert.match(css, /\.home-sponsored-art\{[^}]*height:auto/);
-  assert.match(css, /#screen-home \.home-featured-rail>\.vac-card\{flex:0 0 min\(88%,420px\)/);
+  assert.doesNotMatch(css, /home-featured-|featured-vacancies-rail/);
   assert.match(css, /@media\(min-width:760px\)\{[\s\S]*\.home-vacancy-grid\{grid-template-columns:repeat\(2/);
   assert.match(vacancyCss, /\.vx-source\{display:flex;align-items:center/);
 });

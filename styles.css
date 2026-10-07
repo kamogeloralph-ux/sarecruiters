@@ -1809,26 +1809,10 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .section-share-btn:active{background:var(--accent);color:#fff;transform:scale(.97)}
 @media (max-width:360px){.section-share-btn span{display:none}.section-share-btn{width:32px;height:32px;padding:0}}
 
-/* Featured vacancies use the normal page surface; the card itself carries the emphasis. */
-.featured-vacancies-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
-.featured-vacancies-heading .eyebrow{display:block;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
-.featured-vacancies-heading h2{margin:3px 0 2px;font-size:20px;line-height:1.15;color:var(--text)}
-.featured-vacancies-heading p{margin:0;color:var(--text-2);font-size:12px;line-height:1.45}
-.featured-vacancies-controls{display:flex;gap:6px;flex:0 0 auto}
-.featured-vacancies-controls button{width:32px;height:32px;padding:0;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--accent);font-size:24px;line-height:26px;cursor:pointer}
-.featured-vacancies-controls button:active{background:var(--accent-soft);transform:scale(.95)}
-	.featured-vacancies-rail{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-y;cursor:grab;padding:2px 2px 8px;user-select:none}
-	.featured-vacancies-rail img{pointer-events:none}
-.featured-vacancies-rail::-webkit-scrollbar{display:none}
-.featured-vacancies-rail.is-dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
-.featured-vacancies-rail>.vac-card{flex:0 0 min(88vw,420px);width:min(88vw,420px);margin:0!important;scroll-snap-align:start}
-.featured-vacancies-empty{margin-top:12px;padding:14px;border:1px dashed color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:12px;color:var(--text-2);font-size:12px;line-height:1.5;text-align:center;background:color-mix(in srgb,var(--card) 70%,transparent)}
 .vac-card-featured{position:relative;margin:8px 0 !important;background:color-mix(in srgb,var(--card) 84%,var(--accent-soft)) !important;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border)) !important;border-radius:14px !important;box-shadow:none !important}
 .vac-card-featured .vac-title{font-weight:800}
 .vac-featured-icon{position:absolute;top:8px;right:8px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;background:var(--accent);color:#fff;pointer-events:none}
 .vac-featured-icon svg{width:13px;height:13px;fill:currentColor;stroke:currentColor;stroke-width:1.2;stroke-linejoin:round}
-@media(min-width:900px){.featured-vacancies-rail>.vac-card{flex-basis:min(48%,420px);width:min(48%,420px)}}
-@media(max-width:520px){.featured-vacancies-heading h2{font-size:18px}.featured-vacancies-rail>.vac-card{flex-basis:calc(100vw - 48px);width:calc(100vw - 48px)}}
 
 /* ===== GROUPED VACANCY BROWSE CARDS ===== */
 .vacancy-browse-heading{margin:22px 16px 10px}
@@ -2260,11 +2244,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #screen-home .hf-categories .hf-chips{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:431px){#screen-home .hf-source-grid{grid-template-columns:repeat(4,minmax(0,1fr))}#screen-home .hf-categories .hf-chips{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
-/* Home: swipeable featured rail and a direct path into Interview Tips. */
-#screen-home .home-featured-section{margin:0 0 18px}
-#screen-home .home-featured-heading{margin:0 0 8px}
-#screen-home .home-featured-rail{margin:0 -2px}
-#screen-home .home-featured-rail>.vac-card{flex:0 0 min(88%,420px);width:min(88%,420px)}
+/* Home: a direct path into Interview Tips. */
 #screen-home .home-community-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;margin:0 0 20px;padding:15px;border:1px solid #d9e5f2;border-radius:18px;background:#fff;box-shadow:0 6px 16px rgba(23,59,105,.07);color:#14243d}
 #screen-home .home-community-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:#eaf2ff;color:#0b4eaa;font-size:22px;font-weight:800}
 #screen-home .home-community-copy{min-width:0}
