@@ -304,7 +304,7 @@ function renderHomeFeed() {
       }
     });
   }
-  document.querySelectorAll('.home-filter-chip').forEach(function (button) {
+  document.querySelectorAll('.home-filter-chip[data-home-location]').forEach(function (button) {
     var value = button.getAttribute('data-home-location') || '';
     if (value === 'all') value = '';
     var active = value === (homeLocationFilter || '');
