@@ -189,8 +189,14 @@ function homeVacancyMatchesLocation(v, filter) {
   var text = [v.location, v.address, v.province, v.remote, v.work_arrangement].join(' ').toLowerCase();
   var patterns = {
     gauteng: /gauteng|johannesburg|joburg|pretoria|centurion|sandton|randburg|midrand|benoni|kempton park|eastrand|roodepoort|krugersdorp/i,
-    'western-cape': /western cape|cape town|stellenbosch|paarl|george|mossel bay|bellville|worcester/i,
+    'western-cape': /western[\s-]?cape|cape town|stellenbosch|paarl|george|mossel bay|bellville|worcester/i,
     'kwazulu-natal': /kwazulu[\s-]?natal|durban|pietermaritzburg|richards bay|newcastle|ballito/i,
+    'eastern-cape': /eastern[\s-]?cape|gqeberha|port elizabeth|east london|mthatha|uitenhage|komani|queenstown|bhisho|king william'?s town/i,
+    'free-state': /free[\s-]?state|bloemfontein|welkom|bethlehem|kroonstad|sasolburg|harrismith/i,
+    limpopo: /limpopo|polokwane|thohoyandou|mokopane|tzaneen|lephalale|musina/i,
+    mpumalanga: /mpumalanga|mbombela|nelspruit|witbank|emalahleni|middelburg|secunda|ermelo/i,
+    'north-west': /north[\s-]?west|rustenburg|mahikeng|mafikeng|klerksdorp|potchefstroom|brits|vryburg/i,
+    'northern-cape': /northern[\s-]?cape|kimberley|upington|kuruman|de aar|springbok|kathu/i,
     remote: /remote|hybrid|work[ -]from[ -]home|anywhere|distributed/i
   };
   return !!(patterns[filter] && patterns[filter].test(text));
