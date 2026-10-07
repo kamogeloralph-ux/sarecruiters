@@ -610,43 +610,6 @@ async function getVacancies() {
   } catch(e){}
   return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
 }
-async function loadFeaturedVacancies() {
-  // Paint instantly from the committed snapshot (if present) so the rail is
-  // never blank on first render while the live refresh below is in flight.
-  if (window.__saStaticData) {
-    featuredVacanciesCache = filterExpiredVacancies(window.__saStaticData.featured_vacancies || []);
-  }
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
-  try {
-    if (!supabaseClient) throw new Error('Supabase client unavailable');
-    var result = await supabaseClient.from('vacancies').select(columns)
-      .eq('is_featured', true)
-      .order('featured_order', { ascending: true })
-      .order('created_at', { ascending: false })
-      .limit(12);
-    if (result.error) throw result.error;
-    // The live read is authoritative. When an admin ticks "Feature this
-    // vacancy" the change lands in Supabase immediately, so refresh the rail
-    // from there even though the repo snapshot is enabled — otherwise the
-    // section stays frozen on whatever the snapshot captured until the next
-    // scheduled static-data rebuild. The snapshot above only bridges the gap
-    // until this resolves, and remains the offline fallback if it fails. This
-    // is the client half of the worker's "direct public Supabase refresh" for
-    // the Featured Vacancies section (the D1 mirror still lacks the featured
-    // columns, so its copy of this list is always empty).
-    featuredVacanciesCache = filterExpiredVacancies((result.data || []).filter(function(v){
-      return !v.featured_until || new Date(v.featured_until).getTime() >= Date.now();
-    }));
-  } catch(e) {
-    console.warn('featured vacancies load', e);
-    if (!featuredVacanciesCache.length && window.__saStartupPayload && Array.isArray(window.__saStartupPayload.featured_vacancies)) {
-      featuredVacanciesCache = filterExpiredVacancies(window.__saStartupPayload.featured_vacancies);
-    }
-  }
-  if (typeof filterAndRenderCached === 'function') filterAndRenderCached();
-  if (typeof renderAllVacanciesList === 'function' && document.getElementById('screen-allvacancies') && document.getElementById('screen-allvacancies').classList.contains('active')) renderAllVacanciesList();
-  return featuredVacanciesCache;
-}
 async function getEmployerVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
   var pageSize = 1000;
@@ -1170,10 +1133,9 @@ var deferredNotesStarted = false;
 function applyDeferredVacancyNotes(map) {
   var payload = window.__saStartupPayload;
   var lists = [
-    payload && payload.vacancies, payload && payload.featured_vacancies,
+    payload && payload.vacancies,
     typeof staticVacanciesCache !== 'undefined' ? staticVacanciesCache : null,
     typeof vacanciesCache !== 'undefined' ? vacanciesCache : null,
-    typeof featuredVacanciesCache !== 'undefined' ? featuredVacanciesCache : null,
     typeof vacancyOverviewExtraRows !== 'undefined' ? vacancyOverviewExtraRows : null
   ];
   lists.forEach(function(list) {
@@ -1283,9 +1245,6 @@ async function loadAll(options) {
   var authoritativeStartupVacancyTotal = startup && startup.counts && typeof startup.counts.vacancies === 'number'
     ? startup.counts.vacancies : null;
   if (authoritativeStartupVacancyTotal !== null) cachedVacancyTotal = authoritativeStartupVacancyTotal;
-  if (startup && Array.isArray(startup.featured_vacancies)) {
-    featuredVacanciesCache = filterExpiredVacancies(startup.featured_vacancies);
-  }
   var results = startup ? [
     startup.agencies, startup.branches, startup.vacancies, startup.employers,
     // Prefer the worker's own counts.general (NULL-source rows + non-dedicated-
@@ -1390,7 +1349,6 @@ async function loadAll(options) {
   }
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
-  loadFeaturedVacancies();
   if (startup && !window.__saStaticData) refreshSecondaryStartupData();
   // Candidate spotlight is loaded on demand when the Menu is opened.
   // Poster feed and first-party ads are non-critical to the first render.

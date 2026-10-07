@@ -45,12 +45,11 @@ test('vacancy cards expose a local open and close toggle', () => {
   assert.match(cards, /scrollIntoView\(\{ block: 'nearest'/);
 });
 test('vacancy overview uses eight square source tiles in a fixed grid', () => {
-  assert.match(appUi, /Featured opportunity/);
   for (const source of ['General Vacancies', 'Agency Vacancies', 'Government Vacancies', 'Retail Vacancies', 'Learnerships', 'Himalayas Remote', 'Adzuna Vacancies', 'Cruise Careers']) {
     assert.match(appUi, new RegExp(source.replace(/[&]/g, '&amp;')));
   }
   assert.match(appUi, /career-source-grid/);
-  assert.match(appUi, /career-featured-section/);
+  assert.doesNotMatch(appUi, /career-featured-section|featured-vacancies-rail/);
   assert.match(appUi, /career-recent-section/);
   assert.match(appUi, /setVacancyOverviewSource/);
   assert.match(appUi, /vacancyMatchesOverviewSource/);
@@ -71,12 +70,9 @@ test('vacancy overview filters are wired to live recent listings', () => {
   assert.doesNotMatch(appUi, /career-category-section/);
   assert.doesNotMatch(cards, /vac-featured-icon/);
 });
-test('featured vacancies render as a horizontal carousel', () => {
-  assert.match(appUi, /featured-vacancies-rail/);
-  assert.match(appUi, /scrollFeaturedVacancies\(-1\)/);
-  assert.match(appUi, /scrollFeaturedVacancies\(1\)/);
-  assert.match(styles, /scroll-snap-type:x mandatory/);
-  assert.match(styles, /featured-vacancies-rail>\.vac-card/);
+test('the dedicated featured-vacancy carousel is removed', () => {
+  assert.doesNotMatch(appUi, /featured-vacancies-rail|scrollFeaturedVacancies/);
+  assert.doesNotMatch(styles, /featured-vacancies-rail/);
 });
 test('homepage exposes normal anchor links for Google discovery', () => {
   for (const slug of pages) {
