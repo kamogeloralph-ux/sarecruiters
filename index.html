@@ -162,11 +162,12 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-ui-5">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-ui-5" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-bfc3c5ca59">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-bfc3c5ca59" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-ui-5"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"></noscript>
+<link rel="stylesheet" href="community.css?v=sa-recruiters-bfc3c5ca59" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-bfc3c5ca59"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-bfc3c5ca59"></noscript>
 </head>
 <body>
 
@@ -483,6 +484,7 @@
 
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><svg><use href="icons.svg#i4ccc00"/></svg></span><span>Interview Tips<span class="mi-sub">Ask questions and share interview advice anonymously</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -507,7 +509,45 @@
     </div>
     </div>
   </div>
-
+  <!-- ============ INTERVIEW TIPS COMMUNITY ============ -->
+  <div class="screen" id="screen-community">
+    <div class="screen-fixed">
+      <header class="community-header">
+        <button class="vac-folder-back-btn vac-simple-back screen-back-btn community-back" data-ripple onclick="goBackFromCommunity()" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="community-heading-copy"><h1>Interview Tips</h1><p>Community · South Africa</p></div>
+        <button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share Interview Tips community">Share</button>
+      </header>
+      <section class="community-group-banner" aria-labelledby="community-group-title">
+        <h2 id="community-group-title">Interview Tips</h2>
+        <p id="community-group-description">Practical interview advice for job seekers in South Africa.</p>
+        <div class="community-group-actions"><button class="community-join-btn" id="community-join-btn" type="button" data-ripple onclick="communityJoinGroup()" aria-pressed="false">Join group</button><span class="community-group-note">Public group</span></div>
+      </section>
+      <p class="community-safety-note">Other members see “Anonymous member”; your account ID stays private and is linked to activity for moderation and abuse prevention. Posts and comments are reviewed before publishing. Don’t share names, contact details or confidential information.</p>
+      <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
+        <div class="community-compose-head"><strong>Ask the community</strong><span>Pseudonymous</span></div>
+        <label class="sr-only" for="community-post-body">Write an interview question or tip</label>
+        <textarea id="community-post-body" maxlength="3000" placeholder="What would you like advice on? Share a question or helpful tip…" required></textarea>
+        <div class="community-compose-actions"><span class="community-composer-hint" id="community-composer-hint">Sign in and join to share.</span><button class="community-submit-btn" id="community-post-submit" type="submit" disabled>Post</button></div>
+        <p class="community-status" id="community-status" aria-live="polite"></p>
+      </form>
+      <section class="community-admin-panel" id="community-moderator-panel" hidden>
+        <button class="community-admin-toggle" type="button" onclick="communityToggleModeration()"><span>Moderation queue</span><span id="community-moderation-count">0</span></button>
+        <div class="community-moderation-queue" id="community-moderation-queue" hidden></div>
+      </section>
+    </div>
+    <div class="screen-scroll">
+      <div class="community-feed-toolbar">
+        <h2>Conversations</h2>
+        <div class="community-sort" role="group" aria-label="Sort community posts">
+          <button type="button" data-community-sort="new" class="is-active" aria-pressed="true" onclick="communitySetSort('new')">Newest</button>
+          <button type="button" data-community-sort="top" aria-pressed="false" onclick="communitySetSort('top')">Top this month</button>
+        </div>
+      </div>
+      <div class="community-feed" id="community-feed" aria-live="polite"><div class="community-empty">Loading Interview Tips…</div></div>
+    </div>
+  </div>
   <!-- ============ SMART MANAGER (admin only) ============ -->
   <div class="screen" id="screen-smartmanager">
     <div class="screen-fixed">
@@ -1389,13 +1429,24 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="community-report-overlay" id="community-report-overlay" hidden>
+  <form class="community-report-dialog" role="dialog" aria-modal="true" aria-labelledby="community-report-title" onsubmit="return communitySubmitReport(event)">
+    <h2 id="community-report-title">Report content</h2>
+    <p>Tell the moderation team what’s wrong. Your report is private.</p>
+    <label for="community-report-reason">Reason</label>
+    <select id="community-report-reason" required><option value="spam">Spam or promotion</option><option value="harassment">Harassment or hate</option><option value="personal_info">Personal information</option><option value="scam">Scam or unsafe advice</option><option value="other">Something else</option></select>
+    <label for="community-report-details">Additional details (optional)</label>
+    <textarea id="community-report-details" maxlength="600" placeholder="Add context for the moderators…"></textarea>
+    <div class="community-report-actions"><button type="button" onclick="communityCloseReport()">Cancel</button><button type="submit" id="community-report-submit">Send report</button></div>
+  </form>
+</div>
 
 <!-- FAQ / guide articles (content.js + content-manager.js, ~50 KB) are only needed once a
      content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
      the browser fetch them at idle priority (and keep generate-pages.js cache-busting them);
      openContentSheet() below loads them on demand and then hands over to the real implementation. -->
-<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-eac1068807" data-sa-lazy="content">
-<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-eac1068807" data-sa-lazy="content-manager">
+<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-bfc3c5ca59" data-sa-lazy="content">
+<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-bfc3c5ca59" data-sa-lazy="content-manager">
 <script>
 (function(){
   var pending=null;
@@ -1422,7 +1473,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=d846731317" defer></script>
+<script src="app.bundle.min.js?v=45b9cfa1b8" defer></script>
 <script src="app-vacancy-v2.js?v=vx-scan-2" defer></script>
 <script src="app-alerts.js?v=al-3" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

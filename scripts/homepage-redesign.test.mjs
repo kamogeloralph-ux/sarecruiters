@@ -90,5 +90,5 @@ test('the homepage hero is square and compact, with a smaller search field and t
   assert.match(css, /#screen-home \.screen-fixed header\{padding:0 0 9px\}/);
   assert.match(css, /#screen-home \.search-mini \.search-inner\{height:48px/);
   assert.match(css, /#screen-home \.home-filter-row\{margin-bottom:7px/);
-  assert.match(html, /styles\.css\?v=sa-recruiters-ui-5/);
+  assert.match(html, /styles\.css\?v=[^"]+/);
 });

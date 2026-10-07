@@ -20,7 +20,7 @@ const fs = require('fs');
 const path = require('path');
 const { runBundle, buildSupabaseVendor } = require('./scripts/bundle-app');
 
-// Bundle + minify the 8 app-*.js files into app.bundle.min.js and
+// Bundle + minify the 10 app-*.js files into app.bundle.min.js and
 // rewrite index.html's script tag, before anything else runs. Doing
 // this first (and via require, not npm run) means the existing
 // Cloudflare Pages build command — "npm install && node
@@ -39,7 +39,7 @@ buildSupabaseVendor(__dirname);
 //    Hash (not timestamp) so the 3-hourly cron rebuilds with no source
 //    changes keep the same VERSION and don't needlessly wipe caches.
 // 2) Set ?v=<same hash> on every same-origin asset URL
-//    (styles.css, content.js, content-manager.js, static-pages.css)
+//    (styles.css, community.css, content.js, content-manager.js, static-pages.css)
 //    so stale-while-revalidate style caches treat each deploy as a new
 //    resource and can never answer with a stale copy.
 // ------------------------------------------------------------
@@ -52,6 +52,7 @@ const STATIC_ASSETS = [
   'know-your-rights/index.html',
   'offline.html',
   'styles.css',
+  'community.css',
   'static-pages.css',
   'content.js',
   'content-manager.js',
@@ -77,7 +78,7 @@ function rewriteAssetUrls(html, version) {
   // Handles relative (styles.css), ./relative (./styles.css) and
   // root-absolute (/static-pages.css) references.
   return html.replace(
-    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|content\.js|content-manager\.js|static-pages\.css)(?:\?v=[^"]*)?("?)/g,
+    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|community\.css|content\.js|content-manager\.js|static-pages\.css)(?:\?v=[^"]*)?("?)/g,
     (match, attr, base, file, suffix) => `${attr}${base}${file}?v=${version}${suffix}`,
   );
 }
