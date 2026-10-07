@@ -215,6 +215,24 @@ function openCompanyFeatureInquiry() {
   if (type) type.value = 'Feature request';
 }
 
+function homeVacancySourceMarkup() {
+  var summary = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
+  var order = summary && summary.order ? summary.order : ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
+  var labels = summary && summary.labels ? summary.labels : {
+    general: 'General', agency: 'Agency', government: 'Government', retail: 'Retail',
+    learnerships: 'Learnerships', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', careers_page: 'Cruise Careers'
+  };
+  var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', government: '⌂', retail: '▤', learnerships: '✦', himalayas: '↗', adzuna: 'A', careers_page: '⚓' };
+  var counts = summary && summary.counts ? summary.counts : {};
+  var ready = !!(summary && summary.ready);
+  return '<section class="home-sources-section" aria-labelledby="home-sources-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Browse all opportunities</span><h2 id="home-sources-title">Jobs by source</h2></div><span class="home-source-total">8 sources</span></div><div class="home-source-grid">' +
+    order.map(function (source) {
+      var count = Number(counts[source]) || 0;
+      var countText = ready ? count.toLocaleString() + ' ' + (count === 1 ? 'role' : 'roles') : 'Loading…';
+      return '<button type="button" class="home-source-card" onclick="openVacancyFolder(\'' + source + '\')" aria-label="Open ' + escapeHtml(labels[source]) + ' vacancies"><span class="home-source-icon" aria-hidden="true">' + escapeHtml(icons[source]) + '</span><span class="home-source-copy"><strong>' + escapeHtml(labels[source]) + '</strong><small>' + escapeHtml(countText) + '</small></span><span class="home-source-arrow" aria-hidden="true">›</span></button>';
+    }).join('') + '</div></section>';
+}
+
 function renderHomeFeed() {
   var target = document.getElementById('home-feed');
   if (!target) return;
@@ -253,7 +271,8 @@ function renderHomeFeed() {
     (filtering ? 'No vacancies match those filters yet.' : 'The latest vacancies are loading or none are available right now.') +
     '</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
 
-  target.innerHTML = '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
+  target.innerHTML = homeVacancySourceMarkup() +
+    '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
       '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Available roles</h2><p>Retail vacancies first, followed by the newest live listings.</p></div>' +
       '<button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + '<span aria-hidden="true"> →</span></button></div>' +
       '<div class="home-vacancy-grid" aria-live="polite">' + (cards || empty) + '</div>' +

@@ -40,10 +40,17 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /function renderHomeFeed\(/);
 });
 
-test('the homepage removes the featured section and keeps eight retail-first roles, while vacancy sources appear first', () => {
+test('the homepage shows all eight source cards before retail-first roles', () => {
   assert.match(ui, /HOME_VACANCY_CARD_LIMIT = 8/);
   const homeRender = ui.slice(ui.indexOf('function renderHomeFeed()'), ui.indexOf('// Public section links'));
+  const sourceMarkupPosition = homeRender.indexOf('homeVacancySourceMarkup()');
   const homeRolesPosition = homeRender.indexOf('home-jobs-section');
+  assert.ok(sourceMarkupPosition >= 0 && homeRolesPosition > sourceMarkupPosition, 'source cards must render before available roles');
+  assert.match(ui, /function homeVacancySourceMarkup\(\)/);
+  assert.match(ui, /window\.vacancySourceSummary\(\)/);
+  assert.match(ui, /order\.map\(function \(source\)/);
+  assert.match(ui, /class="home-source-grid"/);
+  assert.match(ui, /onclick="openVacancyFolder/);
   assert.ok(homeRolesPosition >= 0, 'the eight role cards must remain on the home screen');
   assert.doesNotMatch(homeRender, /Featured vacancies|home-featured|featuredMarkup|wireHomeFeaturedRailGestures/);
   assert.match(homeRender, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
@@ -89,11 +96,14 @@ test('home vacancy cards expose an application action, and the home search uses 
 });
 
 test('responsive styles cover the vacancy cards, categories, sponsored slot, and seeker/employer actions', () => {
-  for (const selector of ['.home-vacancy-grid', '.home-category-grid', '.home-sponsored', '.home-sponsored-art', '.home-tools-grid']) {
+  for (const selector of ['.home-source-grid', '.home-source-card', '.home-vacancy-grid', '.home-category-grid', '.home-sponsored', '.home-sponsored-art', '.home-tools-grid']) {
     assert.ok(css.includes(selector), `Missing homepage style: ${selector}`);
   }
   assert.match(css, /\.home-sponsored-art\{[^}]*height:auto/);
   assert.doesNotMatch(css, /home-featured-|featured-vacancies-rail/);
+  assert.match(css, /\.home-source-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /#screen-home \.screen-scroll\{container-type:inline-size/);
+  assert.match(css, /@container \(min-width:760px\)\{\s*#screen-home \.home-source-grid\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(min-width:760px\)\{[\s\S]*\.home-vacancy-grid\{grid-template-columns:repeat\(2/);
   assert.match(vacancyCss, /\.vx-source\{display:flex;align-items:center/);
 });
