@@ -156,8 +156,10 @@ test('privacy policy matches the guest app and current data providers', () => {
   assert.match(privacy, /Cloudflare/);
   assert.match(privacy, /BigDataCloud/);
   assert.match(privacy, /Resend/);
+  assert.match(privacy, /Community posts, comments and reports/);
+  assert.match(privacy, /pseudonymous, not untraceable/);
   assert.match(privacy, /Ask us to access, correct or delete/i);
-  assert.match(privacy, /Last updated: 25 September 2026/);
+  assert.match(privacy, /Last updated: 7 October 2026/);
   assert.match(privacy, /canonical.*privacy\//i);
   assert.match(legacyPrivacy, /location\.replace\('\/privacy\/'\)/);
 });
@@ -269,7 +271,7 @@ test('vacancy statistic uses the shared startup count path', () => {
 
 test('offline launch bypasses network-only startup work', () => {
   assert.match(appData, /if \(navigator\.onLine === false\)/);
-  assert.match(homepage, /<script async defer src="https:\/\/challenges\.cloudflare\.com\/turnstile/);
+  assert.match(homepage, /<script defer src="https:\/\/challenges\.cloudflare\.com\/turnstile/);
 });
 
 test('CV Builder offers selectable templates without regenerating the CV', () => {

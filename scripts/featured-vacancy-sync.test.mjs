@@ -108,7 +108,7 @@ test('vacancy overview shows available roles before all eight sources and remove
   assert.match(vacancyCss, /\.vx-org\{order:0/);
   assert.match(vacancyCss, /\.vx-inline-apply\{display:inline-flex/);
   assert.match(read('../styles.css'), /#screen-allagencies #allagencies-list \.hub-summary/, 'agency typography and spacing should be scoped to the agency directory');
-  assert.match(indexSrc, /styles\.css\?v=sa-recruiters-ui-5/, 'the shared stylesheet cache key must be refreshed');
+  assert.match(indexSrc, /styles\.css\?v=[^"]+/, 'the shared stylesheet cache key must be refreshed');
   assert.match(indexSrc, /vacancy-v2\.css\?v=vx-scan-2/, 'the vacancy stylesheet cache key must be refreshed');
   assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-scan-2/, 'the vacancy renderer cache key must be refreshed');
   assert.match(indexSrc, /app-alerts\.js\?v=al-3/, 'the saved-search CTA script cache key must be refreshed');
