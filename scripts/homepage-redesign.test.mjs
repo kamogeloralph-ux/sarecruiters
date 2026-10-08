@@ -161,6 +161,16 @@ test('home conversion sections use the compact Interview Tips card language', ()
   assert.match(css, /#screen-home \.home-section-heading h2,[\s\S]*?#screen-home \.hf-head h2\{font-size:17px!important/);
 });
 
+test('Tips Chat uses a welcoming community banner with a clear join action', () => {
+  assert.match(ui, /home-chat-banner/);
+  assert.match(ui, /Chat together\. Learn together\. Move forward\./);
+  assert.match(ui, /home-chat-live/);
+  assert.match(ui, /home-chat-people/);
+  assert.match(ui, /Open Tips Chat/);
+  assert.match(css, /#screen-home \.home-chat-banner\{[\s\S]*?linear-gradient/);
+  assert.match(html, /community-menu-badge.*>Join</);
+});
+
 test('Home and Menu community entries are labelled Tips Chat and use the chat icon', () => {
   assert.match(ui, /<h2 id="home-community-title">Tips Chat<\/h2>/);
   assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?Tips Chat/s);

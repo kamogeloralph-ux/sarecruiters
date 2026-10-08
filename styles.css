@@ -2268,7 +2268,31 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #screen-home .home-community-copy p{margin:4px 0 0;color:#637590;font-size:11px;line-height:1.4}
 #screen-home .home-community-card>button{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border:0;border-radius:999px;background:#0b4eaa;color:#fff;font:inherit;font-size:11px;font-weight:750;white-space:nowrap;cursor:pointer}
 #screen-home .home-community-card>button:active{transform:scale(.97)}
-@media(max-width:430px){#screen-home .home-community-card{grid-template-columns:36px minmax(0,1fr);gap:10px;padding:13px}#screen-home .home-community-icon{width:36px;height:36px}#screen-home .home-community-card>button{grid-column:1/-1;justify-self:stretch}}
+/* Tips Chat conversion banner: make the community feel active, welcoming, and easy to join. */
+#screen-home .home-chat-banner{display:block;position:relative;overflow:hidden;padding:15px 16px 14px;background:linear-gradient(135deg,#0e4fae 0%,#315ed0 52%,#6950dd 100%)!important;border:0!important;color:#fff;box-shadow:0 12px 28px rgba(29,74,175,.22)!important}
+#screen-home .home-chat-banner::after{content:'';position:absolute;width:150px;height:150px;right:-54px;top:-72px;border:1px solid rgba(255,255,255,.2);border-radius:50%;box-shadow:0 0 0 18px rgba(255,255,255,.04),0 0 0 38px rgba(255,255,255,.035);pointer-events:none}
+#screen-home .home-chat-banner-top,#screen-home .home-chat-banner-bottom{position:relative;z-index:1;display:flex;align-items:center;gap:8px}
+#screen-home .home-chat-banner-top{justify-content:space-between;margin-bottom:12px}
+#screen-home .home-chat-banner .home-community-kicker{margin:0;color:rgba(255,255,255,.78);font-size:10px;letter-spacing:.12em}
+#screen-home .home-chat-live{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.12);font-size:9.5px;font-weight:700;color:rgba(255,255,255,.9);white-space:nowrap}
+#screen-home .home-chat-live>span{width:6px;height:6px;border-radius:50%;background:#63e6be;box-shadow:0 0 0 3px rgba(99,230,190,.18)}
+#screen-home .home-chat-banner-main{position:relative;z-index:1;display:flex;align-items:center;gap:12px}
+#screen-home .home-chat-banner .home-community-icon{width:44px;height:44px;flex:0 0 44px;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:14px}
+#screen-home .home-chat-banner .home-community-icon svg{width:23px;height:23px}
+#screen-home .home-chat-banner .home-community-copy{min-width:0}
+#screen-home .home-chat-banner .home-community-copy h2{color:#fff;font-size:19px;letter-spacing:-.025em}
+#screen-home .home-chat-banner .home-community-copy p{margin:3px 0 3px;color:#fff;font-size:12.5px;font-weight:750;line-height:1.25}
+#screen-home .home-chat-banner .home-community-copy small{display:block;color:rgba(255,255,255,.76);font-size:10.5px;line-height:1.4}
+#screen-home .home-chat-banner-bottom{margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,.16)}
+#screen-home .home-chat-people{display:flex;align-items:center;padding-left:4px}
+#screen-home .home-chat-people span{display:grid;place-items:center;width:23px;height:23px;margin-left:-4px;border:2px solid #315ed0;border-radius:50%;background:#e8efff;color:#315ed0;font-size:9px;font-weight:850}
+#screen-home .home-chat-people span:nth-child(2){background:#ffe9c7;color:#a65b14}.home-chat-people span:nth-child(3){background:#d8f6e9;color:#18734e}.home-chat-people span:nth-child(4){background:rgba(255,255,255,.2);color:#fff}
+#screen-home .home-chat-people-label{flex:1;min-width:0;color:rgba(255,255,255,.78);font-size:10px;line-height:1.25}
+#screen-home .home-chat-banner-bottom>button{flex:0 0 auto;padding:9px 11px;background:#fff;color:#174ca7;border-radius:10px;font-size:10.5px;font-weight:850;box-shadow:0 5px 14px rgba(5,30,92,.18)}
+#screen-home .home-chat-banner-bottom>button:active{background:#edf3ff;transform:scale(.97)}
+#screen-menu .community-menu-item .community-menu-badge{flex:0 0 auto;padding:5px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:10px;font-weight:800}
+@media(max-width:430px){#screen-home .home-community-card{grid-template-columns:36px minmax(0,1fr);gap:10px;padding:13px}#screen-home .home-community-icon{width:36px;height:36px}#screen-home .home-community-card>button{grid-column:1/-1;justify-self:stretch}#screen-home .home-chat-banner{padding:14px}#screen-home .home-chat-banner-top{align-items:flex-start}#screen-home .home-chat-banner-main{gap:9px}#screen-home .home-chat-banner .home-community-icon{width:40px;height:40px;flex-basis:40px}#screen-home .home-chat-banner-bottom{align-items:flex-start}#screen-home .home-chat-people-label{font-size:9.5px}#screen-home .home-chat-banner-bottom>button{padding:9px 9px}}
+@media(max-width:350px){#screen-home .home-chat-live{font-size:8.5px;padding:4px 6px}#screen-home .home-chat-people-label{display:none}#screen-home .home-chat-banner-bottom>button{margin-left:auto}}
 
 /* Agency directory: lighter card rhythm and more legible identity/location hierarchy. */
 #screen-allagencies #allagencies-list .hub-card{margin:0 0 10px;border-radius:16px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
