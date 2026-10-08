@@ -20,6 +20,7 @@ import { isStaleVacancy } from './vacancy-freshness.mjs';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const GENERAL_URL = process.env.GRADUATES24_GENERAL_URL || 'https://www.graduates24.com/learnerships';
+const MAX_VACANCIES = 50;
 const PAGE_COUNT = parsePositiveInt(process.env.GRADUATES24_PAGES, 60);
 const REQUEST_DELAY_MS = parsePositiveInt(process.env.GRADUATES24_REQUEST_DELAY_MS, 1_500);
 const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.GRADUATES24_REQUEST_TIMEOUT_MS, 60_000);
@@ -190,11 +191,11 @@ async function upsertJobs(parsedJobs) {
   }
   return jobs;
 }
-async function scrapePage(page) {
+async function scrapePage(page, remaining = MAX_VACANCIES) {
   const url = pageUrlFor(page);
   console.log(`[graduates24] page ${page}: fetching ${url}`);
   const parsed = parseGraduates24Jobs(await fetchPage(url), url);
-  const jobs = await upsertJobs(parsed);
+  const jobs = await upsertJobs(parsed.slice(0, remaining));
   console.log(`[graduates24] page ${page}: found ${parsed.rawCardCount} listing(s), parsed ${parsed.length} fresh, upserted ${jobs.length}`);
   return { upserted: jobs.length, rawCardCount: parsed.rawCardCount };
 }
@@ -203,9 +204,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   let failures = 0;
   let totalUpserted = 0;
-  for (let page = 1; page <= PAGE_COUNT; page += 1) {
+  for (let page = 1; page <= PAGE_COUNT && totalUpserted < MAX_VACANCIES; page += 1) {
     try {
-      const { upserted, rawCardCount } = await scrapePage(page);
+      const { upserted, rawCardCount } = await scrapePage(page, MAX_VACANCIES - totalUpserted);
       totalUpserted += upserted;
       // Graduates24 shows "no results" rather than erroring once you run
       // past the last real page -- stop early instead of grinding through

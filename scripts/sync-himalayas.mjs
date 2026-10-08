@@ -5,7 +5,8 @@ import { isStaleVacancy } from './vacancy-freshness.mjs';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const HIMALAYAS_COUNTRY = process.env.HIMALAYAS_COUNTRY || 'ZA';
-const PAGE_COUNT = Number.parseInt(process.env.HIMALAYAS_PAGES || '5', 10);
+const MAX_VACANCIES = 50;
+const PAGE_COUNT = Math.min(Number.parseInt(process.env.HIMALAYAS_PAGES || '5', 10), MAX_VACANCIES);
 const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.HIMALAYAS_PAGE_SIZE || '20', 10) || 20, 1), 20);
 const REQUEST_DELAY_MS = Number.parseInt(process.env.HIMALAYAS_REQUEST_DELAY_MS || '1500', 10);
 const API_URL = 'https://himalayas.app/jobs/api/search';
@@ -136,13 +137,13 @@ async function upsertJobs(mappedJobs) {
   return jobs;
 }
 
-async function syncPage(page) {
+async function syncPage(page, remaining = MAX_VACANCIES) {
   let lastError;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       console.log(`[himalayas] page ${page}: fetching ${HIMALAYAS_COUNTRY}-eligible remote jobs (attempt ${attempt})`);
       const payload = await fetchPage(page);
-      const mapped = mapHimalayasResults(payload);
+      const mapped = mapHimalayasResults(payload).slice(0, remaining);
       const jobs = await upsertJobs(mapped);
       console.log(`[himalayas] page ${page}: parsed ${mapped.length}, upserted ${jobs.length}`);
       return jobs.length;
@@ -157,9 +158,12 @@ async function syncPage(page) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   let failures = 0;
-  for (let page = 1; page <= PAGE_COUNT; page += 1) {
+  let processed = 0;
+  for (let page = 1; page <= PAGE_COUNT && processed < MAX_VACANCIES; page += 1) {
     try {
-      await syncPage(page);
+      const remaining = MAX_VACANCIES - processed;
+      const count = await syncPage(page, remaining);
+      processed += count;
     } catch (error) {
       failures += 1;
       console.error(`[himalayas] page ${page}: ${errorMessage(error)}`);

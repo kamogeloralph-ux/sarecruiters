@@ -18,6 +18,7 @@ const BOXER_JOB_PREFIX = '/candidateapp/Jobs/View/';
 const CASHBUILD_BASE = 'https://careers-page.com';
 const CASHBUILD_SLUG = 'cashbuild-careers';
 const CASHBUILD_SEARCH = `${CASHBUILD_BASE}/api/v1.0/c/${CASHBUILD_SLUG}/jobs/`;
+const MAX_VACANCIES = 50;
 const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.RETAIL_PAGE_SIZE || '20', 10), 1), 20);
 const DETAIL_CONCURRENCY = Math.min(Math.max(Number.parseInt(process.env.RETAIL_DETAIL_CONCURRENCY || '4', 10), 1), 8);
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.RETAIL_REQUEST_TIMEOUT_MS || '60000', 10);
@@ -269,9 +270,9 @@ export async function fetchPickNPayJobs() {
       body: JSON.stringify({ appliedFacets: {}, limit: PAGE_SIZE, offset, searchText: '' }),
     });
     const page = parsePickNPaySearch(payload);
-    summaries.push(...page);
+    summaries.push(...page.slice(0, MAX_VACANCIES - summaries.length));
     console.log(`[retail:pnp] search offset ${offset}: ${page.length} jobs`);
-    if (page.length < PAGE_SIZE || summaries.length >= Number(payload.total || 0)) break;
+    if (page.length < PAGE_SIZE || summaries.length >= Number(payload.total || 0) || summaries.length >= MAX_VACANCIES) break;
   }
   return summaries;
 }
@@ -304,7 +305,7 @@ async function fetchBoxerJobs() {
     const jobs = parseBoxerSearch(await fetchText(categoryLink));
     jobs.forEach((job) => summariesById.set(job.externalId, job));
   }
-  const summaries = [...summariesById.values()];
+  const summaries = [...summariesById.values()].slice(0, MAX_VACANCIES);
   const jobs = [];
   let cursor = 0;
   async function worker() {
@@ -330,9 +331,9 @@ async function fetchCashbuildJobs() {
   for (let page = 1; ; page += 1) {
     const payload = await fetchJson(`${CASHBUILD_SEARCH}?page_size=${PAGE_SIZE}&page=${page}`);
     const pageJobs = parseCashbuildSearch(payload, employerId);
-    jobs.push(...pageJobs);
+    jobs.push(...pageJobs.slice(0, MAX_VACANCIES - jobs.length));
     console.log(`[retail:cashbuild] page ${page}: ${pageJobs.length} jobs`);
-    if (!payload.next || !pageJobs.length) break;
+    if (!payload.next || !pageJobs.length || jobs.length >= MAX_VACANCIES) break;
   }
   return jobs;
 }

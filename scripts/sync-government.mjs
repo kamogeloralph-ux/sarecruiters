@@ -139,11 +139,12 @@ function fieldFromBlock(block, label) {
   return match ? clean(match[1]) : '';
 }
 
-export function parseGovernmentPdfText(text, { circularNumber, year, pdfUrl, sourceFile = '' } = {}) {
+export function parseGovernmentPdfText(text, { circularNumber, year, pdfUrl, sourceFile = '', maxJobs = Infinity } = {}) {
   const fullText = String(text || '').replace(/\r/g, '');
   const sections = splitIntoDepartmentSections(fullText);
   const jobs = [];
-  sections.forEach((sectionText, sectionIndex) => {
+  sections.some((sectionText, sectionIndex) => {
+    if (jobs.length >= maxJobs) return true;
     const lines = sectionText.split('\n').map(clean).filter(Boolean);
     const company = parseDepartmentName(lines);
     // A combined circular has a CLOSING DATE per department section (they
@@ -151,7 +152,8 @@ export function parseGovernmentPdfText(text, { circularNumber, year, pdfUrl, sou
     // whole document.
     const closingDate = parseDateValue(sectionText.match(/CLOSING DATE\s*:?\s*([^\n]+)/i)?.[1] || '');
     const blocks = parsePostBlocks(sectionText);
-    blocks.forEach((block, index) => {
+    blocks.some((block, index) => {
+      if (jobs.length >= maxJobs) return true;
       const header = block.match(/^POST\s+(\d+\/\d+)\s*:\s*([\s\S]*?)(?=\s+REF\s+NO\s*:|\n|$)/i);
       const postNumber = header?.[1] || `${sectionIndex + 1}-${index + 1}`;
       const ref = block.match(/REF\s+NO\s*:\s*([^\n]+)/i)?.[1] ? clean(block.match(/REF\s+NO\s*:\s*([^\n]+)/i)[1]) : '';
@@ -203,6 +205,7 @@ export function parseGovernmentPdfText(text, { circularNumber, year, pdfUrl, sou
         created_at: closingDate ? new Date(`${closingDate}T00:00:00.000Z`).toISOString() : new Date().toISOString(),
       });
     });
+    return jobs.length >= maxJobs;
   });
   return jobs.filter((job) => job.title && !/^ANNEXURE|^CONTENTS$/i.test(job.title));
 }
@@ -258,6 +261,7 @@ export async function discoverGovernmentVacancies(options = {}) {
   const circulars = await discoverCirculars(options);
   const jobs = [];
   for (const circular of circulars) {
+    if (jobs.length >= 50) break;
     // Most DPSA circular pages expose exactly one PDF -- the combined
     // circular covering every department in its own ANNEXURE section
     // (confirmed against a real, previously-successful scrape: the page
@@ -276,7 +280,7 @@ export async function discoverGovernmentVacancies(options = {}) {
         const buffer = await fetchBuffer(department.url);
         if (!buffer) continue;
         const text = await pdfToText(buffer);
-        jobs.push(...parseGovernmentPdfText(text, { circularNumber: circular.id.match(/-(\d+)$/)?.[1] || '', year: circular.id.match(/government-circular-(\d+)-/)?.[1] || '', pdfUrl: department.url, sourceFile: department.url.split('/').pop() }));
+        jobs.push(...parseGovernmentPdfText(text, { circularNumber: circular.id.match(/-(\d+)$/)?.[1] || '', year: circular.id.match(/government-circular-(\d+)-/)?.[1] || '', pdfUrl: department.url, sourceFile: department.url.split('/').pop(), maxJobs: 50 - jobs.length }));
       } catch (error) { console.warn(`[government] unable to parse ${department.url}: ${error.message}`); }
     }
   }
@@ -328,7 +332,7 @@ export async function upsertGovernmentVacancies(vacancies) {
 
 async function main() {
   const vacancies = await discoverGovernmentVacancies();
-  const unique = [...new Map(vacancies.map((vacancy) => [vacancy.id, vacancy])).values()];
+  const unique = [...new Map(vacancies.map((vacancy) => [vacancy.id, vacancy])).values()].slice(0, 50);
   console.log(`[government] discovered ${unique.length} vacancies from DPSA public-service circulars across ${GOVERNMENT_YEARS.join(', ')}`);
   const count = await upsertGovernmentVacancies(unique);
   console.log(`[government] upserted ${count} vacancy records`);

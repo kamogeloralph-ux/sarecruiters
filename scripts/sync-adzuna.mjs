@@ -11,8 +11,9 @@ const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SCRAPE_REQUEST_TIMEOUT_M
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersAdzunaSync/1.0 (+https://sa-recruiters.co.za)';
 // Free tier is 25 calls/min, 250/day. Keep PAGE_COUNT modest by default —
 // four scheduled runs/day x a handful of pages stays well under the daily cap.
-const PAGE_COUNT = parsePositiveInt(process.env.ADZUNA_PAGES, 3);
-const RESULTS_PER_PAGE = parsePositiveInt(process.env.ADZUNA_RESULTS_PER_PAGE, 50);
+const MAX_VACANCIES = 50;
+const PAGE_COUNT = Math.min(parsePositiveInt(process.env.ADZUNA_PAGES, 3), MAX_VACANCIES);
+const RESULTS_PER_PAGE = Math.min(parsePositiveInt(process.env.ADZUNA_RESULTS_PER_PAGE, 50), MAX_VACANCIES);
 const REQUEST_DELAY_MS = parsePositiveInt(process.env.ADZUNA_REQUEST_DELAY_MS, 3_000);
 
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
@@ -160,14 +161,20 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (!ADZUNA_APP_ID || !ADZUNA_APP_KEY) throw new Error('ADZUNA_APP_ID and ADZUNA_APP_KEY are required');
 
   let failures = 0;
-  for (let page = 1; page <= PAGE_COUNT; page += 1) {
+  let processed = 0;
+  for (let page = 1; page <= PAGE_COUNT && processed < MAX_VACANCIES; page += 1) {
     try {
-      await syncPage(page);
+      const remaining = MAX_VACANCIES - processed;
+      const payload = await fetchPage(page);
+      const mapped = mapAdzunaResults(payload).slice(0, remaining);
+      const jobs = await upsertJobs(mapped);
+      processed += jobs.length;
+      console.log(`[adzuna] page ${page}: parsed ${mapped.length}, upserted ${jobs.length} (run cap ${MAX_VACANCIES})`);
     } catch (error) {
       failures += 1;
       console.error(`[adzuna] page ${page}: ${error instanceof Error ? error.message : String(error)}`);
     }
-    if (page < PAGE_COUNT) await sleep(REQUEST_DELAY_MS);
+    if (page < PAGE_COUNT && processed < MAX_VACANCIES) await sleep(REQUEST_DELAY_MS);
   }
 
   if (failures > 0) process.exitCode = 1;

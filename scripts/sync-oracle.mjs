@@ -32,12 +32,12 @@ const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.ORACLE_PAGE_SIZE
 const DETAIL_CONCURRENCY = Math.min(Math.max(Number.parseInt(process.env.ORACLE_DETAIL_CONCURRENCY || '3', 10), 1), 6);
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.ORACLE_REQUEST_TIMEOUT_MS || '60000', 10);
 const FETCH_ATTEMPTS = Number.parseInt(process.env.ORACLE_FETCH_ATTEMPTS || '3', 10);
-const MAX_JOBS = Number.parseInt(process.env.ORACLE_MAX_JOBS || '1500', 10);
+const MAX_JOBS = 50;
 // Employers may only list their 50 most recent vacancies (see
 // scripts/enforce-vacancy-caps.mjs, which enforces this DB-wide as a
 // safety net). Sorting + trimming here too means we never fetch job
 // details for postings we'd just delete again afterwards.
-const MAX_PER_EMPLOYER = Math.max(1, Number.parseInt(process.env.ORACLE_MAX_PER_EMPLOYER || '50', 10));
+const MAX_PER_EMPLOYER = 50;
 const DRY_RUN = /^(1|true|yes)$/i.test(process.env.DRY_RUN || '');
 const DEBUG_RAW = /^(1|true|yes)$/i.test(process.env.DEBUG_RAW || '');
 const USER_AGENT = 'SA-Recruiters-Oracle-Sync/1.0 (+https://sa-recruiters.co.za/)';
