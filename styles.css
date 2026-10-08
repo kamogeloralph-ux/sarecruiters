@@ -2402,6 +2402,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 [data-theme="light"] .bottom-nav .navbtn:not(.active) .navbtn-label{color:#53657d!important}
 [data-theme="light"] .bottom-nav .navbtn:not(.active) svg{stroke:#53657d!important;color:#53657d!important}
 
+/* The featured-company creative is a first-party ad: the whole card opens the
+   advertiser, while its inquiry button remains a separate action. */
+#screen-home .home-sponsored[role="link"]{cursor:pointer}
+#screen-home .home-sponsored[role="link"]:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:3px}
+
 /* ===== Final Interview Tips visual pass =====
    Keep guest authentication and the home conversion sections on the same
    calm, high-contrast card system as the community experience. */

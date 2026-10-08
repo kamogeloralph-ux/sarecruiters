@@ -250,6 +250,12 @@ function openCompanyFeatureInquiry() {
   if (type) type.value = 'Feature request';
 }
 
+function openFeaturedCompanyWebsite(event) {
+  if (event && event.target && event.target.closest && event.target.closest('button')) return;
+  var url = 'https://jwprojects.co.za/';
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function homeVacancySourceMarkup() {
   var summary = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
   var order = summary && summary.order ? summary.order : ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
@@ -315,7 +321,7 @@ function renderHomeFeed() {
     '<section class="home-community-card" aria-labelledby="home-community-title"><span class="home-community-icon" aria-hidden="true">✦</span><div class="home-community-copy"><span class="home-community-kicker">Community discussion</span><h2 id="home-community-title">Interview Tips</h2><p>Ask questions and share interview advice with South African job seekers.</p></div><button type="button" onclick="openCommunity()">Join the conversation <span aria-hidden="true">→</span></button></section>' +
     '<section class="home-categories-section" aria-labelledby="home-categories-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Find your next move</span><h2 id="home-categories-title">Explore top job categories</h2></div></div>' +
       '<div class="home-category-grid">' + categoryMarkup + '</div></section>' +
-    '<section class="home-sponsored" aria-label="Feature your company"><img class="home-sponsored-art" src="/jw-aluminium-banner.webp" alt="JW Aluminium advertisement for custom glass and aluminium products" width="1200" height="400" loading="lazy" decoding="async"><div class="home-sponsored-content"><div class="home-sponsored-copy"><span class="home-sponsored-mark">FEATURED COMPANY</span><h2>Feature your company here</h2><p>Showcase your brand to South Africa’s job seekers and employers.</p></div><button type="button" onclick="openCompanyFeatureInquiry()">Ask about advertising</button></div></section>' +
+    '<section class="home-sponsored" role="link" tabindex="0" aria-label="Visit JW Aluminium &amp; Glass website" onclick="openFeaturedCompanyWebsite(event)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openFeaturedCompanyWebsite(event)}"><img class="home-sponsored-art" src="/jw-aluminium-banner.webp" alt="JW Aluminium advertisement for custom glass and aluminium products" width="1200" height="400" loading="lazy" decoding="async"><div class="home-sponsored-content"><div class="home-sponsored-copy"><span class="home-sponsored-mark">FEATURED COMPANY</span><h2>Feature your company here</h2><p>Showcase your brand to South Africa’s job seekers and employers.</p></div><button type="button" onclick="event.stopPropagation();openCompanyFeatureInquiry()">Ask about advertising</button></div></section>' +
     '<section class="home-tools-section" aria-labelledby="home-tools-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Quick actions</span><h2 id="home-tools-title">Tools for job seekers &amp; recruiters</h2></div></div>' +
       '<div class="home-tools-grid">' +
         '<article class="home-tool-card home-tool-card--seeker"><div class="home-tool-icon" aria-hidden="true">CV</div><div><h3>For job seekers</h3><p>Upload or update your CV and get discovered by recruitment agencies.</p></div><div class="home-tool-actions"><button type="button" onclick="openHomeTalentPoolProfile()">Upload / update CV</button><button type="button" class="secondary" onclick="showAllVacancies(\'home\')">Browse vacancies</button></div></article>' +

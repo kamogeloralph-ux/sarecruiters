@@ -105,6 +105,10 @@ test('home vacancy cards expose an application action, and the home search uses 
   assert.match(ui, /jw-aluminium-banner\.webp/);
   assert.match(ui, /Feature your company here/);
   assert.match(ui, /function openCompanyFeatureInquiry\(/);
+  assert.match(ui, /function openFeaturedCompanyWebsite\(event\)/);
+  assert.match(ui, /https:\/\/jwprojects\.co\.za\//);
+  assert.match(ui, /role="link" tabindex="0" aria-label="Visit JW Aluminium &amp; Glass website"/);
+  assert.match(css, /#screen-home \.home-sponsored\[role="link"\]\{cursor:pointer\}/);
   assert.match(html, /id="sendpulse-feedback-only"/);
   assert.match(html, /body\.sendpulse-feedback-open sp-live-chat/);
   assert.doesNotMatch(html, /body:has\(#screen-home\.active\) sp-live-chat/);
