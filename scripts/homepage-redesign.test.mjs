@@ -105,9 +105,12 @@ test('home vacancy cards expose an application action, and the home search uses 
   assert.match(ui, /onclick="openGeneralVacancySheet\(\)"/);
   assert.match(ui, /onclick="openPublicPosterSheet\(\)">Post a poster/);
   assert.match(ui, /house-ad-home-middle/);
-  assert.match(html, /house-ad-home-top/);
+  assert.match(ui, /showAllVacancies\('home'\)/);
+  assert.doesNotMatch(html, /house-ad-home-top/);
   assert.match(html, /house-ad-home-bottom/);
-  assert.match(data, /renderHouseAdSlot\('house-ad-home-top', 'home', 'top'\)/);
+  assert.doesNotMatch(data, /house-ad-home-top/);
+  assert.match(data, /renderHouseAdSlot\('house-ad-home-middle', 'home', 'middle'\)/);
+  assert.match(data, /renderHouseAdSlot\('house-ad-home-bottom', 'home', 'bottom'\)/);
   assert.match(admin, /value="home"/);
   assert.match(admin, /option value="middle"/);
   assert.match(html, /id="sendpulse-feedback-only"/);
