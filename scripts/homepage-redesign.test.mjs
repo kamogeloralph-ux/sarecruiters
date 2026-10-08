@@ -155,6 +155,14 @@ test('home conversion sections use the compact Interview Tips card language', ()
   assert.match(css, /#screen-home \.home-section-heading h2,[\s\S]*?#screen-home \.hf-head h2\{font-size:17px!important/);
 });
 
+test('Home and Menu community entries are labelled Tips Chat and use the chat icon', () => {
+  assert.match(ui, /<h2 id="home-community-title">Tips Chat<\/h2>/);
+  assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?Tips Chat/s);
+  assert.match(ui, /home-community-icon[^>]*aria-hidden="true"><svg[^>]*>[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/);
+  assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?<svg[^>]*>[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"[\s\S]*?Tips Chat/s);
+  assert.match(css, /\.home-community-icon svg\{width:21px;height:21px/);
+});
+
 test('Home Media uses the managed YouTube setting and admin keeps Track of the Day controls', () => {
   assert.match(ui, /id="home-media-section"/);
   assert.match(ui, /id="home-media-video"/);
