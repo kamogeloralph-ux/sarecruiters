@@ -1677,6 +1677,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 
 /* ===== Guest mode: account sign-in card, quota meter, home teaser ===== */
 .account-signin-card{margin:14px 2px 4px;padding:16px;border-radius:var(--radius-sm);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);box-shadow:0 12px 28px -18px color-mix(in srgb,var(--accent) 55%,transparent)}
+.account-signin-card[hidden],.account-quota-card[hidden],#account-signout-group[hidden]{display:none!important}
 .account-signin-copy{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
 .account-signin-copy strong{font-size:15.5px;font-weight:800;letter-spacing:-.02em}
 .account-signin-copy span{font-size:12.5px;line-height:1.5;color:var(--text-2)}

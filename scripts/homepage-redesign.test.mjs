@@ -129,6 +129,16 @@ test('bottom navigation keeps inactive icons visible and source cards open their
   assert.match(ui, /class="home-source-card" onclick="openVacancyFolder/);
 });
 
+test('Profile keeps Google sign-in visible for guests and hides it only for signed-in users', () => {
+  assert.match(html, /id="account-signin-card"[^>]*aria-hidden="false"/);
+  assert.match(html, /id="google-sign-in"[^>]*class="gsi-material-button"/);
+  assert.match(ui, /signinCard\.hidden = !isGuest/);
+  assert.match(ui, /signinCard\.setAttribute\('aria-hidden', isGuest \? 'false' : 'true'\)/);
+  assert.match(ui, /quotaCard\.hidden = !isGuest/);
+  assert.match(ui, /signoutGroup\.hidden = isGuest/);
+  assert.match(css, /\.account-signin-card\[hidden\][^}]*display:none!important/);
+});
+
 test('responsive styles cover the vacancy cards, categories, sponsored slot, and seeker/employer actions', () => {
   for (const selector of ['.home-source-grid', '.home-source-card', '.home-vacancy-grid', '.home-category-grid', '.home-sponsored', '.home-sponsored-art', '.home-tools-grid']) {
     assert.ok(css.includes(selector), `Missing homepage style: ${selector}`);
