@@ -2283,3 +2283,109 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #screen-allagencies #allagencies-list .hub-tabs{gap:7px;margin-bottom:12px}
 #screen-allagencies #allagencies-list .hub-tab{padding:8px 13px;border-radius:10px;font-size:12px}
 @media(max-width:380px){#screen-allagencies #allagencies-list .hub-summary{gap:9px;padding:12px}#screen-allagencies #allagencies-list .agency-name{font-size:15px}}
+
+/* ===== Interview Tips visual system — app-wide refresh =====
+   Shared language: compact product headers, blue community surfaces,
+   quiet borders, purposeful controls, and card rhythm. Feature-specific
+   marketplace styles remain intact; this layer unifies the surrounding app.
+*/
+:root{
+  --it-blue:#2268ce;
+  --it-indigo:#574ce5;
+  --it-ink:#17233d;
+  --it-muted:#667085;
+  --it-surface:#fff;
+  --it-surface-2:#f5f7fb;
+  --it-line:#e2e7f0;
+  --it-shadow:0 5px 18px rgba(32,61,112,.07);
+  --it-radius:15px;
+}
+[data-theme="light"]{
+  --bg:#f5f7fb;
+  --card:#fff;
+  --card-2:#f5f7fb;
+  --card-3:#eef2f8;
+  --border:#e2e7f0;
+  --border-strong:#cbd5e3;
+  --separator:#edf0f5;
+  --text:#17233d;
+  --text-2:#667085;
+  --text-3:#98a2b3;
+  --accent:#2268ce;
+  --accent-soft:#eaf2ff;
+}
+[data-theme="dark"]{
+  --bg:#0b1220;
+  --card:#111b2e;
+  --card-2:#16233a;
+  --card-3:#1b2b45;
+  --border:#263753;
+  --border-strong:#395171;
+  --separator:#1c2b43;
+  --text:#f5f7fb;
+  --text-2:#a8b5c9;
+  --text-3:#7788a2;
+  --accent:#75a8ff;
+  --accent-soft:#17345f;
+}
+html,body{font-family:'Inter','Inter Fallback',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.app{background:var(--bg)}
+.screen-fixed{padding:12px 16px 10px;border-bottom:1px solid var(--separator);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);z-index:4}
+.screen-fixed header{min-height:42px;display:flex;align-items:center;gap:10px}
+.logo-text{font-size:20px;line-height:1.15;font-weight:800;letter-spacing:-.025em;color:var(--text)}
+.screen-context{font-size:11.5px;color:var(--text-2);margin-top:3px}
+.screen-title-group{min-width:0;flex:1}
+.header-actions{display:flex;align-items:center;gap:7px}
+.theme-toggle,.menu-more-btn,.screen-close-btn,.screen-back-btn{width:40px;height:40px;border:1px solid var(--border);border-radius:13px;background:var(--card);color:var(--text);box-shadow:none}
+.screen-scroll{padding-left:16px;padding-right:16px}
+.section-title,.section-head .section-title{font-size:14px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+.section-head,.home-section-heading{margin-top:16px}
+.card,.hub-card,.directory-group,.vacancy-overview-section,.profile-card,.contact-card,.pgrouped-list,.account-signin-card,.account-quota-card,.quick-card,.spotlight-mini,.home-community-card,.vacancy-card{border-color:var(--it-line);border-radius:var(--it-radius);box-shadow:var(--it-shadow)}
+[data-theme="dark"] .card,[data-theme="dark"] .hub-card,[data-theme="dark"] .directory-group,[data-theme="dark"] .vacancy-overview-section,[data-theme="dark"] .profile-card,[data-theme="dark"] .contact-card,[data-theme="dark"] .pgrouped-list,[data-theme="dark"] .account-signin-card,[data-theme="dark"] .account-quota-card,[data-theme="dark"] .quick-card,[data-theme="dark"] .spotlight-mini,[data-theme="dark"] .home-community-card,[data-theme="dark"] .vacancy-card{box-shadow:0 6px 22px rgba(0,0,0,.16)}
+.btn-primary,.community-submit-btn,.community-comment-form button,.home-vacancy-apply,.home-feed-empty button,.poster-post-btn{border-radius:11px;font-weight:800;box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 20%,transparent)}
+button,input,select,textarea{font-family:inherit}
+input,select,textarea{border-color:var(--border-strong);border-radius:11px}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);outline:0}
+.pill,.badge,.meta-chip,.company-chip,.hub-tab{border-radius:999px}
+.pill{background:var(--card);border-color:var(--border);font-size:12px;padding:9px 13px}
+.bottom-nav{height:68px;padding:7px 8px max(7px,env(safe-area-inset-bottom));background:color-mix(in srgb,var(--card) 94%,transparent);border-top:1px solid var(--separator);box-shadow:0 -8px 24px rgba(31,57,101,.08);backdrop-filter:blur(18px)}
+.navbtn{border-radius:12px;color:var(--text-2);font-size:10px;font-weight:700;transition:background .16s,color .16s,transform .16s}
+.navbtn.active{background:var(--accent-soft);color:var(--accent)}
+.navbtn:active{transform:scale(.96)}
+.navbtn svg{width:19px;height:19px}
+#screen-home .screen-fixed{background:linear-gradient(135deg,#2268ce,#574ce5);border:0;color:#fff;box-shadow:0 10px 26px rgba(38,83,176,.16)}
+#screen-home .screen-fixed .logo-text,#screen-home .screen-fixed .screen-context{color:#fff}
+#screen-home .screen-fixed .screen-context{opacity:.78}
+#screen-home .screen-fixed .theme-toggle{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff}
+#screen-home .screen-scroll{background:var(--bg);padding-top:16px}
+#screen-home .home-section-heading h2{font-size:18px;letter-spacing:-.025em}
+#screen-home .home-section-heading p{font-size:11px}
+.home-source-card,.home-vacancy-grid>.vac-card,.home-community-card,#screen-home .hf-actions button,#screen-home .hf-categories .hf-chips button,#screen-home .hf-source-card,#screen-home .hf-sponsor{border-color:var(--it-line)!important;background:var(--card)!important;box-shadow:var(--it-shadow)!important;border-radius:15px!important}
+.home-source-card:hover,.home-source-card:focus-visible{background:var(--accent-soft)!important}
+.home-source-icon,.hf-category-icon,.home-community-icon{background:var(--accent-soft);color:var(--accent)}
+.home-community-card>button{background:var(--accent);border-radius:10px}
+#screen-allagencies .screen-fixed,#screen-allbranches .screen-fixed,#screen-allvacancies .screen-fixed,#screen-allposters .screen-fixed,#screen-allemployers .screen-fixed,#screen-pool .screen-fixed,#screen-saved .screen-fixed,#screen-account .screen-fixed{background:var(--bg)}
+#screen-allagencies .screen-scroll,#screen-allbranches .screen-scroll,#screen-allvacancies .screen-scroll,#screen-allposters .screen-scroll,#screen-allemployers .screen-scroll,#screen-pool .screen-scroll,#screen-saved .screen-scroll,#screen-account .screen-scroll{background:var(--bg)}
+#screen-allagencies #allagencies-list .hub-card,#screen-allemployers .hub-card,#screen-allbranches .hub-card{border-radius:15px;box-shadow:var(--it-shadow)}
+#screen-allagencies #allagencies-list .hub-card.open{border-color:color-mix(in srgb,var(--accent) 40%,var(--border));box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 10%,transparent)}
+#screen-allagencies #allagencies-list .hub-branch-badge{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.vac-card,.vacancy-card{border-radius:15px!important}
+.vac-card:hover,.vacancy-card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
+.profile-menu-item{min-height:60px;padding:12px 14px;border-radius:0;font-size:13px}
+.pgroup-label{margin:20px 4px 8px;font-size:10px;letter-spacing:.1em;color:var(--text-2)}
+.pgrouped-list{overflow:hidden}
+.account-hero{padding:16px;border:1px solid var(--it-line);border-radius:18px;background:linear-gradient(125deg,#2268ce,#574ce5);color:#fff;box-shadow:0 10px 28px rgba(38,83,176,.16)}
+.account-hero .account-name,.account-hero .account-email,.account-hero .account-provider{color:#fff}
+.account-hero .account-email,.account-hero .account-provider{opacity:.78}
+.account-signin-card,.account-quota-card{padding:14px;border-radius:15px}
+.quick-card-actions button{border-radius:10px}
+.sheet{border-radius:20px 20px 0 0;border:1px solid var(--border);box-shadow:0 -12px 38px rgba(22,42,79,.18)}
+.sheet-handle{background:var(--border-strong)}
+.sheet h3{font-size:18px;letter-spacing:-.02em}
+@media(max-width:620px){
+  .screen-fixed{padding-left:14px;padding-right:14px}
+  .screen-scroll{padding-left:14px;padding-right:14px}
+  .logo-text{font-size:19px}
+  .bottom-nav{height:66px}
+}
+@media(prefers-reduced-motion:reduce){.navbtn,.home-source-card,.vac-card,.vacancy-card{transition:none!important}}
