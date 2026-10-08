@@ -2033,3 +2033,7 @@ async function deleteSubmission(table, id) {
   renderSubmissionsList();
   showToast('Deleted');
 }
+
+// Homepage source cards use inline actions in rendered markup. Export the
+// handler explicitly because the bundled UI code has its own scope.
+window.openVacancyFolder = openVacancyFolder;

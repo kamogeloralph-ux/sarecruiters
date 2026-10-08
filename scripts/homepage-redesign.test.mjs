@@ -123,6 +123,11 @@ test('bottom navigation keeps Interview Tips chat separate from Feedback', () =>
   assert.match(community, /screenId === 'screen-community' && button\.id === 'nav-community'/,
     'the dedicated community action should show as active while the community screen is open');
 });
+test('bottom navigation keeps inactive icons visible and source cards open their folders', () => {
+  assert.match(css, /\.bottom-nav \.navbtn:not\(\.active\) svg\{[^}]*stroke:rgba\(255,255,255,\.9\)!important/);
+  assert.match(ui, /window\.openVacancyFolder = openVacancyFolder/);
+  assert.match(ui, /class="home-source-card" onclick="openVacancyFolder/);
+});
 
 test('responsive styles cover the vacancy cards, categories, sponsored slot, and seeker/employer actions', () => {
   for (const selector of ['.home-source-grid', '.home-source-card', '.home-vacancy-grid', '.home-category-grid', '.home-sponsored', '.home-sponsored-art', '.home-tools-grid']) {
