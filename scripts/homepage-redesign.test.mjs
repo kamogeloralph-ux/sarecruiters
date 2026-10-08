@@ -127,8 +127,10 @@ test('bottom navigation keeps Interview Tips chat separate from Feedback', () =>
 });
 test('bottom navigation keeps inactive icons visible and source cards open their folders', () => {
   assert.match(css, /\.bottom-nav \.navbtn:not\(\.active\) svg\{[^}]*stroke:rgba\(255,255,255,\.9\)!important/);
+  assert.match(css, /\[data-theme="light"\] \.bottom-nav \.navbtn:not\(\.active\) svg\{stroke:#53657d!important/);
   assert.match(ui, /window\.openVacancyFolder = openVacancyFolder/);
   assert.match(ui, /class="home-source-card" onclick="openVacancyFolder/);
+  assert.match(ui, /function openVacancyFolder\(type\) \{[\s\S]*?showAllVacancies\('home'\)/);
 });
 
 test('Profile keeps Google sign-in visible for guests and hides it only for signed-in users', () => {

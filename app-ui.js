@@ -1339,6 +1339,10 @@ async function setVacancyOverviewFilter(filter) {
   renderAllVacanciesList();
 }
 function openVacancyFolder(type) {
+  // Source cards live on Home, so explicitly open the vacancy screen before
+  // applying the selected source. Previously the filter state changed while
+  // Home remained active, making the tap appear to do nothing.
+  showAllVacancies('home');
   allVacanciesFolder = type;
   vacancyFolderDisplayLimit = 30;
   vacancyFolderDisplayKey = '';

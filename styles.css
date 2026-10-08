@@ -2398,3 +2398,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .bottom-nav .navbtn.active,
 .bottom-nav .navbtn.active .navbtn-label{color:var(--brand-green,var(--accent))!important;opacity:1!important}
 .bottom-nav .navbtn.active svg{stroke:var(--brand-green,var(--accent))!important;opacity:1!important}
+[data-theme="light"] .bottom-nav .navbtn:not(.active),
+[data-theme="light"] .bottom-nav .navbtn:not(.active) .navbtn-label{color:#53657d!important}
+[data-theme="light"] .bottom-nav .navbtn:not(.active) svg{stroke:#53657d!important;color:#53657d!important}
