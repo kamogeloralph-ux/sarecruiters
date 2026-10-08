@@ -365,6 +365,45 @@ async function loadEmployerRegSetting() {
   publicEmployerRegistrationOpen = (v === true || v === 'true');
 }
 
+/* ===== Home Media ===== */
+var DEFAULT_MEDIA_YOUTUBE_URL = 'https://youtu.be/HV64XG91tE4';
+var mediaYoutubeUrl = DEFAULT_MEDIA_YOUTUBE_URL;
+
+function youtubeEmbedUrl(value) {
+  var raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    var url = new URL(raw);
+    var id = '';
+    if (url.hostname === 'youtu.be') id = url.pathname.replace(/^\//, '').split('/')[0];
+    else if (url.hostname === 'youtube.com' || url.hostname === 'www.youtube.com' || url.hostname === 'm.youtube.com') {
+      id = url.searchParams.get('v') || (url.pathname.indexOf('/shorts/') === 0 ? url.pathname.split('/')[2] : '');
+    }
+    if (!/^[A-Za-z0-9_-]{6,20}$/.test(id || '')) return '';
+    return 'https://www.youtube.com/embed/' + id + '?rel=0';
+  } catch (e) { return ''; }
+}
+
+function renderHomeMediaSection() {
+  var section = document.getElementById('home-media-section');
+  var frame = document.getElementById('home-media-video');
+  if (!section || !frame) return;
+  var embed = youtubeEmbedUrl(mediaYoutubeUrl);
+  if (!embed) {
+    section.hidden = true;
+    frame.removeAttribute('src');
+    return;
+  }
+  section.hidden = false;
+  if (frame.getAttribute('src') !== embed) frame.setAttribute('src', embed);
+}
+
+async function loadMediaSetting() {
+  var value = await getAppSetting('media_youtube_url', DEFAULT_MEDIA_YOUTUBE_URL);
+  mediaYoutubeUrl = youtubeEmbedUrl(value) ? String(value).trim() : DEFAULT_MEDIA_YOUTUBE_URL;
+  renderHomeMediaSection();
+}
+
 /* ===== Track of the Day =====
    Reads the newest track published within the seven-day retention window from
    the `daily_tracks` table (Supabase). This keeps an uploaded track available
@@ -1344,6 +1383,7 @@ async function loadAll(options) {
   // which uses the authenticated admin_set_manager_token RPC.
   rebuildPublicListingSlugs();
   updateStats();
+  loadMediaSetting();
   // The committed static snapshot (data/startup.json) historically omitted the
   // Talent Pool rows and hard-coded counts.candidates = 0, so the home
   // "Talent Pool Candidates" card sat at 0 until the visitor opened the Talent
