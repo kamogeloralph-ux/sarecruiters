@@ -56,15 +56,13 @@ function restoredScreenName() {
     return isRestorableScreen(name) ? name : 'home';
   } catch(e) { return 'home'; }
 }
-function restoreActiveScreenBeforeReveal() {
-  // Normal launches and refreshes always begin at Home. URL-owned manager or
-  // action links remain eligible to route themselves after the app boots.
+function normalizeStartupScreen() {
   var params = new URLSearchParams(window.location.search);
+  // Explicit manager/action/deep-link URLs are intentional entry points.
   if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
   try { sessionStorage.setItem(SA_ACTIVE_SCREEN_KEY, 'home'); } catch(e) {}
-  // Explicitly normalize the DOM as well as storage. This prevents cached
-  // render work or a waiting service-worker update from briefly exposing the
-  // Menu/Tips Chat screen before Home data is ready.
+  // Normalize every screen, not just the previously observed Menu/Tips Chat
+  // route. This is called both before boot and immediately before reveal.
   document.querySelectorAll('.screen').forEach(function (screen) { screen.classList.remove('active'); });
   var home = document.getElementById('screen-home');
   if (home) home.classList.add('active');
@@ -77,6 +75,10 @@ function restoreActiveScreenBeforeReveal() {
   if (backdrop) { backdrop.classList.remove('is-visible'); backdrop.setAttribute('aria-hidden', 'true'); }
   document.body.classList.remove('site-menu-open');
   window.__saRestoredScreen = 'home';
+}
+window.__saNormalizeStartupScreen = normalizeStartupScreen;
+function restoreActiveScreenBeforeReveal() {
+  normalizeStartupScreen();
 }
 restoreActiveScreenBeforeReveal();
 
