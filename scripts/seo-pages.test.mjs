@@ -21,6 +21,15 @@ const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
 
+test('Pages generation uses committed public data and does not scan Supabase on deploy', () => {
+  assert.match(generator, /function fetchAll\(\)/);
+  assert.match(generator, /path\.join\(dataDir, 'startup\.json'\)/);
+  assert.match(generator, /path\.join\(dataDir, 'vacancy-notes\.json'\)/);
+  assert.match(generator, /notes\[String\(vacancy\.id\)\]/);
+  assert.doesNotMatch(generator, /supabase\.from\(/, 'deploy builds must not read public tables through PostgREST');
+  assert.match(generator, /\$\{R2_WORKER_URL\}\/api\/posters/, 'supplemental poster pages should use the public Worker feed');
+});
+
 test('generator defines stable crawlable landing pages', () => {
   for (const slug of pages) {
     assert.match(generator, new RegExp(`slug: '${slug}'`));

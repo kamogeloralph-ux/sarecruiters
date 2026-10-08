@@ -1081,7 +1081,10 @@ async function loadDataCache() {
 }
 
 var startupDataPromise = null;
+var startupDataSource = '';
+var startupDataResolved = false;
 async function fetchStartupDataOnce() {
+  startupDataSource = '';
   if (staticDataEnabled) {
     try {
       // index.html starts this download at HTML-parse time (window.__saStartupEarly) so the
@@ -1099,8 +1102,9 @@ async function fetchStartupDataOnce() {
         var staticResponse = await fetch(staticUrl, { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' } });
         if (staticResponse.ok) staticPayload = await staticResponse.json();
       }
-      {
-        if (staticPayload && Array.isArray(staticPayload.agencies) && Array.isArray(staticPayload.branches) && Array.isArray(staticPayload.vacancies) && Array.isArray(staticPayload.employers) && staticPayload.counts && staticPayload.settings) return staticPayload;
+      if (staticPayload && Array.isArray(staticPayload.agencies) && Array.isArray(staticPayload.branches) && Array.isArray(staticPayload.vacancies) && Array.isArray(staticPayload.employers) && staticPayload.counts && staticPayload.settings) {
+        startupDataSource = 'static';
+        return staticPayload;
       }
     } catch (e) { console.warn('static data load', e); }
   }
@@ -1119,6 +1123,7 @@ async function fetchStartupDataOnce() {
     if (!payload || !Array.isArray(payload.agencies) || !Array.isArray(payload.branches) ||
         !Array.isArray(payload.vacancies) || !Array.isArray(payload.employers) ||
         !payload.counts || !payload.settings) return null;
+    startupDataSource = 'worker';
     return payload;
   } catch (e) {
     return null;
@@ -1174,12 +1179,18 @@ function scheduleDeferredVacancyNotes(startup) {
 }
 
 function getStartupData(forceFresh) {
-  if (forceFresh) startupDataPromise = null;
+  if (forceFresh) {
+    startupDataPromise = null;
+    startupDataSource = '';
+    startupDataResolved = false;
+  }
   if (startupDataPromise) return startupDataPromise;
+  startupDataResolved = false;
   startupDataPromise = fetchStartupDataOnce();
   startupDataPromise.then(function(payload){
+    startupDataResolved = true;
     if (!payload) startupDataPromise = null;
-  }, function(){ startupDataPromise = null; });
+  }, function(){ startupDataResolved = true; startupDataPromise = null; });
   return startupDataPromise;
 }
 async function refreshSecondaryStartupData() {

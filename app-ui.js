@@ -149,14 +149,43 @@ function isRetailPriorityVacancy(v) {
 window.isRetailPriorityVacancy = isRetailPriorityVacancy;
 
 function ensureRetailPriorityVacancies() {
-  if (retailPriorityPreviewLoaded || retailPriorityPreviewPromise || typeof supabaseClient === 'undefined' || !supabaseClient) return retailPriorityPreviewPromise;
+  if (retailPriorityPreviewLoaded) return Promise.resolve(window.retailPriorityPreviewRows || []);
+  if (retailPriorityPreviewPromise) return retailPriorityPreviewPromise;
+  // The committed Pages snapshot already contains the full live vacancy set,
+  // including dedicated retail sources. Do not download the same 60 wide rows
+  // (with long descriptions) from PostgREST again on every Home/overview visit.
+  if (typeof staticDataEnabled !== 'undefined' && staticDataEnabled &&
+      typeof startupDataResolved !== 'undefined' && !startupDataResolved &&
+      typeof getStartupData === 'function') {
+    return getStartupData().then(function () { return ensureRetailPriorityVacancies(); });
+  }
+  if (typeof startupDataSource !== 'undefined' && startupDataSource === 'static') {
+    retailPriorityPreviewLoaded = true;
+    window.retailPriorityPreviewRows = [];
+    return Promise.resolve(window.retailPriorityPreviewRows);
+  }
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
-  retailPriorityPreviewPromise = supabaseClient.from('vacancies').select(columns)
-    .in('source_type', ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'])
-    .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(60)
-    .then(function (result) {
-      if (result.error) throw result.error;
-      window.retailPriorityPreviewRows = filterExpiredVacancies(result.data || []);
+  var retailSources = ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'];
+  function readRetailFromPostgrest() {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) return Promise.resolve([]);
+    return supabaseClient.from('vacancies').select(columns)
+      .in('source_type', retailSources)
+      .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(60)
+      .then(function (result) {
+        if (result.error) throw result.error;
+        return result.data || [];
+      });
+  }
+  var workerRead = typeof fetchVacancyPageFromWorker === 'function'
+    ? fetchVacancyPageFromWorker({ source: retailSources.join(','), limit: 50 })
+    : Promise.resolve(null);
+  retailPriorityPreviewPromise = Promise.resolve(workerRead).catch(function () { return null; })
+    .then(function (page) {
+      if (page && Array.isArray(page.vacancies)) return page.vacancies;
+      return readRetailFromPostgrest();
+    })
+    .then(function (rows) {
+      window.retailPriorityPreviewRows = filterExpiredVacancies(rows || []);
       retailPriorityPreviewLoaded = true;
       retailPriorityPreviewPromise = null;
       var home = document.getElementById('screen-home');
