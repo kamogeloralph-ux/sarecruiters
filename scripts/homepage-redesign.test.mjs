@@ -143,6 +143,13 @@ test('Profile keeps Google sign-in visible for guests and hides it only for sign
   assert.match(css, /\.account-signin-card\[hidden\][^}]*display:none!important/);
 });
 
+test('home conversion sections use the compact Interview Tips card language', () => {
+  assert.match(css, /#screen-account \.account-signin-card[\s\S]*?background:linear-gradient\(145deg,#eef6ff/);
+  assert.match(css, /#screen-home \.quick-card[\s\S]*?border:1px solid var\(--it-line\)!important/);
+  assert.match(css, /#screen-home \.spotlight-mini[\s\S]*?box-shadow:var\(--it-shadow\)!important/);
+  assert.match(css, /#screen-home \.home-section-heading h2,[\s\S]*?#screen-home \.hf-head h2\{font-size:17px!important/);
+});
+
 test('stale PWA tabs are refreshed and the service worker cannot be held by HTTP cache', () => {
   assert.match(sw, /self\.clients\.matchAll\(\{ type: 'window', includeUncontrolled: true \}\)/);
   assert.match(sw, /client\.navigate\(client\.url\)/);
