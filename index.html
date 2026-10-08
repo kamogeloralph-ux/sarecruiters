@@ -211,7 +211,10 @@
   <div class="site-menu-footer"><button class="site-menu-signout" type="button" data-ripple onclick="signOutSaRecruiters()">Sign out of Google</button></div>
 </aside>
 
-<div class="update-banner" id="update-banner">A new version is available. <button onclick="forceUpdateReload()">Reload now</button></div>
+<div class="update-banner" id="update-banner" role="status" aria-live="polite" hidden>
+  <div class="update-banner-copy"><strong>A new SA Recruiters version is ready</strong><span>Refresh when you’re ready — your saved searches stay safe.</span></div>
+  <div class="update-banner-actions"><button type="button" class="update-later" onclick="dismissUpdateBanner()">Later</button><button type="button" class="update-now" onclick="forceUpdateReload()">Update now</button></div>
+</div>
 <div class="retry-banner" id="retry-banner" role="status" aria-live="polite">Couldn't refresh the latest listings. <button onclick="retryLoadAll()">Retry</button></div>
 <svg width="0" height="0" style="position:absolute">
   <defs><linearGradient id="navgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0A84FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs>
@@ -359,6 +362,11 @@
         <button class="profile-menu-item" data-ripple onclick="openMyPoolProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Talent Pool profile<span class="mi-sub" id="account-pool-status">Your Mini-CV shown to recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
 
+      <section class="saved-alerts-panel" id="saved-alerts-panel" aria-labelledby="saved-alerts-title"></section>
+      <section class="install-app-card" id="install-app-card" hidden>
+        <div><strong>Install SA Recruiters</strong><span>Keep job searches one tap away, with a faster launch and offline shell.</span></div>
+        <button type="button" class="account-primary-btn" onclick="installSaRecruiters()">Install app</button>
+      </section>
       <div class="pgroup-label">Activity</div>
       <div class="pgrouped-list">
         <button class="profile-menu-item" data-ripple onclick="openMySubmissions()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>My submissions<span class="mi-sub">Track reports and suggestions you've sent</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -1459,9 +1467,9 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=131a4bd040" defer></script>
+<script src="app.bundle.min.js?v=4a15bfaf18" defer></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
-<script src="app-alerts.js?v=al-3" defer></script>
+<script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
      still loads/retries it on demand if it is not ready when a form opens. -->
 <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>

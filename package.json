@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
-    "cheerio": "^1.2.0"
+    "cheerio": "^1.2.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "esbuild": "^0.24.0"

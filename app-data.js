@@ -1089,7 +1089,7 @@ function setConnectionStatus(state, timestamp) {
 }
 
 function initConnectionStatus() {
-  window.addEventListener('offline', function() { setConnectionStatus('offline', lastDataRefreshAt); });
+  window.addEventListener('offline', function() { setConnectionStatus('offline', lastDataRefreshAt); try { trackEvent('offline_detected', 'pwa', null); } catch(e) {} });
   window.addEventListener('online', function() {
     setConnectionStatus('loading', lastDataRefreshAt);
     loadAll();
@@ -1311,6 +1311,7 @@ async function loadAll(options) {
   var forceFresh = !!(options && options.fresh);
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
   if (navigator.onLine === false) {
+    try { trackEvent('offline_launch', 'pwa', null); } catch(e) {}
     if (await loadDataCache()) {
       updateStats();
       filterAndRenderCached();
@@ -1390,6 +1391,7 @@ async function loadAll(options) {
     cachedVacancyTotal = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
   }
   setRetryBanner(hadLoadError);
+  if (hadLoadError) { try { trackEvent('data_refresh_failed', 'data', null, { online: navigator.onLine !== false }); } catch(e) {} }
   if (!hadLoadError) lastDataRefreshAt = Date.now();
   setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
   publicVacancyPostingOpen = (results[5] === true || results[5] === 'true');

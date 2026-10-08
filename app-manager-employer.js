@@ -289,7 +289,10 @@ startAuthenticatedApp(bootAuthenticatedApp);
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function (registration) {
       function showUpdate() {
         var banner = document.getElementById('update-banner');
-        if (banner) banner.classList.add('show');
+        if (!banner) return;
+        banner.hidden = false;
+        banner.classList.add('show');
+        try { trackEvent('service_worker_update_available', 'pwa', null); } catch (e) {}
       }
       if (registration.waiting) showUpdate();
       registration.addEventListener('updatefound', function () {
@@ -298,6 +301,9 @@ startAuthenticatedApp(bootAuthenticatedApp);
         worker.addEventListener('statechange', function () {
           if (worker.state === 'installed' && navigator.serviceWorker.controller) showUpdate();
         });
+      });
+      navigator.serviceWorker.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'OFFLINE_LAUNCH') { try { trackEvent('offline_launch', 'pwa', null); } catch (e) {} }
       });
       registration.update().catch(function () {});
     }).catch(function (error) {
