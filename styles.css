@@ -2364,6 +2364,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .home-source-card,.home-vacancy-grid>.vac-card,.home-community-card,#screen-home .hf-actions button,#screen-home .hf-categories .hf-chips button,#screen-home .hf-source-card,#screen-home .hf-sponsor{border-color:var(--it-line)!important;background:var(--card)!important;box-shadow:var(--it-shadow)!important;border-radius:15px!important}
 .home-source-card:hover,.home-source-card:focus-visible{background:var(--accent-soft)!important}
 .home-source-icon,.hf-category-icon,.home-community-icon{background:var(--accent-soft);color:var(--accent)}
+.home-community-icon svg{width:21px;height:21px;display:block}
 .home-community-card>button{background:var(--accent);border-radius:10px}
 #screen-allagencies .screen-fixed,#screen-allbranches .screen-fixed,#screen-allvacancies .screen-fixed,#screen-allposters .screen-fixed,#screen-allemployers .screen-fixed,#screen-pool .screen-fixed,#screen-saved .screen-fixed,#screen-account .screen-fixed{background:var(--bg)}
 #screen-allagencies .screen-scroll,#screen-allbranches .screen-scroll,#screen-allvacancies .screen-scroll,#screen-allposters .screen-scroll,#screen-allemployers .screen-scroll,#screen-pool .screen-scroll,#screen-saved .screen-scroll,#screen-account .screen-scroll{background:var(--bg)}
