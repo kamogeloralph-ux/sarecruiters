@@ -256,22 +256,6 @@ function openFeaturedCompanyWebsite(event) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function openHomeMediaSection(event) {
-  if (event && event.target && event.target.closest && event.target.closest('button')) return;
-  goBackToHome();
-  setTimeout(function () {
-    var section = document.getElementById('home-media-section');
-    var scroll = document.querySelector('#screen-home .screen-scroll');
-    if (section && scroll) scroll.scrollTo({ top: Math.max(0, section.offsetTop - 12), behavior: 'smooth' });
-  }, 0);
-}
-
-function handleTrackCardKeydown(event) {
-  if (!event || (event.key !== 'Enter' && event.key !== ' ')) return;
-  event.preventDefault();
-  openHomeMediaSection(event);
-}
-
 function homeVacancySourceMarkup() {
   var summary = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
   var order = summary && summary.order ? summary.order : ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
@@ -332,6 +316,7 @@ function renderHomeFeed() {
       '<div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Watch &amp; listen</span><h2 id="home-media-title">Media</h2><p>Useful recruitment content and the Track of the Day.</p></div></div>' +
       '<div class="home-media-video-wrap"><iframe id="home-media-video" title="SA Recruiters media video" src="https://www.youtube.com/embed/HV64XG91tE4?rel=0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>' +
       '<div class="home-media-track"><div class="home-media-track-art" aria-hidden="true">♫</div><div class="home-media-track-copy"><span>Track of the Day</span><strong id="home-media-track-title">Loading…</strong><small id="home-media-track-artist"></small></div><button type="button" class="home-media-track-play" id="home-media-track-play" disabled onclick="toggleTrackPlay()" aria-label="Play Track of the Day"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button></div>' +
+      '<audio id="track-audio" preload="none" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>' +
     '</section>' +
     homeVacancySourceMarkup() +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
@@ -351,6 +336,8 @@ function renderHomeFeed() {
 
   target.setAttribute('aria-busy', 'false');
   if (typeof renderHomeMediaSection === 'function') renderHomeMediaSection();
+  if (typeof todayTrack !== 'undefined' && todayTrack) renderTrackReady();
+  else if (typeof renderTrackEmpty === 'function') renderTrackEmpty();
   if (previouslyOpenId) {
     target.querySelectorAll('.vac-card').forEach(function (card) {
       if (card.getAttribute('data-vacancy-id') === previouslyOpenId) {

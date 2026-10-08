@@ -2423,8 +2423,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .home-media-track-play{display:grid;place-items:center;width:32px;height:32px;flex:0 0 32px;padding:0;border:0;border-radius:50%;background:var(--accent);color:#fff;cursor:pointer}
 .home-media-track-play:disabled{cursor:default;opacity:.45}
 .home-media-track-play svg{width:15px;height:15px;fill:currentColor}
-#screen-menu .track-card[role="link"]{cursor:pointer}
-#screen-menu .track-card[role="link"]:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:2px}
+.site-menu-trigger{width:44px;height:44px;gap:4px;border-radius:12px}
+.site-menu-trigger span{width:18px;height:2.5px}
 
 /* ===== Final Interview Tips visual pass =====
    Keep guest authentication and the home conversion sections on the same
