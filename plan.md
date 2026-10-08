@@ -41,3 +41,10 @@ The app is a static frontend with no new server or database capability. The exis
 - **Admin behavior:** The existing Daily Track admin area is renamed **Media**. It retains MP3 upload/edit/delete and Track of the Day retention behavior, and adds a validated YouTube URL field stored in `app_settings` under `media_youtube_url`.
 - **Serving behavior:** The public app reads the managed setting at bootstrap, accepts YouTube watch, Shorts, and youtu.be links, converts them to a restricted related-video embed URL, and falls back safely to `https://youtu.be/HV64XG91tE4` if the setting is missing or invalid.
 - **Design:** Use the existing Interview Tips card language: compact utility label, concise copy, quiet border, rounded surface, responsive 16:9 video frame, lazy loading, and no new media provider or credentials.
+
+## Production PWA service worker
+
+- **Worker lifecycle:** register `/sw.js` after the first page load; keep the worker scope at `/`; show the existing update banner when a new worker is waiting; activate it only after the user chooses to update.
+- **Caching strategy:** use a versioned runtime cache. Navigation requests are network-first with the last cached shell as fallback and `/offline.html` as the final fallback. Static scripts, styles, images, and fonts use stale-while-revalidate. Startup data uses network-first and falls back to its cached response.
+- **Offline behavior:** preserve the app's existing IndexedDB/localStorage directory cache so an offline launch can render saved listings; serve a branded offline page when no shell is available. Never cache cross-origin Supabase writes, YouTube embeds, or POST requests.
+- **Deployment:** keep `/sw.js` on no-cache headers, generate the hashed application bundle before deployment, and validate the worker, fallback page, registration, update path, and complete test suite before pushing.
