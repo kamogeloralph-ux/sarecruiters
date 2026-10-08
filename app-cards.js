@@ -1016,6 +1016,7 @@ function renderPosterFeed(posters) {
 async function loadPosterFeed() {
   var posters = await getEmployerPosters();
   renderPosterFeed(posters);
+  if (typeof renderHomeFeaturedPoster === 'function') renderHomeFeaturedPoster(posters);
   // Employer cards show a poster count; refresh them once posters arrive
   // (skipped while a card is expanded so it doesn't collapse under the user).
   var empScreen = document.getElementById('screen-allemployers');

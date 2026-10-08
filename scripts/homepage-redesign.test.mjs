@@ -75,7 +75,7 @@ test('the homepage shows all eight source cards before retail-first roles', () =
   assert.match(ui, /class="home-source-grid"/);
   assert.match(ui, /onclick="openVacancyFolder/);
   assert.ok(homeRolesPosition >= 0, 'the eight role cards must remain on the home screen');
-  assert.doesNotMatch(homeRender, /Featured vacancies|home-featured|featuredMarkup|wireHomeFeaturedRailGestures/);
+  assert.doesNotMatch(homeRender, /Featured vacancies|home-featured-vacancy|featuredMarkup|wireHomeFeaturedRailGestures/);
   assert.match(homeRender, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
   assert.match(ui, /function ensureRetailPriorityVacancies\(/);
   assert.match(ui, /\.in\('source_type', retailSources\)/);
@@ -214,7 +214,7 @@ test('responsive styles cover the vacancy cards, categories, sponsored slot, and
     assert.ok(css.includes(selector), `Missing homepage style: ${selector}`);
   }
   assert.match(css, /\.home-sponsored-art\{[^}]*height:auto/);
-  assert.doesNotMatch(css, /home-featured-|featured-vacancies-rail/);
+  assert.doesNotMatch(css, /home-featured-vacancy|featured-vacancies-rail/);
   assert.match(css, /\.home-source-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /#screen-home \.screen-scroll\{container-type:inline-size/);
   assert.match(css, /@container \(min-width:760px\)\{\s*#screen-home \.home-source-grid\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
