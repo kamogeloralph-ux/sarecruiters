@@ -57,19 +57,12 @@ function restoredScreenName() {
   } catch(e) { return 'home'; }
 }
 function restoreActiveScreenBeforeReveal() {
-  // Manager links, PWA actions and promoted section links are URL-owned entry
-  // points; never let an old consumer section override those destinations.
+  // Normal launches and refreshes always begin at Home. URL-owned manager or
+  // action links remain eligible to route themselves after the app boots.
   var params = new URLSearchParams(window.location.search);
   if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
-  var name = restoredScreenName();
-  var target = document.getElementById('screen-' + name);
-  if (!target) return;
-  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  target.classList.add('active');
-  document.querySelectorAll('.navbtn').forEach(function(btn){
-    btn.classList.toggle('active', btn.dataset.tab === name);
-  });
-  window.__saRestoredScreen = name;
+  try { sessionStorage.setItem(SA_ACTIVE_SCREEN_KEY, 'home'); } catch(e) {}
+  window.__saRestoredScreen = 'home';
 }
 restoreActiveScreenBeforeReveal();
 
