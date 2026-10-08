@@ -280,10 +280,31 @@ startAuthenticatedApp(bootAuthenticatedApp);
   });
 })();
 
-// No application service worker is registered here. The former worker cached
-// navigations and runtime responses and could replay another screen's stale
-// state after an idle resume or pull-to-refresh. sw.js remains deployed only
-// as a one-release kill switch that removes the old registration and caches.
+// Production PWA shell: register after the first paint so the app never waits
+// for service-worker startup. Navigation and data remain network-first; the
+// worker supplies the cached shell/offline page when the network is absent.
+(function registerProductionServiceWorker() {
+  if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function (registration) {
+      function showUpdate() {
+        var banner = document.getElementById('update-banner');
+        if (banner) banner.classList.add('show');
+      }
+      if (registration.waiting) showUpdate();
+      registration.addEventListener('updatefound', function () {
+        var worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener('statechange', function () {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) showUpdate();
+        });
+      });
+      registration.update().catch(function () {});
+    }).catch(function (error) {
+      console.warn('[SA Recruiters] service worker registration failed', error);
+    });
+  });
+})();
 
 // ===== PWA Shortcut / share_target param handling =====
 (function handlePwaParams() {

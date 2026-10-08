@@ -13,6 +13,7 @@ const cards = read('app-cards.js');
 const sheets = read('app-sheets.js');
 const vacancyV2 = read('app-vacancy-v2.js');
 const community = read('app-community.js');
+const appManagerEmployer = read('app-manager-employer.js');
 const css = read('styles.css');
 const admin = read('admin.html');
 const vacancyCss = read('vacancy-v2.css');
@@ -185,11 +186,22 @@ test('Home Media uses the managed YouTube setting and admin keeps Track of the D
   assert.doesNotMatch(ui, /function handleTrackCardKeydown\(event\)/);
 });
 
-test('stale PWA tabs are refreshed and the service worker cannot be held by HTTP cache', () => {
-  assert.match(sw, /self\.clients\.matchAll\(\{ type: 'window', includeUncontrolled: true \}\)/);
-  assert.match(sw, /client\.navigate\(client\.url\)/);
-  assert.match(sw, /self\.registration\.unregister\(\)/);
+test('production PWA worker provides a cached shell, offline fallback, and safe updates', () => {
+  assert.match(sw, /const CACHE_NAME = VERSION \+ '-runtime'/);
+  assert.match(sw, /\/offline\.html/);
+  assert.match(sw, /request\.mode === 'navigate'/);
+  assert.match(sw, /networkFirst\(request, '\/'\)/);
+  assert.match(sw, /caches\.match\('\/offline\.html'\)/);
+  assert.match(sw, /request\.destination\)/);
+  assert.match(sw, /event\.data\.type === 'SKIP_WAITING'/);
+  assert.match(sw, /self\.clients\.claim\(\)/);
+  assert.doesNotMatch(sw, /self\.registration\.unregister\(\)/);
+  assert.match(appManagerEmployer, /navigator\.serviceWorker\.register\('\/sw\.js', \{ scope: '\/' \}\)/);
+  assert.match(appManagerEmployer, /registration\.addEventListener\('updatefound'/);
+  assert.match(ui, /registration\.waiting\.postMessage\(\{ type: 'SKIP_WAITING' \}\)/);
+  assert.match(html, /href="manifest\.json"/);
   assert.match(headers, /\/sw\.js[\s\S]*Cache-Control: no-cache, no-store, must-revalidate/);
+  assert.doesNotThrow(() => read('offline.html'), 'offline fallback must ship');
 });
 
 test('responsive styles cover the vacancy cards, categories, sponsored slot, and seeker/employer actions', () => {

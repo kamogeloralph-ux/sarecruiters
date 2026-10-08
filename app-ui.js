@@ -532,29 +532,25 @@ function showToast(msg) {
   toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
 
-// ===== Force update: clear only SA Recruiters caches + old app SW =====
+// ===== Force update: activate the waiting production worker safely =====
 function forceUpdate() {
-  showToast('Clearing cache and reloading…');
-  if ('caches' in window) {
-    caches.keys().then(function(names) {
-      return Promise.all(names.filter(function(n) { return n.indexOf('sa-recruiters-') === 0; }).map(function(n) { return caches.delete(n); }));
-    }).then(function() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          return Promise.all(regs.filter(function(r) {
-            return r.scope === window.location.origin + '/' && r.active && /\/sw\.js(?:\?|$)/.test(r.active.scriptURL);
-          }).map(function(r) { return r.unregister(); }));
-        }).then(function() {
-          // bust the browser HTTP cache too
-          window.location.href = window.location.pathname + '?v=' + Date.now();
-        });
-      } else {
-        window.location.href = window.location.pathname + '?v=' + Date.now();
-      }
-    });
-  } else {
+  showToast('Updating SA Recruiters…');
+  if (!('serviceWorker' in navigator)) { window.location.reload(); return; }
+  var reloaded = false;
+  function reloadOnce() {
+    if (reloaded) return;
+    reloaded = true;
     window.location.reload();
   }
+  navigator.serviceWorker.addEventListener('controllerchange', reloadOnce, { once: true });
+  navigator.serviceWorker.getRegistration('/').then(function(registration) {
+    if (!registration) { reloadOnce(); return; }
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      registration.update().then(reloadOnce).catch(reloadOnce);
+    }
+  }).catch(reloadOnce);
 }
 
 function forceUpdateReload() {
