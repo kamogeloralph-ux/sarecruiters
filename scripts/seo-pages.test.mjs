@@ -40,6 +40,9 @@ test('public SEO pages expose managed sponsored ad slots', () => {
   assert.match(publicAds, /target_screens=cs/);
   assert.match(publicAds, /record_house_ad_event/);
   assert.match(publicAds, /rel=\"sponsored noopener noreferrer\"/);
+  assert.match(generator, /function buildLocationHubPage/);
+  assert.match(generator, /LOCATION_HUBS\.forEach/);
+  assert.match(generator, /return pageShell\(\{ title, description, canonical, bodyHtml: body, jsonLd, hero, active: 'careers' \}\)/);
 });
 test('generator defines stable crawlable landing pages', () => {
   for (const slug of pages) {
