@@ -12,6 +12,7 @@ const ui = read('app-ui.js');
 const cards = read('app-cards.js');
 const sheets = read('app-sheets.js');
 const vacancyV2 = read('app-vacancy-v2.js');
+const community = read('app-community.js');
 const css = read('styles.css');
 const vacancyCss = read('vacancy-v2.css');
 
@@ -109,6 +110,18 @@ test('home vacancy cards expose an application action, and the home search uses 
   assert.match(html, /var feedbackObserver = null/);
   assert.match(html, /window\.__saSyncFeedbackChat = syncFeedback/);
   assert.equal((sheets.match(/window\.__saSyncFeedbackChat\(\)/g) || []).length, 2);
+});
+
+test('bottom navigation keeps Interview Tips chat separate from Feedback', () => {
+  const nav = html.slice(html.indexOf('<nav class="bottom-nav">'), html.indexOf('</nav>', html.indexOf('<nav class="bottom-nav">')));
+  assert.match(nav, /id="nav-suggest"[^>]*onclick="openSuggestionSheet\(\)"[^>]*aria-label="Suggest or comment"/);
+  assert.match(nav, /id="nav-community"[^>]*onclick="openCommunity\(\)"[^>]*aria-label="Open the Interview Tips community chat"/);
+  assert.match(nav, /<span class="navbtn-label">Feedback<\/span>/);
+  assert.match(nav, /<span class="navbtn-label">Tips chat<\/span>/);
+  assert.match(nav, /id="nav-community"[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/,
+    'the community action should use a multi-bubble discussion icon, not Feedback’s single bubble');
+  assert.match(community, /screenId === 'screen-community' && button\.id === 'nav-community'/,
+    'the dedicated community action should show as active while the community screen is open');
 });
 
 test('responsive styles cover the vacancy cards, categories, sponsored slot, and seeker/employer actions', () => {

@@ -50,7 +50,10 @@ function communitySetScreen(screenId) {
   document.querySelectorAll('.screen').forEach(function(screen) { screen.classList.remove('active'); });
   var screen = document.getElementById(screenId);
   if (screen) screen.classList.add('active');
-  document.querySelectorAll('.navbtn').forEach(function(button) { button.classList.remove('active'); });
+  document.querySelectorAll('.navbtn').forEach(function(button) {
+    var isCommunity = screenId === 'screen-community' && button.id === 'nav-community';
+    button.classList.toggle('active', isCommunity || button.dataset.tab === screenId.replace(/^screen-/, ''));
+  });
   if (typeof resetActiveScreenScroll === 'function') resetActiveScreenScroll(screenId);
   else window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
