@@ -227,6 +227,13 @@ test('Home includes the Talent Pool Spotlight section with live candidate loadin
   assert.match(ui, /id="home-spotlight-title"[^>]*>Meet our candidates/);
   assert.match(ui, /typeof loadCandidateSpotlight === 'function'\) loadCandidateSpotlight\(\)/);
   assert.match(data, /home-candidate-spotlight-deck/);
-  assert.match(data, /renderCandidateSpotlight\(list\.slice\(0, 10\), menuTarget, homeTarget\)/);
+  assert.match(data, /candidateSpotlightList = list\.slice\(0, 10\);/);
   assert.match(css, /#screen-home \.spotlight-mini/);
+});
+
+test('Talent Pool Spotlight does not get stuck loading after Home re-renders', () => {
+  assert.match(data, /var candidateSpotlightList = \[\];/);
+  assert.match(data, /if \(candidateSpotlightLoaded\) \{[\s\S]*renderCandidateSpotlight\(candidateSpotlightList, menuTarget, homeTarget\)/);
+  assert.match(data, /candidateSpotlightList = list\.slice\(0, 10\);/);
+  assert.match(data, /candidateSpotlightLoaded = true;/);
 });
