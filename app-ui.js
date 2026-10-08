@@ -325,6 +325,7 @@ function renderHomeFeed() {
       '<div class="home-vacancy-grid" aria-live="polite">' + (cards || empty) + '</div>' +
     '</section>' +
     '<section class="home-community-card" aria-labelledby="home-community-title"><span class="home-community-icon" aria-hidden="true">✦</span><div class="home-community-copy"><span class="home-community-kicker">Community discussion</span><h2 id="home-community-title">Interview Tips</h2><p>Ask questions and share interview advice with South African job seekers.</p></div><button type="button" onclick="openCommunity()">Join the conversation <span aria-hidden="true">→</span></button></section>' +
+    '<section class="spotlight-mini home-spotlight" aria-labelledby="home-spotlight-title"><div class="spotlight-mini-head"><div><div class="quick-access-label">Talent Pool spotlight</div><h2 id="home-spotlight-title">Meet our candidates</h2></div><button type="button" data-ripple onclick="goPool(\'profile\')">See all &#8594;</button></div><div class="spotlight-deck" id="home-candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"><div class="poster-empty">Loading candidates…</div></div></section>' +
     '<section class="home-categories-section" aria-labelledby="home-categories-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Find your next move</span><h2 id="home-categories-title">Explore top job categories</h2></div></div>' +
       '<div class="home-category-grid">' + categoryMarkup + '</div></section>' +
     '<section class="home-sponsored" role="link" tabindex="0" aria-label="Visit JW Aluminium &amp; Glass website" onclick="openFeaturedCompanyWebsite(event)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openFeaturedCompanyWebsite(event)}"><img class="home-sponsored-art" src="/jw-aluminium-banner.webp" alt="JW Aluminium advertisement for custom glass and aluminium products" width="1200" height="400" loading="lazy" decoding="async"><div class="home-sponsored-content"><div class="home-sponsored-copy"><span class="home-sponsored-mark">FEATURED COMPANY</span><h2>Feature your company here</h2><p>Showcase your brand to South Africa’s job seekers and employers.</p></div><button type="button" onclick="event.stopPropagation();openCompanyFeatureInquiry()">Ask about advertising</button></div></section>' +
@@ -338,6 +339,7 @@ function renderHomeFeed() {
   if (typeof renderHomeMediaSection === 'function') renderHomeMediaSection();
   if (typeof todayTrack !== 'undefined' && todayTrack) renderTrackReady();
   else if (typeof renderTrackEmpty === 'function') renderTrackEmpty();
+  if (typeof loadCandidateSpotlight === 'function') loadCandidateSpotlight();
   if (previouslyOpenId) {
     target.querySelectorAll('.vac-card').forEach(function (card) {
       if (card.getAttribute('data-vacancy-id') === previouslyOpenId) {
