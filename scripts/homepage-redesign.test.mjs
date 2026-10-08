@@ -221,3 +221,12 @@ test('Home is one continuous scroll surface with founder and legal footer inform
   assert.match(html, /href="\/privacy\/"/);
   assert.match(html, /href="\/terms\/"/);
 });
+
+test('Home includes the Talent Pool Spotlight section with live candidate loading', () => {
+  assert.match(ui, /id="home-candidate-spotlight-deck"/);
+  assert.match(ui, /id="home-spotlight-title"[^>]*>Meet our candidates/);
+  assert.match(ui, /typeof loadCandidateSpotlight === 'function'\) loadCandidateSpotlight\(\)/);
+  assert.match(data, /home-candidate-spotlight-deck/);
+  assert.match(data, /renderCandidateSpotlight\(list\.slice\(0, 10\), menuTarget, homeTarget\)/);
+  assert.match(css, /#screen-home \.spotlight-mini/);
+});

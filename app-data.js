@@ -209,8 +209,9 @@ async function getPublicPoolCandidatesFromWorker() {
 }
 var candidateSpotlightLoaded = false;
 async function loadCandidateSpotlight() {
-  var target = document.getElementById('candidate-spotlight-deck');
-  if (!target || candidateSpotlightLoaded) return;
+  var menuTarget = document.getElementById('candidate-spotlight-deck');
+  var homeTarget = document.getElementById('home-candidate-spotlight-deck');
+  if ((!menuTarget && !homeTarget) || candidateSpotlightLoaded) return;
   candidateSpotlightLoaded = true;
   var list = [];
   try {
@@ -253,16 +254,16 @@ async function loadCandidateSpotlight() {
     if ((b.verified?1:0) !== (a.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
     return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
   });
-  renderCandidateSpotlight(list.slice(0, 10));
+  renderCandidateSpotlight(list.slice(0, 10), menuTarget, homeTarget);
 }
-function renderCandidateSpotlight(list) {
-  var target = document.getElementById('candidate-spotlight-deck');
-  if (!target) return;
+function renderCandidateSpotlight(list, menuTarget, homeTarget) {
+  var targets = [menuTarget || document.getElementById('candidate-spotlight-deck'), homeTarget || document.getElementById('home-candidate-spotlight-deck')].filter(Boolean);
+  if (!targets.length) return;
   if (!list.length) {
-    target.innerHTML = '<div class="poster-empty">Candidates will appear here as people join the Talent Pool.</div>';
+    targets.forEach(function(target) { target.innerHTML = '<div class="poster-empty">Candidates will appear here as people join the Talent Pool.</div>'; });
     return;
   }
-  target.innerHTML = list.map(function(c) {
+  var markup = list.map(function(c) {
     var expText = (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '')
       ? (c.experience_years >= 10 ? '10+ yrs exp' : c.experience_years + ' yrs exp')
       : '';
@@ -272,6 +273,7 @@ function renderCandidateSpotlight(list) {
       '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</strong>' +
       '<span>'+escapeHtml(subtitle)+'</span></span></button>';
   }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
+  targets.forEach(function(target) { target.innerHTML = markup; });
 }
 
 async function upsertEmployer(e) {
