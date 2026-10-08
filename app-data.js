@@ -462,14 +462,19 @@ function renderTrackEmpty() {
   var card = document.getElementById('track-card');
   var info = document.getElementById('track-info');
   var btn = document.getElementById('track-play');
-  if (!card) return;
-  card.classList.remove('has-track', 'playing');
+  var homeBtn = document.getElementById('home-media-track-play');
+  if (card) card.classList.remove('has-track', 'playing');
   if (info) info.classList.add('track-empty');
   var t = document.getElementById('track-title');
   var a = document.getElementById('track-artist');
   if (t) t.textContent = 'No track today';
   if (a) a.textContent = 'Check back tomorrow for a fresh pick';
   if (btn) btn.disabled = true;
+  var homeTitle = document.getElementById('home-media-track-title');
+  var homeArtist = document.getElementById('home-media-track-artist');
+  if (homeTitle) homeTitle.textContent = 'No track today';
+  if (homeArtist) homeArtist.textContent = 'Check back tomorrow for a fresh pick';
+  if (homeBtn) { homeBtn.disabled = true; homeBtn.setAttribute('aria-label', 'Play Track of the Day'); }
   var prog = document.getElementById('track-progress');
   if (prog) prog.style.display = 'none';
 }
@@ -479,14 +484,19 @@ function renderTrackReady() {
   var card = document.getElementById('track-card');
   var info = document.getElementById('track-info');
   var btn = document.getElementById('track-play');
-  if (!card) return;
-  card.classList.add('has-track');
+  var homeBtn = document.getElementById('home-media-track-play');
+  if (card) card.classList.add('has-track');
   if (info) info.classList.remove('track-empty');
   var t = document.getElementById('track-title');
   var a = document.getElementById('track-artist');
   if (t) t.textContent = todayTrack.title || 'Today\'s track';
   if (a) a.textContent = todayTrack.artist || '';
   if (btn) btn.disabled = false;
+  var homeTitle = document.getElementById('home-media-track-title');
+  var homeArtist = document.getElementById('home-media-track-artist');
+  if (homeTitle) homeTitle.textContent = todayTrack.title || 'Today\'s track';
+  if (homeArtist) homeArtist.textContent = todayTrack.artist || '';
+  if (homeBtn) homeBtn.disabled = false;
   // Keep the media element source-free until explicit play intent. Assigning
   // src plus load() here eagerly downloads multi-megabyte audio on startup.
   trackAudio = document.getElementById('track-audio');
@@ -503,6 +513,18 @@ function toggleTrackPlay() {
     }
     trackAudio.play().catch(function(){ /* autoplay blocked or load error */ });
   }
+}
+
+function updateTrackPlayButtons() {
+  var iconPath = trackIsPlaying ? 'M6 4h4v16H6zM14 4h4v16h-4z' : 'M8 5v14l11-7z';
+  var label = trackIsPlaying ? 'Pause Track of the Day' : 'Play Track of the Day';
+  ['track-play', 'home-media-track-play'].forEach(function(id) {
+    var button = document.getElementById(id);
+    if (!button) return;
+    button.setAttribute('aria-label', label);
+    var svg = button.querySelector('svg');
+    if (svg) svg.innerHTML = '<path d="' + iconPath + '"/>';
+  });
 }
 
 function onTrackLoaded() {
@@ -528,6 +550,7 @@ function onTrackEnded() {
   var icon = document.getElementById('track-play-icon');
   if (card) card.classList.remove('playing');
   if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+  updateTrackPlayButtons();
   var fill = document.getElementById('track-progress-fill');
   if (fill) fill.style.width = '0%';
 }
@@ -540,6 +563,7 @@ document.addEventListener('play', function(e){
     var icon = document.getElementById('track-play-icon');
     if (card) card.classList.add('playing');
     if (icon) icon.innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+    updateTrackPlayButtons();
   }
 }, true);
 document.addEventListener('pause', function(e){
@@ -549,6 +573,7 @@ document.addEventListener('pause', function(e){
     var icon = document.getElementById('track-play-icon');
     if (card) card.classList.remove('playing');
     if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    updateTrackPlayButtons();
   }
 }, true);
 async function togglePublicPosting(checked) {
