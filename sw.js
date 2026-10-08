@@ -6,7 +6,7 @@
  * Static assets are stale-while-revalidate, while startup data is network-first
  * because it changes independently of the app shell.
  */
-const VERSION = 'sa-recruiters-3b2b5f1bdc';
+const VERSION = 'sa-recruiters-b1a446927f';
 const CACHE_NAME = VERSION + '-runtime';
 const PRECACHE_URLS = [
   '/',

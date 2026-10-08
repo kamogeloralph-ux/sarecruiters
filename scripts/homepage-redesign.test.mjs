@@ -34,10 +34,11 @@ test('home replaces the direct agency feed with the job-search feed while retain
 
 test('location filters and category shortcuts feed real vacancy results', () => {
   const provinces = ['gauteng', 'western-cape', 'kwazulu-natal', 'eastern-cape', 'free-state', 'limpopo', 'mpumalanga', 'north-west', 'northern-cape'];
-  for (const location of [...provinces, 'remote']) {
-    if (location === 'remote') assert.match(html, /data-home-location="remote"/);
-    else assert.match(html, new RegExp(`<a class="home-filter-chip" href="/jobs/${location}/" aria-label="View [^"]+ public job listings">`));
+  for (const location of provinces) {
+    assert.match(html, new RegExp(`<a class="home-filter-chip" href="/jobs/${location}/" aria-label="View [^"]+ public job listings">`));
   }
+  assert.doesNotMatch(html, /All South Africa/);
+  assert.doesNotMatch(html, /data-home-location="remote"/);
   assert.equal((html.match(/<a class="home-filter-chip" href="\/jobs\/(?:gauteng|western-cape|kwazulu-natal|eastern-cape|free-state|limpopo|mpumalanga|north-west|northern-cape)\/"/g) || []).length, 9);
   assert.match(ui, /querySelectorAll\('\.home-filter-chip\[data-home-location\]'\)/);
   assert.match(ui, /function setHomeLocationFilter\(/);

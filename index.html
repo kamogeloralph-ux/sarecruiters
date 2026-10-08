@@ -162,12 +162,12 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-3b2b5f1bdc">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-3b2b5f1bdc" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-b1a446927f">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-b1a446927f" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="community.css?v=sa-recruiters-3b2b5f1bdc" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-3b2b5f1bdc"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-3b2b5f1bdc"></noscript>
+<link rel="stylesheet" href="community.css?v=sa-recruiters-b1a446927f" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-b1a446927f"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-b1a446927f"></noscript>
 </head>
 <body>
 
@@ -247,8 +247,7 @@
         <input id="home-search" type="search" placeholder="Job title, skill, company, or location…" oninput="scheduleCachedSearch()">
       </div>
     </div>
-    <div class="home-filter-row" role="group" aria-label="Quick filters: all nine provinces, all South Africa, and remote vacancies">
-      <button type="button" class="home-filter-chip active" data-home-location="all" aria-pressed="true" onclick="setHomeLocationFilter('')">All South Africa</button>
+    <div class="home-filter-row" role="group" aria-label="Quick filters: nine South African provinces">
       <a class="home-filter-chip" href="/jobs/gauteng/" aria-label="View Gauteng public job listings">Gauteng</a>
       <a class="home-filter-chip" href="/jobs/western-cape/" aria-label="View Western Cape public job listings">Western Cape</a>
       <a class="home-filter-chip" href="/jobs/kwazulu-natal/" aria-label="View KwaZulu-Natal public job listings">KwaZulu-Natal</a>
@@ -258,7 +257,6 @@
       <a class="home-filter-chip" href="/jobs/mpumalanga/" aria-label="View Mpumalanga public job listings">Mpumalanga</a>
       <a class="home-filter-chip" href="/jobs/north-west/" aria-label="View North West public job listings">North West</a>
       <a class="home-filter-chip" href="/jobs/northern-cape/" aria-label="View Northern Cape public job listings">Northern Cape</a>
-      <button type="button" class="home-filter-chip" data-home-location="remote" aria-pressed="false" onclick="setHomeLocationFilter('remote')">Remote</button>
     </div>
     <div class="stats-wrap">
       <button class="stats-scroll-btn stats-scroll-prev" type="button" data-ripple onclick="scrollStats(-1)" aria-label="Show previous statistics">‹</button>
@@ -1440,8 +1438,8 @@
      content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
      the browser fetch them at idle priority (and keep generate-pages.js cache-busting them);
      openContentSheet() below loads them on demand and then hands over to the real implementation. -->
-<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-3b2b5f1bdc" data-sa-lazy="content">
-<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-3b2b5f1bdc" data-sa-lazy="content-manager">
+<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-b1a446927f" data-sa-lazy="content">
+<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-b1a446927f" data-sa-lazy="content-manager">
 <script>
 (function(){
   var pending=null;
