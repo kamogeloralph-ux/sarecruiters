@@ -27,13 +27,13 @@ test('rejects pages without a full circular PDF', () => {
 });
 
 test('extracts every POST block from a Government department PDF text export', () => {
-  const text = `ANNEXURE A\nDEPARTMENT OF AGRICULTURE (DOA)\nCLOSING DATE : 28 September 2026 at 16:00\nPOST 33/01 : STATE VETERINARIAN REF NO: 3/3/1/83/2026\nSALARY : R932 292 per annum (Level 11)\nCENTRE : Mpumalanga: Skukuza\nREQUIREMENTS : Veterinary degree and registration.\nDUTIES : Provide veterinary services.\nPOST 33/02 : ASSISTANT DIRECTOR: EMPLOYEE RELATIONS REF NO: 3/3/1/84/2026\nSALARY : R487 197 per annum (Level 09)\nCENTRE : Gauteng: Pretoria\nREQUIREMENTS : Labour relations qualification.`;
+  const text = `ANNEXURE A\nDEPARTMENT OF AGRICULTURE (DOA)\nCLOSING DATE : 28 September 2099 at 16:00\nPOST 33/01 : STATE VETERINARIAN REF NO: 3/3/1/83/2026\nSALARY : R932 292 per annum (Level 11)\nCENTRE : Mpumalanga: Skukuza\nREQUIREMENTS : Veterinary degree and registration.\nDUTIES : Provide veterinary services.\nPOST 33/02 : ASSISTANT DIRECTOR: EMPLOYEE RELATIONS REF NO: 3/3/1/84/2026\nSALARY : R487 197 per annum (Level 09)\nCENTRE : Gauteng: Pretoria\nREQUIREMENTS : Labour relations qualification.`;
   const jobs = parseGovernmentPdfTextForTest(text, { circularNumber: 33, year: 2026, pdfUrl: 'https://example.gov/a.pdf', sourceFile: 'a.pdf' });
   assert.equal(jobs.length, 2);
   assert.equal(jobs[0].source_type, 'government');
   assert.equal(jobs[0].company, 'DEPARTMENT OF AGRICULTURE (DOA)');
   assert.equal(jobs[0].title, 'STATE VETERINARIAN');
-  assert.equal(jobs[0].closing_date, '2026-09-28');
+  assert.equal(jobs[0].closing_date, '2099-09-28');
   assert.match(jobs[1].title, /ASSISTANT DIRECTOR/);
 });
 
@@ -55,7 +55,7 @@ test('extracts POST blocks from a COMBINED circular PDF spanning multiple depart
     'PUBLIC SERVICE VACANCY CIRCULAR 33 OF 2026',
     'ANNEXURE A',
     'DEPARTMENT OF AGRICULTURE (DOA)',
-    'CLOSING DATE : 28 September 2026 at 16:00',
+    'CLOSING DATE : 28 September 2099 at 16:00',
     'POST 33/01 : STATE VETERINARIAN REF NO: 3/3/1/83/2026',
     'SALARY : R932 292 per annum (Level 11)',
     'CENTRE : Mpumalanga: Skukuza',
@@ -63,7 +63,7 @@ test('extracts POST blocks from a COMBINED circular PDF spanning multiple depart
     'DUTIES : Provide veterinary services.',
     'ANNEXURE B',
     'DEPARTMENT OF HEALTH',
-    'CLOSING DATE : 05 October 2026 at 16:00',
+    'CLOSING DATE : 05 October 2099 at 16:00',
     'POST 33/45 : MEDICAL OFFICER GRADE 1 REF NO: HLT/2026/45',
     'SALARY : R1 059 285 per annum',
     'CENTRE : Western Cape: Tygerberg Hospital',
@@ -74,10 +74,10 @@ test('extracts POST blocks from a COMBINED circular PDF spanning multiple depart
   assert.equal(jobs.length, 2);
   assert.equal(jobs[0].company, 'DEPARTMENT OF AGRICULTURE (DOA)');
   assert.equal(jobs[0].title, 'STATE VETERINARIAN');
-  assert.equal(jobs[0].closing_date, '2026-09-28');
+  assert.equal(jobs[0].closing_date, '2099-09-28');
   assert.equal(jobs[1].company, 'DEPARTMENT OF HEALTH');
   assert.equal(jobs[1].title, 'MEDICAL OFFICER GRADE 1');
-  assert.equal(jobs[1].closing_date, '2026-10-05');
+  assert.equal(jobs[1].closing_date, '2099-10-05');
   // Different departments/closing dates must not collide on id.
   assert.notEqual(jobs[0].id, jobs[1].id);
 });
