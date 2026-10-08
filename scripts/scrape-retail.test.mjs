@@ -48,12 +48,12 @@ test('parses Boxer eRecruit category links and job rows', () => {
 });
 
 test('normalizes Boxer JSON-LD detail data as a retail vacancy', () => {
-  const html = '<script type="application/ld+json">{"@type":"JobPosting","title":"HOD: Logistics","description":"<p>Lead logistics.</p>","validThrough":"2026-09-28","identifier":{"value":"BOX260910-1"},"jobLocation":{"address":{"addressLocality":"Westville","addressRegion":"KwaZulu-Natal"}}}</script>';
+  const html = '<script type="application/ld+json">{"@type":"JobPosting","title":"HOD: Logistics","description":"<p>Lead logistics.</p>","validThrough":"2099-09-28","identifier":{"value":"BOX260910-1"},"jobLocation":{"address":{"addressLocality":"Westville","addressRegion":"KwaZulu-Natal"}}}</script>';
   const job = parseBoxerDetail(html, { externalId: 'BOX260910-1', link: 'https://boxer.erecruit.co/candidateapp/Jobs/View/BOX260910-1', location: 'Westville', closingDate: '' });
   assert.equal(job.id, 'retail-boxer-BOX260910-1');
   assert.equal(job.company, 'Boxer Superstores');
   assert.equal(job.location, 'Westville, KwaZulu-Natal');
-  assert.equal(job.closing_date, '2026-09-28');
+  assert.equal(job.closing_date, '2099-09-28');
   assert.equal(job.notes, 'Lead logistics.');
 });
 
