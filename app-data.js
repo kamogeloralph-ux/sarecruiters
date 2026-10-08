@@ -208,11 +208,15 @@ async function getPublicPoolCandidatesFromWorker() {
   }
 }
 var candidateSpotlightLoaded = false;
+var candidateSpotlightList = [];
 async function loadCandidateSpotlight() {
   var menuTarget = document.getElementById('candidate-spotlight-deck');
   var homeTarget = document.getElementById('home-candidate-spotlight-deck');
-  if ((!menuTarget && !homeTarget) || candidateSpotlightLoaded) return;
-  candidateSpotlightLoaded = true;
+  if (!menuTarget && !homeTarget) return;
+  if (candidateSpotlightLoaded) {
+    renderCandidateSpotlight(candidateSpotlightList, menuTarget, homeTarget);
+    return;
+  }
   var list = [];
   try {
     var startup = await getPublicPoolCandidatesFromWorker();
@@ -254,7 +258,9 @@ async function loadCandidateSpotlight() {
     if ((b.verified?1:0) !== (a.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
     return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
   });
-  renderCandidateSpotlight(list.slice(0, 10), menuTarget, homeTarget);
+  candidateSpotlightList = list.slice(0, 10);
+  candidateSpotlightLoaded = true;
+  renderCandidateSpotlight(candidateSpotlightList, menuTarget, homeTarget);
 }
 function renderCandidateSpotlight(list, menuTarget, homeTarget) {
   var targets = [menuTarget || document.getElementById('candidate-spotlight-deck'), homeTarget || document.getElementById('home-candidate-spotlight-deck')].filter(Boolean);
