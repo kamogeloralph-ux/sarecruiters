@@ -204,3 +204,11 @@ test('the homepage hero is square and compact, with a smaller search field and t
   assert.match(css, /#screen-home \.home-filter-row\{margin-bottom:7px/);
   assert.match(html, /styles\.css\?v=[^"]+/);
 });
+
+test('Home navigation returns locally without refreshing data, and the hero uses square corners', () => {
+  assert.match(ui, /function refreshHome\(\)\s*\{[\s\S]*?goBackToHome\(\)/);
+  const refreshBody = ui.slice(ui.indexOf('function refreshHome()'), ui.indexOf('// ===== Toast'));
+  assert.doesNotMatch(refreshBody, /loadAll\(\{ fresh: true \}\)/);
+  assert.match(css, /#screen-home \.screen-fixed,#screen-menu \.menu-hero\{border-radius:0!important/);
+  assert.match(css, /#screen-home \.site-menu-trigger\{background:transparent!important/);
+});
