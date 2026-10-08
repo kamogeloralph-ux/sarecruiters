@@ -9,7 +9,7 @@
  * Keep this file at /sw.js for at least one full release so browsers that have
  * the old worker registered receive and activate the cleanup worker.
  */
-const VERSION = 'sa-recruiters-412582b4e6';
+const VERSION = 'sa-recruiters-37c911fa19';
 const APP_CACHE_PREFIX = 'sa-recruiters-';
 
 self.addEventListener('install', function(event) {
@@ -24,6 +24,15 @@ self.addEventListener('activate', function(event) {
       }).map(function(name) {
         return caches.delete(name);
       }));
+    }).then(function() {
+      // Existing PWA tabs can still be rendering the old cached shell even
+      // after this cleanup worker activates. Reload those tabs once so the
+      // current network HTML/CSS/JS is painted immediately.
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clients) {
+        return Promise.all(clients.map(function(client) {
+          return client.navigate(client.url).catch(function() {});
+        }));
+      });
     }).then(function() {
       return self.registration.unregister();
     })

@@ -15,6 +15,8 @@ const vacancyV2 = read('app-vacancy-v2.js');
 const community = read('app-community.js');
 const css = read('styles.css');
 const vacancyCss = read('vacancy-v2.css');
+const sw = read('sw.js');
+const headers = read('_headers');
 
 test('home replaces the direct agency feed with the job-search feed while retaining all five metric routes', () => {
   assert.match(html, /id="home-feed"/);
@@ -137,6 +139,13 @@ test('Profile keeps Google sign-in visible for guests and hides it only for sign
   assert.match(ui, /quotaCard\.hidden = !isGuest/);
   assert.match(ui, /signoutGroup\.hidden = isGuest/);
   assert.match(css, /\.account-signin-card\[hidden\][^}]*display:none!important/);
+});
+
+test('stale PWA tabs are refreshed and the service worker cannot be held by HTTP cache', () => {
+  assert.match(sw, /self\.clients\.matchAll\(\{ type: 'window', includeUncontrolled: true \}\)/);
+  assert.match(sw, /client\.navigate\(client\.url\)/);
+  assert.match(sw, /self\.registration\.unregister\(\)/);
+  assert.match(headers, /\/sw\.js[\s\S]*Cache-Control: no-cache, no-store, must-revalidate/);
 });
 
 test('responsive styles cover the vacancy cards, categories, sponsored slot, and seeker/employer actions', () => {
