@@ -7,6 +7,7 @@ import fs from 'node:fs';
 
 const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
 const appDataSrc = read('../app-data.js');
+const cardsSrc = read('../app-cards.js');
 const appCoreSrc = read('../app-core.js');
 const uiSrc = read('../app-ui.js');
 const alertsSrc = read('../app-alerts.js');
@@ -32,14 +33,14 @@ function functionBody(src, name) {
 test('dedicated featured-vacancy sections and their extra startup query are removed', () => {
   const home = functionBody(uiSrc, 'renderHomeFeed');
   assert.ok(home, 'the home vacancy renderer must remain present');
-  assert.doesNotMatch(home, /Featured vacancies|home-featured|featuredMarkup|homeVacancyIsFeatured/);
+  assert.doesNotMatch(home, /Featured vacancies|home-featured-vacancy|featuredMarkup|homeVacancyIsFeatured/);
   assert.match(home, /target\.innerHTML = '[\s\S]*homeVacancySourceMarkup\(\) \+\s*'<section class="home-jobs-section"/);
   assert.match(home, /var rows = matchingRows;/, 'featured listings remain eligible for normal retail-first role ordering');
   assert.match(home, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
   assert.match(home, /onclick="openCommunity\(\)"/, 'the Interview Tips shortcut must remain on the home screen');
 
   assert.doesNotMatch(uiSrc, /career-featured-section|featured-vacancies-(?:heading|controls|rail|empty)|wireFeaturedRailGestures/);
-  assert.doesNotMatch(sharedCss, /featured-vacancies-(?:heading|controls|rail|empty)|home-featured-/);
+  assert.doesNotMatch(sharedCss, /featured-vacancies-(?:heading|controls|rail|empty)|home-featured-vacancy/);
   assert.doesNotMatch(appDataSrc, /loadFeaturedVacancies|featuredVacanciesCache|featured_vacancies/);
   assert.doesNotMatch(appCoreSrc, /featuredVacanciesCache/);
 });
@@ -79,6 +80,15 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
   assert.match(indexSrc, /vacancy-v2\.css\?v=vx-scan-2/, 'the vacancy stylesheet cache key must be refreshed');
   assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-retail-3/, 'the vacancy renderer cache key must be refreshed');
   assert.match(indexSrc, /app-alerts\.js\?v=al-4/, 'the saved-search CTA script cache key must be refreshed');
+});
+
+test('Home renders one deterministic daily featured vacancy poster', () => {
+  assert.match(uiSrc, /function getDailyFeaturedPoster\(posters\)/);
+  assert.match(uiSrc, /function renderHomeFeaturedPoster\(posters\)/);
+  assert.match(uiSrc, /home-featured-poster-slot/);
+  assert.match(uiSrc, /Date\.UTC\(now\.getFullYear\(\), now\.getMonth\(\), now\.getDate\(\)/);
+  assert.match(cardsSrc, /renderHomeFeaturedPoster\(posters\)/);
+  assert.match(uiSrc, /id=\"home-featured-poster-slot\"/);
 });
 
 test('all vacancy filters are wired to the overview and folder render paths', () => {

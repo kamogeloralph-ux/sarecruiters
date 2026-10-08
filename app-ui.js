@@ -291,6 +291,29 @@ function homeVacancySourceMarkup() {
     }).join('') + '</div></section>';
 }
 
+function getDailyFeaturedPoster(posters) {
+  var list = (Array.isArray(posters) ? posters : []).filter(function (poster) { return poster && poster.image_url; }).slice().sort(function (a, b) {
+    return String(a.id || a.image_url).localeCompare(String(b.id || b.image_url));
+  });
+  if (!list.length) return null;
+  var now = new Date();
+  var day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+  return list[((day % list.length) + list.length) % list.length];
+}
+function renderHomeFeaturedPoster(posters) {
+  var slot = document.getElementById('home-featured-poster-slot');
+  if (!slot) return;
+  var featured = getDailyFeaturedPoster(posters);
+  if (!featured) {
+    slot.innerHTML = '<div class="poster-empty">No vacancy posters are available today. Check back soon.</div>';
+    return;
+  }
+  var caption = String(featured.caption || 'Featured vacancy opportunity');
+  slot.innerHTML = '<button type="button" class="poster-page-card home-featured-poster-card" data-featured-poster-url="' + escapeHtml(featured.image_url) + '" aria-label="Open featured vacancy poster"><img src="' + escapeHtml(featured.image_url) + '" loading="lazy" decoding="async" alt="' + escapeHtml(caption) + '"><span class="managed-poster-copy"><strong>' + escapeHtml(caption) + '</strong><span>Tap to view the full vacancy poster</span></span></button>';
+  slot.querySelectorAll('[data-featured-poster-url]').forEach(function (button) {
+    button.addEventListener('click', function () { openPosterLightbox(button.getAttribute('data-featured-poster-url')); });
+  });
+}
 function renderHomeFeed() {
   var target = document.getElementById('home-feed');
   if (!target) return;
@@ -335,6 +358,7 @@ function renderHomeFeed() {
       '<div class="home-media-track"><div class="home-media-track-art" aria-hidden="true">♫</div><div class="home-media-track-copy"><span>Track of the Day</span><strong id="home-media-track-title">Loading…</strong><small id="home-media-track-artist"></small></div><button type="button" class="home-media-track-play" id="home-media-track-play" disabled onclick="toggleTrackPlay()" aria-label="Play Track of the Day"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button></div>' +
       '<audio id="track-audio" preload="none" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>' +
     '</section>' +
+    '<section class="poster-cta home-featured-poster" aria-labelledby="home-featured-poster-title"><div class="poster-cta-heading"><span class="poster-cta-kicker">Featured every day</span><h2 id="home-featured-poster-title">Vacancy poster of the day</h2><p>A fresh recruitment poster selected automatically for today.</p></div><div class="poster-deck" id="home-featured-poster-slot"><div class="poster-empty">Loading today’s poster…</div></div></section>' +
     homeVacancySourceMarkup() +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
       '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Available roles</h2><p>Retail vacancies first, followed by the newest live listings.</p></div>' +
@@ -353,6 +377,7 @@ function renderHomeFeed() {
       '</div></section>';
 
   target.setAttribute('aria-busy', 'false');
+  if (typeof renderHomeFeaturedPoster === 'function') renderHomeFeaturedPoster(typeof postersCache !== 'undefined' ? postersCache : []);
   if (typeof renderHomeMediaSection === 'function') renderHomeMediaSection();
   if (typeof renderHouseAdSlots === 'function') renderHouseAdSlots();
   if (typeof todayTrack !== 'undefined' && todayTrack) renderTrackReady();
