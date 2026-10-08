@@ -170,12 +170,11 @@ test('Home Media uses the managed YouTube setting and admin keeps Track of the D
   assert.match(admin, /Track of the Day/);
   assert.match(ui, /id="home-media-track-play"/);
   assert.match(ui, /onclick="toggleTrackPlay\(\)"/);
-  assert.match(ui, /function openHomeMediaSection\(event\)/);
   assert.match(data, /function updateTrackPlayButtons\(\)/);
   assert.match(data, /home-media-track-title/);
-  assert.match(html, /aria-label="Open Track of the Day in Home Media"/);
-  assert.match(ui, /function handleTrackCardKeydown\(event\)/);
-  assert.match(html, /onkeydown="handleTrackCardKeydown\(event\)"/);
+  assert.match(ui, /id="track-audio"/);
+  assert.doesNotMatch(html, /id="track-card"/);
+  assert.doesNotMatch(ui, /function handleTrackCardKeydown\(event\)/);
 });
 
 test('stale PWA tabs are refreshed and the service worker cannot be held by HTTP cache', () => {
