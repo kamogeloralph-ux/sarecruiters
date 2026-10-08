@@ -94,8 +94,16 @@ function setHomeLocationFilter(filter) {
 }
 
 function setHomeCategoryFilter(filter) {
-  homeCategoryFilter = homeCategoryFilter === filter ? '' : filter;
-  filterAndRenderCached();
+  var category = HOME_JOB_CATEGORIES.find(function (item) { return item.key === filter; });
+  if (!category) return;
+  // Category tiles are navigation cards: take the visitor to the full vacancy
+  // screen with the selected category already entered in the search field.
+  showAllVacancies('home');
+  var search = document.getElementById('allvacancies-search');
+  if (search) {
+    search.value = category.key;
+    if (typeof renderAllVacanciesList === 'function') renderAllVacanciesList();
+  }
 }
 
 function clearHomeFeedFilters() {
