@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const generator = readFileSync(new URL('../generate-pages.js', import.meta.url), 'utf8');
+const publicAds = readFileSync(new URL('../public-ads.js', import.meta.url), 'utf8');
 const homepage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const cards = readFileSync(new URL('../app-cards.js', import.meta.url), 'utf8');
 const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
@@ -30,6 +31,16 @@ test('Pages generation uses committed public data and does not scan Supabase on 
   assert.match(generator, /\$\{R2_WORKER_URL\}\/api\/posters/, 'supplemental poster pages should use the public Worker feed');
 });
 
+test('public SEO pages expose managed sponsored ad slots', () => {
+  assert.match(generator, /function publicAdSlot\(slot\)/);
+  assert.match(generator, /publicAdSlot\('top'\)/);
+  assert.match(generator, /publicAdSlot\('middle'\)/);
+  assert.match(generator, /publicAdSlot\('bottom'\)/);
+  assert.match(generator, /public-ads\.js\?v=\$\{DEPLOY_VERSION\}/);
+  assert.match(publicAds, /target_screens=cs/);
+  assert.match(publicAds, /record_house_ad_event/);
+  assert.match(publicAds, /rel=\"sponsored noopener noreferrer\"/);
+});
 test('generator defines stable crawlable landing pages', () => {
   for (const slug of pages) {
     assert.match(generator, new RegExp(`slug: '${slug}'`));

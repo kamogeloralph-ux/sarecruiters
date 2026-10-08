@@ -44,6 +44,7 @@ buildSupabaseVendor(__dirname);
 // ------------------------------------------------------------
 const STATIC_ASSETS = [
   'index.html',
+  'public-ads.js',
   'admin.html',
   'privacy.html',
   'privacy/index.html',
@@ -77,7 +78,7 @@ function rewriteAssetUrls(html, version) {
   // Handles relative (styles.css), ./relative (./styles.css) and
   // root-absolute (/static-pages.css) references.
   return html.replace(
-    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|community\.css|content\.js|content-manager\.js|static-pages\.css)(?:\?v=[^"]*)?("?)/g,
+    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|community\.css|content\.js|content-manager\.js|static-pages\.css|public-ads\.js)(?:\?v=[^"]*)?("?)/g,
     (match, attr, base, file, suffix) => `${attr}${base}${file}?v=${version}${suffix}`,
   );
 }
@@ -489,6 +490,9 @@ ${cats ? `<div><h3>Browse by type</h3><div class="sp-foot-col">${cats}</div></di
 </div></footer>`;
 }
 
+function publicAdSlot(slot) {
+  return `<div class="public-house-ad-wrap sp-wrap"><div class="public-house-ad-slot" data-public-ad-slot="${slot}" hidden></div></div>`;
+}
 function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, hero = '', active = '', narrow = false, applyBar = '' }) {
   const ogImage = image || `${SITE_URL}/icons/v2-icon-512.png`;
   const cur = (key) => (active === key ? ' aria-current="page"' : '');
@@ -528,11 +532,14 @@ ${jsonLd ? `<script type="application/ld+json">${serializeJsonLd(jsonLd)}</scrip
 <a class="sp-cta" href="/post-a-job/">${icon('tag', 16)} Post a job</a>
 </div></header>
 ${hero}
+${publicAdSlot('top')}
 <main id="main" class="sp-main"><div class="sp-wrap${narrow ? ' sp-narrow' : ''}">
 ${bodyHtml}
-</div></main>
+</div>${publicAdSlot('middle')}</main>
+${publicAdSlot('bottom')}
 ${applyBar}
 ${footerHtml()}
+<script src="/public-ads.js?v=${DEPLOY_VERSION}" defer></script>
 </body>
 </html>`;
 }
