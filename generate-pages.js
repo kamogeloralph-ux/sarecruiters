@@ -1,9 +1,8 @@
 // ============================================================
 //  SA RECRUITERS — generate-pages.js
 // ============================================================
-//  Runs via GitHub Actions (see .github/workflows/deploy.yml), on every
-//  push to main and on a 3-hourly schedule.
-//  Queries Supabase for agencies, branches and vacancies, and
+//  Runs via GitHub Actions on pushes to main.
+//  Reads the committed public startup snapshot and vacancy-notes map, and
 //  writes a static HTML page per agency and per vacancy so
 //  Google (and anyone sharing a link) sees real content instead
 //  of the empty app shell.
@@ -11,10 +10,10 @@
 //  Your existing index.html / app is untouched — this just adds
 //  extra static pages alongside it in the GitHub Pages output.
 //
-//  Requires: npm install @supabase/supabase-js  (already in package.json)
+//  Public data is refreshed by refresh-static-data.yml; deployment builds
+//  must not scan Supabase/PostgREST for the same records again.
 // ============================================================
 
-const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -120,11 +119,6 @@ function applyDeployVersioning() {
 
 const DEPLOY_VERSION = applyDeployVersioning();
 
-// Same public values already used in index.html — safe to reuse,
-// this is the anon/public key, not a secret.
-const SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
-
 const SITE_URL = 'https://sa-recruiters.co.za';
 const OUT_DIR = path.join(__dirname); // publish root — adjust if you move this script
 // Kept in sync by hand with app-core.js (R2_WORKER_URL) and app-sheets.js
@@ -133,8 +127,6 @@ const OUT_DIR = path.join(__dirname); // publish root — adjust if you move thi
 // Turnstile itself.
 const R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
 const TURNSTILE_SITE_KEY = '0x4AAAAAAE781UzzffMh7u8L';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ---------- helpers ----------
 
@@ -545,70 +537,29 @@ ${footerHtml()}
 </html>`;
 }
 
-// ---------- fetch data ----------
+// ---------- committed public data ----------
+function fetchAll() {
+  const dataDir = path.join(__dirname, 'data');
+  const snapshotPath = path.join(dataDir, 'startup.json');
+  const notesPath = path.join(dataDir, 'vacancy-notes.json');
+  if (!fs.existsSync(snapshotPath)) throw new Error(`Aborting build: required public snapshot is missing: ${snapshotPath}`);
 
-async function fetchAllRows(table) {
-  // Explicit column lists (not select('*')): manage_token is revoked from the
-  // anon role (supabase/migrations/20260918_lock_down_manager_tokens.sql) and
-  // static pages must never carry Smart Manager tokens. If a new column is
-  // added to these tables and needs to appear on static pages, add it here
-  // explicitly.
-  const COLUMNS = {
-    agencies: 'id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified',
-    branches: 'id,agency_id,name,location,phone,email',
-    vacancies: 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,updated_at,source_type',
-  };
-  const pageSize = 1000;
-  const rows = [];
-  const columns = COLUMNS[table] || '*';
-  for (let offset = 0; ; offset += pageSize) {
-    const { data, error } = await supabase.from(table).select(columns).range(offset, offset + pageSize - 1);
-    if (error) return { data: null, error };
-    const page = data || [];
-    rows.push(...page);
-    if (page.length < pageSize) return { data: rows, error: null };
-  }
-}
-
-async function fetchAll() {
-  const [{ data: agencies, error: aErr }, { data: branches, error: bErr }, { data: vacancies, error: vErr }] =
-    await Promise.all([
-      fetchAllRows('agencies'),
-      fetchAllRows('branches'),
-      fetchAllRows('vacancies'),
-    ]);
-
-  if (aErr) console.error('agencies fetch error:', JSON.stringify(aErr));
-  if (bErr) console.error('branches fetch error:', JSON.stringify(bErr));
-  if (vErr) console.error('vacancies fetch error:', JSON.stringify(vErr));
-
-  // A real Supabase error here must stop the build. Without this, the
-  // script logs the error and carries on with an empty array, writes zero
-  // agency/vacancy pages, exits 0 (green check), and GitHub Pages happily
-  // deploys that empty result OVER whatever was working before — every
-  // public listing page 404s even though the workflow "succeeded".
-  if (aErr || bErr || vErr) {
-    throw new Error(
-      'Aborting build: Supabase fetch failed, refusing to deploy an empty/partial site. ' +
-      'See the fetch error(s) logged above.'
-    );
+  const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
+  if (!snapshot || !Array.isArray(snapshot.agencies) || !Array.isArray(snapshot.branches) ||
+      !Array.isArray(snapshot.vacancies) || snapshot.agencies.length === 0 || snapshot.vacancies.length < 10) {
+    throw new Error('Aborting build: public snapshot is invalid or incomplete; refusing to generate a partial site.');
   }
 
-  // Belt-and-braces: this directory normally has dozens of agencies. A
-  // clean (no-error) but empty result is still a red flag worth stopping
-  // for rather than silently publishing an empty directory.
-  if (!agencies || agencies.length === 0) {
-    throw new Error(
-      'Aborting build: agencies table returned 0 rows with no error — ' +
-      'that is almost certainly wrong for this directory, refusing to deploy.'
-    );
+  let notes = {};
+  if (fs.existsSync(notesPath)) {
+    const parsedNotes = JSON.parse(fs.readFileSync(notesPath, 'utf8'));
+    if (parsedNotes && typeof parsedNotes === 'object' && !Array.isArray(parsedNotes)) notes = parsedNotes;
   }
-
-  return {
-    agencies: agencies || [],
-    branches: branches || [],
-    vacancies: (vacancies || []).filter((vacancy) => !isExpiredVacancy(vacancy)),
-  };
+  const vacancies = snapshot.vacancies.map((vacancy) => ({
+    ...vacancy,
+    notes: vacancy.notes || notes[String(vacancy.id)] || '',
+  }));
+  return { agencies: snapshot.agencies, branches: snapshot.branches, vacancies };
 }
 
 // ---------- page builders ----------
@@ -1370,7 +1321,7 @@ function buildSeoLandingPage(page) {
 // ---------- main ----------
 
 async function main() {
-  console.log('Fetching data from Supabase...');
+  console.log('Loading committed public data snapshot...');
   const { agencies, branches, vacancies } = await fetchAll();
   console.log(`Fetched ${agencies.length} agencies, ${branches.length} branches, ${vacancies.length} vacancies.`);
 
@@ -1515,17 +1466,18 @@ async function main() {
   });
 
   // Poster pages: one shareable page per active poster. A failed/missing
-  // poster table must never fail the whole build.
+  // poster table must never fail the build.
   let posters = [];
   try {
-    const { data, error } = await supabase.from('employer_posters')
-      .select('id,image_url,caption,expires_at')
-      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-      .order('created_at', { ascending: false })
-      .limit(500);
-    if (error) console.warn('poster fetch error (skipping poster pages):', JSON.stringify(error));
-    else posters = data || [];
-  } catch (e) { console.warn('poster fetch failed (skipping poster pages):', e.message); }
+    const response = await fetch(`${R2_WORKER_URL}/api/posters`, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Worker returned HTTP ${response.status}`);
+    const payload = await response.json();
+    posters = Array.isArray(payload.posters) ? payload.posters : [];
+  } catch (e) {
+    // Poster pages are supplemental. Keep the rest of the static site buildable
+    // if the public Worker feed is briefly unavailable.
+    console.warn('poster fetch failed (skipping poster pages):', e.message);
+  }
   const posterDir = path.join(OUT_DIR, 'poster');
   ensureDir(posterDir);
   posters.filter((p) => p.image_url).forEach((poster) => {

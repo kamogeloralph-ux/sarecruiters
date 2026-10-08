@@ -7,6 +7,7 @@ import path from 'node:path';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (name) => readFileSync(path.join(root, name), 'utf8');
 const html = read('index.html');
+const data = read('app-data.js');
 const ui = read('app-ui.js');
 const cards = read('app-cards.js');
 const sheets = read('app-sheets.js');
@@ -42,6 +43,18 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /function renderHomeFeed\(/);
 });
 
+test('public retail preview reuses the Pages snapshot and prefers Worker reads over PostgREST', () => {
+  assert.match(data, /startupDataSource = 'static'/);
+  assert.match(data, /startupDataSource = 'worker'/);
+  const retailLoader = ui.slice(ui.indexOf('function ensureRetailPriorityVacancies()'), ui.indexOf('window.ensureRetailPriorityVacancies'));
+  assert.match(retailLoader, /startupDataSource === 'static'/);
+  assert.match(retailLoader, /fetchVacancyPageFromWorker\(\{ source: retailSources\.join\(','\), limit: 50 \}\)/);
+  const workerReadPosition = retailLoader.indexOf('var workerRead =');
+  const postgrestFallbackPosition = retailLoader.indexOf('return readRetailFromPostgrest();');
+  assert.ok(workerReadPosition >= 0 && postgrestFallbackPosition > workerReadPosition,
+    'the D1-backed Worker read must be attempted before any PostgREST fallback');
+});
+
 test('the homepage shows all eight source cards before retail-first roles', () => {
   assert.match(ui, /HOME_VACANCY_CARD_LIMIT = 8/);
   const homeRender = ui.slice(ui.indexOf('function renderHomeFeed()'), ui.indexOf('// Public section links'));
@@ -57,7 +70,8 @@ test('the homepage shows all eight source cards before retail-first roles', () =
   assert.doesNotMatch(homeRender, /Featured vacancies|home-featured|featuredMarkup|wireHomeFeaturedRailGestures/);
   assert.match(homeRender, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
   assert.match(ui, /function ensureRetailPriorityVacancies\(/);
-  assert.match(ui, /\.in\('source_type', \['retail'/);
+  assert.match(ui, /\.in\('source_type', retailSources\)/);
+
   assert.match(ui, /isRetailPriorityVacancy\(b\)/);
   assert.match(homeRender, /onclick="openCommunity\(\)"/);
   assert.match(ui, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);

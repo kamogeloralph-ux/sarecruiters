@@ -9,7 +9,7 @@
  * Keep this file at /sw.js for at least one full release so browsers that have
  * the old worker registered receive and activate the cleanup worker.
  */
-const VERSION = 'sa-recruiters-7f9a516073';
+const VERSION = 'sa-recruiters-412582b4e6';
 const APP_CACHE_PREFIX = 'sa-recruiters-';
 
 self.addEventListener('install', function(event) {
