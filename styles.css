@@ -2389,3 +2389,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
   .bottom-nav{height:66px}
 }
 @media(prefers-reduced-motion:reduce){.navbtn,.home-source-card,.vac-card,.vacancy-card{transition:none!important}}
+
+/* Keep every bottom-nav icon legible, not only the selected destination. */
+.bottom-nav .navbtn:not(.active),
+.bottom-nav .navbtn:not(.active) .navbtn-label{color:rgba(255,255,255,.9)!important;opacity:1!important}
+.bottom-nav .navbtn:not(.active) svg{display:block!important;stroke:rgba(255,255,255,.9)!important;color:rgba(255,255,255,.9)!important;opacity:1!important}
+.bottom-nav .navbtn.active,
+.bottom-nav .navbtn.active .navbtn-label{color:var(--brand-green,var(--accent))!important;opacity:1!important}
+.bottom-nav .navbtn.active svg{stroke:var(--brand-green,var(--accent))!important;opacity:1!important}
