@@ -15,6 +15,7 @@ const vacancyV2 = read('app-vacancy-v2.js');
 const community = read('app-community.js');
 const appManagerEmployer = read('app-manager-employer.js');
 const css = read('styles.css');
+const communityCss = read('community.css');
 const admin = read('admin.html');
 const vacancyCss = read('vacancy-v2.css');
 const sw = read('sw.js');
@@ -169,6 +170,18 @@ test('Tips Chat uses a welcoming community banner with a clear join action', () 
   assert.match(ui, /Open Tips Chat/);
   assert.match(css, /#screen-home \.home-chat-banner\{[\s\S]*?linear-gradient/);
   assert.match(html, /community-menu-badge.*>Join</);
+});
+
+test('Tips Chat exposes the original SA Recruiters emoji picker and reaction hooks', () => {
+  assert.match(html, /community-post-emoji-picker/);
+  assert.match(html, /Choose a custom SA Recruiters emoji/);
+  assert.match(community, /COMMUNITY_EMOJIS/);
+  assert.match(community, /communityRenderBody/);
+  assert.match(community, /communityToggleReaction/);
+  assert.match(community, /communityEmojiUrl/);
+  assert.match(community, /community-inline-emoji/);
+  assert.match(communityCss, /community-emoji-picker/);
+  assert.match(communityCss, /community-inline-emoji/);
 });
 
 test('Home and Menu community entries are labelled Tips Chat and use the chat icon', () => {
