@@ -17,7 +17,7 @@ const REQUEST_TIMEOUT_MS = positiveInt(process.env.CAREERS_PAGE_TIMEOUT_MS, 15_0
 const FETCH_ATTEMPTS = positiveInt(process.env.CAREERS_PAGE_FETCH_ATTEMPTS, 2);
 const REQUEST_DELAY_MS = positiveInt(process.env.CAREERS_PAGE_DELAY_MS, 350);
 const CONCURRENCY = positiveInt(process.env.CAREERS_PAGE_CONCURRENCY, 3);
-const MAX_JOBS = positiveInt(process.env.CAREERS_PAGE_MAX_JOBS, 1_000);
+const MAX_JOBS = 50;
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersCareersPageScraper/1.0 (+https://sa-recruiters.co.za)';
 
 export const SOURCES = {
@@ -178,7 +178,7 @@ async function fetchSource(source) {
   if (!summaries.length) throw new Error(`${source.label}: no public /job/{id} links found`);
   const selected = summaries.slice(0, MAX_JOBS);
   if (summaries.length > selected.length) {
-    console.warn(`[careers-page:${source.key}] limiting ${summaries.length} discovered jobs to ${selected.length}; set CAREERS_PAGE_MAX_JOBS to raise the cap`);
+    console.warn(`[careers-page:${source.key}] limiting ${summaries.length} discovered jobs to ${selected.length}; the scraper cap is fixed at 50`);
   }
   const jobs = [];
   let failures = 0;

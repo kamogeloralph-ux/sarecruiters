@@ -6,7 +6,8 @@ import { isStaleVacancy } from './vacancy-freshness.mjs';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SIMPLIFY_BASE_URL = process.env.SIMPLIFY_BASE_URL || 'https://jobs.simplify.hr';
-const PAGE_SIZE = parsePositiveInt(process.env.SIMPLIFY_PAGE_SIZE, 100);
+const MAX_VACANCIES = 50;
+const PAGE_SIZE = Math.min(parsePositiveInt(process.env.SIMPLIFY_PAGE_SIZE, 100), MAX_VACANCIES);
 const MAX_PAGES = parsePositiveInt(process.env.SIMPLIFY_MAX_PAGES, 100);
 const REQUEST_DELAY_MS = parsePositiveInt(process.env.SIMPLIFY_REQUEST_DELAY_MS, 750);
 const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SIMPLIFY_REQUEST_TIMEOUT_MS, 30_000);
@@ -185,12 +186,12 @@ export async function runSimplifyScraper({ maxPages = MAX_PAGES, pageSize = PAGE
   let failures = 0;
   let pagesWithListings = 0;
 
-  for (let page = 1; page <= maxPages; page += 1) {
+  for (let page = 1; page <= maxPages && totalUpserted < MAX_VACANCIES; page += 1) {
     const pageUrl = simplifyPageUrl(page, pageSize);
     try {
       console.log(`[simplify] page ${page}: fetching ${pageUrl}`);
       const parsed = parseSimplifyJobs(await fetchPage(pageUrl), pageUrl, now);
-      const upserted = await upsertJobs(parsed);
+      const upserted = await upsertJobs(parsed.slice(0, MAX_VACANCIES - totalUpserted));
       totalParsed += parsed.length;
       totalUpserted += upserted;
       if (parsed.rawListingCount) pagesWithListings += 1;
