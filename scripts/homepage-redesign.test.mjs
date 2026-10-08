@@ -223,6 +223,8 @@ test('Home navigation returns locally without refreshing data, and the hero uses
 
 test('Home is one continuous scroll surface with founder and legal footer information', () => {
   assert.match(css, /#screen-home\{overflow-y:auto/);
+  assert.match(css, /#screen-home\{overflow-y:auto[^}]*overscroll-behavior-y:auto/);
+  assert.match(css, /\.app:has\(#screen-home\.active\)\{height:auto;min-height:100vh;overflow:visible\}/);
   assert.match(css, /#screen-home \.screen-scroll\{flex:0 0 auto;overflow:visible/);
   assert.match(html, /class="home-site-footer"/);
   assert.match(html, /founded by Ralph Kamogelo Chiloane/);

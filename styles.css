@@ -2428,7 +2428,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .site-menu-trigger span{width:18px;height:2.5px}
 #screen-home .screen-fixed,#screen-menu .menu-hero{border-radius:0!important}
 #screen-home .site-menu-trigger{background:transparent!important;border-color:rgba(255,255,255,.58)!important;color:#fff!important;box-shadow:none!important}
-#screen-home{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+#screen-home{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch}
+#screen-home.active{overflow:visible;min-height:100vh}
+.app:has(#screen-home.active){height:auto;min-height:100vh;overflow:visible}
 #screen-home .screen-fixed{flex:0 0 auto}
 #screen-home .screen-scroll{flex:0 0 auto;overflow:visible;min-height:0}
 .home-site-footer{padding:8px 20px calc(118px + env(safe-area-inset-bottom));background:var(--bg);color:var(--text-2);text-align:center;font-size:11px;line-height:1.55}
