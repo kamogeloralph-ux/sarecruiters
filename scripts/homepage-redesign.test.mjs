@@ -212,3 +212,12 @@ test('Home navigation returns locally without refreshing data, and the hero uses
   assert.match(css, /#screen-home \.screen-fixed,#screen-menu \.menu-hero\{border-radius:0!important/);
   assert.match(css, /#screen-home \.site-menu-trigger\{background:transparent!important/);
 });
+
+test('Home is one continuous scroll surface with founder and legal footer information', () => {
+  assert.match(css, /#screen-home\{overflow-y:auto/);
+  assert.match(css, /#screen-home \.screen-scroll\{flex:0 0 auto;overflow:visible/);
+  assert.match(html, /class="home-site-footer"/);
+  assert.match(html, /founded by Ralph Kamogelo Chiloane/);
+  assert.match(html, /href="\/privacy\/"/);
+  assert.match(html, /href="\/terms\/"/);
+});
