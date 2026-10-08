@@ -508,6 +508,7 @@ function __saHideOverlayWithFade(el, removeFromDom) {
   setTimeout(function () { __saHideOverlayNow(el, removeFromDom); }, 300);
 }
 function __saApplyReveal(usingViewTransition) {
+  if (typeof window.__saNormalizeStartupScreen === 'function') window.__saNormalizeStartupScreen();
   document.body.classList.add('app-ready');
   if (typeof __saClearSlowLoadStatus === 'function') __saClearSlowLoadStatus();
   var splash = document.getElementById('app-splash');
