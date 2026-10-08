@@ -312,7 +312,11 @@ function renderHomeFeed() {
     (filtering ? 'No vacancies match those filters yet.' : 'The latest vacancies are loading or none are available right now.') +
     '</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
 
-  target.innerHTML = homeVacancySourceMarkup() +
+  target.innerHTML = '<section class="home-media-section" id="home-media-section" aria-labelledby="home-media-title">' +
+      '<div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Watch &amp; listen</span><h2 id="home-media-title">Media</h2><p>Useful recruitment content and the Track of the Day.</p></div></div>' +
+      '<div class="home-media-video-wrap"><iframe id="home-media-video" title="SA Recruiters media video" src="https://www.youtube.com/embed/HV64XG91tE4?rel=0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>' +
+    '</section>' +
+    homeVacancySourceMarkup() +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
       '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Available roles</h2><p>Retail vacancies first, followed by the newest live listings.</p></div>' +
       '<button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + '<span aria-hidden="true"> →</span></button></div>' +
@@ -329,6 +333,7 @@ function renderHomeFeed() {
       '</div></section>';
 
   target.setAttribute('aria-busy', 'false');
+  if (typeof renderHomeMediaSection === 'function') renderHomeMediaSection();
   if (previouslyOpenId) {
     target.querySelectorAll('.vac-card').forEach(function (card) {
       if (card.getAttribute('data-vacancy-id') === previouslyOpenId) {

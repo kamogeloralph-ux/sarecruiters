@@ -14,6 +14,7 @@ const sheets = read('app-sheets.js');
 const vacancyV2 = read('app-vacancy-v2.js');
 const community = read('app-community.js');
 const css = read('styles.css');
+const admin = read('admin.html');
 const vacancyCss = read('vacancy-v2.css');
 const sw = read('sw.js');
 const headers = read('_headers');
@@ -152,6 +153,21 @@ test('home conversion sections use the compact Interview Tips card language', ()
   assert.match(css, /#screen-home \.quick-card[\s\S]*?border:1px solid var\(--it-line\)!important/);
   assert.match(css, /#screen-home \.spotlight-mini[\s\S]*?box-shadow:var\(--it-shadow\)!important/);
   assert.match(css, /#screen-home \.home-section-heading h2,[\s\S]*?#screen-home \.hf-head h2\{font-size:17px!important/);
+});
+
+test('Home Media uses the managed YouTube setting and admin keeps Track of the Day controls', () => {
+  assert.match(ui, /id="home-media-section"/);
+  assert.match(ui, /id="home-media-video"/);
+  assert.match(ui, /https:\/\/www\.youtube\.com\/embed\/HV64XG91tE4\?rel=0/);
+  assert.match(data, /media_youtube_url/);
+  assert.match(data, /function youtubeEmbedUrl\(value\)/);
+  assert.match(css, /\.home-media-section\{/);
+  assert.match(admin, /id="sec-media"/);
+  assert.match(admin, />Media<\/h2>/);
+  assert.match(admin, /id="media-youtube-url"/);
+  assert.match(admin, /function saveMediaYoutubeUrl\(\)/);
+  assert.match(admin, /setAppSetting\('media_youtube_url'/);
+  assert.match(admin, /Track of the Day/);
 });
 
 test('stale PWA tabs are refreshed and the service worker cannot be held by HTTP cache', () => {

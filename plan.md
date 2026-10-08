@@ -22,15 +22,22 @@ The app is a static frontend with no new server or database capability. The exis
 
 ## Interview Tips visual system refresh
 
-- **Design movement:** compact community-product UI with soft editorial surfaces and a confident blue gradient anchor.
+- **Design movement:** compact community-product UI with a soft editorial surface and a confident blue gradient anchor.
 - **Core principles:** clear hierarchy, quiet borders, compact controls, and consistent card rhythm.
 - **Color philosophy:** deep ink and cool blue create trust and focus; lavender-blue surfaces make actions discoverable without visual noise; muted gray text keeps dense directory data readable.
 - **Layout paradigm:** stacked content groups with strong section labels, compact headers, and full-width cards rather than isolated dashboard tiles.
 - **Signature elements:** blue-to-indigo feature surfaces, 15–18px rounded cards, and small uppercase utility labels paired with concise supporting copy.
 - **Interaction philosophy:** every primary action is a clear filled control; secondary actions use quiet outlined or tinted surfaces; focus states use the same accent-soft halo as Interview Tips.
-- **Animation:** retain the app’s existing motion, but keep hover/lift subtle and respect reduced-motion preferences.
+- **Animation:** retain the app’s existing motion, but keep hover/lift subtle and respect reduced motion.
 - **Typography system:** Inter for all UI, 800-weight compact headings, 10–12px utility labels, and 12–14px readable body copy.
 - **Brand essence:** a trusted South African recruitment community that makes finding work and connecting talent feel clear, human, and practical; **focused, welcoming, credible**.
 - **Brand voice:** direct and supportive — “Find your next opportunity” and “Ask the community.”
 - **Wordmark & logo:** preserve the existing SA Recruiters mark while giving it a stronger blue product shell.
 - **Signature brand color:** Interview Tips blue `#2268ce`, paired with indigo `#574ce5` and accent-soft blue surfaces.
+
+## Home Media
+
+- **Required behavior:** Home includes a compact Media card with the supplied YouTube video as its initial URL; the video is embedded responsively and does not autoplay.
+- **Admin behavior:** The existing Daily Track admin area is renamed **Media**. It retains MP3 upload/edit/delete and Track of the Day retention behavior, and adds a validated YouTube URL field stored in `app_settings` under `media_youtube_url`.
+- **Serving behavior:** The public app reads the managed setting at bootstrap, accepts YouTube watch, Shorts, and youtu.be links, converts them to a restricted related-video embed URL, and falls back safely to `https://youtu.be/HV64XG91tE4` if the setting is missing or invalid.
+- **Design:** Use the existing Interview Tips card language: compact utility label, concise copy, quiet border, rounded surface, responsive 16:9 video frame, lazy loading, and no new media provider or credentials.

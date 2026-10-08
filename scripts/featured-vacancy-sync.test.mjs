@@ -33,7 +33,7 @@ test('dedicated featured-vacancy sections and their extra startup query are remo
   const home = functionBody(uiSrc, 'renderHomeFeed');
   assert.ok(home, 'the home vacancy renderer must remain present');
   assert.doesNotMatch(home, /Featured vacancies|home-featured|featuredMarkup|homeVacancyIsFeatured/);
-  assert.match(home, /target\.innerHTML = homeVacancySourceMarkup\(\) \+\s*'<section class="home-jobs-section"/);
+  assert.match(home, /target\.innerHTML = '[\s\S]*homeVacancySourceMarkup\(\) \+\s*'<section class="home-jobs-section"/);
   assert.match(home, /var rows = matchingRows;/, 'featured listings remain eligible for normal retail-first role ordering');
   assert.match(home, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
   assert.match(home, /onclick="openCommunity\(\)"/, 'the Interview Tips shortcut must remain on the home screen');
