@@ -147,6 +147,31 @@
 
   /* ---------- filter state ---------- */
   function val(id) { var el = $(id); return el ? String(el.value || '').trim() : ''; }
+  function vacancyText(v, fields) { return fields.map(function (key) { return v && v[key] || ''; }).join(' ').toLowerCase(); }
+  function matchesWorkMode(v, wanted) {
+    if (!wanted) return true;
+    var text = vacancyText(v, ['remote', 'work_arrangement', 'work_schedule', 'notes']);
+    if (wanted === 'remote') return /remote|telecommute|work[ -]?from[ -]?home|anywhere|distributed/.test(text);
+    if (wanted === 'hybrid') return /hybrid/.test(text);
+    if (wanted === 'onsite') return /on[ -]?site|office|in[ -]?person/.test(text) && !/remote|hybrid/.test(text);
+    return text.indexOf(String(wanted).toLowerCase()) !== -1;
+  }
+  function matchesExperience(v, wanted) {
+    if (!wanted) return true;
+    var text = vacancyText(v, ['experience_level', 'notes', 'title']);
+    if (wanted === 'entry') return /entry|junior|graduate|intern|learnership|trainee|no experience/.test(text);
+    if (wanted === 'mid') return /mid|intermediate|experienced/.test(text) && !/senior|lead|principal|manager|executive/.test(text);
+    if (wanted === 'senior') return /senior|lead|principal|manager|executive|head of/.test(text);
+    return text.indexOf(String(wanted).toLowerCase()) !== -1;
+  }
+  function hasSalary(v) {
+    return /\d/.test(String(v && (v.salary || v.min_salary || v.max_salary) || ''));
+  }
+  function postedWithin(v, days) {
+    if (!days) return true;
+    var posted = new Date(v && (v.created_at || v.posted_at || v.updated_at) || '').getTime();
+    return !!posted && Date.now() - posted <= days * DAY;
+  }
   function activeList() {
     var a = [], q = val('allvacancies-search'), l = val('allvacancies-location');
     if (q) a.push(['search', '“' + q + '”']);
@@ -196,15 +221,18 @@
     var pool = vacanciesCache.slice();
     (vacancyOverviewExtraRows || []).forEach(function (v) { if (v && !pool.some(function (x) { return x.id === v.id; })) pool.push(v); });
     (window.retailPriorityPreviewRows || []).forEach(function (v) { if (v && !pool.some(function (x) { return x.id === v.id; })) pool.push(v); });
-    var q = val('allvacancies-search').toLowerCase(), loc = val('allvacancies-location').toLowerCase(), rem = val('allvacancies-remote'), ex = val('allvacancies-exp'), ind = val('allvacancies-industry').toLowerCase();
+    var q = val('allvacancies-search').toLowerCase(), loc = val('allvacancies-location').toLowerCase(), rem = val('allvacancies-remote'), ex = val('allvacancies-exp'), ind = val('allvacancies-industry').toLowerCase(), posted = Number(val('vx-posted')) || (S.fresh ? 7 : 0);
     return pool.filter(function (v) {
       if (isVacancyExpired(v)) return false;
       var a = agencyOf(v);
       if (loc && ((v.location || '') + ' ' + (v.address || '') + ' ' + (v.province || '')).toLowerCase().indexOf(loc) < 0) return false;
-      if (rem && (v.remote || '') !== rem) return false;
-      if (ex && (v.experience_level || '') !== ex) return false;
+      if (!matchesWorkMode(v, rem)) return false;
+      if (!matchesExperience(v, ex)) return false;
       if (ind && [a.trades, v.industry, v.sector, v.category, v.notes].join(' ').toLowerCase().indexOf(ind) < 0) return false;
       if (q && [v.title, v.notes, v.location, v.company, a.name, a.trades].join(' ').toLowerCase().indexOf(q) < 0) return false;
+      if (posted && !postedWithin(v, posted)) return false;
+      if (S.salary && !hasSalary(v)) return false;
+      if (S.saved && !savedSet.has(v.id)) return false;
       if (vacancyOverviewFilter !== 'all' && !vacancyMatchesOverviewFilter(v)) return false;
       return true;
     });
@@ -238,8 +266,12 @@
     list.sort(function (a, b) {
       var isRetail = window.isRetailPriorityVacancy;
       var retailOrder = Number(typeof isRetail === 'function' && isRetail(b)) - Number(typeof isRetail === 'function' && isRetail(a));
+      if (retailOrder) return retailOrder;
+      if (S.sort === 'title') return String(a.title || '').localeCompare(String(b.title || ''));
+      if (S.sort === 'salary') return (Number(String(b.salary || '').replace(/[^0-9.]/g, '')) || 0) - (Number(String(a.salary || '').replace(/[^0-9.]/g, '')) || 0);
+      if (S.sort === 'closing') return (new Date(a.closing_date || '9999-12-31').getTime() || 9e15) - (new Date(b.closing_date || '9999-12-31').getTime() || 9e15);
       var aDate = new Date(a.created_at || 0).getTime() || 0, bDate = new Date(b.created_at || 0).getTime() || 0;
-      return retailOrder || bDate - aDate;
+      return bDate - aDate;
     });
     var html = '';
     if (searching) html += '<p class="vx-search-note" role="status">Showing loaded matches. Choose a source below to browse more.</p>';
@@ -295,7 +327,7 @@
   window.renderAllVacanciesList = render;
   window.clearVacancyFilters = function () {
     ['allvacancies-search', 'allvacancies-location', 'allvacancies-industry', 'allvacancies-remote', 'allvacancies-exp', 'vx-posted'].forEach(function (id) { var el = $(id); if (el) el.value = ''; });
-    S.fresh = S.salary = S.saved = false; S.sort = 'newest'; render();
+    S.fresh = S.salary = S.saved = false; S.sort = 'newest'; vacancyOverviewFilter = 'all'; vacancyOverviewExtraRows = []; render();
   };
   window.setVacancySort = function (v) { S.sort = v || 'newest'; render(); };
 
