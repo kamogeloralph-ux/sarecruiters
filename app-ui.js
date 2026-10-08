@@ -517,8 +517,8 @@ function setCtaPanel(index) {
   if (carousel) carousel.addEventListener('scroll', updateCtaDots, { passive: true });
 })();
 function refreshHome() {
-  showToast('Refreshing…');
-  loadAll({ fresh: true });
+  // Home is already hydrated; returning here must not refetch or rebuild the app.
+  if (typeof goBackToHome === 'function') goBackToHome();
 }
 
 // ===== Toast =====

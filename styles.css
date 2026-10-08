@@ -2425,6 +2425,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .home-media-track-play svg{width:15px;height:15px;fill:currentColor}
 .site-menu-trigger{width:44px;height:44px;gap:4px;border-radius:12px}
 .site-menu-trigger span{width:18px;height:2.5px}
+#screen-home .screen-fixed,#screen-menu .menu-hero{border-radius:0!important}
+#screen-home .site-menu-trigger{background:transparent!important;border-color:rgba(255,255,255,.58)!important;color:#fff!important;box-shadow:none!important}
 
 /* ===== Final Interview Tips visual pass =====
    Keep guest authentication and the home conversion sections on the same
