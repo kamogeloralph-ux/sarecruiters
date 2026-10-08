@@ -62,6 +62,20 @@ function restoreActiveScreenBeforeReveal() {
   var params = new URLSearchParams(window.location.search);
   if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
   try { sessionStorage.setItem(SA_ACTIVE_SCREEN_KEY, 'home'); } catch(e) {}
+  // Explicitly normalize the DOM as well as storage. This prevents cached
+  // render work or a waiting service-worker update from briefly exposing the
+  // Menu/Tips Chat screen before Home data is ready.
+  document.querySelectorAll('.screen').forEach(function (screen) { screen.classList.remove('active'); });
+  var home = document.getElementById('screen-home');
+  if (home) home.classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function (button) {
+    button.classList.toggle('active', button.dataset.tab === 'home');
+  });
+  var drawer = document.getElementById('site-menu-drawer');
+  var backdrop = document.getElementById('site-menu-backdrop');
+  if (drawer) { drawer.classList.remove('is-open'); drawer.setAttribute('aria-hidden', 'true'); }
+  if (backdrop) { backdrop.classList.remove('is-visible'); backdrop.setAttribute('aria-hidden', 'true'); }
+  document.body.classList.remove('site-menu-open');
   window.__saRestoredScreen = 'home';
 }
 restoreActiveScreenBeforeReveal();
