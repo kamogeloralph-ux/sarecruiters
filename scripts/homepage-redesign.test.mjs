@@ -43,6 +43,7 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /function setHomeLocationFilter\(/);
   assert.match(ui, /function homeVacancyMatchesLocation\(/);
   assert.match(ui, /function setHomeCategoryFilter\(/);
+  assert.match(ui, /document\.querySelectorAll\('\.screen'\)\.forEach\(function \(screen\)/, 'startup must normalize the visible screen to Home');
   assert.match(ui, /function homeVacancyMatchesCategory\(/);
   assert.match(ui, /function homeSourceVacancies\(/);
   assert.match(ui, /function renderHomeFeed\(/);
