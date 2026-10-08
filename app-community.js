@@ -6,6 +6,7 @@ var communityMvp = {
   sort: 'new',
   posts: [],
   liked: new Set(),
+  reactions: new Map(),
   expanded: new Set(),
   loading: false,
   returnScreen: 'home',
@@ -20,6 +21,43 @@ function communityEsc(value) {
 function communityToast(message) {
   if (typeof showToast === 'function') showToast(message);
   else console.info('[Community]', message);
+}
+var COMMUNITY_EMOJIS = [
+  { type: 'join', label: 'Join in', file: 'sa-recruiters-emoji-01-join.webp' },
+  { type: 'good-luck', label: 'Good luck', file: 'sa-recruiters-emoji-02-good-luck.webp' },
+  { type: 'interview-win', label: 'Interview win', file: 'sa-recruiters-emoji-03-interview-win.webp' },
+  { type: 'ask-question', label: 'Question', file: 'sa-recruiters-emoji-04-ask-question.webp' },
+  { type: 'applause', label: 'Applause', file: 'sa-recruiters-emoji-05-applause.webp' }
+];
+function communityEmojiInfo(type) { return COMMUNITY_EMOJIS.find(function(item) { return item.type === type; }) || COMMUNITY_EMOJIS[0]; }
+function communityEmojiUrl(type) { return 'assets/sa-recruiters-emoji/web/' + communityEmojiInfo(type).file; }
+function communityEmojiToken(type) { return '[sa-emoji:' + communityEmojiInfo(type).type + ']'; }
+function communityRenderBody(value) {
+  var source = String(value == null ? '' : value), token = /\[sa-emoji:(join|good-luck|interview-win|ask-question|applause)\]/g, html = '', last = 0, match;
+  while ((match = token.exec(source))) {
+    html += communityEsc(source.slice(last, match.index));
+    var info = communityEmojiInfo(match[1]);
+    html += '<img class="community-inline-emoji" src="' + communityEmojiUrl(info.type) + '" alt="' + communityEsc(info.label) + ' emoji" loading="lazy">';
+    last = match.index + match[0].length;
+  }
+  return html + communityEsc(source.slice(last));
+}
+function communityEmojiButton(type, target) {
+  var info = communityEmojiInfo(type);
+  var action = target.indexOf('post:') === 0
+    ? 'communityToggleReaction(\'' + communityEsc(target.slice(5)) + '\',\'' + info.type + '\')'
+    : 'communityPickComposerEmoji(\'' + communityEsc(target) + '\',\'' + info.type + '\')';
+  return '<button type="button" class="community-emoji-choice" title="' + communityEsc(info.label) + '" aria-label="Add ' + communityEsc(info.label) + ' emoji" onclick="' + action + '"><img src="' + communityEmojiUrl(info.type) + '" alt=""><span>' + communityEsc(info.label) + '</span></button>';
+}
+function communityInitEmojiPicker(id, target) { var picker = document.getElementById(id); if (picker && !picker.dataset.ready) { picker.innerHTML = COMMUNITY_EMOJIS.map(function(item) { return communityEmojiButton(item.type, target); }).join(''); picker.dataset.ready = 'true'; } }
+function communityToggleEmojiPicker(id, target) { var picker = document.getElementById(id); if (!picker) return; communityInitEmojiPicker(id, target); picker.hidden = !picker.hidden; }
+function communityPickComposerEmoji(target, type) {
+  var field = document.getElementById(target); if (!field) return;
+  var token = communityEmojiToken(type), start = Number.isInteger(field.selectionStart) ? field.selectionStart : field.value.length, end = Number.isInteger(field.selectionEnd) ? field.selectionEnd : start;
+  field.value = field.value.slice(0, start) + token + field.value.slice(end); field.focus(); field.selectionStart = field.selectionEnd = start + token.length;
+  var info = communityEmojiInfo(type), preview = document.getElementById('community-post-emoji-preview');
+  if (preview) preview.innerHTML = '<img src="' + communityEmojiUrl(type) + '" alt="' + communityEsc(info.label) + ' emoji"><span>' + communityEsc(info.label) + ' added</span>';
+  var picker = document.getElementById('community-post-emoji-picker'); if (picker) picker.hidden = true;
 }
 function communitySignedIn() {
   return typeof saAuthUser !== 'undefined' && !!saAuthUser && !!supabaseClient;
@@ -151,11 +189,15 @@ async function communityLoadFeed() {
   if (result.error) throw result.error;
   communityMvp.posts = result.data || [];
   communityMvp.liked = new Set();
+  communityMvp.reactions = new Map();
   if (communitySignedIn() && communityMvp.posts.length) {
     var ids = communityMvp.posts.map(function(post) { return post.id; });
-    var likedResult = await supabaseClient.from('community_post_reactions')
-      .select('post_id').in('post_id', ids);
-    if (!likedResult.error) communityMvp.liked = new Set((likedResult.data || []).map(function(row) { return row.post_id; }));
+    var reactionResult = await supabaseClient.from('community_post_reactions')
+      .select('post_id,reaction_type').in('post_id', ids);
+    if (!reactionResult.error) (reactionResult.data || []).forEach(function(row) {
+      if (row.reaction_type === 'like') communityMvp.liked.add(row.post_id);
+      else communityMvp.reactions.set(row.post_id, row.reaction_type);
+    });
   }
   communityRenderFeed();
 }
@@ -178,10 +220,12 @@ function communityRenderFeed() {
       '<div class="community-post-head"><div class="community-author-mark" aria-hidden="true">' + (post.is_official ? 'SA' : 'A') + '</div>' +
       '<div class="community-post-byline"><strong>' + communityEsc(post.author_label) + '</strong>' + official + '<span>' + communityEsc(communityWhen(post.created_at)) + '</span></div>' +
       '<button class="community-more" type="button" aria-label="Report post" title="Report post" onclick="communityOpenReport(\'post\',\'' + id + '\')">•••</button></div>' +
-      '<div class="community-post-body">' + communityEsc(post.body) + '</div>' +
+      '<div class="community-post-body">' + communityRenderBody(post.body) + '</div>' +
       '<div class="community-post-actions"><button type="button" class="community-action' + (liked ? ' is-liked' : '') + '" aria-pressed="' + (liked ? 'true' : 'false') + '" onclick="' + likeAction + '(\'' + id + '\')"><span aria-hidden="true">' + (liked ? '♥' : '♡') + '</span> ' + Number(post.likes_count || 0) + ' Like</button>' +
       '<button type="button" class="community-action" aria-expanded="' + (expanded ? 'true' : 'false') + '" onclick="' + commentAction + '(\'' + id + '\')">' + Number(post.comments_count || 0) + ' Comments</button>' +
+      '<button type="button" class="community-action community-reaction-toggle" aria-expanded="false" onclick="communityToggleEmojiPicker(\'community-reaction-picker-' + id + '\',\'post:' + id + '\')">' + (communityMvp.reactions.has(post.id) ? '<img src="' + communityEmojiUrl(communityMvp.reactions.get(post.id)) + '" alt="" class="community-action-emoji"> Reacted' : 'React') + '</button>' +
       '<button type="button" class="community-action community-share-action" onclick="communitySharePost(\'' + id + '\')">Share</button></div>' +
+      '<div class="community-reaction-picker" id="community-reaction-picker-' + id + '" hidden></div>' +
       '<div class="community-comments" id="community-comments-' + id + '"' + (expanded ? '' : ' hidden') + '></div>' +
       '</article>';
   }).join('');
@@ -265,6 +309,21 @@ function communityToggleLike(postId) {
     if (alreadyLiked) communityMvp.liked.delete(postId); else communityMvp.liked.add(postId);
     communityLoadFeed().catch(function(error) { console.error(error); });
   });
+}
+async function communityToggleReaction(postId, reactionType) {
+  if (!communityRequireSignIn()) return;
+  if (!communityMvp.joined) { communityPromptParticipation(); return; }
+  var current = communityMvp.reactions.get(postId) || (communityMvp.liked.has(postId) ? 'like' : null), result;
+  if (current === reactionType) {
+    result = await supabaseClient.from('community_post_reactions').delete().eq('post_id', postId);
+    if (!result.error) { communityMvp.reactions.delete(postId); communityMvp.liked.delete(postId); }
+  } else {
+    if (current) await supabaseClient.from('community_post_reactions').delete().eq('post_id', postId);
+    result = await supabaseClient.from('community_post_reactions').insert({ post_id: postId, reaction_type: reactionType });
+    if (!result.error) { communityMvp.liked.delete(postId); if (reactionType === 'like') communityMvp.liked.add(postId); else communityMvp.reactions.set(postId, reactionType); }
+  }
+  if (result && result.error && result.error.code !== '23505') { console.error(result.error); communityToast('Reaction could not be saved.'); return; }
+  communityRenderFeed();
 }
 async function communityToggleComments(postId) {
   if (!communityRequireSignIn()) return;
@@ -445,6 +504,9 @@ window.communitySetSort = communitySetSort;
 window.communitySubmitPost = communitySubmitPost;
 window.communityPromptParticipation = communityPromptParticipation;
 window.communityToggleLike = communityToggleLike;
+window.communityToggleReaction = communityToggleReaction;
+window.communityToggleEmojiPicker = communityToggleEmojiPicker;
+window.communityPickComposerEmoji = communityPickComposerEmoji;
 window.communityToggleComments = communityToggleComments;
 window.communitySubmitComment = communitySubmitComment;
 window.communityOpenReport = communityOpenReport;
@@ -457,6 +519,7 @@ window.communityReviewReported = communityReviewReported;
 window.communityDismissReport = communityDismissReport;
 
 (function initCommunityMvp() {
+  communityInitEmojiPicker('community-post-emoji-picker', 'community-post-body');
   var reportOverlay = document.getElementById('community-report-overlay');
   if (reportOverlay) reportOverlay.addEventListener('click', function(event) {
     if (event.target === reportOverlay) communityCloseReport();
