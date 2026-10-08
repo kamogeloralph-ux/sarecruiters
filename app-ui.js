@@ -670,6 +670,7 @@ window.goBackFromAccount = goBackFromAccount;
 function renderAccountIdentity(user) {
   var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Guest';
   var avatar = user && user.user_metadata && (user.user_metadata.profile_photo || user.user_metadata.avatar_url);
+  var isGuest = !user;
   var nameEl = document.getElementById('account-name');
   var emailEl = document.getElementById('account-email');
   var avatarEl = document.getElementById('account-avatar');
@@ -682,11 +683,14 @@ function renderAccountIdentity(user) {
   if (providerEl) providerEl.style.display = user ? 'inline-flex' : 'none';
   // Guest chrome: sign-in card + quota meter. Signed-in chrome: sign-out.
   var signinCard = document.getElementById('account-signin-card');
-  if (signinCard) signinCard.style.display = user ? 'none' : 'block';
+  if (signinCard) {
+    signinCard.hidden = !isGuest;
+    signinCard.setAttribute('aria-hidden', isGuest ? 'false' : 'true');
+  }
   var quotaCard = document.getElementById('account-quota-card');
-  if (quotaCard) quotaCard.style.display = user ? 'none' : 'block';
+  if (quotaCard) quotaCard.hidden = !isGuest;
   var signoutGroup = document.getElementById('account-signout-group');
-  if (signoutGroup) signoutGroup.style.display = user ? 'block' : 'none';
+  if (signoutGroup) signoutGroup.hidden = isGuest;
   var guestTeaser = document.getElementById('guest-teaser');
   if (guestTeaser) guestTeaser.style.display = user ? 'none' : 'flex';
   var meta = document.getElementById('account-meta');

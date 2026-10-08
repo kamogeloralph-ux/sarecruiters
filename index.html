@@ -162,12 +162,12 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-e9fc9b210c">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-e9fc9b210c" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-8c0a10abdc">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-8c0a10abdc" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="community.css?v=sa-recruiters-e9fc9b210c" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-e9fc9b210c"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-e9fc9b210c"></noscript>
+<link rel="stylesheet" href="community.css?v=sa-recruiters-8c0a10abdc" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-8c0a10abdc"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-8c0a10abdc"></noscript>
 </head>
 <body>
 
@@ -312,7 +312,7 @@
         </div>
       </div>
 
-      <div class="account-signin-card" id="account-signin-card">
+      <div class="account-signin-card" id="account-signin-card" aria-hidden="false">
         <div class="account-signin-copy">
           <strong>Create your free account</strong>
           <span>Get unlimited access to every vacancy, save jobs across devices, and join the Talent Pool when you're ready.</span>
@@ -368,7 +368,7 @@
       </div>
 
       <div class="pgroup-label">Account</div>
-      <div class="pgrouped-list" id="account-signout-group" style="display:none">
+      <div class="pgrouped-list" id="account-signout-group" hidden>
         <button class="profile-menu-item" data-ripple onclick="signOutSaRecruiters()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5M15 12H3M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg></span><span>Sign out<span class="mi-sub">Sign out of your Google account</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
     <div class="contact-section">
@@ -1447,8 +1447,8 @@
      content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
      the browser fetch them at idle priority (and keep generate-pages.js cache-busting them);
      openContentSheet() below loads them on demand and then hands over to the real implementation. -->
-<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-e9fc9b210c" data-sa-lazy="content">
-<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-e9fc9b210c" data-sa-lazy="content-manager">
+<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-8c0a10abdc" data-sa-lazy="content">
+<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-8c0a10abdc" data-sa-lazy="content-manager">
 <script>
 (function(){
   var pending=null;
@@ -1475,7 +1475,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=44b2f75130" defer></script>
+<script src="app.bundle.min.js?v=b8917ee4e9" defer></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-3" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
