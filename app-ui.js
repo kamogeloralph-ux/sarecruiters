@@ -553,8 +553,17 @@ function forceUpdate() {
   }).catch(reloadOnce);
 }
 
+function dismissUpdateBanner() {
+  var banner = document.getElementById('update-banner');
+  if (banner) { banner.classList.remove('show'); banner.hidden = true; }
+  try { sessionStorage.setItem('sa_update_dismissed', '1'); } catch (e) {}
+  try { trackEvent('service_worker_update_dismissed', 'pwa', null); } catch (e) {}
+}
 function forceUpdateReload() {
-  document.getElementById('update-banner').classList.remove('show');
+  var banner = document.getElementById('update-banner');
+  if (banner) { banner.classList.remove('show'); banner.hidden = true; }
+  try { sessionStorage.removeItem('sa_update_dismissed'); } catch (e) {}
+  try { trackEvent('service_worker_update_accepted', 'pwa', null); } catch (e) {}
   forceUpdate();
 }
 

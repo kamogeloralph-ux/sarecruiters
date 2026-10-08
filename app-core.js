@@ -73,6 +73,7 @@ function renderAuthUser(user) {
   }
   // Keep the My Account screen in sync with the identity (guest or signed in).
   if (typeof renderAccountIdentity === 'function') renderAccountIdentity(user);
+  try { document.dispatchEvent(new CustomEvent('sa-auth-change', { detail: { user: user || null } })); } catch (e) {}
 }
 // ===== Open app: auth is optional =====
 // The app is browsable by guests; a Google account unlocks unlimited

@@ -269,35 +269,35 @@
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Full dark mode support"
+      "label": "Browse agencies and vacancies in a polished mobile experience"
     },
     {
       "src": "screenshots/mobile-2.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Quick access to admin tools"
+      "label": "Your profile, safety contacts and account tools"
     },
     {
       "src": "screenshots/mobile-3.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Browse all verified agencies"
+      "label": "Quick access to recruitment tools and support"
     },
     {
       "src": "screenshots/mobile-4.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Rate your recruiter"
+      "label": "Save vacancies and manage job alerts"
     },
     {
       "src": "screenshots/mobile-5.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Anti-trafficking resources"
+      "label": "Trusted worker-safety and anti-trafficking resources"
     }
   ]
 }

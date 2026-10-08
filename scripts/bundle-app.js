@@ -1,7 +1,7 @@
 // ============================================================
 //  SA RECRUITERS — scripts/bundle-app.js
 // ============================================================
-//  Concatenates the 10 split app-*.js files (app-core, app-data,
+//  Concatenates the split app-*.js files (app-core, app-data,
 //  app-cards, app-forms, app-sheets, app-ui, app-manager,
 //  app-manager-employer, app-pending-submissions, app-community) into a single minified bundle, and
 //  rewrites index.html's script tag to point at it with a
@@ -33,6 +33,7 @@ const FILES = [
   'app-manager-employer.js',
   'app-pending-submissions.js',
   'app-community.js',
+  'app-install.js',
 ];
 
 const BUNDLE_NAME = 'app.bundle.min.js';

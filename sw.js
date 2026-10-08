@@ -90,7 +90,10 @@ self.addEventListener('fetch', function(event) {
   if (request.mode === 'navigate') {
     event.respondWith(
       networkFirst(request, '/').then(function(response) {
-        return response || caches.match('/offline.html');
+        if (!response) {
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clients) { clients.forEach(function(client) { client.postMessage({ type: 'OFFLINE_LAUNCH' }); }); });
+      }
+      return response || caches.match('/offline.html');
       })
     );
     return;
@@ -112,4 +115,20 @@ self.addEventListener('message', function(event) {
   if (event.data.type === 'GET_VERSION' && event.source) {
     event.source.postMessage({ type: 'VERSION', version: VERSION });
   }
+});
+
+self.addEventListener('push', function(event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = { title: 'SA Recruiters', body: event.data ? event.data.text() : 'New vacancy alert' }; }
+  var title = data.title || 'New vacancy match';
+  var options = { body: data.body || 'A new vacancy matches one of your saved searches.', icon: '/icons/v2-icon-192.png', badge: '/icons/v2-monochrome-192.png', tag: data.tag || 'sa-recruiters-vacancy', renotify: true, data: { url: data.url || '/?source=push' } };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  var target = event.notification.data && event.notification.data.url || '/?source=push';
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clients) {
+    for (var i = 0; i < clients.length; i++) { if ('focus' in clients[i]) { clients[i].navigate(target); return clients[i].focus(); } }
+    return self.clients.openWindow(target);
+  }));
 });
