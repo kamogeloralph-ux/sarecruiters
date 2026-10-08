@@ -2401,3 +2401,61 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 [data-theme="light"] .bottom-nav .navbtn:not(.active),
 [data-theme="light"] .bottom-nav .navbtn:not(.active) .navbtn-label{color:#53657d!important}
 [data-theme="light"] .bottom-nav .navbtn:not(.active) svg{stroke:#53657d!important;color:#53657d!important}
+
+/* ===== Final Interview Tips visual pass =====
+   Keep guest authentication and the home conversion sections on the same
+   calm, high-contrast card system as the community experience. */
+[data-theme="light"] #screen-account .account-signin-card,
+#screen-account .account-signin-card{
+  background:linear-gradient(145deg,#eef6ff 0%,#ffffff 72%)!important;
+  border:1px solid #c8dcef!important;
+  color:#14243d!important;
+  box-shadow:0 8px 22px rgba(22,64,110,.10)!important;
+}
+#screen-account .account-signin-copy strong{color:#14243d!important}
+#screen-account .account-signin-copy span{color:#52657d!important}
+#screen-account .account-signin-card .gsi-material-button{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;min-height:50px!important;height:50px!important;
+  background:#fff!important;border:1px solid #b8cce2!important;
+  color:#243653!important;box-shadow:0 4px 12px rgba(22,64,110,.10)!important;
+}
+#screen-account .account-signin-card .gsi-material-button:hover{background:#f7fbff!important}
+
+#screen-home .quick-access,
+#screen-home .spotlight-mini,
+#screen-home .home-tools-section{margin-top:18px;margin-bottom:22px}
+#screen-home .quick-access-label,
+#screen-home .home-section-kicker{
+  text-transform:none;letter-spacing:.02em;font-size:11px;font-weight:750;color:var(--accent)
+}
+#screen-home .quick-access-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#screen-home .quick-card{
+  padding:14px 13px 12px;border-radius:15px!important;background:var(--card)!important;
+  border:1px solid var(--it-line)!important;box-shadow:var(--it-shadow)!important
+}
+#screen-home .quick-card-head{align-items:flex-start}
+#screen-home .quick-card-icon{width:34px;height:34px;flex-basis:34px;border-radius:11px}
+#screen-home .quick-card-head strong{font-size:14px}
+#screen-home .quick-card-head small{font-size:10.5px;line-height:1.35}
+#screen-home .quick-card-actions{display:grid;grid-template-columns:1fr;gap:6px;margin-top:10px}
+#screen-home .quick-card-actions button{min-height:34px;padding:7px 8px;border-radius:10px;font-size:10.5px}
+#screen-home .spotlight-mini{
+  padding:14px 13px 12px;border-radius:15px!important;background:var(--card)!important;
+  border:1px solid var(--it-line)!important;box-shadow:var(--it-shadow)!important
+}
+#screen-home .spotlight-mini-head{margin-bottom:10px}
+#screen-home .spotlight-mini-head h2{font-size:17px;margin:2px 0 0}
+#screen-home .spotlight-mini .spotlight-deck{padding:1px 0 3px}
+#screen-home .spotlight-mini .spotlight-deck>*{flex-basis:116px;min-width:116px;border-radius:13px}
+
+#screen-home .home-section-heading h2,
+#screen-home .hf-head h2{font-size:17px!important;line-height:1.2;letter-spacing:-.02em!important}
+#screen-home .home-section-heading{margin-bottom:10px}
+#screen-home .home-section-kicker{font-size:10px}
+#screen-home .hf-head{margin-bottom:8px}
+#screen-home .hf-head h2{text-transform:none}
+@media(max-width:390px){
+  #screen-home .quick-access-grid{grid-template-columns:1fr}
+  #screen-home .quick-card-actions{grid-template-columns:1fr 1fr}
+}
