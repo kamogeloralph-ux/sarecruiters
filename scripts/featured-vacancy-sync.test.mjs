@@ -81,6 +81,24 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
   assert.match(indexSrc, /app-alerts\.js\?v=al-4/, 'the saved-search CTA script cache key must be refreshed');
 });
 
+test('all vacancy filters are wired to the overview and folder render paths', () => {
+  for (const id of ['allvacancies-search', 'allvacancies-location', 'allvacancies-industry', 'allvacancies-remote', 'allvacancies-exp', 'vx-posted', 'allvacancies-sort', 'vx-filter-toggle', 'vacancy-clear-filters']) {
+    assert.match(indexSrc, new RegExp('id="' + id + '"'), id + ' control must exist');
+  }
+  for (const chip of ['fresh', 'remote', 'salary', 'saved', 'near']) {
+    assert.match(indexSrc, new RegExp('data-vx="' + chip + '"'), chip + ' quick filter must exist');
+  }
+  assert.match(vacancyRendererSrc, /function matchesWorkMode\(/);
+  assert.match(vacancyRendererSrc, /function matchesExperience\(/);
+  assert.match(vacancyRendererSrc, /function postedWithin\(/);
+  assert.match(vacancyRendererSrc, /if \(S\.salary && !hasSalary\(v\)\)/);
+  assert.match(vacancyRendererSrc, /if \(S\.saved && !savedSet\.has\(v\.id\)\)/);
+  assert.match(vacancyRendererSrc, /S\.sort === 'closing'/);
+  assert.match(vacancyRendererSrc, /data-vxview/);
+  assert.match(uiSrc, /remote\|telecommute\|work\[ -\]\?from\[ -\]\?home/);
+  assert.match(uiSrc, /expFilter === 'entry'/);
+});
+
 test('the saved-search CTA is the modern card, not a bare emoji button', () => {
   assert.match(alertsSrc, /className = 'sa-alert-cta'/, 'app-alerts.js must use the sa-alert-cta class');
   assert.match(alertsSrc, /list\.appendChild\(b\)/, 'the CTA must stay below the source-first overview');

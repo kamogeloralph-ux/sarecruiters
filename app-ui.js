@@ -1671,8 +1671,20 @@ function renderAllVacanciesList() {
     industryFilter = industrySel.value;
   }
   if (locationFilter) list = list.filter(function(v){ return ((v.location||'') + ' ' + (v.address||'') + ' ' + (v.province||'')).toLowerCase().indexOf(locationFilter) !== -1; });
-  if (remoteFilter) list = list.filter(function(v){ return (v.remote||'') === remoteFilter; });
-  if (expFilter) list = list.filter(function(v){ return (v.experience_level||'') === expFilter; });
+  if (remoteFilter) list = list.filter(function(v){
+    var text = [v.remote, v.work_arrangement, v.work_schedule, v.notes].join(' ').toLowerCase();
+    if (remoteFilter === 'remote') return /remote|telecommute|work[ -]?from[ -]?home|anywhere|distributed/.test(text);
+    if (remoteFilter === 'hybrid') return /hybrid/.test(text);
+    if (remoteFilter === 'onsite') return /on[ -]?site|office|in[ -]?person/.test(text) && !/remote|hybrid/.test(text);
+    return text.indexOf(remoteFilter.toLowerCase()) !== -1;
+  });
+  if (expFilter) list = list.filter(function(v){
+    var text = [v.experience_level, v.title, v.notes].join(' ').toLowerCase();
+    if (expFilter === 'entry') return /entry|junior|graduate|intern|learnership|trainee|no experience/.test(text);
+    if (expFilter === 'mid') return /mid|intermediate|experienced/.test(text) && !/senior|lead|principal|manager|executive/.test(text);
+    if (expFilter === 'senior') return /senior|lead|principal|manager|executive|head of/.test(text);
+    return text.indexOf(expFilter.toLowerCase()) !== -1;
+  });
   if (industryFilter) {
     list = list.filter(function(v){
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; });
