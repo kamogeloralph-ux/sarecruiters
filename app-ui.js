@@ -328,7 +328,7 @@ function renderHomeFeed() {
     '<section class="spotlight-mini home-spotlight" aria-labelledby="home-spotlight-title"><div class="spotlight-mini-head"><div><div class="quick-access-label">Talent Pool spotlight</div><h2 id="home-spotlight-title">Meet our candidates</h2></div><button type="button" data-ripple onclick="goPool(\'profile\')">See all &#8594;</button></div><div class="spotlight-deck" id="home-candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"><div class="poster-empty">Loading candidates…</div></div></section>' +
     '<section class="home-categories-section" aria-labelledby="home-categories-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Find your next move</span><h2 id="home-categories-title">Explore top job categories</h2></div></div>' +
       '<div class="home-category-grid">' + categoryMarkup + '</div></section>' +
-    '<section class="home-sponsored" role="link" tabindex="0" aria-label="Visit JW Aluminium &amp; Glass website" onclick="openFeaturedCompanyWebsite(event)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openFeaturedCompanyWebsite(event)}"><img class="home-sponsored-art" src="/jw-aluminium-banner.webp" alt="JW Aluminium advertisement for custom glass and aluminium products" width="1200" height="400" loading="lazy" decoding="async"><div class="home-sponsored-content"><div class="home-sponsored-copy"><span class="home-sponsored-mark">FEATURED COMPANY</span><h2>Feature your company here</h2><p>Showcase your brand to South Africa’s job seekers and employers.</p></div><button type="button" onclick="event.stopPropagation();openCompanyFeatureInquiry()">Ask about advertising</button></div></section>' +
+    '<div id="house-ad-home-middle" class="house-ad-slot" hidden></div>' +
     '<section class="home-tools-section" aria-labelledby="home-tools-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Quick actions</span><h2 id="home-tools-title">Tools for job seekers &amp; recruiters</h2></div></div>' +
       '<div class="home-tools-grid">' +
         '<article class="home-tool-card home-tool-card--seeker"><div class="home-tool-icon" aria-hidden="true">CV</div><div><h3>For job seekers</h3><p>Upload or update your CV and get discovered by recruitment agencies.</p></div><div class="home-tool-actions"><button type="button" onclick="openHomeTalentPoolProfile()">Upload / update CV</button><button type="button" class="secondary" onclick="showAllVacancies(\'home\')">Browse vacancies</button></div></article>' +
@@ -337,6 +337,7 @@ function renderHomeFeed() {
 
   target.setAttribute('aria-busy', 'false');
   if (typeof renderHomeMediaSection === 'function') renderHomeMediaSection();
+  if (typeof renderHouseAdSlots === 'function') renderHouseAdSlots();
   if (typeof todayTrack !== 'undefined' && todayTrack) renderTrackReady();
   else if (typeof renderTrackEmpty === 'function') renderTrackEmpty();
   if (typeof loadCandidateSpotlight === 'function') loadCandidateSpotlight();

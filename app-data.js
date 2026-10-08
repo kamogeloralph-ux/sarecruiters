@@ -117,6 +117,9 @@ function renderHouseAdSlot(targetId, placement, slot) {
   trackHouseAdEvent(ad.id, 'impression');
 }
 function renderHouseAdSlots() {
+  renderHouseAdSlot('house-ad-home-top', 'home', 'top');
+  renderHouseAdSlot('house-ad-home-middle', 'home', 'middle');
+  renderHouseAdSlot('house-ad-home-bottom', 'home', 'bottom');
   renderHouseAdSlot('house-ad-agencies-top', 'agencies', 'top');
   renderHouseAdSlot('house-ad-agencies-middle', 'agencies', 'middle');
   renderHouseAdSlot('house-ad-agencies-bottom', 'agencies', 'bottom');
