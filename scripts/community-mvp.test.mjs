@@ -54,7 +54,7 @@ test('active Talent Pool profiles identify TipChat content without exposing acco
   assert.match(app, /communityAuthorAvatarHtml\(post\.author_label, post\.author_photo_url/);
   assert.match(app, /communityAuthorAvatarHtml\(comment\.author_label, comment\.author_photo_url/);
   assert.match(app, /authorIdentityAvailable/);
-  assert.match(html, /Active Talent Pool members are shown with their profile name and photo/);
+  assert.doesNotMatch(html, /Active Talent Pool members are shown with their profile name and photo/);
 });
 
 test('participation insert policies use a private current-user membership verifier', () => {
@@ -85,12 +85,12 @@ test('client uses only approved content for feeds and includes join, report, and
   assert.match(html, /id="community-report-overlay"/);
 });
 
-test('Interview Tips keeps all content below its title bar in one scrollable pane', () => {
+test('TipChat feed is the first visible content and remains in the scrollable pane', () => {
   const start = html.indexOf('<div class="screen" id="screen-community">');
   const end = html.indexOf('<!-- ============ SMART MANAGER', start);
   const screen = html.slice(start, end);
   const scrollAt = screen.indexOf('<div class="screen-scroll">');
-  assert.match(screen, /<div class="screen-fixed">\s*<header class="community-header">[\s\S]*?<\/header>\s*<\/div>\s*<div class="screen-scroll">\s*<section class="community-group-banner"/);
+  assert.match(screen, /<div class="screen-fixed">\s*<header class="community-header">[\s\S]*?<\/header>\s*<\/div>\s*<div class="screen-scroll">/);
   assert.ok(scrollAt >= 0, 'community screen must expose its scroll region');
   const divTags = /<\/?div\b[^>]*>/gi;
   divTags.lastIndex = scrollAt;
@@ -104,18 +104,23 @@ test('Interview Tips keeps all content below its title bar in one scrollable pan
     }
   }
   assert.ok(scrollEnd > scrollAt, 'community scroll region must close after its full contents');
-  for (const marker of ['community-group-banner', 'community-safety-note', 'community-compose', 'community-admin-panel', 'community-feed-toolbar', 'community-feed']) {
+  for (const marker of ['community-admin-panel', 'community-feed-toolbar', 'community-feed', 'community-compose']) {
     const markerAt = screen.indexOf(marker);
     assert.ok(markerAt > scrollAt && markerAt < scrollEnd, `${marker} must remain reachable inside the scroll pane`);
   }
   assert.match(sharedCss, /\.screen-scroll\{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch/);
   assert.match(communityCss, /#screen-community \.screen-scroll\{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 16px 112px;overscroll-behavior-y:contain\}/);
+  assert.ok(screen.indexOf('id="community-feed"') < screen.indexOf('id="community-post-form"'), 'posts must appear before the composer');
+  assert.match(screen, /id="community-join-btn"[^>]*>Join<\/button>/);
+  assert.doesNotMatch(screen, /Public community · reviewed posts|class="community-safety-note"|>Joined</);
 });
 
-test('TipChat intro uses a prominent logo without the former blue hero card', () => {
-  assert.match(html, /class="community-banner-logo" src="icons\/tipchat-logo\.svg"/);
-  assert.match(communityCss, /#screen-community \.community-group-banner\{[\s\S]*?background:transparent/);
-  assert.match(communityCss, /#screen-community \.community-banner-logo\{[\s\S]*?width:min\(290px/);
+test('TipChat keeps its header logo and compact feed controls without a duplicate intro panel', () => {
+  assert.match(html, /class="tipchat-section-logo" src="icons\/tipchat-logo\.svg"/);
+  assert.doesNotMatch(html, /community-banner-logo|community-group-banner/);
+  assert.match(communityCss, /\.community-join-compact\{min-width:40px;min-height:31px/);
+  assert.match(app, /join\.textContent = communityMvp\.joined \? '✓' : 'Join'/);
+  assert.match(app, /join\.setAttribute\('aria-label', communityMvp\.joined \? 'Leave TipChat' : 'Join TipChat'\)/);
 });
 
 test('community code and stylesheet participate in normal cache-busted builds', () => {
