@@ -175,12 +175,12 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-3e107ce88a">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-3e107ce88a" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-010ab174c0">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-010ab174c0" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="community.css?v=sa-recruiters-3e107ce88a" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-3e107ce88a"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-3e107ce88a"></noscript>
+<link rel="stylesheet" href="community.css?v=sa-recruiters-010ab174c0" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-010ab174c0"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-010ab174c0"></noscript>
 </head>
 <body>
 
@@ -533,14 +533,14 @@
     </div>
     <div class="screen-scroll">
       <section class="community-group-banner" aria-labelledby="community-group-title">
-        <img class="tipchat-banner-logo" src="icons/tipchat-logo.svg" alt="TipChat" width="174" height="60" loading="lazy" decoding="async">
+        <img class="community-banner-logo" src="icons/tipchat-logo.svg" alt="TipChat" width="260" height="90" loading="lazy" decoding="async">
         <h2 id="community-group-title" class="sr-only">TipChat</h2>
         <p id="community-group-description">A shared space for South African job seekers to swap advice and discover vacancies — by text or poster.</p>
         <div class="community-group-actions"><button class="community-join-btn" id="community-join-btn" type="button" data-ripple onclick="communityJoinGroup()" aria-pressed="false">Join TipChat</button><span class="community-group-note">Public community · reviewed posts</span></div>
       </section>
-      <p class="community-safety-note">Other members see “Anonymous member”; your account stays private. Posts and comments are reviewed before publishing. Verify vacancies before applying and never pay to apply for a job.</p>
+      <p class="community-safety-note">Active Talent Pool members are shown with their profile name and photo. Other members appear as “Anonymous member.” Posts and comments are reviewed before they appear. Verify vacancies before applying and never pay to apply for a job.</p>
       <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
-        <div class="community-compose-head"><strong id="community-compose-heading">Start a conversation</strong><span>TipChat · pseudonymous</span></div>
+        <div class="community-compose-head"><strong id="community-compose-heading">Start a conversation</strong><span>Active candidates show their profile</span></div>
         <div class="community-compose-type" role="group" aria-label="Choose what to post"><button type="button" data-community-compose-type="discussion" class="is-active" aria-pressed="true" onclick="communitySetComposerType('discussion')">Ask / share a tip</button><button type="button" data-community-compose-type="vacancy" aria-pressed="false" onclick="communitySetComposerType('vacancy')">Post a vacancy</button></div>
         <p class="community-vacancy-help" id="community-vacancy-help" hidden>Share a vacancy in text, attach its poster, or do both. Include a job title and location when you can.</p>
         <div class="community-vacancy-fields" id="community-vacancy-fields" hidden>
@@ -1474,8 +1474,8 @@
      content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
      the browser fetch them at idle priority (and keep generate-pages.js cache-busting them);
      openContentSheet() below loads them on demand and then hands over to the real implementation. -->
-<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-3e107ce88a" data-sa-lazy="content">
-<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-3e107ce88a" data-sa-lazy="content-manager">
+<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-010ab174c0" data-sa-lazy="content">
+<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-010ab174c0" data-sa-lazy="content-manager">
 <script>
 (function(){
   var pending=null;
@@ -1502,7 +1502,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=49fba60747" defer></script>
+<script src="app.bundle.min.js?v=a6ff7e4880" defer></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
