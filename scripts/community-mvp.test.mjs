@@ -8,6 +8,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
 const migration = read('supabase/migrations/20261006_community_interview_tips.sql');
 const policyFix = read('supabase/migrations/20261007_community_membership_policy_fix.sql');
+const vacancyMigration = read('supabase/migrations/20261010_community_text_vacancies.sql');
 const app = read('app-community.js');
 const html = read('index.html');
 const communityCss = read('community.css');
@@ -101,4 +102,16 @@ test('community code and stylesheet participate in normal cache-busted builds', 
   assert.match(html, /community\.css\?v=/);
   assert.match(build, /'community\.css'/);
   assert.match(build, /styles\\\.css\|community\\\.css/);
+});
+
+test('Tips Chat supports moderated text vacancy posts without exposing private IDs', () => {
+  assert.match(vacancyMigration, /add column if not exists post_type text not null default 'discussion'/i);
+  assert.match(vacancyMigration, /post_type in \('discussion', 'vacancy'\)/i);
+  assert.match(vacancyMigration, /grant insert \([\s\S]*vacancy_title[\s\S]*\) on public\.community_posts to authenticated/i);
+  assert.match(app, /communitySetComposerType/);
+  assert.match(app, /post_type: communityComposerType/);
+  assert.match(app, /communityVacancyMetaHtml/);
+  assert.match(html, /data-community-compose-type="vacancy"/);
+  assert.match(html, /id="community-vacancy-title"/);
+  assert.match(communityCss, /\.community-vacancy-badge/);
 });

@@ -539,7 +539,13 @@
       </section>
       <p class="community-safety-note">Other members see “Anonymous member”; your account ID stays private and is linked to activity for moderation and abuse prevention. Posts and comments are reviewed before publishing. Don’t share names, contact details or confidential information.</p>
       <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
-        <div class="community-compose-head"><strong>Ask the community</strong><span>Pseudonymous</span></div>
+        <div class="community-compose-head"><strong id="community-compose-heading">Ask the community</strong><span>Pseudonymous</span></div>
+        <div class="community-compose-type" role="group" aria-label="Choose what to post"><button type="button" data-community-compose-type="discussion" class="is-active" aria-pressed="true" onclick="communitySetComposerType('discussion')">Ask / share a tip</button><button type="button" data-community-compose-type="vacancy" aria-pressed="false" onclick="communitySetComposerType('vacancy')">Post a vacancy</button></div>
+        <p class="community-vacancy-help" id="community-vacancy-help" hidden>Paste a vacancy announcement like the one you found on LinkedIn or WhatsApp. Add the key details below so it is easier to understand.</p>
+        <div class="community-vacancy-fields" id="community-vacancy-fields" hidden>
+          <div class="community-vacancy-field-grid"><div><label for="community-vacancy-title">Job title (optional)</label><input id="community-vacancy-title" maxlength="140" placeholder="e.g. Safety Officers Required"></div><div><label for="community-vacancy-location">Location (optional)</label><input id="community-vacancy-location" maxlength="120" placeholder="e.g. Polokwane, Limpopo"></div></div>
+          <label for="community-vacancy-application">How to apply (optional)</label><input id="community-vacancy-application" maxlength="300" placeholder="e.g. Send CVs to name@example.com or apply link">
+        </div>
         <label class="sr-only" for="community-post-body">Write an interview question or tip</label>
         <textarea id="community-post-body" maxlength="3000" placeholder="What would you like advice on? Share a question or helpful tip…" required></textarea>
         <div class="community-emoji-tools"><button type="button" class="community-emoji-trigger" onclick="communityToggleEmojiPicker('community-post-emoji-picker','community-post-body')" aria-expanded="false">Add a reaction</button><div class="community-emoji-picker" id="community-post-emoji-picker" hidden role="listbox" aria-label="Choose a custom SA Recruiters emoji"></div></div>
@@ -1490,7 +1496,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=ea5d2dcdf5" defer></script>
+<script src="app.bundle.min.js?v=90e32c863b" defer></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
