@@ -1418,18 +1418,18 @@ async function backfillMissingEmployerPosterTitles(env) {
     or: `(expires_at.is.null,expires_at.gt.${now})`,
     caption: "is.null",
     order: "created_at.asc",
-    limit: "5"
+    limit: "20"
   });
   // PostgREST's OR filter is combined with this empty-string branch to cover
   // both SQL NULL captions and older rows stored as an empty string.
   const rows = Array.isArray(body) ? body : [];
-  if (rows.length < 5) {
+  if (rows.length < 20) {
     const extra = await supabaseGet(env, "employer_posters", {
       select: "id,image_url,caption,expires_at",
       or: `(expires_at.is.null,expires_at.gt.${now})`,
       caption: "eq.",
       order: "created_at.asc",
-      limit: String(5 - rows.length)
+      limit: String(20 - rows.length)
     });
     rows.push(...(extra.body || []));
   }
