@@ -296,17 +296,18 @@ function openPublicPosterSheet() {
   renderTurnstile('public-poster-turnstile', 'public-poster-overlay');
 }
 
-async function uploadPosterIfAny() {
+async function uploadPosterIfAny(caption) {
   if (!window.pendingPosterBlob) return null;
   try {
-    var res = await fetch(R2_WORKER_URL + '/api/upload/employer-poster', {
+    var url = R2_WORKER_URL + '/api/upload/employer-poster' + (caption ? '?caption=' + encodeURIComponent(caption) : '');
+    var res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'image/jpeg' },
       body: window.pendingPosterBlob
     });
     var data = await res.json();
     if (!res.ok) { console.error('poster upload', data && data.error); showToast(data && data.error || 'Could not upload poster.'); return null; }
-    return data.url || null;
+    return data.url ? { url: data.url, caption: data.caption || '' } : null;
   } catch(e) { console.error('poster upload', e); showToast('Could not upload poster — check your connection.'); return null; }
 }
 
@@ -325,12 +326,13 @@ function openPosterUploadSheet(employerId) {
 
 async function savePoster() {
   if (!window.pendingPosterBlob) { alert('Choose a poster image first.'); return; }
-  var imageUrl = await uploadPosterIfAny();
-  if (!imageUrl) return;
+  var enteredCaption = ((document.getElementById('poster-caption') || {}).value || '').trim();
+  var uploadedPoster = await uploadPosterIfAny(enteredCaption);
+  if (!uploadedPoster) return;
   var payload = {
     employer_id: window.pendingPosterEmployerId || null,
-    image_url: imageUrl,
-    caption: (document.getElementById('poster-caption') || {}).value || ''
+    image_url: uploadedPoster.url,
+    caption: enteredCaption || uploadedPoster.caption || 'Vacancy poster'
   };
   var result = await supabaseClient.from('employer_posters').insert([payload]);
   if (result.error) {
