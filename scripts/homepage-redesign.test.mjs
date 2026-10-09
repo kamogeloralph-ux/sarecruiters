@@ -9,6 +9,7 @@ const read = (name) => readFileSync(path.join(root, name), 'utf8');
 const html = read('index.html');
 const data = read('app-data.js');
 const ui = read('app-ui.js');
+const core = read('app-core.js');
 const cards = read('app-cards.js');
 const sheets = read('app-sheets.js');
 const vacancyV2 = read('app-vacancy-v2.js');
@@ -193,6 +194,18 @@ test('Profile keeps Google sign-in visible for guests and hides it only for sign
   assert.match(ui, /quotaCard\.hidden = !isGuest/);
   assert.match(ui, /signoutGroup\.hidden = isGuest/);
   assert.match(css, /\.account-signin-card\[hidden\][^}]*display:none!important/);
+});
+
+test('Google sign-in redirects explicitly and recovers from a stuck OAuth request', () => {
+  assert.match(core, /skipBrowserRedirect: true/);
+  assert.match(core, /setTimeout\(function\(\) \{ reject\(new Error\('Google sign-in request timed out\.'\)\); \}, 12000\)/);
+  assert.match(core, /Promise\.race\(\[/);
+  assert.match(core, /window\.location\.assign\(oauthUrl\)/);
+  assert.match(core, /saAuthRedirecting = false;[\s\S]*?Google sign-in is taking too long/);
+  assert.match(html, /Save jobs, track applications, and unlock unlimited vacancy views/);
+  assert.match(css, /account-signin-card \.gsi-material-button:disabled \.gsi-material-button-contents\{opacity:1!important;color:#243653!important\}/);
+  assert.match(css, /account-signin-status:empty\{display:none\}/);
+  assert.match(css, /account-signin-card\{width:min\(100%,420px\);margin:10px auto 4px;padding:13px 14px/);
 });
 
 test('home conversion sections use the compact Interview Tips card language', () => {
