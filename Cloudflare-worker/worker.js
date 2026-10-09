@@ -1058,7 +1058,7 @@ async function postersResponse(request, env, origin) {
   // Bump this whenever the response source or shape changes; otherwise an
   // earlier empty fallback response can survive a Worker deployment at the
   // edge for its configured s-maxage window.
-  const cacheKey = new Request(new URL("/api/posters?schema=d1-v4", request.url), request);
+  const cacheKey = new Request(new URL("/api/posters?schema=d1-v5", request.url), request);
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) return cached;
   let posters = [];
