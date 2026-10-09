@@ -10,7 +10,8 @@ var communityMvp = {
   expanded: new Set(),
   loading: false,
   returnScreen: 'home',
-  reportTarget: null
+  reportTarget: null,
+  vacancySchemaAvailable: true
 };
 var communityComposerType = 'discussion';
 
@@ -44,7 +45,7 @@ function communityRenderBody(value) {
   return html + communityEsc(source.slice(last));
 }
 function communitySetComposerType(type) {
-  communityComposerType = type === 'vacancy' ? 'vacancy' : 'discussion';
+  communityComposerType = type === 'vacancy' && communityMvp.vacancySchemaAvailable ? 'vacancy' : 'discussion';
   document.querySelectorAll('[data-community-compose-type]').forEach(function(button) {
     var active = button.getAttribute('data-community-compose-type') === communityComposerType;
     button.classList.toggle('is-active', active);
@@ -54,6 +55,11 @@ function communitySetComposerType(type) {
   if (fields) fields.hidden = communityComposerType !== 'vacancy';
   var help = document.getElementById('community-vacancy-help');
   if (help) help.hidden = communityComposerType !== 'vacancy';
+  var vacancyButton = document.querySelector('[data-community-compose-type="vacancy"]');
+  if (vacancyButton) {
+    vacancyButton.hidden = !communityMvp.vacancySchemaAvailable;
+    vacancyButton.title = communityMvp.vacancySchemaAvailable ? '' : 'Vacancy posting is being enabled';
+  }
   var heading = document.getElementById('community-compose-heading');
   if (heading) heading.textContent = communityComposerType === 'vacancy' ? 'Post a vacancy' : 'Ask the community';
   var body = document.getElementById('community-post-body');
@@ -219,6 +225,22 @@ async function communityLoadFeed() {
     query = query.order('created_at', { ascending: false });
   }
   var result = await query.limit(40);
+  if (result.error && String(result.error.code || '') === '42703') {
+    // Keep the existing Tips Chat usable while the additive vacancy migration is being deployed.
+    communityMvp.vacancySchemaAvailable = false;
+    result = await supabaseClient.from('community_posts')
+      .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at')
+      .eq('group_id', communityMvp.group.id).eq('status', 'approved')
+      .order('created_at', { ascending: false }).limit(40);
+    if (communityMvp.sort === 'top') {
+      result = await supabaseClient.from('community_posts')
+        .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at')
+        .eq('group_id', communityMvp.group.id).eq('status', 'approved')
+        .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+        .order('likes_count', { ascending: false }).order('comments_count', { ascending: false }).order('created_at', { ascending: false }).limit(40);
+    }
+    communitySetComposerType(communityComposerType);
+  }
   if (result.error) throw result.error;
   communityMvp.posts = result.data || [];
   communityMvp.liked = new Set();
@@ -306,6 +328,7 @@ async function communitySubmitPost(event) {
   var body = field ? field.value.trim() : '';
   if (body.length < 12 || body.length > 3000) { communityStatus('Write between 12 and 3,000 characters.', 'error'); return false; }
   var vacancy = communityReadVacancyMeta();
+  if (communityComposerType === 'vacancy' && !communityMvp.vacancySchemaAvailable) { communitySetComposerType('discussion'); communityToast('Vacancy posting is being enabled. Please try again shortly.'); return false; }
   if (communityComposerType === 'vacancy' && vacancy.title.length > 140) { communityStatus('Keep the vacancy title under 140 characters.', 'error'); return false; }
   if (communityComposerType === 'vacancy' && vacancy.application.length > 300) { communityStatus('Keep the application contact under 300 characters.', 'error'); return false; }
   var button = document.getElementById('community-post-submit');
@@ -485,11 +508,17 @@ async function communityLoadModerationQueue(showLoading) {
   var badge = document.getElementById('community-moderation-count');
   if (!queue) return;
   if (showLoading) queue.innerHTML = '<div class="community-comment-loading">Loading moderation queue…</div>';
+  var postQueueQuery = supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
   var results = await Promise.all([
-    supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
+    postQueueQuery,
     supabaseClient.from('community_comments').select('id,post_id,author_label,body,status,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
     supabaseClient.from('community_reports').select('id,post_id,comment_id,reason,details,status,created_at').eq('status', 'open').order('created_at', { ascending: false }).limit(50)
   ]);
+  if (results[0].error && String(results[0].error.code || '') === '42703') {
+    communityMvp.vacancySchemaAvailable = false;
+    results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
+    communitySetComposerType(communityComposerType);
+  }
   var error = results.find(function(result) { return result.error; });
   if (error) { console.error('[Community] moderation queue', error.error); queue.innerHTML = '<div class="community-comment-loading">Moderation queue could not be loaded.</div>'; return; }
   var pendingPosts = results[0].data || [];
