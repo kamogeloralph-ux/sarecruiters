@@ -136,40 +136,17 @@ drop trigger if exists community_comments_stamp_candidate_identity on public.com
 create trigger community_comments_stamp_candidate_identity
   before insert on public.community_comments
   for each row execute function public.community_stamp_candidate_identity();
-drop trigger if exists pool_candidates_sync_community_identity on public.pool_candidates;
-create trigger pool_candidates_sync_community_identity
-  after insert or update or delete on public.pool_candidates
-  for each row execute function public.community_sync_candidate_identity_trigger();
+-- pool_candidates is created outside this repo's migrations; only attach the sync
+-- trigger when it exists so this migration also runs on a fresh database.
+do $$
+begin
+  if to_regclass('public.pool_candidates') is not null then
+    drop trigger if exists pool_candidates_sync_community_identity on public.pool_candidates;
+    create trigger pool_candidates_sync_community_identity
+      after insert or update or delete on public.pool_candidates
+      for each row execute function public.community_sync_candidate_identity_trigger();
+  end if;
+end $$;
 
--- Backfill prior approved and pending content. Profile details are displayed
--- only while the matching Talent Pool profile is active; otherwise remain anonymous.
-with active_profiles as (
-  select distinct on (c.user_id) c.user_id, c.full_name, c.photo_url
-  from public.pool_candidates c
-  where c.status = 'active' and nullif(btrim(c.full_name), '') is not null
-  order by c.user_id, c.created_at desc
-)
-update public.community_posts p
-set author_label = left(btrim(c.full_name), 40),
-    author_photo_url = case when c.photo_url like 'https://%' and length(c.photo_url) <= 1200 then c.photo_url else null end
-from active_profiles c
-where p.author_id = c.user_id and not p.is_official;
-update public.community_posts p
-set author_label = 'Anonymous member', author_photo_url = null
-where not p.is_official and p.author_id is not null
-  and not exists (select 1 from public.pool_candidates c where c.user_id = p.author_id and c.status = 'active' and nullif(btrim(c.full_name), '') is not null);
-
-with active_profiles as (
-  select distinct on (c.user_id) c.user_id, c.full_name, c.photo_url
-  from public.pool_candidates c
-  where c.status = 'active' and nullif(btrim(c.full_name), '') is not null
-  order by c.user_id, c.created_at desc
-)
-update public.community_comments cmt
-set author_label = left(btrim(c.full_name), 40),
-    author_photo_url = case when c.photo_url like 'https://%' and length(c.photo_url) <= 1200 then c.photo_url else null end
-from active_profiles c
-where cmt.author_id = c.user_id;
-update public.community_comments cmt
-set author_label = 'Anonymous member', author_photo_url = null
-where not exists (select 1 from public.pool_candidates c where c.user_id = cmt.author_id and c.status = 'active' and nullif(btrim(c.full_name), '') is not null);
+-- The automatic backfill that used to live here was removed: public identity is now
+-- opt-in (20261012_tipchat_audit_fixes.sql), so existing content stays anonymous.
