@@ -50,6 +50,12 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /function homeVacancyMatchesCategory\(/);
   assert.match(ui, /function homeSourceVacancies\(/);
   assert.match(ui, /function renderHomeFeed\(/);
+  assert.match(ui, /var HOME_WEEKLY_PROVINCES = \[/);
+  assert.match(ui, /function homeWeeklyProvince\(/);
+  assert.match(ui, /function homeWeeklyRows\(/);
+  assert.match(ui, /function homeWeeklyTopJobsMarkup\(/);
+  assert.match(ui, /slice\(0, 3\)/, 'weekly highlights must select at most three provinces');
+  assert.match(ui, /window\.openHomeWeeklyVacancy = function \(id\)/);
 });
 
 test('public retail preview reuses the Pages snapshot and prefers Worker reads over PostgREST', () => {
@@ -78,6 +84,9 @@ test('the homepage shows all eight source cards before retail-first roles', () =
   assert.ok(homeRolesPosition >= 0, 'the eight role cards must remain on the home screen');
   assert.doesNotMatch(homeRender, /Featured vacancies|home-featured-vacancy|featuredMarkup|wireHomeFeaturedRailGestures/);
   assert.match(homeRender, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
+  assert.match(homeRender, /homeWeeklyTopJobsMarkup\(\)/);
+  assert.match(ui, /class="home-weekly-grid"/);
+  assert.match(ui, /class="home-weekly-row"/);
   assert.match(ui, /function ensureRetailPriorityVacancies\(/);
   assert.match(ui, /\.in\('source_type', retailSources\)/);
 

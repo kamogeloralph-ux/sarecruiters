@@ -314,6 +314,61 @@ function renderHomeFeaturedPoster(posters) {
     button.addEventListener('click', function () { openPosterLightbox(button.getAttribute('data-featured-poster-url')); });
   });
 }
+var HOME_WEEKLY_PROVINCES = [
+  { key: 'gauteng', label: 'Gauteng', pattern: /gauteng|johannesburg|joburg|pretoria|centurion|sandton|randburg|midrand|benoni|kempton park|eastrand|roodepoort|krugersdorp/i },
+  { key: 'western-cape', label: 'Western Cape', pattern: /western[\s-]?cape|cape town|stellenbosch|paarl|george|mossel bay|bellville|worcester/i },
+  { key: 'kwazulu-natal', label: 'KwaZulu-Natal', pattern: /kwazulu[\s-]?natal|durban|pietermaritzburg|richards bay|newcastle|ballito/i },
+  { key: 'eastern-cape', label: 'Eastern Cape', pattern: /eastern[\s-]?cape|gqeberha|port elizabeth|east london|mthatha|uitenhage|komani|queenstown|bhisho|king william'?s town/i },
+  { key: 'free-state', label: 'Free State', pattern: /free[\s-]?state|bloemfontein|welkom|bethlehem|kroonstad|sasolburg|harrismith/i },
+  { key: 'limpopo', label: 'Limpopo', pattern: /limpopo|polokwane|thohoyandou|mokopane|tzaneen|lephalale|musina/i },
+  { key: 'mpumalanga', label: 'Mpumalanga', pattern: /mpumalanga|mbombela|nelspruit|witbank|emalahleni|middelburg|secunda|ermelo/i },
+  { key: 'north-west', label: 'North West', pattern: /north[\s-]?west|rustenburg|mahikeng|mafikeng|klerksdorp|potchefstroom|brits|vryburg/i },
+  { key: 'northern-cape', label: 'Northern Cape', pattern: /northern[\s-]?cape|kimberley|upington|kuruman|de aar|springbok|kathu/i }
+];
+function homeWeeklyProvince(v) {
+  var text = [v && v.province, v && v.province_name, v && v.state, v && v.region, v && v.location, v && v.address].filter(Boolean).join(' ');
+  for (var i = 0; i < HOME_WEEKLY_PROVINCES.length; i++) if (HOME_WEEKLY_PROVINCES[i].pattern.test(text)) return HOME_WEEKLY_PROVINCES[i];
+  return null;
+}
+function homeWeeklyRows() {
+  var now = Date.now(), week = 7 * 864e5, rows = [], seen = {};
+  homeSourceVacancies().forEach(function (v) {
+    if (!v || seen[v.id]) return;
+    var posted = new Date(v.created_at || v.posted_at || v.updated_at || 0).getTime();
+    var province = homeWeeklyProvince(v);
+    if (!province || !posted || now - posted < 0 || now - posted > week) return;
+    seen[v.id] = true;
+    rows.push({ vacancy: v, province: province, score: (v.is_featured ? 100000000000 : 0) + posted });
+  });
+  var byProvince = {};
+  rows.forEach(function (item) { (byProvince[item.province.key] || (byProvince[item.province.key] = [])).push(item); });
+  return HOME_WEEKLY_PROVINCES.map(function (province) {
+    var items = (byProvince[province.key] || []).sort(function (a, b) { return b.score - a.score; });
+    return { province: province, items: items.slice(0, 5), total: items.length };
+  }).filter(function (group) { return group.total > 0; }).sort(function (a, b) { return b.total - a.total || b.items[0].score - a.items[0].score; }).slice(0, 3);
+}
+function homeWeeklyTopJobsMarkup() {
+  var groups = homeWeeklyRows();
+  if (!groups.length) return '<section class="home-weekly-section" aria-labelledby="home-weekly-title"><div class="home-section-heading"><div><span class="home-section-kicker">This week</span><h2 id="home-weekly-title">Top Jobs This Week</h2><p>Provincial highlights will appear as this week’s listings arrive.</p></div></div><div class="home-weekly-empty">No new provincial highlights are available yet.</div></section>';
+  return '<section class="home-weekly-section" aria-labelledby="home-weekly-title"><div class="home-section-heading"><div><span class="home-section-kicker">This week</span><h2 id="home-weekly-title">Top Jobs This Week</h2><p>The three provinces with the strongest new vacancy activity this week.</p></div><button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all<span aria-hidden="true"> →</span></button></div><div class="home-weekly-grid">' + groups.map(function (group) {
+    return '<article class="home-weekly-province"><header class="home-weekly-province-head"><div class="home-weekly-province-title"><span class="home-weekly-pin" aria-hidden="true">●</span><div><strong>' + escapeHtml(group.province.label) + '</strong><small>' + group.total + ' new role' + (group.total === 1 ? '' : 's') + '</small></div></div><a href="/jobs/' + group.province.key + '/" aria-label="View all ' + escapeHtml(group.province.label) + ' jobs">See province</a></header><div class="home-weekly-table" role="list" aria-label="Top jobs in ' + escapeHtml(group.province.label) + '">' + group.items.map(function (item, index) {
+      var v = item.vacancy;
+      var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined' ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
+      var company = v.company || agency.name || 'SA Recruiters listing';
+      return '<button type="button" class="home-weekly-row" role="listitem" onclick="openHomeWeeklyVacancy(\'' + String(v.id).replace(/[\\']/g, '\\$&') + '\')"><span class="home-weekly-rank">' + String(index + 1).padStart(2, '0') + '</span><span class="home-weekly-job"><strong>' + escapeHtml(v.title || 'Untitled role') + '</strong><small>' + escapeHtml(company) + (v.location ? ' · ' + escapeHtml(v.location) : '') + '</small></span><span class="home-weekly-arrow" aria-hidden="true">›</span></button>';
+    }).join('') + '</div></article>';
+  }).join('') + '</div></section>';
+}
+window.openHomeWeeklyVacancy = function (id) {
+  var source = homeSourceVacancies().find(function (v) { return String(v.id) === String(id); });
+  showAllVacancies('home');
+  setTimeout(function () {
+    var card = Array.prototype.find.call(document.querySelectorAll('#screen-allvacancies [data-vacancy-id]'), function (node) { return String(node.getAttribute('data-vacancy-id')) === String(id); });
+    if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); var head = card.querySelector('.vx-head'); if (head) head.click(); return; }
+    var search = document.getElementById('allvacancies-search');
+    if (search && source) { search.value = source.title || ''; if (typeof renderAllVacanciesList === 'function') renderAllVacanciesList(); }
+  }, 120);
+};
 function renderHomeFeed() {
   var target = document.getElementById('home-feed');
   if (!target) return;
@@ -359,6 +414,7 @@ function renderHomeFeed() {
       '<audio id="track-audio" preload="none" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>' +
     '</section>' +
     '<section class="poster-cta home-featured-poster" aria-labelledby="home-featured-poster-title"><div class="poster-cta-heading"><span class="poster-cta-kicker">Featured every day</span><h2 id="home-featured-poster-title">Vacancy poster of the day</h2><p>A fresh recruitment poster selected automatically for today.</p></div><div class="poster-deck" id="home-featured-poster-slot"><div class="poster-empty">Loading today’s poster…</div></div></section>' +
+    homeWeeklyTopJobsMarkup() +
     homeVacancySourceMarkup() +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
       '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Available roles</h2><p>Retail vacancies first, followed by the newest live listings.</p></div>' +
