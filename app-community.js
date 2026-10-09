@@ -1,4 +1,4 @@
-/* SA Recruiters Community MVP — Interview Tips */
+/* SA Recruiters community feed — TipChat */
 var communityMvp = {
   group: null,
   joined: false,
@@ -11,9 +11,11 @@ var communityMvp = {
   loading: false,
   returnScreen: 'home',
   reportTarget: null,
-  vacancySchemaAvailable: true
+  vacancySchemaAvailable: true,
+  posterSchemaAvailable: true
 };
 var communityComposerType = 'discussion';
+var communityPosterBlob = null;
 
 function communityEsc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
@@ -28,6 +30,10 @@ function communityMissingVacancySchema(error) {
   var code = String(error && (error.code || error.status || '') || '');
   var message = String(error && error.message || '').toLowerCase();
   return code === '42703' || code === 'PGRST204' || message.indexOf('post_type') >= 0 || message.indexOf('vacancy_title') >= 0;
+}
+function communityMissingPosterSchema(error) {
+  var message = String(error && error.message || '').toLowerCase();
+  return message.indexOf('poster_image_url') >= 0;
 }
 var COMMUNITY_EMOJIS = [
   { type: 'join', label: 'Join in', file: 'sa-recruiters-emoji-01-join.webp' },
@@ -60,17 +66,24 @@ function communitySetComposerType(type) {
   if (fields) fields.hidden = communityComposerType !== 'vacancy';
   var help = document.getElementById('community-vacancy-help');
   if (help) help.hidden = communityComposerType !== 'vacancy';
+  var posterUpload = document.getElementById('community-poster-upload');
+  if (posterUpload) posterUpload.hidden = communityComposerType !== 'vacancy' || !communityMvp.posterSchemaAvailable;
   var vacancyButton = document.querySelector('[data-community-compose-type="vacancy"]');
   if (vacancyButton) {
     vacancyButton.hidden = !communityMvp.vacancySchemaAvailable;
     vacancyButton.title = communityMvp.vacancySchemaAvailable ? '' : 'Vacancy posting is being enabled';
   }
   var heading = document.getElementById('community-compose-heading');
-  if (heading) heading.textContent = communityComposerType === 'vacancy' ? 'Post a vacancy' : 'Ask the community';
+  if (heading) heading.textContent = communityComposerType === 'vacancy' ? 'Share a vacancy' : 'Start a conversation';
   var body = document.getElementById('community-post-body');
-  if (body) body.placeholder = communityComposerType === 'vacancy'
-    ? 'Paste the vacancy announcement here, including the role, location and how to apply…'
-    : 'What would you like advice on? Share a question or helpful tip…';
+  if (body) {
+    body.placeholder = communityComposerType === 'vacancy'
+      ? 'Add vacancy details or a short caption. You can also share a poster below…'
+      : 'What would you like advice on? Share a question or helpful tip…';
+    body.setAttribute('aria-label', communityComposerType === 'vacancy' ? 'Vacancy details or caption' : 'Write a TipChat post');
+  }
+  var submit = document.getElementById('community-post-submit');
+  if (submit) submit.textContent = communityComposerType === 'vacancy' ? 'Share vacancy' : 'Post';
 }
 function communityReadVacancyMeta() {
   function value(id) { var field = document.getElementById(id); return field ? field.value.trim() : ''; }
@@ -81,9 +94,77 @@ function communityVacancyMetaHtml(post) {
   var meta = [];
   if (post.vacancy_location) meta.push('<span>📍 ' + communityEsc(post.vacancy_location) + '</span>');
   if (post.vacancy_application) meta.push('<span>✉ ' + communityEsc(post.vacancy_application) + '</span>');
-  return '<div class="community-vacancy-head"><span class="community-vacancy-badge">Vacancy</span><span class="community-vacancy-source">Posted by community member</span></div>' +
+  return '<div class="community-vacancy-head"><span class="community-vacancy-badge">Vacancy</span><span class="community-vacancy-source">' + (post.poster_image_url ? 'Poster vacancy' : 'Text vacancy') + ' · shared by the community</span></div>' +
     (post.vacancy_title ? '<h3 class="community-vacancy-title">' + communityEsc(post.vacancy_title) + '</h3>' : '') +
     (meta.length ? '<div class="community-vacancy-meta">' + meta.join('') + '</div>' : '');
+}
+function communityPosterImageHtml(post) {
+  if (!post || !post.poster_image_url) return '';
+  var title = post.vacancy_title || 'Vacancy poster';
+  var url = communityEsc(post.poster_image_url);
+  return '<a class="community-post-poster" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="Open poster: ' + communityEsc(title) + '"><img src="' + url + '" alt="' + communityEsc(title) + ' vacancy poster" loading="lazy"><span>Open poster</span></a>';
+}
+function communityHandlePosterPhoto(event) {
+  var file = event && event.target && event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type || '')) {
+    communityRemovePoster();
+    event.target.value = '';
+    communityToast('Choose a JPG, PNG or WebP poster image.');
+    return;
+  }
+  if (file.size > 12 * 1024 * 1024) {
+    communityRemovePoster();
+    event.target.value = '';
+    communityToast('Choose a poster smaller than 12 MB.');
+    return;
+  }
+  var preview = document.getElementById('community-poster-preview');
+  var fallback = document.getElementById('community-poster-fallback');
+  communityPosterBlob = null;
+  if (preview && preview.src && preview.src.indexOf('blob:') === 0) URL.revokeObjectURL(preview.src);
+  if (preview) { preview.src = ''; preview.style.display = 'none'; }
+  if (fallback) { fallback.textContent = 'Preparing poster preview…'; fallback.style.display = 'grid'; }
+  if (typeof processPosterPhoto !== 'function') {
+    communityToast('Poster upload is unavailable right now.');
+    return;
+  }
+  processPosterPhoto(event, 'communityPosterBlob', 'community-poster-preview', 'community-poster-fallback');
+}
+function communityRemovePoster() {
+  communityPosterBlob = null;
+  var input = document.getElementById('community-poster-file');
+  var preview = document.getElementById('community-poster-preview');
+  var fallback = document.getElementById('community-poster-fallback');
+  if (input) input.value = '';
+  if (preview) {
+    if (preview.src && preview.src.indexOf('blob:') === 0) URL.revokeObjectURL(preview.src);
+    preview.src = '';
+    preview.style.display = 'none';
+  }
+  if (fallback) { fallback.textContent = 'Poster preview will appear here'; fallback.style.display = 'grid'; }
+}
+async function communityUploadPoster(caption) {
+  if (!communityPosterBlob) return null;
+  try {
+    var sessionResult = await supabaseClient.auth.getSession();
+    var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+    if (!token) throw new Error('Your sign-in has expired. Please sign in again.');
+    var response = await fetch(R2_WORKER_URL + '/api/upload/employer-poster' + (caption ? '?caption=' + encodeURIComponent(caption) : ''), {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'image/jpeg' },
+      body: communityPosterBlob
+    });
+    var payload = await response.json().catch(function() { return {}; });
+    if (!response.ok || !payload.url) throw new Error(payload.error || 'Could not upload the poster. Please try again.');
+    var uploaded = new URL(payload.url);
+    if (uploaded.protocol !== 'https:' || uploaded.pathname.indexOf('/employer-posters/') < 0) throw new Error('The poster upload returned an invalid image URL.');
+    return uploaded.href;
+  } catch (error) {
+    console.error('[TipChat] poster upload failed', error);
+    communityStatus(error.message || 'Could not upload the poster. Your draft is still here.', 'error');
+    return null;
+  }
 }
 function communityEmojiButton(type, target) {
   var info = communityEmojiInfo(type);
@@ -143,8 +224,8 @@ function openCommunity(fromDeepLink) {
   if (active && active.id !== 'screen-community') communityMvp.returnScreen = active.id.replace(/^screen-/, '');
   if (!communityMvp.returnScreen) communityMvp.returnScreen = 'home';
   communitySetScreen('screen-community');
-  if (!fromDeepLink && location.hash !== '#community-interview-tips') {
-    history.replaceState(null, '', location.pathname + location.search + '#community-interview-tips');
+  if (!fromDeepLink && location.hash !== '#tipchat') {
+    history.replaceState(null, '', location.pathname + location.search + '#tipchat');
   }
   communityLoad();
 }
@@ -152,17 +233,17 @@ function goBackFromCommunity() {
   var screenName = communityMvp.returnScreen || 'home';
   var target = document.getElementById('screen-' + screenName) ? 'screen-' + screenName : 'screen-home';
   communitySetScreen(target);
-  if (location.hash === '#community-interview-tips') history.replaceState(null, '', location.pathname + location.search);
+  if (location.hash === '#community-interview-tips' || location.hash === '#tipchat') history.replaceState(null, '', location.pathname + location.search);
 }
 function communityRenderGroup() {
   var group = communityMvp.group;
   var title = document.getElementById('community-group-title');
   var description = document.getElementById('community-group-description');
   var join = document.getElementById('community-join-btn');
-  if (title) title.textContent = group ? group.title : 'Interview Tips';
-  if (description) description.textContent = group ? group.description : 'Practical interview advice for job seekers in South Africa.';
+  if (title) title.textContent = 'TipChat';
+  if (description) description.textContent = 'A shared space for South African job seekers to swap advice and discover vacancies — by text or poster.';
   if (join) {
-    join.textContent = communityMvp.joined ? 'Joined' : 'Join group';
+    join.textContent = communityMvp.joined ? 'Joined' : 'Join TipChat';
     join.classList.toggle('is-joined', communityMvp.joined);
     join.setAttribute('aria-pressed', communityMvp.joined ? 'true' : 'false');
   }
@@ -173,8 +254,8 @@ function communityRenderGroup() {
   var composerHint = document.getElementById('community-composer-hint');
   if (composerHint) {
     composerHint.textContent = !communitySignedIn()
-      ? 'Sign in and join to share a tip or ask a question.'
-      : (!communityMvp.joined ? 'Join this group before posting or commenting.' : 'Your post will be reviewed before it appears in the feed.');
+      ? 'Sign in and join TipChat to share a post.'
+      : (!communityMvp.joined ? 'Join TipChat before posting or commenting.' : 'Posts are reviewed before they appear in the feed.');
   }
   communitySetComposerType(communityComposerType);
 }
@@ -182,13 +263,13 @@ async function communityLoad() {
   var host = document.getElementById('community-feed');
   if (!host || communityMvp.loading || !supabaseClient) return;
   communityMvp.loading = true;
-  host.innerHTML = '<div class="community-empty">Loading the Interview Tips community…</div>';
+  host.innerHTML = '<div class="community-empty">Loading TipChat…</div>';
   try {
     var groupResult = await supabaseClient.from('community_groups')
       .select('id,slug,title,description,is_public')
       .eq('slug', 'interview-tips').eq('is_public', true).maybeSingle();
     if (groupResult.error) throw groupResult.error;
-    if (!groupResult.data) throw new Error('The Interview Tips group is not available yet.');
+    if (!groupResult.data) throw new Error('TipChat is not available yet.');
     communityMvp.group = groupResult.data;
     communityMvp.joined = false;
     communityMvp.moderator = false;
@@ -215,7 +296,7 @@ async function communityLoadFeed() {
   if (!host || !communityMvp.group) return;
   host.innerHTML = '<div class="community-empty">Loading posts…</div>';
   var query = supabaseClient.from('community_posts')
-    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,likes_count,comments_count,created_at')
+    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,likes_count,comments_count,created_at')
     .eq('group_id', communityMvp.group.id)
     .eq('status', 'approved');
   if (communityMvp.sort === 'top') {
@@ -230,20 +311,27 @@ async function communityLoadFeed() {
     query = query.order('created_at', { ascending: false });
   }
   var result = await query.limit(40);
+  if (result.error && communityMissingPosterSchema(result.error)) {
+    communityMvp.posterSchemaAvailable = false;
+    communitySetComposerType(communityComposerType);
+    query = supabaseClient.from('community_posts')
+      .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,likes_count,comments_count,created_at')
+      .eq('group_id', communityMvp.group.id).eq('status', 'approved');
+    if (communityMvp.sort === 'top') query = query.gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()).order('likes_count', { ascending: false }).order('comments_count', { ascending: false }).order('created_at', { ascending: false });
+    else query = query.order('created_at', { ascending: false });
+    result = await query.limit(40);
+  }
   if (result.error && communityMissingVacancySchema(result.error)) {
-    // Keep the existing Tips Chat usable while the additive vacancy migration is being deployed.
     communityMvp.vacancySchemaAvailable = false;
     result = await supabaseClient.from('community_posts')
       .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at')
       .eq('group_id', communityMvp.group.id).eq('status', 'approved')
       .order('created_at', { ascending: false }).limit(40);
-    if (communityMvp.sort === 'top') {
-      result = await supabaseClient.from('community_posts')
-        .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at')
-        .eq('group_id', communityMvp.group.id).eq('status', 'approved')
-        .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
-        .order('likes_count', { ascending: false }).order('comments_count', { ascending: false }).order('created_at', { ascending: false }).limit(40);
-    }
+    if (communityMvp.sort === 'top') result = await supabaseClient.from('community_posts')
+      .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at')
+      .eq('group_id', communityMvp.group.id).eq('status', 'approved')
+      .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+      .order('likes_count', { ascending: false }).order('comments_count', { ascending: false }).order('created_at', { ascending: false }).limit(40);
     communitySetComposerType(communityComposerType);
   }
   if (result.error) throw result.error;
@@ -265,7 +353,7 @@ function communityRenderFeed() {
   var host = document.getElementById('community-feed');
   if (!host) return;
   if (!communityMvp.posts.length) {
-    host.innerHTML = '<div class="community-empty"><strong>No posts yet</strong><span>Be the first to share a question or interview tip.</span></div>';
+    host.innerHTML = '<div class="community-empty"><strong>Start the TipChat feed</strong><span>Share an interview tip, ask for advice, or post a vacancy as text or a poster.</span></div>';
     return;
   }
   host.innerHTML = communityMvp.posts.map(function(post) {
@@ -281,7 +369,8 @@ function communityRenderFeed() {
       '<div class="community-post-byline"><strong>' + communityEsc(post.author_label) + '</strong>' + official + '<span>' + communityEsc(communityWhen(post.created_at)) + '</span></div>' +
       '<button class="community-more" type="button" aria-label="Report post" title="Report post" onclick="communityOpenReport(\'post\',\'' + id + '\')">•••</button></div>' +
       communityVacancyMetaHtml(post) +
-      '<div class="community-post-body">' + communityRenderBody(post.body) + '</div>' +
+      (post.body ? '<div class="community-post-body">' + communityRenderBody(post.body) + '</div>' : '') +
+      communityPosterImageHtml(post) +
       '<div class="community-post-actions"><button type="button" class="community-action' + (liked ? ' is-liked' : '') + '" aria-pressed="' + (liked ? 'true' : 'false') + '" onclick="' + likeAction + '(\'' + id + '\')"><span aria-hidden="true">' + (liked ? '♥' : '♡') + '</span> ' + Number(post.likes_count || 0) + ' Like</button>' +
       '<button type="button" class="community-action" aria-expanded="' + (expanded ? 'true' : 'false') + '" onclick="' + commentAction + '(\'' + id + '\')">' + Number(post.comments_count || 0) + ' Comments</button>' +
       '<button type="button" class="community-action community-reaction-toggle" aria-expanded="false" onclick="communityToggleEmojiPicker(\'community-reaction-picker-' + id + '\',\'post:' + id + '\')">' + (communityMvp.reactions.has(post.id) ? '<img src="' + communityEmojiUrl(communityMvp.reactions.get(post.id)) + '" alt="" class="community-action-emoji"> Reacted' : 'React') + '</button>' +
@@ -301,12 +390,12 @@ async function communityJoinGroup() {
     var leave = await supabaseClient.from('community_memberships').delete().eq('group_id', communityMvp.group.id);
     if (leave.error) { communityToast('Could not leave the group. Please try again.'); return; }
     communityMvp.joined = false;
-    communityToast('You left Interview Tips.');
+    communityToast('You left TipChat.');
   } else {
     var join = await supabaseClient.from('community_memberships').insert({ group_id: communityMvp.group.id });
     if (join.error && join.error.code !== '23505') { console.error(join.error); communityToast('Could not join the group. Please try again.'); return; }
     communityMvp.joined = true;
-    communityToast('You joined Interview Tips. Welcome!');
+    communityToast('You joined TipChat. Welcome!');
   }
   communityRenderGroup();
   communityRenderFeed();
@@ -322,43 +411,60 @@ function communitySetSort(sort) {
 }
 function communityPromptParticipation() {
   if (!communityRequireSignIn()) return;
-  if (!communityMvp.joined) communityToast('Join Interview Tips before posting, commenting or reacting.');
+  if (!communityMvp.joined) communityToast('Join TipChat before posting, commenting or reacting.');
 }
 async function communitySubmitPost(event) {
   if (event) event.preventDefault();
   if (!communityRequireSignIn()) return false;
-  if (!communityMvp.joined) { communityToast('Join Interview Tips before posting.'); return false; }
-  if (!communityMvp.group) { communityStatus('Interview Tips is still loading. Please try again in a moment.', 'error'); return false; }
+  if (!communityMvp.joined) { communityToast('Join TipChat before posting.'); return false; }
+  if (!communityMvp.group) { communityStatus('TipChat is still loading. Please try again in a moment.', 'error'); return false; }
   var field = document.getElementById('community-post-body');
   var body = field ? field.value.trim() : '';
-  if (body.length < 12 || body.length > 3000) { communityStatus('Write between 12 and 3,000 characters.', 'error'); return false; }
   var vacancy = communityReadVacancyMeta();
-  if (communityComposerType === 'vacancy' && !communityMvp.vacancySchemaAvailable) { communitySetComposerType('discussion'); communityToast('Vacancy posting is being enabled. Please try again shortly.'); return false; }
-  if (communityComposerType === 'vacancy' && vacancy.title.length > 140) { communityStatus('Keep the vacancy title under 140 characters.', 'error'); return false; }
-  if (communityComposerType === 'vacancy' && vacancy.application.length > 300) { communityStatus('Keep the application contact under 300 characters.', 'error'); return false; }
+  var isVacancy = communityComposerType === 'vacancy';
+  if (!body && isVacancy && communityPosterBlob) body = vacancy.title ? 'Vacancy poster: ' + vacancy.title : 'Vacancy poster attached — see the image for details.';
+  if (body.length < 12 || body.length > 3000) { communityStatus('Write at least 12 characters, or attach a vacancy poster.', 'error'); return false; }
+  if (isVacancy && !communityMvp.vacancySchemaAvailable) { communityToast('Vacancy posting is being enabled. Please try again shortly.'); return false; }
+  if (isVacancy && communityPosterBlob && !communityMvp.posterSchemaAvailable) { communityToast('Poster posts are being enabled. You can still share this vacancy as text.'); return false; }
+  if (isVacancy && vacancy.title.length > 140) { communityStatus('Keep the vacancy title under 140 characters.', 'error'); return false; }
+  if (isVacancy && vacancy.application.length > 300) { communityStatus('Keep the application contact under 300 characters.', 'error'); return false; }
   var button = document.getElementById('community-post-submit');
   if (button) button.disabled = true;
   var result;
+  var posterImageUrl = null;
   try {
+    if (isVacancy && communityPosterBlob) {
+      communityStatus('Uploading your poster…', '');
+      posterImageUrl = await communityUploadPoster(vacancy.title || 'TipChat vacancy poster');
+      if (!posterImageUrl) { if (button) button.disabled = false; return false; }
+    }
     result = communityMvp.vacancySchemaAvailable
       ? await supabaseClient.from('community_posts').insert({
           group_id: communityMvp.group.id,
           body: body,
-          post_type: communityComposerType,
-          vacancy_title: communityComposerType === 'vacancy' ? (vacancy.title || null) : null,
-          vacancy_location: communityComposerType === 'vacancy' ? (vacancy.location || null) : null,
-          vacancy_application: communityComposerType === 'vacancy' ? (vacancy.application || null) : null
+          post_type: isVacancy ? 'vacancy' : 'discussion',
+          vacancy_title: isVacancy ? (vacancy.title || null) : null,
+          vacancy_location: isVacancy ? (vacancy.location || null) : null,
+          vacancy_application: isVacancy ? (vacancy.application || null) : null,
+          poster_image_url: posterImageUrl
         })
       : await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
   } catch (error) {
     result = { error: error };
   }
   if (result.error && communityMissingVacancySchema(result.error)) {
-    // The production project may still be on the original community schema.
-    // Retry as a normal community post instead of losing the user's draft.
     communityMvp.vacancySchemaAvailable = false;
-    result = await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
-    communitySetComposerType('discussion');
+    communityStatus('TipChat vacancy support is still being enabled. Your draft is still here; please try again later.', 'error');
+    if (button) button.disabled = false;
+    communityRenderGroup();
+    return false;
+  }
+  if (result.error && communityMissingPosterSchema(result.error)) {
+    communityMvp.posterSchemaAvailable = false;
+    communityStatus('Poster posts are still being enabled. Your draft is still here; please try again later.', 'error');
+    if (button) button.disabled = false;
+    communityRenderGroup();
+    return false;
   }
   if (button) button.disabled = false;
   if (result.error) {
@@ -374,6 +480,8 @@ async function communitySubmitPost(event) {
   }
   if (field) field.value = '';
   ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
+  communityRemovePoster();
+  communitySetComposerType('discussion');
   communityStatus('Thanks — your post is awaiting moderator review. Your account is not shown publicly.', 'success');
   communityRenderGroup();
   communityLoadModerationQueue(false);
@@ -445,7 +553,7 @@ async function communityLoadComments(postId) {
 async function communitySubmitComment(event, postId) {
   if (event) event.preventDefault();
   if (!communityRequireSignIn()) return false;
-  if (!communityMvp.joined) { communityToast('Join Interview Tips before commenting.'); return false; }
+  if (!communityMvp.joined) { communityToast('Join TipChat before commenting.'); return false; }
   var form = event && event.currentTarget;
   var field = form && form.querySelector('textarea');
   var body = field ? field.value.trim() : '';
@@ -499,11 +607,11 @@ async function communitySubmitReport(event) {
   return false;
 }
 async function communitySharePost(postId) {
-  var link = location.origin + location.pathname + '#community-interview-tips';
+  var link = location.origin + location.pathname + '#tipchat';
   var post = communityMvp.posts.find(function(item) { return item.id === postId; });
-  var text = post ? String(post.body).slice(0, 180) : 'Join the Interview Tips community on SA Recruiters.';
+  var text = post ? String(post.body).slice(0, 180) : 'Join TipChat on SA Recruiters — advice, conversations and vacancy posts in one place.';
   try {
-    if (navigator.share) await navigator.share({ title: 'Interview Tips — SA Recruiters', text: text, url: link });
+    if (navigator.share) await navigator.share({ title: 'TipChat — SA Recruiters', text: text, url: link });
     else if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(link); communityToast('Community link copied.'); }
     else communityToast(link);
   } catch (error) {
@@ -522,12 +630,17 @@ async function communityLoadModerationQueue(showLoading) {
   var badge = document.getElementById('community-moderation-count');
   if (!queue) return;
   if (showLoading) queue.innerHTML = '<div class="community-comment-loading">Loading moderation queue…</div>';
-  var postQueueQuery = supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
+  var postQueueQuery = supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
   var results = await Promise.all([
     postQueueQuery,
     supabaseClient.from('community_comments').select('id,post_id,author_label,body,status,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
     supabaseClient.from('community_reports').select('id,post_id,comment_id,reason,details,status,created_at').eq('status', 'open').order('created_at', { ascending: false }).limit(50)
   ]);
+  if (results[0].error && communityMissingPosterSchema(results[0].error)) {
+    communityMvp.posterSchemaAvailable = false;
+    results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
+    communitySetComposerType(communityComposerType);
+  }
   if (results[0].error && communityMissingVacancySchema(results[0].error)) {
     communityMvp.vacancySchemaAvailable = false;
     results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
@@ -560,7 +673,7 @@ async function communityLoadModerationQueue(showLoading) {
 }
 function communityModerationCard(type, row, status) {
   var id = communityEsc(row.id);
-  return '<article class="community-review-card"><div class="community-review-meta">' + (type === 'post' ? (row.post_type === 'vacancy' ? 'Vacancy' : 'Post') : 'Comment') + ' · ' + communityEsc(communityWhen(row.created_at)) + ' · ' + communityEsc(row.author_label) + '</div>' + (type === 'post' ? communityVacancyMetaHtml(row) : '') + '<p>' + communityEsc(row.body) + '</p><div class="community-review-actions"><button type="button" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'approved\')">Approve</button><button type="button" class="community-danger-btn" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'hidden\')">Hide</button></div></article>';
+  return '<article class="community-review-card"><div class="community-review-meta">' + (type === 'post' ? (row.post_type === 'vacancy' ? 'Vacancy' : 'Post') : 'Comment') + ' · ' + communityEsc(communityWhen(row.created_at)) + ' · ' + communityEsc(row.author_label) + '</div>' + (type === 'post' ? communityVacancyMetaHtml(row) + communityPosterImageHtml(row) : '') + '<p>' + communityEsc(row.body) + '</p><div class="community-review-actions"><button type="button" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'approved\')">Approve</button><button type="button" class="community-danger-btn" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'hidden\')">Hide</button></div></article>';
 }
 async function communityModerate(type, id, status) {
   var table = type === 'comment' ? 'community_comments' : 'community_posts';
@@ -591,6 +704,8 @@ window.communityJoinGroup = communityJoinGroup;
 window.communitySetSort = communitySetSort;
 window.communitySubmitPost = communitySubmitPost;
 window.communitySetComposerType = communitySetComposerType;
+window.communityHandlePosterPhoto = communityHandlePosterPhoto;
+window.communityRemovePoster = communityRemovePoster;
 window.communityPromptParticipation = communityPromptParticipation;
 window.communityToggleLike = communityToggleLike;
 window.communityToggleReaction = communityToggleReaction;
@@ -621,7 +736,7 @@ window.communityDismissReport = communityDismissReport;
       if (document.getElementById('screen-community') && document.getElementById('screen-community').classList.contains('active')) communityLoad();
     });
   }
-  if (location.hash === '#community-interview-tips') {
+  if (location.hash === '#community-interview-tips' || location.hash === '#tipchat') {
     window.setTimeout(function() { openCommunity(true); }, 700);
   }
 })();
