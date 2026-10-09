@@ -162,16 +162,20 @@ test('home available roles use compact province groups and the existing exact-va
   assert.equal((sheets.match(/window\.__saSyncFeedbackChat\(\)/g) || []).length, 2);
 });
 
-test('bottom navigation keeps Interview Tips chat separate from Feedback', () => {
+test('bottom navigation keeps TipChat separate from Feedback', () => {
   const nav = html.slice(html.indexOf('<nav class="bottom-nav">'), html.indexOf('</nav>', html.indexOf('<nav class="bottom-nav">')));
   assert.match(nav, /id="nav-suggest"[^>]*onclick="openSuggestionSheet\(\)"[^>]*aria-label="Suggest or comment"/);
-  assert.match(nav, /id="nav-community"[^>]*onclick="openCommunity\(\)"[^>]*aria-label="Open the Interview Tips community chat"/);
+  assert.match(nav, /id="nav-community"[^>]*onclick="openCommunity\(\)"[^>]*aria-label="Open TipChat"/);
   assert.match(nav, /<span class="navbtn-label">Feedback<\/span>/);
-  assert.match(nav, /<span class="navbtn-label">Tips chat<\/span>/);
+  assert.match(nav, /<span class="navbtn-label">TipChat<\/span>/);
   assert.match(nav, /id="nav-community"[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/,
     'the community action should use a multi-bubble discussion icon, not Feedback’s single bubble');
   assert.match(community, /screenId === 'screen-community' && button\.id === 'nav-community'/,
     'the dedicated community action should show as active while the community screen is open');
+});
+test('TipChat shared links survive final startup normalization', () => {
+  assert.match(ui, /location\.hash === '#tipchat' \|\| location\.hash === '#community-interview-tips'\) return;/);
+  assert.match(community, /if \(location\.hash === '#community-interview-tips' \|\| location\.hash === '#tipchat'\)[\s\S]*?openCommunity\(true\)/);
 });
 test('bottom navigation keeps inactive icons visible and source cards open their folders', () => {
   assert.match(css, /\.bottom-nav \.navbtn:not\(\.active\) svg\{[^}]*stroke:rgba\(255,255,255,\.9\)!important/);
@@ -198,17 +202,17 @@ test('home conversion sections use the compact Interview Tips card language', ()
   assert.match(css, /#screen-home \.home-section-heading h2,[\s\S]*?#screen-home \.hf-head h2\{font-size:17px!important/);
 });
 
-test('Tips Chat uses a welcoming community banner with a clear join action', () => {
+test('TipChat uses a welcoming community banner with a clear join action', () => {
   assert.match(ui, /home-chat-banner/);
-  assert.match(ui, /Chat together\. Learn together\. Move forward\./);
+  assert.match(ui, /Advice, conversations and vacancies — together\./);
   assert.match(ui, /home-chat-live/);
   assert.match(ui, /home-chat-people/);
-  assert.match(ui, /Open Tips Chat/);
+  assert.match(ui, /Open TipChat/);
   assert.match(css, /#screen-home \.home-chat-banner\{[\s\S]*?linear-gradient/);
   assert.match(html, /community-menu-badge.*>Join</);
 });
 
-test('Tips Chat exposes the original SA Recruiters emoji picker and reaction hooks', () => {
+test('TipChat exposes the original SA Recruiters emoji picker and reaction hooks', () => {
   assert.match(html, /community-post-emoji-picker/);
   assert.match(html, /Choose a custom SA Recruiters emoji/);
   assert.match(community, /COMMUNITY_EMOJIS/);
@@ -220,11 +224,11 @@ test('Tips Chat exposes the original SA Recruiters emoji picker and reaction hoo
   assert.match(communityCss, /community-inline-emoji/);
 });
 
-test('Home and Menu community entries are labelled Tips Chat and use the chat icon', () => {
-  assert.match(ui, /<h2 id="home-community-title">Tips Chat<\/h2>/);
-  assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?Tips Chat/s);
+test('Home and Menu community entries are labelled TipChat and use the chat icon', () => {
+  assert.match(ui, /<h2 id="home-community-title">TipChat<\/h2>/);
+  assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?TipChat/s);
   assert.match(ui, /home-community-icon[^>]*aria-hidden="true"><svg[^>]*>[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/);
-  assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?<svg[^>]*>[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"[\s\S]*?Tips Chat/s);
+  assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?<svg[^>]*>[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"[\s\S]*?TipChat/s);
   assert.match(css, /\.home-community-icon svg\{width:21px;height:21px/);
 });
 
