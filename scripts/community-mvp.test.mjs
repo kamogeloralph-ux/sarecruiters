@@ -154,7 +154,7 @@ test('TipChat unifies vacancy text and poster uploads in its moderated social fe
   assert.match(posterMigration, /set title = 'TipChat'/);
   assert.match(app, /communityUploadPoster/);
   assert.match(app, /Authorization': 'Bearer ' \+ token/);
-  assert.match(app, /poster_image_url: posterImageUrl/);
+  assert.match(app, /poster_image_url: poster \? poster\.url : null/);
   assert.match(app, /communityPosterImageHtml/);
   assert.match(app, /communityMissingPosterSchema/);
   assert.match(app, /communityModerationCard[\s\S]*communityPosterImageHtml/);
