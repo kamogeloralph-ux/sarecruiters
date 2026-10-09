@@ -2179,17 +2179,27 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .home-sponsored-copy h2{margin:0 0 4px;color:var(--text);font-size:13px;line-height:1.25}
 .home-sponsored-copy p{margin:0;color:var(--text-2);font-size:10.5px;line-height:1.4}
 .home-sponsored>button{flex:0 0 auto;border:0;border-radius:10px;padding:9px 10px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;cursor:pointer}
-.home-tools-grid{display:grid;grid-template-columns:1fr;gap:10px}
-.home-tool-card{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:start;gap:9px;padding:14px;border:1px solid var(--border);border-radius:17px;background:var(--card);box-shadow:var(--shadow-sm)}
-.home-tool-card--seeker{background:linear-gradient(145deg,var(--card),color-mix(in srgb,#0a84ff 6%,var(--card)))}
-.home-tool-card--employer{background:linear-gradient(145deg,var(--card),color-mix(in srgb,#16a765 7%,var(--card)))}
-.home-tool-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:900}
-.home-tool-card--employer .home-tool-icon{background:color-mix(in srgb,#16a765 15%,var(--card));color:#16854f}
-.home-tool-card h3{margin:1px 0 4px;color:var(--text);font-size:13px}
-.home-tool-card p{margin:0;color:var(--text-2);font-size:10.5px;line-height:1.45}
-.home-tool-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:7px;margin-top:3px}
-.home-tool-actions button{border:0;border-radius:10px;padding:9px 11px;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;cursor:pointer}
-.home-tool-actions button.secondary{border:1px solid var(--border);background:var(--card-2);color:var(--text)}
+.home-tools-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.home-tool-card{position:relative;display:flex;min-height:218px;flex-direction:column;align-items:stretch;gap:0;padding:18px;overflow:hidden;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));border-radius:22px;background:var(--card);box-shadow:0 12px 26px rgba(10,35,80,.12);isolation:isolate;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s ease}
+.home-tool-card::after{position:absolute;right:-34px;bottom:-48px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.12);content:'';pointer-events:none;z-index:-1}
+.home-tool-card:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(10,35,80,.18);border-color:color-mix(in srgb,var(--accent) 42%,var(--border))}
+.home-tool-card--seeker{background:linear-gradient(145deg,#0758ad,#0a84ff 72%,#4b9eff);color:#fff}
+.home-tool-card--employer{background:linear-gradient(145deg,#087b50,#16a765 72%,#49c98b);border-color:color-mix(in srgb,#16a765 44%,var(--border));color:#fff}
+.home-tool-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.home-tool-icon{display:grid;place-items:center;width:52px;height:52px;border:1px solid rgba(255,255,255,.28);border-radius:16px;background:rgba(255,255,255,.16);color:#fff;font-size:15px;font-weight:900;letter-spacing:-.04em;box-shadow:inset 0 1px rgba(255,255,255,.18)}
+.home-tool-card--employer .home-tool-icon{background:rgba(255,255,255,.16);color:#fff}
+.home-tool-badge{display:inline-flex;align-items:center;min-height:25px;padding:5px 9px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(255,255,255,.14);color:rgba(255,255,255,.94);font-size:9.5px;font-weight:800;white-space:nowrap}
+.home-tool-copy{flex:1;margin-top:16px}
+.home-tool-card h3{margin:0 0 6px;color:#fff;font-size:17px;line-height:1.18;letter-spacing:-.025em}
+.home-tool-card p{margin:0;max-width:34em;color:rgba(255,255,255,.82);font-size:12px;line-height:1.5}
+.home-tool-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+.home-tool-actions button{min-height:38px;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 12px;background:#fff;color:#0758ad;font-size:11px;font-weight:800;cursor:pointer;transition:transform .15s var(--ease),background .15s ease}
+.home-tool-actions button span{display:inline-block;margin-left:3px;transition:transform .15s ease}
+.home-tool-actions button:hover span{transform:translateX(2px)}
+.home-tool-actions button:active{transform:scale(.98)}
+.home-tool-actions button.secondary{border-color:rgba(255,255,255,.32);background:rgba(255,255,255,.14);color:#fff}
+.home-tool-card--employer .home-tool-actions button{color:#087b50}
+.home-tool-card--employer .home-tool-actions button.secondary{color:#fff}
 @container (min-width:760px){
   #screen-home .home-source-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
