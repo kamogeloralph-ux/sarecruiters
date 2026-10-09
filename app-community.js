@@ -13,10 +13,19 @@ var communityMvp = {
   reportTarget: null,
   vacancySchemaAvailable: true,
   posterSchemaAvailable: true,
-  authorIdentityAvailable: true
+  authorIdentityAvailable: true,
+  mine: new Map(),
+  submissions: [],
+  identity: { show: false, has: false },
+  lastUserId: null,
+  reactionBusy: new Set(),
+  pendingReload: false,
+  drafts: {}
 };
 var communityComposerType = 'discussion';
 var communityPosterBlob = null;
+var communityPosterPreparing = false;
+var COMMUNITY_SEEN_KEY = 'sa_tipchat_seen_v1';
 
 function communityEsc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
@@ -32,6 +41,12 @@ function communityAuthorAvatarHtml(label, photo, isOfficial, compact) {
   var className = compact ? 'community-comment-avatar' : 'community-author-mark';
   return '<span class="' + className + (safePhoto ? ' has-photo' : '') + '" aria-hidden="true">' +
     (safePhoto ? '<img src="' + safePhoto + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : communityEsc(initial)) + '</span>';
+}
+function communityIsRateLimit(error) {
+  return String(error && error.message || '').toLowerCase().indexOf('rate limit') >= 0 || String(error && error.code || '') === 'P0429';
+}
+function communityRateLimitMessage() {
+  return 'You are doing that too quickly. Please wait a few minutes and try again.';
 }
 function communityToast(message) {
   if (typeof showToast === 'function') showToast(message);
@@ -140,10 +155,18 @@ function communityHandlePosterPhoto(event) {
     communityToast('Poster upload is unavailable right now.');
     return;
   }
-  processPosterPhoto(event, 'communityPosterBlob', 'community-poster-preview', 'community-poster-fallback');
+  communityPosterPreparing = true;
+  processPosterPhoto(event, 'communityPosterBlob', 'community-poster-preview', 'community-poster-fallback', function(error) {
+    communityPosterPreparing = false;
+    if (error) {
+      communityRemovePoster();
+      communityToast('That image could not be read. Try a different JPG, PNG or WebP.');
+    }
+  });
 }
 function communityRemovePoster() {
   communityPosterBlob = null;
+  communityPosterPreparing = false;
   var input = document.getElementById('community-poster-file');
   var preview = document.getElementById('community-poster-preview');
   var fallback = document.getElementById('community-poster-fallback');
@@ -170,11 +193,32 @@ async function communityUploadPoster(caption) {
     if (!response.ok || !payload.url) throw new Error(payload.error || 'Could not upload the poster. Please try again.');
     var uploaded = new URL(payload.url);
     if (uploaded.protocol !== 'https:' || uploaded.pathname.indexOf('/employer-posters/') < 0) throw new Error('The poster upload returned an invalid image URL.');
-    return uploaded.href;
+    return { url: uploaded.href, key: payload.key || null };
   } catch (error) {
     console.error('[TipChat] poster upload failed', error);
     communityStatus(error.message || 'Could not upload the poster. Your draft is still here.', 'error');
     return null;
+  }
+}
+// Best-effort cleanup of an uploaded poster that never became (or no longer is) a post.
+async function communityDeletePosterFile(ref) {
+  try {
+    var key = String(ref || '');
+    if (!key) return;
+    if (/^https?:/i.test(key)) {
+      var match = key.match(/\/(employer-posters\/[A-Za-z0-9]+\.jpg)$/);
+      key = match ? match[1] : '';
+    }
+    if (!key) return;
+    var sessionResult = await supabaseClient.auth.getSession();
+    var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+    if (!token) return;
+    await fetch(R2_WORKER_URL + '/api/upload/employer-poster?key=' + encodeURIComponent(key), {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+  } catch (error) {
+    console.warn('[TipChat] poster cleanup skipped', error);
   }
 }
 function communityEmojiButton(type, target) {
@@ -263,15 +307,18 @@ function communityRenderGroup() {
   if (composerHint) {
     composerHint.textContent = !communitySignedIn()
       ? 'Sign in and join TipChat to share a post.'
-      : (!communityMvp.joined ? 'Join TipChat before posting or commenting.' : 'Posts are reviewed before they appear in the feed.');
+      : (!communityMvp.joined ? 'Join TipChat before posting or commenting.' : 'Posts are reviewed before they appear. You show as Anonymous member unless you choose otherwise above.');
   }
+  communityRenderIdentity();
   communitySetComposerType(communityComposerType);
 }
 async function communityLoad() {
   var host = document.getElementById('community-feed');
-  if (!host || communityMvp.loading || !supabaseClient) return;
+  if (!host || !supabaseClient) return;
+  if (communityMvp.loading) { communityMvp.pendingReload = true; return; }
   communityMvp.loading = true;
-  host.innerHTML = '<div class="community-empty">Loading TipChat…</div>';
+  communityMvp.pendingReload = false;
+  if (!communityMvp.posts.length) host.innerHTML = '<div class="community-empty">Loading TipChat…</div>';
   try {
     var groupResult = await supabaseClient.from('community_groups')
       .select('id,slug,title,description,is_public')
@@ -281,6 +328,7 @@ async function communityLoad() {
     communityMvp.group = groupResult.data;
     communityMvp.joined = false;
     communityMvp.moderator = false;
+    communityMvp.lastUserId = communitySignedIn() ? saAuthUser.id : null;
     if (communitySignedIn()) {
       var membership = await supabaseClient.from('community_memberships')
         .select('group_id').eq('group_id', communityMvp.group.id).limit(1).maybeSingle();
@@ -288,6 +336,8 @@ async function communityLoad() {
       var adminResult = await supabaseClient.rpc('is_admin');
       communityMvp.moderator = !adminResult.error && adminResult.data === true;
     }
+    await communityLoadIdentityState();
+    await communityLoadMySubmissions();
     communityRenderGroup();
     await communityLoadFeed();
     if (communityMvp.moderator) await communityLoadModerationQueue(false);
@@ -297,12 +347,13 @@ async function communityLoad() {
     communityStatus('Could not load the community. Please try again.', 'error');
   } finally {
     communityMvp.loading = false;
+    if (communityMvp.pendingReload) { communityMvp.pendingReload = false; communityLoad(); }
   }
 }
 async function communityLoadFeed() {
   var host = document.getElementById('community-feed');
   if (!host || !communityMvp.group) return;
-  host.innerHTML = '<div class="community-empty">Loading posts…</div>';
+  if (!communityMvp.posts.length) host.innerHTML = '<div class="community-empty">Loading posts…</div>';
   var authorPhotoSelect = communityMvp.authorIdentityAvailable ? ',author_photo_url' : '';
   var query = supabaseClient.from('community_posts')
     .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,likes_count,comments_count,created_at' + authorPhotoSelect)
@@ -362,6 +413,31 @@ async function communityLoadFeed() {
   }
   communityRenderFeed();
 }
+function communityCurrentReaction(postId) {
+  return communityMvp.reactions.get(postId) || (communityMvp.liked.has(postId) ? 'like' : null);
+}
+function communityActionsHtml(post) {
+  var id = communityEsc(post.id);
+  var liked = communityMvp.liked.has(post.id);
+  var joined = communityMvp.joined && communitySignedIn();
+  var likeAction = joined ? 'communityToggleLike' : 'communityPromptParticipation';
+  var expanded = communityMvp.expanded.has(post.id);
+  var emoji = communityMvp.reactions.get(post.id);
+  return '<button type="button" class="community-action' + (liked ? ' is-liked' : '') + '" aria-pressed="' + (liked ? 'true' : 'false') + '" onclick="' + likeAction + '(\'' + id + '\')"><span aria-hidden="true">' + (liked ? '♥' : '♡') + '</span> ' + Number(post.likes_count || 0) + ' Like</button>' +
+    '<button type="button" class="community-action" data-community-comments-toggle aria-expanded="' + (expanded ? 'true' : 'false') + '" onclick="communityToggleComments(\'' + id + '\')">' + Number(post.comments_count || 0) + ' Comments</button>' +
+    '<button type="button" class="community-action community-reaction-toggle" aria-expanded="false" onclick="communityToggleEmojiPicker(\'community-reaction-picker-' + id + '\',\'post:' + id + '\')">' + (emoji ? '<img src="' + communityEmojiUrl(emoji) + '" alt="" class="community-action-emoji"> Reacted' : 'React') + '</button>' +
+    '<button type="button" class="community-action community-share-action" onclick="communitySharePost(\'' + id + '\')">Share</button>';
+}
+// Update one post's action row in place: no feed reload, no lost scroll position or drafts.
+function communityRefreshActions(postId) {
+  var post = communityMvp.posts.find(function(item) { return item.id === postId; });
+  var article = document.querySelector('.community-post[data-post-id="' + String(postId).replace(/"/g, '') + '"]');
+  if (!post || !article) return;
+  var actions = article.querySelector('.community-post-actions');
+  if (actions) actions.innerHTML = communityActionsHtml(post);
+  var picker = article.querySelector('.community-reaction-picker');
+  if (picker) picker.hidden = true;
+}
 function communityRenderFeed() {
   var host = document.getElementById('community-feed');
   if (!host) return;
@@ -372,22 +448,19 @@ function communityRenderFeed() {
   host.innerHTML = communityMvp.posts.map(function(post) {
     var id = communityEsc(post.id);
     var official = post.is_official ? '<span class="community-official">Official</span>' : '';
-    var liked = communityMvp.liked.has(post.id);
-    var joined = communityMvp.joined && communitySignedIn();
-    var likeAction = joined ? 'communityToggleLike' : 'communityPromptParticipation';
-    var commentAction = joined ? 'communityToggleComments' : 'communityPromptParticipation';
     var expanded = communityMvp.expanded.has(post.id);
+    var mine = communityMvp.mine.has('post:' + post.id);
+    var moreButton = mine
+      ? '<button class="community-more community-more-delete" type="button" aria-label="Delete your post" title="Delete your post" onclick="communityDeleteOwn(\'post\',\'' + id + '\')">Delete</button>'
+      : '<button class="community-more" type="button" aria-label="Report post" title="Report post" onclick="communityOpenReport(\'post\',\'' + id + '\')">•••</button>';
     return '<article class="community-post" data-post-id="' + id + '">' +
       '<div class="community-post-head">' + communityAuthorAvatarHtml(post.author_label, post.author_photo_url, post.is_official, false) +
       '<div class="community-post-byline"><strong>' + communityEsc(post.author_label) + '</strong>' + official + '<span>' + communityEsc(communityWhen(post.created_at)) + '</span></div>' +
-      '<button class="community-more" type="button" aria-label="Report post" title="Report post" onclick="communityOpenReport(\'post\',\'' + id + '\')">•••</button></div>' +
+      moreButton + '</div>' +
       communityVacancyMetaHtml(post) +
       (post.body ? '<div class="community-post-body">' + communityRenderBody(post.body) + '</div>' : '') +
       communityPosterImageHtml(post) +
-      '<div class="community-post-actions"><button type="button" class="community-action' + (liked ? ' is-liked' : '') + '" aria-pressed="' + (liked ? 'true' : 'false') + '" onclick="' + likeAction + '(\'' + id + '\')"><span aria-hidden="true">' + (liked ? '♥' : '♡') + '</span> ' + Number(post.likes_count || 0) + ' Like</button>' +
-      '<button type="button" class="community-action" aria-expanded="' + (expanded ? 'true' : 'false') + '" onclick="' + commentAction + '(\'' + id + '\')">' + Number(post.comments_count || 0) + ' Comments</button>' +
-      '<button type="button" class="community-action community-reaction-toggle" aria-expanded="false" onclick="communityToggleEmojiPicker(\'community-reaction-picker-' + id + '\',\'post:' + id + '\')">' + (communityMvp.reactions.has(post.id) ? '<img src="' + communityEmojiUrl(communityMvp.reactions.get(post.id)) + '" alt="" class="community-action-emoji"> Reacted' : 'React') + '</button>' +
-      '<button type="button" class="community-action community-share-action" onclick="communitySharePost(\'' + id + '\')">Share</button></div>' +
+      '<div class="community-post-actions">' + communityActionsHtml(post) + '</div>' +
       '<div class="community-reaction-picker" id="community-reaction-picker-' + id + '" hidden></div>' +
       '<div class="community-comments" id="community-comments-' + id + '"' + (expanded ? '' : ' hidden') + '></div>' +
       '</article>';
@@ -435,6 +508,7 @@ async function communitySubmitPost(event) {
   var body = field ? field.value.trim() : '';
   var vacancy = communityReadVacancyMeta();
   var isVacancy = communityComposerType === 'vacancy';
+  if (isVacancy && communityPosterPreparing) { communityStatus('Your poster is still being prepared. Please wait a moment, then press Share again.', 'error'); return false; }
   if (!body && isVacancy && communityPosterBlob) body = vacancy.title ? 'Vacancy poster: ' + vacancy.title : 'Vacancy poster attached — see the image for details.';
   if (body.length < 12 || body.length > 3000) { communityStatus('Write at least 12 characters, or attach a vacancy poster.', 'error'); return false; }
   if (isVacancy && !communityMvp.vacancySchemaAvailable) { communityToast('Vacancy posting is being enabled. Please try again shortly.'); return false; }
@@ -444,12 +518,12 @@ async function communitySubmitPost(event) {
   var button = document.getElementById('community-post-submit');
   if (button) button.disabled = true;
   var result;
-  var posterImageUrl = null;
+  var poster = null;
   try {
     if (isVacancy && communityPosterBlob) {
       communityStatus('Uploading your poster…', '');
-      posterImageUrl = await communityUploadPoster(vacancy.title || 'TipChat vacancy poster');
-      if (!posterImageUrl) { if (button) button.disabled = false; return false; }
+      poster = await communityUploadPoster(vacancy.title || 'TipChat vacancy poster');
+      if (!poster) { if (button) button.disabled = false; return false; }
     }
     result = communityMvp.vacancySchemaAvailable
       ? await supabaseClient.from('community_posts').insert({
@@ -459,12 +533,13 @@ async function communitySubmitPost(event) {
           vacancy_title: isVacancy ? (vacancy.title || null) : null,
           vacancy_location: isVacancy ? (vacancy.location || null) : null,
           vacancy_application: isVacancy ? (vacancy.application || null) : null,
-          poster_image_url: posterImageUrl
+          poster_image_url: poster ? poster.url : null
         })
       : await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
   } catch (error) {
     result = { error: error };
   }
+  if (result.error && poster) communityDeletePosterFile(poster.key || poster.url);
   if (result.error && communityMissingVacancySchema(result.error)) {
     communityMvp.vacancySchemaAvailable = false;
     communityStatus('TipChat vacancy support is still being enabled. Your draft is still here; please try again later.', 'error');
@@ -483,11 +558,13 @@ async function communitySubmitPost(event) {
   if (result.error) {
     console.error('community post insert', result.error);
     var errorCode = String(result.error.code || result.error.status || '');
-    var errorMessage = errorCode === '401' || errorCode === 'PGRST301'
-      ? 'Your sign-in may have expired. Sign in again, then retry; your draft remains in the box.'
-      : errorCode === '403' || errorCode === '42501'
-        ? 'The post was blocked by group permissions. Check that you are still joined; your draft remains in the box.'
-        : 'Your post could not be sent. Your draft remains in the box; check your connection and try again.';
+    var errorMessage = communityIsRateLimit(result.error)
+      ? communityRateLimitMessage() + ' Your draft remains in the box.'
+      : errorCode === '401' || errorCode === 'PGRST301'
+        ? 'Your sign-in may have expired. Sign in again, then retry; your draft remains in the box.'
+        : errorCode === '403' || errorCode === '42501'
+          ? 'The post was blocked by group permissions. Check that you are still joined; your draft remains in the box.'
+          : 'Your post could not be sent. Your draft remains in the box; check your connection and try again.';
     communityStatus(errorMessage, 'error');
     return false;
   }
@@ -495,51 +572,51 @@ async function communitySubmitPost(event) {
   ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
   communityRemovePoster();
   communitySetComposerType('discussion');
-  communityStatus('Thanks — your post is awaiting moderator review. Your account is not shown publicly.', 'success');
+  communityStatus('Thanks — your post is awaiting moderator review. Track it under My submissions; ' + (communityMvp.identity.show && communityMvp.identity.has ? 'it will show your Talent Pool name and photo once approved.' : 'it will appear as Anonymous member.'), 'success');
   communityRenderGroup();
+  communityLoadMySubmissions();
   communityLoadModerationQueue(false);
   return false;
 }
 function communityToggleLike(postId) {
-  if (!communityRequireSignIn()) return;
-  if (!communityMvp.joined) { communityPromptParticipation(); return; }
-  var alreadyLiked = communityMvp.liked.has(postId);
-  var request = alreadyLiked
-    ? supabaseClient.from('community_post_reactions').delete().eq('post_id', postId)
-    : supabaseClient.from('community_post_reactions').insert({ post_id: postId, reaction_type: 'like' });
-  request.then(function(result) {
-    if (result.error && result.error.code !== '23505') { console.error(result.error); communityToast('Reaction could not be saved.'); return; }
-    if (alreadyLiked) communityMvp.liked.delete(postId); else communityMvp.liked.add(postId);
-    communityLoadFeed().catch(function(error) { console.error(error); });
-  });
+  return communityToggleReaction(postId, 'like');
 }
 async function communityToggleReaction(postId, reactionType) {
   if (!communityRequireSignIn()) return;
   if (!communityMvp.joined) { communityPromptParticipation(); return; }
-  var current = communityMvp.reactions.get(postId) || (communityMvp.liked.has(postId) ? 'like' : null), result;
-  if (current === reactionType) {
-    result = await supabaseClient.from('community_post_reactions').delete().eq('post_id', postId);
-    if (!result.error) { communityMvp.reactions.delete(postId); communityMvp.liked.delete(postId); }
-  } else {
-    if (current) await supabaseClient.from('community_post_reactions').delete().eq('post_id', postId);
-    result = await supabaseClient.from('community_post_reactions').insert({ post_id: postId, reaction_type: reactionType });
-    if (!result.error) { communityMvp.liked.delete(postId); if (reactionType === 'like') communityMvp.liked.add(postId); else communityMvp.reactions.set(postId, reactionType); }
+  if (communityMvp.reactionBusy.has(postId)) return;
+  communityMvp.reactionBusy.add(postId);
+  try {
+    // One atomic server call: set, switch or clear. No delete-then-insert gap.
+    var result = await supabaseClient.rpc('community_set_reaction', { p_post_id: postId, p_reaction: reactionType });
+    if (result.error) {
+      console.error(result.error);
+      communityToast(String(result.error.code) === '42501' ? 'Join TipChat before reacting.' : 'Reaction could not be saved.');
+      return;
+    }
+    var previous = communityCurrentReaction(postId);
+    var next = result.data || null;
+    communityMvp.liked.delete(postId);
+    communityMvp.reactions.delete(postId);
+    if (next === 'like') communityMvp.liked.add(postId);
+    else if (next) communityMvp.reactions.set(postId, next);
+    var post = communityMvp.posts.find(function(item) { return item.id === postId; });
+    if (post) post.likes_count = Math.max(0, Number(post.likes_count || 0) + (next === 'like' ? 1 : 0) - (previous === 'like' ? 1 : 0));
+    communityRefreshActions(postId);
+  } finally {
+    communityMvp.reactionBusy.delete(postId);
   }
-  if (result && result.error && result.error.code !== '23505') { console.error(result.error); communityToast('Reaction could not be saved.'); return; }
-  communityRenderFeed();
 }
 async function communityToggleComments(postId) {
-  if (!communityRequireSignIn()) return;
-  if (!communityMvp.joined) { communityPromptParticipation(); return; }
-  if (communityMvp.expanded.has(postId)) {
-    communityMvp.expanded.delete(postId);
-    var panel = document.getElementById('community-comments-' + postId);
-    if (panel) panel.hidden = true;
-    communityRenderFeed();
-    return;
-  }
-  communityMvp.expanded.add(postId);
-  communityRenderFeed();
+  // Reading comments is public; only posting needs sign-in and membership.
+  var panel = document.getElementById('community-comments-' + postId);
+  if (!panel) return;
+  var opening = !communityMvp.expanded.has(postId);
+  if (opening) communityMvp.expanded.add(postId); else communityMvp.expanded.delete(postId);
+  var article = panel.closest('.community-post');
+  var toggle = article && article.querySelector('[data-community-comments-toggle]');
+  if (toggle) toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
+  if (!opening) { panel.hidden = true; return; }
   await communityLoadComments(postId);
 }
 async function communityLoadComments(postId) {
@@ -560,15 +637,23 @@ async function communityLoadComments(postId) {
   }
   if (result.error) { console.error(result.error); panel.innerHTML = '<div class="community-comment-loading">Comments are unavailable right now.</div>'; return; }
   var comments = result.data || [];
+  var canComment = communityMvp.joined && communitySignedIn();
+  var inputId = 'community-comment-input-' + communityEsc(postId);
   panel.innerHTML = '<div class="community-comment-list">' + (comments.length
     ? comments.map(function(comment) {
         var commentId = communityEsc(comment.id);
-        return '<div class="community-comment"><div class="community-comment-head">' + communityAuthorAvatarHtml(comment.author_label, comment.author_photo_url, false, true) + '<strong>' + communityEsc(comment.author_label) + '</strong><span>' + communityEsc(communityWhen(comment.created_at)) + '</span><button type="button" class="community-comment-report" aria-label="Report comment" onclick="communityOpenReport(\'comment\',\'' + commentId + '\')">Report</button></div><p>' + communityEsc(comment.body) + '</p></div>';
+        var own = communityMvp.mine.has('comment:' + comment.id);
+        var actionButton = own
+          ? '<button type="button" class="community-comment-report" aria-label="Delete your comment" onclick="communityDeleteOwn(\'comment\',\'' + commentId + '\')">Delete</button>'
+          : '<button type="button" class="community-comment-report" aria-label="Report comment" onclick="communityOpenReport(\'comment\',\'' + commentId + '\')">Report</button>';
+        return '<div class="community-comment"><div class="community-comment-head">' + communityAuthorAvatarHtml(comment.author_label, comment.author_photo_url, false, true) + '<strong>' + communityEsc(comment.author_label) + '</strong><span>' + communityEsc(communityWhen(comment.created_at)) + '</span>' + actionButton + '</div><p>' + communityEsc(comment.body) + '</p></div>';
       }).join('')
     : '<div class="community-comment-loading">No approved comments yet.</div>') + '</div>' +
-    (communityMvp.joined && communitySignedIn()
-      ? '<form class="community-comment-form" onsubmit="return communitySubmitComment(event,\'' + communityEsc(postId) + '\')"><label class="sr-only" for="community-comment-input-' + communityEsc(postId) + '">Add a comment</label><textarea id="community-comment-input-' + communityEsc(postId) + '" maxlength="1500" placeholder="Add a helpful comment…" required></textarea><button type="submit">Send</button><small>Comments are reviewed before they appear.</small></form>'
-      : '<button type="button" class="community-secondary-btn" onclick="communityPromptParticipation()">Join to comment</button>');
+    (canComment
+      ? '<form class="community-comment-form" onsubmit="return communitySubmitComment(event,\'' + communityEsc(postId) + '\')"><label class="sr-only" for="' + inputId + '">Add a comment</label><textarea id="' + inputId + '" maxlength="1500" placeholder="Add a helpful comment…" required></textarea><button type="submit">Send</button><small>Comments are reviewed before they appear.</small></form>'
+      : '<button type="button" class="community-secondary-btn" onclick="communityPromptParticipation()">' + (communitySignedIn() ? 'Join to comment' : 'Sign in to comment') + '</button>');
+  var draftField = document.getElementById('community-comment-input-' + postId);
+  if (draftField && communityMvp.drafts[draftField.id]) draftField.value = communityMvp.drafts[draftField.id];
 }
 async function communitySubmitComment(event, postId) {
   if (event) event.preventDefault();
@@ -579,9 +664,14 @@ async function communitySubmitComment(event, postId) {
   var body = field ? field.value.trim() : '';
   if (body.length < 2 || body.length > 1500) { communityToast('Write between 2 and 1,500 characters.'); return false; }
   var result = await supabaseClient.from('community_comments').insert({ post_id: postId, body: body });
-  if (result.error) { console.error(result.error); communityToast('Comment could not be sent. Please try again.'); return false; }
-  if (field) field.value = '';
-  communityToast('Comment submitted for moderator review.');
+  if (result.error) {
+    console.error(result.error);
+    communityToast(communityIsRateLimit(result.error) ? communityRateLimitMessage() : 'Comment could not be sent. Please try again.');
+    return false;
+  }
+  if (field) { delete communityMvp.drafts[field.id]; field.value = ''; }
+  communityToast('Comment submitted for moderator review. Track it under My submissions.');
+  communityLoadMySubmissions();
   communityLoadModerationQueue(false);
   return false;
 }
@@ -618,6 +708,7 @@ async function communitySubmitReport(event) {
   var result = await supabaseClient.from('community_reports').insert(payload);
   if (result.error) {
     if (result.error.code === '23505') communityToast('You have already reported this item.');
+    else if (communityIsRateLimit(result.error)) communityToast(communityRateLimitMessage());
     else { console.error(result.error); communityToast('Report could not be sent. Please try again.'); }
     return false;
   }
@@ -625,6 +716,107 @@ async function communitySubmitReport(event) {
   communityToast('Report sent to the moderation team.');
   communityLoadModerationQueue(false);
   return false;
+}
+async function communityLoadIdentityState() {
+  communityMvp.identity = { show: false, has: false };
+  if (communitySignedIn()) {
+    try {
+      var result = await supabaseClient.rpc('community_identity_state');
+      if (!result.error && result.data) communityMvp.identity = { show: !!result.data.show_profile, has: !!result.data.has_profile };
+    } catch (error) { console.warn('[TipChat] identity state unavailable', error); }
+  }
+  communityRenderIdentity();
+}
+function communityRenderIdentity() {
+  var box = document.getElementById('community-identity-box');
+  var toggle = document.getElementById('community-identity-toggle');
+  if (box) box.hidden = !(communitySignedIn() && communityMvp.joined && communityMvp.identity.has);
+  if (toggle) toggle.checked = !!communityMvp.identity.show;
+}
+async function communitySetIdentityVisibility(show) {
+  var toggle = document.getElementById('community-identity-toggle');
+  if (!communityRequireSignIn()) { if (toggle) toggle.checked = false; return; }
+  if (toggle) toggle.disabled = true;
+  var result = await supabaseClient.rpc('community_set_identity_visibility', { p_show: !!show });
+  if (toggle) toggle.disabled = false;
+  if (result.error || !result.data) {
+    console.error(result.error);
+    if (toggle) toggle.checked = !show;
+    communityToast('Could not update your visibility setting. Please try again.');
+    return;
+  }
+  communityMvp.identity = { show: !!result.data.show_profile, has: !!result.data.has_profile };
+  communityRenderIdentity();
+  communityToast(communityMvp.identity.show ? 'Your Talent Pool name and photo now show on your TipChat posts and comments.' : 'You now appear as Anonymous member.');
+  await communityLoadFeed();
+}
+function communityNotifyDecisions() {
+  var seen = {};
+  try { seen = JSON.parse(localStorage.getItem(COMMUNITY_SEEN_KEY) || '{}') || {}; } catch (error) { seen = {}; }
+  var approved = 0, hidden = 0, next = {};
+  communityMvp.submissions.forEach(function(row) {
+    if (seen[row.item_id] === 'pending') {
+      if (row.item_status === 'approved') approved++;
+      else if (row.item_status === 'hidden') hidden++;
+    }
+    next[row.item_id] = row.item_status;
+  });
+  try { localStorage.setItem(COMMUNITY_SEEN_KEY, JSON.stringify(next)); } catch (error) {}
+  if (approved) communityToast(approved === 1 ? 'Your submission was approved and is now live.' : approved + ' of your submissions were approved and are now live.');
+  else if (hidden) communityToast('A submission was not approved. See My submissions for details.');
+}
+async function communityLoadMySubmissions() {
+  communityMvp.mine = new Map();
+  communityMvp.submissions = [];
+  if (communitySignedIn()) {
+    try {
+      var result = await supabaseClient.rpc('community_my_submissions');
+      if (result.error) throw result.error;
+      communityMvp.submissions = result.data || [];
+      communityMvp.submissions.forEach(function(row) { communityMvp.mine.set(row.item_kind + ':' + row.item_id, row.item_status); });
+      communityNotifyDecisions();
+    } catch (error) { console.warn('[TipChat] my submissions unavailable', error); }
+  }
+  communityRenderMine();
+}
+function communityRenderMine() {
+  var panel = document.getElementById('community-mine');
+  var list = document.getElementById('community-mine-list');
+  var count = document.getElementById('community-mine-count');
+  if (!panel) return;
+  var rows = communityMvp.submissions;
+  panel.hidden = !communitySignedIn() || !rows.length;
+  var pending = rows.filter(function(row) { return row.item_status === 'pending'; }).length;
+  if (count) count.textContent = String(pending);
+  if (!list) return;
+  list.innerHTML = rows.map(function(row) {
+    var label = row.item_status === 'pending' ? 'Awaiting review' : (row.item_status === 'approved' ? 'Live' : 'Not approved');
+    var kind = row.item_kind === 'comment' ? 'comment' : 'post';
+    return '<article class="community-review-card"><div class="community-review-meta">' + (kind === 'post' ? 'Post' : 'Comment') + ' · ' + communityEsc(communityWhen(row.item_created_at)) +
+      ' <span class="community-status-pill is-' + communityEsc(row.item_status) + '">' + label + '</span></div><p>' + communityRenderBody(row.item_body) + '</p>' +
+      '<div class="community-review-actions"><button type="button" class="community-danger-btn" onclick="communityDeleteOwn(\'' + kind + '\',\'' + communityEsc(row.item_id) + '\')">Delete</button></div></article>';
+  }).join('');
+}
+function communityToggleMine() {
+  var list = document.getElementById('community-mine-list');
+  if (list) list.hidden = !list.hidden;
+}
+async function communityDeleteOwn(kind, id) {
+  if (!communityRequireSignIn()) return;
+  var type = kind === 'comment' ? 'comment' : 'post';
+  if (!window.confirm(type === 'post' ? 'Delete this post? This cannot be undone.' : 'Delete this comment? This cannot be undone.')) return;
+  var result = await supabaseClient.rpc('community_delete_own', { p_kind: type, p_id: id });
+  if (result.error || !result.data || !result.data.deleted) {
+    console.error(result.error);
+    communityToast('Could not delete that. Please try again.');
+    return;
+  }
+  if (result.data.poster_image_url) communityDeletePosterFile(result.data.poster_image_url);
+  communityMvp.expanded.delete(id);
+  communityToast('Deleted.');
+  await communityLoadMySubmissions();
+  await communityLoadFeed();
+  if (communityMvp.moderator) await communityLoadModerationQueue(false);
 }
 async function communitySharePost(postId) {
   var link = location.origin + location.pathname + '#tipchat';
@@ -650,36 +842,42 @@ async function communityLoadModerationQueue(showLoading) {
   var badge = document.getElementById('community-moderation-count');
   if (!queue) return;
   if (showLoading) queue.innerHTML = '<div class="community-comment-loading">Loading moderation queue…</div>';
-  var postQueueQuery = supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
+  var postCols = 'id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,created_at';
   var results = await Promise.all([
-    postQueueQuery,
-    supabaseClient.from('community_comments').select('id,post_id,author_label,body,status,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
-    supabaseClient.from('community_reports').select('id,post_id,comment_id,reason,details,status,created_at').eq('status', 'open').order('created_at', { ascending: false }).limit(50)
+    supabaseClient.from('community_posts').select(postCols, { count: 'exact' }).eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
+    supabaseClient.from('community_comments').select('id,post_id,author_label,body,status,created_at', { count: 'exact' }).eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
+    supabaseClient.from('community_reports').select('id,post_id,comment_id,reason,details,status,created_at', { count: 'exact' }).eq('status', 'open').order('created_at', { ascending: false }).limit(50),
+    supabaseClient.rpc('community_admin_flags')
   ]);
   if (results[0].error && communityMissingPosterSchema(results[0].error)) {
     communityMvp.posterSchemaAvailable = false;
-    results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
+    results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,created_at', { count: 'exact' }).eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
     communitySetComposerType(communityComposerType);
   }
   if (results[0].error && communityMissingVacancySchema(results[0].error)) {
     communityMvp.vacancySchemaAvailable = false;
-    results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
+    results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,created_at', { count: 'exact' }).eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
     communitySetComposerType(communityComposerType);
   }
-  var error = results.find(function(result) { return result.error; });
+  var error = results.slice(0, 3).find(function(result) { return result.error; });
   if (error) { console.error('[Community] moderation queue', error.error); queue.innerHTML = '<div class="community-comment-loading">Moderation queue could not be loaded.</div>'; return; }
   var pendingPosts = results[0].data || [];
   var pendingComments = results[1].data || [];
   var reports = results[2].data || [];
-  if (badge) badge.textContent = String(pendingPosts.length + pendingComments.length + reports.length);
+  var totalPosts = results[0].count != null ? results[0].count : pendingPosts.length;
+  var totalComments = results[1].count != null ? results[1].count : pendingComments.length;
+  var totalReports = results[2].count != null ? results[2].count : reports.length;
+  var flags = new Map();
+  if (!results[3].error) (results[3].data || []).forEach(function(row) { flags.set(row.flag_content_type + ':' + row.flag_content_id, row.flag_reasons || []); });
+  if (badge) badge.textContent = String(totalPosts + totalComments + totalReports);
   var postIds = Array.from(new Set(reports.map(function(row) { return row.post_id; }).filter(Boolean)));
   var commentIds = Array.from(new Set(reports.map(function(row) { return row.comment_id; }).filter(Boolean)));
   var reportPosts = postIds.length ? await supabaseClient.from('community_posts').select('id,author_label,body,status').in('id', postIds) : { data: [] };
   var reportComments = commentIds.length ? await supabaseClient.from('community_comments').select('id,post_id,author_label,body,status').in('id', commentIds) : { data: [] };
   var postMap = new Map((reportPosts.data || []).map(function(row) { return [row.id, row]; }));
   var commentMap = new Map((reportComments.data || []).map(function(row) { return [row.id, row]; }));
-  var pendingHtml = pendingPosts.map(function(row) { return communityModerationCard('post', row, 'pending'); }).join('') +
-    pendingComments.map(function(row) { return communityModerationCard('comment', row, 'pending'); }).join('');
+  var pendingHtml = pendingPosts.map(function(row) { return communityModerationCard('post', row, 'pending', flags); }).join('') +
+    pendingComments.map(function(row) { return communityModerationCard('comment', row, 'pending', flags); }).join('');
   var reportHtml = reports.map(function(report) {
     var type = report.post_id ? 'post' : 'comment';
     var target = report.post_id ? postMap.get(report.post_id) : commentMap.get(report.comment_id);
@@ -688,12 +886,20 @@ async function communityLoadModerationQueue(showLoading) {
       (target ? '<blockquote>' + communityEsc(target.body) + '</blockquote>' : '<p>Content is no longer available.</p>') +
       '<div class="community-review-actions"><button type="button" onclick="communityReviewReported(\'' + communityEsc(report.id) + '\',\'' + type + '\',\'' + communityEsc(report.post_id || report.comment_id) + '\',\'hide\')">Hide content</button><button type="button" class="community-secondary-btn" onclick="communityDismissReport(\'' + communityEsc(report.id) + '\')">Dismiss report</button></div></article>';
   }).join('');
-  queue.innerHTML = '<section><h3>Waiting for approval <span>' + (pendingPosts.length + pendingComments.length) + '</span></h3>' + (pendingHtml || '<p class="community-review-empty">Nothing is waiting for approval.</p>') + '</section>' +
-    '<section><h3>Open reports <span>' + reports.length + '</span></h3>' + (reportHtml || '<p class="community-review-empty">No open reports.</p>') + '</section>';
+  function overflowNote(shown, total) {
+    return total > shown ? '<p class="community-review-empty">Showing the oldest ' + shown + ' of ' + total + '. Clear these to load more.</p>' : '';
+  }
+  var waiting = totalPosts + totalComments;
+  queue.innerHTML = '<section><h3>Waiting for approval <span>' + waiting + '</span></h3>' + (pendingHtml || '<p class="community-review-empty">Nothing is waiting for approval.</p>') + overflowNote(pendingPosts.length, totalPosts) + overflowNote(pendingComments.length, totalComments) + '</section>' +
+    '<section><h3>Open reports <span>' + totalReports + '</span></h3>' + (reportHtml || '<p class="community-review-empty">No open reports.</p>') + overflowNote(reports.length, totalReports) + '</section>';
 }
-function communityModerationCard(type, row, status) {
+function communityModerationCard(type, row, status, flags) {
   var id = communityEsc(row.id);
-  return '<article class="community-review-card"><div class="community-review-meta">' + (type === 'post' ? (row.post_type === 'vacancy' ? 'Vacancy' : 'Post') : 'Comment') + ' · ' + communityEsc(communityWhen(row.created_at)) + ' · ' + communityEsc(row.author_label) + '</div>' + (type === 'post' ? communityVacancyMetaHtml(row) + communityPosterImageHtml(row) : '') + '<p>' + communityEsc(row.body) + '</p><div class="community-review-actions"><button type="button" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'approved\')">Approve</button><button type="button" class="community-danger-btn" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'hidden\')">Hide</button></div></article>';
+  var reasons = flags && flags.get(type + ':' + row.id);
+  var flagNote = reasons && reasons.length
+    ? '<div class="community-flag-note">⚠ Automated flag: ' + communityEsc(reasons.map(function(reason) { return String(reason).replace(/_/g, ' '); }).join(', ')) + '</div>'
+    : '';
+  return '<article class="community-review-card"><div class="community-review-meta">' + (type === 'post' ? (row.post_type === 'vacancy' ? 'Vacancy' : 'Post') : 'Comment') + ' · ' + communityEsc(communityWhen(row.created_at)) + ' · ' + communityEsc(row.author_label) + '</div>' + flagNote + (type === 'post' ? communityVacancyMetaHtml(row) + communityPosterImageHtml(row) : '') + '<p>' + communityEsc(row.body) + '</p><div class="community-review-actions"><button type="button" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'approved\')">Approve</button><button type="button" class="community-danger-btn" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'hidden\')">Hide</button></div></article>';
 }
 async function communityModerate(type, id, status) {
   var table = type === 'comment' ? 'community_comments' : 'community_posts';
@@ -741,6 +947,10 @@ window.communityToggleModeration = communityToggleModeration;
 window.communityModerate = communityModerate;
 window.communityReviewReported = communityReviewReported;
 window.communityDismissReport = communityDismissReport;
+window.communityLoad = communityLoad;
+window.communitySetIdentityVisibility = communitySetIdentityVisibility;
+window.communityDeleteOwn = communityDeleteOwn;
+window.communityToggleMine = communityToggleMine;
 
 (function initCommunityMvp() {
   communityInitEmojiPicker('community-post-emoji-picker', 'community-post-body');
@@ -751,8 +961,18 @@ window.communityDismissReport = communityDismissReport;
   document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') communityCloseReport();
   });
+  // Keep unsent comment drafts across feed reloads.
+  document.addEventListener('input', function(event) {
+    var target = event.target;
+    if (target && target.matches && target.matches('.community-comment-form textarea') && target.id) communityMvp.drafts[target.id] = target.value;
+  });
   if (supabaseClient && supabaseClient.auth) {
-    supabaseClient.auth.onAuthStateChange(function() {
+    supabaseClient.auth.onAuthStateChange(function(authEvent, session) {
+      // Token refreshes and repeated INITIAL_SESSION events must not reload the feed;
+      // only an actual sign-in / sign-out / account switch should.
+      var userId = session && session.user ? session.user.id : null;
+      if (userId === communityMvp.lastUserId) return;
+      communityMvp.lastUserId = userId;
       if (document.getElementById('screen-community') && document.getElementById('screen-community').classList.contains('active')) communityLoad();
     });
   }

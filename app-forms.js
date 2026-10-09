@@ -236,25 +236,43 @@ function handleEmployerPhoto(evt) {
 // ----- Employer poster upload (full recruitment-ad image) -----
 // Unlike handleEmployerPhoto, this keeps the original aspect ratio (posters
 // are portrait, like a printed flyer) instead of square-cropping.
-function processPosterPhoto(evt, blobKey, previewId, fallbackId) {
+// done(error, blob) is optional: it lets callers react to unreadable images instead of
+// leaving the preview stuck on "Preparing…" and block submits while a poster is processing.
+function processPosterPhoto(evt, blobKey, previewId, fallbackId, done) {
   var file = evt.target.files[0];
   if (!file) return;
+  function finish(error, blob) {
+    if (error) {
+      window[blobKey] = null;
+      var failedFallback = document.getElementById(fallbackId);
+      if (failedFallback) { failedFallback.textContent = 'Could not read this image'; failedFallback.style.display = 'grid'; }
+    }
+    if (typeof done === 'function') done(error || null, blob || null);
+  }
   var reader = new FileReader();
+  reader.onerror = function() { finish(new Error('read failed')); };
   reader.onload = function(e) {
     var img = new Image();
+    img.onerror = function() { finish(new Error('decode failed')); };
     img.onload = function() {
       var maxW = 1080;
       var scale = Math.min(1, maxW / img.width);
       var canvas = document.createElement('canvas');
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      var ctx = canvas.getContext('2d');
+      // JPEG has no alpha: paint white first so transparent PNGs do not turn black.
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(function(blob) {
+        if (!blob) { finish(new Error('encode failed')); return; }
         window[blobKey] = blob;
         var preview = document.getElementById(previewId);
         var fallback = document.getElementById(fallbackId);
         if (preview) { preview.src = URL.createObjectURL(blob); preview.style.display = 'block'; }
         if (fallback) fallback.style.display = 'none';
+        finish(null, blob);
       }, 'image/jpeg', 0.85);
     };
     img.src = e.target.result;

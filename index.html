@@ -537,6 +537,10 @@
         <button class="community-admin-toggle" type="button" onclick="communityToggleModeration()"><span>Moderation queue</span><span id="community-moderation-count">0</span></button>
         <div class="community-moderation-queue" id="community-moderation-queue" hidden></div>
       </section>
+      <section class="community-admin-panel community-mine-panel" id="community-mine" hidden>
+        <button class="community-admin-toggle" type="button" onclick="communityToggleMine()"><span>My submissions</span><span id="community-mine-count" title="Awaiting review">0</span></button>
+        <div class="community-moderation-queue" id="community-mine-list" hidden></div>
+      </section>
       <div class="community-feed-toolbar">
         <div><h2>TipChat feed</h2></div>
         <div class="community-feed-toolbar-actions">
@@ -549,7 +553,8 @@
       </div>
       <div class="community-feed" id="community-feed" aria-live="polite"><div class="community-empty">Loading TipChat…</div></div>
       <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
-        <div class="community-compose-head"><strong id="community-compose-heading">Start a conversation</strong><span>Active candidates show their profile</span></div>
+        <div class="community-compose-head"><strong id="community-compose-heading">Start a conversation</strong><span>Anonymous by default</span></div>
+        <div class="community-identity-box" id="community-identity-box" hidden><label for="community-identity-toggle"><input type="checkbox" id="community-identity-toggle" onchange="communitySetIdentityVisibility(this.checked)"><span>Show my Talent Pool name and photo on my TipChat posts and comments</span></label><small>Off by default. You can switch this off any time and your past posts return to “Anonymous member”.</small></div>
         <div class="community-compose-type" role="group" aria-label="Choose what to post"><button type="button" data-community-compose-type="discussion" class="is-active" aria-pressed="true" onclick="communitySetComposerType('discussion')">Ask / share a tip</button><button type="button" data-community-compose-type="vacancy" aria-pressed="false" onclick="communitySetComposerType('vacancy')">Post a vacancy</button></div>
         <p class="community-vacancy-help" id="community-vacancy-help" hidden>Share a vacancy in text, attach its poster, or do both. Include a job title and location when you can.</p>
         <div class="community-vacancy-fields" id="community-vacancy-fields" hidden>

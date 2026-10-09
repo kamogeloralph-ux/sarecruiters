@@ -197,3 +197,16 @@
 #screen-community .community-sort{gap:2px}
 #screen-community .community-sort button{padding:0 7px;font-size:10px}
 @media(max-width:360px){#screen-community .community-feed-toolbar{gap:6px}#screen-community .community-feed-toolbar h2{font-size:13px}#screen-community .community-feed-toolbar-actions{gap:4px}#screen-community .community-sort button{padding:0 5px;font-size:9.5px}}
+
+/* TipChat audit additions */
+.community-identity-box{margin:8px 0 10px;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.08);font-size:.86rem}
+.community-identity-box label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;line-height:1.35}
+.community-identity-box input{margin-top:3px;flex:0 0 auto}
+.community-identity-box small{display:block;margin:6px 0 0 26px;opacity:.7;line-height:1.35}
+.community-status-pill{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:600;background:rgba(127,127,127,.15)}
+.community-status-pill.is-pending{background:rgba(245,158,11,.18);color:#b45309}
+.community-status-pill.is-approved{background:rgba(34,197,94,.16);color:#15803d}
+.community-status-pill.is-hidden{background:rgba(239,68,68,.16);color:#b91c1c}
+.community-flag-note{margin:6px 0;padding:6px 10px;border-radius:8px;background:rgba(245,158,11,.16);color:#92400e;font-size:.82rem;font-weight:600}
+.community-more-delete{width:auto;padding:0 10px;font-size:.78rem;font-weight:600}
+.community-mine-panel{margin-bottom:12px}
