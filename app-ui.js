@@ -309,7 +309,7 @@ function renderHomeFeaturedPoster(posters) {
     return;
   }
   var caption = String(featured.caption || 'Featured vacancy opportunity');
-  slot.innerHTML = '<button type="button" class="poster-page-card home-featured-poster-card" data-featured-poster-url="' + escapeHtml(featured.image_url) + '" aria-label="Open featured vacancy poster"><img src="' + escapeHtml(featured.image_url) + '" loading="lazy" decoding="async" alt="' + escapeHtml(caption) + '"><span class="managed-poster-copy"><strong>' + escapeHtml(caption) + '</strong><span>Tap to view the full vacancy poster</span></span></button>';
+  slot.innerHTML = '<button type="button" class="home-featured-poster-image" data-featured-poster-url="' + escapeHtml(featured.image_url) + '" aria-label="Open featured vacancy poster: ' + escapeHtml(caption) + '"><img src="' + escapeHtml(featured.image_url) + '" loading="lazy" decoding="async" alt="' + escapeHtml(caption) + '"></button>';
   slot.querySelectorAll('[data-featured-poster-url]').forEach(function (button) {
     button.addEventListener('click', function () { openPosterLightbox(button.getAttribute('data-featured-poster-url')); });
   });
@@ -434,7 +434,7 @@ function renderHomeFeed() {
       '<div class="home-media-track"><div class="home-media-track-art" aria-hidden="true">♫</div><div class="home-media-track-copy"><span>Track of the Day</span><strong id="home-media-track-title">Loading…</strong><small id="home-media-track-artist"></small></div><button type="button" class="home-media-track-play" id="home-media-track-play" disabled onclick="toggleTrackPlay()" aria-label="Play Track of the Day"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button></div>' +
       '<audio id="track-audio" preload="none" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>' +
     '</section>' +
-    '<section class="poster-cta home-featured-poster" aria-labelledby="home-featured-poster-title"><div class="poster-cta-heading"><span class="poster-cta-kicker">Featured every day</span><h2 id="home-featured-poster-title">Vacancy poster of the day</h2><p>A fresh recruitment poster selected automatically for today.</p></div><div class="poster-deck" id="home-featured-poster-slot"><div class="poster-empty">Loading today’s poster…</div></div></section>' +
+    '<section class="home-featured-poster" aria-labelledby="home-featured-poster-title"><div class="poster-cta-heading"><span class="poster-cta-kicker">Featured today</span><h2 id="home-featured-poster-title">Vacancy poster of the day</h2><p>A fresh recruitment poster selected automatically for today.</p></div><div class="poster-deck" id="home-featured-poster-slot"><div class="poster-empty">Loading today’s poster…</div></div></section>' +
     homeWeeklyTopJobsMarkup() +
     homeVacancySourceMarkup() +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
