@@ -93,14 +93,37 @@ async function signInWithGoogle() {
   if (!supabaseClient || saAuthRedirecting) return;
   saAuthRedirecting = true;
   setAuthGateState('redirecting', 'Opening Google sign-in…');
-  var result = await supabaseClient.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: authRedirectUrl(), queryParams: { access_type: 'offline', prompt: 'select_account' } }
-  });
-  if (result.error) {
+  var timeoutId;
+  try {
+    var timeout = new Promise(function(resolve, reject) {
+      timeoutId = window.setTimeout(function() { reject(new Error('Google sign-in request timed out.')); }, 12000);
+    });
+    var result = await Promise.race([
+      supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: authRedirectUrl(),
+          queryParams: { access_type: 'offline', prompt: 'select_account' },
+          skipBrowserRedirect: true
+        }
+      }),
+      timeout
+    ]);
+    if (timeoutId) window.clearTimeout(timeoutId);
+    if (result && result.error) throw result.error;
+    var oauthUrl = result && result.data && result.data.url;
+    if (!oauthUrl) throw new Error('Google sign-in did not return a redirect URL.');
+    // Use a top-level navigation so mobile browsers do not strand users on
+    // the disabled account card after the OAuth URL has been created.
+    window.location.assign(oauthUrl);
+  } catch (error) {
+    if (timeoutId) window.clearTimeout(timeoutId);
     saAuthRedirecting = false;
-    setAuthGateState('error', 'Google sign-in could not start. Please try again.');
-    console.error('Google sign-in', result.error);
+    var timedOut = error && /timed out/i.test(String(error.message || error));
+    setAuthGateState('error', timedOut
+      ? 'Google sign-in is taking too long. Check your connection and try again.'
+      : 'Google sign-in could not start. Please try again.');
+    console.error('Google sign-in', error);
   }
 }
 window.signInWithGoogle = signInWithGoogle;
