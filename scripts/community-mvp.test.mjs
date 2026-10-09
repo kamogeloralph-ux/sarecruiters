@@ -10,6 +10,7 @@ const migration = read('supabase/migrations/20261006_community_interview_tips.sq
 const policyFix = read('supabase/migrations/20261007_community_membership_policy_fix.sql');
 const vacancyMigration = read('supabase/migrations/20261010_community_text_vacancies.sql');
 const posterMigration = read('supabase/migrations/20261010_community_tipchat_posters.sql');
+const candidateIdentityMigration = read('supabase/migrations/20261011_community_candidate_public_identity.sql');
 const app = read('app-community.js');
 const html = read('index.html');
 const communityCss = read('community.css');
@@ -34,13 +35,26 @@ test('community tables are protected by RLS and public identity columns are not 
   assert.doesNotMatch(migration, /grant select\s*\([^)]*\breporter_id\b/i);
 });
 
-test('member posts and comments default to pending review and fixed pseudonymous labels', () => {
+test('member posts and comments default to pending review and Anonymous member labels', () => {
   assert.match(migration, /author_label text not null default 'Anonymous member'/);
   assert.match(migration, /status text not null default 'pending'/);
   assert.match(migration, /community_posts_insert_member[\s\S]*?status = 'pending'/);
   assert.match(migration, /community_comments_insert_member[\s\S]*?status = 'pending'/);
   assert.match(migration, /community_posts_admin_moderate/);
   assert.match(migration, /community_comments_admin_moderate/);
+});
+
+test('active Talent Pool profiles identify TipChat content without exposing account IDs', () => {
+  assert.match(candidateIdentityMigration, /c\.user_id = new\.author_id[\s\S]*?c\.status = 'active'/i);
+  assert.match(candidateIdentityMigration, /new\.author_label := 'Anonymous member'/);
+  assert.match(candidateIdentityMigration, /after insert or update or delete on public\.pool_candidates/i);
+  assert.match(candidateIdentityMigration, /grant select \(author_photo_url\) on public\.community_posts to anon, authenticated/i);
+  assert.match(candidateIdentityMigration, /grant select \(author_photo_url\) on public\.community_comments to anon, authenticated/i);
+  assert.doesNotMatch(candidateIdentityMigration, /grant select\s*\([^)]*\bauthor_id\b/i);
+  assert.match(app, /communityAuthorAvatarHtml\(post\.author_label, post\.author_photo_url/);
+  assert.match(app, /communityAuthorAvatarHtml\(comment\.author_label, comment\.author_photo_url/);
+  assert.match(app, /authorIdentityAvailable/);
+  assert.match(html, /Active Talent Pool members are shown with their profile name and photo/);
 });
 
 test('participation insert policies use a private current-user membership verifier', () => {
@@ -96,6 +110,12 @@ test('Interview Tips keeps all content below its title bar in one scrollable pan
   }
   assert.match(sharedCss, /\.screen-scroll\{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch/);
   assert.match(communityCss, /#screen-community \.screen-scroll\{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 16px 112px;overscroll-behavior-y:contain\}/);
+});
+
+test('TipChat intro uses a prominent logo without the former blue hero card', () => {
+  assert.match(html, /class="community-banner-logo" src="icons\/tipchat-logo\.svg"/);
+  assert.match(communityCss, /#screen-community \.community-group-banner\{[\s\S]*?background:transparent/);
+  assert.match(communityCss, /#screen-community \.community-banner-logo\{[\s\S]*?width:min\(290px/);
 });
 
 test('community code and stylesheet participate in normal cache-busted builds', () => {
