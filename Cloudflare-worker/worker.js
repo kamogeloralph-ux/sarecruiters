@@ -78,6 +78,27 @@ function randomKey() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 __name(randomKey, "randomKey");
+// Best-effort per-user hourly upload cap (Cache API; per Cloudflare location). Fails open.
+async function posterUploadAllowed(userId, limit = 10) {
+  try {
+    const cache = caches.default;
+    const hour = Math.floor(Date.now() / 36e5);
+    const key = new Request(`https://rate-limit.internal/employer-poster/${userId}/${hour}`);
+    const hit = await cache.match(key);
+    const count = hit ? parseInt(await hit.text(), 10) || 0 : 0;
+    if (count >= limit) return false;
+    await cache.put(key, new Response(String(count + 1), { headers: { "Cache-Control": "max-age=3600" } }));
+    return true;
+  } catch (e) {
+    return true;
+  }
+}
+__name(posterUploadAllowed, "posterUploadAllowed");
+function looksLikeJpeg(buffer) {
+  const b = new Uint8Array(buffer, 0, Math.min(3, buffer.byteLength));
+  return b.length === 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+}
+__name(looksLikeJpeg, "looksLikeJpeg");
 
 // ============================================================
 //  Cloudflare Turnstile server-side verification.
@@ -2008,11 +2029,37 @@ var worker_default = {
         if (bytes.byteLength > MAX_POSTER_BYTES) {
           return json({ error: "Poster too large (max 5MB)." }, 413, origin);
         }
+        if (!looksLikeJpeg(bytes)) {
+          return json({ error: "Posters must be JPEG images." }, 400, origin);
+        }
+        if (!await posterUploadAllowed(posterUserId)) {
+          return json({ error: "Too many poster uploads. Please try again in an hour." }, 429, origin);
+        }
         const key = `employer-posters/${randomKey()}.jpg`;
-        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
+        await env.MEDIA_BUCKET.put(key, bytes, {
+          httpMetadata: { contentType: "image/jpeg" },
+          customMetadata: { owner: posterUserId }
+        });
         const submittedCaption = (url.searchParams.get("caption") || "").trim();
         const caption = submittedCaption || await inferEmployerPosterTitle(env, bytes) || "Vacancy poster";
         return json({ url: publicUrlFor(env, key), key, caption }, 200, origin);
+      }
+      if (path === "/api/upload/employer-poster" && request.method === "DELETE") {
+        const deleteUserId = await verifiedUserId(request, env);
+        if (!deleteUserId) {
+          return json({ error: "Please sign in." }, 401, origin);
+        }
+        const posterKey = url.searchParams.get("key") || "";
+        if (!/^employer-posters\/[A-Za-z0-9]+\.jpg$/.test(posterKey)) {
+          return json({ error: "Invalid poster key." }, 400, origin);
+        }
+        const head = await env.MEDIA_BUCKET.head(posterKey);
+        if (!head) return json({ ok: true }, 200, origin);
+        if (!head.customMetadata || head.customMetadata.owner !== deleteUserId) {
+          return json({ error: "Not allowed." }, 403, origin);
+        }
+        await env.MEDIA_BUCKET.delete(posterKey);
+        return json({ ok: true }, 200, origin);
       }
       if (path === "/api/upload/daily-track" && request.method === "POST") {
         if (!await isAdminRequest(request, env)) {
