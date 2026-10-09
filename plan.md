@@ -48,3 +48,19 @@ The app is a static frontend with no new server or database capability. The exis
 - **Caching strategy:** use a versioned runtime cache. Navigation requests are network-first with the last cached shell as fallback and `/offline.html` as the final fallback. Static scripts, styles, images, and fonts use stale-while-revalidate. Startup data uses network-first and falls back to its cached response.
 - **Offline behavior:** preserve the app's existing IndexedDB/localStorage directory cache so an offline launch can render saved listings; serve a branded offline page when no shell is available. Never cache cross-origin Supabase writes, YouTube embeds, or POST requests.
 - **Deployment:** keep `/sw.js` on no-cache headers, generate the hashed application bundle before deployment, and validate the worker, fallback page, registration, update path, and complete test suite before pushing.
+
+
+## Operational automation rollout (2026-10-09)
+
+The following scheduled jobs are being added to the existing architecture:
+
+1. Official closing-date deletion plus existing source TTL cleanup.
+2. Scraper and refresh anomaly email reporting through Resend.
+3. Conservative repeated-failure vacancy-link checks.
+4. Private scheduled Supabase JSON backup artifacts.
+5. Static snapshot integrity and anomaly validation before publication.
+6. Public PWA shell/manifest/service-worker health checks.
+7. Deterministic community risk flags for moderator review; no automatic content deletion.
+8. Weekly analytics aggregation emailed to the administrator.
+
+WhatsApp is deliberately not used. Email activation requires the protected `OPS_ALERT_EMAIL` secret, with `RESEND_API_KEY` already used by the repository's existing alert workflow.

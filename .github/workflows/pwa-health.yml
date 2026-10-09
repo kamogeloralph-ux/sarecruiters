@@ -1,0 +1,34 @@
+name: PWA health check
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: pwa-health-check
+  cancel-in-progress: false
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_URL: https://sa-recruiters.co.za
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      OPS_ALERT_EMAIL: ${{ secrets.OPS_ALERT_EMAIL }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run health check
+        id: health
+        continue-on-error: true
+        run: node scripts/check-pwa-health.mjs 2>&1 | tee pwa-health.log
+      - name: Email failure summary
+        if: steps.health.outcome == 'failure'
+        run: node --input-type=module -e "import fs from 'node:fs'; import { sendOpsEmail } from './scripts/send-ops-email.mjs'; await sendOpsEmail({subject:'SA Recruiters PWA health check failed', text:fs.readFileSync('pwa-health.log','utf8')});"
+      - name: Fail workflow after notification
+        if: steps.health.outcome == 'failure'
+        run: exit 1

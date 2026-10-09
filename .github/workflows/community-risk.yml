@@ -1,0 +1,28 @@
+name: Scan community risk signals
+on:
+  schedule:
+    - cron: "45 */6 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: community-risk-scan
+  cancel-in-progress: false
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      OPS_ALERT_EMAIL: ${{ secrets.OPS_ALERT_EMAIL }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: node scripts/flag-community-risk.mjs
