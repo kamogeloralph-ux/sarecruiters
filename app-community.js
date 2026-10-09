@@ -12,7 +12,8 @@ var communityMvp = {
   returnScreen: 'home',
   reportTarget: null,
   vacancySchemaAvailable: true,
-  posterSchemaAvailable: true
+  posterSchemaAvailable: true,
+  authorIdentityAvailable: true
 };
 var communityComposerType = 'discussion';
 var communityPosterBlob = null;
@@ -21,6 +22,16 @@ function communityEsc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
     return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
   });
+}
+function communityMissingIdentitySchema(error) {
+  return String(error && error.message || '').toLowerCase().indexOf('author_photo_url') >= 0;
+}
+function communityAuthorAvatarHtml(label, photo, isOfficial, compact) {
+  var safePhoto = /^https:\/\//i.test(String(photo || '')) ? communityEsc(photo) : '';
+  var initial = isOfficial ? 'SA' : (String(label || 'Anonymous member').trim().charAt(0).toUpperCase() || 'A');
+  var className = compact ? 'community-comment-avatar' : 'community-author-mark';
+  return '<span class="' + className + (safePhoto ? ' has-photo' : '') + '" aria-hidden="true">' +
+    (safePhoto ? '<img src="' + safePhoto + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : communityEsc(initial)) + '</span>';
 }
 function communityToast(message) {
   if (typeof showToast === 'function') showToast(message);
@@ -295,8 +306,9 @@ async function communityLoadFeed() {
   var host = document.getElementById('community-feed');
   if (!host || !communityMvp.group) return;
   host.innerHTML = '<div class="community-empty">Loading posts…</div>';
+  var authorPhotoSelect = communityMvp.authorIdentityAvailable ? ',author_photo_url' : '';
   var query = supabaseClient.from('community_posts')
-    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,likes_count,comments_count,created_at')
+    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,likes_count,comments_count,created_at' + authorPhotoSelect)
     .eq('group_id', communityMvp.group.id)
     .eq('status', 'approved');
   if (communityMvp.sort === 'top') {
@@ -311,11 +323,15 @@ async function communityLoadFeed() {
     query = query.order('created_at', { ascending: false });
   }
   var result = await query.limit(40);
+  if (result.error && communityMvp.authorIdentityAvailable && communityMissingIdentitySchema(result.error)) {
+    communityMvp.authorIdentityAvailable = false;
+    return communityLoadFeed();
+  }
   if (result.error && communityMissingPosterSchema(result.error)) {
     communityMvp.posterSchemaAvailable = false;
     communitySetComposerType(communityComposerType);
     query = supabaseClient.from('community_posts')
-      .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,likes_count,comments_count,created_at')
+      .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,likes_count,comments_count,created_at' + authorPhotoSelect)
       .eq('group_id', communityMvp.group.id).eq('status', 'approved');
     if (communityMvp.sort === 'top') query = query.gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()).order('likes_count', { ascending: false }).order('comments_count', { ascending: false }).order('created_at', { ascending: false });
     else query = query.order('created_at', { ascending: false });
@@ -324,11 +340,11 @@ async function communityLoadFeed() {
   if (result.error && communityMissingVacancySchema(result.error)) {
     communityMvp.vacancySchemaAvailable = false;
     result = await supabaseClient.from('community_posts')
-      .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at')
+      .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at' + authorPhotoSelect)
       .eq('group_id', communityMvp.group.id).eq('status', 'approved')
       .order('created_at', { ascending: false }).limit(40);
     if (communityMvp.sort === 'top') result = await supabaseClient.from('community_posts')
-      .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at')
+      .select('id,group_id,author_label,body,status,is_official,likes_count,comments_count,created_at' + authorPhotoSelect)
       .eq('group_id', communityMvp.group.id).eq('status', 'approved')
       .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
       .order('likes_count', { ascending: false }).order('comments_count', { ascending: false }).order('created_at', { ascending: false }).limit(40);
@@ -365,7 +381,7 @@ function communityRenderFeed() {
     var commentAction = joined ? 'communityToggleComments' : 'communityPromptParticipation';
     var expanded = communityMvp.expanded.has(post.id);
     return '<article class="community-post" data-post-id="' + id + '">' +
-      '<div class="community-post-head"><div class="community-author-mark" aria-hidden="true">' + (post.is_official ? 'SA' : 'A') + '</div>' +
+      '<div class="community-post-head">' + communityAuthorAvatarHtml(post.author_label, post.author_photo_url, post.is_official, false) +
       '<div class="community-post-byline"><strong>' + communityEsc(post.author_label) + '</strong>' + official + '<span>' + communityEsc(communityWhen(post.created_at)) + '</span></div>' +
       '<button class="community-more" type="button" aria-label="Report post" title="Report post" onclick="communityOpenReport(\'post\',\'' + id + '\')">•••</button></div>' +
       communityVacancyMetaHtml(post) +
@@ -535,19 +551,26 @@ async function communityLoadComments(postId) {
   panel.hidden = false;
   panel.innerHTML = '<div class="community-comment-loading">Loading comments…</div>';
   var result = await supabaseClient.from('community_comments')
-    .select('id,post_id,author_label,body,status,created_at')
+    .select('id,post_id,author_label,body,status,created_at' + (communityMvp.authorIdentityAvailable ? ',author_photo_url' : ''))
     .eq('post_id', postId).eq('status', 'approved')
     .order('created_at', { ascending: true }).limit(50);
+  if (result.error && communityMvp.authorIdentityAvailable && communityMissingIdentitySchema(result.error)) {
+    communityMvp.authorIdentityAvailable = false;
+    result = await supabaseClient.from('community_comments')
+      .select('id,post_id,author_label,body,status,created_at')
+      .eq('post_id', postId).eq('status', 'approved')
+      .order('created_at', { ascending: true }).limit(50);
+  }
   if (result.error) { console.error(result.error); panel.innerHTML = '<div class="community-comment-loading">Comments are unavailable right now.</div>'; return; }
   var comments = result.data || [];
   panel.innerHTML = '<div class="community-comment-list">' + (comments.length
     ? comments.map(function(comment) {
         var commentId = communityEsc(comment.id);
-        return '<div class="community-comment"><div class="community-comment-head"><strong>' + communityEsc(comment.author_label) + '</strong><span>' + communityEsc(communityWhen(comment.created_at)) + '</span><button type="button" class="community-comment-report" aria-label="Report comment" onclick="communityOpenReport(\'comment\',\'' + commentId + '\')">Report</button></div><p>' + communityEsc(comment.body) + '</p></div>';
+        return '<div class="community-comment"><div class="community-comment-head">' + communityAuthorAvatarHtml(comment.author_label, comment.author_photo_url, false, true) + '<strong>' + communityEsc(comment.author_label) + '</strong><span>' + communityEsc(communityWhen(comment.created_at)) + '</span><button type="button" class="community-comment-report" aria-label="Report comment" onclick="communityOpenReport(\'comment\',\'' + commentId + '\')">Report</button></div><p>' + communityEsc(comment.body) + '</p></div>';
       }).join('')
     : '<div class="community-comment-loading">No approved comments yet.</div>') + '</div>' +
     (communityMvp.joined && communitySignedIn()
-      ? '<form class="community-comment-form" onsubmit="return communitySubmitComment(event,\'' + communityEsc(postId) + '\')"><label class="sr-only" for="community-comment-input-' + communityEsc(postId) + '">Add a comment</label><textarea id="community-comment-input-' + communityEsc(postId) + '" maxlength="1500" placeholder="Add a helpful comment…" required></textarea><button type="submit">Send</button><small>Comments are pseudonymous and reviewed before they appear.</small></form>'
+      ? '<form class="community-comment-form" onsubmit="return communitySubmitComment(event,\'' + communityEsc(postId) + '\')"><label class="sr-only" for="community-comment-input-' + communityEsc(postId) + '">Add a comment</label><textarea id="community-comment-input-' + communityEsc(postId) + '" maxlength="1500" placeholder="Add a helpful comment…" required></textarea><button type="submit">Send</button><small>Comments are reviewed before they appear.</small></form>'
       : '<button type="button" class="community-secondary-btn" onclick="communityPromptParticipation()">Join to comment</button>');
 }
 async function communitySubmitComment(event, postId) {
