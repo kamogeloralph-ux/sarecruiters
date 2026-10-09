@@ -53,6 +53,8 @@ const STATIC_ASSETS = [
   'offline.html',
   'styles.css',
   'community.css',
+  'icons/tipchat-logo.svg',
+  'icons/tipchat-mark.svg',
   'static-pages.css',
   'content.js',
   'content-manager.js',

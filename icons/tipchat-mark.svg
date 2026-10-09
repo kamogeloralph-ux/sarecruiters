@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 130" role="img" aria-label="TipChat">
+<defs><linearGradient id="g" x1="25" y1="7" x2="135" y2="120" gradientUnits="userSpaceOnUse"><stop stop-color="#69D6FF"/><stop offset=".48" stop-color="#3185F5"/><stop offset="1" stop-color="#563CE0"/></linearGradient></defs>
+<path d="M24 28c0-13 11-24 24-24h68c13 0 24 11 24 24v59c0 13-11 24-24 24H83l-28 21v-21h-7c-13 0-24-11-24-24V28Z" fill="#182E69" opacity=".32" transform="translate(2 4)"/>
+<path d="M20 24C20 11 31 0 44 0h68c13 0 24 11 24 24v59c0 13-11 24-24 24H79l-28 21v-21h-7c-13 0-24-11-24-24V24Z" fill="url(#g)" stroke="#fff" stroke-opacity=".8" stroke-width="3"/>
+<g fill="#fff"><rect x="45" y="39" width="17" height="34" rx="8.5"/><rect x="72" y="33" width="17" height="46" rx="8.5"/><rect x="99" y="42" width="17" height="29" rx="8.5"/></g></svg>

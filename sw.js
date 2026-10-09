@@ -6,7 +6,7 @@
  * Static assets are stale-while-revalidate, while startup data is network-first
  * because it changes independently of the app shell.
  */
-const VERSION = 'sa-recruiters-913625059b';
+const VERSION = 'sa-recruiters-3e107ce88a';
 const CACHE_NAME = VERSION + '-runtime';
 const PRECACHE_URLS = [
   '/',
@@ -20,6 +20,8 @@ const PRECACHE_URLS = [
   '/icons/v2-icon-192.png',
   '/icons/v2-icon-512.png',
   '/icons/v2-Maskable-512.png',
+  '/icons/tipchat-logo.svg',
+  '/icons/tipchat-mark.svg',
 ];
 
 function isSameOrigin(request) {
