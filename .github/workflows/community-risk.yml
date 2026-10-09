@@ -1,7 +1,7 @@
-name: Scan community risk signals
+name: Scan community risk signals and notify moderators
 on:
   schedule:
-    - cron: "45 */6 * * *"
+    - cron: "15 * * * *"
   workflow_dispatch: {}
 permissions:
   contents: read
