@@ -495,7 +495,7 @@
 
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg></span><span>Tips Chat<span class="mi-sub">Chat with other job seekers, share advice, and ask questions</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg></span><span>TipChat<span class="mi-sub">Share advice and vacancies by text or poster</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -520,34 +520,39 @@
     </div>
     </div>
   </div>
-  <!-- ============ INTERVIEW TIPS COMMUNITY ============ -->
+  <!-- ============ TIPCHAT COMMUNITY ============ -->
   <div class="screen" id="screen-community">
     <div class="screen-fixed">
       <header class="community-header">
         <button class="vac-folder-back-btn vac-simple-back screen-back-btn community-back" data-ripple onclick="goBackFromCommunity()" aria-label="Back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <div class="community-heading-copy"><h1>Interview Tips</h1><p>Community · South Africa</p></div>
-        <button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share Interview Tips community">Share</button>
+        <div class="community-heading-copy"><h1>TipChat</h1><p>Jobs, advice &amp; opportunities · South Africa</p></div>
+        <button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share TipChat">Share</button>
       </header>
     </div>
     <div class="screen-scroll">
       <section class="community-group-banner" aria-labelledby="community-group-title">
-        <h2 id="community-group-title">Interview Tips</h2>
-        <p id="community-group-description">Practical interview advice for job seekers in South Africa.</p>
-        <div class="community-group-actions"><button class="community-join-btn" id="community-join-btn" type="button" data-ripple onclick="communityJoinGroup()" aria-pressed="false">Join group</button><span class="community-group-note">Public group</span></div>
+        <h2 id="community-group-title">TipChat</h2>
+        <p id="community-group-description">A shared space for South African job seekers to swap advice and discover vacancies — by text or poster.</p>
+        <div class="community-group-actions"><button class="community-join-btn" id="community-join-btn" type="button" data-ripple onclick="communityJoinGroup()" aria-pressed="false">Join TipChat</button><span class="community-group-note">Public community · reviewed posts</span></div>
       </section>
-      <p class="community-safety-note">Other members see “Anonymous member”; your account ID stays private and is linked to activity for moderation and abuse prevention. Posts and comments are reviewed before publishing. Don’t share names, contact details or confidential information.</p>
+      <p class="community-safety-note">Other members see “Anonymous member”; your account stays private. Posts and comments are reviewed before publishing. Verify vacancies before applying and never pay to apply for a job.</p>
       <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
-        <div class="community-compose-head"><strong id="community-compose-heading">Ask the community</strong><span>Pseudonymous</span></div>
+        <div class="community-compose-head"><strong id="community-compose-heading">Start a conversation</strong><span>TipChat · pseudonymous</span></div>
         <div class="community-compose-type" role="group" aria-label="Choose what to post"><button type="button" data-community-compose-type="discussion" class="is-active" aria-pressed="true" onclick="communitySetComposerType('discussion')">Ask / share a tip</button><button type="button" data-community-compose-type="vacancy" aria-pressed="false" onclick="communitySetComposerType('vacancy')">Post a vacancy</button></div>
-        <p class="community-vacancy-help" id="community-vacancy-help" hidden>Paste a vacancy announcement like the one you found on LinkedIn or WhatsApp. Add the key details below so it is easier to understand.</p>
+        <p class="community-vacancy-help" id="community-vacancy-help" hidden>Share a vacancy in text, attach its poster, or do both. Include a job title and location when you can.</p>
         <div class="community-vacancy-fields" id="community-vacancy-fields" hidden>
           <div class="community-vacancy-field-grid"><div><label for="community-vacancy-title">Job title (optional)</label><input id="community-vacancy-title" maxlength="140" placeholder="e.g. Safety Officers Required"></div><div><label for="community-vacancy-location">Location (optional)</label><input id="community-vacancy-location" maxlength="120" placeholder="e.g. Polokwane, Limpopo"></div></div>
           <label for="community-vacancy-application">How to apply (optional)</label><input id="community-vacancy-application" maxlength="300" placeholder="e.g. Send CVs to name@example.com or apply link">
+          <div class="community-poster-upload" id="community-poster-upload" hidden>
+            <label for="community-poster-file">Add a vacancy poster <span>JPG, PNG or WebP · max 5 MB after compression</span></label>
+            <input id="community-poster-file" type="file" accept="image/jpeg,image/png,image/webp" onchange="communityHandlePosterPhoto(event)">
+            <div class="community-poster-preview-wrap"><div id="community-poster-fallback">Poster preview will appear here</div><img id="community-poster-preview" alt="Selected vacancy poster preview" style="display:none"><button type="button" onclick="communityRemovePoster()">Remove poster</button></div>
+          </div>
         </div>
-        <label class="sr-only" for="community-post-body">Write an interview question or tip</label>
-        <textarea id="community-post-body" maxlength="3000" placeholder="What would you like advice on? Share a question or helpful tip…" required></textarea>
+        <label class="sr-only" for="community-post-body">Write a TipChat post</label>
+        <textarea id="community-post-body" maxlength="3000" placeholder="What would you like advice on? Share a question or helpful tip…"></textarea>
         <div class="community-emoji-tools"><button type="button" class="community-emoji-trigger" onclick="communityToggleEmojiPicker('community-post-emoji-picker','community-post-body')" aria-expanded="false">Add a reaction</button><div class="community-emoji-picker" id="community-post-emoji-picker" hidden role="listbox" aria-label="Choose a custom SA Recruiters emoji"></div></div>
         <div class="community-emoji-preview" id="community-post-emoji-preview" aria-live="polite"></div>
         <div class="community-compose-actions"><span class="community-composer-hint" id="community-composer-hint">Sign in and join to share.</span><button class="community-submit-btn" id="community-post-submit" type="submit" disabled>Post</button></div>
@@ -558,13 +563,13 @@
         <div class="community-moderation-queue" id="community-moderation-queue" hidden></div>
       </section>
       <div class="community-feed-toolbar">
-        <h2>Conversations</h2>
+        <div><h2>TipChat feed</h2><p>Advice, conversations and vacancies together</p></div>
         <div class="community-sort" role="group" aria-label="Sort community posts">
           <button type="button" data-community-sort="new" class="is-active" aria-pressed="true" onclick="communitySetSort('new')">Newest</button>
           <button type="button" data-community-sort="top" aria-pressed="false" onclick="communitySetSort('top')">Top this month</button>
         </div>
       </div>
-      <div class="community-feed" id="community-feed" aria-live="polite"><div class="community-empty">Loading Interview Tips…</div></div>
+      <div class="community-feed" id="community-feed" aria-live="polite"><div class="community-empty">Loading TipChat…</div></div>
     </div>
   </div>
   <!-- ============ SMART MANAGER (admin only) ============ -->
@@ -883,9 +888,9 @@
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.7-5.1A7.5 7.5 0 1 1 20 11.5z"/></svg>
     <span class="navbtn-label">Feedback</span>
   </button>
-  <button class="navbtn navbtn-community" id="nav-community" data-ripple onclick="openCommunity()" aria-label="Open the Interview Tips community chat" title="Interview Tips community chat">
+  <button class="navbtn navbtn-community" id="nav-community" data-ripple onclick="openCommunity()" aria-label="Open TipChat" title="TipChat community">
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg>
-    <span class="navbtn-label">Tips chat</span>
+    <span class="navbtn-label">TipChat</span>
   </button>
   <button class="navbtn" data-tab="menu" data-ripple aria-label="Menu">
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -1496,7 +1501,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=367fb8fc0f" defer></script>
+<script src="app.bundle.min.js?v=ca36154ed8" defer></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

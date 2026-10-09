@@ -9,6 +9,7 @@ const read = (path) => readFileSync(join(root, path), 'utf8');
 const migration = read('supabase/migrations/20261006_community_interview_tips.sql');
 const policyFix = read('supabase/migrations/20261007_community_membership_policy_fix.sql');
 const vacancyMigration = read('supabase/migrations/20261010_community_text_vacancies.sql');
+const posterMigration = read('supabase/migrations/20261010_community_tipchat_posters.sql');
 const app = read('app-community.js');
 const html = read('index.html');
 const communityCss = read('community.css');
@@ -104,18 +105,36 @@ test('community code and stylesheet participate in normal cache-busted builds', 
   assert.match(build, /styles\\\.css\|community\\\.css/);
 });
 
-test('Tips Chat supports moderated text vacancy posts without exposing private IDs', () => {
+test('TipChat supports moderated text vacancy posts without exposing private IDs', () => {
   assert.match(vacancyMigration, /add column if not exists post_type text not null default 'discussion'/i);
   assert.match(vacancyMigration, /post_type in \('discussion', 'vacancy'\)/i);
   assert.match(vacancyMigration, /grant insert \([\s\S]*vacancy_title[\s\S]*\) on public\.community_posts to authenticated/i);
   assert.match(app, /communitySetComposerType/);
   assert.match(app, /communityMissingVacancySchema/);
-  assert.match(app, /Retry as a normal community post/);
+  assert.match(app, /Your draft is still here/);
   assert.match(app, /insert\(\{ group_id: communityMvp\.group\.id, body: body \}\)/);
   assert.match(app, /vacancySchemaAvailable/);
-  assert.match(app, /post_type: communityComposerType/);
+  assert.match(app, /post_type: isVacancy \? 'vacancy' : 'discussion'/);
   assert.match(app, /communityVacancyMetaHtml/);
   assert.match(html, /data-community-compose-type="vacancy"/);
   assert.match(html, /id="community-vacancy-title"/);
   assert.match(communityCss, /\.community-vacancy-badge/);
+});
+
+test('TipChat unifies vacancy text and poster uploads in its moderated social feed', () => {
+  assert.match(posterMigration, /add column if not exists poster_image_url text/i);
+  assert.match(posterMigration, /poster_image_url.*like 'https:\/\/%\/employer-posters\/%'/is);
+  assert.match(posterMigration, /grant select \([\s\S]*poster_image_url[\s\S]*\) on public\.community_posts to anon, authenticated/i);
+  assert.match(posterMigration, /grant insert \(poster_image_url\) on public\.community_posts to authenticated/i);
+  assert.match(posterMigration, /set title = 'TipChat'/);
+  assert.match(app, /communityUploadPoster/);
+  assert.match(app, /Authorization': 'Bearer ' \+ token/);
+  assert.match(app, /poster_image_url: posterImageUrl/);
+  assert.match(app, /communityPosterImageHtml/);
+  assert.match(app, /communityMissingPosterSchema/);
+  assert.match(app, /communityModerationCard[\s\S]*communityPosterImageHtml/);
+  assert.match(html, /id="community-poster-file" type="file" accept="image\/jpeg,image\/png,image\/webp"/);
+  assert.match(html, /Share a vacancy in text, attach its poster, or do both/);
+  assert.match(html, /<h1>TipChat<\/h1>/);
+  assert.match(communityCss, /\.community-post-poster img/);
 });
