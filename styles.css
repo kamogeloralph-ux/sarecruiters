@@ -682,6 +682,8 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
    (z-index 100000) is still in the DOM, so these sheets need to render
    above it. */
 body:not(.app-ready) .sheet-scrim{z-index:100010}
+body:not(.app-ready) #notes-overlay.open{visibility:hidden;opacity:0!important;pointer-events:none!important}
+body:not(.app-ready) #notes-overlay.open .sheet{transform:translateY(100%)!important}
 #pool-register-overlay.gate-mandatory .sheet-close-btn{display:none}
 .sheet-scrim.open{opacity:1;pointer-events:auto}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--sheet-bg);border-radius:28px 28px 0 0;padding:10px 22px calc(26px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .4s var(--ease);z-index:61;border:1px solid var(--border);border-bottom:none;max-height:88vh;overflow-y:auto}
