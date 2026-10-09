@@ -346,6 +346,13 @@ async function communitySubmitPost(event) {
   } catch (error) {
     result = { error: error };
   }
+  if (result.error && String(result.error.code || '') === '42703') {
+    // The production project may still be on the original community schema.
+    // Retry as a normal community post instead of losing the user's draft.
+    communityMvp.vacancySchemaAvailable = false;
+    result = await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
+    communitySetComposerType('discussion');
+  }
   if (button) button.disabled = false;
   if (result.error) {
     console.error('community post insert', result.error);
