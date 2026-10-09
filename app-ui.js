@@ -369,6 +369,32 @@ window.openHomeWeeklyVacancy = function (id) {
     if (search && source) { search.value = source.title || ''; if (typeof renderAllVacanciesList === 'function') renderAllVacanciesList(); }
   }, 120);
 };
+function homeAvailableRoleGroups(rows) {
+  var grouped = {};
+  (rows || []).forEach(function (v) {
+    var province = homeWeeklyProvince(v);
+    if (!province) return;
+    var group = grouped[province.key] || (grouped[province.key] = { province: province, rows: [], seen: {} });
+    var title = String(v.title || 'Untitled role').trim();
+    var dedupe = title.toLowerCase();
+    if (group.seen[dedupe]) return;
+    group.seen[dedupe] = true;
+    group.rows.push(v);
+  });
+  return HOME_WEEKLY_PROVINCES.map(function (province) { return grouped[province.key]; })
+    .filter(function (group) { return group && group.rows.length; })
+    .sort(function (a, b) { return b.rows.length - a.rows.length || a.province.label.localeCompare(b.province.label); })
+    .slice(0, 3);
+}
+function homeAvailableRolesMarkup(rows) {
+  var groups = homeAvailableRoleGroups(rows);
+  if (!groups.length) return '<div class="home-feed-empty" role="status"><strong>No provincial roles match yet.</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
+  return '<div class="home-available-groups">' + groups.map(function (group) {
+    return '<article class="home-available-group"><header><span class="home-available-group-pin" aria-hidden="true">●</span><div><strong>' + escapeHtml(group.province.label) + '</strong><small>' + group.rows.length + ' available role' + (group.rows.length === 1 ? '' : 's') + '</small></div></header><div class="home-available-role-list" role="list">' + group.rows.slice(0, 8).map(function (v, index) {
+      return '<button type="button" class="home-available-role" role="listitem" onclick="openHomeWeeklyVacancy(\'' + String(v.id).replace(/[\\']/g, '\\$&') + '\')"><span class="home-available-role-index">' + String(index + 1).padStart(2, '0') + '</span><span><strong>' + escapeHtml(v.title || 'Untitled role') + '</strong><small>' + escapeHtml(v.company || v.location || 'View vacancy details') + '</small></span><span aria-hidden="true">›</span></button>';
+    }).join('') + (group.rows.length > 8 ? '<button type="button" class="home-available-more" onclick="openHomeWeeklyVacancy(\'' + String(group.rows[0].id).replace(/[\\']/g, '\\$&') + '\')">+' + (group.rows.length - 8) + ' more roles</button>' : '') + '</div></article>';
+  }).join('') + '</div>';
+}
 function renderHomeFeed() {
   var target = document.getElementById('home-feed');
   if (!target) return;
@@ -394,11 +420,6 @@ function renderHomeFeed() {
       '<span class="home-category-icon" aria-hidden="true">' + category.icon + '</span>' +
       '<span class="home-category-copy"><strong>' + category.label + '</strong><small>' + category.sub + '</small></span></button>';
   }).join('');
-  var cards = rows.slice(0, HOME_VACANCY_CARD_LIMIT).map(function (v) {
-    var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
-      ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
-    return vacancyCard(v, agency, { homePreview: true });
-  }).join('');
   var totalNode = document.getElementById('stat-vacancies');
   var totalLabel = totalNode && totalNode.textContent.trim() && totalNode.textContent.trim() !== '…'
     ? totalNode.textContent.trim() : 'all';
@@ -419,7 +440,7 @@ function renderHomeFeed() {
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
       '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Available roles</h2><p>Retail vacancies first, followed by the newest live listings.</p></div>' +
       '<button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + '<span aria-hidden="true"> →</span></button></div>' +
-      '<div class="home-vacancy-grid" aria-live="polite">' + (cards || empty) + '</div>' +
+      '<div class="home-available-roles-wrap" aria-live="polite">' + (rows.length ? homeAvailableRolesMarkup(rows) : empty) + '</div>' +
     '</section>' +
     '<section class="home-community-card home-chat-banner" aria-labelledby="home-community-title"><div class="home-chat-banner-top"><span class="home-community-kicker">A space to connect</span><span class="home-chat-live"><span aria-hidden="true"></span> Public community</span></div><div class="home-chat-banner-main"><span class="home-community-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg></span><div class="home-community-copy"><h2 id="home-community-title">Tips Chat</h2><p>Chat together. Learn together. Move forward.</p><small>Ask questions, share interview wins, and get practical advice from other South African job seekers.</small></div></div><div class="home-chat-banner-bottom"><div class="home-chat-people" aria-hidden="true"><span>R</span><span>N</span><span>T</span><span>+</span></div><span class="home-chat-people-label">Join the conversation with the community</span><button type="button" onclick="openCommunity()">Open Tips Chat <span aria-hidden="true">→</span></button></div></section>' +
     '<section class="spotlight-mini home-spotlight" aria-labelledby="home-spotlight-title"><div class="spotlight-mini-head"><div><div class="quick-access-label">Talent Pool spotlight</div><h2 id="home-spotlight-title">Meet our candidates</h2></div><button type="button" data-ripple onclick="goPool(\'profile\')">See all &#8594;</button></div><div class="spotlight-deck" id="home-candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"><div class="poster-empty">Loading candidates…</div></div></section>' +
