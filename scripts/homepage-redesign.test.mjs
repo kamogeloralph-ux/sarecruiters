@@ -97,6 +97,11 @@ test('the homepage shows all eight source cards before retail-first roles', () =
   assert.doesNotMatch(overview, /Featured vacancies|vx-rail/);
 });
 
+test('vacancy cards prioritise closing warnings over the NEW badge', () => {
+  assert.match(vacancyV2, /age < 3 && \(left === null \|\| left > 7\)/);
+  assert.match(vacancyV2, /left === 0 \? 'Closes today'/);
+});
+
 test('home vacancy cards expose an application action, and the home search uses the new renderer', () => {
   assert.match(cards, /options\.homePreview/);
   assert.match(cards, /class="home-vacancy-apply"/);
