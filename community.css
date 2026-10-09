@@ -166,3 +166,7 @@
   .community-post-poster img{max-height:420px}
 }
 @media(max-width:420px){.community-emoji-choice{padding:3px 4px}.community-emoji-choice span{display:none}.community-emoji-choice img{width:36px;height:36px}}
+
+.community-header{gap:10px}
+.community-heading-copy{min-width:0;flex:1}
+.community-heading-copy p{font-size:10px;line-height:1.3}
