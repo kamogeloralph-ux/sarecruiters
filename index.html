@@ -53,20 +53,7 @@
   [data-theme="dark"] #app-splash .sa-splash-title{color:#F2F2F7}
   #app-splash .sa-splash-sub{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:13.5px;line-height:1.4;color:#8A8A8E;margin:0}
   body:not(.app-ready) .app{visibility:hidden}
-  /* Keep every body-level portal outside .app hidden until real content is ready. */
-  body:not(.app-ready) > :not(#app-splash):not(.app):not(script):not(style):not(link):not(svg){display:none!important}
-  body:not(.app-ready) > #pool-register-overlay.gate-mandatory{display:block!important}
-  /* Keep intentionally opened body-level UI usable during startup. The
-     blanket rule above protects the first paint, but must not hide a sheet
-     opened by a deep link or an early interaction (including the CV Builder).
-     Inactive portals remain hidden behind the splash. */
-  body:not(.app-ready) > .sheet-scrim.open{display:block!important}
-  body:not(.app-ready) > .site-menu-backdrop.is-visible{display:block!important}
-  body:not(.app-ready) > .site-menu-drawer.is-open{display:flex!important}
-  body:not(.app-ready) > .community-report-overlay:not([hidden]){display:grid!important}
-  body:not(.app-ready) > .toast.show,
-  body:not(.app-ready) > .update-banner.show,
-  body:not(.app-ready) > .retry-banner.show{display:block!important}
+  body:not(.app-ready) .app{visibility:hidden}
   /* Google Identity Services branded button (styles once in styles.css;
      kept here so the account screen's sign-in button never paints raw). */
   .gsi-material-button{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #747775;border-radius:14px;box-sizing:border-box;color:#1f1f1f;cursor:pointer;font-family:'Roboto',arial,sans-serif;font-size:14px;height:44px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 18px;position:relative;text-align:center;transition:background-color .218s,border-color .218s,box-shadow .218s;vertical-align:middle;white-space:nowrap;width:100%;max-width:none}
@@ -175,12 +162,11 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-c2c5ae5943">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-c2c5ae5943" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
-<link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="community.css?v=sa-recruiters-c2c5ae5943" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-c2c5ae5943"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-c2c5ae5943"></noscript>
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-vacancy-redesign-6">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-6" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="stylesheet" href="ios-blue-ui.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="vacancy-v2.css?v=vx-3" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-vacancy-redesign-6"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-3"></noscript>
 </head>
 <body>
 
@@ -224,10 +210,7 @@
   <div class="site-menu-footer"><button class="site-menu-signout" type="button" data-ripple onclick="signOutSaRecruiters()">Sign out of Google</button></div>
 </aside>
 
-<div class="update-banner" id="update-banner" role="status" aria-live="polite" hidden>
-  <div class="update-banner-copy"><strong>A new SA Recruiters version is ready</strong><span>Refresh when you’re ready — your saved searches stay safe.</span></div>
-  <div class="update-banner-actions"><button type="button" class="update-later" onclick="dismissUpdateBanner()">Later</button><button type="button" class="update-now" onclick="forceUpdateReload()">Update now</button></div>
-</div>
+<div class="update-banner" id="update-banner">A new version is available. <button onclick="forceUpdateReload()">Reload now</button></div>
 <div class="retry-banner" id="retry-banner" role="status" aria-live="polite">Couldn't refresh the latest listings. <button onclick="retryLoadAll()">Retry</button></div>
 <svg width="0" height="0" style="position:absolute">
   <defs><linearGradient id="navgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0A84FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs>
@@ -256,20 +239,9 @@
     <div class="search search-mini">
       <div class="search-inner">
         <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
-        <label for="home-search" class="sr-only">Search vacancies by job title, skill, company, or location</label>
-        <input id="home-search" type="search" placeholder="Job title, skill, company, or location…" oninput="scheduleCachedSearch()">
+        <label for="home-search" class="sr-only">Search agencies or location</label>
+        <input id="home-search" type="search" placeholder="Search agencies, trades, jobs, locations..." oninput="scheduleCachedSearch()">
       </div>
-    </div>
-    <div class="home-filter-row" role="group" aria-label="Quick filters: nine South African provinces">
-      <a class="home-filter-chip" href="/jobs/gauteng/" aria-label="View Gauteng public job listings">Gauteng</a>
-      <a class="home-filter-chip" href="/jobs/western-cape/" aria-label="View Western Cape public job listings">Western Cape</a>
-      <a class="home-filter-chip" href="/jobs/kwazulu-natal/" aria-label="View KwaZulu-Natal public job listings">KwaZulu-Natal</a>
-      <a class="home-filter-chip" href="/jobs/eastern-cape/" aria-label="View Eastern Cape public job listings">Eastern Cape</a>
-      <a class="home-filter-chip" href="/jobs/free-state/" aria-label="View Free State public job listings">Free State</a>
-      <a class="home-filter-chip" href="/jobs/limpopo/" aria-label="View Limpopo public job listings">Limpopo</a>
-      <a class="home-filter-chip" href="/jobs/mpumalanga/" aria-label="View Mpumalanga public job listings">Mpumalanga</a>
-      <a class="home-filter-chip" href="/jobs/north-west/" aria-label="View North West public job listings">North West</a>
-      <a class="home-filter-chip" href="/jobs/northern-cape/" aria-label="View Northern Cape public job listings">Northern Cape</a>
     </div>
     <div class="stats-wrap">
       <button class="stats-scroll-btn stats-scroll-prev" type="button" data-ripple onclick="scrollStats(-1)" aria-label="Show previous statistics">‹</button>
@@ -285,21 +257,23 @@
     </div>
 
     <div class="screen-scroll">
-    <div id="home-feed" aria-live="polite" aria-busy="true"></div>
-    <div id="house-ad-home-bottom" class="house-ad-slot" hidden></div>
-    <section class="home-bottom-hero" aria-label="Support the SA Recruiters directory">
-      <div class="home-bottom-brand">
-        <img src="icons/menu-logo-100.webp" alt="SA Recruiters logo" width="50" height="50" loading="lazy" decoding="async">
-        <div><strong>SA Recruiters</strong><span>Connecting South Africa's Recruitment Community.</span></div>
-      </div>
-      <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory — view donation details">
-        <span class="support-ticker-item">💙 Support the Directory to keep it running — Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
-      </div>
-    </section>
-    <footer class="home-site-footer">
-      <p>SA Recruiters was founded by Ralph Kamogelo Chiloane as a community-guided, open initiative to help South African youth find jobs.</p>
-      <nav aria-label="Legal links"><a href="/privacy/">Privacy Policy</a><span aria-hidden="true">&amp;</span><a href="/terms/">Terms of Use</a></nav>
-    </footer>
+
+    <p class="browse-jobs-row"><span class="browse-jobs-scroll">
+      <a href="/jobs/gauteng/">Gauteng</a>
+      <a href="/jobs/western-cape/">Western Cape</a>
+      <a href="/jobs/kwazulu-natal/">KwaZulu-Natal</a>
+      <a href="/jobs/eastern-cape/">Eastern Cape</a>
+      <a href="/jobs/free-state/">Free State</a>
+      <a href="/jobs/limpopo/">Limpopo</a>
+      <a href="/jobs/mpumalanga/">Mpumalanga</a>
+      <a href="/jobs/north-west/">North West</a>
+      <a href="/jobs/northern-cape/">Northern Cape</a>
+    </span></p>
+
+    <div id="hub-list"></div>
+    <div class="empty" id="empty-msg" style="display:none;">
+      <div class="empty-state"><h3>No agencies yet</h3><p>Tap + to add the first one.</p></div>
+    </div>
     </div>
   </div>
 
@@ -340,7 +314,7 @@
         </div>
       </div>
 
-      <div class="account-signin-card" id="account-signin-card" aria-hidden="false">
+      <div class="account-signin-card" id="account-signin-card">
         <div class="account-signin-copy">
           <strong>Create your free account</strong>
           <span>Get unlimited access to every vacancy, save jobs across devices, and join the Talent Pool when you're ready.</span>
@@ -383,11 +357,6 @@
         <button class="profile-menu-item" data-ripple onclick="openMyPoolProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Talent Pool profile<span class="mi-sub" id="account-pool-status">Your Mini-CV shown to recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
 
-      <section class="saved-alerts-panel" id="saved-alerts-panel" aria-labelledby="saved-alerts-title"></section>
-      <section class="install-app-card" id="install-app-card" hidden>
-        <div><strong>Install SA Recruiters</strong><span>Keep job searches one tap away, with a faster launch and offline shell.</span></div>
-        <button type="button" class="account-primary-btn" onclick="installSaRecruiters()">Install app</button>
-      </section>
       <div class="pgroup-label">Activity</div>
       <div class="pgrouped-list">
         <button class="profile-menu-item" data-ripple onclick="openMySubmissions()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>My submissions<span class="mi-sub">Track reports and suggestions you've sent</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -401,7 +370,7 @@
       </div>
 
       <div class="pgroup-label">Account</div>
-      <div class="pgrouped-list" id="account-signout-group" hidden>
+      <div class="pgrouped-list" id="account-signout-group" style="display:none">
         <button class="profile-menu-item" data-ripple onclick="signOutSaRecruiters()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5M15 12H3M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg></span><span>Sign out<span class="mi-sub">Sign out of your Google account</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
     <div class="contact-section">
@@ -469,6 +438,26 @@
       </div>
     </header>
 
+    <!-- ===== Track of the Day ===== -->
+    <div class="track-card-wrap">
+      <div class="track-card" id="track-card">
+        <div class="track-art" id="track-art">
+          <svg><use href="icons.svg#ibdb88b"/></svg>
+          <div class="art-bars"><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="track-info" id="track-info">
+          <div class="track-label">Track of the Day</div>
+          <div class="track-title" id="track-title">Loading&#8230;</div>
+          <div class="track-artist" id="track-artist"></div>
+        </div>
+        <button class="track-play" id="track-play" disabled onclick="toggleTrackPlay()" aria-label="Play track">
+          <svg><use href="icons.svg#idac8d7"/></svg>
+        </button>
+      </div>
+      <div class="track-progress" id="track-progress" style="display:none"><div class="track-progress-fill" id="track-progress-fill"></div></div>
+    </div>
+    <audio id="track-audio" preload="none" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>
+
     <!-- ===== Support ticker ===== -->
     <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory &#8212; view donation details">
       <span class="support-ticker-item">&#128153; Support the Directory to keep it running &#8212; Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
@@ -495,7 +484,6 @@
 
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg></span><span>Tips Chat<span class="mi-sub">Chat with other job seekers, share advice, and ask questions</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -520,47 +508,7 @@
     </div>
     </div>
   </div>
-  <!-- ============ INTERVIEW TIPS COMMUNITY ============ -->
-  <div class="screen" id="screen-community">
-    <div class="screen-fixed">
-      <header class="community-header">
-        <button class="vac-folder-back-btn vac-simple-back screen-back-btn community-back" data-ripple onclick="goBackFromCommunity()" aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <div class="community-heading-copy"><h1>Interview Tips</h1><p>Community · South Africa</p></div>
-        <button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share Interview Tips community">Share</button>
-      </header>
-    </div>
-    <div class="screen-scroll">
-      <section class="community-group-banner" aria-labelledby="community-group-title">
-        <h2 id="community-group-title">Interview Tips</h2>
-        <p id="community-group-description">Practical interview advice for job seekers in South Africa.</p>
-        <div class="community-group-actions"><button class="community-join-btn" id="community-join-btn" type="button" data-ripple onclick="communityJoinGroup()" aria-pressed="false">Join group</button><span class="community-group-note">Public group</span></div>
-      </section>
-      <p class="community-safety-note">Other members see “Anonymous member”; your account ID stays private and is linked to activity for moderation and abuse prevention. Posts and comments are reviewed before publishing. Don’t share names, contact details or confidential information.</p>
-      <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
-        <div class="community-compose-head"><strong>Ask the community</strong><span>Pseudonymous</span></div>
-        <label class="sr-only" for="community-post-body">Write an interview question or tip</label>
-        <textarea id="community-post-body" maxlength="3000" placeholder="What would you like advice on? Share a question or helpful tip…" required></textarea>
-        <div class="community-emoji-tools"><button type="button" class="community-emoji-trigger" onclick="communityToggleEmojiPicker('community-post-emoji-picker','community-post-body')" aria-expanded="false">Add a reaction</button><div class="community-emoji-picker" id="community-post-emoji-picker" hidden role="listbox" aria-label="Choose a custom SA Recruiters emoji"></div></div>
-        <div class="community-emoji-preview" id="community-post-emoji-preview" aria-live="polite"></div>
-        <div class="community-compose-actions"><span class="community-composer-hint" id="community-composer-hint">Sign in and join to share.</span><button class="community-submit-btn" id="community-post-submit" type="submit" disabled>Post</button></div>
-        <p class="community-status" id="community-status" aria-live="polite"></p>
-      </form>
-      <section class="community-admin-panel" id="community-moderator-panel" hidden>
-        <button class="community-admin-toggle" type="button" onclick="communityToggleModeration()"><span>Moderation queue</span><span id="community-moderation-count">0</span></button>
-        <div class="community-moderation-queue" id="community-moderation-queue" hidden></div>
-      </section>
-      <div class="community-feed-toolbar">
-        <h2>Conversations</h2>
-        <div class="community-sort" role="group" aria-label="Sort community posts">
-          <button type="button" data-community-sort="new" class="is-active" aria-pressed="true" onclick="communitySetSort('new')">Newest</button>
-          <button type="button" data-community-sort="top" aria-pressed="false" onclick="communitySetSort('top')">Top this month</button>
-        </div>
-      </div>
-      <div class="community-feed" id="community-feed" aria-live="polite"><div class="community-empty">Loading Interview Tips…</div></div>
-    </div>
-  </div>
+
   <!-- ============ SMART MANAGER (admin only) ============ -->
   <div class="screen" id="screen-smartmanager">
     <div class="screen-fixed">
@@ -876,10 +824,6 @@
   <button class="navbtn" id="nav-suggest" data-ripple onclick="openSuggestionSheet()" aria-label="Suggest or comment">
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.7-5.1A7.5 7.5 0 1 1 20 11.5z"/></svg>
     <span class="navbtn-label">Feedback</span>
-  </button>
-  <button class="navbtn navbtn-community" id="nav-community" data-ripple onclick="openCommunity()" aria-label="Open the Interview Tips community chat" title="Interview Tips community chat">
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg>
-    <span class="navbtn-label">Tips chat</span>
   </button>
   <button class="navbtn" data-tab="menu" data-ripple aria-label="Menu">
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -1446,24 +1390,13 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<div class="community-report-overlay" id="community-report-overlay" hidden>
-  <form class="community-report-dialog" role="dialog" aria-modal="true" aria-labelledby="community-report-title" onsubmit="return communitySubmitReport(event)">
-    <h2 id="community-report-title">Report content</h2>
-    <p>Tell the moderation team what’s wrong. Your report is private.</p>
-    <label for="community-report-reason">Reason</label>
-    <select id="community-report-reason" required><option value="spam">Spam or promotion</option><option value="harassment">Harassment or hate</option><option value="personal_info">Personal information</option><option value="scam">Scam or unsafe advice</option><option value="other">Something else</option></select>
-    <label for="community-report-details">Additional details (optional)</label>
-    <textarea id="community-report-details" maxlength="600" placeholder="Add context for the moderators…"></textarea>
-    <div class="community-report-actions"><button type="button" onclick="communityCloseReport()">Cancel</button><button type="submit" id="community-report-submit">Send report</button></div>
-  </form>
-</div>
 
 <!-- FAQ / guide articles (content.js + content-manager.js, ~50 KB) are only needed once a
      content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
      the browser fetch them at idle priority (and keep generate-pages.js cache-busting them);
      openContentSheet() below loads them on demand and then hands over to the real implementation. -->
-<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-c2c5ae5943" data-sa-lazy="content">
-<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-c2c5ae5943" data-sa-lazy="content-manager">
+<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-eac1068807" data-sa-lazy="content">
+<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-eac1068807" data-sa-lazy="content-manager">
 <script>
 (function(){
   var pending=null;
@@ -1490,9 +1423,9 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=ea5d2dcdf5" defer></script>
-<script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
-<script src="app-alerts.js?v=al-4" defer></script>
+<script src="app.bundle.min.js?v=83f4b6223f" defer></script>
+<script src="app-vacancy-v2.js?v=vx-3" defer></script>
+<script src="app-alerts.js?v=al-2" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
      still loads/retries it on demand if it is not ready when a form opens. -->
 <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
@@ -1508,16 +1441,21 @@
   </nav>
 </footer>
 
-<!-- SendPulse live chat: only available while the feedback sheet is open -->
-<style id="sendpulse-feedback-only">
-sp-live-chat{display:none!important}
-body.sendpulse-feedback-open sp-live-chat{display:block!important}
+<!-- SendPulse live chat widget: shown on the Home section only, locked just above the bottom navigation bar -->
+<style id="sendpulse-home-only">
+/* The widget mounts as a single <sp-live-chat> element. Hidden by default; shown only while
+   the Home screen is active, and hidden again behind any open sheet/overlay.
+   (Wrapped in @supports so a browser without :has() simply shows it everywhere instead of nowhere.) */
+@supports selector(:has(*)){
+  sp-live-chat{display:none!important}
+  body:has(#screen-home.active) sp-live-chat{display:block!important}
+  body:has(#screen-home.active):has(.sheet-scrim.open) sp-live-chat{display:none!important}
+}
 </style>
 <script>
 (function () {
   var GAP = 16;            // px between the chat button and the top of the nav bar
   var timer = null;
-  var feedbackObserver = null;
 
   function navHeight() {
     var nav = document.querySelector('.bottom-nav');
@@ -1526,8 +1464,6 @@ body.sendpulse-feedback-open sp-live-chat{display:block!important}
   }
 
   function place() {
-    var feedback = document.getElementById('suggestion-overlay');
-    if (!feedback || !feedback.classList.contains('open') || !document.body.classList.contains('sendpulse-feedback-open')) return false;
     var lc = window.sp && window.sp.liveChat;
     if (!lc || typeof lc.config !== 'function') return false;   // widget bundle not ready yet
     var right = Math.max(18, (window.innerWidth - 520) / 2 + 18);
@@ -1561,39 +1497,25 @@ body.sendpulse-feedback-open sp-live-chat{display:block!important}
   window.addEventListener('orientationchange', later);
   window.addEventListener('pageshow', later);
 
-  // Show/load chat only while the feedback sheet is the active sheet.
-  function syncFeedback() {
-    var feedback = document.getElementById('suggestion-overlay');
-    if (!feedback || !document.body) return;
-    var otherSheetOpen = Array.prototype.some.call(document.querySelectorAll('.sheet-scrim.open'), function (sheet) { return sheet !== feedback; });
-    var active = feedback.classList.contains('open') && !otherSheetOpen;
-    document.body.classList.toggle('sendpulse-feedback-open', active);
-    if (active) {
-      if (window.__saStartSendPulse) window.__saStartSendPulse();
-      later();
-    }
+  // Re-apply whenever the Home screen becomes active again (cheap: watches one element's class only).
+  function watchHome() {
+    var home = document.getElementById('screen-home');
+    if (!home || !window.MutationObserver) return;
+    new MutationObserver(function () { if (home.classList.contains('active')) later(); })
+      .observe(home, { attributes: true, attributeFilter: ['class'] });
   }
-  function watchFeedback() {
-    var overlays = document.querySelectorAll('.sheet-scrim');
-    if (window.MutationObserver) {
-      feedbackObserver = new MutationObserver(syncFeedback);
-      overlays.forEach(function (overlay) { feedbackObserver.observe(overlay, { attributes: true, attributeFilter: ['class'] }); });
-    }
-    syncFeedback();
-  }
-  window.__saSyncFeedbackChat = syncFeedback;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchFeedback);
-  else watchFeedback();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchHome);
+  else watchHome();
 })();
 </script>
 <script>
-/* Load SendPulse only after the user opens the feedback sheet. */
+/* SendPulse live chat, loaded lazily: on the first real user interaction, or when the browser
+   is idle a few seconds after the page has loaded — never during initial render. */
 (function () {
-  var started = false;
+  var started = false, EVENTS = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
   function start() {
-    var feedback = document.getElementById('suggestion-overlay');
-    if (started || !feedback || !feedback.classList.contains('open')) return;
-    started = true;
+    if (started) return; started = true;
+    EVENTS.forEach(function (e) { window.removeEventListener(e, start, true); });
     var s = document.createElement('script');
     s.src = 'https://cdn.pulse.is/livechat/loader.js';
     s.async = true;
@@ -1601,7 +1523,10 @@ body.sendpulse-feedback-open sp-live-chat{display:block!important}
     document.body.appendChild(s);
     if (window.__saStartChatPlacement) window.__saStartChatPlacement();
   }
-  window.__saStartSendPulse = start;
+  EVENTS.forEach(function (e) { window.addEventListener(e, start, { capture: true, passive: true, once: true }); });
+  function whenIdle() { (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(start, { timeout: 8000 }); }
+  if (document.readyState === 'complete') setTimeout(whenIdle, 3000);
+  else window.addEventListener('load', function () { setTimeout(whenIdle, 3000); });
 })();
 </script>
 </body>

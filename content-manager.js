@@ -157,7 +157,8 @@ function renderContentBody(key){
     html = '<div class="content-empty">No articles in this section yet.</div>';
   } else {
     articles.forEach(function(a){
-      html += '<div class="content-article" id="c-art-'+ a.id +'">' +
+      var isMediaArticle = /content-video|youtube-nocookie|youtu\.be/i.test(a.body || '');
+      html += '<div class="content-article' + (isMediaArticle ? ' content-article-media' : '') + '" id="c-art-'+ a.id +'">' +
         '<div class="content-article-title">' + escapeHtml(a.title || '') + '</div>' +
         '<div class="content-article-body">' + (a.body || '') + '</div>';
       if (isAdmin) {
