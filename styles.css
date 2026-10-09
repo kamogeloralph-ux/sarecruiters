@@ -2474,7 +2474,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #screen-home .home-sponsored[role="link"]:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:3px}
 
 /* ===== Home Media ===== */
-.home-media-section{margin:0 0 18px;padding:17px;border:1px solid var(--border);border-radius:20px;background:var(--card-elevated);box-shadow:var(--card-shadow)}
+.home-media-section{margin:0 0 18px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
 .home-media-section .home-section-heading{margin:0 0 12px}
 .home-media-video-wrap{position:relative;overflow:hidden;aspect-ratio:16/9;border-radius:15px;background:#071b3d;box-shadow:0 8px 20px rgba(10,35,80,.12)}
 .home-media-video-wrap iframe{display:block;width:100%;height:100%;border:0}
