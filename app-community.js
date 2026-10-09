@@ -24,6 +24,11 @@ function communityToast(message) {
   if (typeof showToast === 'function') showToast(message);
   else console.info('[Community]', message);
 }
+function communityMissingVacancySchema(error) {
+  var code = String(error && (error.code || error.status || '') || '');
+  var message = String(error && error.message || '').toLowerCase();
+  return code === '42703' || code === 'PGRST204' || message.indexOf('post_type') >= 0 || message.indexOf('vacancy_title') >= 0;
+}
 var COMMUNITY_EMOJIS = [
   { type: 'join', label: 'Join in', file: 'sa-recruiters-emoji-01-join.webp' },
   { type: 'good-luck', label: 'Good luck', file: 'sa-recruiters-emoji-02-good-luck.webp' },
@@ -225,7 +230,7 @@ async function communityLoadFeed() {
     query = query.order('created_at', { ascending: false });
   }
   var result = await query.limit(40);
-  if (result.error && String(result.error.code || '') === '42703') {
+  if (result.error && communityMissingVacancySchema(result.error)) {
     // Keep the existing Tips Chat usable while the additive vacancy migration is being deployed.
     communityMvp.vacancySchemaAvailable = false;
     result = await supabaseClient.from('community_posts')
@@ -335,18 +340,20 @@ async function communitySubmitPost(event) {
   if (button) button.disabled = true;
   var result;
   try {
-    result = await supabaseClient.from('community_posts').insert({
-      group_id: communityMvp.group.id,
-      body: body,
-      post_type: communityComposerType,
-      vacancy_title: communityComposerType === 'vacancy' ? (vacancy.title || null) : null,
-      vacancy_location: communityComposerType === 'vacancy' ? (vacancy.location || null) : null,
-      vacancy_application: communityComposerType === 'vacancy' ? (vacancy.application || null) : null
-    });
+    result = communityMvp.vacancySchemaAvailable
+      ? await supabaseClient.from('community_posts').insert({
+          group_id: communityMvp.group.id,
+          body: body,
+          post_type: communityComposerType,
+          vacancy_title: communityComposerType === 'vacancy' ? (vacancy.title || null) : null,
+          vacancy_location: communityComposerType === 'vacancy' ? (vacancy.location || null) : null,
+          vacancy_application: communityComposerType === 'vacancy' ? (vacancy.application || null) : null
+        })
+      : await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
   } catch (error) {
     result = { error: error };
   }
-  if (result.error && String(result.error.code || '') === '42703') {
+  if (result.error && communityMissingVacancySchema(result.error)) {
     // The production project may still be on the original community schema.
     // Retry as a normal community post instead of losing the user's draft.
     communityMvp.vacancySchemaAvailable = false;
@@ -521,7 +528,7 @@ async function communityLoadModerationQueue(showLoading) {
     supabaseClient.from('community_comments').select('id,post_id,author_label,body,status,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
     supabaseClient.from('community_reports').select('id,post_id,comment_id,reason,details,status,created_at').eq('status', 'open').order('created_at', { ascending: false }).limit(50)
   ]);
-  if (results[0].error && String(results[0].error.code || '') === '42703') {
+  if (results[0].error && communityMissingVacancySchema(results[0].error)) {
     communityMvp.vacancySchemaAvailable = false;
     results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
     communitySetComposerType(communityComposerType);

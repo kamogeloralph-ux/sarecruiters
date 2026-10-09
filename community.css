@@ -24,6 +24,7 @@
 .community-compose-type button.is-active{background:var(--accent);color:#fff}
 .community-vacancy-help{margin:-2px 0 9px;color:var(--text-2);font-size:10.5px;line-height:1.4}
 .community-vacancy-fields{display:grid;gap:7px;margin:0 0 9px;padding:9px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:11px;background:var(--accent-soft)}
+#screen-community .community-vacancy-fields[hidden],#screen-community .community-vacancy-help[hidden]{display:none}
 .community-vacancy-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .community-vacancy-fields label{display:block;margin:0 0 4px;color:var(--text-2);font-size:10px;font-weight:750}
 .community-vacancy-fields input{width:100%;height:35px;box-sizing:border-box;padding:0 9px;border:1px solid var(--border-strong);border-radius:9px;background:var(--bg);color:var(--text);font-size:11px}
