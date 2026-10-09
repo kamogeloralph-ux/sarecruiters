@@ -70,6 +70,14 @@ test('all body-level UI portals outside the app shell stay hidden until startup 
   assert.match(html, /class="seo-site-footer"/);
 });
 
+test('active outside-app portals remain visible during startup', () => {
+  assert.match(html, /body:not\(\.app-ready\) > \.sheet-scrim\.open\{display:block!important\}/, 'open sheets such as CV Builder must not be swallowed by the startup guard');
+  assert.match(html, /body:not\(\.app-ready\) > \.site-menu-backdrop\.is-visible\{display:block!important\}/);
+  assert.match(html, /body:not\(\.app-ready\) > \.site-menu-drawer\.is-open\{display:flex!important\}/);
+  assert.match(html, /body:not\(\.app-ready\) > \.community-report-overlay:not\(\[hidden\]\)\{display:grid!important\}/);
+  assert.match(html, /body:not\(\.app-ready\) > \.toast\.show,[\s\S]*body:not\(\.app-ready\) > \.retry-banner\.show\{display:block!important\}/);
+});
+
 test('public retail preview reuses the Pages snapshot and prefers Worker reads over PostgREST', () => {
   assert.match(data, /startupDataSource = 'static'/);
   assert.match(data, /startupDataSource = 'worker'/);
