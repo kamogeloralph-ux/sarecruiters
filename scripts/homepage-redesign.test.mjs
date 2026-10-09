@@ -225,7 +225,7 @@ test('TipChat exposes the original SA Recruiters emoji picker and reaction hooks
 test('TipChat logo is used on home, in the community screen and the menu', () => {
   assert.match(ui, /class="tipchat-home-logo"[\s\S]*?icons\/tipchat-logo\.svg/);
   assert.match(html, /class="tipchat-section-logo" src="icons\/tipchat-logo\.svg"/);
-  assert.match(html, /class="community-banner-logo" src="icons\/tipchat-logo\.svg"/);
+  assert.doesNotMatch(html, /community-banner-logo/);
   assert.match(html, /class="tipchat-menu-logo" src="icons\/tipchat-mark\.svg"/);
   assert.match(css, /\.tipchat-home-logo/);
   assert.match(css, /\.tipchat-section-logo/);
