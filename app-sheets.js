@@ -842,11 +842,9 @@ function renderPoolList() {
   var middleAt = Math.max(1, Math.ceil(list.length / 2));
   listEl.innerHTML = list.map(function(c, index){
     var middleAd = index === middleAt ? '<div id="house-ad-candidates-middle" class="house-ad-slot" hidden></div>' : '';
-    var sub = [c.position, c.sector, c.location].filter(Boolean).join(' · ');
     var frontBits = [];
-    if (c.position) frontBits.push(escapeHtml(c.position));
-    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs');
-    if (c.location) frontBits.push(escapeHtml(c.location));
+    if (c.sector) frontBits.push(escapeHtml(c.sector));
+    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs experience');
     var detailBits = [];
     function detail(label, value){ if(value !== null && value !== undefined && String(value).trim() !== '') detailBits.push('<div class="det-row"><span class="det-label">'+label+':</span> '+escapeHtml(value)+'</div>'); }
     if (c.verified) detailBits.push('<div class="det-row mini-cv-pitch">' + verifiedBadge('Screened &amp; Verified') + ' Screened &amp; Verified — information confirmed by SA Recruiters</div>');
@@ -857,13 +855,16 @@ function renderPoolList() {
     // CREATE_POOL_PUBLIC_ACCESS.sql. Interested employers go through
     // SA Recruiters on WhatsApp rather than contacting candidates directly.
     detailBits.push('<div class="det-row pool-contact-row"><a class="pool-whatsapp-btn" href="'+poolCandidateWhatsAppLink(c)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg> Interested? Contact SA Recruiters</a></div>');
-    return middleAd + '<div class="manager-item pool-mini-card'+(c.photo_url ? ' has-photo' : '')+'" data-candidate-id="'+escapeHtml(c.id)+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
-      (c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar">'+initials(c.full_name)+'</div>') +
-      '<div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</div>' +
-      '<div class="manager-item-sub">'+(frontBits.length ? frontBits.join(' · ') : 'Profile details available')+'</div>' +
-      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>' +
+    var role = c.position || 'Open to opportunities';
+    var location = c.location || 'South Africa';
+    var status = c.verified ? 'Screened profile' : 'Open to opportunities';
+    var avatar = c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar pool-mini-avatar">'+initials(c.full_name)+'</div>';
+    return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
+      '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div><div class="pool-mini-location">'+escapeHtml(location)+'</div></div><div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
+      '<div class="pool-mini-meta"><span class="pool-status">'+escapeHtml(status)+'</span>'+(frontBits.length ? '<span>'+frontBits.join(' · ')+'</span>' : '')+'</div>' +
+      '<div class="pool-mini-actions"><button type="button" class="pool-view-btn" onclick="event.stopPropagation();togglePoolCard(this.closest(\'.pool-mini-card\'))">View Mini-CV <span aria-hidden="true">↓</span></button><a class="pool-contact-btn" href="'+poolCandidateWhatsAppLink(c)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Contact</a></div>' +
       '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
-      '</div>';
+      '</div>'
   }).join('');
 }
 

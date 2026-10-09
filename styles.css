@@ -2610,3 +2610,41 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #screen-home .hf-sponsor-note span{flex:1}
 #screen-home .hf-sponsor-note a{color:var(--accent);font-weight:800;text-decoration:none;white-space:nowrap}
 @media(max-width:390px){#screen-home .hf-sponsor-note{align-items:flex-start;flex-direction:column;gap:3px}#screen-home .hf-sponsor-note a{align-self:flex-end}}
+
+/* Talent Pool candidate hierarchy: identity first, then role, location and action. */
+.spotlight-card{width:164px;min-width:164px;border-radius:16px;background:var(--card);border-color:color-mix(in srgb,var(--accent) 18%,var(--border));box-shadow:0 6px 16px rgba(10,35,80,.08)}
+.spotlight-photo{width:164px;height:116px;background:var(--card-2)}
+.spotlight-copy{gap:3px;padding:10px 11px 12px}
+.spotlight-copy strong{font-size:13px;line-height:1.2}
+.spotlight-copy .spotlight-role{overflow:hidden;color:var(--text);font-size:11.5px;font-weight:700;line-height:1.25;text-overflow:ellipsis;white-space:nowrap}
+.spotlight-copy .spotlight-location{overflow:hidden;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}
+.spotlight-copy .spotlight-view{display:flex;align-items:center;justify-content:space-between;margin-top:5px;color:var(--accent);font-size:10.5px;font-weight:800}
+.spotlight-copy .spotlight-view span{font-size:14px;line-height:1}
+.spotlight-more{width:118px;min-width:118px}
+#screen-home .spotlight-mini .spotlight-deck .spotlight-card{flex-basis:164px;min-width:164px;width:164px}
+#screen-home .spotlight-mini .spotlight-deck .spotlight-more{flex-basis:118px;min-width:118px;width:118px}
+
+.pool-mini-card{padding:14px!important;border-radius:18px!important;cursor:pointer}
+.pool-mini-card .pool-mini-head{display:flex;align-items:center;gap:11px;min-width:0;padding-right:22px}
+.pool-mini-card .pool-mini-avatar{position:static;width:52px;height:52px;flex:0 0 52px;border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#0a3e86,#0758ad);color:#fff;font-size:16px;font-weight:800}
+.pool-mini-card .pool-mini-avatar img{width:100%;height:100%;object-fit:cover}
+.pool-mini-card .pool-mini-copy{min-width:0;flex:1}
+.pool-mini-card .pool-mini-copy .manager-item-title{margin:0 0 3px;overflow:hidden;font-size:15px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.pool-mini-role{overflow:hidden;color:var(--text);font-size:12.5px;font-weight:700;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
+.pool-mini-location{overflow:hidden;margin-top:2px;color:var(--text-2);font-size:11.5px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
+.pool-mini-card .row-chevron{position:absolute;right:14px;top:18px;color:var(--text-2)}
+.pool-mini-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0 0;padding-top:10px;border-top:1px solid var(--separator);color:var(--text-2);font-size:10.5px}
+.pool-mini-meta>span+span{padding-left:7px;border-left:1px solid var(--border-strong)}
+.pool-status{color:#16854f;font-weight:800}
+.pool-mini-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.pool-mini-actions button,.pool-contact-btn{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:8px 11px;border-radius:10px;font-size:11px;font-weight:800;cursor:pointer;text-decoration:none}
+.pool-view-btn{border:1px solid var(--accent);background:var(--accent);color:#fff}
+.pool-contact-btn{border:1px solid color-mix(in srgb,#25D366 50%,var(--border));background:color-mix(in srgb,#25D366 14%,var(--card));color:#087b50}
+.pool-mini-card .pool-mini-details{margin-top:12px;padding-top:12px;border-top:1px solid var(--separator)}
+.pool-mini-card.expanded .pool-view-btn span{display:inline-block;transform:rotate(180deg)}
+@media(max-width:520px){
+  .spotlight-card{width:154px;min-width:154px}
+  .spotlight-photo{width:154px}
+  #screen-home .spotlight-mini .spotlight-deck .spotlight-card{flex-basis:154px;min-width:154px;width:154px}
+  .pool-mini-actions button,.pool-contact-btn{flex:1}
+}

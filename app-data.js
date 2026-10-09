@@ -275,11 +275,16 @@ function renderCandidateSpotlight(list, menuTarget, homeTarget) {
     var expText = (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '')
       ? (c.experience_years >= 10 ? '10+ yrs exp' : c.experience_years + ' yrs exp')
       : '';
-    var subtitle = [c.position, expText].filter(Boolean).join(' · ') || 'Looking for opportunities';
+    var role = c.position || 'Open to opportunities';
+    var location = c.location || 'South Africa';
+    var expText = (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '')
+      ? (c.experience_years >= 10 ? '10+ yrs experience' : c.experience_years + ' yrs experience')
+      : '';
     return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\',\''+escapeHtml(c.id)+'\')">' +
       (c.photo_url ? '<span class="spotlight-photo"><img loading="lazy" decoding="async" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' : '<span class="spotlight-photo spotlight-initials">'+initials(c.full_name)+'</span>') +
       '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</strong>' +
-      '<span>'+escapeHtml(subtitle)+'</span></span></button>';
+      '<span class="spotlight-role">'+escapeHtml(role)+'</span><span class="spotlight-location">'+escapeHtml(location)+'</span>' +
+      '<span class="spotlight-view">View profile <span aria-hidden="true">→</span></span></span></button>';
   }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
   targets.forEach(function(target) { target.innerHTML = markup; });
 }
