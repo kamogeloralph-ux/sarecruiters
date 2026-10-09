@@ -274,7 +274,7 @@ startAuthenticatedApp(bootAuthenticatedApp);
   // which visibilitychange doesn't always catch.
   window.addEventListener('pageshow', function(e) {
     if (e.persisted) {
-      if (typeof window.__saCloseTransientNotesSheet === 'function') window.__saCloseTransientNotesSheet();
+      if (typeof window.__saCloseTransientOutsideUi === 'function') window.__saCloseTransientOutsideUi();
       if (typeof resetGuestQuotaIfNewDay === 'function') resetGuestQuotaIfNewDay();
       loadAll({ fresh: true });
     }
