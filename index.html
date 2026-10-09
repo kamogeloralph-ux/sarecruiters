@@ -175,12 +175,12 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-c2c5ae5943">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-c2c5ae5943" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-3e107ce88a">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-3e107ce88a" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="community.css?v=sa-recruiters-c2c5ae5943" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-c2c5ae5943"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-c2c5ae5943"></noscript>
+<link rel="stylesheet" href="community.css?v=sa-recruiters-3e107ce88a" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-3e107ce88a"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-3e107ce88a"></noscript>
 </head>
 <body>
 
@@ -495,7 +495,7 @@
 
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg></span><span>TipChat<span class="mi-sub">Share advice and vacancies by text or poster</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><img class="tipchat-menu-logo" src="icons/tipchat-mark.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span><span>TipChat<span class="mi-sub">Share advice and vacancies by text or poster</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -527,13 +527,14 @@
         <button class="vac-folder-back-btn vac-simple-back screen-back-btn community-back" data-ripple onclick="goBackFromCommunity()" aria-label="Back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <div class="community-heading-copy"><h1>TipChat</h1><p>Jobs, advice &amp; opportunities · South Africa</p></div>
+        <img class="tipchat-section-logo" src="icons/tipchat-logo.svg" alt="TipChat" width="174" height="60" loading="lazy" decoding="async"><div class="community-heading-copy"><h1 class="sr-only">TipChat</h1><p>Jobs, advice &amp; opportunities · South Africa</p></div>
         <button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share TipChat">Share</button>
       </header>
     </div>
     <div class="screen-scroll">
       <section class="community-group-banner" aria-labelledby="community-group-title">
-        <h2 id="community-group-title">TipChat</h2>
+        <img class="tipchat-banner-logo" src="icons/tipchat-logo.svg" alt="TipChat" width="174" height="60" loading="lazy" decoding="async">
+        <h2 id="community-group-title" class="sr-only">TipChat</h2>
         <p id="community-group-description">A shared space for South African job seekers to swap advice and discover vacancies — by text or poster.</p>
         <div class="community-group-actions"><button class="community-join-btn" id="community-join-btn" type="button" data-ripple onclick="communityJoinGroup()" aria-pressed="false">Join TipChat</button><span class="community-group-note">Public community · reviewed posts</span></div>
       </section>
@@ -1473,8 +1474,8 @@
      content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
      the browser fetch them at idle priority (and keep generate-pages.js cache-busting them);
      openContentSheet() below loads them on demand and then hands over to the real implementation. -->
-<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-c2c5ae5943" data-sa-lazy="content">
-<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-c2c5ae5943" data-sa-lazy="content-manager">
+<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-3e107ce88a" data-sa-lazy="content">
+<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-3e107ce88a" data-sa-lazy="content-manager">
 <script>
 (function(){
   var pending=null;
@@ -1501,7 +1502,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=ca36154ed8" defer></script>
+<script src="app.bundle.min.js?v=49fba60747" defer></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

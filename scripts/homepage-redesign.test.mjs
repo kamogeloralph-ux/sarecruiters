@@ -203,12 +203,10 @@ test('home conversion sections use the compact Interview Tips card language', ()
 });
 
 test('TipChat uses a welcoming community banner with a clear join action', () => {
-  assert.match(ui, /home-chat-banner/);
-  assert.match(ui, /Advice, conversations and vacancies — together\./);
-  assert.match(ui, /home-chat-live/);
-  assert.match(ui, /home-chat-people/);
-  assert.match(ui, /Open TipChat/);
-  assert.match(css, /#screen-home \.home-chat-banner\{[\s\S]*?linear-gradient/);
+  assert.match(ui, /class=\"tipchat-home-logo\" onclick=\"openCommunity\(\)\"/);
+  assert.match(ui, /icons\/tipchat-logo\.svg/);
+  assert.doesNotMatch(ui, /home-chat-banner/);
+  assert.match(css, /\.tipchat-home-logo/);
   assert.match(html, /community-menu-badge.*>Join</);
 });
 
@@ -224,12 +222,14 @@ test('TipChat exposes the original SA Recruiters emoji picker and reaction hooks
   assert.match(communityCss, /community-inline-emoji/);
 });
 
-test('Home and Menu community entries are labelled TipChat and use the chat icon', () => {
-  assert.match(ui, /<h2 id="home-community-title">TipChat<\/h2>/);
-  assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?TipChat/s);
-  assert.match(ui, /home-community-icon[^>]*aria-hidden="true"><svg[^>]*>[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/);
-  assert.match(html, /onclick="openCommunity\(\)"[^>]*>.*?<svg[^>]*>[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"[\s\S]*?TipChat/s);
-  assert.match(css, /\.home-community-icon svg\{width:21px;height:21px/);
+test('TipChat logo is used on home, in the community screen and the menu', () => {
+  assert.match(ui, /class="tipchat-home-logo"[\s\S]*?icons\/tipchat-logo\.svg/);
+  assert.match(html, /class="tipchat-section-logo" src="icons\/tipchat-logo\.svg"/);
+  assert.match(html, /class="tipchat-banner-logo" src="icons\/tipchat-logo\.svg"/);
+  assert.match(html, /class="tipchat-menu-logo" src="icons\/tipchat-mark\.svg"/);
+  assert.match(css, /\.tipchat-home-logo/);
+  assert.match(css, /\.tipchat-section-logo/);
+  assert.match(read('icons/tipchat-logo.svg'), /<title id="title">TipChat<\/title>/);
 });
 
 test('Home Media uses the managed YouTube setting and admin keeps Track of the Day controls', () => {

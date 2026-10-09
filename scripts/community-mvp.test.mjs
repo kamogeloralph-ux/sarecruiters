@@ -135,6 +135,6 @@ test('TipChat unifies vacancy text and poster uploads in its moderated social fe
   assert.match(app, /communityModerationCard[\s\S]*communityPosterImageHtml/);
   assert.match(html, /id="community-poster-file" type="file" accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(html, /Share a vacancy in text, attach its poster, or do both/);
-  assert.match(html, /<h1>TipChat<\/h1>/);
+  assert.match(html, /<h1 class="sr-only">TipChat<\/h1>/);
   assert.match(communityCss, /\.community-post-poster img/);
 });
