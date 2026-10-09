@@ -2,151 +2,137 @@
 
 ## Terms and Conditions of Use
 
-**Effective date:** 25 September 2026  |  **Email:** sarecruiters.directory@gmail.com  |  **WhatsApp:** 071 553 1005
+**Effective date:** 9 October 2026  |  **Email:** sarecruiters.directory@gmail.com  |  **WhatsApp:** +27 71 553 1005
 
-### Overview
-This website is operated by SA Recruiters. Throughout the site, the terms “we”, “us” and “our” refer to SA Recruiters. SA Recruiters offers this website, including all information, tools and services available from this site to you, the user, conditioned upon your acceptance of all terms, conditions, policies and notices stated here.
+These Terms and Conditions explain the rules for using SA Recruiters, including the website, installed progressive web app (PWA), public recruitment directory, vacancy search, Talent Pool, CV Builder, candidate resources, community features and related forms (together, the **“Service”**).
 
-By visiting our site and/ or purchasing something from us, you engage in our “Service” and agree to be bound by the following terms and conditions (“Terms of Service”, “Terms”), including those additional terms and conditions and policies referenced herein and/or available by hyperlink. These Terms of Service apply to all users of the site, including without limitation users who are browsers, vendors, customers, merchants, and/ or contributors of content.
+SA Recruiters is a South African recruitment directory and jobs platform. We are not an employment agency for every vacancy shown on the Service, are not the employer or recruiter named in a listing, and do not guarantee that you will be contacted, shortlisted, interviewed, hired or paid.
 
-Please read these Terms of Service carefully before accessing or using our website. By accessing or using any part of the site, you agree to be bound by these Terms of Service. If you do not agree to all the terms and conditions of this agreement, then you may not access the website or use any services. If these Terms of Service are considered an offer, acceptance is expressly limited to these Terms of Service.
+By browsing or using the Service, submitting information, creating an account, joining the Talent Pool, posting or suggesting a listing, using the CV Builder, or participating in the community, you agree to these Terms. If you do not agree, do not use the relevant feature. Our [Privacy Policy](/privacy/) explains how information is handled.
 
-Any new features or tools which are added to the current store shall also be subject to the Terms of Service. You can review the most current version of the Terms of Service at any time on this page. We reserve the right to update, change or replace any part of these Terms of Service by posting updates and/or changes to our website. It is your responsibility to check this page periodically for changes. Your continued use of or access to the website following the posting of any changes constitutes acceptance of those changes.
+## 1. What SA Recruiters provides
 
-Our store is hosted on SDDS Web Design Inc. They provide us with the online e-commerce platform that allows us to sell our products and services to you.
+Depending on availability, the Service allows you to:
 
-### Section 1 – ONLINE STORE TERMS
+- browse recruitment agencies, branches, employers, vacancy listings and vacancy posters;
+- search, filter and save vacancies, including using local or offline browser features;
+- follow an application link or use contact details supplied by an agency, employer or other listing source;
+- submit agency, employer, vacancy, poster, report and suggestion information for review;
+- create an optional Google-linked account for account features;
+- join and manage an optional Talent Pool profile so approved employers or recruiters can discover relevant candidate information;
+- use candidate resources, interview guidance, job-search information and the public Tips Chat/community where enabled;
+- use the CV Builder to turn information you provide into a structured CV draft, select a template, copy the text or print/save it as a PDF; and
+- receive vacancy alerts only where you opt in and the alert feature is available.
 
-By agreeing to these Terms of Service, you represent that you are at least the age of majority in your state or province of residence, or that you are the age of majority in your state or province of residence and you have given us your consent to allow any of your minor dependents to use this site.
+Features may be changed, paused, limited or removed as the Service develops. Some features require an internet connection, account, review, verification or other eligibility condition shown in the app.
 
-You may not use our products for any illegal or unauthorized purpose nor may you, in the use of the Service, violate any laws in your jurisdiction (including but not limited to copyright laws).
+## 2. Eligibility and accounts
 
-You must not transmit any worms or viruses or any code of a destructive nature.
+The Service is intended for adults seeking work, recruiting staff or managing business listings. You must provide information that is reasonably accurate when a feature asks for it and must update it when it becomes materially incorrect.
 
-A breach or violation of any of the Terms will result in an immediate termination of your Services.
+You are responsible for activity carried out through your account, browser session or device. Keep account access and verification links private. Do not create an account for another person without permission, impersonate another person or organisation, or use a disposable or misleading identity to evade moderation.
 
-### Section 2 – GENERAL CONDITIONS
+Google sign-in is an optional third-party authentication method. Google’s own terms and privacy policy apply to that sign-in. SA Recruiters does not receive your Google password.
 
-We reserve the right to refuse service to anyone for any reason at any time.
+## 3. Vacancy, agency and employer information
 
-You understand that your content (not including credit card information), may be transferred unencrypted and involve (a) transmissions over various networks; and (b) changes to conform and adapt to technical requirements of connecting networks or devices. Credit card information is always encrypted during transfer over networks.
+SA Recruiters aggregates, organises and displays information from agencies, employers, public sources and user submissions. We may review, edit, categorise, expire, remove or decline a listing, but review or a “Verified” or similar label is not an endorsement, guarantee of legitimacy, promise that a role is still open, or guarantee of employment.
 
-You agree not to reproduce, duplicate, copy, sell, resell or exploit any portion of the Service, use of the Service, or access to the Service or any contact on the website through which the service is provided, without express written permission by us.
+Listing information can change, expire, be incomplete or contain mistakes. Always confirm the organisation, role, location, closing date, salary, eligibility and application instructions with the relevant agency or employer before applying.
 
-The headings used in this agreement are included for convenience only and will not limit or otherwise affect these Terms.
+When you select an application link, email address, telephone number, WhatsApp link or external website, you are dealing with the destination organisation or provider, not SA Recruiters. Their own terms, privacy notices and application processes apply. SA Recruiters does not receive or process the application unless the app expressly says otherwise.
 
-### Section 3 – ACCURACY, COMPLETENESS AND TIMELINESS OF INFORMATION We are not responsible if information made available on this site is not accurate, complete or current. The material on this site is provided for general information only and should not be relied upon or used as the sole basis for making decisions without consulting primary, more accurate, more complete or more timely sources of information. Any reliance on the material on this site is at your own risk.
+**Never pay a person merely to apply for a job.** Do not send passwords, banking PINs, one-time passwords or unnecessary identity documents. Report suspicious, inaccurate or unsafe listings to us.
 
-This site may contain certain historical information. Historical information, necessarily, is not current and is provided for your reference only. We reserve the right to modify the contents of this site at any time, but we have no obligation to update any information on our site. You agree that it is your responsibility to monitor changes to our site.
+## 4. Employers, agencies and submitted listings
 
-### Section 4 – MODIFICATIONS TO THE SERVICE AND PRICES
+If you submit or request publication of an agency, employer, vacancy or poster, you confirm that:
 
-Prices for our products are subject to change without notice.
+- you are authorised to provide the information and ask us to review or publish it;
+- the information is accurate to the best of your knowledge and is not misleading;
+- you have the right to use any logo, photograph, poster, CV, job description or other material supplied;
+- the listing complies with applicable law and does not unlawfully discriminate, misrepresent a job or request prohibited fees; and
+- you will promptly tell us if the information is no longer accurate or the role is closed.
 
-We reserve the right at any time to modify or discontinue the Service (or any part or content thereof) without notice at any time.
+Submission does not guarantee publication, a particular position, continued display or a response. We may request verification, edit for clarity and safety, decline or remove content, and limit future submissions. Public information may be indexed, copied or shared by others.
 
-We shall not be liable to you or to any third-party for any modification, price change, suspension or discontinuance of the Service.
+## 5. Talent Pool
 
-### Section 5 – PRODUCTS OR SERVICES
+The Talent Pool is an optional candidate profile and introduction service. You are responsible for the accuracy and appropriateness of information, photo and CV material you submit. You must not upload another person’s CV or personal information without permission, and you should not include passwords, banking details, identity numbers or information you do not want considered for publication.
 
-(if applicable) Certain products or services may be available exclusively online through the website. These products or services may have limited quantities and are subject to return or exchange only according to our Return Policy.
+Only approved or active profiles may be shown publicly. A public candidate card may show information such as name, photo, position, sector, location, experience and an approved summary. The app is designed not to display your phone number, email address or uploaded CV as public direct contact details. Interested employers or recruiters may contact SA Recruiters to request an introduction; we do not guarantee that an introduction or job opportunity will result.
 
-We have made every effort to display as accurately as possible the colours and images of our products that appear at the store. We cannot guarantee that your computer monitor’s display of any colour will be accurate.
+You may edit or request removal of your own Talent Pool profile through the available account controls or by contacting us. We may suspend or remove profiles that are inaccurate, inactive, unsafe, unauthorised or inconsistent with these Terms.
 
-We reserve the right, but are not obligated, to limit the sales of our products or Services to any person, geographic region or jurisdiction. We may exercise this right on a case-by-case basis. We reserve the right to limit the quantities of any products or services that we offer. All descriptions of products or product pricing are subject to change at anytime without notice, at the sole discretion of us. We reserve the right to discontinue any product at any time. Any offer for any product or service made on this site is void where prohibited.
+## 6. CV Builder and candidate resources
 
-We do not warrant that the quality of any products, services, information, or other material purchased or obtained by you will meet your expectations, or that any errors in the Service will be corrected.
+The CV Builder is a convenience tool. It uses the information you provide to create a CV draft and may use an external AI processing service through our configured infrastructure. You are responsible for checking every name, date, qualification, employer, skill and statement before using the draft. The output may be incomplete, inaccurate, unsuitable for a particular role or different from what you intended.
 
-### Section 6 – ACCURACY OF BILLING AND ACCOUNT INFORMATION
+The CV Builder does not provide legal, immigration, employment, recruitment or career advice, does not guarantee an interview or job, and does not submit applications for you. You decide what to copy, print, save, upload or send. Candidate resources, interview tips and community advice are general information only and are not a substitute for professional advice or the instructions of the relevant employer or authority.
 
-We reserve the right to refuse any order you place with us. We may, in our sole discretion, limit or cancel quantities purchased per person, per household or per order. These restrictions may include orders placed by or under the same customer account, the same credit card, and/or orders that use the same billing and/or shipping address. In the event that we make a change to or cancel an order, we may attempt to notify you by contacting the e-mail and/or billing address/phone number provided at the time the order was made. We reserve the right to limit or prohibit orders that, in our sole judgment, appear to be placed by dealers, resellers or distributors.
+## 7. Community, reports and suggestions
 
-You agree to provide current, complete and accurate purchase and account information for all purchases made at our store. You agree to promptly update your account and other information, including your email address and credit card numbers and expiration dates, so that we can complete your transactions and contact you as needed.
+Where Tips Chat or another community feature is available, you must communicate respectfully and may not post unlawful, abusive, threatening, discriminatory, deceptive, defamatory, sexually explicit or malicious content; spam or solicit users; reveal another person’s private information; share employer-confidential information; or give dangerous or fraudulent job-search instructions.
 
-For more details, please review our Returns Policy.
+Community posts and comments may be moderated, held for review, edited for safety or removed. Public community content may use a pseudonymous label, but it is not anonymous to SA Recruiters. Do not put contact details, passwords, identity numbers or sensitive personal information in a public post.
 
-### Section 7 – OPTIONAL TOOLS
+You remain responsible for content you submit. You grant SA Recruiters permission to host, reproduce, display, format, moderate and share that content as reasonably necessary to operate, secure and promote the relevant Service feature. This permission is non-exclusive and ends when the content is deleted, except where retention is reasonably necessary for security, legal, dispute or backup purposes. You retain ownership of your original content.
 
-We may provide you with access to third-party tools over which we neither monitor nor have any control nor input.
+Reports and suggestions help us review the Service but do not guarantee a particular action, outcome or response. Do not use them for emergencies.
 
-You acknowledge and agree that we provide access to such tools” as is” and “as available” without any warranties, representations or conditions of any kind and without any endorsement. We shall have no liability whatsoever arising from or relating to your use of optional third-party tools.
+## 8. Acceptable use
 
-Any use by you of optional tools offered through the site is entirely at your own risk and discretion and you should ensure that you are familiar with and approve of the terms on which tools are provided by the relevant third-party provider(s).
+You must not:
 
-We may also, in the future, offer new services and/or features through the website (including, the release of new tools and resources). Such new features and/or services shall also be subject to these Terms of Service.
+- use the Service for an unlawful, fraudulent, abusive or discriminatory purpose;
+- submit false, stolen, misleading or unauthorised information;
+- harvest contact details, scrape or copy the directory at scale, or use automated access without written permission;
+- send spam, phishing messages, malware or harmful code;
+- interfere with the Service, bypass access controls, probe security or attempt to access another user’s account or data;
+- use vacancy, agency, employer or Talent Pool information to harass, stalk, discriminate against or exploit another person;
+- infringe copyright, trade marks, privacy, confidentiality or other rights; or
+- use the Service to recruit for an unlawful scheme, collect prohibited fees or misrepresent SA Recruiters.
 
-### Section 8 – THIRD-PARTY LINKS Certain content, products and services available via our Service may include materials from third-parties.
+We may restrict, suspend or terminate access to a feature or account where we reasonably believe these Terms, safety rules or applicable law have been breached. We may also preserve relevant information and cooperate with lawful requests.
 
-Third-party links on this site may direct you to third-party websites that are not affiliated with us. We are not responsible for examining or evaluating the content or accuracy and we do not warrant and will not have any liability or responsibility for any third-party materials or websites, or for any other materials, products, or services of third-parties.
+## 9. Intellectual property
 
-We are not liable for any harm or damages related to the purchase or use of goods, services, resources, content, or any other transactions made in connection with any third-party websites. Please review carefully the third-party’s policies and practices and make sure you understand them before you engage in any transaction. Complaints, claims, concerns, or questions regarding third-party products should be directed to the third-party.
+The SA Recruiters name, branding, app design, original text, software and arrangement of the directory are owned by or licensed to SA Recruiters and may not be copied, republished, sold or exploited except as permitted by law or with written permission. Listing names, logos and submitted materials may belong to their respective owners.
 
-### Section 9 – USER
+You may use the Service and share ordinary links for personal, lawful job-search or recruitment purposes. You may not frame, mirror, resell or systematically reproduce the Service or its data.
 
-COMMENTS, FEEDBACK AND OTHER SUBMISSIONS If, at our request, you send certain specific submissions (for example contest entries) or without a request from us you send creative ideas, suggestions, proposals, plans, or other materials, whether online, by email, by postal mail, or otherwise (collectively, ‘comments’), you agree that we may, at any time, without restriction, edit, copy, publish, distribute, translate and otherwise use in any medium any comments that you forward to us. We are and shall be under no obligation (1) to maintain any comments in confidence; (2) to pay compensation for any comments; or (3) to respond to any comments.
+## 10. External services and offline features
 
-We may, but have no obligation to, monitor, edit or remove content that we determine in our sole discretion are unlawful, offensive, threatening, libelous, defamatory, pornographic, obscene or otherwise objectionable or violates any party’s intellectual property or these Terms of Service.
+The Service may link to Google, WhatsApp, YouTube, application websites, agency systems, employer systems, maps, hosting, analytics, security, email, storage, chat and AI providers. Those services are independent of SA Recruiters. We do not control their availability, content, security, processing or terms.
 
-You agree that your comments will not violate any right of any third-party, including copyright, trademark, privacy, personality or other personal or proprietary right. You further agree that your comments will not contain libelous or otherwise unlawful, abusive or obscene material, or contain any computer virus or other malware that could in any way affect the operation of the Service or any related website. You may not use a false e-mail address, pretend to be someone other than yourself, or otherwise mislead us or third-parties as to the origin of any comments. You are solely responsible for any comments you make and their accuracy. We take no responsibility and assume no liability for any comments posted by you or any third-party.
+The PWA may store saved vacancies, notes, settings, cached pages and other local data on your device. Offline content can be old and cannot submit forms, sign in, send alerts or open external application destinations until you reconnect. Clear browser storage, uninstalling the PWA or changing devices may remove local data.
 
-### Section 10 – PERSONAL INFORMATION
+## 11. Availability and disclaimers
 
-Your submission of personal information through the store is governed by our Privacy Policy. To view our Privacy Policy.
+We aim to keep the Service useful and safe, but it is provided on an “as available” basis. We do not promise that it will always be available, current, secure, error-free, compatible with every device, or free from harmful code. We do not promise that any listing, candidate, agency, employer, community statement, CV output or external destination is accurate, safe, suitable or successful.
 
-### Section 11 – ERRORS, INACCURACIES AND OMISSIONS Occasionally there may be information on our site or in the Service that contains typographical errors, inaccuracies or omissions that may relate to product descriptions, pricing, promotions, offers, product shipping charges, transit times and availability. We reserve the right to correct any errors, inaccuracies or omissions, and to change or update information or cancel orders if any information in the Service or on any related website is inaccurate at any time without prior notice (including after you have submitted your order).
+To the maximum extent permitted by South African law, SA Recruiters is not responsible for losses arising from your reliance on listing information, contact with a candidate, agency or employer, an application or transaction with a third party, unauthorised content, missed opportunities, employment outcomes, or temporary unavailability of the Service. Nothing in these Terms excludes or limits liability or rights that cannot lawfully be excluded or limited.
 
-We undertake no obligation to update, amend or clarify information in the Service or on any related website, including, without limitation, pricing information, except as required by law. No specified update or refresh date applied in the Service or on any related website, should be taken to indicate that all information in the Service or on any related website has been modified or updated.
+## 12. Privacy and public information
 
-### Section 12 – PROHIBITED USES
+Our [Privacy Policy](/privacy/) describes the information handled by the Service, including account information, Talent Pool data, public listings, community activity, CV Builder requests, local device storage and service providers. By using a feature, you agree that we may handle information as described there.
 
-In addition to other prohibitions as set forth in the Terms of Service, you are prohibited from using the site or its content: (a) for any unlawful purpose; (b) to solicit others to perform or participate in any unlawful acts; (c) to violate any international, federal, provincial or state regulations, rules, laws, or local ordinances; (d) to infringe upon or violate our intellectual property rights or the intellectual property rights of others; (e) to harass, abuse, insult, harm, defame, slander, disparage, intimidate, or discriminate based on gender, sexual orientation, religion, ethnicity, race, age, national origin, or disability; (f) to submit false or misleading information; (g) to upload or transmit viruses or any other type of malicious code that will or may be used in any way that will affect the functionality or operation of the Service or of any related website, other websites, or the Internet; (h) to collect or track the personal information of others; (i) to spam, phish, pharm, pretext, spider, crawl, or scrape; (j) for any obscene or immoral purpose; or (k) to interfere with or circumvent the security features of the Service or any related website, other websites, or the Internet. We reserve the right to terminate your use of the Service or any related website for violating any of the prohibited uses.
+Do not submit information for public display unless you are comfortable with it being visible, indexed, copied or accessed from outside South Africa. You are responsible for obtaining the permissions needed for information about other people.
 
-### Section 13 – DISCLAIMER OF WARRANTIES; LIMITATION OF LIABILITY
+## 13. Changes and termination
 
-We do not guarantee, represent or warrant that your use of our service will be uninterrupted, timely, secure or error-free.
+We may update these Terms when the Service, features or legal requirements change. The effective date above will be updated for a material revision. Continued use after an update means you accept the updated Terms. If you do not accept a change, stop using the affected feature.
 
-We do not warrant that the results that may be obtained from the use of the service will be accurate or reliable.
+You may stop using the Service, sign out, unsubscribe from alerts, remove available local data and request deletion of account-linked or Talent Pool information as described in the Privacy Policy. Provisions about content, intellectual property, privacy, acceptable use, disclaimers, liability and disputes may continue where their purpose requires it.
 
-You agree that from time to time we may remove the service for indefinite periods of time or cancel the service at any time, without notice to you.
+## 14. South African law and contact
 
-You expressly agree that your use of, or inability to use, the service is at your sole risk. The service and all products and services delivered to you through the service are (except as expressly stated by us) provided ‘as is’ and ‘as available’ for your use, without any representation, warranties or conditions of any kind, either express or implied, including all implied warranties or conditions of merchantability, merchantable quality, fitness for a particular purpose, durability, title, and non-infringement.
+These Terms are governed by the laws of South Africa. Any dispute should first be raised with us so that we can try to resolve it informally. Nothing in these Terms removes a consumer or other legal right that cannot lawfully be waived.
 
-In no case shall SA Recruiters, our directors, officers, employees, affiliates, agents, contractors, interns, suppliers, service providers or licensors be liable for any injury, loss, claim, or any direct, indirect, incidental, punitive, special, or consequential damages of any kind, including, without limitation lost profits, lost revenue, lost savings, loss of data, replacement costs, or any similar damages, whether based in contract, tort (including negligence), strict liability or otherwise, arising from your use of any of the service or any products procured using the service, or for any other claim related in any way to your use of the service or any product, including, but not limited to, any errors or omissions in any content, or any loss or damage of any kind incurred as a result of the use of the service or any content (or product) posted, transmitted, or otherwise made available via the service, even if advised of their possibility. Because some states or jurisdictions do not allow the exclusion or the limitation of liability for consequential or incidental damages, in such states or jurisdictions, our liability shall be limited to the maximum extent permitted by law.
+Questions, corrections, safety reports and Terms concerns:
 
-### Section 14 – INDEMNIFICATION
+- **Email:** [sarecruiters.directory@gmail.com](mailto:sarecruiters.directory@gmail.com)
+- **WhatsApp:** [+27 71 553 1005](https://wa.me/27715531005)
+- **Website:** [sa-recruiters.co.za](https://sa-recruiters.co.za/)
 
-You agree to indemnify, defend and hold harmless SA Recruiters and our parent, subsidiaries, affiliates, partners, officers, directors, agents, contractors, licensors, service providers, subcontractors, suppliers, interns and employees, harmless from any claim or demand, including reasonable attorneys’ fees, made by any third-party due to or arising out of your breach of these Terms of Service or the documents they incorporate by reference, or your violation of any law or the rights of a third-party.
-
-### Section 15 – SEVERABILITY
-
-In the event that any provision of these Terms of Service is determined to be unlawful, void or unenforceable, such provision shall nonetheless be enforceable to the fullest extent permitted by applicable law, and the unenforceable portion shall be deemed to be severed from these Terms of Service, such determination shall not affect the validity and enforceability of any other remaining provisions.
-
-### Section 16 – TERMINATION
-
-The obligations and liabilities of the parties incurred prior to the termination date shall survive the termination of this agreement for all purposes.
-
-These Terms of Service are effective unless and until terminated by either you or us. You may terminate these Terms of Service at any time by notifying us that you no longer wish to use our Services, or when you cease using our site.
-
-If in our sole judgment you fail, or we suspect that you have failed, to comply with any term or provision of these Terms of Service, we also may terminate this agreement at any time without notice and you will remain liable for all amounts due up to and including the date of termination; and/or accordingly may deny you access to our Services (or any part thereof).
-
-### Section 17 – ENTIRE AGREEMENT
-
-The failure of us to exercise or enforce any right or provision of these Terms of Service shall not constitute a waiver of such right or provision.
-
-These Terms of Service and any policies or operating rules posted by us on this site or in respect to The Service constitutes the entire agreement and understanding between you and us and govern your use of the Service, superseding any prior or contemporaneous agreements, communications and proposals, whether oral or written, between you and us (including, but not limited to, any prior versions of the Terms of Service).
-
-Any ambiguities in the interpretation of these Terms of Service shall not be construed against the drafting party.
-
-### Section 18 – GOVERNING LAW
-
-These Terms of Service and any separate agreements whereby we provide you Services shall be governed by and construed in accordance with the laws of South Africa.
-
-### Section 19 – CHANGES TO TERMS OF SERVICE
-
-You can review the most current version of the Terms of Service at any time at this page.
-
-We reserve the right, at our sole discretion, to update, change or replace any part of these Terms of Service by posting updates and changes to our website. It is your responsibility to check our website periodically for changes. Your continued use of or access to our website or the Service following the posting of any changes to these Terms of Service constitutes acceptance of those changes.
-
-### Section 20 – CONTACT INFORMATION
-
-Questions about the Terms of Service should be sent to us at sarecruiters.directory@gmail.com or WhatsApp 071 553 1005
+> This document is written for the current SA Recruiters service and is general information, not legal advice. Consider having a South African attorney review it before relying on it as a final legal contract.

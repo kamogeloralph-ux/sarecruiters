@@ -395,6 +395,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <!-- VACANCIES -->
       <div class="section section-manage" id="sec-vacancies">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
+        <div class="muted" id="vacancy-count-summary" style="margin:-6px 0 14px">Loading vacancy totals…</div>
         <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="debouncedRenderVacancies()">
         <div id="va-list"></div>
       </div>
@@ -873,6 +874,37 @@ var adminDataReady = false;
 var ADMIN_CACHE_DB = 'sa_data_cache_db';
 var ADMIN_CACHE_STORE = 'kv';
 var ADMIN_CACHE_KEY = 'sa_admin_directory_v1';
+// Admin retains every database row so stale/imported records can be reviewed.
+// The public app publishes only valid, unexpired rows and caps each agency,
+// employer, or unlinked company at its 50 newest listings.
+function parseAdminClosingDate(value){
+  if(!value) return null;
+  var s=String(value).trim(), m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return Date.UTC(+m[1],+m[2]-1,+m[3]);
+  m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+  if(m) return Date.UTC(+m[3],+m[2]-1,+m[1]);
+  m=s.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\.?\s+(\d{4})/);
+  if(m){var months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11},month=months[m[2].slice(0,3).toLowerCase()];if(month!==undefined)return Date.UTC(+m[3],month,+m[1]);}
+  return null;
+}
+function publicLiveVacancyCount(rows){
+  var now=new Date(), today=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()), counts={}, live=0;
+  var sorted=(rows||[]).filter(function(v){var closing=parseAdminClosingDate(v&&v.closing_date);return v&&v.id&&v.title&&v.link&&(closing===null||closing>=today);}).slice().sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));});
+  sorted.forEach(function(v){
+    var key='';
+    if(v.agency_id&&v.agency_id!=='general'&&v.agency_id!=='employer') key='a:'+v.agency_id;
+    else if(v.employer_id) key='e:'+v.employer_id;
+    else if(String(v.company||'').trim()) key='c:'+String(v.company).trim().toLowerCase().replace(/\s+/g,' ');
+    if(key&&(counts[key]||0)>=50)return;
+    if(key)counts[key]=(counts[key]||0)+1;
+    live++;
+  });
+  return live;
+}
+function updateVacancyCountSummary(){
+  var el=document.getElementById('vacancy-count-summary');
+  if(el&&adminDataReady)el.textContent=cache.vacancies.length.toLocaleString()+' stored records · '+publicLiveVacancyCount(cache.vacancies).toLocaleString()+' public live vacancies';
+}
 function openAdminCacheDB(){
   return new Promise(function(resolve,reject){
     if(!window.indexedDB){ reject(new Error('IndexedDB unavailable')); return; }
@@ -1462,7 +1494,8 @@ function renderDashboard(){
   var stats = [
     { v:cache.agencies.length, l:'Agencies' },
     { v:cache.branches.length, l:'Branches' },
-    { v:cache.vacancies.length, l:'Vacancies' },
+    { v:cache.vacancies.length, l:'Vacancies stored' },
+    { v:publicLiveVacancyCount(cache.vacancies), l:'Public live vacancies' },
     { v:cache.employers.length, l:'Employers' },
     { v:cache.posters.length, l:'Vacancy Posters' },
     { v:cache.reports.length, l:'Reports ('+openReports+' open)' },
@@ -1473,6 +1506,7 @@ function renderDashboard(){
   document.getElementById('stats-grid').innerHTML = stats.map(function(s){
     return '<div class="stat"><div class="v">'+(adminDataReady ? s.v : '…')+'</div><div class="l">'+s.l+'</div></div>';
   }).join('');
+  updateVacancyCountSummary();
   // Build the home card grid (grouped like Profile section)
   var homeEl = document.getElementById('home-cards');
   if(homeEl){
