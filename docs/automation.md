@@ -11,7 +11,7 @@ The repository now runs eight operational automations through GitHub Actions and
 | Vacancy caps | 02:30 UTC | Keeps each poster/company at its newest 50 vacancies |
 | Link checks | 04:30 UTC | Checks application links and records repeated failures |
 | PWA health | 05:30 UTC | Checks the live shell, manifest, service worker, snapshot and icon |
-| Community risk scan | Every 6 hours | Flags likely scams, payment requests and spam for moderator review |
+| Community risk scan + moderator digest | Hourly | Flags likely scams and spam (shown in the TipChat moderation queue) and emails one digest of new items awaiting review |
 | Backup | 01:30 UTC | Exports operational tables to a private 30-day GitHub artifact |
 | Weekly analytics | Mondays 06:00 UTC | Emails a seven-day event summary |
 
