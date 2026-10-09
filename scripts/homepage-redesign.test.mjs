@@ -58,6 +58,14 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /window\.openHomeWeeklyVacancy = function \(id\)/);
 });
 
+test('My Notes does not flash back onto the app while it refreshes', () => {
+  assert.match(ui, /function closeTransientNotesSheet\(\)/);
+  assert.match(ui, /window\.addEventListener\('pagehide', closeTransientNotesSheet\)/);
+  assert.match(ui, /closeTransientNotesSheet\(\);/);
+  assert.match(appManagerEmployer, /__saCloseTransientNotesSheet/);
+  assert.match(css, /body:not\(\.app-ready\) #notes-overlay\.open\{visibility:hidden;opacity:0!important;pointer-events:none!important\}/);
+});
+
 test('public retail preview reuses the Pages snapshot and prefers Worker reads over PostgREST', () => {
   assert.match(data, /startupDataSource = 'static'/);
   assert.match(data, /startupDataSource = 'worker'/);

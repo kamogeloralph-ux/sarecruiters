@@ -56,10 +56,19 @@ function restoredScreenName() {
     return isRestorableScreen(name) ? name : 'home';
   } catch(e) { return 'home'; }
 }
+function closeTransientNotesSheet() {
+  var overlay = document.getElementById('notes-overlay');
+  if (overlay) overlay.classList.remove('open');
+  var accordion = document.getElementById('my-notes-accordion');
+  if (accordion) accordion.open = false;
+}
+window.__saCloseTransientNotesSheet = closeTransientNotesSheet;
+window.addEventListener('pagehide', closeTransientNotesSheet);
 function normalizeStartupScreen() {
   var params = new URLSearchParams(window.location.search);
   // Explicit manager/action/deep-link URLs are intentional entry points.
   if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
+  closeTransientNotesSheet();
   try { sessionStorage.setItem(SA_ACTIVE_SCREEN_KEY, 'home'); } catch(e) {}
   // Normalize every screen, not just the previously observed Menu/Tips Chat
   // route. This is called both before boot and immediately before reveal.
