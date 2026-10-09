@@ -247,16 +247,13 @@ function goBackFromCommunity() {
   if (location.hash === '#community-interview-tips' || location.hash === '#tipchat') history.replaceState(null, '', location.pathname + location.search);
 }
 function communityRenderGroup() {
-  var group = communityMvp.group;
-  var title = document.getElementById('community-group-title');
-  var description = document.getElementById('community-group-description');
   var join = document.getElementById('community-join-btn');
-  if (title) title.textContent = 'TipChat';
-  if (description) description.textContent = 'A shared space for South African job seekers to swap advice and discover vacancies — by text or poster.';
   if (join) {
-    join.textContent = communityMvp.joined ? 'Joined' : 'Join TipChat';
+    join.textContent = communityMvp.joined ? '✓' : 'Join';
     join.classList.toggle('is-joined', communityMvp.joined);
     join.setAttribute('aria-pressed', communityMvp.joined ? 'true' : 'false');
+    join.setAttribute('aria-label', communityMvp.joined ? 'Leave TipChat' : 'Join TipChat');
+    join.title = communityMvp.joined ? 'Leave TipChat' : 'Join TipChat';
   }
   var adminPanel = document.getElementById('community-moderator-panel');
   if (adminPanel) adminPanel.hidden = !communityMvp.moderator;
