@@ -81,9 +81,9 @@ test('the homepage shows all eight source cards before retail-first roles', () =
   assert.match(ui, /order\.map\(function \(source\)/);
   assert.match(ui, /class="home-source-grid"/);
   assert.match(ui, /onclick="openVacancyFolder/);
-  assert.ok(homeRolesPosition >= 0, 'the eight role cards must remain on the home screen');
+  assert.ok(homeRolesPosition >= 0, 'the grouped available roles must remain on the home screen');
   assert.doesNotMatch(homeRender, /Featured vacancies|home-featured-vacancy|featuredMarkup|wireHomeFeaturedRailGestures/);
-  assert.match(homeRender, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
+  assert.match(homeRender, /homeAvailableRolesMarkup\(rows\)/);
   assert.match(homeRender, /homeWeeklyTopJobsMarkup\(\)/);
   assert.match(ui, /class="home-weekly-grid"/);
   assert.match(ui, /class="home-weekly-row"/);
@@ -92,8 +92,7 @@ test('the homepage shows all eight source cards before retail-first roles', () =
 
   assert.match(ui, /isRetailPriorityVacancy\(b\)/);
   assert.match(homeRender, /onclick="openCommunity\(\)"/);
-  assert.match(ui, /rows\.slice\(0, HOME_VACANCY_CARD_LIMIT\)/);
-  assert.match(ui, /vacancyCard\(v, agency, \{ homePreview: true \}\)/);
+  assert.match(ui, /group\.rows\.slice\(0, 8\)/);
   const overview = vacancyV2.slice(vacancyV2.indexOf('function renderOverview()'), vacancyV2.indexOf('/* ---------- folder post-processing'));
   const sourcesPosition = overview.indexOf('vx-source-section');
   const rolesPosition = overview.indexOf('vx-available-roles');
@@ -111,12 +110,15 @@ test('vacancy cards prioritise closing warnings over the NEW badge', () => {
   assert.match(vacancyV2, /left === 0 \? 'Closes today'/);
 });
 
-test('home vacancy cards expose an application action, and the home search uses the new renderer', () => {
-  assert.match(cards, /options\.homePreview/);
-  assert.match(cards, /class="home-vacancy-apply"/);
+test('home available roles use compact province groups and the existing exact-vacancy opener', () => {
+  assert.match(ui, /function homeAvailableRoleGroups\(/);
+  assert.match(ui, /function homeAvailableRolesMarkup\(/);
+  assert.match(ui, /class="home-available-groups"/);
+  assert.match(ui, /class="home-available-role"/);
+  assert.match(ui, /homeAvailableRolesMarkup\(rows\)/);
+  assert.match(ui, /openHomeWeeklyVacancy\(/);
   assert.match(vacancyV2, /if \(o\.homePreview\)/);
   assert.match(vacancyV2, /class="home-vacancy-apply"/);
-  assert.match(vacancyV2, /homePreviewMarkup \+/);
   assert.match(html, /app-vacancy-v2\.js\?v=vx-retail-3/);
   assert.match(cards, /if \(typeof renderHomeFeed === 'function'\) \{\s*renderHomeFeed\(\);\s*return;/);
   assert.match(ui, /onclick="openHomeTalentPoolProfile\(\)"/);
