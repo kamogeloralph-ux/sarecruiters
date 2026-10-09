@@ -109,6 +109,8 @@ test('Tips Chat supports moderated text vacancy posts without exposing private I
   assert.match(vacancyMigration, /post_type in \('discussion', 'vacancy'\)/i);
   assert.match(vacancyMigration, /grant insert \([\s\S]*vacancy_title[\s\S]*\) on public\.community_posts to authenticated/i);
   assert.match(app, /communitySetComposerType/);
+  assert.match(app, /String\(result\.error\.code \|\| ''\) === '42703'/);
+  assert.match(app, /vacancySchemaAvailable/);
   assert.match(app, /post_type: communityComposerType/);
   assert.match(app, /communityVacancyMetaHtml/);
   assert.match(html, /data-community-compose-type="vacancy"/);
