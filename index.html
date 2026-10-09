@@ -53,7 +53,9 @@
   [data-theme="dark"] #app-splash .sa-splash-title{color:#F2F2F7}
   #app-splash .sa-splash-sub{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:13.5px;line-height:1.4;color:#8A8A8E;margin:0}
   body:not(.app-ready) .app{visibility:hidden}
-  body:not(.app-ready) .app{visibility:hidden}
+  /* Keep every body-level portal outside .app hidden until real content is ready. */
+  body:not(.app-ready) > :not(#app-splash):not(.app):not(script):not(style):not(link):not(svg){display:none!important}
+  body:not(.app-ready) > #pool-register-overlay.gate-mandatory{display:block!important}
   /* Google Identity Services branded button (styles once in styles.css;
      kept here so the account screen's sign-in button never paints raw). */
   .gsi-material-button{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #747775;border-radius:14px;box-sizing:border-box;color:#1f1f1f;cursor:pointer;font-family:'Roboto',arial,sans-serif;font-size:14px;height:44px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 18px;position:relative;text-align:center;transition:background-color .218s,border-color .218s,box-shadow .218s;vertical-align:middle;white-space:nowrap;width:100%;max-width:none}
@@ -1477,7 +1479,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=930dd230d8" defer></script>
+<script src="app.bundle.min.js?v=ea5d2dcdf5" defer></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

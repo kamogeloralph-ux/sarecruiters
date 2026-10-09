@@ -56,19 +56,30 @@ function restoredScreenName() {
     return isRestorableScreen(name) ? name : 'home';
   } catch(e) { return 'home'; }
 }
-function closeTransientNotesSheet() {
-  var overlay = document.getElementById('notes-overlay');
-  if (overlay) overlay.classList.remove('open');
-  var accordion = document.getElementById('my-notes-accordion');
-  if (accordion) accordion.open = false;
+function closeTransientOutsideUi() {
+  document.querySelectorAll('.sheet-scrim.open').forEach(function (overlay) {
+    if (overlay.id === 'pool-register-overlay' && overlay.classList.contains('gate-mandatory')) return;
+    overlay.classList.remove('open');
+  });
+  var notes = document.getElementById('my-notes-accordion');
+  if (notes) notes.open = false;
+  var report = document.getElementById('community-report-overlay');
+  if (report) { report.hidden = true; report.classList.remove('open'); }
+  var toast = document.getElementById('toast');
+  if (toast) toast.classList.remove('show');
+  var drawer = document.getElementById('site-menu-drawer');
+  var backdrop = document.getElementById('site-menu-backdrop');
+  if (drawer) { drawer.classList.remove('is-open'); drawer.setAttribute('aria-hidden', 'true'); }
+  if (backdrop) { backdrop.classList.remove('is-visible'); backdrop.setAttribute('aria-hidden', 'true'); }
+  document.body.classList.remove('site-menu-open');
 }
-window.__saCloseTransientNotesSheet = closeTransientNotesSheet;
-window.addEventListener('pagehide', closeTransientNotesSheet);
+window.__saCloseTransientOutsideUi = closeTransientOutsideUi;
+window.addEventListener('pagehide', closeTransientOutsideUi);
 function normalizeStartupScreen() {
   var params = new URLSearchParams(window.location.search);
+  closeTransientOutsideUi();
   // Explicit manager/action/deep-link URLs are intentional entry points.
   if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
-  closeTransientNotesSheet();
   try { sessionStorage.setItem(SA_ACTIVE_SCREEN_KEY, 'home'); } catch(e) {}
   // Normalize every screen, not just the previously observed Menu/Tips Chat
   // route. This is called both before boot and immediately before reveal.
@@ -78,11 +89,6 @@ function normalizeStartupScreen() {
   document.querySelectorAll('.navbtn').forEach(function (button) {
     button.classList.toggle('active', button.dataset.tab === 'home');
   });
-  var drawer = document.getElementById('site-menu-drawer');
-  var backdrop = document.getElementById('site-menu-backdrop');
-  if (drawer) { drawer.classList.remove('is-open'); drawer.setAttribute('aria-hidden', 'true'); }
-  if (backdrop) { backdrop.classList.remove('is-visible'); backdrop.setAttribute('aria-hidden', 'true'); }
-  document.body.classList.remove('site-menu-open');
   window.__saRestoredScreen = 'home';
 }
 window.__saNormalizeStartupScreen = normalizeStartupScreen;

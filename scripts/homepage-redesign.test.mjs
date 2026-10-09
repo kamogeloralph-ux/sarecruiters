@@ -58,12 +58,16 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /window\.openHomeWeeklyVacancy = function \(id\)/);
 });
 
-test('My Notes does not flash back onto the app while it refreshes', () => {
-  assert.match(ui, /function closeTransientNotesSheet\(\)/);
-  assert.match(ui, /window\.addEventListener\('pagehide', closeTransientNotesSheet\)/);
-  assert.match(ui, /closeTransientNotesSheet\(\);/);
-  assert.match(appManagerEmployer, /__saCloseTransientNotesSheet/);
-  assert.match(css, /body:not\(\.app-ready\) #notes-overlay\.open\{visibility:hidden;opacity:0!important;pointer-events:none!important\}/);
+test('all body-level UI portals outside the app shell stay hidden until startup is ready', () => {
+  assert.match(html, /body:not\(\.app-ready\) > :not\(#app-splash\):not\(\.app\):not\(script\):not\(style\):not\(link\):not\(svg\)\{display:none!important\}/);
+  assert.match(html, /body:not\(\.app-ready\) > #pool-register-overlay\.gate-mandatory\{display:block!important\}/);
+  assert.match(html, /body:not\(\.app-ready\) \.app\{visibility:hidden\}/);
+  assert.match(ui, /function closeTransientOutsideUi\(\)/);
+  assert.match(ui, /window\.addEventListener\('pagehide', closeTransientOutsideUi\)/);
+  assert.match(ui, /overlay\.id === 'pool-register-overlay' && overlay\.classList\.contains\('gate-mandatory'\)/);
+  assert.match(appManagerEmployer, /__saCloseTransientOutsideUi/);
+  assert.match(html, /<nav class="bottom-nav">/);
+  assert.match(html, /class="seo-site-footer"/);
 });
 
 test('public retail preview reuses the Pages snapshot and prefers Worker reads over PostgREST', () => {
