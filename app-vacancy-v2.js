@@ -61,7 +61,8 @@
       : '';
     var tags = '';
     if (v.is_featured) tags += '<span class="vx-tag vx-tag--feat">★ Featured</span>';
-    if (ts(v.created_at) && age < 3) tags += '<span class="vx-tag vx-tag--new">New</span>';
+    // A closing warning is more actionable than freshness; never show both NEW and Closes today.
+    if (ts(v.created_at) && age < 3 && (left === null || left > 7)) tags += '<span class="vx-tag vx-tag--new">New</span>';
     if (left !== null && left >= 0 && left <= 7) tags += '<span class="vx-tag vx-tag--warn">' + (left === 0 ? 'Closes today' : 'Closes in ' + left + 'd') + '</span>';
     if (v.salary) tags += '<span class="vx-tag vx-tag--money">' + esc(String(v.salary).slice(0, 34)) + '</span>';
     if (v.employment_type) tags += '<span class="vx-tag">' + esc(v.employment_type) + '</span>';
