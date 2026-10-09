@@ -26,6 +26,8 @@ env:
   ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
   ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
   RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  OPS_ALERT_EMAIL: ${{ secrets.OPS_ALERT_EMAIL }}
+  EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
   GOVERNMENT_YEARS: ${{ inputs.years || '2026' }}
   GOVERNMENT_MAX_CIRCULAR: "60"
   ADZUNA_PAGES: "3"
@@ -78,6 +80,8 @@ jobs:
           echo "$failures" > scraper-failures.txt
       - name: Export public snapshot
         run: node scripts/export-static-data.mjs
+      - name: Validate snapshot integrity and freshness
+        run: npm run validate:snapshot
       - name: Commit updated JSON when data changed
         run: |
           git config user.name "github-actions[bot]"
@@ -85,6 +89,14 @@ jobs:
           git add data/startup.json
           git diff --cached --quiet && echo "No public data changes" || git commit -m "chore(data): refresh static vacancy snapshot"
           git push
+      - name: Email refresh summary when a source fails
+        if: always()
+        continue-on-error: true
+        run: |
+          failures=$(cat scraper-failures.txt 2>/dev/null || echo 0)
+          if [ "$failures" -gt 0 ]; then
+            node --input-type=module -e "import { sendOpsEmail } from './scripts/send-ops-email.mjs'; await sendOpsEmail({subject: 'SA Recruiters scraper refresh failed', text: '$failures scraper source(s) failed during the scheduled refresh. Review the GitHub Actions log.'});"
+          fi
       - name: Report isolated scraper failures
         if: always()
         run: |

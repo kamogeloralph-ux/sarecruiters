@@ -15,7 +15,13 @@
     "purge:stale": "node scripts/purge-stale-vacancies.mjs",
     "enforce:vacancy-caps": "node scripts/enforce-vacancy-caps.mjs",
     "scrape:graduates24": "node scripts/scrape-graduates24.mjs",
-    "scrape:careers-page": "node scripts/scrape-careers-page.mjs"
+    "scrape:careers-page": "node scripts/scrape-careers-page.mjs",
+    "validate:snapshot": "node scripts/validate-static-snapshot.mjs",
+    "check:vacancy-links": "node scripts/check-vacancy-links.mjs",
+    "backup:data": "node scripts/export-backup.mjs",
+    "check:pwa": "node scripts/check-pwa-health.mjs",
+    "moderate:risk": "node scripts/flag-community-risk.mjs",
+    "report:analytics": "node scripts/send-weekly-analytics.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
