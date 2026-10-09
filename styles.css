@@ -2583,7 +2583,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #screen-home .home-featured-poster .poster-empty{height:auto;min-height:0;padding:14px 0;border:0;border-radius:0;background:transparent;text-align:left}
 
 /* Closing brand panel repeats the Menu hero after the homepage bottom ad. */
-#screen-home .home-bottom-hero{position:relative;isolation:isolate;margin:17px -14px 0;padding:18px 16px calc(22px + env(safe-area-inset-bottom));overflow:hidden;color:#fff;background:radial-gradient(ellipse at 85% 10%,rgba(100,194,255,.5),transparent 34%),linear-gradient(150deg,#0a3e86 0%,#0758ad 50%,#063d86 100%);box-shadow:0 14px 28px rgba(4,45,105,.22)}
+#screen-home .home-bottom-hero{position:relative;isolation:isolate;margin:17px -14px 0;padding:18px 16px 14px;overflow:hidden;color:#fff;background:radial-gradient(ellipse at 85% 10%,rgba(100,194,255,.5),transparent 34%),linear-gradient(150deg,#0a3e86 0%,#0758ad 50%,#063d86 100%);box-shadow:0 14px 28px rgba(4,45,105,.22)}
 #screen-home .home-bottom-hero::after{content:"";position:absolute;left:-8%;right:-8%;bottom:-30px;height:76px;background:rgba(3,38,78,.24);clip-path:polygon(0 48%,15% 30%,29% 58%,44% 23%,60% 56%,76% 29%,100% 50%,100% 100%,0 100%);pointer-events:none;z-index:-1}
 #screen-home .home-bottom-brand{position:relative;z-index:1;display:flex;align-items:center;gap:12px}
 #screen-home .home-bottom-brand img{display:block;width:50px;height:50px;flex:0 0 50px;object-fit:cover;overflow:hidden;border-radius:15px;background:rgba(255,255,255,.12);box-shadow:0 7px 18px rgba(0,15,50,.28)}
@@ -2594,6 +2594,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #screen-home .home-bottom-hero .support-ticker-item{font-size:11px;color:#fff;font-weight:750}
 [data-theme="dark"] #screen-home .home-bottom-hero{background:radial-gradient(ellipse at 85% 10%,rgba(76,149,220,.36),transparent 34%),linear-gradient(150deg,#092d62 0%,#073e80 50%,#052d61 100%)}
 @media(max-width:380px){#screen-home .home-bottom-hero{padding-left:14px;padding-right:14px}#screen-home .home-bottom-brand img{width:46px;height:46px;flex-basis:46px}}
+#screen-home .screen-scroll{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+.home-site-footer{padding:5px 20px 0}
 #screen-home .hf-sponsor-note strong{color:var(--text);font-size:11.5px}
 #screen-home .hf-sponsor-note span{flex:1}
 #screen-home .hf-sponsor-note a{color:var(--accent);font-weight:800;text-decoration:none;white-space:nowrap}
