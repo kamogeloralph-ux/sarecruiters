@@ -708,7 +708,7 @@ __name(loadStartupDataFromD1, "loadStartupDataFromD1");
 async function loadProvinceCountsFromD1(env) {
   if (!env.DB) return {};
   const counts = await Promise.all(Object.entries(PROVINCE_LOCATION_TERMS).map(async ([slug, terms]) => {
-    const where = terms.map(() => "LOWER(COALESCE(location, '') || ' ' || COALESCE(address, '')) LIKE ?").join(" OR ");
+    const where = terms.map(() => "LOWER(COALESCE(location, '')) LIKE ?").join(" OR ");
     const result = await env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${where}`).bind(...terms.map((term) => `%${term.toLowerCase()}%`)).all();
     return [slug, result.results[0]?.n || 0];
   }));
