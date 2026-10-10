@@ -215,3 +215,35 @@
   .vx-title{font-size:15.5px}
   .vx-summary-action{padding-left:59px}
 }
+
+/* Reference card layout: logo left, role/company identity, then compact facts. */
+.vx-card.vac-card{border:0;border-bottom:1px solid #dfe3e6;border-radius:0;background:var(--card);box-shadow:none}
+.vx-head{height:auto;min-height:224px;grid-template-columns:78px minmax(0,1fr);gap:18px;padding:25px 12px 25px 20px}
+.vx-logo{width:78px;height:78px;border-radius:50%;font-size:20px;background:#214e68;border:1px solid #65bd38}
+.vx-main{display:flex;flex-direction:column;min-width:0;padding-top:2px}
+.vx-title{order:0;margin:0;color:#58b936;font-size:20px;line-height:1.2;font-weight:800;letter-spacing:-.02em}
+.vx-company-context{order:1;margin-top:8px;color:#5d6268;font-size:15px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vx-org{order:2;margin-top:3px;color:#58b936;font-size:15px;line-height:1.25;font-weight:600}
+.vx-card-meta{order:3;margin-top:11px;gap:8px;font-size:15px;line-height:1.25;color:#59616a}
+.vx-card-meta>span{gap:12px;min-height:22px}
+.vx-card-meta svg{width:24px;height:24px;color:#4f5c67}
+.vx-card-meta b{font-weight:500;color:#59616a}
+.vx-card-field em{font-style:normal;flex:0 0 108px;color:#58b936;font-weight:800}
+.vx-card-field b{font-weight:500;color:#59616a}
+.vx-tools-col{padding:10px 8px 0 0}
+.vx-tool{width:34px;height:34px;color:#65717a}
+.vx-meta,.vx-preview,.vx-summary-action{display:none!important}
+.vx-detail-in{padding-top:14px}
+@media(max-width:480px){
+  .vx-head{grid-template-columns:78px minmax(0,1fr);gap:14px;padding-left:18px;padding-right:8px}
+  .vx-tools-col{padding-right:3px}
+  .vx-title{font-size:18px}
+  .vx-company-context,.vx-org,.vx-card-meta{font-size:14px}
+  .vx-card-field em{flex-basis:92px}
+}
+@media(max-width:360px){
+  .vx-head{grid-template-columns:68px minmax(0,1fr);gap:11px;padding-left:12px}
+  .vx-logo{width:68px;height:68px}
+  .vx-card-meta>span{gap:8px}
+  .vx-card-field em{flex-basis:82px}
+}

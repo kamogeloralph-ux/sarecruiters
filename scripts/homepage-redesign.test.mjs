@@ -125,9 +125,11 @@ test('the homepage shows all eight source cards before retail-first roles', () =
   assert.doesNotMatch(overview, /Featured vacancies|vx-rail/);
 });
 
-test('vacancy cards prioritise closing warnings over the NEW badge', () => {
-  assert.match(vacancyV2, /age < 3 && \(left === null \|\| left > 7\)/);
-  assert.match(vacancyV2, /left === 0 \? 'Closes today'/);
+test('vacancy cards use the reference hierarchy without duplicate badges or previews', () => {
+  assert.match(vacancyV2, /class="vx-card-meta"/);
+  assert.match(vacancyV2, /class="vx-card-field"/);
+  assert.doesNotMatch(vacancyV2, /class="vx-preview"/);
+  assert.doesNotMatch(vacancyV2, /class="vx-tag vx-tag--new"/);
 });
 
 test('home available roles use compact province groups and the existing exact-vacancy opener', () => {
@@ -137,8 +139,8 @@ test('home available roles use compact province groups and the existing exact-va
   assert.match(ui, /class="home-available-role"/);
   assert.match(ui, /homeAvailableRolesMarkup\(rows\)/);
   assert.match(ui, /openHomeWeeklyVacancy\(/);
-  assert.match(vacancyV2, /if \(o\.homePreview\)/);
-  assert.match(vacancyV2, /class="home-vacancy-apply"/);
+  assert.doesNotMatch(vacancyV2, /if \(o\.homePreview\)/);
+  assert.doesNotMatch(vacancyV2, /class="home-vacancy-apply"/);
   assert.match(html, /app-vacancy-v2\.js\?v=vx-retail-3/);
   assert.match(cards, /if \(typeof renderHomeFeed === 'function'\) \{\s*renderHomeFeed\(\);\s*return;/);
   assert.match(ui, /onclick="openHomeTalentPoolProfile\(\)"/);
