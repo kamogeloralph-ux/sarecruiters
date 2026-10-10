@@ -5,6 +5,8 @@ import { readFileSync } from 'node:fs';
 const worker = readFileSync(new URL('../Cloudflare-worker/worker.js', import.meta.url), 'utf8');
 const admin = readFileSync(new URL('../admin.html', import.meta.url), 'utf8');
 const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
+const deployPages = readFileSync(new URL('../.github/workflows/deploy-pages.yml', import.meta.url), 'utf8');
+const generatePages = readFileSync(new URL('../generate-pages.js', import.meta.url), 'utf8');
 
 test('admin vacancies are served by an authenticated D1 cursor endpoint', () => {
   assert.match(worker, /async function adminVacanciesResponse\(request, env, origin\)/);
@@ -38,6 +40,28 @@ test('admin vacancy UI no longer uses Supabase/PostgREST for the bulk list', () 
   assert.match(loader, /\/api\/admin\/vacancies/);
   assert.match(loader, /cursor/);
   assert.doesNotMatch(loader, /supabaseClient\.from\(['"]vacancies/);
+});
+
+test('admin vacancy list renders its first D1 page immediately and reports later failures', () => {
+  const loaderStart = admin.indexOf('async function getVacancies()');
+  const loaderEnd = admin.indexOf('async function getAdminSubmissions()', loaderStart);
+  const loader = admin.slice(loaderStart, loaderEnd);
+  assert.match(loader, /var pageSize = 500/);
+  assert.match(loader, /loadRemainingAdminVacancies\(all, authHdr, body\.next_cursor\)/);
+  assert.match(loader, /adminVacancyLoadError = e\.message/);
+  assert.match(loader, /function retryAdminVacancies\(\)/);
+
+  const renderStart = admin.indexOf('function renderVacancies()');
+  const renderEnd = admin.indexOf('function openVacancySheet(', renderStart);
+  const renderer = admin.slice(renderStart, renderEnd);
+  assert.match(renderer, /Loading vacancies/);
+  assert.match(renderer, /Vacancies unavailable/);
+  assert.match(renderer, /Retry loading vacancies/);
+});
+
+test('admin page changes deploy through Pages and bump the app service-worker version', () => {
+  assert.match(deployPages, /^\s+- "admin\.html"$/m);
+  assert.match(generatePages, /^\s+'admin\.html',?$/m);
 });
 
 test('public app-data has no Supabase table reads or public pool fallback', () => {

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "index.html"
+      - "admin.html"
       - "_headers"
       - "sw.js"
       - "app-*.js"
