@@ -120,12 +120,7 @@
       else if (v.email) { homeApplyHref = 'mailto:' + esc(v.email); homeApplyLabel = 'Email to apply'; }
       else if (v.phone) { homeApplyHref = 'tel:' + esc(String(v.phone).replace(/\s/g, '')); homeApplyLabel = 'Call to apply'; }
       else { homeApplyHref = 'vacancy/' + publicVacancySlug(v) + '/'; homeApplyLabel = 'View vacancy'; homeApplyTarget = 'target="_blank" rel="noopener"'; }
-      var homeMeta = '';
-      if (v.salary) homeMeta += '<span class="home-vacancy-salary">' + esc(v.salary) + '</span>';
-      if (v.employment_type) homeMeta += '<span>' + esc(v.employment_type) + '</span>';
-      if (!homeMeta) homeMeta = '<span>' + esc(timeAgo(v.created_at) || 'Live opportunity') + '</span>';
-      homePreviewMarkup = '<div class="home-vacancy-footer"><div class="home-vacancy-meta">' + homeMeta + '</div>' +
-        '<a class="home-vacancy-apply" href="' + homeApplyHref + '" ' + homeApplyTarget + ' ' + track + ' aria-label="' + homeApplyLabel + ' for ' + esc(v.title || 'this vacancy') + '">' + homeApplyLabel + '</a></div>';
+      homePreviewMarkup = '<div class="home-vacancy-footer"><a class="home-vacancy-apply" href="' + homeApplyHref + '" ' + homeApplyTarget + ' ' + track + ' aria-label="' + homeApplyLabel + ' for ' + esc(v.title || 'this vacancy') + '">' + homeApplyLabel + '</a></div>';
     }
 
     var loc = v.location ? shortLocation(v.location) : '';

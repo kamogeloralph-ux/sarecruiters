@@ -139,6 +139,7 @@
 .vx-foot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vx-foot i{font-style:normal;opacity:.5}
 .vx-card-meta{display:flex;flex-direction:column;gap:3px;margin-top:7px;font-size:12px;line-height:1.3;color:var(--text-2)}
+.vx-card-meta{order:0}
 .vx-card-meta>span{display:flex;align-items:center;gap:5px;min-width:0}
 .vx-card-meta svg{width:13px;height:13px;flex:none}
 .vx-card-meta b{font-weight:650;color:var(--text)}
@@ -200,7 +201,7 @@
 .vx-foot{order:2;margin-top:5px;font-size:12.5px}
 .vx-meta{order:3;margin-top:6px;gap:6px}
 .vx-tag--money{background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--success)}
-.vx-preview{order:4;display:-webkit-box;margin-top:7px;color:var(--text-2);font-size:12.5px;line-height:1.45;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vx-preview{display:none!important}
 .vx-tools-col{padding:6px 8px 0 0}
 .vx-tool{width:36px;height:36px;border-radius:10px}
 .vx-summary-action{padding:0 14px 13px 67px}
