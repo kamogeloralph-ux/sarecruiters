@@ -1125,9 +1125,20 @@ async function adminVacanciesResponse(request, env, origin) {
     "id", "agency_id", "employer_id", "title", "company", "company_photo",
     "location", "closing_date", "notes", "link", "email", "phone", "remote",
     "experience_level", "employment_type", "contract_type", "work_schedule", "hours",
-    "salary", "start_date", "created_at", "source_type", "is_featured", "featured_until",
-    "featured_order"
+    "salary", "start_date", "created_at", "source_type"
   ];
+  // Featured-vacancy fields were added after the initial D1 mirror schema.
+  // Read them when available, but keep the admin list working against older
+  // mirrors instead of failing the entire query with "no such column".
+  try {
+    const schema = await env.DB.prepare("PRAGMA table_info(vacancies)").all();
+    const names = new Set((schema.results || []).map((column) => column.name));
+    if (["is_featured", "featured_until", "featured_order"].every((name) => names.has(name))) {
+      columns.push("is_featured", "featured_until", "featured_order");
+    }
+  } catch (e) {
+    console.warn("Could not inspect D1 vacancy schema; using base admin columns", e);
+  }
   const result = await env.DB.prepare(
     `SELECT ${columns.join(",")} FROM vacancies${conditions.length ? ` WHERE ${conditions.join(" AND ")}` : ""} ORDER BY created_at DESC, id DESC LIMIT ?`
   ).bind(...values, limit + 1).all();

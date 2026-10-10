@@ -19,6 +19,17 @@ test('admin vacancies are served by an authenticated D1 cursor endpoint', () => 
   assert.match(worker, /nextCursor/);
 });
 
+test('admin vacancy reads tolerate D1 mirrors without optional featured columns', () => {
+  const start = worker.indexOf('async function adminVacanciesResponse');
+  const end = worker.indexOf('async function syncStatusResponse', start);
+  assert.ok(start >= 0 && end > start);
+  const handler = worker.slice(start, end);
+  assert.match(handler, /PRAGMA table_info\(vacancies\)/);
+  assert.match(handler, /columns\.push\("is_featured", "featured_until", "featured_order"\)/);
+  assert.match(handler, /using base admin columns/);
+  assert.doesNotMatch(handler, /const columns = \[[\s\S]*?"source_type", "is_featured"/);
+});
+
 test('admin vacancy UI no longer uses Supabase/PostgREST for the bulk list', () => {
   const start = admin.indexOf('async function getVacancies()');
   const end = admin.indexOf('async function getAdminSubmissions()', start);
