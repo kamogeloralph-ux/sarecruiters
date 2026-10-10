@@ -743,10 +743,7 @@ async function getPoolCandidateCount() {
   try {
     var startup = await getPublicPoolCandidatesFromWorker();
     if (startup && startup.counts && typeof startup.counts.candidates === 'number') return startup.counts.candidates;
-    // Resilience fallback for a temporary Worker/D1 outage.
-    var { count, error } = await supabaseClient.from('pool_candidates_public').select('id', { count: 'exact', head: true });
-    if (error) throw error;
-    return typeof count === 'number' ? count : null;
+    return null;
   } catch(e) { console.warn('pool count load', e); return null; }
 }
 
@@ -776,14 +773,7 @@ async function loadPoolCandidates() {
   try {
     var startup = await getPublicPoolCandidatesFromWorker();
     var data = startup && Array.isArray(startup.pool_candidates) ? startup.pool_candidates : null;
-    if (!data) {
-      // Resilience fallback for a temporary Worker/D1 outage.
-      var result = await supabaseClient.from('pool_candidates_public')
-        .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
-        .order('created_at', { ascending: false });
-      if (result.error) throw result.error;
-      data = result.data || [];
-    }
+    if (!data) data = [];
     poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){
       var aPhoto = String(a.photo_url || '').trim() ? 1 : 0;
       var bPhoto = String(b.photo_url || '').trim() ? 1 : 0;
