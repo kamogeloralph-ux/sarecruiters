@@ -199,25 +199,15 @@ function ensureRetailPriorityVacancies() {
     window.retailPriorityPreviewRows = [];
     return Promise.resolve(window.retailPriorityPreviewRows);
   }
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var retailSources = ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'];
-  function readRetailFromPostgrest() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) return Promise.resolve([]);
-    return supabaseClient.from('vacancies').select(columns)
-      .in('source_type', retailSources)
-      .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(60)
-      .then(function (result) {
-        if (result.error) throw result.error;
-        return result.data || [];
-      });
-  }
   var workerRead = typeof fetchVacancyPageFromWorker === 'function'
     ? fetchVacancyPageFromWorker({ source: retailSources.join(','), limit: 50 })
     : Promise.resolve(null);
   retailPriorityPreviewPromise = Promise.resolve(workerRead).catch(function () { return null; })
     .then(function (page) {
-      if (page && Array.isArray(page.vacancies)) return page.vacancies;
-      return readRetailFromPostgrest();
+      // A Worker outage must not send the browser to PostgREST. The next
+      // refresh can retry the bounded Worker request.
+      return page && Array.isArray(page.vacancies) ? page.vacancies : [];
     })
     .then(function (rows) {
       window.retailPriorityPreviewRows = filterExpiredVacancies(rows || []);

@@ -15,11 +15,9 @@
 // can never leak Smart Manager links. Token resolution happens server-side
 // via the Worker's /api/verify-manager endpoint (see app-manager.js).
 async function getAgencies() {
-  try {
-    var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified').order('created_at', { ascending: false });
-    if (error) { console.error('agencies load', error); return markLoadError([]); }
-    return data.map(function(a) { return { id: a.id, name: a.name, website: a.website, contact: a.contact, email: a.email, location: a.location, address: a.address, cvpref: a.cvpref, photo: a.photo, companies: a.companies, trades: a.trades, verified: !!a.verified, manage_token: '' }; });
-  } catch(e) { console.error('agencies load', e); return markLoadError([]); }
+  var startup = await getStartupData();
+  if (startup && Array.isArray(startup.agencies)) return startup.agencies;
+  return markLoadError([]);
 }
 // Persist a SMART MANAGER token so any device can resolve it (not just the
 // browser that generated it). Token writes are privileged: signed-in admins
@@ -76,12 +74,9 @@ async function removeAgency(id) {
    `employers` table + `employer_id` vacancies column are created — run
    CREATE_EMPLOYERS_TABLE.sql in the Supabase SQL Editor to make it live. */
 async function getEmployers() {
-  // manage_token is intentionally not selected — see the note on getAgencies().
-  try {
-    var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified').order('created_at', { ascending: false });
-    if (!error && data) return data.map(function(e) { return { id: e.id, name: e.name, industry: e.industry, website: e.website, contact: e.contact, email: e.email, location: e.location, address: e.address, photo: e.photo, verified: !!e.verified, manage_token: '' }; });
-  } catch(err){}
-  return markLoadError(readLocal('employers'));
+  var startup = await getStartupData();
+  if (startup && Array.isArray(startup.employers)) return startup.employers;
+  return markLoadError([]);
 }
 // ===== First-party house ads =====
 var houseAdsCache = [];
@@ -133,13 +128,10 @@ function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-posters-bottom', 'posters', 'bottom');
 }
 async function loadHouseAds() {
-  try {
-    var now = new Date().toISOString();
-    var result = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,starts_at,ends_at,sort_order').eq('is_active', true).lte('starts_at', now).or('ends_at.is.null,ends_at.gt.' + now).order('sort_order', { ascending: true }).order('created_at', { ascending: false }).limit(20);
-    if (result.error) throw result.error;
-    houseAdsCache = result.data || [];
-    renderHouseAdSlots();
-  } catch(e) { console.warn('house ads load', e); }
+  // House ads are not mirrored into D1 yet. Do not fall back to a public
+  // PostgREST read; an empty ad slot is safer than recreating the egress path.
+  houseAdsCache = [];
+  renderHouseAdSlots();
 }
 function trackHouseAdEvent(id, eventName) {
   if (!id || !supabaseClient || ['impression','click'].indexOf(eventName) === -1) return;
@@ -151,11 +143,8 @@ function trackHouseAdEvent(id, eventName) {
 }
 
 async function getManagedPosters() {
-  try {
-    var { data, error } = await supabaseClient.from('posters').select('id,audience,title,subtitle,image_url,sort_order').eq('is_active', true).order('audience', { ascending: true }).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
-    if (!error) return data || [];
-    console.warn('managed posters load', error);
-  } catch (e) { console.warn('managed posters load', e); }
+  // Managed campaign posters are not part of the D1 mirror yet. Keep this
+  // public bundle Cloudflare-only rather than issuing a Supabase fallback.
   return [];
 }
 function renderManagedPoster(poster, targetId) {
@@ -224,13 +213,6 @@ async function loadCandidateSpotlight() {
     var startup = await getPublicPoolCandidatesFromWorker();
     if (startup && Array.isArray(startup.pool_candidates)) {
       list = startup.pool_candidates.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice(0, 12);
-    } else {
-      // Resilience fallback for a temporary Worker/D1 outage.
-      var result = await supabaseClient.from('pool_candidates_public')
-        .select('id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at')
-        .order('created_at', { ascending: false }).limit(12);
-      if (result.error) throw result.error;
-      list = (result.data || []).filter(function(c){ return (c.status || 'pending') === 'active'; });
     }
   } catch (e) { console.warn('candidate spotlight load', e); list = []; }
   // Keep photo profiles ahead of no-photo profiles. Within those groups, keep
@@ -326,11 +308,9 @@ function writeLocal(kind, arr) {
 
 // ----- Branches -----
 async function getBranches() {
-  try {
-    var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email').order('name', { ascending: true });
-    if (!error && data) return data;
-  } catch(e){}
-  return markLoadError(readLocal('branches'));
+  var startup = await getStartupData();
+  if (startup && Array.isArray(startup.branches)) return startup.branches;
+  return markLoadError([]);
 }
 async function upsertBranch(b) {
   try {
@@ -353,9 +333,9 @@ async function removeBranch(id) {
 // ----- App settings (admin-controlled, e.g. public vacancy posting toggle) -----
 async function getAppSetting(key, fallback) {
   try {
-    var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key', key).maybeSingle();
-    if (error || !data) return fallback;
-    return data.value;
+    var startup = await getStartupData();
+    var settings = startup && startup.settings;
+    return settings && Object.prototype.hasOwnProperty.call(settings, key) ? settings[key] : fallback;
   } catch(e) { return fallback; }
 }
 async function setAppSetting(key, value) {
@@ -674,70 +654,27 @@ async function getVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var pageSize = 1000;
   var rows = [];
-  try {
-    for (var offset = 0; ; offset += pageSize) {
-      // General public vacancies are loaded lazily by the paginated directory
-      // query below. Startup only needs agency/employer records for hub cards.
-      var result = await supabaseClient.from('vacancies').select(columns)
-        .or('agency_id.neq.general,employer_id.not.is.null')
-        .order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
-      if (result.error) break;
-      var page = result.data || [];
-      rows = rows.concat(page);
-      if (page.length < pageSize) return filterExpiredVacancies(rows);
-    }
-  } catch(e){}
+  // Public vacancy reads are served by the Cloudflare Worker (D1/R2). Never
+  // fall back to an unbounded browser-side PostgREST scan if that path is
+  // unavailable; authenticated manager/admin writes remain below unchanged.
   return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
 }
 async function getEmployerVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
   var pageSize = 1000;
-  var rows = [];
-  try {
-    for (var offset = 0; ; offset += pageSize) {
-      var result = await supabaseClient.from('vacancies').select(columns)
-        .not('employer_id', 'is', null)
-        .order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
-      if (result.error) throw result.error;
-      var page = result.data || [];
-      rows = rows.concat(page);
-      if (page.length < pageSize) return filterExpiredVacancies(rows);
-    }
-  } catch(e) {
-    console.warn('employer vacancies fetch', e);
-    return [];
-  }
+  // Employer vacancy browsing is public and must stay on the bounded Worker
+  // API; do not reintroduce a direct PostgREST table scan here.
+  return [];
 }
 async function getAgencyAdzunaVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
-  try {
-    var result = await supabaseClient.from('vacancies').select(columns)
-      .eq('source_type', 'adzuna')
-      .not('agency_id', 'is', null)
-      .neq('agency_id', 'general')
-      .is('employer_id', null)
-      .order('created_at', { ascending: false }).limit(1000);
-    if (result.error) throw result.error;
-    return filterExpiredVacancies(result.data || []);
-  } catch(e) {
-    console.warn('agency Adzuna vacancies fetch', e);
-    return [];
-  }
+  // Public source pages use fetchVacancyPageFromWorker() below.
+  return [];
 }
 async function getGeneralVacancyCount() {
-  try {
-    var result = await supabaseClient.from('vacancies')
-      .select('id', { count: 'exact', head: true })
-      .or('agency_id.is.null,agency_id.eq.general')
-      .is('employer_id', null)
-      // The general folder historically includes unassigned agency and
-      // government imports. Keep only the dedicated external sources in
-      // their own folders; otherwise the count understates the directory
-      // (e.g. 43 instead of several thousand rows).
-      .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships,careers_page)');
-    if (result.error) return null;
-    return typeof result.count === 'number' ? result.count : 0;
-  } catch(e) { return null; }
+  // Counts come from /api/startup, backed by D1. A failed Worker request must
+  // not turn into a public PostgREST count request.
+  return null;
 }
 // Fallback for when /api/startup is unreachable and loadAll() falls back to
 // direct Supabase reads — mirrors the worker's per-folder counts (see
@@ -746,13 +683,7 @@ async function getGeneralVacancyCount() {
 async function getDedicatedVacancyCounts() {
   var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government','dpsa'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], learnerships: ['learnerships'], careers_page: ['careers_page'] };
   var out = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0, careers_page: 0 };
-  try {
-    await Promise.all(Object.keys(folders).map(function(key){
-      return supabaseClient.from('vacancies').select('id', { count: 'exact', head: true }).in('source_type', folders[key])
-        .then(function(res){ if (typeof res.count === 'number') out[key] = res.count; });
-    }));
-  } catch(e) {}
-  return out;
+  return null;
 }
 function isDedicatedVacancySource(sourceType) {
   return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships', 'careers_page'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
@@ -850,28 +781,10 @@ async function fetchGeneralVacancyPage(state, page) {
     generalVacancyNextCursor = workerPage.next_cursor || null;
     return workerPage.vacancies;
   }
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var from = page * generalVacancyPageSize;
-  var query = supabaseClient.from('vacancies').select(columns)
-    .or('agency_id.is.null,agency_id.eq.general')
-    .is('employer_id', null)
-    // Match the folder classification used by renderAllVacanciesList():
-    // unassigned agency/government imports are general, while Himalayas,
-    // Adzuna, DPSA, and retail feeds have dedicated folders.
-    .or('source_type.is.null,source_type.not.in.(himalayas,adzuna,government,dpsa,retail,shoprite,picknpay,woolworths,truworths,spar,career_board,learnerships,careers_page)')
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: false })
-    .range(from, from + generalVacancyPageSize - 1);
-  if (state.remote) query = query.eq('remote', state.remote);
-  if (state.exp) query = query.eq('experience_level', state.exp);
-  if (state.q) {
-    var safe = state.q.replace(/[(),]/g, ' ').replace(/%/g, '').trim();
-    if (safe) query = query.or('title.ilike.%' + safe + '%,company.ilike.%' + safe + '%,location.ilike.%' + safe + '%,notes.ilike.%' + safe + '%');
-  }
-  var result = await query;
-  if (result.error) throw result.error;
-  // Return raw pages so expired rows do not make a full page look like EOF.
-  return result.data || [];
+  // The Worker owns public vacancy serving and caps each response. Do not
+  // fall back to a direct PostgREST page when it is unavailable.
+  return [];
 }
 // Source-type groupings for the 5 dedicated-source folders, mirroring the
 // classifier functions in renderAllVacanciesList() (isHimalayasVacancy etc.)
@@ -900,22 +813,7 @@ async function fetchDedicatedVacancyPage(folder, state, page) {
     dedicatedVacancyNextCursor = workerPage.next_cursor || null;
     return workerPage.vacancies;
   }
-  var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
-  var from = page * dedicatedVacancyPageSize;
-  var query = supabaseClient.from('vacancies').select(columns)
-    .in('source_type', sources)
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: false })
-    .range(from, from + dedicatedVacancyPageSize - 1);
-  if (state.remote) query = query.eq('remote', state.remote);
-  if (state.exp) query = query.eq('experience_level', state.exp);
-  if (state.q) {
-    var safe = state.q.replace(/[(),]/g, ' ').replace(/%/g, '').trim();
-    if (safe) query = query.or('title.ilike.%' + safe + '%,company.ilike.%' + safe + '%,location.ilike.%' + safe + '%,notes.ilike.%' + safe + '%');
-  }
-  var result = await query;
-  if (result.error) throw result.error;
-  return result.data || [];
+  return [];
 }
 async function upsertVacancy(v) {
   // First attempt: send all fields
@@ -1164,14 +1062,14 @@ var startupDataSource = '';
 var startupDataResolved = false;
 async function fetchStartupDataOnce() {
   startupDataSource = '';
+  var earlyStartup = window.__saStartupEarly;
+  window.__saStartupEarly = null;
   if (staticDataEnabled) {
     try {
       // index.html starts this download at HTML-parse time (window.__saStartupEarly) so the
       // 5-8 MB snapshot is already in flight while the JS bundle downloads. Use it once; any
       // later/forced refresh does its own fetch.
       var staticPayload = null;
-      var earlyStartup = window.__saStartupEarly;
-      window.__saStartupEarly = null;
       if (earlyStartup) { try { staticPayload = await earlyStartup; } catch (e) { staticPayload = null; } }
       if (!staticPayload) {
         // Ensure a fresh GitHub Pages/CDN object after the scheduled scraper
@@ -1186,6 +1084,17 @@ async function fetchStartupDataOnce() {
         return staticPayload;
       }
     } catch (e) { console.warn('static data load', e); }
+  }
+  if (earlyStartup) {
+    try {
+      var earlyPayload = await earlyStartup;
+      if (earlyPayload && Array.isArray(earlyPayload.agencies) && Array.isArray(earlyPayload.branches) &&
+          Array.isArray(earlyPayload.vacancies) && Array.isArray(earlyPayload.employers) &&
+          earlyPayload.counts && earlyPayload.settings) {
+        startupDataSource = 'worker';
+        return earlyPayload;
+      }
+    } catch (e) {}
   }
   try {
     var controller = typeof AbortController === 'function' ? new AbortController() : null;

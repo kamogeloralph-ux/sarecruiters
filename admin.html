@@ -1132,30 +1132,32 @@ async function getBranches(){
   return data || [];
 }
 async function getVacancies(){
-  // Get the total count first, then fire all the range() pages in parallel
-  // instead of awaiting them one at a time — with ~9000 rows that was 9
-  // sequential round trips (each waiting on the last) just to open the
-  // admin panel. Supabase/PostgREST still caps a single request at 1000
-  // rows, so paging itself is still required, just no longer serial.
+  // Keep the admin UI's existing in-memory editing contract, but page through
+  // D1 rather than downloading the vacancy table from PostgREST. The endpoint
+  // also accepts q/location/source/agency_id/employer_id/remote/experience
+  // filters for callers that can keep filtering server-side.
   try {
-    var PAGE_SIZE = 1000;
-    var countRes = await supabaseClient.from('vacancies').select('id', { count: 'exact', head: true });
-    if (countRes.error) throw countRes.error;
-    var total = countRes.count || 0;
-    var cols = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
-    var pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    var pages = await Promise.all(Array.from({length: pageCount}, function(_, i){
-      var from = i * PAGE_SIZE;
-      return supabaseClient.from('vacancies').select(cols).order('created_at',{ascending:false}).range(from, from + PAGE_SIZE - 1);
-    }));
+    var authHdr = await r2AuthHeader();
+    if (!authHdr.Authorization) throw new Error('Admin session expired');
     var all = [];
-    for (var i = 0; i < pages.length; i++) {
-      if (pages[i].error) throw pages[i].error;
-      all = all.concat(pages[i].data || []);
+    var cursor = '';
+    var pageSize = 250;
+    for (var page = 0; page < 100; page++) {
+      var qs = new URLSearchParams({ limit: String(pageSize), include_expired: '1' });
+      if (cursor) qs.set('cursor', cursor);
+      var response = await fetch(R2_WORKER_URL + '/api/admin/vacancies?' + qs.toString(), { headers: authHdr, cache: 'no-store' });
+      var body = await response.json().catch(function(){ return {}; });
+      if (!response.ok) throw new Error(body.error || 'Could not load vacancies');
+      var rows = Array.isArray(body.vacancies) ? body.vacancies : [];
+      all = all.concat(rows);
+      if (!body.next_cursor || !rows.length) break;
+      cursor = body.next_cursor;
     }
     return all;
-  } catch(e){}
-  return [];
+  } catch(e) {
+    console.error('admin vacancies load', e);
+    return [];
+  }
 }
 async function getAdminSubmissions(){
   var authHdr = await r2AuthHeader();

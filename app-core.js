@@ -17,11 +17,11 @@ var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 // 'https://sarecruiters-uploader.<your-subdomain>.workers.dev'
 var R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
 var STARTUP_DATA_URL = R2_WORKER_URL + '/api/startup';
-// Public reads use the repository snapshot on GitHub Pages. Supabase remains
-// available for authentication and admin/employer writes, but the directory
-// no longer depends on a database or edge worker being online.
+// Public inventory is served by the Cloudflare Worker (D1/R2). Keep the
+// committed snapshot for SEO/build tooling, but do not let browsers use it as
+// a parallel serving layer or fall back to direct Supabase vacancy reads.
 var STATIC_DATA_URL = 'data/startup.json';
-var staticDataEnabled = true;
+var staticDataEnabled = false;
 var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
