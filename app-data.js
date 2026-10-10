@@ -1429,7 +1429,7 @@ function updateStats() {
   document.querySelectorAll('[data-province-count]').forEach(function (node) {
     var key = node.getAttribute('data-province-count');
     var count = provinceCounts && typeof provinceCounts[key] === 'number' ? provinceCounts[key] : null;
-    if (count !== null) node.textContent = count.toLocaleString() + ' vacancy' + (count === 1 ? '' : ' vacancies');
+    if (count !== null) node.textContent = count.toLocaleString();
   });
   reorderStatCardsByCount();
 }

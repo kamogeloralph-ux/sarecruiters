@@ -66,7 +66,6 @@
     if (ts(v.created_at) && age < 3 && (left === null || left > 7)) tags += '<span class="vx-tag vx-tag--new">New</span>';
     if (left !== null && left >= 0 && left <= 7) tags += '<span class="vx-tag vx-tag--warn">' + (left === 0 ? 'Closes today' : 'Closes in ' + left + 'd') + '</span>';
     if (v.salary) tags += '<span class="vx-tag vx-tag--money">' + esc(String(v.salary).slice(0, 34)) + '</span>';
-    if (v.employment_type) tags += '<span class="vx-tag">' + esc(v.employment_type) + '</span>';
     if (v.remote) tags += '<span class="vx-tag">' + esc(v.remote) + '</span>';
     if (v.experience_level) tags += '<span class="vx-tag">' + esc(v.experience_level) + '</span>';
     var isGov = src === 'government', isAdz = src === 'adzuna', isHim = src === 'himalayas';
