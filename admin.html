@@ -1131,33 +1131,74 @@ async function getBranches(){
   if (error){ console.error('branches',error); return []; }
   return data || [];
 }
+var adminVacancyLoading = false;
+var adminVacancyLoadError = '';
 async function getVacancies(){
   // Keep the admin UI's existing in-memory editing contract, but page through
   // D1 rather than downloading the vacancy table from PostgREST. The endpoint
   // also accepts q/location/source/agency_id/employer_id/remote/experience
   // filters for callers that can keep filtering server-side.
+  adminVacancyLoading = true;
+  adminVacancyLoadError = '';
   try {
     var authHdr = await r2AuthHeader();
     if (!authHdr.Authorization) throw new Error('Admin session expired');
-    var all = [];
-    var cursor = '';
-    var pageSize = 250;
-    for (var page = 0; page < 100; page++) {
-      var qs = new URLSearchParams({ limit: String(pageSize), include_expired: '1' });
-      if (cursor) qs.set('cursor', cursor);
-      var response = await fetch(R2_WORKER_URL + '/api/admin/vacancies?' + qs.toString(), { headers: authHdr, cache: 'no-store' });
-      var body = await response.json().catch(function(){ return {}; });
-      if (!response.ok) throw new Error(body.error || 'Could not load vacancies');
-      var rows = Array.isArray(body.vacancies) ? body.vacancies : [];
-      all = all.concat(rows);
-      if (!body.next_cursor || !rows.length) break;
-      cursor = body.next_cursor;
+    var pageSize = 500;
+    var qs = new URLSearchParams({ limit: String(pageSize), include_expired: '1' });
+    var response = await fetch(R2_WORKER_URL + '/api/admin/vacancies?' + qs.toString(), { headers: authHdr, cache: 'no-store' });
+    var body = await response.json().catch(function(){ return {}; });
+    if (!response.ok) throw new Error(body.error || ('Could not load vacancies (HTTP '+response.status+')'));
+    var all = Array.isArray(body.vacancies) ? body.vacancies : [];
+    cache.vacancies = all;
+    if (body.next_cursor && all.length) {
+      loadRemainingAdminVacancies(all, authHdr, body.next_cursor);
+    } else {
+      adminVacancyLoading = false;
     }
+    if (document.getElementById('sec-vacancies').classList.contains('active')) renderVacancies();
     return all;
   } catch(e) {
+    adminVacancyLoading = false;
+    adminVacancyLoadError = e.message || 'Could not load vacancies.';
     console.error('admin vacancies load', e);
+    showToast('Vacancies could not be loaded. Open the Vacancies section for details.');
+    if (document.getElementById('sec-vacancies').classList.contains('active')) renderVacancies();
     return [];
   }
+}
+async function loadRemainingAdminVacancies(all, authHdr, cursor){
+  try {
+    var pageSize = 500;
+    for (var page = 0; cursor && page < 100; page++) {
+      var qs = new URLSearchParams({ limit: String(pageSize), include_expired: '1', cursor: cursor });
+      var response = await fetch(R2_WORKER_URL + '/api/admin/vacancies?' + qs.toString(), { headers: authHdr, cache: 'no-store' });
+      var body = await response.json().catch(function(){ return {}; });
+      if (!response.ok) throw new Error(body.error || ('Could not load vacancies (HTTP '+response.status+')'));
+      var rows = Array.isArray(body.vacancies) ? body.vacancies : [];
+      if (!rows.length) { cursor = ''; break; }
+      all.push.apply(all, rows);
+      cursor = body.next_cursor || '';
+      if (document.getElementById('sec-vacancies').classList.contains('active')) renderVacancies();
+    }
+    if (cursor) throw new Error('The vacancy list is too large to finish loading in one pass.');
+    adminVacancyLoadError = '';
+  } catch(e) {
+    adminVacancyLoadError = e.message || 'Some vacancies could not be loaded.';
+    console.error('admin vacancies continued load', e);
+    showToast('Some vacancies could not be loaded. Open Vacancies for details.');
+  } finally {
+    adminVacancyLoading = false;
+    cache.vacancies = all;
+    renderNav();
+    renderDashboard();
+    if (document.getElementById('sec-vacancies').classList.contains('active')) renderVacancies();
+  }
+}
+async function retryAdminVacancies(){
+  cache.vacancies = await getVacancies();
+  renderNav();
+  renderDashboard();
+  renderVacancies();
 }
 async function getAdminSubmissions(){
   var authHdr = await r2AuthHeader();
@@ -2368,7 +2409,11 @@ function renderVacancies(){
   var list = cache.vacancies;
   if(q){ list = list.filter(function(v){ var ag=agencyById(v.agency_id); var emp=v.employer_id?employerById(v.employer_id):null; var hay=((v.title||'')+' '+(v.company||'')+' '+(v.location||'')+' '+(v.notes||'')+((ag&&ag.name)||'')+((emp&&emp.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   var el = document.getElementById('va-list');
-  if(!list.length){ el.innerHTML = emptyState('No vacancies','Add a vacancy or adjust your search.'); return; }
+  if(!list.length){
+    if(adminVacancyLoadError){ el.innerHTML = emptyState('Vacancies unavailable',adminVacancyLoadError)+'<button class="minibtn full" style="margin:12px 14px" onclick="retryAdminVacancies()">Retry loading vacancies</button>'; return; }
+    if(adminVacancyLoading){ el.innerHTML = emptyState('Loading vacancies','Fetching the first page from the database…'); return; }
+    el.innerHTML = emptyState('No vacancies','Add a vacancy or adjust your search.'); return;
+  }
   // Rendering all matches at once (thousands of full detail blocks) was the
   // other half of the slowness — cap the DOM to a page of rows and let
   // "Load more" pull in the rest, same underlying list either way.
@@ -2393,7 +2438,7 @@ function renderVacancies(){
           '<button class="minibtn full danger" onclick="stopProp(event);deleteVacancy(\''+v.id+'\')">Delete</button>'+
         '</div>'+
       '</div>';
-  }).join('') + (list.length > shown.length ? '<button class="minibtn full" style="margin:12px 14px" onclick="loadMoreVacancies()">Load '+Math.min(VACANCIES_PAGE_SIZE, list.length-shown.length)+' more ('+(list.length-shown.length)+' remaining)</button>' : '');
+  }).join('') + (adminVacancyLoadError ? '<div class="empty" role="alert"><p>Some vacancies could not be loaded: '+escapeHtml(adminVacancyLoadError)+'</p><button class="minibtn full" onclick="retryAdminVacancies()">Retry loading vacancies</button></div>' : (adminVacancyLoading ? '<div class="empty" role="status"><p>Showing '+list.length.toLocaleString()+' vacancies so far; loading the rest…</p></div>' : '')) + (list.length > shown.length ? '<button class="minibtn full" style="margin:12px 14px" onclick="loadMoreVacancies()">Load '+Math.min(VACANCIES_PAGE_SIZE, list.length-shown.length)+' more ('+(list.length-shown.length)+' remaining)</button>' : '');
 }
 function openVacancySheet(id, employerId){
   editing.vacancy = id || null;
