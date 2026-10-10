@@ -1,3 +1,4 @@
+import { runWatchdog } from "./watchdog.js";
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
@@ -1481,7 +1482,21 @@ var worker_default = {
   // per-visitor Supabase egress. ctx.waitUntil lets the sync finish even
   // though cron invocations don't wait on a returned Promise otherwise.
   async scheduled(event, env, ctx) {
+    // "15,45 * * * *": lightweight self-healing watchdog (see watchdog.js). Offset from
+    // the 6-hourly tick so the two never run at the same moment.
+    if (event.cron === "15,45 * * * *") {
+      ctx.waitUntil(runWatchdog(env, {}).catch((e) => console.error("scheduled watchdog failed", e)));
+      return;
+    }
     ctx.waitUntil((async () => {
+      try {
+        // Deep check (validates the public snapshot) every 6h; the daily TipChat
+        // Autopilot digest goes out with the 06:00 UTC tick (08:00 in South Africa).
+        const result = await runWatchdog(env, { deep: true, digest: new Date(event.scheduledTime).getUTCHours() === 6 });
+        if (result.problems.length) console.log("Watchdog open problems", result.problems.join(", "));
+      } catch (e) {
+        console.error("scheduled deep watchdog failed", e);
+      }
       try {
         const removed = await deleteExpiredEmployerPosters(env);
         if (removed) console.log("Expired employer posters removed", removed);

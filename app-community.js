@@ -307,7 +307,7 @@ function communityRenderGroup() {
   if (composerHint) {
     composerHint.textContent = !communitySignedIn()
       ? 'Sign in and join TipChat to share a post.'
-      : (!communityMvp.joined ? 'Join TipChat before posting or commenting.' : 'Posts are reviewed before they appear. You show as Anonymous member unless you choose otherwise above.');
+      : (!communityMvp.joined ? 'Join TipChat before posting or commenting.' : 'Posts are checked before they appear. You show as Anonymous member unless you choose otherwise above.');
   }
   communityRenderIdentity();
   communitySetComposerType(communityComposerType);
@@ -572,7 +572,7 @@ async function communitySubmitPost(event) {
   ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
   communityRemovePoster();
   communitySetComposerType('discussion');
-  communityStatus('Thanks — your post is awaiting moderator review. Track it under My submissions; ' + (communityMvp.identity.show && communityMvp.identity.has ? 'it will show your Talent Pool name and photo once approved.' : 'it will appear as Anonymous member.'), 'success');
+  communityStatus('Thanks — your post is being checked and will appear as soon as it passes. Track it under My submissions; ' + (communityMvp.identity.show && communityMvp.identity.has ? 'it will show your Talent Pool name and photo once it is live.' : 'it will appear as Anonymous member.'), 'success');
   communityRenderGroup();
   communityLoadMySubmissions();
   communityLoadModerationQueue(false);
@@ -650,7 +650,7 @@ async function communityLoadComments(postId) {
       }).join('')
     : '<div class="community-comment-loading">No approved comments yet.</div>') + '</div>' +
     (canComment
-      ? '<form class="community-comment-form" onsubmit="return communitySubmitComment(event,\'' + communityEsc(postId) + '\')"><label class="sr-only" for="' + inputId + '">Add a comment</label><textarea id="' + inputId + '" maxlength="1500" placeholder="Add a helpful comment…" required></textarea><button type="submit">Send</button><small>Comments are reviewed before they appear.</small></form>'
+      ? '<form class="community-comment-form" onsubmit="return communitySubmitComment(event,\'' + communityEsc(postId) + '\')"><label class="sr-only" for="' + inputId + '">Add a comment</label><textarea id="' + inputId + '" maxlength="1500" placeholder="Add a helpful comment…" required></textarea><button type="submit">Send</button><small>Comments are checked before they appear.</small></form>'
       : '<button type="button" class="community-secondary-btn" onclick="communityPromptParticipation()">' + (communitySignedIn() ? 'Join to comment' : 'Sign in to comment') + '</button>');
   var draftField = document.getElementById('community-comment-input-' + postId);
   if (draftField && communityMvp.drafts[draftField.id]) draftField.value = communityMvp.drafts[draftField.id];
@@ -670,7 +670,7 @@ async function communitySubmitComment(event, postId) {
     return false;
   }
   if (field) { delete communityMvp.drafts[field.id]; field.value = ''; }
-  communityToast('Comment submitted for moderator review. Track it under My submissions.');
+  communityToast('Comment submitted — it will appear as soon as it passes the checks. Track it under My submissions.');
   communityLoadMySubmissions();
   communityLoadModerationQueue(false);
   return false;

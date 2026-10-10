@@ -14,6 +14,14 @@ const patterns = [
   ['mass_promotion', /guaranteed\s+(?:job|placement)|act\s+now|limited\s+slots|click\s+here/i],
 ];
 
+// When TipChat Autopilot is live it resolves submissions itself (and the Cloudflare watchdog
+// sends the daily summary), so the hourly "please review" email would only be noise. In
+// 'shadow' or 'off' mode (or if the Autopilot table does not exist yet) humans still
+// moderate, so the digest keeps working exactly as before.
+export function shouldEmailModeratorDigest(autopilotMode) {
+  return autopilotMode !== 'live';
+}
+
 export function matchRisk(body, { isVacancy = false } = {}) {
   return patterns
     .filter(([name, pattern]) => !(isVacancy && name === 'off_platform_contact') && pattern.test(String(body || '')))
@@ -26,6 +34,12 @@ async function main() {
   if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   const { createClient } = await import('@supabase/supabase-js');
   const db = createClient(url, key, { auth: { persistSession: false } });
+  const autopilot = await db.from('community_automod_settings').select('mode').eq('id', true).maybeSingle();
+  const autopilotMode = autopilot.error ? null : (autopilot.data && autopilot.data.mode) || null;
+  if (!shouldEmailModeratorDigest(autopilotMode)) {
+    console.log('[moderation] TipChat Autopilot is live; skipping the manual-review digest');
+    return;
+  }
   const [posts, comments] = await Promise.all([
     db.from('community_posts').select('id,body,post_type,vacancy_title,notified_at,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(200),
     db.from('community_comments').select('id,body,notified_at,created_at').eq('status', 'pending').order('created_at', { ascending: true }).limit(200),

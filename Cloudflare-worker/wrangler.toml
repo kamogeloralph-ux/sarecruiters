@@ -27,8 +27,12 @@ database_id = "7d1a4327-6056-45cf-ae62-b5b26a454627"
 # batches and removes stale keys, avoiding full-table rewrites. Use POST
 # /api/sync-d1 after an important admin data change if an immediate refresh is
 # needed.
+#
+# Second schedule: the watchdog (watchdog.js) -- every 30 minutes, offset from the
+# 6-hourly tick. It restarts stale/disabled GitHub workflows, backs up the TipChat
+# Autopilot sweep if pg_cron stalls, and emails only when self-healing fails.
 [triggers]
-crons = ["0 */6 * * *"]
+crons = ["0 */6 * * *", "15,45 * * * *"]
 
 [vars]
 SUPABASE_URL = "https://ythznnktswgymerdcxky.supabase.co"
@@ -40,6 +44,17 @@ EMAIL_FROM = "SA Recruiters <notifications@sa-recruiters.co.za>"
 # (R2 -> sarecruiters-media -> Settings -> Public Access), then use that
 # URL here. Already confirmed working:
 R2_PUBLIC_BASE_URL = "https://pub-911e4cd402674c6f85c747b12212772f.r2.dev"
+#
+# WATCHDOG settings (all optional; each unlocks one more self-healing check):
+#   SITE_URL              default https://sa-recruiters.co.za
+#   GITHUB_REPO           "owner/repo" of this project. Enables workflow self-healing.
+#   GITHUB_BRANCH         default main
+#   WATCHDOG_GH_TOKEN     SECRET: fine-grained GitHub token, this repo only,
+#                         permission "Actions: Read and write". Without it the
+#                         watchdog still checks the site, D1 sync and Autopilot.
+#   HEALTHCHECK_PING_URL  SECRET/var: a healthchecks.io-style ping URL, called every
+#                         run, so an outside service emails you if the watchdog dies.
+#   OPS_ALERT_EMAIL       who receives alerts (falls back to ADMIN_NOTIFY_EMAIL).
 #
 # OPTIONAL non-secret settings — configure these as Worker variables if you
 # need to change the defaults:
