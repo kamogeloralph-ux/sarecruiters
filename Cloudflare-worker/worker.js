@@ -917,7 +917,7 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v6-d1-count", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v7-d1-count-plain-json", request.url), request);
 
   async function buildResponse(payload) {
     const body = JSON.stringify(payload);
@@ -940,11 +940,6 @@ async function startupResponse(request, env, ctx, origin) {
         "Access-Control-Allow-Methods": "GET,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
     });
-    if (typeof CompressionStream === "function") {
-      headers.set("Content-Encoding", "gzip");
-      const compressed = new Response(body).body.pipeThrough(new CompressionStream("gzip"));
-      return new Response(compressed, { headers });
-    }
     return new Response(body, { headers });
   }
   __name(buildResponse, "buildResponse");
