@@ -693,21 +693,17 @@ async function loadStartupDataFromD1(env) {
 }
 __name(loadStartupDataFromD1, "loadStartupDataFromD1");
 
-// Prefers the D1 mirror (zero Supabase egress) and only falls back to the
-// live Supabase path when D1 has nothing yet -- e.g. before the first
-// scheduled sync has ever run, or if the DB binding is missing entirely.
-// Once syncD1FromSupabase() has run at least once, this never touches
-// Supabase on a normal request.
+// Public startup reads are D1/R2-only. Supabase is an ingest source for the
+// scheduled mirror sync, never a browser-facing fallback.
 async function loadStartupDataOrFallback(env) {
-  if (env.DB) {
-    try {
-      const check = await env.DB.prepare("SELECT COUNT(*) AS n FROM agencies").all();
-      if ((check.results[0]?.n || 0) > 0) return await loadStartupDataFromD1(env);
-    } catch (e) {
-      // D1 unreachable or not yet migrated -- fall through to Supabase.
-    }
+  if (!env.DB) return null;
+  try {
+    const check = await env.DB.prepare("SELECT COUNT(*) AS n FROM agencies").all();
+    if ((check.results[0]?.n || 0) === 0) return null;
+    return await loadStartupDataFromD1(env);
+  } catch (e) {
+    return null;
   }
-  return await loadStartupData(env);
 }
 __name(loadStartupDataOrFallback, "loadStartupDataOrFallback");
 async function loadStartupData(env) {
@@ -961,6 +957,7 @@ async function startupResponse(request, env, ctx, origin) {
       return snapshot;
     }
     const payload = await loadStartupDataOrFallback(env);
+    if (!payload) throw new Error("Public startup mirror unavailable");
     ctx.waitUntil(writePublicStartupSnapshot(env, payload).catch((e) => console.warn("Could not seed public R2 startup snapshot", e)));
     const response = await buildResponse(payload);
     await cache.put(cacheKey, response.clone());
@@ -1066,6 +1063,64 @@ async function vacanciesResponse(request, env, ctx, origin) {
   return response;
 }
 __name(vacanciesResponse, "vacanciesResponse");
+async function adminVacanciesResponse(request, env, origin) {
+  if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+  if (!env.DB) return json({ error: "D1 not bound" }, 503, origin);
+  const url = new URL(request.url);
+  const q = String(url.searchParams.get("q") || "").trim().slice(0, 120);
+  const location = String(url.searchParams.get("location") || "").trim().slice(0, 120);
+  const source = String(url.searchParams.get("source") || "").trim().slice(0, 240);
+  const agencyId = String(url.searchParams.get("agency_id") || "").trim().slice(0, 120);
+  const employerId = String(url.searchParams.get("employer_id") || "").trim().slice(0, 120);
+  const remote = String(url.searchParams.get("remote") || "").trim().slice(0, 30);
+  const experience = String(url.searchParams.get("experience") || "").trim().slice(0, 60);
+  const includeExpired = url.searchParams.get("include_expired") !== "0";
+  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 200) || 200, 1), 500);
+  const cursor = String(url.searchParams.get("cursor") || "");
+  const cursorSeparator = cursor.indexOf("|");
+  const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;
+  const cursorId = cursorSeparator >= 0 ? cursor.slice(cursorSeparator + 1) : "";
+  const conditions = [];
+  const values = [];
+  if (!includeExpired) conditions.push("(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now'))");
+  if (q) {
+    conditions.push("(id LIKE ? OR title LIKE ? OR company LIKE ? OR location LIKE ? OR notes LIKE ?)");
+    const term = `%${q}%`;
+    values.push(term, term, term, term, term);
+  }
+  if (location) { conditions.push("location LIKE ?"); values.push(`%${location}%`); }
+  if (source) {
+    const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
+    if (sources.length) { conditions.push(`source_type IN (${sources.map(() => "?").join(",")})`); values.push(...sources); }
+  }
+  if (agencyId) { conditions.push("agency_id = ?"); values.push(agencyId); }
+  if (employerId) { conditions.push("employer_id = ?"); values.push(employerId); }
+  if (remote) { conditions.push("remote = ?"); values.push(remote); }
+  if (experience) { conditions.push("experience_level = ?"); values.push(experience); }
+  if (cursorCreated) {
+    conditions.push("(created_at < ? OR (created_at = ? AND id < ?))");
+    values.push(cursorCreated, cursorCreated, cursorId);
+  }
+  const columns = [
+    "id", "agency_id", "employer_id", "title", "company", "company_photo",
+    "location", "closing_date", "notes", "link", "email", "phone", "remote",
+    "experience_level", "employment_type", "contract_type", "work_schedule", "hours",
+    "salary", "start_date", "created_at", "source_type", "is_featured", "featured_until",
+    "featured_order"
+  ];
+  const result = await env.DB.prepare(
+    `SELECT ${columns.join(",")} FROM vacancies${conditions.length ? ` WHERE ${conditions.join(" AND ")}` : ""} ORDER BY created_at DESC, id DESC LIMIT ?`
+  ).bind(...values, limit + 1).all();
+  const rows = result.results || [];
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last ? `${last.created_at || ""}|${last.id || ""}` : null;
+  const response = json({ vacancies: page, next_cursor: nextCursor, limit }, 200, origin);
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
+__name(adminVacanciesResponse, "adminVacanciesResponse");
 async function syncStatusResponse(request, env, origin) {
   if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
   const status = await readSyncMeta(env, "sync_status");
@@ -1095,23 +1150,6 @@ async function postersResponse(request, env, origin) {
     count = total.results?.[0]?.n || 0;
   } catch (d1Error) {
     count = -1;
-  }
-  if (posters.length === 0) {
-    // The D1 mirror is preferred. During a first-time migration, before its
-    // first sync, or during a D1 write-limit window, serve the same public
-    // Supabase rows through this Worker cache instead of making every browser
-    // fetch Supabase independently.
-    const now = new Date().toISOString();
-    const url = `${env.SUPABASE_URL}/rest/v1/employer_posters?select=id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at&or=(expires_at.is.null,expires_at.gt.${encodeURIComponent(now)})&order=created_at.desc&limit=200`;
-    const result = await fetch(url, {
-      headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`, Prefer: "count=exact" }
-    });
-    if (!result.ok) return json({ error: "Public poster feed unavailable" }, 502, origin);
-    posters = await result.json();
-    source = "supabase-cache-fallback";
-    const range = result.headers.get("content-range") || "";
-    const match = range.match(/\/(\d+)$/);
-    count = match ? Number(match[1]) : posters.length;
   }
   const response = json({ posters, count, source }, 200, origin);
   response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=3600");
@@ -1533,6 +1571,9 @@ var worker_default = {
       }
       if (path === "/api/posters" && request.method === "GET") {
         return await postersResponse(request, env, origin);
+      }
+      if (path === "/api/admin/vacancies" && request.method === "GET") {
+        return await adminVacanciesResponse(request, env, origin);
       }
       if (path === "/api/sync-status" && request.method === "GET") {
         return await syncStatusResponse(request, env, origin);
