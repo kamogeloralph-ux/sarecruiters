@@ -102,8 +102,9 @@ function verifyManageTokenSelected(rootDir) {
   // the Worker's /api/verify-manager endpoints instead. Re-adding it here
   // would either fail every agencies/employers query (column revoked) or, if
   // the grant was ever re-added, leak every Smart Manager link publicly.
-  const agenciesSelect = dataSrc.match(/function\s+getAgencies[\s\S]{0,400}?\.select\('([^']*)'\)/);
-  if (!agenciesSelect || /manage_token/.test(agenciesSelect[1])) {
+  const directSelects = Array.from(dataSrc.matchAll(/supabaseClient\.from\(['"]([^'"]+)['"]\)[\s\S]{0,120}?\.select\(['"]([^'"]*)['"]\)/g));
+  const agenciesSelect = directSelects.find((match) => match[1] === 'agencies');
+  if (agenciesSelect && /manage_token/.test(agenciesSelect[2])) {
     problems.push(
       "getAgencies()'s Supabase .select(...) must NOT include 'manage_token'. " +
       "Tokens are resolved server-side via /api/verify-manager (see app-manager.js); " +
@@ -111,8 +112,8 @@ function verifyManageTokenSelected(rootDir) {
       "migration or leak every manager link if the grant was re-added."
     );
   }
-  const employersSelect = dataSrc.match(/function\s+getEmployers[\s\S]{0,400}?\.select\('([^']*)'\)/);
-  if (!employersSelect || /manage_token/.test(employersSelect[1])) {
+  const employersSelect = directSelects.find((match) => match[1] === 'employers');
+  if (employersSelect && /manage_token/.test(employersSelect[2])) {
     problems.push(
       "getEmployers()'s Supabase .select(...) must NOT include 'manage_token'. " +
       "Tokens are resolved server-side via /api/verify-employer-manager (see app-manager.js)."
