@@ -6,7 +6,10 @@ const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
 const db = createClient(url, key, { auth: { persistSession: false } });
-const tables = ['agencies', 'employers', 'vacancies', 'pool_candidates_public', 'saved_searches', 'push_subscriptions', 'community_posts', 'community_comments', 'house_ads', 'media_settings'];
+// Public agencies, employers, vacancies and the redacted candidate view are
+// served from Cloudflare D1/R2 and are intentionally not exported from
+// PostgREST. Keep this backup for private/authenticated operational state.
+const tables = ['saved_searches', 'push_subscriptions', 'community_posts', 'community_comments', 'house_ads', 'media_settings'];
 const output = process.env.BACKUP_DIR || 'backup';
 await fs.mkdir(output, { recursive: true });
 const manifest = { generated_at: new Date().toISOString(), tables: {} };

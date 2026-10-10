@@ -1425,6 +1425,12 @@ function updateStats() {
   if (statEmployers) statEmployers.textContent = employersCache.length;
   var statPool = document.getElementById('stat-pool');
   if (statPool) statPool.textContent = poolLoaded ? poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length : poolCandidateCount;
+  var provinceCounts = window.__saStartupPayload && window.__saStartupPayload.counts && window.__saStartupPayload.counts.provinces;
+  document.querySelectorAll('[data-province-count]').forEach(function (node) {
+    var key = node.getAttribute('data-province-count');
+    var count = provinceCounts && typeof provinceCounts[key] === 'number' ? provinceCounts[key] : null;
+    if (count !== null) node.textContent = count.toLocaleString() + ' vacancy' + (count === 1 ? '' : ' vacancies');
+  });
   reorderStatCardsByCount();
 }
 

@@ -38,6 +38,7 @@
   }
   function ts(d) { var t = d ? new Date(d).getTime() : 0; return isNaN(t) ? 0 : t; }
   function closingIn(v) { var t = ts(v.closing_date); return t ? Math.ceil((t - Date.now()) / DAY) : null; }
+  function postedLabel(v) { var t = ts(v.created_at || v.posted_at || v.updated_at); return t ? new Date(t).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'; }
   function salaryNum(v) { var m = String(v.salary || '').replace(/\s/g, '').match(/\d[\d,.]*/g); return m ? Math.max.apply(null, m.map(function (x) { return parseFloat(x.replace(/,/g, '')) || 0; })) : 0; }
   function agencyOf(v) { return v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {}; }
   function fact(label, val) { return val ? '<div class="vx-fact"><small>' + esc(label) + '</small><b>' + val + '</b></div>' : ''; }
@@ -129,13 +130,16 @@
     }
 
     var loc = v.location ? shortLocation(v.location) : '';
+    var jobType = v.employment_type || v.contract_type || 'Not specified';
+    var daysLabel = left === null ? 'Open until filled' : (left < 0 ? 'Closed' : (left === 0 ? 'Closes today' : left + ' day' + (left === 1 ? '' : 's') + ' left'));
+    var cardMeta = '<span class="vx-card-meta"><span>' + (loc ? I.pin + '<b>' + esc(loc) + '</b>' : '<b>South Africa</b>') + '</span><span>Job Type: <b>' + esc(jobType) + '</b></span><span>Posted: <b>' + esc(postedLabel(v)) + '</b></span><span class="vx-days-left">' + esc(daysLabel) + '</span></span>';
     return '<article class="vx-card vac-card' + (o.featured || v.is_featured ? ' vx-card--feat' : '') + (locked ? ' vx-card--locked' : '') + '" id="vc-' + esc(key) + '" data-vacancy-id="' + esc(v.id) + '" data-posted="' + ts(v.created_at) + '" data-closing="' + ts(v.closing_date) + '" data-salary="' + salaryNum(v) + '" data-title="' + esc(String(v.title || '').toLowerCase()) + '" data-loc="' + esc(String(v.location || v.province || '').toLowerCase()) + '">' +
       '<div class="vx-top">' +
         '<button type="button" class="vx-head" aria-expanded="false" aria-controls="vd-' + esc(key) + '" onclick="' + (locked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' + logo +
         '<span class="vx-main"><span class="vx-title" style="display:-webkit-box">' + esc(v.title || 'Untitled role') + '</span>' +
           '<span class="vx-org"><span>' + esc(org) + '</span>' + (verified ? verifiedBadge(employer ? 'Verified employer' : 'Verified agency') : '') + '</span>' +
           (tags ? '<span class="vx-meta">' + tags + '</span>' : '') +
-          '<span class="vx-foot">' + (loc ? I.pin + '<span>' + esc(loc) + '</span><i>•</i>' : '') + I.clock + '<span>' + esc(timeAgo(v.created_at) || 'Recently') + '</span></span>' + previewMarkup + '</span></button>' +
+          cardMeta + previewMarkup + '</span></button>' +
         '<div class="vx-tools-col"><button type="button" class="vx-tool vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + jsq(key) + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button>' +
         '<button type="button" class="vx-tool vac-share" onclick="event.stopPropagation();shareVacancy(\'' + jsq(key) + '\')" aria-label="Share vacancy">' + SHARE_SVG + '</button></div>' +
       '</div>' +

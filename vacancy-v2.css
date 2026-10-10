@@ -137,6 +137,11 @@
 .vx-foot svg{width:13px;height:13px;flex:none}
 .vx-foot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vx-foot i{font-style:normal;opacity:.5}
+.vx-card-meta{display:flex;flex-direction:column;gap:3px;margin-top:7px;font-size:12px;line-height:1.3;color:var(--text-2)}
+.vx-card-meta>span{display:flex;align-items:center;gap:5px;min-width:0}
+.vx-card-meta svg{width:13px;height:13px;flex:none}
+.vx-card-meta b{font-weight:650;color:var(--text)}
+.vx-card-meta .vx-days-left{color:var(--accent);font-weight:700}
 .vx-tools-col{display:flex;flex-direction:column;gap:2px;padding:8px 8px 0 0}
 .vx-tool{width:38px;height:38px;border-radius:12px;border:0;background:transparent;color:var(--text-2);display:grid;place-items:center;cursor:pointer;transition:background .15s,color .15s,transform .15s var(--ease)}
 .vx-tool:active{transform:scale(.88)}

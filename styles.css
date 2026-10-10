@@ -2081,6 +2081,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #screen-home .home-filter-row::-webkit-scrollbar-thumb{background:rgba(255,255,255,.45);border-radius:3px}
 #screen-home .home-filter-chip{flex:0 0 auto;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 12px;background:rgba(255,255,255,.12);color:#fff;font-size:11px;font-weight:700;white-space:nowrap;text-decoration:none;cursor:pointer;transition:background .15s,transform .15s}
 #screen-home a.home-filter-chip{display:inline-flex;align-items:center}
+#screen-home .home-filter-chip small{margin-left:5px;padding-left:5px;border-left:1px solid rgba(255,255,255,.32);font-size:9px;font-weight:600;opacity:.86}
 #screen-home .home-filter-chip:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #screen-home .home-filter-chip:active{transform:scale(.97)}
 #screen-home .home-filter-chip.active{background:#0a84ff;border-color:#4b9eff;color:#fff;box-shadow:0 4px 12px rgba(0,35,90,.2)}

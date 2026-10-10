@@ -8,7 +8,6 @@
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
     "sync:oracle": "node scripts/sync-oracle.mjs",
     "sync:government": "node scripts/sync-government.mjs",
-    "export:static-data": "node scripts/export-static-data.mjs",
     "test": "node --test scripts/*.test.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs",
     "scrape:simplify": "node scripts/scrape-simplify.mjs",

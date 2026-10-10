@@ -79,16 +79,16 @@ test('active outside-app portals remain visible during startup', () => {
   assert.match(html, /body:not\(\.app-ready\) > \.toast\.show,[\s\S]*body:not\(\.app-ready\) > \.retry-banner\.show\{display:block!important\}/);
 });
 
-test('public retail preview reuses the Pages snapshot and prefers Worker reads over PostgREST', () => {
+test('public retail preview uses the bounded Worker feed and never falls back to PostgREST', () => {
   assert.match(data, /startupDataSource = 'static'/);
   assert.match(data, /startupDataSource = 'worker'/);
   const retailLoader = ui.slice(ui.indexOf('function ensureRetailPriorityVacancies()'), ui.indexOf('window.ensureRetailPriorityVacancies'));
   assert.match(retailLoader, /startupDataSource === 'static'/);
   assert.match(retailLoader, /fetchVacancyPageFromWorker\(\{ source: retailSources\.join\(','\), limit: 50 \}\)/);
   const workerReadPosition = retailLoader.indexOf('var workerRead =');
-  const postgrestFallbackPosition = retailLoader.indexOf('return readRetailFromPostgrest();');
-  assert.ok(workerReadPosition >= 0 && postgrestFallbackPosition > workerReadPosition,
-    'the D1-backed Worker read must be attempted before any PostgREST fallback');
+  assert.ok(workerReadPosition >= 0, 'the D1-backed Worker read must be attempted');
+  assert.doesNotMatch(retailLoader, /readRetailFromPostgrest|supabaseClient\.from\(['"]vacancies/,
+    'public retail preview must not read vacancies through PostgREST');
 });
 
 test('the homepage shows all eight source cards before retail-first roles', () => {
@@ -109,7 +109,6 @@ test('the homepage shows all eight source cards before retail-first roles', () =
   assert.match(ui, /class="home-weekly-grid"/);
   assert.match(ui, /class="home-weekly-row"/);
   assert.match(ui, /function ensureRetailPriorityVacancies\(/);
-  assert.match(ui, /\.in\('source_type', retailSources\)/);
 
   assert.match(ui, /isRetailPriorityVacancy\(b\)/);
   assert.match(homeRender, /onclick="openCommunity\(\)"/);

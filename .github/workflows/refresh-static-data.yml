@@ -78,17 +78,9 @@ jobs:
           run_source npm run scrape:graduates24
           run_source npm run scrape:careers-page
           echo "$failures" > scraper-failures.txt
-      - name: Export public snapshot
-        run: node scripts/export-static-data.mjs
-      - name: Validate snapshot integrity and freshness
-        run: npm run validate:snapshot
-      - name: Commit updated JSON when data changed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/startup.json
-          git diff --cached --quiet && echo "No public data changes" || git commit -m "chore(data): refresh static vacancy snapshot"
-          git push
+      # Public inventory is mirrored by the scheduled Cloudflare Worker into
+      # D1 and published to R2. Do not export or commit a full Supabase table
+      # snapshot from Actions; browsers no longer serve that artifact.
       - name: Email refresh summary when a source fails
         if: always()
         continue-on-error: true

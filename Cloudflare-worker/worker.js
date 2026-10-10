@@ -7,6 +7,17 @@ var MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 var MAX_TRACK_BYTES = 25 * 1024 * 1024;
 var MAX_POSTER_BYTES = 5 * 1024 * 1024;
 var VACANCY_RECONCILE_INTERVAL_SECONDS = 86400;
+var PROVINCE_LOCATION_TERMS = {
+  gauteng: ["gauteng", "johannesburg", "joburg", "pretoria", "centurion", "sandton", "randburg", "midrand", "benoni", "kempton park", "eastrand", "roodepoort", "krugersdorp"],
+  "western-cape": ["western cape", "cape town", "stellenbosch", "paarl", "george", "mossel bay", "bellville", "worcester"],
+  "kwazulu-natal": ["kwazulu natal", "kwazulu-natal", "durban", "pietermaritzburg", "richards bay", "newcastle", "ballito"],
+  "eastern-cape": ["eastern cape", "eastern-cape", "gqeberha", "port elizabeth", "east london", "mthatha", "uitenhage", "komani", "queenstown", "bhisho"],
+  "free-state": ["free state", "free-state", "bloemfontein", "welkom", "bethlehem", "kroonstad", "sasolburg", "harrismith"],
+  limpopo: ["limpopo", "polokwane", "thohoyandou", "mokopane", "tzaneen", "lephalale", "musina"],
+  mpumalanga: ["mpumalanga", "mbombela", "nelspruit", "witbank", "emalahleni", "middelburg", "secunda", "ermelo"],
+  "north-west": ["north west", "north-west", "rustenburg", "mahikeng", "mafikeng", "klerksdorp", "potchefstroom", "brits", "vryburg"],
+  "northern-cape": ["northern cape", "northern-cape", "kimberley", "upington", "kuruman", "de aar", "springbok", "kathu"]
+};
 function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin || "*",
@@ -655,6 +666,7 @@ async function loadStartupDataFromD1(env) {
     const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${sources.map(() => "?").join(",")})`).bind(...sources).all();
     return [key, r.results[0]?.n || 0];
   }));
+  const provinceCounts = await loadProvinceCountsFromD1(env);
   const employerCountMap = Object.fromEntries((employerCountsR.results || []).map((row) => [row.employer_id, row.n || 0]));
 
   const n = (r) => r.results[0]?.n || 0;
@@ -682,7 +694,8 @@ async function loadStartupDataFromD1(env) {
       general: n(generalCountR) + n(generalPoolCountR),
       employers: (employersR.results || []).length,
       candidates: n(poolCountR),
-      dedicated: Object.fromEntries(folderCounts)
+      dedicated: Object.fromEntries(folderCounts),
+      provinces: provinceCounts
     },
     settings: {
       public_vacancy_posting: settingMap.public_vacancy_posting ?? "false",
@@ -692,7 +705,16 @@ async function loadStartupDataFromD1(env) {
   };
 }
 __name(loadStartupDataFromD1, "loadStartupDataFromD1");
-
+async function loadProvinceCountsFromD1(env) {
+  if (!env.DB) return {};
+  const counts = await Promise.all(Object.entries(PROVINCE_LOCATION_TERMS).map(async ([slug, terms]) => {
+    const where = terms.map(() => "LOWER(COALESCE(location, '') || ' ' || COALESCE(address, '')) LIKE ?").join(" OR ");
+    const result = await env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${where}`).bind(...terms.map((term) => `%${term.toLowerCase()}%`)).all();
+    return [slug, result.results[0]?.n || 0];
+  }));
+  return Object.fromEntries(counts);
+}
+__name(loadProvinceCountsFromD1, "loadProvinceCountsFromD1");
 // Public startup reads are D1/R2-only. Supabase is an ingest source for the
 // scheduled mirror sync, never a browser-facing fallback.
 async function loadStartupDataOrFallback(env) {
@@ -917,7 +939,7 @@ async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v7-d1-count-plain-json", request.url), request);
+  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v8-d1-province-counts", request.url), request);
 
   async function buildResponse(payload) {
     const body = JSON.stringify(payload);
@@ -947,6 +969,9 @@ async function startupResponse(request, env, ctx, origin) {
   async function refreshAndCache() {
     let snapshot = await readPublicStartupSnapshot(env);
     if (snapshot) {
+      if (!snapshot.counts || !snapshot.counts.provinces) {
+        snapshot = { ...snapshot, counts: { ...(snapshot.counts || {}), provinces: await loadProvinceCountsFromD1(env) } };
+      }
       const response = await buildResponse(snapshot);
       await cache.put(cacheKey, response.clone());
       return snapshot;
