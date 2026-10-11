@@ -475,7 +475,7 @@ async function loadMediaSetting() {
    to visitors for at least seven days instead of showing it only on its upload
    date. The audio file is served from the `daily-tracks` storage bucket. */
 var TRACKS_PUBLIC_BASE_URL = 'https://pub-911e4cd402674c6f85c747b12212772f.r2.dev';
-var todayTrack = null;       // {id,title,artist,track_date,file_url}
+var todayTrack = null;       // {id,title,artist,track_date,file_url,spotify_url}
 var trackAudio = null;       // <audio> element
 var trackIsPlaying = false;
 
@@ -496,7 +496,7 @@ async function loadTodayTrack() {
     var cutoffISO = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0');
     var { data, error } = await supabaseClient
       .from('daily_tracks')
-      .select('id,title,artist,track_date,file_url,file_path')
+      .select('id,title,artist,track_date,file_url,file_path,spotify_url')
       .gte('track_date', cutoffISO)
       .lte('track_date', today)
       .order('track_date', { ascending: false })
@@ -528,6 +528,8 @@ function renderTrackEmpty() {
   var info = document.getElementById('track-info');
   var btn = document.getElementById('track-play');
   var homeBtn = document.getElementById('home-media-track-play');
+  var spotifyBtn = document.getElementById('track-spotify');
+  var homeSpotifyBtn = document.getElementById('home-media-track-spotify');
   if (card) card.classList.remove('has-track', 'playing');
   if (info) info.classList.add('track-empty');
   var t = document.getElementById('track-title');
@@ -540,6 +542,8 @@ function renderTrackEmpty() {
   if (homeTitle) homeTitle.textContent = 'No track today';
   if (homeArtist) homeArtist.textContent = 'Check back tomorrow for a fresh pick';
   if (homeBtn) { homeBtn.disabled = true; homeBtn.setAttribute('aria-label', 'Play Track of the Day'); }
+  if (spotifyBtn) spotifyBtn.hidden = true;
+  if (homeSpotifyBtn) homeSpotifyBtn.hidden = true;
   var prog = document.getElementById('track-progress');
   if (prog) prog.style.display = 'none';
 }
@@ -550,6 +554,8 @@ function renderTrackReady() {
   var info = document.getElementById('track-info');
   var btn = document.getElementById('track-play');
   var homeBtn = document.getElementById('home-media-track-play');
+  var spotifyBtn = document.getElementById('track-spotify');
+  var homeSpotifyBtn = document.getElementById('home-media-track-spotify');
   if (card) card.classList.add('has-track');
   if (info) info.classList.remove('track-empty');
   var t = document.getElementById('track-title');
@@ -561,14 +567,16 @@ function renderTrackReady() {
   var homeArtist = document.getElementById('home-media-track-artist');
   if (homeTitle) homeTitle.textContent = todayTrack.title || 'Today\'s track';
   if (homeArtist) homeArtist.textContent = todayTrack.artist || '';
-  if (homeBtn) homeBtn.disabled = false;
+  if (homeBtn) homeBtn.disabled = !todayTrack.file_url;
+  if (spotifyBtn) { spotifyBtn.hidden = !todayTrack.spotify_url; if (todayTrack.spotify_url) spotifyBtn.href = todayTrack.spotify_url; }
+  if (homeSpotifyBtn) { homeSpotifyBtn.hidden = !todayTrack.spotify_url; if (todayTrack.spotify_url) homeSpotifyBtn.href = todayTrack.spotify_url; }
   // Keep the media element source-free until explicit play intent. Assigning
   // src plus load() here eagerly downloads multi-megabyte audio on startup.
   trackAudio = document.getElementById('track-audio');
 }
 
 function toggleTrackPlay() {
-  if (!todayTrack || !trackAudio) return;
+  if (!todayTrack || !trackAudio || !todayTrack.file_url) return;
   if (trackIsPlaying) {
     trackAudio.pause();
   } else {

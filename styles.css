@@ -2677,3 +2677,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #screen-account .account-signin-card .gsi-material-button:disabled .gsi-material-button-icon{opacity:1!important}
 #screen-account .account-signin-card .gsi-material-button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:2px}
 @media(max-width:420px){#screen-account .account-signin-card{padding:12px 13px}#screen-account .account-signin-card .gsi-material-button{min-height:44px!important;height:44px!important}}
+
+
+/* Spotify actions for Track of the Day */
+.home-media-track-spotify,.track-spotify-link{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 9px;border:1px solid #1ed760;border-radius:999px;background:rgba(30,215,96,.12);color:#087b3f;font-size:10.5px;font-weight:800;text-decoration:none;white-space:nowrap}
+.home-media-track-spotify[hidden],.track-spotify-link[hidden]{display:none}
+.home-media-track-spotify:active,.track-spotify-link:active{transform:scale(.97)}
+[data-theme="dark"] .home-media-track-spotify,[data-theme="dark"] .track-spotify-link{color:#5ff08b}

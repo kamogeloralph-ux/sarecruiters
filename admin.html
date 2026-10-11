@@ -518,7 +518,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
           <div class="field"><label for="media-youtube-url">YouTube URL</label><input id="media-youtube-url" type="url" placeholder="https://youtu.be/HV64XG91tE4"></div>
           <button class="btn" onclick="saveMediaYoutubeUrl()">Save media video</button>
         </div>
-        <div class="muted" style="margin-bottom:14px">Upload an MP3 to feature as "Track of the Day" in the public app. Set the date to control which day each track plays. The newest track for a given date is shown. <strong>Tracks are kept for 7 days</strong> and automatically deleted after one week.</div>
+        <div class="muted" style="margin-bottom:14px">Upload an MP3 or add a Spotify link to feature as "Track of the Day" in the public app. Set the date to control which day each track plays. The newest track for a given date is shown. <strong>Tracks are kept for 7 days</strong> and automatically deleted after one week.</div>
         <div id="track-setup-warn" class="card card-pad" style="margin-bottom:14px;display:none;border-color:var(--danger);color:var(--danger);font-size:13px;line-height:1.5"></div>
         <div id="track-list"></div>
       </div>
@@ -762,9 +762,10 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Artist / subtitle</label><input id="t-artist" placeholder="e.g. DJ Sbu or Inspirational Talk"></div>
     <div class="field"><label>Date (which day this plays) *</label><input id="t-date" type="date"><small style="display:block;margin-top:5px;color:var(--text-2)">Tracks remain available to visitors for 7 days from this date.</small></div>
     <div class="field">
-      <label>MP3 file *<span id="t-file-hint" style="font-weight:400;color:var(--text-2)"></span></label>
+      <label>MP3 file <span id="t-file-hint" style="font-weight:400;color:var(--text-2)"></span></label>
       <input id="t-file" type="file" accept="audio/mpeg,audio/mp3,.mp3" style="padding:9px 13px">
     </div>
+    <div class="field"><label>Spotify link</label><input id="t-spotify" type="url" placeholder="https://open.spotify.com/track/..." inputmode="url"><small style="display:block;margin-top:5px;color:var(--text-2)">Add a Spotify track link, an MP3, or both. At least one is required.</small></div>
     <div id="t-progress" style="display:none;font-size:13px;color:var(--accent);margin-bottom:12px"></div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('track-overlay')">Cancel</button>
@@ -1260,7 +1261,7 @@ async function upsertPoolCandidate(p){
 
 async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); else await writeThroughD1Mirror('pool_candidates',id,'delete'); }
 async function getTracks(){
-  try { var { data, error } = await supabaseClient.from('daily_tracks').select('id,title,artist,file_path,track_date,created_at').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
+  try { var { data, error } = await supabaseClient.from('daily_tracks').select('id,title,artist,file_path,file_url,spotify_url,track_date,created_at').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function upsertAgency(a){
@@ -3038,7 +3039,7 @@ function renderDailyTracks(){
     var ageBadge = ageDays>=7 ? ' <span class="nav-badge" style="background:rgba(220,38,38,.15);color:var(--danger)">Expires soon</span>' : (ageDays>=5 ? ' <span class="nav-badge" style="background:rgba(217,119,6,.15);color:var(--warn)">'+ageLabel+'</span>' : '');
     var details = '<div class="det-row"><span class="det-label">Artist:</span> '+escapeHtml(t.artist||'No artist')+'</div>'+
       '<div class="det-row"><span class="det-label">Date:</span> '+fmtTrackDate(t.track_date)+'</div>'+
-      '<div class="det-row"><span class="det-label">Age:</span> '+ageLabel+ageBadge+'</div>';
+      '<div class="det-row"><span class="det-label">Age:</span> '+ageLabel+ageBadge+'</div>' + (t.spotify_url ? '<div class="det-row"><span class="det-label">Spotify:</span> <a href="'+escapeHtml(t.spotify_url)+'" target="_blank" rel="noopener">Open track</a></div>' : '');
     return '<div class="card"><div class="row-item" onclick="toggleRow(this)">'
       + '<div class="row-avatar" style="background:linear-gradient(145deg,#0A84FF,#0051D5)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'
       + '<div class="row-main"><div class="row-title">'+escapeHtml(t.title||'Untitled')+badge+'</div>'
@@ -3106,6 +3107,7 @@ function openTrackSheet(){
   document.getElementById('track-sheet-title').textContent = 'Upload track';
   document.getElementById('t-title').value = '';
   document.getElementById('t-artist').value = '';
+  document.getElementById('t-spotify').value = '';
   document.getElementById('t-date').value = todayStr();
   document.getElementById('t-file').value = '';
   document.getElementById('t-file-hint').textContent = ' (required)';
@@ -3122,6 +3124,7 @@ function editTrack(id){
   document.getElementById('track-sheet-title').textContent = 'Edit track';
   document.getElementById('t-title').value = t.title || '';
   document.getElementById('t-artist').value = t.artist || '';
+  document.getElementById('t-spotify').value = t.spotify_url || '';
   document.getElementById('t-date').value = t.track_date || todayStr();
   document.getElementById('t-file').value = '';
   document.getElementById('t-file-hint').textContent = ' (leave empty to keep current file)';
@@ -3140,15 +3143,18 @@ document.addEventListener('change', function(e){
 async function saveTrack(){
   var title = document.getElementById('t-title').value.trim();
   var artist = document.getElementById('t-artist').value.trim();
+  var spotifyUrl = document.getElementById('t-spotify').value.trim();
   var date = document.getElementById('t-date').value;
   if(!title){ alert('Please enter a track title.'); return; }
   if(!date){ alert('Please pick a date.'); return; }
 
   var isEditing = !!editingTrackId;
   var existing = isEditing ? cache.tracks.find(function(x){ return x.id === editingTrackId; }) : null;
+  if(isEditing && !spotifyUrl && existing) spotifyUrl = existing.spotify_url || '';
 
-  // If creating new, file is required
-  if(!isEditing && !trackFileChosen){ alert('Please choose an MP3 file to upload.'); return; }
+  // A new track may use an MP3, Spotify, or both.
+  if(!isEditing && !trackFileChosen && !spotifyUrl){ alert('Please choose an MP3 file or add a Spotify link.'); return; }
+  if(isEditing && !trackFileChosen && !spotifyUrl && !(existing && (existing.file_url || existing.file_path || existing.spotify_url))){ alert('Please choose an MP3 file or add a Spotify link.'); return; }
 
   var saveBtn = document.getElementById('t-save-btn');
   saveBtn.disabled = true;
@@ -3180,14 +3186,13 @@ async function saveTrack(){
       filePath = upData.key;
       fileUrl = upData.url;
     } else if(isEditing && existing) {
-      // Keep existing file
+      // Keep the existing MP3 when no replacement was selected.
       filePath = existing.file_path || '';
       fileUrl = existing.file_url || '';
     } else {
-      prog.style.display = 'none';
-      saveBtn.disabled = false;
-      alert('No file selected.');
-      return;
+      // Spotify-only tracks do not need an uploaded audio file.
+      filePath = '';
+      fileUrl = '';
     }
 
     prog.textContent = 'Saving details…';
@@ -3197,7 +3202,8 @@ async function saveTrack(){
       artist: artist,
       track_date: date,
       file_url: fileUrl,
-      file_path: filePath
+      file_path: filePath,
+      spotify_url: spotifyUrl
     };
     var dbRes = await supabaseClient.from('daily_tracks').upsert(row);
     if(dbRes.error){
