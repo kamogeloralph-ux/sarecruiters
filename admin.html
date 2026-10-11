@@ -1120,6 +1120,54 @@ async function initAdminPage(){
 }
 initAdminPage();
 
+// Admin mutation write-through: use the row representation returned by the same
+// Supabase mutation, then atomically update D1 and bump the public cache version.
+var D1_WRITE_THROUGH_COLUMNS = {
+  agencies: ['id','name','website','contact','email','location','address','cvpref','photo','companies','trades','verified','created_at'],
+  branches: ['id','agency_id','name','location','phone','email'],
+  vacancies: ['id','agency_id','employer_id','title','company','company_photo','location','closing_date','notes','link','email','phone','remote','experience_level','employment_type','contract_type','work_schedule','hours','salary','start_date','created_at','updated_at','source_type','is_featured','featured_until','featured_order'],
+  employers: ['id','name','industry','website','contact','email','location','address','photo','verified','created_at'],
+  app_settings: ['key','value'],
+  employer_posters: ['id','employer_id','agency_id','image_url','caption','vacancy_id','created_at','expires_at'],
+  pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','photo_url','verified','status','created_at']
+};
+async function writeThroughD1Mirror(table, value, operation){
+  try {
+    var authHdr = await r2AuthHeader();
+    if(!authHdr.Authorization) return false;
+    var requests = [];
+    if(operation === 'delete'){
+      var ids = Array.isArray(value) ? value : [value];
+      for(var i=0;i<ids.length;i+=200) requests.push({operation:'delete',table:table,ids:ids.slice(i,i+200)});
+    } else {
+      var sourceRows = Array.isArray(value) ? value : [value];
+      var allowed = D1_WRITE_THROUGH_COLUMNS[table] || [];
+      var safeRows = sourceRows.map(function(row){
+        var safe = {};
+        if(row && typeof row === 'object') allowed.forEach(function(column){
+          if(Object.prototype.hasOwnProperty.call(row,column)) safe[column] = row[column];
+        });
+        return safe;
+      });
+      for(var j=0;j<safeRows.length;j+=100) requests.push({operation:'upsert',table:table,rows:safeRows.slice(j,j+100)});
+    }
+    var lastVersion = null;
+    for(var k=0;k<requests.length;k++){
+      var res = await fetch(R2_WORKER_URL + '/api/admin/d1/write-through', {
+        method:'POST', cache:'no-store', headers:Object.assign({'Content-Type':'application/json','Accept':'application/json'},authHdr), body:JSON.stringify(requests[k])
+      });
+      var payload = await res.json().catch(function(){ return null; });
+      if(!res.ok || !payload || payload.ok !== true){
+        console.warn('D1 write-through failed after Supabase save',table,payload && payload.error || res.status);
+        return false;
+      }
+      if(typeof payload.data_version === 'number') lastVersion = payload.data_version;
+    }
+    window.__saLastD1DataVersion = lastVersion;
+    return requests.length > 0;
+  } catch(error){ console.warn('D1 write-through unavailable after Supabase save',table,error); return false; }
+}
+
 // ===== Data access =====
 async function getAgencies(){
   var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token').order('created_at',{ascending:false});
@@ -1199,26 +1247,37 @@ async function upsertPoolCandidate(p){
   var payload = Object.assign({}, p);
   var optional = ['photo_url','verified'];
   var droppedAny = false;
-  var { error } = await supabaseClient.from('pool_candidates').upsert(payload);
-  while(error && /column|schema cache/i.test(error.message||'') && optional.length){
+  var result = await supabaseClient.from('pool_candidates').upsert(payload).select('*').single();
+  while(result.error && /column|schema cache/i.test(result.error.message||'') && optional.length){
     var col = optional.shift();
     if(col in payload){ delete payload[col]; droppedAny = true; }
-    var retry = await supabaseClient.from('pool_candidates').upsert(payload);
-    error = retry.error;
+    result = await supabaseClient.from('pool_candidates').upsert(payload).select('*').single();
   }
-  if(error){ console.error('pool save', error); alert('Could not save: '+error.message); return; }
+  if(result.error){ console.error('pool save', result.error); alert('Could not save: '+result.error.message); return; }
+  await writeThroughD1Mirror('pool_candidates', Object.assign({},payload,result.data||{}));
   if(droppedAny) alert('Saved — but run CREATE_POOL_PHOTOS.sql / CREATE_POOL_VERIFIED.sql in Supabase to store the photo and verified badge.');
 }
-async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); }
+
+async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); else await writeThroughD1Mirror('pool_candidates',id,'delete'); }
 async function getTracks(){
   try { var { data, error } = await supabaseClient.from('daily_tracks').select('id,title,artist,file_path,track_date,created_at').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
 }
 async function upsertAgency(a){
-  var { error } = await supabaseClient.from('agencies').upsert(a);
-  if(error){ var msg=(error.message||'')+' '+(error.hint||''); if(/trades/i.test(msg)){ var s2=Object.assign({},a); delete s2.trades; var r2=await supabaseClient.from('agencies').upsert(s2); if(r2.error){ console.error('agency save',r2.error); alert('Could not save agency: '+r2.error.message); } else { console.warn('Saved agency without trades — add the trades column (ADD_TRADES_COLUMN.sql)'); } return; } console.error('agency save',error); alert('Could not save agency: '+error.message); }
+  var result = await supabaseClient.from('agencies').upsert(a).select('*').single();
+  if(!result.error){ await writeThroughD1Mirror('agencies',Object.assign({},a,result.data||{})); return; }
+  var msg=(result.error.message||'')+' '+(result.error.hint||'');
+  if(/trades/i.test(msg)){
+    var safe=Object.assign({},a); delete safe.trades;
+    var retry=await supabaseClient.from('agencies').upsert(safe).select('*').single();
+    if(retry.error){ console.error('agency save',retry.error); alert('Could not save agency: '+retry.error.message); }
+    else { await writeThroughD1Mirror('agencies',Object.assign({},safe,retry.data||{})); console.warn('Saved agency without trades — add the trades column (ADD_TRADES_COLUMN.sql)'); }
+    return;
+  }
+  console.error('agency save',result.error); alert('Could not save agency: '+result.error.message);
 }
-async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } }
+
+async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } else await writeThroughD1Mirror('agencies',id,'delete'); }
 async function getEmployers(){
   try { var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified,manage_token').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
   return [];
@@ -1231,30 +1290,22 @@ async function getHouseAds(){
   try { var { data, error } = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at').order('sort_order',{ascending:true}).order('created_at',{ascending:false}); if(!error) return data||[]; console.error('house ads load',error); } catch(e){ console.error('house ads load',e); }
   return [];
 }
-async function upsertEmployer(e){ var { error } = await supabaseClient.from('employers').upsert(e); if(error){ console.error('employer save',error); alert('Could not save employer: '+error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } }
-async function removeEmployer(id){ var { error } = await supabaseClient.from('employers').delete().eq('id',id); if(error){ console.error('employer del',error); alert('Could not delete: '+error.message); } }
-async function upsertBranch(b){ var { error } = await supabaseClient.from('branches').upsert(b); if(error){ console.error('branch save',error); alert('Could not save branch: '+error.message); } }
-async function removeBranch(id){ var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error) console.error('branch del',error); }
+async function upsertEmployer(e){ var result=await supabaseClient.from('employers').upsert(e).select('*').single(); if(result.error){ console.error('employer save',result.error); alert('Could not save employer: '+result.error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } else await writeThroughD1Mirror('employers',Object.assign({},e,result.data||{})); }
+async function removeEmployer(id){ var { error } = await supabaseClient.from('employers').delete().eq('id',id); if(error){ console.error('employer del',error); alert('Could not delete: '+error.message); } else await writeThroughD1Mirror('employers',id,'delete'); }
+async function upsertBranch(b){ var result=await supabaseClient.from('branches').upsert(b).select('*').single(); if(result.error){ console.error('branch save',result.error); alert('Could not save branch: '+result.error.message); } else await writeThroughD1Mirror('branches',Object.assign({},b,result.data||{})); }
+async function removeBranch(id){ var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error) console.error('branch del',error); else await writeThroughD1Mirror('branches',id,'delete'); }
 async function upsertVacancy(v){
-  var { error } = await supabaseClient.from('vacancies').upsert(v);
-  if(error){
-    // If the error is about a missing column, retry with only the
-    // columns that are guaranteed to exist in the original schema.
-    if(error.message && error.message.indexOf('column') > -1){
-      var safe = {
-        id:v.id, agency_id:v.agency_id||'general', title:v.title||'',
-        company:v.company||'', location:v.location||'',
-        closing_date:v.closing_date||'', notes:v.notes||'',
-        link:v.link||'', email:v.email||'', phone:v.phone||''
-      };
-      var { error:err2 } = await supabaseClient.from('vacancies').upsert(safe);
-      if(err2){ console.error('vacancy save (retry)',err2); alert('Could not save vacancy: '+err2.message+'\n\nPlease run UPDATE_VACANCIES_SCHEMA.sql in Supabase to add the missing columns.'); }
-    } else {
-      console.error('vacancy save',error); alert('Could not save vacancy: '+error.message);
-    }
-  }
+  var result = await supabaseClient.from('vacancies').upsert(v).select('*').single();
+  if(!result.error){ await writeThroughD1Mirror('vacancies',Object.assign({},v,result.data||{})); return; }
+  if(result.error.message && result.error.message.indexOf('column') > -1){
+    var safe={id:v.id,agency_id:v.agency_id||'general',title:v.title||'',company:v.company||'',location:v.location||'',closing_date:v.closing_date||'',notes:v.notes||'',link:v.link||'',email:v.email||'',phone:v.phone||''};
+    var retry=await supabaseClient.from('vacancies').upsert(safe).select('*').single();
+    if(retry.error){ console.error('vacancy save (retry)',retry.error); alert('Could not save vacancy: '+retry.error.message+'\\n\\nPlease run UPDATE_VACANCIES_SCHEMA.sql in Supabase to add the missing columns.'); }
+    else await writeThroughD1Mirror('vacancies',Object.assign({},safe,retry.data||{}));
+  } else { console.error('vacancy save',result.error); alert('Could not save vacancy: '+result.error.message); }
 }
-async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); }
+
+async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); else await writeThroughD1Mirror('vacancies',id,'delete'); }
 async function adminSubmissionAction(kind, id, method, status){
   try {
     var authHdr = await r2AuthHeader();
@@ -1321,7 +1372,7 @@ async function queueAndSendVacancyAlerts(vacancy){
   }catch(e){ console.warn('vacancy alerts unavailable',e); showToast('Vacancy saved, but the email alert could not be sent.'); return {sent:0,reason:'unexpected'}; }
 }
 async function getAppSetting(key, fb){ try{ var { data, error } = await supabaseClient.from('app_settings').select('value').eq('key',key).maybeSingle(); if(error||!data) return fb; return data.value; }catch(e){ return fb; } }
-async function setAppSetting(key, value){ try{ var { error } = await supabaseClient.from('app_settings').upsert({key:key,value:value,updated_at:new Date().toISOString()}); return !error; }catch(e){ return false; } }
+async function setAppSetting(key, value){ try{ var result=await supabaseClient.from('app_settings').upsert({key:key,value:value,updated_at:new Date().toISOString()}).select('key,value').single(); if(result.error) return false; await writeThroughD1Mirror('app_settings',Object.assign({key:key,value:value},result.data||{})); return true; }catch(e){ return false; } }
 // Both save functions verify the write by reading the row back — a plain
 // .update() can report "no error" while the write didn't actually stick
 // (missing column, an RLS policy matching 0 rows, etc). Returns true only
@@ -1704,8 +1755,9 @@ async function uploadVacancyPhotoIfAny(){
 async function propagateCompanyPhoto(company, photoUrl){
   if(!company || !photoUrl) return;
   var pattern = company.trim().replace(/[%_\\]/g, '\\$&');
-  var { error } = await supabaseClient.from('vacancies').update({company_photo:photoUrl}).ilike('company', pattern);
-  if(error) console.error('company photo propagate', error);
+  var result = await supabaseClient.from('vacancies').update({company_photo:photoUrl}).ilike('company', pattern).select('*');
+  if(result.error) console.error('company photo propagate', result.error);
+  else if(result.data && result.data.length) await writeThroughD1Mirror('vacancies', result.data);
 }
 // Talent Pool candidate photos go into the same Supabase Storage bucket the
 // public registration form uses, so admin-added/edited photos don't eat
@@ -2121,12 +2173,12 @@ async function publishPosterQueue(){
   var saved = 0;
   if(rows.length){
     progress.textContent = 'Saving posters…';
-    var result = await supabaseClient.from('employer_posters').insert(rows);
+    var result = await supabaseClient.from('employer_posters').insert(rows).select('*');
     if(result.error){
       console.error('poster save', result.error);
       rowItems.forEach(function(it){ it.status = 'failed'; it.error = result.error.message; });
       alert('Could not save posters: '+result.error.message);
-    } else { rowItems.forEach(function(it){ it.status = 'done'; }); saved = rows.length; }
+    } else { rowItems.forEach(function(it){ it.status = 'done'; }); saved = rows.length; if(result.data && result.data.length) await writeThroughD1Mirror('employer_posters',result.data); }
   }
   posterPublishing = false;
   var failed = posterQueue.filter(function(it){ return it.status==='failed'; }).length;
@@ -2159,12 +2211,13 @@ async function savePosterEdit(){
     agency_id: document.getElementById('pe-agency').value || null,
     expires_at: posterInputToExpiry(document.getElementById('pe-expiry').value)
   };
-  var res = await supabaseClient.from('employer_posters').update(patch).eq('id', editingPosterId).select('id');
+  var res = await supabaseClient.from('employer_posters').update(patch).eq('id', editingPosterId).select('*');
   if(res.error || !(res.data && res.data.length)){
     console.error('poster update', res.error);
     alert('Could not save changes'+(res.error ? ': '+res.error.message : ' (no permission — run ADD_POSTER_ADMIN_POLICIES.sql in Supabase).'));
     return;
   }
+  await writeThroughD1Mirror('employer_posters',Object.assign({id:editingPosterId},patch,res.data && res.data[0] || {}));
   closeSheet('poster-edit-overlay'); editingPosterId = null;
   showToast('Poster updated');
   cache.posters = await getPosters();
@@ -2179,6 +2232,7 @@ async function deletePoster(id){
     alert('Could not delete poster'+(res.error ? ': '+res.error.message : ' (no permission — run ADD_POSTER_ADMIN_POLICIES.sql in Supabase).'));
     return;
   }
+  await writeThroughD1Mirror('employer_posters',id,'delete');
   showToast('Poster deleted');
   cache.posters = await getPosters();
   renderNav(); renderPosters(); renderDashboard();
@@ -2309,6 +2363,7 @@ async function purgeExpiredVacancies(){
     var { error } = await supabaseClient.from('vacancies').delete().in('id', ids);
     if(error){ console.warn('auto-expire vacancies', error); return false; }
   } catch(e){ console.warn('auto-expire vacancies', e); return false; }
+  await writeThroughD1Mirror('vacancies',ids,'delete');
   cache.vacancies = cache.vacancies.filter(function(v){ return ids.indexOf(v.id) === -1; });
   return true;
 }

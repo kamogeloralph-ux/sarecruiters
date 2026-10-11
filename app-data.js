@@ -38,35 +38,91 @@ async function saveManagerTokenToSupabase(agencyId, token) {
     }
   } catch(e) { console.error('manage_token save', e); }
 }
-async function upsertAgency(a) {
-  // Send the FULL payload (including trades) to Supabase.
-  // The `trades` column must exist on the agencies table — run
-  // ADD_TRADES_COLUMN.sql once in the Supabase SQL Editor if it doesn't.
-  // To stay resilient, if the upsert fails specifically because the
-  // `trades` column is missing, we retry once without trades so the rest
-  // of the agency record still saves (and trades keeps working via the
-  // cached in-memory copy until the column is added).
-  var safe = Object.assign({}, a);
-  var { error } = await supabaseClient.from('agencies').upsert(safe);
-  if (error) {
-    var msg = (error.message || '') + ' ' + (error.hint || '') + ' ' + JSON.stringify(error.details || '');
-    if (/trades/i.test(msg)) {
-      // Column missing — retry without trades so the agency still saves.
-      var safeNoTrades = Object.assign({}, a); delete safeNoTrades.trades;
-      var r2 = await supabaseClient.from('agencies').upsert(safeNoTrades);
-      if (r2.error) { console.error('agency save', r2.error); alert('Could not save. Check your Supabase setup.'); }
-      else { console.warn('Saved agency, but the `trades` column is missing — run ADD_TRADES_COLUMN.sql so trades persist.'); }
-      return;
+var D1_WRITE_THROUGH_COLUMNS = {
+  agencies: ['id','name','website','contact','email','location','address','cvpref','photo','companies','trades','verified','created_at'],
+  branches: ['id','agency_id','name','location','phone','email'],
+  vacancies: ['id','agency_id','employer_id','title','company','company_photo','location','closing_date','notes','link','email','phone','remote','experience_level','employment_type','contract_type','work_schedule','hours','salary','start_date','created_at','updated_at','source_type','is_featured','featured_until','featured_order'],
+  employers: ['id','name','industry','website','contact','email','location','address','photo','verified','created_at'],
+  app_settings: ['key','value'],
+  employer_posters: ['id','employer_id','agency_id','image_url','caption','vacancy_id','created_at','expires_at'],
+  pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','photo_url','verified','status','created_at']
+};
+async function writeThroughD1Mirror(table, value, operation) {
+  if (!isAdmin || !supabaseClient || !R2_WORKER_URL) return false;
+  try {
+    var sessionResult = await supabaseClient.auth.getSession();
+    var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+    if (!token) return false;
+    var requests = [];
+    if (operation === 'delete') {
+      var ids = Array.isArray(value) ? value : [value];
+      for (var i = 0; i < ids.length; i += 200) requests.push({ operation: 'delete', table: table, ids: ids.slice(i, i + 200) });
+    } else {
+      var sourceRows = Array.isArray(value) ? value : [value];
+      var allowed = D1_WRITE_THROUGH_COLUMNS[table] || [];
+      var rows = sourceRows.map(function(row) {
+        var safe = {};
+        if (row && typeof row === 'object') allowed.forEach(function(column) {
+          if (Object.prototype.hasOwnProperty.call(row, column)) safe[column] = row[column];
+        });
+        return safe;
+      });
+      for (var j = 0; j < rows.length; j += 100) requests.push({ operation: 'upsert', table: table, rows: rows.slice(j, j + 100) });
     }
-    console.error('agency save', error);
-    alert('Could not save. Check your Supabase setup.');
+    var lastVersion = null;
+    for (var k = 0; k < requests.length; k++) {
+      var response = await fetch(R2_WORKER_URL + '/api/admin/d1/write-through', {
+        method: 'POST', cache: 'no-store',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(requests[k])
+      });
+      var result = await response.json().catch(function(){ return null; });
+      if (!response.ok || !result || result.ok !== true) {
+        console.warn('D1 write-through failed after Supabase save', table, result && result.error || response.status);
+        if (typeof showToast === 'function') showToast('Saved, but live public data could not be refreshed yet.');
+        return false;
+      }
+      if (typeof result.data_version === 'number') lastVersion = result.data_version;
+    }
+    window.__saLastD1DataVersion = lastVersion;
+    startupDataPromise = null;
+    startupDataSource = '';
+    startupDataResolved = false;
+    window.__saStartupPayload = null;
+    window.__saStaticData = null;
+    publicPoolStartupPromise = null;
+    candidateSpotlightLoaded = false;
+    return requests.length > 0;
+  } catch (error) { console.warn('D1 write-through unavailable after Supabase save', table, error); return false; }
+}
+
+async function upsertAgency(a) {
+  var safe = Object.assign({}, a);
+  var mutation = supabaseClient.from('agencies').upsert(safe);
+  var result = isAdmin ? await mutation.select('*').single() : await mutation;
+  if (!result.error) {
+    if (isAdmin) await writeThroughD1Mirror('agencies', Object.assign({}, safe, result.data || {}));
+    return;
   }
+  var msg = (result.error.message || '') + ' ' + (result.error.hint || '') + ' ' + JSON.stringify(result.error.details || '');
+  if (/trades/i.test(msg)) {
+    var safeNoTrades = Object.assign({}, a); delete safeNoTrades.trades;
+    var retryMutation = supabaseClient.from('agencies').upsert(safeNoTrades);
+    var retry = isAdmin ? await retryMutation.select('*').single() : await retryMutation;
+    if (retry.error) { console.error('agency save', retry.error); alert('Could not save. Check your Supabase setup.'); }
+    else {
+      if (isAdmin) await writeThroughD1Mirror('agencies', Object.assign({}, safeNoTrades, retry.data || {}));
+      console.warn('Saved agency, but the `trades` column is missing — run ADD_TRADES_COLUMN.sql so trades persist.');
+    }
+    return;
+  }
+  console.error('agency save', result.error); alert('Could not save. Check your Supabase setup.');
 }
 async function removeAgency(id) {
   var { error } = await supabaseClient.from('agencies').delete().eq('id', id);
-  if (error) { console.error('agency delete', error); alert('Could not delete. Check your Supabase setup.'); }
+  if (error) { console.error('agency delete', error); alert('Could not delete. Check your Supabase setup.'); return; }
+  if (isAdmin) await writeThroughD1Mirror('agencies', id, 'delete');
 }
-
 /* ── Data: EMPLOYERS ──────────────────────────────────
    Companies that register directly and post their own vacancies (separate
    from the recruitment-agency directory). Same try-Supabase-then-fall-back
@@ -273,8 +329,12 @@ function renderCandidateSpotlight(list, menuTarget, homeTarget) {
 
 async function upsertEmployer(e) {
   try {
-    var { error } = await supabaseClient.from('employers').upsert(e);
-    if (!error) return true;
+    var mutation = supabaseClient.from('employers').upsert(e);
+    var result = isAdmin ? await mutation.select('*').single() : await mutation;
+    if (!result.error) {
+      if (isAdmin) await writeThroughD1Mirror('employers', Object.assign({}, e, result.data || {}));
+      return true;
+    }
   } catch(err){}
   var arr = readLocal('employers');
   var i = arr.findIndex(function(x){ return x.id === e.id; });
@@ -283,11 +343,13 @@ async function upsertEmployer(e) {
   return false;
 }
 async function removeEmployer(id) {
-  try { await supabaseClient.from('employers').delete().eq('id', id); } catch(err){}
+  try {
+    var result = await supabaseClient.from('employers').delete().eq('id', id);
+    if (!result.error && isAdmin) await writeThroughD1Mirror('employers', id, 'delete');
+  } catch(err){}
   var arr = readLocal('employers').filter(function(x){ return x.id !== id; });
   writeLocal('employers', arr);
 }
-
 /* ── Data: BRANCHES & VACANCIES ─────────────────────────
    The `branches` table now EXISTS in Supabase (verified).
    The `vacancies` table was NOT yet created — run CREATE_VACANCIES_TABLE.sql
@@ -314,22 +376,27 @@ async function getBranches() {
 }
 async function upsertBranch(b) {
   try {
-    var { error } = await supabaseClient.from('branches').upsert(b);
-    if (!error) return true;
+    var mutation = supabaseClient.from('branches').upsert(b);
+    var result = isAdmin ? await mutation.select('*').single() : await mutation;
+    if (!result.error) {
+      if (isAdmin) await writeThroughD1Mirror('branches', Object.assign({}, b, result.data || {}));
+      return true;
+    }
   } catch(e){}
-  // fallback: save locally
   var arr = readLocal('branches');
   var i = arr.findIndex(function(x){ return x.id === b.id; });
   if (i >= 0) arr[i] = Object.assign({}, arr[i], b); else arr.push(b);
   writeLocal('branches', arr);
-  return false; // indicates it was stored locally, not in Supabase
+  return false;
 }
 async function removeBranch(id) {
-  try { await supabaseClient.from('branches').delete().eq('id', id); } catch(e){}
+  try {
+    var result = await supabaseClient.from('branches').delete().eq('id', id);
+    if (!result.error && isAdmin) await writeThroughD1Mirror('branches', id, 'delete');
+  } catch(e){}
   var arr = readLocal('branches').filter(function(x){ return x.id !== id; });
   writeLocal('branches', arr);
 }
-
 // ----- App settings (admin-controlled, e.g. public vacancy posting toggle) -----
 async function getAppSetting(key, fallback) {
   try {
@@ -340,8 +407,11 @@ async function getAppSetting(key, fallback) {
 }
 async function setAppSetting(key, value) {
   try {
-    var { error } = await supabaseClient.from('app_settings').upsert({ key: key, value: value, updated_at: new Date().toISOString() });
-    return !error;
+    var mutation = supabaseClient.from('app_settings').upsert({ key: key, value: value, updated_at: new Date().toISOString() });
+    var result = isAdmin ? await mutation.select('key,value').single() : await mutation;
+    if (result.error) return false;
+    if (isAdmin) await writeThroughD1Mirror('app_settings', Object.assign({ key: key, value: value }, result.data || {}));
+    return true;
   } catch(e) { return false; }
 }
 async function loadPostingSetting() {
@@ -742,11 +812,26 @@ function generalVacancyQueryKeyFor(state) {
   return [state.q, state.remote, state.exp].join('|').toLowerCase();
 }
 async function fetchVacancyPageFromWorker(params) {
+  if (R2_WORKER_URL) {
+    try {
+      var url = new URL(R2_WORKER_URL + '/api/vacancies');
+      Object.keys(params || {}).forEach(function(key) {
+        var value = params[key];
+        if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+      });
+      var response = await fetch(url.toString(), { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' } });
+      if (response.ok) {
+        var payload = await response.json();
+        if (payload && Array.isArray(payload.vacancies)) return payload;
+      }
+    } catch(e) {}
+  }
   if (window.__saStaticData) {
     var sourceNames = params && params.source ? String(params.source).split(',') : null;
     var rows = (staticVacanciesCache || []).filter(function(v) {
       if (sourceNames && sourceNames.length && sourceNames.indexOf(String(v.source_type || '')) === -1) return false;
       if (params.scope === 'general' && !isGeneralDirectoryVacancy(v)) return false;
+      if (params.location && String(v.location || '').toLowerCase().indexOf(String(params.location).toLowerCase()) === -1) return false;
       if (params.remote && String(v.remote || '') !== String(params.remote)) return false;
       if (params.experience && String(v.experience_level || '') !== String(params.experience)) return false;
       if (params.q && [v.title, v.company, v.location, v.notes].join(' ').toLowerCase().indexOf(String(params.q).toLowerCase()) === -1) return false;
@@ -757,20 +842,7 @@ async function fetchVacancyPageFromWorker(params) {
     var offset = Number(params.cursor) || 0;
     return { vacancies: rows.slice(offset * limit, (offset + 1) * limit), next_cursor: (offset + 1) * limit < rows.length ? String(offset + 1) : null, total: rows.length };
   }
-  if (!R2_WORKER_URL) return null;
-  try {
-    var url = new URL(R2_WORKER_URL + '/api/vacancies');
-    Object.keys(params || {}).forEach(function(key) {
-      var value = params[key];
-      if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
-    });
-    var response = await fetch(url.toString(), { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' } });
-    if (!response.ok) return null;
-    var payload = await response.json();
-    return payload && Array.isArray(payload.vacancies) ? payload : null;
-  } catch(e) {
-    return null;
-  }
+  return null;
 }
 async function fetchGeneralVacancyPage(state, page) {
   var workerPage = await fetchVacancyPageFromWorker({
@@ -816,34 +888,24 @@ async function fetchDedicatedVacancyPage(folder, state, page) {
   return [];
 }
 async function upsertVacancy(v) {
-  // First attempt: send all fields
   try {
-    var { error } = await supabaseClient.from('vacancies').upsert(v);
-    if (!error) return true;
-    // Log every failed save (constraint violations, RLS denials, etc.) so
-    // future issues show up in the console instead of failing silently.
-    console.error('vacancy upsert', error);
-    // If the error is about a missing column, retry with only the
-    // columns that are guaranteed to exist in the original schema.
-    if (error && error.message && error.message.indexOf('column') > -1) {
-      var safe = {
-        id: v.id,
-        agency_id: v.agency_id || 'general',
-        title: v.title || '',
-        company: v.company || '',
-        location: v.location || '',
-        closing_date: v.closing_date || '',
-        notes: v.notes || '',
-        link: v.link || '',
-        email: v.email || '',
-        phone: v.phone || ''
-      };
-      try {
-        var { error: err2 } = await supabaseClient.from('vacancies').upsert(safe);
-        if (!err2) return true;
-      } catch(e2){}
+    var mutation = supabaseClient.from('vacancies').upsert(v);
+    var result = isAdmin ? await mutation.select('*').single() : await mutation;
+    if (!result.error) {
+      if (isAdmin) await writeThroughD1Mirror('vacancies', Object.assign({}, v, result.data || {}));
+      return true;
     }
-  } catch(e){}
+    console.error('vacancy upsert', result.error);
+    if (result.error.message && result.error.message.indexOf('column') > -1) {
+      var safe = { id:v.id, agency_id:v.agency_id||'general', title:v.title||'', company:v.company||'', location:v.location||'', closing_date:v.closing_date||'', notes:v.notes||'', link:v.link||'', email:v.email||'', phone:v.phone||'' };
+      var retryMutation = supabaseClient.from('vacancies').upsert(safe);
+      var retry = isAdmin ? await retryMutation.select('*').single() : await retryMutation;
+      if (!retry.error) {
+        if (isAdmin) await writeThroughD1Mirror('vacancies', Object.assign({}, safe, retry.data || {}));
+        return true;
+      }
+    }
+  } catch(e) { console.error('vacancy upsert', e); }
   var arr = readLocal('vacancies');
   var i = arr.findIndex(function(x){ return x.id === v.id; });
   if (i >= 0) arr[i] = Object.assign({}, arr[i], v); else arr.push(v);
@@ -851,11 +913,13 @@ async function upsertVacancy(v) {
   return false;
 }
 async function removeVacancy(id) {
-  try { await supabaseClient.from('vacancies').delete().eq('id', id); } catch(e){}
+  try {
+    var result = await supabaseClient.from('vacancies').delete().eq('id', id);
+    if (!result.error && isAdmin) await writeThroughD1Mirror('vacancies', id, 'delete');
+  } catch(e){}
   var arr = readLocal('vacancies').filter(function(x){ return x.id !== id; });
   writeLocal('vacancies', arr);
 }
-
 // Elapsed-time TTL expiry was removed: a vacancy is only ever considered
 // gone once something has actually verified it's gone (currently
 // scripts/verify-jobmail.mjs for Job Mail, which fetches each listing's
@@ -1064,60 +1128,38 @@ async function fetchStartupDataOnce() {
   startupDataSource = '';
   var earlyStartup = window.__saStartupEarly;
   window.__saStartupEarly = null;
+  function validStartup(payload) {
+    return !!(payload && Array.isArray(payload.agencies) && Array.isArray(payload.branches) && Array.isArray(payload.vacancies) && Array.isArray(payload.employers) && payload.counts && payload.settings);
+  }
+  var workerPayload = null;
+  if (earlyStartup) {
+    var earlyTimer = null;
+    try {
+      var timeoutPromise = new Promise(function(resolve){ earlyTimer = setTimeout(function(){ resolve(null); }, 7000); });
+      workerPayload = await Promise.race([earlyStartup, timeoutPromise]);
+    } catch(e) { workerPayload = null; }
+    if (earlyTimer) clearTimeout(earlyTimer);
+  }
+  if (!validStartup(workerPayload)) {
+    try {
+      var controller = typeof AbortController === 'function' ? new AbortController() : null;
+      var timeout = controller ? setTimeout(function(){ controller.abort(); }, 7000) : null;
+      var response = await fetch(STARTUP_DATA_URL, { method:'GET', cache:'no-store', headers:{ Accept:'application/json' }, signal:controller ? controller.signal : undefined });
+      if (timeout) clearTimeout(timeout);
+      if (response.ok) workerPayload = await response.json();
+    } catch(e) { console.warn('Worker startup data load', e); }
+  }
+  if (validStartup(workerPayload)) { startupDataSource = 'worker'; return workerPayload; }
   if (staticDataEnabled) {
     try {
-      // index.html starts this download at HTML-parse time (window.__saStartupEarly) so the
-      // 5-8 MB snapshot is already in flight while the JS bundle downloads. Use it once; any
-      // later/forced refresh does its own fetch.
-      var staticPayload = null;
-      if (earlyStartup) { try { staticPayload = await earlyStartup; } catch (e) { staticPayload = null; } }
-      if (!staticPayload) {
-        // Ensure a fresh GitHub Pages/CDN object after the scheduled scraper
-        // commits a new snapshot; returning PWAs must not stay on an older
-        // revalidated response.
-        var staticUrl = STATIC_DATA_URL + (STATIC_DATA_URL.indexOf('?') === -1 ? '?' : '&') + 'v=' + Date.now();
-        var staticResponse = await fetch(staticUrl, { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' } });
-        if (staticResponse.ok) staticPayload = await staticResponse.json();
-      }
-      if (staticPayload && Array.isArray(staticPayload.agencies) && Array.isArray(staticPayload.branches) && Array.isArray(staticPayload.vacancies) && Array.isArray(staticPayload.employers) && staticPayload.counts && staticPayload.settings) {
-        startupDataSource = 'static';
-        return staticPayload;
-      }
-    } catch (e) { console.warn('static data load', e); }
+      var staticUrl = STATIC_DATA_URL + (STATIC_DATA_URL.indexOf('?') === -1 ? '?' : '&') + 'v=' + Date.now();
+      var staticResponse = await fetch(staticUrl, { method:'GET', cache:'no-store', headers:{ Accept:'application/json' } });
+      var staticPayload = staticResponse.ok ? await staticResponse.json() : null;
+      if (validStartup(staticPayload)) { startupDataSource = 'static'; return staticPayload; }
+    } catch(e) { console.warn('static data load', e); }
   }
-  if (earlyStartup) {
-    try {
-      var earlyPayload = await earlyStartup;
-      if (earlyPayload && Array.isArray(earlyPayload.agencies) && Array.isArray(earlyPayload.branches) &&
-          Array.isArray(earlyPayload.vacancies) && Array.isArray(earlyPayload.employers) &&
-          earlyPayload.counts && earlyPayload.settings) {
-        startupDataSource = 'worker';
-        return earlyPayload;
-      }
-    } catch (e) {}
-  }
-  try {
-    var controller = typeof AbortController === 'function' ? new AbortController() : null;
-    var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
-    var response = await fetch(STARTUP_DATA_URL, {
-      method: 'GET',
-      cache: 'no-store',
-      headers: { Accept: 'application/json' },
-      signal: controller ? controller.signal : undefined
-    });
-    if (timeout) clearTimeout(timeout);
-    if (!response.ok) return null;
-    var payload = await response.json();
-    if (!payload || !Array.isArray(payload.agencies) || !Array.isArray(payload.branches) ||
-        !Array.isArray(payload.vacancies) || !Array.isArray(payload.employers) ||
-        !payload.counts || !payload.settings) return null;
-    startupDataSource = 'worker';
-    return payload;
-  } catch (e) {
-    return null;
-  }
+  return null;
 }
-
 // ----- Deferred job descriptions -----
 // data/startup.json ships vacancies WITHOUT their `notes` (about half of its bytes) so the first
 // screen can render sooner. The descriptions live in data/vacancy-notes.json ({ id: notes }); we
@@ -1212,7 +1254,7 @@ async function refreshSecondaryStartupData() {
 // publicEmployerRegistrationOpen can't wait for the normal loadAll(), which
 // only ever runs after auth resolves (see bootAuthenticatedApp). Fetch just
 // the public settings independently, immediately at page load — this is
-// the same public, edge-cached /api/startup endpoint loadAll() itself uses.
+// the same public, version-aware /api/startup endpoint loadAll() itself uses.
 (function loadPreAuthEmployerRegFlag() {
   getStartupData().then(function(startup) {
     if (startup && startup.settings) {
