@@ -606,8 +606,9 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-source-tag{display:inline-block;font-size:10px;font-weight:700;color:#0a7a62;background:rgba(52,199,159,.14);padding:2px 7px;border-radius:var(--radius-pill);margin-left:6px;vertical-align:1px}
 .vac-source-tag-dpsa{color:#1769aa;background:rgba(10,132,255,.14)}
 .vac-source-tag-learnership{color:#7c3aed;background:rgba(124,58,237,.14)}
-.vac-loc-line{font-size:12.5px;color:var(--text-2);margin-top:4px;display:flex;align-items:center;gap:5px}
+.vac-loc-line{font-size:12.5px;color:var(--text-2);margin-top:4px;display:flex;align-items:center;gap:5px;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden}
 .vac-loc-line svg{width:12px;height:12px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vac-loc-line .vac-loc-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vac-desc-preview{font-size:12.5px;line-height:1.5;color:var(--text-2);margin-top:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .vac-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .vac-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}

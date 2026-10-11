@@ -706,7 +706,7 @@ function vacancyCard(v, agency, options) {
   /* Indeed-style summary: title, company, location, posted time — nothing else.
      Everything else (work arrangement, salary, closing date, contacts...) only
      shows once the card is tapped open. */
-  var locLine = v.location ? ('<div class="vac-loc-line">' + VAC_ICONS.pin + escapeHtml(v.location) + '</div>') : '';
+  var locLine = v.location ? ('<div class="vac-loc-line">' + VAC_ICONS.pin + '<span class="vac-loc-text">' + escapeHtml(v.location) + '</span></div>') : '';
   var previewText = v.notes ? v.notes.replace(/\s+/g, ' ').trim() : '';
   var descPreview = previewText ? '<div class="vac-desc-preview">' + escapeHtml(previewText.length > 130 ? previewText.slice(0, 130).trim() + '…' : previewText) + '</div>' : '';
   var pillsRow = (v.employment_type || v.remote) ? (
