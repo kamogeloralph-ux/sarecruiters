@@ -1665,8 +1665,8 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .account-hero-copy{min-width:0;flex:1 1 auto}
 .account-name{font-size:15.5px;font-weight:800;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .account-email{font-size:12.5px;color:var(--text-2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.account-provider{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:3px 8px;border-radius:999px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);font-size:10px;font-weight:700;letter-spacing:.01em}
-.account-provider svg{width:12px;height:12px;fill:currentColor}
+.account-provider{display:inline-flex;align-items:center;gap:7px;margin-top:6px;padding:5px 10px;border-radius:8px;background:#fff!important;border:1px solid #dadce0!important;color:#3c4043!important;font-family:Roboto,Arial,sans-serif;font-size:10px;font-weight:500;letter-spacing:.01em;box-shadow:0 1px 2px rgba(60,64,67,.18)}
+.account-provider svg{width:15px;height:15px;flex:0 0 15px;display:block}
 /* Drawer account card is now a tappable link into My Account */
 .site-menu-account{cursor:pointer;transition:transform .15s var(--ease),background .2s}
 .site-menu-account:active{transform:scale(.98)}
