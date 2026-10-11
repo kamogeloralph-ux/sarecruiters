@@ -130,6 +130,12 @@ test('vacancy cards prioritise closing warnings over the NEW badge', () => {
   assert.match(vacancyV2, /left === 0 \? 'Closes today'/);
 });
 
+test('vacancy cards cap long locations so they cannot create a second line', () => {
+  assert.match(cards, /compact\.length > 30 \? compact\.slice\(0, 29\)\.trimEnd\(\) \+ '…' : compact/);
+  assert.match(vacancyV2, /class="vx-location-text"/);
+  assert.match(vacancyCss, /\.vx-card-meta \.vx-location-text\{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\}/);
+});
+
 test('home available roles use compact province groups and the existing exact-vacancy opener', () => {
   assert.match(ui, /function homeAvailableRoleGroups\(/);
   assert.match(ui, /function homeAvailableRolesMarkup\(/);

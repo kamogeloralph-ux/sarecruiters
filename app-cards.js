@@ -860,8 +860,8 @@ function shortLocation(loc) {
   while (parts.length > 2 && (/^\d+$/.test(parts[parts.length - 1]) || /^south africa$/i.test(parts[parts.length - 1]))) {
     parts.pop();
   }
-  if (parts.length <= 2) return parts.join(', ');
-  return parts.slice(-2).join(', ');
+  var compact = parts.length <= 2 ? parts.join(', ') : parts.slice(-2).join(', ');
+  return compact.length > 30 ? compact.slice(0, 29).trimEnd() + '…' : compact;
 }
 
 /* Helper: detail row with icon + label + value */
