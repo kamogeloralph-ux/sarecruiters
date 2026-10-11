@@ -30,14 +30,30 @@ test('admin vacancy reads tolerate D1 mirrors without optional featured columns'
   assert.doesNotMatch(handler, /const columns = \[[\s\S]*?"source_type", "is_featured"/);
 });
 
-test('admin vacancy UI no longer uses Supabase/PostgREST for the bulk list', () => {
+test('live public endpoints bypass snapshot and edge caches on fresh requests', () => {
+  assert.match(worker, /const forceFresh = requestUrl\.searchParams\.get\("fresh"\) === "1"/);
+  assert.match(worker, /refreshAndCache\(true\)/);
+  assert.match(worker, /source: "supabase-live"/);
+  assert.match(worker, /Live poster data unavailable/);
+  assert.match(worker, /Live vacancy data unavailable/);
+});
+
+test('admin vacancy UI reads live authenticated Supabase pages and retains a Worker fallback', () => {
   const start = admin.indexOf('async function getVacancies()');
   const end = admin.indexOf('async function getAdminSubmissions()', start);
   assert.ok(start >= 0 && end > start);
   const loader = admin.slice(start, end);
+  assert.match(loader, /supabaseClient\.from\('vacancies'\)/);
+  assert.match(loader, /\.range\(page \* 1000/);
   assert.match(loader, /\/api\/admin\/vacancies/);
-  assert.match(loader, /cursor/);
-  assert.doesNotMatch(loader, /supabaseClient\.from\(['"]vacancies/);
+});
+
+test('public and admin clients subscribe to database changes for immediate refreshes', () => {
+  assert.match(appData, /sa-recruiters-public-live/);
+  assert.match(appData, /table: 'employer_posters'/);
+  assert.match(appData, /loadAll\(\{ fresh: true \}\)/);
+  assert.match(admin, /sa-recruiters-admin-live/);
+  assert.match(admin, /function scheduleAdminRealtimeRefresh/);
 });
 
 test('public app-data has no Supabase table reads or public pool fallback', () => {

@@ -29,7 +29,7 @@ test('FAQ/content scripts are lazy (prefetch only) on the landing page', () => {
 
 test('LCP logo is preloaded as webp and the Worker startup download starts at parse time', () => {
   assert.ok(/<link rel="preload" as="image" href="icons\/logo-152\.webp"[^>]*fetchpriority="high"/.test(html));
-  assert.ok(/window\.__saStartupEarly=fetch\('https:\/\/sarecruiters-uploader\.kamogeloralph\.workers\.dev\/api\/startup'/.test(html));
+  assert.ok(/window\.__saStartupEarly=fetch\('https:\/\/sarecruiters-uploader\.kamogeloralph\.workers\.dev\/api\/startup(?:\?fresh=1)?'/.test(html));
   for (const f of ['icons/logo-152.webp', 'icons/logo-96.webp', 'icons/menu-logo-100.webp']) assert.ok(fs.existsSync(new URL('../' + f, import.meta.url)), f);
 });
 

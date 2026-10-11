@@ -15,10 +15,11 @@
 })();
 </script>
 
-<!-- Start downloading the D1-backed public directory immediately instead of
-     after the JS bundle has downloaded + executed. -->
+<!-- Start downloading the live public directory immediately instead of
+     after the JS bundle has downloaded + executed. Offline fallback remains
+     available through IndexedDB and the service worker. -->
 <script>
-(function(){try{window.__saStartupEarly=fetch('https://sarecruiters-uploader.kamogeloralph.workers.dev/api/startup',{method:'GET',cache:'no-cache',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}catch(e){}})();
+(function(){try{window.__saStartupEarly=fetch('https://sarecruiters-uploader.kamogeloralph.workers.dev/api/startup?fresh=1',{method:'GET',cache:'no-store',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}catch(e){}})();
 </script>
 
 <!-- Critical shell CSS + first-paint splash, inline so it applies before
