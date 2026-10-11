@@ -352,12 +352,14 @@ async function savePoster() {
     image_url: uploadedPoster.url,
     caption: enteredCaption || uploadedPoster.caption || 'Vacancy poster'
   };
-  var result = await supabaseClient.from('employer_posters').insert([payload]);
+  var posterMutation = supabaseClient.from('employer_posters').insert([payload]);
+  var result = isAdmin ? await posterMutation.select('*').single() : await posterMutation;
   if (result.error) {
     console.error('poster save', result.error);
     showToast('Could not save poster. Check ADD_EMPLOYER_POSTERS.sql has been run.');
     return;
   }
+  if (isAdmin && result.data) await writeThroughD1Mirror('employer_posters', result.data);
   closeSheet('poster-upload-overlay');
   showToast('Poster published');
   if (typeof loadPosterFeed === 'function') loadPosterFeed();

@@ -459,6 +459,49 @@ async function readSyncMeta(env, key) {
   return result.results?.[0]?.value || null;
 }
 __name(readSyncMeta, "readSyncMeta");
+const PUBLIC_DATA_VERSION_KEY = "public_data_version";
+async function readPublicDataVersion(env) {
+  try {
+    const raw = await readSyncMeta(env, PUBLIC_DATA_VERSION_KEY);
+    const value = Number.parseInt(raw || "0", 10);
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  } catch (error) { return 0; }
+}
+__name(readPublicDataVersion, "readPublicDataVersion");
+function publicDataVersionBumpStatement(env) {
+  return env.DB.prepare("INSERT INTO sync_meta (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = CAST(CAST(sync_meta.value AS INTEGER) + 1 AS TEXT)").bind(PUBLIC_DATA_VERSION_KEY);
+}
+__name(publicDataVersionBumpStatement, "publicDataVersionBumpStatement");
+async function bumpPublicDataVersion(env) {
+  await publicDataVersionBumpStatement(env).run();
+  return await readPublicDataVersion(env);
+}
+__name(bumpPublicDataVersion, "bumpPublicDataVersion");
+const D1_WRITE_THROUGH_SPECS = {
+  agencies: { key: "id", columns: ["id", "name", "website", "contact", "email", "location", "address", "cvpref", "photo", "companies", "trades", "verified", "created_at"], boolColumns: ["verified"] },
+  branches: { key: "id", columns: ["id", "agency_id", "name", "location", "phone", "email"], boolColumns: [] },
+  vacancies: { key: "id", columns: ["id", "agency_id", "employer_id", "title", "company", "company_photo", "location", "closing_date", "notes", "link", "email", "phone", "remote", "experience_level", "employment_type", "contract_type", "work_schedule", "hours", "salary", "start_date", "created_at", "updated_at", "source_type", "is_featured", "featured_until", "featured_order"], boolColumns: ["is_featured"] },
+  employers: { key: "id", columns: ["id", "name", "industry", "website", "contact", "email", "location", "address", "photo", "verified", "created_at"], boolColumns: ["verified"] },
+  app_settings: { key: "key", columns: ["key", "value"], boolColumns: [] },
+  employer_posters: { key: "id", columns: ["id", "employer_id", "agency_id", "image_url", "caption", "vacancy_id", "created_at", "expires_at"], boolColumns: [] },
+  // This projection deliberately excludes candidate contacts, CV links, and admin fields.
+  pool_candidates: { key: "id", columns: ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"], boolColumns: ["verified"] }
+};
+function prepareD1WriteThroughUpsert(env, table, spec, columns, row) {
+  const updateColumns = columns.filter((column) => column !== spec.key);
+  const changedPredicate = updateColumns.map((column) => `${column} IS NOT excluded.${column}`).join(" OR ");
+  const sql = `INSERT INTO ${table} (${columns.join(",")}) VALUES (${columns.map(() => "?").join(",")}) ON CONFLICT(${spec.key}) DO UPDATE SET ${updateColumns.map((column) => `${column}=excluded.${column}`).join(",")} WHERE ${changedPredicate}`;
+  const values = columns.map((column) => {
+    const value = row[column];
+    if (spec.boolColumns.includes(column)) return value === true || value === 1 || String(value).toLowerCase() === "true" ? 1 : 0;
+    if (table === "app_settings" && column === "value" && typeof value === "boolean") return value ? "true" : "false";
+    if (value === void 0) return null;
+    if (value !== null && typeof value === "object") return JSON.stringify(value);
+    return value;
+  });
+  return env.DB.prepare(sql).bind(...values);
+}
+__name(prepareD1WriteThroughUpsert, "prepareD1WriteThroughUpsert");
 
 async function reconcileDeletedVacancies(env) {
   const liveRows = await supabaseGetAll(env, "vacancies", { select: "id", order: "id.asc" }, 1000);
@@ -476,9 +519,8 @@ async function recordSyncFailure(env, error) {
   try {
     await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
       .bind("sync_status", JSON.stringify({ status: "failed", failed_at: (/* @__PURE__ */ new Date()).toISOString(), error: String(error?.message || error).slice(0, 500) })).run();
-  } catch (metaError) {
-    console.error("Could not record sync failure", metaError);
-  }
+  } catch (metaError) { console.error("Could not record sync failure", metaError); }
+  try { await bumpPublicDataVersion(env); } catch (versionError) { console.error("Could not bump public data version after sync failure", versionError); }
 }
 __name(recordSyncFailure, "recordSyncFailure");
 
@@ -614,13 +656,16 @@ async function syncD1FromSupabase(env) {
 __name(syncD1FromSupabase, "syncD1FromSupabase");
 async function syncD1AndPublishSnapshot(env) {
   const summary = await syncD1FromSupabase(env);
+  const dataVersion = env.DB ? await bumpPublicDataVersion(env) : 0;
   const payload = env.DB ? await loadStartupDataFromD1(env) : await loadStartupData(env);
+  payload.data_version = dataVersion;
   const vacancySnapshot = env.DB ? await buildPublicVacancySnapshot(env) : null;
+  if (vacancySnapshot) vacancySnapshot.data_version = dataVersion;
   await Promise.all([
     writePublicStartupSnapshot(env, payload),
     vacancySnapshot ? writePublicVacancySnapshot(env, vacancySnapshot) : Promise.resolve(false)
   ]);
-  return { ...summary, snapshot: "r2", snapshot_generated_at: payload.generated_at, vacancy_snapshot_rows: vacancySnapshot?.vacancies?.length || 0 };
+  return { ...summary, data_version: dataVersion, snapshot: "r2", snapshot_generated_at: payload.generated_at, vacancy_snapshot_rows: vacancySnapshot?.vacancies?.length || 0 };
 }
 __name(syncD1AndPublishSnapshot, "syncD1AndPublishSnapshot");
 
@@ -937,81 +982,56 @@ async function loadStartupData(env) {
 __name(loadStartupData, "loadStartupData");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  // Bump the internal key whenever the payload shape changes so visitors do
-  // not receive an older cached startup response without employer counts.
-  const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v8-d1-province-counts", request.url), request);
-
-  async function buildResponse(payload) {
+  const dataVersion = await readPublicDataVersion(env);
+  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v9-d1-versioned&version=${dataVersion}`, request.url), request);
+  async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
-    const headers = new Headers({
-        "Content-Type": "application/json; charset=utf-8",
-        // Cached at a long max-age so Cloudflare's Cache API never silently
-        // evicts this entry on its own -- freshness below is decided
-        // ourselves from payload.generated_at, which is what makes the
-        // stale-while-revalidate behavior actually work (the Cache API
-        // otherwise drops an entry the instant its own max-age passes, so a
-        // short max-age here just meant "block on a full Supabase re-scan
-        // every N seconds", not real SWR).
-        // The Worker owns freshness via its internal Cache API and generated_at
-        // checks. Do not let the outer CDN serve this aggregate for 24 hours
-        // without executing the Worker freshness logic.
-        // The Worker decides freshness from generated_at; a short edge cache
-        // prevents every browser open from forcing a D1 read on a cold colo.
-        "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    });
-    return new Response(body, { headers });
+    return new Response(body, { headers: {
+      "Content-Type": "application/json; charset=utf-8", "Cache-Control": cacheControl,
+      "X-Data-Version": String(dataVersion), "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,OPTIONS", "Access-Control-Allow-Headers": "Content-Type"
+    }});
   }
-  __name(buildResponse, "buildResponse");
-
+  function clientResponse(response) {
+    const headers = new Headers(response.headers);
+    headers.set("Cache-Control", "no-store");
+    headers.set("X-Data-Version", String(dataVersion));
+    headers.set("Access-Control-Allow-Origin", "*");
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
   async function refreshAndCache() {
     let snapshot = await readPublicStartupSnapshot(env);
-    if (snapshot) {
-      if (!snapshot.counts || !snapshot.counts.provinces) {
-        snapshot = { ...snapshot, counts: { ...(snapshot.counts || {}), provinces: await loadProvinceCountsFromD1(env) } };
-      }
+    const snapshotHasVersion = snapshot && Number.isSafeInteger(Number(snapshot.data_version));
+    const snapshotFresh = !!(snapshot && (snapshotHasVersion ? Number(snapshot.data_version) === dataVersion : !env.DB));
+    if (snapshotFresh) {
+      if (!snapshot.counts || !snapshot.counts.provinces) snapshot = { ...snapshot, counts: { ...(snapshot.counts || {}), provinces: await loadProvinceCountsFromD1(env) } };
       const response = await buildResponse(snapshot);
       await cache.put(cacheKey, response.clone());
       return snapshot;
     }
-    const payload = await loadStartupDataOrFallback(env);
-    if (!payload) throw new Error("Public startup mirror unavailable");
-    ctx.waitUntil(writePublicStartupSnapshot(env, payload).catch((e) => console.warn("Could not seed public R2 startup snapshot", e)));
+    const source = env.DB ? await loadStartupDataFromD1(env) : await loadStartupDataOrFallback(env);
+    if (!source) throw new Error("Public startup mirror unavailable");
+    const payload = { ...source, data_version: dataVersion };
+    ctx.waitUntil(writePublicStartupSnapshot(env, payload).catch((e) => console.warn("Could not refresh public R2 startup snapshot", e)));
     const response = await buildResponse(payload);
     await cache.put(cacheKey, response.clone());
     return payload;
   }
-  __name(refreshAndCache, "refreshAndCache");
-
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) {
     try {
       const payload = await cached.clone().json();
+      const sameVersion = Number(payload.data_version) === dataVersion;
       const ageSeconds = (Date.now() - new Date(payload.generated_at).getTime()) / 1e3;
-      if (ageSeconds < STARTUP_CACHE_TTL) {
-        return cached;
-      }
-      if (ageSeconds < STARTUP_STALE_TTL) {
-        // Stale but usable: serve it immediately, refresh in the background
-        // so the NEXT visitor gets fresh data without anyone blocking on the
-        // full Supabase scan.
+      if (sameVersion && ageSeconds < STARTUP_CACHE_TTL) return clientResponse(cached);
+      if (sameVersion && ageSeconds < STARTUP_STALE_TTL) {
         ctx.waitUntil(refreshAndCache().catch(() => {}));
-        return cached;
+        return clientResponse(cached);
       }
-      // Past the stale window -- fall through to a blocking refresh below.
-    } catch (e) {
-      // Malformed cache entry; fall through to a fresh fetch.
-    }
+    } catch (e) { /* malformed/legacy cache; rebuild */ }
   }
-
-  try {
-    const payload = await refreshAndCache();
-    return await buildResponse(payload);
-  } catch (error) {
-    return json({ error: "Startup data unavailable", detail: error.message }, 502, origin);
-  }
+  try { return clientResponse(await buildResponse(await refreshAndCache(), "no-store")); }
+  catch (error) { return json({ error: "Startup data unavailable", detail: error.message }, 502, origin); }
 }
 __name(startupResponse, "startupResponse");
 async function vacanciesResponse(request, env, ctx, origin) {
@@ -1023,9 +1043,28 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const remote = String(url.searchParams.get("remote") || "").trim().slice(0, 30);
   const experience = String(url.searchParams.get("experience") || "").trim().slice(0, 60);
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 20) || 20, 1), 50);
+  const hasOffset = url.searchParams.has("offset");
   const offset = Math.min(Math.max(Number(url.searchParams.get("offset") || 0) || 0, 0), 5000);
   const cursor = String(url.searchParams.get("cursor") || "");
+  const dataVersion = await readPublicDataVersion(env);
+  const cache = caches.default;
+  const cacheUrl = new URL(request.url);
+  cacheUrl.searchParams.set("__schema", "d1-v2-versioned");
+  cacheUrl.searchParams.set("__version", String(dataVersion));
+  cacheUrl.searchParams.sort();
+  const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+  function clientResponse(cachedResponse) {
+    const headers = new Headers(cachedResponse.headers);
+    headers.set("Cache-Control", "no-store");
+    headers.set("X-Data-Version", String(dataVersion));
+    headers.set("Access-Control-Allow-Origin", origin || "*");
+    return new Response(cachedResponse.body, { status: cachedResponse.status, statusText: cachedResponse.statusText, headers });
+  }
+  const cached = await cache.match(cacheKey, { ignoreMethod: true });
+  if (cached) return clientResponse(cached);
   const snapshot = await readPublicVacancySnapshot(env);
+  const snapshotHasVersion = snapshot && Number.isSafeInteger(Number(snapshot.data_version));
+  const snapshotFresh = !!(snapshot && (snapshotHasVersion ? Number(snapshot.data_version) === dataVersion : !env.DB));
   const filterRows = (allRows) => {
     const dedicated = new Set(["himalayas", "adzuna", "government", "dpsa", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "learnerships", "careers_page"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
@@ -1040,47 +1079,46 @@ async function vacanciesResponse(request, env, ctx, origin) {
       if (experience && String(row.experience_level || "") !== experience) return false;
       if (scope === "general" && !((!row.agency_id || row.agency_id === "general") && !row.employer_id && !dedicated.has(String(row.source_type || "")))) return false;
       if (sources.length && !sources.includes(String(row.source_type || ""))) return false;
-      if (cursorCreated && !(
-        String(row.created_at || "") < cursorCreated ||
-        (String(row.created_at || "") === cursorCreated && String(row.id || "") < cursorId)
-      )) return false;
+      if (cursorCreated && !(String(row.created_at || "") < cursorCreated || (String(row.created_at || "") === cursorCreated && String(row.id || "") < cursorId))) return false;
       return true;
     });
   };
   let rows;
-  if (snapshot) {
+  let alreadyPaged = false;
+  if (snapshotFresh) {
     rows = filterRows(snapshot.vacancies);
   } else if (env.DB) {
-    // Compatibility fallback for the first deployment before the scheduled
-    // sync has published the R2 vacancy snapshot.
     const conditions = ["(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now'))"];
     const values = [];
     if (scope === "general") conditions.push("(agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND (source_type IS NULL OR source_type NOT IN ('himalayas','adzuna','government','dpsa','retail','shoprite','picknpay','woolworths','truworths','spar','career_board','learnerships','careers_page'))");
-    if (source) {
-      const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
-      conditions.push(`source_type IN (${sources.map(() => "?").join(",")})`);
-      values.push(...sources);
-    }
+    if (q) { conditions.push("instr(lower(COALESCE(title,'') || ' ' || COALESCE(company,'') || ' ' || COALESCE(location,'') || ' ' || COALESCE(notes,'')), ?) > 0"); values.push(q.toLowerCase()); }
+    if (location) { conditions.push("instr(lower(COALESCE(location,'')), ?) > 0"); values.push(location.toLowerCase()); }
     if (remote) { conditions.push("remote = ?"); values.push(remote); }
     if (experience) { conditions.push("experience_level = ?"); values.push(experience); }
+    const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
+    if (sources.length) { conditions.push(`source_type IN (${sources.map(() => "?").join(",")})`); values.push(...sources); }
+    if (cursor) {
+      const separator = cursor.indexOf("|");
+      const cursorCreated = separator >= 0 ? cursor.slice(0, separator) : cursor;
+      const cursorId = separator >= 0 ? cursor.slice(separator + 1) : "";
+      conditions.push("(created_at < ? OR (created_at = ? AND id < ?))");
+      values.push(cursorCreated, cursorCreated, cursorId);
+    }
     const columns = ["id", "agency_id", "employer_id", "title", "company", "company_photo", "location", "closing_date", "notes", "link", "email", "phone", "remote", "experience_level", "employment_type", "contract_type", "work_schedule", "hours", "salary", "start_date", "created_at", "source_type"];
-    const result = await env.DB.prepare(`SELECT ${columns.join(",")} FROM vacancies WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`).bind(...values, limit + 1, offset).all();
+    const result = await env.DB.prepare(`SELECT ${columns.join(",")} FROM vacancies WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`).bind(...values, limit + 1, hasOffset ? offset : 0).all();
     rows = result.results || [];
-    // Do not build the full snapshot from a visitor request. Until the first
-    // scheduled/admin sync publishes it, this bounded fallback keeps the
-    // remaining D1 cost predictable instead of allowing every visitor to
-    // trigger a full-table read.
-  } else {
-    return json({ error: "Public vacancy snapshot unavailable" }, 503, origin);
-  }
-  const paged = cursor || url.searchParams.has("offset") ? rows.slice(offset, offset + limit + 1) : rows.slice(0, limit + 1);
+    alreadyPaged = true;
+  } else return json({ error: "Public vacancy snapshot unavailable" }, 503, origin);
+  const paged = alreadyPaged ? rows : ((cursor || hasOffset) ? rows.slice(offset, offset + limit + 1) : rows.slice(0, limit + 1));
   const hasMore = paged.length > limit;
   const page = hasMore ? paged.slice(0, limit) : paged;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? `${last.created_at || ""}|${last.id || ""}` : null;
-  const response = json({ vacancies: page, next_cursor: nextCursor, limit }, 200, origin);
-  response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=3600");
-  return response;
+  const response = json({ vacancies: page, next_cursor: nextCursor, limit, data_version: dataVersion }, 200, origin);
+  response.headers.set("Cache-Control", "public, max-age=86400");
+  response.headers.set("X-Data-Version", String(dataVersion));
+  await cache.put(cacheKey, response.clone());
+  return clientResponse(response);
 }
 __name(vacanciesResponse, "vacanciesResponse");
 async function adminVacanciesResponse(request, env, origin) {
@@ -1152,6 +1190,52 @@ async function adminVacanciesResponse(request, env, origin) {
   return response;
 }
 __name(adminVacanciesResponse, "adminVacanciesResponse");
+async function adminD1WriteThroughResponse(request, env, origin) {
+  if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+  if (!env.DB) return json({ error: "D1 not bound" }, 503, origin);
+  const contentLength = Number(request.headers.get("Content-Length") || 0);
+  if (contentLength > 131072) return json({ error: "Write-through payload is too large." }, 413, origin);
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "Invalid payload." }, 400, origin);
+  if (JSON.stringify(body).length > 131072) return json({ error: "Write-through payload is too large." }, 413, origin);
+  const table = String(body.table || "");
+  const spec = D1_WRITE_THROUGH_SPECS[table];
+  if (!spec) return json({ error: "Unsupported mirror table." }, 400, origin);
+  const operation = body.operation || "upsert";
+  try {
+    if (operation === "delete") {
+      const ids = (Array.isArray(body.ids) ? body.ids : [body.id]).map((id) => String(id ?? "").trim());
+      if (!ids.length || ids.length > 200 || ids.some((id) => !id || id.length > 256)) return json({ error: "Missing or invalid row keys." }, 400, origin);
+      await env.DB.batch([...ids.map((id) => env.DB.prepare(`DELETE FROM ${table} WHERE ${spec.key} = ?`).bind(id)), publicDataVersionBumpStatement(env)]);
+      return json({ ok: true, table, ids, data_version: await readPublicDataVersion(env) }, 200, origin);
+    }
+    if (operation !== "upsert") return json({ error: "Unsupported operation." }, 400, origin);
+    const rows = Array.isArray(body.rows) ? body.rows : [body.row];
+    if (!rows.length || rows.length > 100 || rows.some((row) => !row || typeof row !== "object" || Array.isArray(row))) return json({ error: "Missing or invalid rows." }, 400, origin);
+    const schema = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
+    const available = new Set((schema.results || []).map((column) => column.name));
+    if (!available.has(spec.key)) return json({ error: "D1 mirror schema is not ready for this table." }, 503, origin);
+    const statements = [];
+    const ids = [];
+    for (const row of rows) {
+      const key = row[spec.key];
+      if (key === null || key === void 0 || String(key).trim() === "" || String(key).length > 256) return json({ error: "Missing or invalid row key." }, 400, origin);
+      if (table === "vacancies" && !row.updated_at) row.updated_at = new Date().toISOString();
+      const columns = spec.columns.filter((column) => available.has(column) && Object.prototype.hasOwnProperty.call(row, column));
+      if (!columns.includes(spec.key) || columns.length < 2) return json({ error: "D1 mirror schema is not ready for this row." }, 503, origin);
+      statements.push(prepareD1WriteThroughUpsert(env, table, spec, columns, row));
+      ids.push(String(key));
+    }
+    statements.push(publicDataVersionBumpStatement(env));
+    await env.DB.batch(statements);
+    return json({ ok: true, table, ids, data_version: await readPublicDataVersion(env) }, 200, origin);
+  } catch (error) {
+    console.error("Admin D1 write-through failed", table, error);
+    return json({ error: "D1 write-through failed." }, 500, origin);
+  }
+}
+__name(adminD1WriteThroughResponse, "adminD1WriteThroughResponse");
+
 async function syncStatusResponse(request, env, origin) {
   if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
   const status = await readSyncMeta(env, "sync_status");
@@ -1163,12 +1247,17 @@ __name(syncStatusResponse, "syncStatusResponse");
 async function postersResponse(request, env, origin) {
   if (!env.DB) return json({ error: "Public poster mirror unavailable" }, 503, origin);
   const cache = caches.default;
-  // Bump this whenever the response source or shape changes; otherwise an
-  // earlier empty fallback response can survive a Worker deployment at the
-  // edge for its configured s-maxage window.
-  const cacheKey = new Request(new URL("/api/posters?schema=d1-v5", request.url), request);
+  const dataVersion = await readPublicDataVersion(env);
+  const cacheKey = new Request(new URL(`/api/posters?schema=d1-v6-versioned&version=${dataVersion}`, request.url), request);
+  function clientResponse(response) {
+    const headers = new Headers(response.headers);
+    headers.set("Cache-Control", "no-store");
+    headers.set("X-Data-Version", String(dataVersion));
+    headers.set("Access-Control-Allow-Origin", origin || "*");
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
-  if (cached) return cached;
+  if (cached) return clientResponse(cached);
   let posters = [];
   let count = 0;
   let source = "d1";
@@ -1179,13 +1268,12 @@ async function postersResponse(request, env, origin) {
     ]);
     posters = rows.results || [];
     count = total.results?.[0]?.n || 0;
-  } catch (d1Error) {
-    count = -1;
-  }
-  const response = json({ posters, count, source }, 200, origin);
-  response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=3600");
-  await cache.put(cacheKey, response.clone());
-  return response;
+  } catch (d1Error) { count = -1; }
+  const cachedResponse = json({ posters, count, source, data_version: dataVersion }, 200, origin);
+  cachedResponse.headers.set("Cache-Control", "public, max-age=86400");
+  cachedResponse.headers.set("X-Data-Version", String(dataVersion));
+  await cache.put(cacheKey, cachedResponse.clone());
+  return clientResponse(cachedResponse);
 }
 __name(postersResponse, "postersResponse");
 var PHOTO_BATCH_SIZE = 20;
@@ -1608,6 +1696,9 @@ var worker_default = {
       }
       if (path === "/api/sync-status" && request.method === "GET") {
         return await syncStatusResponse(request, env, origin);
+      }
+      if (path === "/api/admin/d1/write-through" && request.method === "POST") {
+        return await adminD1WriteThroughResponse(request, env, origin);
       }
 
       // Manual trigger for the D1 mirror sync -- same auth as the other

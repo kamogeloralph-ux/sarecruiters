@@ -82,3 +82,10 @@ Anything already uploaded to Supabase Storage (`candidate-photos`,
 `daily-tracks` buckets there) stays where it is and will keep working —
 this only changes where *new* uploads go. If you want to migrate the old
 files too, say the word and I'll write a one-off script for that.
+
+
+## D1 public-data write-through
+
+Admin writes that affect public directories use `POST /api/admin/d1/write-through`. The admin UI sends the row representation returned by the same Supabase mutation, so the Worker does not issue a second Supabase row read. The Worker verifies the admin session, applies a table/column allowlist, writes the row (or deletion) and increments `sync_meta.public_data_version` atomically in D1.
+
+`/api/startup`, `/api/vacancies` and `/api/posters` use that version to bypass stale D1/R2/Worker cache entries. When a vacancy snapshot has an older version, the Worker filters/paginates directly from D1; it does not run a full mirror sync. The static Pages snapshot remains a fallback when the Worker is unavailable. The scheduled/manual mirror sync is still used for scraper imports, reconciliation and recovery.

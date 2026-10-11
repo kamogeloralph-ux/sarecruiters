@@ -18,7 +18,7 @@
 <!-- Start downloading the D1-backed public directory immediately instead of
      after the JS bundle has downloaded + executed. -->
 <script>
-(function(){try{window.__saStartupEarly=fetch('https://sarecruiters-uploader.kamogeloralph.workers.dev/api/startup',{method:'GET',cache:'no-cache',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}catch(e){}})();
+(function(){try{window.__saStartupEarly=fetch('https://sarecruiters-uploader.kamogeloralph.workers.dev/api/startup',{method:'GET',cache:'no-store',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}catch(e){}})();
 </script>
 
 <!-- Critical shell CSS + first-paint splash, inline so it applies before
@@ -1503,7 +1503,7 @@
      source files. The ?v= hash is rewritten automatically each build for
      cache-busting; don't hand-edit it. The 8 source files stay in the repo
      for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=ca2ff59cc2" defer></script>
+<script src="app.bundle.min.js?v=3e5b129cf3" defer></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
