@@ -34,17 +34,6 @@ test('home replaces the direct agency feed with the job-search feed while retain
   assert.doesNotMatch(html, /Browse jobs by province|home-province-section|home-province-links/);
 });
 
-test('homepage includes the authenticated daily opportunity mission MVP', () => {
-  assert.match(ui, /id="home-mission-slot"/);
-  assert.match(ui, /Daily Opportunity Mission/);
-  assert.match(ui, /loadHomeMissions\(/);
-  assert.match(ui, /data-mission-key/);
-  assert.match(ui, /home-mission-progress/);
-  assert.match(ui, /home-mission-streak/);
-  assert.match(css, /\.home-mission-card/);
-  assert.match(css, /\.home-mission-progress/);
-});
-
 test('location filters and category shortcuts feed real vacancy results', () => {
   const provinces = ['gauteng', 'western-cape', 'kwazulu-natal', 'eastern-cape', 'free-state', 'limpopo', 'mpumalanga', 'north-west', 'northern-cape'];
   for (const location of provinces) {

@@ -403,93 +403,6 @@ function homeAvailableRolesMarkup(rows) {
     }).join('') + (group.rows.length > 8 ? '<button type="button" class="home-available-more" onclick="openHomeWeeklyVacancy(\'' + String(group.rows[0].id).replace(/[\\']/g, '\\$&') + '\')">+' + (group.rows.length - 8) + ' more roles</button>' : '') + '</div></article>';
   }).join('') + '</div>';
 }
-var homeMissionState = { definitions: [], daily: [], progress: [], streak: null, date: null, loaded: false };
-function homeMissionDate() {
-  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-  var map = {}; parts.forEach(function(part) { map[part.type] = part.value; });
-  return map.year + '-' + map.month + '-' + map.day;
-}
-function homeMissionMarkup() {
-  var host = document.getElementById('home-mission-slot');
-  if (!host) return;
-  if (!saAuthUser || !supabaseClient) {
-    host.innerHTML = '<section class="home-mission-card home-mission-card--guest" aria-labelledby="home-mission-title"><div class="home-mission-heading"><div><span class="home-section-kicker">Your next step</span><h2 id="home-mission-title">Daily Opportunity Mission</h2><p>Take one small step closer to work today.</p></div><span class="home-mission-flame" aria-hidden="true">✦</span></div><div class="home-mission-guest"><strong>Build your momentum every day</strong><span>Sign in with Google to track missions and your streak across devices.</span><button type="button" onclick="signInWithGoogle()">Start today <span aria-hidden="true">→</span></button></div></section>';
-    return;
-  }
-  if (!homeMissionState.loaded) {
-    host.innerHTML = '<section class="home-mission-card" aria-labelledby="home-mission-title"><div class="home-mission-heading"><div><span class="home-section-kicker">Your next step</span><h2 id="home-mission-title">Daily Opportunity Mission</h2><p>Loading today\'s mission…</p></div><span class="home-mission-flame" aria-hidden="true">✦</span></div><div class="home-mission-loading" aria-live="polite">Preparing your next steps…</div></section>';
-    return;
-  }
-  var definitions = homeMissionState.definitions || [];
-  var daily = {}; (homeMissionState.daily || []).forEach(function(row) { daily[row.mission_id] = row; });
-  var progress = {}; (homeMissionState.progress || []).forEach(function(row) { progress[row.mission_id] = row; });
-  var completed = definitions.filter(function(def) { return progress[def.id] && progress[def.id].completed_at; }).length;
-  var total = definitions.length;
-  var streak = homeMissionState.streak || {};
-  var missionCards = definitions.map(function(def, index) {
-    var override = daily[def.id] || {};
-    var row = progress[def.id] || {};
-    var target = Number(override.target_override || row.target || def.target_count || 1);
-    var current = Math.min(Number(row.progress || 0), target);
-    var done = !!row.completed_at || current >= target;
-    var key = escapeHtml(def.mission_key);
-    var action = def.action_type === 'vacancy_view' ? 'Browse a role' : (def.action_type === 'content_view' ? 'Read a tip' : 'Improve profile');
-    return '<article class="home-mission-item' + (done ? ' is-complete' : '') + '"><span class="home-mission-number" aria-hidden="true">' + (done ? '✓' : String(index + 1)) + '</span><div class="home-mission-item-copy"><strong>' + escapeHtml(override.title_override || def.title) + '</strong><span>' + escapeHtml(override.description_override || def.description) + '</span></div><button type="button" class="home-mission-action" data-mission-key="' + key + '" data-mission-type="' + escapeHtml(def.action_type) + '"' + (done ? ' disabled' : '') + '>' + (done ? 'Done' : action) + '</button></article>';
-  }).join('');
-  var percent = total ? Math.round((completed / total) * 100) : 0;
-  host.innerHTML = '<section class="home-mission-card" aria-labelledby="home-mission-title"><div class="home-mission-heading"><div><span class="home-section-kicker">Your next step</span><h2 id="home-mission-title">Daily Opportunity Mission</h2><p>Small actions today can lead to a better opportunity tomorrow.</p></div><div class="home-mission-streak" aria-label="Current streak"><span aria-hidden="true">🔥</span><strong>' + Number(streak.current_streak || 0) + '</strong><small>day streak</small></div></div><div class="home-mission-progress-head"><strong>' + completed + ' of ' + total + ' completed</strong><span>' + percent + '%</span></div><div class="home-mission-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + percent + '"><span style="width:' + percent + '%"></span></div><div class="home-mission-list">' + (missionCards || '<div class="home-mission-loading">No missions available today.</div>') + '</div><div class="home-mission-footer"><span>Longest streak: <strong>' + Number(streak.longest_streak || 0) + ' days</strong></span><span>Keep going — your next step counts.</span></div></section>';
-  host.querySelectorAll('[data-mission-key]').forEach(function(button) { button.addEventListener('click', function() { completeHomeMission(button.getAttribute('data-mission-key'), button.getAttribute('data-mission-type')); }); });
-}
-async function loadHomeMissions() {
-  var host = document.getElementById('home-mission-slot');
-  if (!host || !supabaseClient) return;
-  homeMissionState.date = homeMissionDate();
-  if (!saAuthUser) { homeMissionState.loaded = false; homeMissionMarkup(); return; }
-  homeMissionState.loaded = false;
-  homeMissionMarkup();
-  try {
-    var date = homeMissionState.date;
-    var results = await Promise.all([
-      supabaseClient.from('mission_definitions').select('id,mission_key,title,description,action_type,target_count,icon,sort_order,config').eq('active', true).order('sort_order', { ascending: true }),
-      supabaseClient.from('daily_missions').select('mission_date,mission_id,title_override,description_override,target_override,config_override').eq('mission_date', date),
-      supabaseClient.from('user_mission_progress').select('mission_id,progress,target,completed_at').eq('user_id', saAuthUser.id).eq('mission_date', date),
-      supabaseClient.from('user_streaks').select('current_streak,longest_streak,total_active_days,last_active_date,streak_started_on').eq('user_id', saAuthUser.id).limit(1).maybeSingle()
-    ]);
-    if (results[0].error) throw results[0].error;
-    if (results[1].error) console.warn('[Mission] daily assignments unavailable', results[1].error);
-    if (results[2].error) console.warn('[Mission] progress unavailable', results[2].error);
-    if (results[3].error) console.warn('[Mission] streak unavailable', results[3].error);
-    homeMissionState.definitions = results[0].data || [];
-    homeMissionState.daily = results[1].data || [];
-    homeMissionState.progress = results[2].data || [];
-    homeMissionState.streak = results[3].data || null;
-    homeMissionState.loaded = true;
-    homeMissionMarkup();
-  } catch (error) {
-    console.warn('[Mission] homepage load failed', error);
-    homeMissionState.loaded = true;
-    homeMissionState.definitions = [];
-    homeMissionMarkup();
-  }
-}
-async function completeHomeMission(missionKey, actionType) {
-  var button = document.querySelector('[data-mission-key="' + String(missionKey).replace(/"/g, '') + '"]');
-  if (button) button.disabled = true;
-  try {
-    var result = await supabaseClient.rpc('record_mission_event', { p_mission_key: missionKey, p_event_type: actionType, p_entity_type: 'homepage_mission', p_entity_id: homeMissionDate(), p_metadata: { source: 'homepage_mission' } });
-    if (result.error) throw result.error;
-    if (actionType === 'vacancy_view') showAllVacancies('home');
-    else if (actionType === 'content_view') openCommunity();
-    else if (actionType === 'profile_update') openHomeTalentPoolProfile();
-    loadHomeMissions();
-  } catch (error) {
-    if (button) button.disabled = false;
-    console.warn('[Mission] event failed', error);
-    if (typeof showToast === 'function') showToast('Could not update your mission. Please try again.');
-  }
-}
-document.addEventListener('sa-auth-change', function() { if (document.getElementById('home-mission-slot')) loadHomeMissions(); });
-
 function renderHomeFeed() {
   var target = document.getElementById('home-feed');
   if (!target) return;
@@ -523,8 +436,7 @@ function renderHomeFeed() {
     (filtering ? 'No vacancies match those filters yet.' : 'The latest vacancies are loading or none are available right now.') +
     '</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
 
-  target.innerHTML = '<div id="home-mission-slot"></div>' +
-    '<section class="home-media-section" id="home-media-section" aria-labelledby="home-media-title">' +
+  target.innerHTML = '<section class="home-media-section" id="home-media-section" aria-labelledby="home-media-title">' +
       '<div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Watch &amp; listen</span><h2 id="home-media-title">Media</h2><p>Useful recruitment content and the Track of the Day.</p></div></div>' +
       '<div class="home-media-video-wrap"><iframe id="home-media-video" title="SA Recruiters media video" src="https://www.youtube.com/embed/HV64XG91tE4?rel=0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>' +
       '<div class="home-media-track"><div class="home-media-track-art" aria-hidden="true">♫</div><div class="home-media-track-copy"><span>Track of the Day</span><strong id="home-media-track-title">Loading…</strong><small id="home-media-track-artist"></small></div><a class="home-media-track-spotify" id="home-media-track-spotify" hidden target="_blank" rel="noopener" aria-label="Open Track of the Day on Spotify" href="">Spotify</a><button type="button" class="home-media-track-play" id="home-media-track-play" disabled onclick="toggleTrackPlay()" aria-label="Play Track of the Day"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button></div>' +
@@ -550,8 +462,6 @@ function renderHomeFeed() {
       '</div></section>';
 
   target.setAttribute('aria-busy', 'false');
-  homeMissionMarkup();
-  loadHomeMissions();
   if (typeof renderHomeFeaturedPoster === 'function') renderHomeFeaturedPoster(typeof postersCache !== 'undefined' ? postersCache : []);
   if (typeof renderHomeMediaSection === 'function') renderHomeMediaSection();
   if (typeof renderHouseAdSlots === 'function') renderHouseAdSlots();
