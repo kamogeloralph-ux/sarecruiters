@@ -937,8 +937,6 @@ async function loadStartupData(env) {
 __name(loadStartupData, "loadStartupData");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  const requestUrl = new URL(request.url);
-  const forceFresh = requestUrl.searchParams.get("fresh") === "1";
   // Bump the internal key whenever the payload shape changes so visitors do
   // not receive an older cached startup response without employer counts.
   const cacheKey = new Request(new URL("/api/startup?schema=featured-vacancies-v8-d1-province-counts", request.url), request);
@@ -968,14 +966,7 @@ async function startupResponse(request, env, ctx, origin) {
   }
   __name(buildResponse, "buildResponse");
 
-  async function refreshAndCache(liveRead = false) {
-    if (liveRead) {
-      const payload = await loadStartupData(env);
-      ctx.waitUntil(writePublicStartupSnapshot(env, payload).catch((e) => console.warn("Could not publish live startup snapshot", e)));
-      const response = await buildResponse(payload);
-      await cache.put(cacheKey, response.clone());
-      return payload;
-    }
+  async function refreshAndCache() {
     let snapshot = await readPublicStartupSnapshot(env);
     if (snapshot) {
       if (!snapshot.counts || !snapshot.counts.provinces) {
@@ -993,28 +984,6 @@ async function startupResponse(request, env, ctx, origin) {
     return payload;
   }
   __name(refreshAndCache, "refreshAndCache");
-
-  if (forceFresh) {
-    try {
-      const payload = await refreshAndCache(true);
-      const response = await buildResponse(payload);
-      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
-      response.headers.set("X-Data-Source", "supabase-live");
-      response.headers.set("X-Data-As-Of", payload.generated_at || "");
-      return response;
-    } catch (error) {
-      try {
-        const payload = await refreshAndCache(false);
-        const response = await buildResponse(payload);
-        response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
-        response.headers.set("X-Data-Source", "d1-fallback");
-        response.headers.set("X-Data-As-Of", payload.generated_at || "");
-        return response;
-      } catch (fallbackError) {
-        return json({ error: "Live startup data unavailable", detail: error.message || fallbackError.message }, 502, origin);
-      }
-    }
-  }
 
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) {
@@ -1056,45 +1025,6 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 20) || 20, 1), 50);
   const offset = Math.min(Math.max(Number(url.searchParams.get("offset") || 0) || 0, 0), 5000);
   const cursor = String(url.searchParams.get("cursor") || "");
-  if (url.searchParams.get("fresh") === "1") {
-    try {
-      const dedicated = new Set(STARTUP_DEDICATED_SOURCES);
-      const safeSources = source.split(",").map((item) => item.trim().toLowerCase()).filter((item) => /^[a-z0-9_-]+$/.test(item) && dedicated.has(item)).slice(0, 20);
-      const params = {
-        select: "id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type",
-        order: "created_at.desc,id.desc",
-        limit: String(limit),
-        offset: String(Math.max(0, Number(cursor) || 0)),
-        or: "(agency_id.neq.general,employer_id.not.is.null,source_type.not.is.null)"
-      };
-      if (safeSources.length) params.source_type = `in.(${safeSources.join(",")})`;
-      if (scope === "general") {
-        params.or = "(agency_id.is.null,agency_id.eq.general)";
-        params.employer_id = "is.null";
-        params.source_type = `not.in.(${STARTUP_DEDICATED_SOURCES.join(",")})`;
-      }
-      if (location) params.location = `ilike.*${location.replace(/[^a-z0-9 ,.-]/gi, "")}*`;
-      if (remote) params.remote = `eq.${remote.replace(/[^a-z0-9_-]/gi, "")}`;
-      if (experience) params.experience_level = `eq.${experience.replace(/[^a-z0-9_-]/gi, "")}`;
-      if (q) {
-        const term = q.replace(/[^a-z0-9 .,\-]/gi, "");
-        params.or = `(title.ilike.*${term}*,company.ilike.*${term}*,location.ilike.*${term}*,notes.ilike.*${term}*)`;
-      }
-      const result = await supabaseGet(env, "vacancies", params, { prefer: "count=exact" });
-      const rows = Array.isArray(result.body) ? result.body : [];
-      const range = result.headers.get("content-range") || "";
-      const match = range.match(/\/(\d+)$/);
-      const total = match ? Number(match[1]) : rows.length;
-      const nextCursor = Number(cursor || 0) + rows.length < total ? String(Number(cursor || 0) + rows.length) : null;
-      const response = json({ vacancies: rows, next_cursor: nextCursor, total, source: "supabase-live" }, 200, origin);
-      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
-      response.headers.set("X-Data-Source", "supabase-live");
-      response.headers.set("X-Data-As-Of", new Date().toISOString());
-      return response;
-    } catch (error) {
-      return json({ error: "Live vacancy data unavailable", detail: error.message }, 502, origin);
-    }
-  }
   const snapshot = await readPublicVacancySnapshot(env);
   const filterRows = (allRows) => {
     const dedicated = new Set(["himalayas", "adzuna", "government", "dpsa", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "learnerships", "careers_page"]);
@@ -1232,27 +1162,6 @@ async function syncStatusResponse(request, env, origin) {
 __name(syncStatusResponse, "syncStatusResponse");
 async function postersResponse(request, env, origin) {
   if (!env.DB) return json({ error: "Public poster mirror unavailable" }, 503, origin);
-  const requestUrl = new URL(request.url);
-  if (requestUrl.searchParams.get("fresh") === "1") {
-    try {
-      const now = new Date().toISOString();
-      const result = await supabaseGet(env, "employer_posters", {
-        select: "id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at",
-        or: `(expires_at.is.null,expires_at.gt.${now})`,
-        order: "created_at.desc",
-        limit: "200"
-      }, { prefer: "count=exact" });
-      const range = result.headers.get("content-range") || "";
-      const match = range.match(/\/(\d+)$/);
-      const response = json({ posters: result.body || [], count: match ? Number(match[1]) : (result.body || []).length, source: "supabase-live" }, 200, origin);
-      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
-      response.headers.set("X-Data-Source", "supabase-live");
-      response.headers.set("X-Data-As-Of", now);
-      return response;
-    } catch (error) {
-      return json({ error: "Live poster data unavailable", detail: error.message }, 502, origin);
-    }
-  }
   const cache = caches.default;
   // Bump this whenever the response source or shape changes; otherwise an
   // earlier empty fallback response can survive a Worker deployment at the

@@ -598,7 +598,7 @@ function updatePosterStat() {
 }
 async function getEmployerPosters() {
   try {
-    var response = await fetch(R2_WORKER_URL + '/api/posters?fresh=1', {
+    var response = await fetch(R2_WORKER_URL + '/api/posters', {
       method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }
     });
     if (!response.ok) throw new Error('Poster Worker request failed');
@@ -764,7 +764,6 @@ async function fetchVacancyPageFromWorker(params) {
       var value = params[key];
       if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
     });
-    url.searchParams.set('fresh', '1');
     var response = await fetch(url.toString(), { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' } });
     if (!response.ok) return null;
     var payload = await response.json();
@@ -1100,8 +1099,7 @@ async function fetchStartupDataOnce() {
   try {
     var controller = typeof AbortController === 'function' ? new AbortController() : null;
     var timeout = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
-    var liveUrl = STARTUP_DATA_URL + (STARTUP_DATA_URL.indexOf('?') === -1 ? '?' : '&') + 'fresh=1&v=' + Date.now();
-    var response = await fetch(liveUrl, {
+    var response = await fetch(STARTUP_DATA_URL, {
       method: 'GET',
       cache: 'no-store',
       headers: { Accept: 'application/json' },
@@ -1224,35 +1222,6 @@ async function refreshSecondaryStartupData() {
 })();
 
 var loadAllRequestId = 0;
-var publicRealtimeChannel = null;
-var publicRealtimeRefreshTimer = null;
-var publicRealtimeRefreshInFlight = false;
-var publicRealtimePollTimer = null;
-var publicStartupPollTimer = null;
-function schedulePublicRealtimeRefresh() {
-  clearTimeout(publicRealtimeRefreshTimer);
-  publicRealtimeRefreshTimer = setTimeout(function() {
-    if (publicRealtimeRefreshInFlight || navigator.onLine === false) return;
-    publicRealtimeRefreshInFlight = true;
-    loadAll({ fresh: true }).catch(function(error){ console.warn('realtime public refresh', error); }).finally(function(){ publicRealtimeRefreshInFlight = false; });
-  }, 350);
-}
-function initPublicRealtime() {
-  if (publicRealtimeChannel || !supabaseClient || typeof supabaseClient.channel !== 'function') return;
-  publicRealtimePollTimer = setInterval(function(){ if (navigator.onLine !== false) loadPosterFeed(); }, 15000);
-  publicStartupPollTimer = setInterval(function(){ if (navigator.onLine !== false) schedulePublicRealtimeRefresh(); }, 60000);
-  publicRealtimeChannel = supabaseClient.channel('sa-recruiters-public-live')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'agencies' }, schedulePublicRealtimeRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'branches' }, schedulePublicRealtimeRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'vacancies' }, schedulePublicRealtimeRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'employers' }, schedulePublicRealtimeRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'employer_posters' }, function(){
-      loadPosterFeed();
-      schedulePublicRealtimeRefresh();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, schedulePublicRealtimeRefresh)
-    .subscribe(function(status){ if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') publicRealtimeChannel = null; });
-}
 async function loadAll(options) {
   var requestId = ++loadAllRequestId;
   var forceFresh = !!(options && options.fresh);
@@ -1413,7 +1382,6 @@ async function loadAll(options) {
     employerManagerPendingToken = null;
     enterEmployerManagerMode(etok);
   }
-  initPublicRealtime();
   // If admin is viewing SMART MANAGER section, re-render it
   if (typeof renderSmartManager === 'function' && document.getElementById('screen-smartmanager') && document.getElementById('screen-smartmanager').classList.contains('active')) {
     renderSmartManager();

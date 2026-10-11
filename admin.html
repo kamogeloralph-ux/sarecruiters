@@ -871,10 +871,6 @@ var ADMIN_WHATSAPP = '27715531005';
 // ===== State =====
 var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [], houseAds: [] };
 var adminDataReady = false;
-var adminRealtimeChannel = null;
-var adminRealtimeRefreshTimer = null;
-var adminRealtimeRefreshInFlight = false;
-var adminRealtimePollTimer = null;
 var ADMIN_CACHE_DB = 'sa_data_cache_db';
 var ADMIN_CACHE_STORE = 'kv';
 var ADMIN_CACHE_KEY = 'sa_admin_directory_v1';
@@ -948,34 +944,6 @@ var subTab = 'reports';
 var publicVacancyPostingOpen = false;
 var publicEmployerRegistrationOpen = false;
 var employerDirectoryOpen = true;
-function scheduleAdminRealtimeRefresh(){
-  clearTimeout(adminRealtimeRefreshTimer);
-  adminRealtimeRefreshTimer=setTimeout(function(){
-    if(adminRealtimeRefreshInFlight) return;
-    adminRealtimeRefreshInFlight=true;
-    loadAll().then(function(){ adminDataReady=true; renderNav(); renderDashboard(); }).catch(function(e){ console.warn('admin realtime refresh',e); }).finally(function(){ adminRealtimeRefreshInFlight=false; });
-  },350);
-}
-function initAdminRealtime(){
-  if(adminRealtimeChannel || !supabaseClient || typeof supabaseClient.channel!=='function') return;
-  adminRealtimePollTimer=setInterval(scheduleAdminRealtimeRefresh,60000);
-  adminRealtimeChannel=supabaseClient.channel('sa-recruiters-admin-live')
-    .on('postgres_changes',{event:'*',schema:'public',table:'agencies'},scheduleAdminRealtimeRefresh)
-    .on('postgres_changes',{event:'*',schema:'public',table:'branches'},scheduleAdminRealtimeRefresh)
-    .on('postgres_changes',{event:'*',schema:'public',table:'vacancies'},scheduleAdminRealtimeRefresh)
-    .on('postgres_changes',{event:'*',schema:'public',table:'employers'},scheduleAdminRealtimeRefresh)
-    .on('postgres_changes',{event:'*',schema:'public',table:'employer_posters'},scheduleAdminRealtimeRefresh)
-    .on('postgres_changes',{event:'*',schema:'public',table:'app_settings'},scheduleAdminRealtimeRefresh)
-    .on('postgres_changes',{event:'*',schema:'public',table:'house_ads'},scheduleAdminRealtimeRefresh)
-    .subscribe(function(status){ if(status==='CHANNEL_ERROR'||status==='TIMED_OUT') adminRealtimeChannel=null; });
-}
-function stopAdminRealtime(){
-  if(adminRealtimeChannel && supabaseClient && typeof supabaseClient.removeChannel==='function') supabaseClient.removeChannel(adminRealtimeChannel);
-  adminRealtimeChannel=null;
-  clearTimeout(adminRealtimeRefreshTimer);
-  clearInterval(adminRealtimePollTimer);
-  adminRealtimePollTimer=null;
-}
 
 // ===== Theme =====
 function applyTheme(t){
@@ -1072,7 +1040,6 @@ async function loginWithGoogle(){
 }
 async function doLogout(){
   try{ await supabaseClient.auth.signOut(); }catch(e){}
-  stopAdminRealtime();
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
@@ -1098,7 +1065,6 @@ async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('who-am-i').textContent = user.email || 'admin';
-  initAdminRealtime();
   // Paint the console immediately. The previous bootstrap awaited every
   // table—including all vacancy pages and posters—before showing Dashboard,
   // which made the admin page look stuck on slower mobile connections.
@@ -1166,51 +1132,31 @@ async function getBranches(){
   return data || [];
 }
 async function getVacancies(){
-  // The admin console is the authoritative live view. Read authenticated
-  // Supabase pages directly so a newly posted/edited vacancy is visible
-  // immediately instead of waiting for the D1 mirror cron. The Worker path
-  // remains a compatibility fallback for older deployments.
-  var baseColumns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
-  var fullColumns = baseColumns + ',is_featured,featured_until,featured_order';
+  // Keep the admin UI's existing in-memory editing contract, but page through
+  // D1 rather than downloading the vacancy table from PostgREST. The endpoint
+  // also accepts q/location/source/agency_id/employer_id/remote/experience
+  // filters for callers that can keep filtering server-side.
   try {
+    var authHdr = await r2AuthHeader();
+    if (!authHdr.Authorization) throw new Error('Admin session expired');
     var all = [];
-    var columns = fullColumns;
+    var cursor = '';
+    var pageSize = 250;
     for (var page = 0; page < 100; page++) {
-      var result = await supabaseClient.from('vacancies').select(columns).order('created_at',{ascending:false}).order('id',{ascending:false}).range(page * 1000, page * 1000 + 999);
-      if (result.error && columns === fullColumns && /column|schema cache/i.test(result.error.message || '')) {
-        columns = baseColumns;
-        page = -1;
-        all = [];
-        continue;
-      }
-      if (result.error) throw result.error;
-      var rows = result.data || [];
+      var qs = new URLSearchParams({ limit: String(pageSize), include_expired: '1' });
+      if (cursor) qs.set('cursor', cursor);
+      var response = await fetch(R2_WORKER_URL + '/api/admin/vacancies?' + qs.toString(), { headers: authHdr, cache: 'no-store' });
+      var body = await response.json().catch(function(){ return {}; });
+      if (!response.ok) throw new Error(body.error || 'Could not load vacancies');
+      var rows = Array.isArray(body.vacancies) ? body.vacancies : [];
       all = all.concat(rows);
-      if (rows.length < 1000) break;
+      if (!body.next_cursor || !rows.length) break;
+      cursor = body.next_cursor;
     }
     return all;
   } catch(e) {
-    console.warn('live admin vacancies load; trying Worker fallback', e);
-    try {
-      var authHdr = await r2AuthHeader();
-      if (!authHdr.Authorization) throw new Error('Admin session expired');
-      var fallback = [], cursor = '';
-      for (var page2 = 0; page2 < 100; page2++) {
-        var qs = new URLSearchParams({ limit: '250', include_expired: '1' });
-        if (cursor) qs.set('cursor', cursor);
-        var response = await fetch(R2_WORKER_URL + '/api/admin/vacancies?' + qs.toString(), { headers: authHdr, cache: 'no-store' });
-        var body = await response.json().catch(function(){ return {}; });
-        if (!response.ok) throw new Error(body.error || 'Could not load vacancies');
-        var rows2 = Array.isArray(body.vacancies) ? body.vacancies : [];
-        fallback = fallback.concat(rows2);
-        if (!body.next_cursor || !rows2.length) break;
-        cursor = body.next_cursor;
-      }
-      return fallback;
-    } catch(fallbackError) {
-      console.error('admin vacancies load', fallbackError);
-      throw fallbackError;
-    }
+    console.error('admin vacancies load', e);
+    return [];
   }
 }
 async function getAdminSubmissions(){
