@@ -329,18 +329,30 @@ async function communityLoad() {
     communityMvp.joined = false;
     communityMvp.moderator = false;
     communityMvp.lastUserId = communitySignedIn() ? saAuthUser.id : null;
+    // The feed is the critical path. Run account-only checks together instead
+    // of making visitors wait for membership, identity, submissions and admin
+    // checks one after another.
+    var secondaryLoads = [communityLoadIdentityState(), communityLoadMySubmissions()];
     if (communitySignedIn()) {
-      var membership = await supabaseClient.from('community_memberships')
-        .select('group_id').eq('group_id', communityMvp.group.id).limit(1).maybeSingle();
-      if (!membership.error) communityMvp.joined = !!membership.data;
-      var adminResult = await supabaseClient.rpc('is_admin');
-      communityMvp.moderator = !adminResult.error && adminResult.data === true;
+      secondaryLoads.push(
+        supabaseClient.from('community_memberships')
+          .select('group_id').eq('group_id', communityMvp.group.id).limit(1).maybeSingle()
+          .then(function(membership) {
+            if (!membership.error) communityMvp.joined = !!membership.data;
+          }),
+        supabaseClient.rpc('is_admin').then(function(adminResult) {
+          communityMvp.moderator = !adminResult.error && adminResult.data === true;
+        })
+      );
     }
-    await communityLoadIdentityState();
-    await communityLoadMySubmissions();
+    // Start the feed at once. Secondary account state continues in parallel
+    // and updates the controls when it finishes.
     communityRenderGroup();
-    await communityLoadFeed();
-    if (communityMvp.moderator) await communityLoadModerationQueue(false);
+    var feedLoad = communityLoadFeed();
+    await Promise.all(secondaryLoads);
+    communityRenderGroup();
+    await feedLoad;
+    if (communityMvp.moderator) communityLoadModerationQueue(false);
   } catch (error) {
     console.error('[Community] load failed', error);
     host.innerHTML = '<div class="community-empty"><strong>Community unavailable</strong><span>Check your connection and try again.</span><button type="button" class="community-secondary-btn" onclick="communityLoad()">Retry</button></div>';
@@ -402,16 +414,22 @@ async function communityLoadFeed() {
   communityMvp.posts = result.data || [];
   communityMvp.liked = new Set();
   communityMvp.reactions = new Map();
+  // Paint the posts immediately. Reactions are a secondary enhancement and
+  // must never delay the first useful TipChat view.
+  communityRenderFeed();
   if (communitySignedIn() && communityMvp.posts.length) {
     var ids = communityMvp.posts.map(function(post) { return post.id; });
-    var reactionResult = await supabaseClient.from('community_post_reactions')
-      .select('post_id,reaction_type').in('post_id', ids);
-    if (!reactionResult.error) (reactionResult.data || []).forEach(function(row) {
-      if (row.reaction_type === 'like') communityMvp.liked.add(row.post_id);
-      else communityMvp.reactions.set(row.post_id, row.reaction_type);
-    });
+    supabaseClient.from('community_post_reactions')
+      .select('post_id,reaction_type').in('post_id', ids)
+      .then(function(reactionResult) {
+        if (reactionResult.error) return;
+        (reactionResult.data || []).forEach(function(row) {
+          if (row.reaction_type === 'like') communityMvp.liked.add(row.post_id);
+          else communityMvp.reactions.set(row.post_id, row.reaction_type);
+        });
+        communityMvp.posts.forEach(function(post) { communityRefreshActions(post.id); });
+      });
   }
-  communityRenderFeed();
 }
 function communityCurrentReaction(postId) {
   return communityMvp.reactions.get(postId) || (communityMvp.liked.has(postId) ? 'like' : null);
@@ -977,6 +995,6 @@ window.communityToggleMine = communityToggleMine;
     });
   }
   if (location.hash === '#community-interview-tips' || location.hash === '#tipchat') {
-    window.setTimeout(function() { openCommunity(true); }, 700);
+    openCommunity(true);
   }
 })();
