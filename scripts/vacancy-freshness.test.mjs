@@ -69,6 +69,7 @@ test('maxAgeDaysForSource matches the per-source TTL ceilings', () => {
   assert.equal(maxAgeDaysForSource('learnerships'), 30);
   assert.equal(maxAgeDaysForSource('retail'), 30);
   assert.equal(maxAgeDaysForSource('adzuna'), 45);
+  assert.equal(maxAgeDaysForSource('indeed'), 45);
   assert.equal(maxAgeDaysForSource('government'), 90);
   assert.equal(maxAgeDaysForSource('something-new'), 60);
 });

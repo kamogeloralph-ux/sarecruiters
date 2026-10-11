@@ -70,6 +70,7 @@ jobs:
             fi
           }
           run_source npm run sync:adzuna
+          run_source npm run sync:indeed
           run_source npm run sync:himalayas
           run_source npm run sync:oracle
           run_source npm run sync:government

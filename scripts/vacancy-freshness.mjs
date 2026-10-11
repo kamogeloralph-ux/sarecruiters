@@ -34,6 +34,7 @@ export const MAX_AGE_DAYS = {
   truworths: 30,
   spar: 30,
   adzuna: 45,
+  indeed: 45,
   himalayas: 45,
   pnet: 45, // external job-board aggregation, same tier as adzuna/himalayas
   simplify: 45, // external job-board aggregation, same tier as Pnet/Adzuna
