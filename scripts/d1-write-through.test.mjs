@@ -44,7 +44,7 @@ test('the client sends the Supabase mutation representation through the admin Wo
 test('public startup, vacancy and poster reads are versioned and bypass stale snapshots', () => {
   assert.match(worker, /const PUBLIC_DATA_VERSION_KEY = "public_data_version"/);
   assert.match(worker, /ON CONFLICT\(key\) DO UPDATE SET value = CAST\(CAST\(sync_meta\.value AS INTEGER\) \+ 1 AS TEXT\)/);
-  assert.match(worker, /featured-vacancies-v10-employer-vacancies&version=\$\{dataVersion\}/);
+  assert.match(worker, /featured-vacancies-v11-employer-vacancies&version=\$\{dataVersion\}/);
   assert.match(worker, /employer_id IS NOT NULL OR source_type IS NULL OR source_type NOT IN/);
   assert.match(worker, /snapshot\.data_version\) === dataVersion/);
   assert.match(worker, /schema=d1-v6-versioned&version=\$\{dataVersion\}/);

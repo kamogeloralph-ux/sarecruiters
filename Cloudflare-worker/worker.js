@@ -983,7 +983,7 @@ __name(loadStartupData, "loadStartupData");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   const dataVersion = await readPublicDataVersion(env);
-  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v10-employer-vacancies&version=${dataVersion}`, request.url), request);
+  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v11-employer-vacancies&version=${dataVersion}`, request.url), request);
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
     return new Response(body, { headers: {
