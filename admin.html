@@ -1566,6 +1566,12 @@ async function loadAll(scope){
     cache.posters = Array.isArray(auxiliary.posters) ? auxiliary.posters : [];
     cache.jobEnquiries = Array.isArray(auxiliary.jobEnquiries) ? auxiliary.jobEnquiries : [];
     cache.houseAds = Array.isArray(auxiliary.houseAds) ? auxiliary.houseAds : [];
+    // The Worker names any table it could not read instead of returning a
+    // silent empty list. Surface it so an empty section is never misleading.
+    var auxErrors = auxiliary.errors && typeof auxiliary.errors === 'object' ? auxiliary.errors : null;
+    if(auxErrors && Object.keys(auxErrors).length){
+      throw new Error('Could not read ' + Object.keys(auxErrors).map(function(k){ return k + ' (' + auxErrors[k] + ')'; }).join('; '));
+    }
   }));
   if(has('settings')) jobs.push(loadSettings().catch(function(e){ console.error('settings load', e); }));
   await Promise.all(jobs);
