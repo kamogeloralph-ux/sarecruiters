@@ -726,6 +726,62 @@ async function submitJobPostEnquiry() {
   showToast("Submitted for admin review — it will not be published until approved.");
 }
 
+// ===== "LOOKING FOR WORK?" — quick job-seeker intake =====
+// Always open (no sign-in). Posts to /api/submit/job-seeker, which verifies
+// Turnstile and consent server-side and stores a PRIVATE request for the admin
+// (public_submit_job_seeker(), 20261014_job_seeker_requests.sql). It never
+// creates a public Talent Pool profile.
+function openJobSeekerSheet() {
+  ['js-name','js-phone','js-email','js-location','js-looking','js-qualification','js-message','js-cv'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['js-work-status','js-availability'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.selectedIndex = 0;
+  });
+  var consent = document.getElementById('job-seeker-consent');
+  if (consent) consent.checked = false;
+  var err = document.getElementById('job-seeker-error');
+  err.style.display = 'none'; err.textContent = '';
+  var waLink = document.getElementById('job-seeker-wa-link');
+  if (waLink) waLink.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent("Hi, I'm looking for work and would like help finding opportunities.");
+  var btn = document.getElementById('job-seeker-submit');
+  if (btn) { btn.disabled = false; btn.textContent = 'Send my request'; }
+  document.getElementById('job-seeker-overlay').classList.add('open');
+  renderTurnstile('job-seeker-turnstile', 'job-seeker-overlay');
+}
+async function submitJobSeekerRequest() {
+  var err = document.getElementById('job-seeker-error');
+  var btn = document.getElementById('job-seeker-submit');
+  function val(id) { return (document.getElementById(id).value || '').trim(); }
+  function fail(msg) { err.textContent = msg; err.style.display = 'block'; }
+  err.style.display = 'none'; err.textContent = '';
+  var payload = {
+    full_name: val('js-name'), phone: val('js-phone'), email: val('js-email'),
+    location: val('js-location'), looking_for: val('js-looking'),
+    qualification: val('js-qualification'), work_status: val('js-work-status'),
+    availability: val('js-availability'), message: val('js-message'), cv_link: val('js-cv'),
+    consent: !!document.getElementById('job-seeker-consent').checked
+  };
+  if (!payload.full_name) return fail('Please add your full name.');
+  if (!payload.phone && !payload.email) return fail('Add a phone/WhatsApp number or an email so we can reach you.');
+  if (!payload.looking_for) return fail('Tell us what kind of work you are looking for.');
+  if (!payload.work_status) return fail('Select your work status in South Africa.');
+  if (!payload.consent) return fail('Please tick the consent box to continue.');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+  var workerRes = await submitViaWorker('/api/submit/job-seeker', payload, 'job-seeker-turnstile');
+  if (!workerRes.ok) {
+    // Never fall back to a direct Supabase insert: that would bypass the
+    // Worker-side Turnstile and consent checks.
+    fail(workerRes.error || 'Could not send your request. Please try again.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send my request'; }
+    return;
+  }
+  resetTurnstile('job-seeker-turnstile');
+  if (btn) { btn.disabled = false; btn.textContent = 'Send my request'; }
+  closeSheet('job-seeker-overlay');
+  showToast(payload.email ? "Request sent — we've emailed you some helpful links." : 'Request sent — our team will be in touch.');
+}
+
 // ===== TALENT POOL (public browse + self-registration) =====
 var poolCache = [];
 var poolLoaded = false;

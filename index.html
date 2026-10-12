@@ -208,6 +208,7 @@
     <svg class="site-menu-account-chev" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
   </div>
   <nav class="site-menu-nav" aria-label="Site navigation">
+    <button type="button" data-ripple onclick="closeSiteMenu();openJobSeekerSheet()"><span class="site-menu-nav-icon">✋</span><span>Looking for work?<small>Tell us what you're after — it takes a minute</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openPostJobSheet()"><span class="site-menu-nav-icon">⊕</span><span>Post a job<small>Tell us about the roles you're hiring for</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();showAllVacancies('home')"><span class="site-menu-nav-icon">⌕</span><span>Browse vacancies<small>Find your next opportunity</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();showAllAgencies()"><span class="site-menu-nav-icon">⌂</span><span>Recruitment agencies<small>Explore agencies and branches</small></span><b>›</b></button>
@@ -380,6 +381,7 @@
       <div class="pgroup-label">Your listing</div>
       <div class="pgrouped-list">
         <button class="profile-menu-item" data-ripple onclick="openMyPoolProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Talent Pool profile<span class="mi-sub" id="account-pool-status">Your Mini-CV shown to recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+    <button data-ripple onclick="openJobSeekerSheet()" style="display:block;margin:-6px 16px 14px;width:calc(100% - 32px);background:none;border:none;color:var(--text-2);font-size:12.5px;font-weight:600;text-align:center;padding:4px">Just need help finding work? <span style="color:var(--accent)">Send us a quick request</span></button>
       </div>
 
       <section class="saved-alerts-panel" id="saved-alerts-panel" aria-labelledby="saved-alerts-title"></section>
@@ -1267,6 +1269,48 @@
     <div id="post-job-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
     <button class="sheet-submit" data-ripple onclick="submitJobPostEnquiry()">Submit for admin review</button>
     <p style="font-size:11.5px;color:var(--text-3);text-align:center;margin-top:12px;">Prefer WhatsApp? <a href="#" id="post-job-wa-link" target="_blank" rel="noopener">Message the admin instead</a>.</p>
+  </div>
+</div>
+
+<!-- ============ LOOKING FOR WORK? — quick job-seeker intake (always open) ============ -->
+<!-- Creates a private request for the admin only. It never creates a public Talent Pool
+     profile; an admin reviews it and can convert it. -->
+<div class="sheet-scrim" id="job-seeker-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Looking for work?</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Tell us a little about yourself and the work you want. Our team will review your request and point you to suitable opportunities. This is free — SA Recruiters never charges job seekers to apply.</p>
+    <div class="field"><label>Full name</label><input id="js-name" autocomplete="name" placeholder="e.g. Thandi Nkosi"></div>
+    <div class="field"><label>Phone / WhatsApp</label><input id="js-phone" type="tel" autocomplete="tel" placeholder="082 000 0000"></div>
+    <div class="field"><label>Email <span class="field-optional">optional — we'll send helpful links</span></label><input id="js-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+    <div class="field"><label>Where are you based? <span class="field-optional">optional</span></label><input id="js-location" placeholder="e.g. Pretoria, Gauteng"></div>
+    <div class="field"><label>What work are you looking for?</label><input id="js-looking" maxlength="500" placeholder="e.g. Admin, IT support, entry-level — open to other fields"></div>
+    <div class="field"><label>Highest qualification <span class="field-optional">optional</span></label><input id="js-qualification" placeholder="e.g. Matric, Diploma, BSc Information Technology"></div>
+    <div class="field">
+      <label>Work status in South Africa</label>
+      <select id="js-work-status">
+        <option value="">Select</option>
+        <option value="citizen_pr">SA citizen / permanent resident</option>
+        <option value="work_visa">I hold a valid SA work visa / permit</option>
+        <option value="unsure">Not sure / prefer to discuss</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>When can you start? <span class="field-optional">optional</span></label>
+      <select id="js-availability">
+        <option value="">Select</option>
+        <option>Immediately</option>
+        <option>Within 1 month</option>
+        <option>Serving a notice period</option>
+        <option>Flexible</option>
+      </select>
+    </div>
+    <div class="field"><label>Tell us more <span class="field-optional">optional — experience, skills, anything useful</span></label><textarea id="js-message" maxlength="4000" placeholder="e.g. Experience in auditing, administration and customer service…"></textarea></div>
+    <div class="field"><label>CV link <span class="field-optional">optional — Google Drive, Dropbox, etc.</span></label><input id="js-cv" type="url" inputmode="url" placeholder="Paste a share link to your CV"></div>
+    <label class="terms-accept-row" for="job-seeker-consent"><input id="job-seeker-consent" type="checkbox"><span><strong>I CONSENT TO BEING CONTACTED</strong><small>I agree that SA Recruiters may store these details and contact me about opportunities, as set out in the <a href="terms/" target="_blank" rel="noopener">Terms and Conditions</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. I understand listing is not a guarantee of placement.</small></span></label>
+    <div id="job-seeker-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+    <button class="sheet-submit" id="job-seeker-submit" data-ripple onclick="submitJobSeekerRequest()">Send my request</button>
+    <p style="font-size:11.5px;color:var(--text-3);text-align:center;margin-top:12px;">Prefer WhatsApp? <a href="#" id="job-seeker-wa-link" target="_blank" rel="noopener">Message the admin instead</a>.</p>
   </div>
 </div>
 
