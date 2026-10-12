@@ -712,7 +712,18 @@ async function saveVacancy() {
     closeSheet('vacancy-overlay');
     showToast(live ? (termsRecorded ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
     await loadAll();
-    if (managerMode) { renderManagerMode(); return; }
+    if (managerMode) {
+      if (live) {
+        var existingManagerVacancy = vacanciesCache.findIndex(function(row){ return row.id === vacancy.id; });
+        var liveManagerVacancy = Object.assign({}, vacancy, { created_at: vacancy.created_at || new Date().toISOString(), source_type: 'manager' });
+        if (existingManagerVacancy >= 0) vacanciesCache[existingManagerVacancy] = Object.assign({}, vacanciesCache[existingManagerVacancy], liveManagerVacancy);
+        else vacanciesCache.unshift(liveManagerVacancy);
+        vacanciesCache = sortVacancies(vacanciesCache);
+        saveDataCache();
+      }
+      renderManagerMode();
+      return;
+    }
     var card = document.getElementById('hub-' + pendingVacancyAgency);
     if (card) { card.classList.add('open'); switchHubTab(card.querySelector('.hub-tab'), pendingVacancyAgency, 'vacancies'); }
   } catch (error) {

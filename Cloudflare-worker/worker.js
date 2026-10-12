@@ -472,6 +472,19 @@ function publicDataVersionBumpStatement(env) {
   return env.DB.prepare("INSERT INTO sync_meta (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = CAST(CAST(sync_meta.value AS INTEGER) + 1 AS TEXT)").bind(PUBLIC_DATA_VERSION_KEY);
 }
 __name(publicDataVersionBumpStatement, "publicDataVersionBumpStatement");
+async function mirrorManagerVacancy(env, vacancy) {
+  if (!env.DB) return false;
+  const columns = ["id", "agency_id", "employer_id", "title", "company", "location", "closing_date", "notes", "link", "email", "phone", "remote", "experience_level", "employment_type", "contract_type", "work_schedule", "hours", "salary", "start_date", "created_at", "source_type"];
+  const values = columns.map((column) => vacancy[column] ?? null);
+  const placeholders = columns.map(() => "?").join(",");
+  const updates = columns.filter((column) => column !== "id").map((column) => `${column}=excluded.${column}`).join(",");
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO vacancies (${columns.join(",")}) VALUES (${placeholders}) ON CONFLICT(id) DO UPDATE SET ${updates}`).bind(...values),
+    publicDataVersionBumpStatement(env)
+  ]);
+  return true;
+}
+__name(mirrorManagerVacancy, "mirrorManagerVacancy");
 async function bumpPublicDataVersion(env) {
   await publicDataVersionBumpStatement(env).run();
   return await readPublicDataVersion(env);
@@ -1811,6 +1824,9 @@ var worker_default = {
         if (!body.token || !body.vacancy_id || !body.title) {
           return json({ error: "Missing fields." }, 400, origin);
         }
+        const agencyRows = await supabaseRpc(env, "verify_manager_token", { p_token: String(body.token) });
+        const agencyRecord = Array.isArray(agencyRows) ? agencyRows[0] : null;
+        if (!agencyRecord?.id) return json({ error: "Invalid manager link." }, 403, origin);
         const result = await supabaseRpc(env, "manager_add_vacancy", {
           p_token: String(body.token),
           p_vacancy_id: String(body.vacancy_id),
@@ -1827,6 +1843,16 @@ var worker_default = {
           p_link: String(body.link || "")
         });
         if (!result) return json({ error: "Invalid manager link." }, 403, origin);
+        await mirrorManagerVacancy(env, {
+          id: String(body.vacancy_id), agency_id: String(agencyRecord.id), employer_id: null,
+          title: String(body.title), company: null, location: String(body.location || ""),
+          closing_date: String(body.closing_date || ""), notes: String(body.notes || ""),
+          link: String(body.link || ""), email: null, phone: null, remote: null,
+          experience_level: null, employment_type: String(body.employment_type || ""),
+          contract_type: String(body.contract_type || ""), work_schedule: String(body.work_schedule || ""),
+          hours: String(body.hours || ""), salary: String(body.salary || ""),
+          start_date: String(body.start_date || ""), created_at: new Date().toISOString(), source_type: "manager"
+        });
         return json({ ok: true, vacancy_id: result }, 200, origin);
       }
       if (path === "/api/manager/employer-vacancy" && request.method === "POST") {
@@ -1834,6 +1860,9 @@ var worker_default = {
         if (!body.token || !body.vacancy_id || !body.title) {
           return json({ error: "Missing fields." }, 400, origin);
         }
+        const employerRows = await supabaseRpc(env, "verify_employer_manager_token", { p_token: String(body.token) });
+        const employerRecord = Array.isArray(employerRows) ? employerRows[0] : null;
+        if (!employerRecord?.id) return json({ error: "Invalid manager link." }, 403, origin);
         const result = await supabaseRpc(env, "manager_employer_add_vacancy", {
           p_token: String(body.token),
           p_vacancy_id: String(body.vacancy_id),
@@ -1854,6 +1883,16 @@ var worker_default = {
           p_phone: String(body.phone || "")
         });
         if (!result) return json({ error: "Invalid manager link." }, 403, origin);
+        await mirrorManagerVacancy(env, {
+          id: String(body.vacancy_id), agency_id: "employer", employer_id: String(employerRecord.id),
+          title: String(body.title), company: String(body.company || ""), location: String(body.location || ""),
+          closing_date: String(body.closing_date || ""), notes: String(body.notes || ""),
+          link: String(body.link || ""), email: String(body.email || ""), phone: String(body.phone || ""), remote: null,
+          experience_level: String(body.experience_level || ""), employment_type: String(body.employment_type || ""),
+          contract_type: String(body.contract_type || ""), work_schedule: String(body.work_schedule || ""),
+          hours: String(body.hours || ""), salary: String(body.salary || ""),
+          start_date: String(body.start_date || ""), created_at: new Date().toISOString(), source_type: "manager"
+        });
         return json({ ok: true, vacancy_id: result }, 200, origin);
       }
 

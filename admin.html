@@ -1265,17 +1265,24 @@ async function getTracks(){
   return [];
 }
 async function upsertAgency(a){
-  var result = await supabaseClient.from('agencies').upsert(a).select('*').single();
-  if(!result.error){ await writeThroughD1Mirror('agencies',Object.assign({},a,result.data||{})); return; }
+  var mutation = a.id && editing.agency
+    ? supabaseClient.from('agencies').update(a).eq('id', a.id)
+    : supabaseClient.from('agencies').upsert(a);
+  var result = await mutation.select('*').single();
+  if(!result.error){ await writeThroughD1Mirror('agencies',Object.assign({},a,result.data||{})); return true; }
   var msg=(result.error.message||'')+' '+(result.error.hint||'');
   if(/trades/i.test(msg)){
     var safe=Object.assign({},a); delete safe.trades;
-    var retry=await supabaseClient.from('agencies').upsert(safe).select('*').single();
-    if(retry.error){ console.error('agency save',retry.error); alert('Could not save agency: '+retry.error.message); }
-    else { await writeThroughD1Mirror('agencies',Object.assign({},safe,retry.data||{})); console.warn('Saved agency without trades — add the trades column (ADD_TRADES_COLUMN.sql)'); }
-    return;
+    var retryMutation = safe.id && editing.agency
+      ? supabaseClient.from('agencies').update(safe).eq('id', safe.id)
+      : supabaseClient.from('agencies').upsert(safe);
+    var retry=await retryMutation.select('*').single();
+    if(retry.error){ console.error('agency save',retry.error); alert('Could not save agency: '+retry.error.message); return false; }
+    await writeThroughD1Mirror('agencies',Object.assign({},safe,retry.data||{}));
+    console.warn('Saved agency without trades — add the trades column (ADD_TRADES_COLUMN.sql)');
+    return true;
   }
-  console.error('agency save',result.error); alert('Could not save agency: '+result.error.message);
+  console.error('agency save',result.error); alert('Could not save agency: '+result.error.message); return false;
 }
 
 async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } else await writeThroughD1Mirror('agencies',id,'delete'); }
@@ -1835,8 +1842,12 @@ async function saveAgency(){
   };
   var isNewAgency = !editing.agency;
   if (isNewAgency) payload.manage_token = genToken(); // write once, atomically
-  await upsertAgency(payload);
+  var saved = await upsertAgency(payload);
+  if (!saved) return;
   if (isNewAgency) { var verified = await saveManagerToken(id, payload.manage_token); if (!verified) payload.manage_token = ''; }
+  var cachedIndex = cache.agencies.findIndex(function(x){ return x.id === id; });
+  if (cachedIndex >= 0) cache.agencies[cachedIndex] = Object.assign({}, cache.agencies[cachedIndex], payload);
+  else cache.agencies.unshift(Object.assign({ created_at: new Date().toISOString() }, payload));
   closeSheet('agency-overlay');
   showToast(editing.agency ? 'Agency updated' : 'Agency added');
   editing.agency = null; pendingPhoto = null; pendingPhotoBlob = null;
