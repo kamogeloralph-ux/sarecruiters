@@ -1796,15 +1796,17 @@ var worker_default = {
         if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
         const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}` };
         const [reportsRes, suggestionsRes] = await Promise.all([
-          fetch(`${env.SUPABASE_URL}/rest/v1/reports?select=id,agency_name,reason,details,status,created_at&order=created_at.desc`, { headers }),
-          fetch(`${env.SUPABASE_URL}/rest/v1/suggestions?select=id,type,agency_name,details,contact,status,created_at&order=created_at.desc`, { headers })
+          fetch(`${env.SUPABASE_URL}/rest/v1/reports?select=*&order=created_at.desc`, { headers }),
+          fetch(`${env.SUPABASE_URL}/rest/v1/suggestions?select=*&order=created_at.desc`, { headers })
         ]);
         if (!reportsRes.ok || !suggestionsRes.ok) {
           return json({ error: "Could not load submissions." }, 502, origin);
         }
         return json({ reports: await reportsRes.json(), suggestions: await suggestionsRes.json() }, 200, origin);
       }
-      const adminSubmissionMatch = path.match(/^\/api\/admin\/submissions\/(report|suggestion)\/(\d+)$/);
+      // Ids may be uuid or numeric depending on the table's history, so accept
+      // any safe id token (it is URL-encoded before it reaches PostgREST).
+      const adminSubmissionMatch = path.match(/^\/api\/admin\/submissions\/(report|suggestion)\/([A-Za-z0-9_-]{1,64})$/);
       if (adminSubmissionMatch && (request.method === "POST" || request.method === "DELETE")) {
         if (!await isAdminRequest(request, env)) {
           return json({ error: "Unauthorized" }, 401, origin);
@@ -1813,17 +1815,124 @@ var worker_default = {
         if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
         const table = adminSubmissionMatch[1] === "report" ? "reports" : "suggestions";
         const id = adminSubmissionMatch[2];
-        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json" };
-        const target = `${env.SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`;
-        const response = request.method === "DELETE"
-          ? await fetch(target, { method: "DELETE", headers })
-          : await (async () => {
-              const body = await request.json().catch(() => ({}));
-              const status = body.status === "resolved" ? "resolved" : "open";
-              return fetch(target, { method: "PATCH", headers: { ...headers, Prefer: "return=minimal" }, body: JSON.stringify({ status }) });
-            })();
-        if (!response.ok) return json({ error: "Could not update submission." }, 502, origin);
+        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json", Prefer: "return=representation" };
+        const target = `${env.SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=id`;
+        let response;
+        if (request.method === "DELETE") {
+          response = await fetch(target, { method: "DELETE", headers });
+        } else {
+          const body = await request.json().catch(() => ({}));
+          const status = body.status === "resolved" ? "resolved" : "open";
+          response = await fetch(target, { method: "PATCH", headers, body: JSON.stringify({ status }) });
+        }
+        if (!response.ok) {
+          const detail = await response.text().catch(() => "");
+          console.error("admin submission action failed", table, id, response.status, detail.slice(0, 300));
+          return json({ error: "Could not update submission.", detail: detail.slice(0, 200) }, 502, origin);
+        }
+        const affected = await response.json().catch(() => []);
+        if (Array.isArray(affected) && !affected.length) return json({ error: "That submission no longer exists." }, 404, origin);
         return json({ ok: true }, 200, origin);
+      }
+
+      // Job enquiries: edit / change status / delete through the service role so
+      // the admin console never depends on browser-side RLS policies.
+      const adminEnquiryMatch = path.match(/^\/api\/admin\/job-enquiries\/([A-Za-z0-9_-]{1,64})$/);
+      if (adminEnquiryMatch && (request.method === "POST" || request.method === "DELETE")) {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
+        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json", Prefer: "return=representation" };
+        const target = `${env.SUPABASE_URL}/rest/v1/job_post_enquiries?id=eq.${encodeURIComponent(adminEnquiryMatch[1])}&select=id`;
+        let response;
+        if (request.method === "DELETE") {
+          response = await fetch(target, { method: "DELETE", headers });
+        } else {
+          const body = await request.json().catch(() => ({}));
+          const patch = {};
+          if (body.status !== void 0) {
+            if (!["new", "approved", "contacted", "rejected", "resolved"].includes(body.status)) return json({ error: "Invalid status." }, 400, origin);
+            patch.status = body.status;
+          }
+          for (const field of ["company_name", "contact_person", "work_email", "phone", "industry", "positions_to_fill", "additional_details", "website"]) {
+            if (body[field] !== void 0) patch[field] = String(body[field] ?? "").slice(0, field === "additional_details" ? 4000 : 300);
+          }
+          if (Array.isArray(body.role_types)) patch.role_types = body.role_types.map((r) => String(r).slice(0, 60)).slice(0, 20);
+          if (!Object.keys(patch).length) return json({ error: "Nothing to update." }, 400, origin);
+          if (patch.company_name === "" || patch.work_email === "") return json({ error: "Company name and work email are required." }, 400, origin);
+          response = await fetch(target, { method: "PATCH", headers, body: JSON.stringify(patch) });
+        }
+        if (!response.ok) {
+          const detail = await response.text().catch(() => "");
+          console.error("admin job enquiry action failed", response.status, detail.slice(0, 300));
+          return json({ error: "Could not update the enquiry.", detail: detail.slice(0, 200) }, 502, origin);
+        }
+        const affected = await response.json().catch(() => []);
+        if (Array.isArray(affected) && !affected.length) return json({ error: "That enquiry no longer exists." }, 404, origin);
+        return json({ ok: true }, 200, origin);
+      }
+
+      // Vacancy posters: edit / delete through the service role (no browser RLS
+      // policy exists for these), remove the R2 image on delete, and keep the
+      // public D1 mirror in step so the app updates immediately.
+      const adminPosterMatch = path.match(/^\/api\/admin\/posters\/([A-Za-z0-9_-]{1,64})$/);
+      if (adminPosterMatch && (request.method === "POST" || request.method === "DELETE")) {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
+        const posterId = adminPosterMatch[1];
+        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json", Prefer: "return=representation" };
+        const target = `${env.SUPABASE_URL}/rest/v1/employer_posters?id=eq.${encodeURIComponent(posterId)}`;
+        if (request.method === "DELETE") {
+          const lookup = await fetch(`${target}&select=id,image_url`, { headers });
+          const found = lookup.ok ? await lookup.json().catch(() => []) : [];
+          const response = await fetch(`${target}&select=id`, { method: "DELETE", headers });
+          if (!response.ok) {
+            const detail = await response.text().catch(() => "");
+            console.error("admin poster delete failed", posterId, response.status, detail.slice(0, 300));
+            return json({ error: "Could not delete the poster.", detail: detail.slice(0, 200) }, 502, origin);
+          }
+          const removed = await response.json().catch(() => []);
+          if (Array.isArray(removed) && !removed.length) return json({ error: "That poster no longer exists." }, 404, origin);
+          // Best-effort cleanup: the database row is already gone, so a storage
+          // or mirror hiccup must not turn the delete into an error.
+          try {
+            const key = found[0] && found[0].image_url ? employerPosterKey(found[0].image_url, env) : null;
+            if (key && env.MEDIA_BUCKET) await env.MEDIA_BUCKET.delete(key);
+          } catch (e) { console.error("poster image cleanup failed", posterId, e); }
+          try {
+            if (env.DB) await env.DB.batch([env.DB.prepare("DELETE FROM employer_posters WHERE id = ?").bind(posterId), publicDataVersionBumpStatement(env)]);
+          } catch (e) { console.error("poster D1 mirror delete failed", posterId, e); }
+          return json({ ok: true }, 200, origin);
+        }
+        const body = await request.json().catch(() => ({}));
+        const patch = {};
+        if (body.caption !== void 0) patch.caption = String(body.caption ?? "").trim().slice(0, 500) || null;
+        if (body.employer_id !== void 0) patch.employer_id = body.employer_id ? String(body.employer_id).slice(0, 120) : null;
+        if (body.agency_id !== void 0) patch.agency_id = body.agency_id ? String(body.agency_id).slice(0, 120) : null;
+        if (body.expires_at !== void 0) {
+          if (body.expires_at !== null && Number.isNaN(Date.parse(body.expires_at))) return json({ error: "Invalid expiry date." }, 400, origin);
+          patch.expires_at = body.expires_at;
+        }
+        if (!Object.keys(patch).length) return json({ error: "Nothing to update." }, 400, origin);
+        const response = await fetch(`${target}&select=*`, { method: "PATCH", headers, body: JSON.stringify(patch) });
+        if (!response.ok) {
+          const detail = await response.text().catch(() => "");
+          console.error("admin poster update failed", posterId, response.status, detail.slice(0, 300));
+          return json({ error: "Could not update the poster.", detail: detail.slice(0, 200) }, 502, origin);
+        }
+        const rows = await response.json().catch(() => []);
+        if (!Array.isArray(rows) || !rows.length) return json({ error: "That poster no longer exists." }, 404, origin);
+        try {
+          if (env.DB) {
+            const spec = D1_WRITE_THROUGH_SPECS.employer_posters;
+            const schema = await env.DB.prepare("PRAGMA table_info(employer_posters)").all();
+            const available = new Set((schema.results || []).map((column) => column.name));
+            const columns = spec.columns.filter((column) => available.has(column) && Object.prototype.hasOwnProperty.call(rows[0], column));
+            if (columns.includes("id")) await env.DB.batch([prepareD1WriteThroughUpsert(env, "employer_posters", spec, columns, rows[0]), publicDataVersionBumpStatement(env)]);
+          }
+        } catch (e) { console.error("poster D1 mirror update failed", posterId, e); }
+        return json({ ok: true, poster: rows[0] }, 200, origin);
       }
 
       // ---------- Smart Manager: server-side token flows ----------
