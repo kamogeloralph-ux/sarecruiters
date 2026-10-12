@@ -1724,7 +1724,8 @@ var worker_default = {
         }
         const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
         if (!adminKey || !env.SUPABASE_URL) {
-          return json({ error: "Admin data access is not configured." }, 503, origin);
+          const missing = [!adminKey && "SUPABASE_SERVICE_ROLE_KEY", !env.SUPABASE_URL && "SUPABASE_URL"].filter(Boolean).join(" and ");
+          return json({ error: `Admin data access is not configured: the Worker is missing ${missing}.` }, 503, origin);
         }
         const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}` };
         const tables = {
