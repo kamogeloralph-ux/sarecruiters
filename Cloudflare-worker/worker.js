@@ -1732,6 +1732,7 @@ var worker_default = {
           reports: "reports",
           suggestions: "suggestions",
           jobEnquiries: "job_post_enquiries",
+          jobSeekers: "job_seeker_requests",
           poolCandidates: "pool_candidates",
           posters: "employer_posters",
           houseAds: "house_ads",
@@ -1869,6 +1870,39 @@ var worker_default = {
         }
         const affected = await response.json().catch(() => []);
         if (Array.isArray(affected) && !affected.length) return json({ error: "That enquiry no longer exists." }, 404, origin);
+        return json({ ok: true }, 200, origin);
+      }
+
+      // "Looking for work?" requests: status updates (new / contacted / added /
+      // closed, plus the linked Talent Pool id) and deletion, service role only.
+      const adminSeekerMatch = path.match(/^\/api\/admin\/job-seekers\/([A-Za-z0-9_-]{1,64})$/);
+      if (adminSeekerMatch && (request.method === "POST" || request.method === "DELETE")) {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
+        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json", Prefer: "return=representation" };
+        const target = `${env.SUPABASE_URL}/rest/v1/job_seeker_requests?id=eq.${encodeURIComponent(adminSeekerMatch[1])}&select=id`;
+        let response;
+        if (request.method === "DELETE") {
+          response = await fetch(target, { method: "DELETE", headers });
+        } else {
+          const body = await request.json().catch(() => ({}));
+          const patch = {};
+          if (body.status !== void 0) {
+            if (!["new", "contacted", "added", "closed"].includes(body.status)) return json({ error: "Invalid status." }, 400, origin);
+            patch.status = body.status;
+          }
+          if (body.talent_pool_id !== void 0) patch.talent_pool_id = body.talent_pool_id ? String(body.talent_pool_id).slice(0, 120) : null;
+          if (!Object.keys(patch).length) return json({ error: "Nothing to update." }, 400, origin);
+          response = await fetch(target, { method: "PATCH", headers, body: JSON.stringify(patch) });
+        }
+        if (!response.ok) {
+          const detail = await response.text().catch(() => "");
+          console.error("admin job seeker action failed", response.status, detail.slice(0, 300));
+          return json({ error: "Could not update the request.", detail: detail.slice(0, 200) }, 502, origin);
+        }
+        const affected = await response.json().catch(() => []);
+        if (Array.isArray(affected) && !affected.length) return json({ error: "That request no longer exists." }, 404, origin);
         return json({ ok: true }, 200, origin);
       }
 
@@ -2158,6 +2192,86 @@ var worker_default = {
             "\nDetails: " + (body.additional_details || "-")
         });
         return json({ ok: true, email }, 200, origin);
+      }
+      // ---------- "Looking for work?" quick intake (public, Turnstile-protected) ----------
+      // Replaces people messaging the admin free-text ("may I send my CV?") with
+      // one structured request. It never creates a public profile: an admin
+      // triages it and can convert it into a Talent Pool candidate.
+      if (path === "/api/submit/job-seeker" && request.method === "POST") {
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const body = await request.json().catch(() => ({}));
+        const clean = (value, max) => String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+        const fullName = clean(body.full_name, 200);
+        const phone = clean(body.phone, 60);
+        const email = clean(body.email, 200);
+        if (!fullName) return json({ error: "Please add your full name." }, 400, origin);
+        if (!phone && !email) return json({ error: "Add a phone/WhatsApp number or an email so we can reach you." }, 400, origin);
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "That email address does not look right." }, 400, origin);
+        if (body.consent !== true) return json({ error: "Please tick the consent box to continue." }, 400, origin);
+        let cvLink = clean(body.cv_link, 500);
+        if (cvLink) {
+          if (!/^https?:\/\//i.test(cvLink)) cvLink = "https://" + cvLink;
+          try { const u = new URL(cvLink); if (!/^https?:$/.test(u.protocol)) throw new Error("bad"); }
+          catch (_) { return json({ error: "The CV link is not a valid web address." }, 400, origin); }
+        }
+        // Keep message line breaks (useful when someone pastes their whole note).
+        const message = String(body.message ?? "").replace(/\r/g, "").replace(/[ \t]+/g, " ").trim().slice(0, 4000);
+        const workStatus = ["citizen_pr", "work_visa", "unsure"].includes(body.work_status) ? body.work_status : "unsure";
+        const seekerUserId = await verifiedUserId(request, env);
+        try {
+          await supabaseRpc(env, "public_submit_job_seeker", {
+            p_full_name: fullName,
+            p_phone: phone,
+            p_email: email,
+            p_location: clean(body.location, 200),
+            p_looking_for: clean(body.looking_for, 500),
+            p_qualification: clean(body.qualification, 300),
+            p_work_status: workStatus,
+            p_availability: clean(body.availability, 100),
+            p_message: message,
+            p_cv_link: cvLink,
+            p_user_id: seekerUserId
+          });
+        } catch (e) {
+          return json({ error: "Could not send your request — please try again.", detail: e.detail }, 502, origin);
+        }
+        const statusLabel = { citizen_pr: "SA citizen / permanent resident", work_visa: "Valid SA work visa/permit", unsure: "Not specified" }[workStatus];
+        const adminEmail = await sendNotificationEmail(env, {
+          to_email: env.ADMIN_NOTIFY_EMAIL || "sarecruiters.directory@gmail.com",
+          email_subject: "SA Recruiters | New job seeker — " + fullName,
+          notification_type: "JOB SEEKER",
+          notification_title: "New \"Looking for work?\" request",
+          notification_intro: "A job seeker asked for help through SA Recruiters. Review it under Submissions → Job seekers.",
+          notification_body: "Name: " + fullName +
+            "\nPhone: " + (phone || "-") +
+            "\nEmail: " + (email || "-") +
+            "\nLocation: " + (clean(body.location, 200) || "-") +
+            "\nLooking for: " + (clean(body.looking_for, 500) || "-") +
+            "\nQualification: " + (clean(body.qualification, 300) || "-") +
+            "\nWork status: " + statusLabel +
+            "\nAvailability: " + (clean(body.availability, 100) || "-") +
+            "\nCV link: " + (cvLink || "-") +
+            "\n\n" + (message || "-")
+        });
+        // Instant, useful reply so the person is not left waiting. It makes no
+        // promise of placement — SA Recruiters is a directory, not an employer.
+        let autoReply = { sent: false };
+        if (email) {
+          const site = "https://sa-recruiters.co.za";
+          autoReply = await sendNotificationEmail(env, {
+            to_email: email,
+            email_subject: "SA Recruiters | We received your request",
+            notification_type: "JOB SEEKER",
+            notification_title: "Thanks, " + fullName.split(" ")[0] + " — we've got your details",
+            notification_intro: "Our team will review your request. In the meantime, these will help you move faster:",
+            notification_body: "1. Join the free Talent Pool so employers can find you:\n" + site + "/?section=talent-pool" +
+              "\n\n2. Browse the latest vacancies and set up alerts for the roles you want:\n" + site + "/?section=vacancies" +
+              "\n\n3. Build a professional CV in the app (menu → CV Builder).\n\n" +
+              "Please note: SA Recruiters is a directory — we cannot guarantee placement, and we never charge job seekers to apply for vacancies. Beware of anyone asking you to pay for a job."
+          });
+        }
+        return json({ ok: true, email: adminEmail, auto_reply: autoReply.sent === true }, 200, origin);
       }
       // ---------- Employer self-service registration (no Google sign-in, no Talent Pool profile) ----------
       // A brand-new employer registers here and gets back a working Smart
