@@ -198,6 +198,17 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   .row-item .row-actions-inline{display:flex;gap:6px;flex-shrink:0}
 }
 .row-actions-inline{display:none;gap:6px;flex-shrink:0}
+/* Posters open the editor on tap, so their Edit/Delete buttons must stay visible on phones too */
+.row-actions-inline.always{display:flex !important}
+/* Submissions rows (reports / suggestions / job enquiries) */
+.row-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.sub-item{cursor:default;align-items:flex-start}
+.sub-item:hover{background:transparent}
+@media(max-width:760px){
+  .sub-item{flex-direction:column;align-items:stretch}
+  .sub-item .row-actions{justify-content:flex-start;margin-top:8px}
+  .sub-item .row-actions .minibtn{padding:9px 12px;font-size:12.5px}
+}
 @media(min-width:761px){.row-actions-inline{display:flex}}
 /* Full details panel shown on expand */
 .row-details{display:none;padding:0 16px 14px 52px;font-size:13px;color:var(--text-2);line-height:1.6}
@@ -987,7 +998,7 @@ function debounce(fn, ms){
     t = setTimeout(function(){ fn.apply(ctx, args); }, ms);
   };
 }
-var editing = { agency: null, branch: null, vacancy: null, employer: null, article: null, articleSection: null };
+var editing = { agency: null, branch: null, vacancy: null, employer: null, article: null, articleSection: null, enquiry: null };
 var pendingPhoto = null;
 var pendingPhotoBlob = null;
 var subTab = 'reports';
@@ -1023,6 +1034,7 @@ function openSheet(id){ document.getElementById(id).classList.add('open'); }
 function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
 
 // ===== Helpers =====
+function jsq(v){ return String(v==null?'':v).replace(/[^A-Za-z0-9_-]/g,''); } // ids are safe tokens; strip anything that could break an inline handler
 function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function initials(n){ return (n||'?').trim().split(/\s+/).map(function(w){return w[0];}).join('').slice(0,2).toUpperCase(); }
 function genToken(){
@@ -1385,28 +1397,36 @@ async function upsertBranch(b){ var result=await supabaseClient.from('branches')
 async function removeBranch(id){ var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error) console.error('branch del',error); else await writeThroughD1Mirror('branches',id,'delete'); }
 async function upsertVacancy(v){
   var result = await supabaseClient.from('vacancies').upsert(v).select('*').single();
-  if(!result.error){ await writeThroughD1Mirror('vacancies',Object.assign({},v,result.data||{})); return; }
+  if(!result.error){ await writeThroughD1Mirror('vacancies',Object.assign({},v,result.data||{})); return true; }
   if(result.error.message && result.error.message.indexOf('column') > -1){
     var safe={id:v.id,agency_id:v.agency_id||'general',title:v.title||'',company:v.company||'',location:v.location||'',closing_date:v.closing_date||'',notes:v.notes||'',link:v.link||'',email:v.email||'',phone:v.phone||''};
     var retry=await supabaseClient.from('vacancies').upsert(safe).select('*').single();
-    if(retry.error){ console.error('vacancy save (retry)',retry.error); alert('Could not save vacancy: '+retry.error.message+'\\n\\nPlease run UPDATE_VACANCIES_SCHEMA.sql in Supabase to add the missing columns.'); }
-    else await writeThroughD1Mirror('vacancies',Object.assign({},safe,retry.data||{}));
-  } else { console.error('vacancy save',result.error); alert('Could not save vacancy: '+result.error.message); }
+    if(retry.error){ console.error('vacancy save (retry)',retry.error); alert('Could not save vacancy: '+retry.error.message+'\\n\\nPlease run UPDATE_VACANCIES_SCHEMA.sql in Supabase to add the missing columns.'); return false; }
+    else { await writeThroughD1Mirror('vacancies',Object.assign({},safe,retry.data||{})); return true; }
+  } else { console.error('vacancy save',result.error); alert('Could not save vacancy: '+result.error.message); return false; }
 }
 
 async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); else await writeThroughD1Mirror('vacancies',id,'delete'); }
+// One place for every admin write that goes through the Worker (service role).
+// Throws an Error carrying the server's message so callers can show it.
+async function adminApi(method, path, body){
+  var authHdr = await r2AuthHeader();
+  if (!authHdr.Authorization) throw new Error('Admin session expired — please sign in again');
+  var opts = { method: method, headers: Object.assign({}, authHdr) };
+  if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  var res = await fetchWithTimeout(R2_WORKER_URL + path, opts, 30000);
+  var data = await res.json().catch(function(){ return {}; });
+  if (!res.ok) {
+    var msg = data.error || ('Request failed (' + res.status + ')');
+    if (res.status === 404 && !data.error) msg = 'Not found — the Worker may need to be redeployed';
+    if (data.detail) console.error('admin api detail', path, data.detail);
+    throw new Error(msg);
+  }
+  return data;
+}
 async function adminSubmissionAction(kind, id, method, status){
   try {
-    var authHdr = await r2AuthHeader();
-    if (!authHdr.Authorization) throw new Error('Admin session expired');
-    var opts = { method: method, headers: authHdr };
-    if (method === 'POST') {
-      opts.headers['Content-Type'] = 'application/json';
-      opts.body = JSON.stringify({ status: status });
-    }
-    var res = await fetch(R2_WORKER_URL + '/api/admin/submissions/' + kind + '/' + encodeURIComponent(id), opts);
-    var body = await res.json().catch(function(){ return {}; });
-    if (!res.ok) throw new Error(body.error || 'Could not update submission');
+    await adminApi(method, '/api/admin/submissions/' + kind + '/' + encodeURIComponent(id), method === 'POST' ? { status: status } : undefined);
     return true;
   } catch(e) { console.error('admin submission action', e); showToast(e.message || 'Could not update submission'); return false; }
 }
@@ -2191,7 +2211,7 @@ function renderPosters(){
       '<img class="poster-thumb" src="'+escapeHtml(p.image_url)+'" alt="" loading="lazy">'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(p.caption||'Untitled poster')+' '+badge+'</div>'+
       '<div class="row-sub">'+escapeHtml(who||'No employer or agency linked')+' · '+escapeHtml(fmtDate(p.created_at))+'</div></div>'+
-      '<div class="row-actions-inline">'+
+      '<div class="row-actions-inline always">'+
         '<button class="minibtn" onclick="stopProp(event);openPosterEditSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>'+
         '<button class="minibtn danger" onclick="stopProp(event);deletePoster(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
       '</div></div>';
@@ -2359,32 +2379,26 @@ async function savePosterEdit(){
     agency_id: document.getElementById('pe-agency').value || null,
     expires_at: posterInputToExpiry(document.getElementById('pe-expiry').value)
   };
-  var res = await supabaseClient.from('employer_posters').update(patch).eq('id', editingPosterId).select('*');
-  if(res.error || !(res.data && res.data.length)){
-    console.error('poster update', res.error);
-    alert('Could not save changes'+(res.error ? ': '+res.error.message : ' (no permission — run ADD_POSTER_ADMIN_POLICIES.sql in Supabase).'));
-    return;
-  }
-  await writeThroughD1Mirror('employer_posters',Object.assign({id:editingPosterId},patch,res.data && res.data[0] || {}));
+  var result;
+  try { result = await adminApi('POST', '/api/admin/posters/' + encodeURIComponent(editingPosterId), patch); }
+  catch(e){ console.error('poster update', e); alert('Could not save changes: ' + (e.message || 'check your connection')); return; }
+  var id = editingPosterId;
+  var i = cache.posters.findIndex(function(x){ return String(x.id)===String(id); });
+  if(i >= 0) cache.posters[i] = Object.assign({}, cache.posters[i], patch, (result && result.poster) || {});
   closeSheet('poster-edit-overlay'); editingPosterId = null;
   showToast('Poster updated');
-  cache.posters = await getPosters();
   renderNav(); renderPosters(); renderDashboard();
 }
 async function deletePoster(id){
-  var p = cache.posters.find(function(x){ return x.id===id; });
+  var p = cache.posters.find(function(x){ return String(x.id)===String(id); });
   if(!confirm('Delete "'+((p && p.caption) || 'this poster')+'"? This cannot be undone.')) return;
-  var res = await supabaseClient.from('employer_posters').delete().eq('id', id).select('id');
-  if(res.error || !(res.data && res.data.length)){
-    console.error('poster delete', res.error);
-    alert('Could not delete poster'+(res.error ? ': '+res.error.message : ' (no permission — run ADD_POSTER_ADMIN_POLICIES.sql in Supabase).'));
-    return;
-  }
-  await writeThroughD1Mirror('employer_posters',id,'delete');
+  try { await adminApi('DELETE', '/api/admin/posters/' + encodeURIComponent(id)); }
+  catch(e){ console.error('poster delete', e); alert('Could not delete poster: ' + (e.message || 'check your connection')); return; }
+  cache.posters = cache.posters.filter(function(x){ return String(x.id)!==String(id); });
   showToast('Poster deleted');
-  cache.posters = await getPosters();
   renderNav(); renderPosters(); renderDashboard();
 }
+
 async function regenEmployerToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
   var tok = genToken(); if (!await saveEmployerManagerToken(id, tok)) return;
@@ -2600,6 +2614,7 @@ function renderVacancies(){
 }
 function openVacancySheet(id, employerId){
   editing.vacancy = id || null;
+  editing.enquiry = null;
   var v = id ? cache.vacancies.find(function(x){return x.id===id;}) : null;
   document.getElementById('vacancy-sheet-title').textContent = id ? 'Edit vacancy' : 'Add vacancy';
   fillAgencySelects();
@@ -2668,7 +2683,8 @@ async function saveVacancy(){
     email:document.getElementById('v-email').value.trim(),
     phone:document.getElementById('v-phone').value.trim()
   };
-  await upsertVacancy(payload);
+  var vacancySaved = await upsertVacancy(payload);
+  if (vacancySaved === false) return;   // keep the sheet open; the error was already shown
   if (photoUrl) {
     await propagateCompanyPhoto(company, photoUrl);
     // Mirror the server-side case-insensitive propagation locally so the
@@ -2677,10 +2693,13 @@ async function saveVacancy(){
     cache.vacancies.forEach(function(x){ if(x.company && x.company.trim().toLowerCase() === norm) x.company_photo = photoUrl; });
   }
   var isNewVacancy = !editing.vacancy;
+  var fromEnquiry = editing.enquiry;
   closeSheet('vacancy-overlay');
   showToast(editing.vacancy ? 'Vacancy updated' : 'Vacancy added');
   if (isNewVacancy) await queueAndSendVacancyAlerts(payload);
   editing.vacancy = null; pendingVacancyPhoto = null; pendingVacancyPhotoBlob = null;
+  editing.enquiry = fromEnquiry || null;
+  if (fromEnquiry) await resolveEnquiryAfterPublish(title);
   // Patch the in-memory list instead of re-fetching all ~9000 vacancies
   // from scratch after every single save — that reload (9+ paged requests)
   // was a big chunk of the admin panel feeling slow.
@@ -2892,25 +2911,25 @@ function renderSubmissions(){
     if(!cache.reports.length){ el.innerHTML = emptyState('No reports','Reports submitted by users will appear here.'); return; }
     el.innerHTML = cache.reports.map(function(r){
       var st = (r.status||'open');
-      return '<div class="row-item"><div class="row-main">'+
+      return '<div class="row-item sub-item"><div class="row-main">'+
         '<div class="row-title">'+escapeHtml(r.agency_name||'General report')+' <span class="badge '+(st==='resolved'?'resolved':'open')+'">'+st+'</span></div>'+
         '<div class="row-sub"><strong>Reason:</strong> '+escapeHtml(r.reason||'—')+'</div>'+
         (r.details?'<div class="row-sub" style="white-space:normal">'+escapeHtml(r.details)+'</div>':'')+
         '<div class="muted" style="margin-top:3px">'+fmtDate(r.created_at)+'</div>'+
       '</div><div class="row-actions">'+
-        (st!=='resolved'?'<button class="minibtn ok" onclick="resolveReport('+r.id+')">Resolve</button>':'<button class="minibtn" onclick="reopenReport('+r.id+')">Reopen</button>')+
-        '<button class="minibtn danger" onclick="delReport('+r.id+')">Delete</button>'+
+        (st!=='resolved'?'<button class="minibtn ok" onclick="resolveReport(\''+jsq(r.id)+'\')">Resolve</button>':'<button class="minibtn" onclick="reopenReport(\''+jsq(r.id)+'\')">Reopen</button>')+
+        '<button class="minibtn danger" onclick="delReport(\''+jsq(r.id)+'\')">Delete</button>'+
       '</div></div>';
     }).join('');
   } else if(subTab==='suggestions') {
     if(!cache.suggestions.length){ el.innerHTML = emptyState('No suggestions','Suggestions & feedback from users will appear here.'); return; }
     el.innerHTML = cache.suggestions.map(function(s){
-      return '<div class="row-item"><div class="row-main">'+
+      return '<div class="row-item sub-item"><div class="row-main">'+
         '<div class="row-title">'+escapeHtml(s.type||'Suggestion')+ (s.agency_name?(' — '+escapeHtml(s.agency_name)):'')+'</div>'+
         (s.details?'<div class="row-sub" style="white-space:normal">'+escapeHtml(s.details)+'</div>':'')+
         (s.contact?'<div class="muted" style="margin-top:3px">Contact: '+escapeHtml(s.contact)+'</div>':'')+
         '<div class="muted" style="margin-top:3px">'+fmtDate(s.created_at)+'</div>'+
-      '</div><div class="row-actions"><button class="minibtn danger" onclick="delSuggestion('+s.id+')">Delete</button></div></div>';
+      '</div><div class="row-actions"><button class="minibtn danger" onclick="delSuggestion(\''+jsq(s.id)+'\')">Delete</button></div></div>';
     }).join('');
   } else {
     // Job enquiries — the FirstJobly-style "Post a job" lead form
@@ -2919,8 +2938,8 @@ function renderSubmissions(){
     el.innerHTML = cache.jobEnquiries.map(function(j){
       var st = (j.status||'new');
       var roles = Array.isArray(j.role_types) ? j.role_types.join(', ') : '';
-      return '<div class="row-item"><div class="row-main">'+
-        '<div class="row-title">'+escapeHtml(j.company_name||'Untitled company')+' <span class="badge '+(st==='new'?'open':(st==='approved'?'resolved':'resolved'))+'">'+st+'</span></div>'+
+      return '<div class="row-item sub-item"><div class="row-main">'+
+        '<div class="row-title">'+escapeHtml(j.company_name||'Untitled company')+' <span class="badge '+(st==='new'?'open':'resolved')+'">'+st+'</span></div>'+
         '<div class="row-sub"><strong>Contact:</strong> '+escapeHtml(j.contact_person||'—')+' &middot; '+escapeHtml(j.work_email||'—')+(j.phone?(' &middot; '+escapeHtml(j.phone)):'')+'</div>'+
         (j.industry || j.positions_to_fill ? '<div class="row-sub">'+[j.industry?('Industry: '+escapeHtml(j.industry)):'', j.positions_to_fill?('Positions: '+escapeHtml(j.positions_to_fill)):''].filter(Boolean).join(' &middot; ')+'</div>' : '')+
         (roles?'<div class="row-sub">Roles: '+escapeHtml(roles)+'</div>':'')+
@@ -2928,33 +2947,111 @@ function renderSubmissions(){
         (j.website?'<div class="row-sub">Website: '+escapeHtml(j.website)+'</div>':'')+
         '<div class="muted" style="margin-top:3px">'+fmtDate(j.created_at)+'</div>'+
       '</div><div class="row-actions">'+
-        '<button class="minibtn" onclick="openJobEnquiryEditSheet(\''+j.id+'\')">Edit</button>'+
-        (st==='new'?'<button class="minibtn ok" onclick="approveJobEnquiry('+"'"+j.id+"'"+')">Approve for posting</button><button class="minibtn danger" onclick="rejectJobEnquiry('+"'"+j.id+"'"+')">Reject</button>':'')+
-        (st==='approved'?'<button class="minibtn ok" onclick="markJobEnquiryContacted('+"'"+j.id+"'"+')">Mark contacted</button>':'')+
-        (st==='contacted'?'<button class="minibtn" onclick="reopenJobEnquiry('+"'"+j.id+"'"+')">Reopen</button>':'')+
-        (st==='rejected'?'<button class="minibtn" onclick="reopenJobEnquiry('+"'"+j.id+"'"+')">Reopen</button>':'')+
-        '<button class="minibtn danger" onclick="delJobEnquiry('+"'"+j.id+"'"+')">Delete</button>'+
+        '<button class="minibtn" onclick="openJobEnquiryEditSheet(\''+jsq(j.id)+'\')">Edit</button>'+
+        ((st==='new'||st==='approved')?'<button class="minibtn ok" onclick="approveJobEnquiry(\''+jsq(j.id)+'\')">Approve &amp; publish</button>':'')+
+        (st==='new'?'<button class="minibtn danger" onclick="rejectJobEnquiry(\''+jsq(j.id)+'\')">Reject</button>':'')+
+        ((st==='new'||st==='approved')?'<button class="minibtn" onclick="markJobEnquiryContacted(\''+jsq(j.id)+'\')">Mark contacted</button>':'')+
+        ((st==='approved'||st==='contacted')?'<button class="minibtn ok" onclick="markJobEnquiryResolved(\''+jsq(j.id)+'\')">Mark resolved</button>':'')+
+        ((st==='contacted'||st==='rejected'||st==='resolved')?'<button class="minibtn" onclick="reopenJobEnquiry(\''+jsq(j.id)+'\')">Reopen</button>':'')+
+        '<button class="minibtn danger" onclick="delJobEnquiry(\''+jsq(j.id)+'\')">Delete</button>'+
       '</div></div>';
     }).join('');
   }
 }
-async function resolveReport(id){ await updateReportStatus(id,'resolved'); showToast('Marked resolved'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
-async function reopenReport(id){ await updateReportStatus(id,'open'); showToast('Reopened'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
-async function delReport(id){ if(!confirm('Delete this report?')) return; await deleteReport(id); showToast('Report deleted'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
-async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
-async function approveJobEnquiry(id){
-  if(!confirm('Approve this request for posting? It will still need to be turned into a vacancy by an admin.')) return;
-  if(!await updateJobEnquiryStatus(id,'approved')) return; showToast('Approved for posting'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard();
+// After any submissions change: refresh counts/lists without waiting on a network reload.
+function refreshSubmissionsUI(){ renderNav(); renderSubmissions(); renderDashboard(); }
+function dropFromCache(listName, id){ cache[listName] = cache[listName].filter(function(x){ return String(x.id) !== String(id); }); }
+async function resolveReport(id){
+  if(!await updateReportStatus(id,'resolved')) return;
+  cache.reports.forEach(function(r){ if(String(r.id)===String(id)) r.status='resolved'; });
+  showToast('Marked resolved'); refreshSubmissionsUI();
+}
+async function reopenReport(id){
+  if(!await updateReportStatus(id,'open')) return;
+  cache.reports.forEach(function(r){ if(String(r.id)===String(id)) r.status='open'; });
+  showToast('Reopened'); refreshSubmissionsUI();
+}
+async function delReport(id){
+  if(!confirm('Delete this report?')) return;
+  if(!await deleteReport(id)) return;
+  dropFromCache('reports', id); showToast('Report deleted'); refreshSubmissionsUI();
+}
+async function delSuggestion(id){
+  if(!confirm('Delete this suggestion?')) return;
+  if(!await deleteSuggestion(id)) return;
+  dropFromCache('suggestions', id); showToast('Suggestion deleted'); refreshSubmissionsUI();
+}
+
+// ----- Job enquiries -----
+// Approve = review the enquiry as a vacancy, publish it, and resolve the enquiry.
+// The enquiry only moves to "resolved" once the vacancy has really been saved,
+// so cancelling the sheet leaves it waiting where it was.
+function enquiryTitleGuess(j){
+  var d = String(j.additional_details||'').replace(/\r/g,'').split('\n').map(function(x){return x.trim();}).filter(Boolean)[0] || '';
+  d = d.replace(/\s+(to join|wanted|required|needed|for our|at our).*$/i,'').replace(/[.:;,\s]+$/,'');
+  if(d.length > 90) d = d.slice(0,90).replace(/\s+\S*$/,'');
+  return d || (Array.isArray(j.role_types) && j.role_types.length ? j.role_types.join(' / ') + ' vacancy' : '');
+}
+function publishJobEnquiry(id){
+  var j = cache.jobEnquiries.find(function(x){return String(x.id)===String(id);});
+  if(!j) return;
+  openVacancySheet(null);                       // resets editing.vacancy / editing.enquiry
+  editing.enquiry = String(j.id);
+  document.getElementById('vacancy-sheet-title').textContent = 'Publish job enquiry';
+  document.getElementById('v-agency').value = 'general';
+  document.getElementById('v-title').value = enquiryTitleGuess(j);
+  document.getElementById('v-company').value = j.company_name || '';
+  document.getElementById('v-notes').value = j.additional_details || '';
+  document.getElementById('v-email').value = j.work_email || '';
+  document.getElementById('v-phone').value = j.phone || '';
+  document.getElementById('v-link').value = j.website || '';
+  document.getElementById('v-etype').value = Array.isArray(j.role_types) ? j.role_types.join(', ') : '';
+  showToast('Check the details, then Save to publish');
+}
+async function approveJobEnquiry(id){ publishJobEnquiry(id); }
+// Called by saveVacancy() once the vacancy exists in the app.
+async function resolveEnquiryAfterPublish(vacancyTitle){
+  var enquiryId = editing.enquiry; editing.enquiry = null;
+  if(!enquiryId) return;
+  if(await updateJobEnquiryStatus(enquiryId,'resolved')){
+    setEnquiryStatusLocal(enquiryId,'resolved');
+    showToast('Published "'+(vacancyTitle||'vacancy')+'" and resolved the enquiry');
+    refreshSubmissionsUI();
+  } else {
+    alert('The vacancy was published, but the enquiry could not be marked resolved. Use "Mark resolved" on it.');
+  }
 }
 async function rejectJobEnquiry(id){
   if(!confirm('Reject this job request? It will not be published.')) return;
-  if(!await updateJobEnquiryStatus(id,'rejected')) return; showToast('Request rejected'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard();
+  if(!await updateJobEnquiryStatus(id,'rejected')) return;
+  setEnquiryStatusLocal(id,'rejected'); showToast('Request rejected'); refreshSubmissionsUI();
 }
-async function markJobEnquiryContacted(id){ if(!await updateJobEnquiryStatus(id,'contacted')) return; showToast('Marked contacted'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
-async function reopenJobEnquiry(id){ if(!await updateJobEnquiryStatus(id,'new')) return; showToast('Reopened'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
-async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) return; if(!await deleteJobEnquiry(id)) return; showToast('Enquiry deleted'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
-async function updateJobEnquiryStatus(id,status){ try{ var res=await supabaseClient.from('job_post_enquiries').update({status:status}).eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not update this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not update this enquiry. Check your connection.'); return false; } }
-async function deleteJobEnquiry(id){ try{ var res=await supabaseClient.from('job_post_enquiries').delete().eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not delete this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not delete this enquiry. Check your connection.'); return false; } }
+async function markJobEnquiryResolved(id){
+  if(!await updateJobEnquiryStatus(id,'resolved')) return;
+  setEnquiryStatusLocal(id,'resolved'); showToast('Marked resolved'); refreshSubmissionsUI();
+}
+async function markJobEnquiryContacted(id){
+  if(!await updateJobEnquiryStatus(id,'contacted')) return;
+  setEnquiryStatusLocal(id,'contacted'); showToast('Marked contacted'); refreshSubmissionsUI();
+}
+async function reopenJobEnquiry(id){
+  if(!await updateJobEnquiryStatus(id,'new')) return;
+  setEnquiryStatusLocal(id,'new'); showToast('Reopened'); refreshSubmissionsUI();
+}
+async function delJobEnquiry(id){
+  if(!confirm('Delete this job enquiry?')) return;
+  if(!await deleteJobEnquiry(id)) return;
+  dropFromCache('jobEnquiries', id); showToast('Enquiry deleted'); refreshSubmissionsUI();
+}
+function setEnquiryStatusLocal(id,status){ cache.jobEnquiries.forEach(function(x){ if(String(x.id)===String(id)) x.status=status; }); }
+async function updateJobEnquiryStatus(id,status){
+  try{ await adminApi('POST','/api/admin/job-enquiries/'+encodeURIComponent(id),{status:status}); return true; }
+  catch(e){ console.error('job enquiry status',e); alert('Could not update this enquiry: '+(e.message||'check your connection')); return false; }
+}
+async function deleteJobEnquiry(id){
+  try{ await adminApi('DELETE','/api/admin/job-enquiries/'+encodeURIComponent(id)); return true; }
+  catch(e){ console.error('job enquiry delete',e); alert('Could not delete this enquiry: '+(e.message||'check your connection')); return false; }
+}
 
 function openJobEnquiryEditSheet(id){
   var j=cache.jobEnquiries.find(function(x){return String(x.id)===String(id);});
@@ -2977,8 +3074,8 @@ async function saveJobEnquiryEdit(){
   var email=document.getElementById('je-email').value.trim();
   if(!company||!email){ alert('Company name and work email are required.'); return; }
   var payload={company_name:company,contact_person:document.getElementById('je-contact').value.trim(),work_email:email,phone:document.getElementById('je-phone').value.trim(),industry:document.getElementById('je-industry').value.trim(),positions_to_fill:document.getElementById('je-positions').value.trim(),role_types:document.getElementById('je-roles').value.split(',').map(function(x){return x.trim();}).filter(Boolean),additional_details:document.getElementById('je-details').value.trim(),website:document.getElementById('je-website').value.trim()};
-  var res=await supabaseClient.from('job_post_enquiries').update(payload).eq('id',id).select('id');
-  if(res.error || !(res.data&&res.data.length)){ alert('Could not save this enquiry: '+(res.error?res.error.message:'no matching record')); return; }
+  try{ await adminApi('POST','/api/admin/job-enquiries/'+encodeURIComponent(id),payload); }
+  catch(e){ alert('Could not save this enquiry: '+(e.message||'check your connection')); return; }
   var i=cache.jobEnquiries.findIndex(function(x){return String(x.id)===String(id);});
   if(i>=0) cache.jobEnquiries[i]=Object.assign({},cache.jobEnquiries[i],payload);
   closeSheet('job-enquiry-overlay'); renderSubmissions(); renderNav(); showToast('Job enquiry updated');
