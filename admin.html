@@ -307,8 +307,12 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .pb-item.pb-failed{border-color:var(--danger)}
 .pb-status{font-size:12px;font-weight:600;margin-top:2px}
 .poster-thumb{width:48px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--card-2)}
+
+.load-banner{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:0 0 12px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text-2);font-size:13px}
+.load-banner.err{border-color:var(--danger);color:var(--text)}
+.load-banner.err strong{color:var(--danger);display:block;margin-bottom:2px}
+.stat.bad{border-color:var(--danger);cursor:pointer}.stat.bad .v{color:var(--danger)}
 </style>
-<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 <style>
 .house-ad-admin-thumb{background:var(--card-2);border:1px solid var(--border)}
 .house-ad-admin-thumb img{width:100%;height:100%;object-fit:cover}
@@ -373,6 +377,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <!-- DASHBOARD -->
       <div class="section section-dashboard active" id="sec-dashboard">
         <div class="section-head"><h2>Dashboard</h2></div>
+        <div id="load-banner"></div>
         <div class="stats-grid" id="stats-grid"></div>
         <div class="card analytics-card section-analytics-card" style="margin-top:14px"><div class="card-pad"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0;font-size:16px">Usage analytics</h3><p style="margin:3px 0 0;color:var(--text-2);font-size:12px">Last 30 days · anonymous events</p></div><button class="minibtn" onclick="loadAnalyticsSummary(true)">Load analytics</button></div><div id="analytics-summary" style="margin-top:14px"><div style="color:var(--text-2);font-size:13px">Analytics is loaded only when requested.</div></div></div></div>
         <div id="home-cards" style="margin-top:8px"></div>
@@ -545,6 +550,10 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Companies (comma separated)</label><input id="a-companies" placeholder="e.g. Standard Bank, Shoprite"></div>
     <div class="field"><label>Trades / Industries (comma separated)</label><input id="a-trades" placeholder="e.g. Mining, Logistics, Construction"></div>
     <div class="field"><label>CV preference</label><select id="a-cvpref"><option>Email</option><option>WhatsApp</option><option>Online form</option><option>Phone</option><option>Upload portal</option></select></div>
+    <div class="toggle-row" style="margin-bottom:16px">
+      <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified agencies show a badge on their listing</div></div>
+      <label class="switch"><input type="checkbox" id="a-verified"><span class="track"><span class="knob"></span></span></label>
+    </div>
     <div class="field"><label>Agency photo / logo</label><input type="file" id="a-photo" accept="image/*" onchange="handlePhoto(event)"></div>
     <div id="a-photo-preview" style="display:none;margin-bottom:12px"><img id="a-photo-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></div>
     <div class="sheet-actions">
@@ -826,11 +835,11 @@ async function runLogoMigration(endpoint, btnId, outId, refreshFn){
 }
 async function migrateAgencyLogosToR2(){
   await runLogoMigration('/api/migrate-agency-logos', 'migrate-agency-logos-btn', 'migrate-agency-logos-result',
-    function(){ if(typeof renderAgencies === 'function') renderAgencies(); if(typeof loadAll === 'function') loadAll(); });
+    function(){ if(typeof loadAll === 'function') loadAll(['agencies']); });
 }
 async function migrateEmployerLogosToR2(){
   await runLogoMigration('/api/migrate-employer-logos', 'migrate-employer-logos-btn', 'migrate-employer-logos-result',
-    function(){ if(typeof loadAll === 'function') loadAll(); });
+    function(){ if(typeof loadAll === 'function') loadAll(['employers']); });
 }
 async function migratePhotosToR2(){
   var btn = document.getElementById('migrate-photos-btn');
@@ -872,6 +881,28 @@ var ADMIN_WHATSAPP = '27715531005';
 // ===== State =====
 var cache = { agencies: [], branches: [], vacancies: [], employers: [], posters: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [], houseAds: [] };
 var adminDataReady = false;
+// Each dataset loads, succeeds or fails on its own, so one slow source can no
+// longer leave every dashboard tile on "…" or silently show zero.
+var loadState = { agencies:'loading', branches:'loading', vacancies:'loading', employers:'loading', aux:'loading' };
+var loadErrors = {};
+var restoredFlags = {};
+var vacancyProgress = 0;
+var LOAD_LABELS = { agencies:'Agencies', branches:'Branches', vacancies:'Vacancies', employers:'Employers', aux:'Reports, posters, Talent Pool & media' };
+function resetLoadState(){ Object.keys(loadState).forEach(function(k){ loadState[k]='loading'; }); loadErrors={}; restoredFlags={}; vacancyProgress=0; }
+function dsShown(k){ return loadState[k]==='ok' || !!restoredFlags[k] || (k==='vacancies' && vacancyProgress>0); }
+function withTimeout(promise, ms, label){
+  return new Promise(function(resolve, reject){
+    var t = setTimeout(function(){ reject(new Error(label+' timed out after '+Math.round(ms/1000)+'s')); }, ms);
+    Promise.resolve(promise).then(function(v){ clearTimeout(t); resolve(v); }, function(e){ clearTimeout(t); reject(e); });
+  });
+}
+function fetchWithTimeout(url, opts, ms){
+  opts = Object.assign({}, opts || {}); ms = ms || 30000;
+  if(typeof AbortController === 'undefined') return withTimeout(fetch(url, opts), ms, 'Request');
+  var ctl = new AbortController(); opts.signal = ctl.signal;
+  var t = setTimeout(function(){ ctl.abort(); }, ms);
+  return fetch(url, opts).then(function(r){ clearTimeout(t); return r; }, function(e){ clearTimeout(t); throw (e && e.name==='AbortError' ? new Error('Request timed out after '+Math.round(ms/1000)+'s') : e); });
+}
 var ADMIN_CACHE_DB = 'sa_data_cache_db';
 var ADMIN_CACHE_STORE = 'kv';
 var ADMIN_CACHE_KEY = 'sa_admin_directory_v1';
@@ -904,7 +935,7 @@ function publicLiveVacancyCount(rows){
 }
 function updateVacancyCountSummary(){
   var el=document.getElementById('vacancy-count-summary');
-  if(el&&adminDataReady)el.textContent=cache.vacancies.length.toLocaleString()+' stored records · '+publicLiveVacancyCount(cache.vacancies).toLocaleString()+' public live vacancies';
+  if(el&&dsShown('vacancies'))el.textContent=cache.vacancies.length.toLocaleString()+' stored records · '+publicLiveVacancyCount(cache.vacancies).toLocaleString()+' public live vacancies';
 }
 function openAdminCacheDB(){
   return new Promise(function(resolve,reject){
@@ -920,14 +951,32 @@ async function restoreAdminDirectoryCache(){
     var db=await openAdminCacheDB();
     var d=await new Promise(function(resolve,reject){ var r=db.transaction(ADMIN_CACHE_STORE,'readonly').objectStore(ADMIN_CACHE_STORE).get(ADMIN_CACHE_KEY); r.onsuccess=function(){resolve(r.result);}; r.onerror=function(){reject(r.error);}; });
     if(!d || !Array.isArray(d.agencies)) return false;
-    cache.agencies=d.agencies||[]; cache.branches=d.branches||[]; cache.vacancies=d.vacancies||[]; cache.employers=d.employers||[];
+    // Cached copies are only a head start: never overwrite data that already loaded fresh.
+    if(loadState.agencies!=='ok'){ cache.agencies=d.agencies||[]; restoredFlags.agencies=true; }
+    if(loadState.branches!=='ok'){ cache.branches=d.branches||[]; restoredFlags.branches=true; }
+    if(loadState.employers!=='ok'){ cache.employers=d.employers||[]; restoredFlags.employers=true; }
+    if(loadState.vacancies!=='ok' && vacancyProgress===0 && Array.isArray(d.vacancies) && d.vacancies.length){ cache.vacancies=d.vacancies; restoredFlags.vacancies=true; }
     return true;
   }catch(e){ return false; }
 }
 async function saveAdminDirectoryCache(){
   try{
     var db=await openAdminCacheDB();
-    await new Promise(function(resolve,reject){ var tx=db.transaction(ADMIN_CACHE_STORE,'readwrite'); tx.objectStore(ADMIN_CACHE_STORE).put({agencies:cache.agencies,branches:cache.branches,vacancies:cache.vacancies,employers:cache.employers,savedAt:Date.now()},ADMIN_CACHE_KEY); tx.oncomplete=resolve; tx.onerror=function(){reject(tx.error);}; });
+    await new Promise(function(resolve,reject){
+      var tx=db.transaction(ADMIN_CACHE_STORE,'readwrite'); var store=tx.objectStore(ADMIN_CACHE_STORE);
+      var g=store.get(ADMIN_CACHE_KEY);
+      g.onsuccess=function(){
+        var prev=g.result||{};
+        store.put({
+          agencies: loadState.agencies==='ok' ? cache.agencies : (prev.agencies||[]),
+          branches: loadState.branches==='ok' ? cache.branches : (prev.branches||[]),
+          employers: loadState.employers==='ok' ? cache.employers : (prev.employers||[]),
+          vacancies: loadState.vacancies==='ok' ? cache.vacancies : (prev.vacancies||[]),
+          savedAt: Date.now()
+        }, ADMIN_CACHE_KEY);
+      };
+      tx.oncomplete=resolve; tx.onerror=function(){reject(tx.error);};
+    });
   }catch(e){}
 }
 function debounce(fn, ms){
@@ -1045,7 +1094,7 @@ async function doLogout(){
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
   cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[] };
-  adminDataReady = false;
+  adminDataReady = false; resetLoadState();
 }
 
 // A session can end in another tab or expire while this console is open.
@@ -1053,7 +1102,7 @@ async function doLogout(){
 if (supabaseClient && supabaseClient.auth) {
   supabaseClient.auth.onAuthStateChange(function(event, session){
     if (event === 'SIGNED_OUT' || !session) {
-      adminDataReady = false;
+      adminDataReady = false; resetLoadState();
       cache = { agencies:[], branches:[], vacancies:[], employers:[], posters:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[] };
       var app = document.getElementById('app');
       var login = document.getElementById('login-screen');
@@ -1078,19 +1127,10 @@ async function enterConsole(user){
     renderDashboard();
     renderAgencies(); renderBranches(); renderVacancies(); renderEmployers();
   });
-  loadAll().then(async function(){
-    await checkTracksTable();
-    adminDataReady = true;
-    saveAdminDirectoryCache();
-    renderNav();
-    renderDashboard();
-  }).catch(function(error){
+  loadAll().then(function(){ return checkTracksTable(); }).catch(function(error){
     console.error('Admin data bootstrap failed:', error);
-    adminDataReady = true;
     showToast('Some admin data could not be loaded.');
-    renderNav();
-    renderDashboard();
-  });
+  }).then(function(){ adminDataReady = true; renderNav(); renderDashboard(); });
 }
 // Check session status on page load and render the appropriate admin state.
 async function initAdminPage(){
@@ -1171,42 +1211,49 @@ async function writeThroughD1Mirror(table, value, operation){
 
 // ===== Data access =====
 async function getAgencies(){
-  var { data, error } = await supabaseClient.from('agencies').select('id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token').order('created_at',{ascending:false});
-  if (error){ console.error('agencies',error); return []; }
-  return data;
+  var cols = 'id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token';
+  var res = await withTimeout(supabaseClient.from('agencies').select(cols).order('created_at',{ascending:false}), 30000, 'Agencies');
+  if (res.error) {
+    // If the token column is not readable from the browser role, still load the list.
+    console.warn('agencies: retrying without manage_token', res.error);
+    res = await withTimeout(supabaseClient.from('agencies').select(cols.replace(',manage_token','')).order('created_at',{ascending:false}), 30000, 'Agencies');
+  }
+  if (res.error) throw new Error(res.error.message || 'Agencies could not be read');
+  return res.data || [];
 }
 async function getBranches(){
-  var { data, error } = await supabaseClient.from('branches').select('id,agency_id,name,location,phone,email').order('name',{ascending:true});
-  if (error){ console.error('branches',error); return []; }
-  return data || [];
+  var res = await withTimeout(supabaseClient.from('branches').select('id,agency_id,name,location,phone,email').order('name',{ascending:true}), 30000, 'Branches');
+  if (res.error) throw new Error(res.error.message || 'Branches could not be read');
+  return res.data || [];
 }
-async function getVacancies(){
-  // Keep the admin UI's existing in-memory editing contract, but page through
-  // D1 rather than downloading the vacancy table from PostgREST. The endpoint
-  // also accepts q/location/source/agency_id/employer_id/remote/experience
-  // filters for callers that can keep filtering server-side.
-  try {
-    var authHdr = await r2AuthHeader();
-    if (!authHdr.Authorization) throw new Error('Admin session expired');
-    var all = [];
-    var cursor = '';
-    var pageSize = 250;
-    for (var page = 0; page < 100; page++) {
-      var qs = new URLSearchParams({ limit: String(pageSize), include_expired: '1' });
-      if (cursor) qs.set('cursor', cursor);
-      var response = await fetch(R2_WORKER_URL + '/api/admin/vacancies?' + qs.toString(), { headers: authHdr, cache: 'no-store' });
-      var body = await response.json().catch(function(){ return {}; });
-      if (!response.ok) throw new Error(body.error || 'Could not load vacancies');
-      var rows = Array.isArray(body.vacancies) ? body.vacancies : [];
-      all = all.concat(rows);
-      if (!body.next_cursor || !rows.length) break;
-      cursor = body.next_cursor;
+async function getVacancies(onProgress){
+  // Pages through the Worker's D1 endpoint (max 500 rows per request). Rows are
+  // reported as each page arrives so the dashboard shows live progress; a failed
+  // page is retried once, and anything already loaded is kept.
+  var authHdr = await r2AuthHeader();
+  if (!authHdr.Authorization) throw new Error('Admin session expired - sign in again');
+  var all = [];
+  var cursor = '';
+  for (var page = 0; page < 200; page++) {
+    var qs = new URLSearchParams({ limit: '500', include_expired: '1' });
+    if (cursor) qs.set('cursor', cursor);
+    var body = null, lastError = null;
+    for (var attempt = 0; attempt < 2 && body === null; attempt++) {
+      try {
+        var response = await fetchWithTimeout(R2_WORKER_URL + '/api/admin/vacancies?' + qs.toString(), { headers: authHdr, cache: 'no-store' }, 30000);
+        var parsed = await response.json().catch(function(){ return {}; });
+        if (!response.ok) throw new Error(parsed.error || ('Vacancies request failed (' + response.status + ')'));
+        body = parsed;
+      } catch (e) { lastError = e; if (attempt === 0) await new Promise(function(r){ setTimeout(r, 700); }); }
     }
-    return all;
-  } catch(e) {
-    console.error('admin vacancies load', e);
-    return [];
+    if (body === null) throw new Error((lastError && lastError.message) || 'Could not load vacancies');
+    var rows = Array.isArray(body.vacancies) ? body.vacancies : [];
+    Array.prototype.push.apply(all, rows);
+    if (typeof onProgress === 'function') onProgress(all);
+    if (!body.next_cursor || !rows.length) break;
+    cursor = body.next_cursor;
   }
+  return all;
 }
 async function getAdminSubmissions(){
   var authHdr = await r2AuthHeader();
@@ -1219,7 +1266,7 @@ async function getAdminSubmissions(){
 async function getAdminAuxiliaryData(){
   var authHdr = await r2AuthHeader();
   if (!authHdr.Authorization) throw new Error('Admin session expired');
-  var res = await fetch(R2_WORKER_URL + '/api/admin/auxiliary', { headers: authHdr, cache: 'no-store' });
+  var res = await fetchWithTimeout(R2_WORKER_URL + '/api/admin/auxiliary', { headers: authHdr, cache: 'no-store' }, 30000);
   var body = await res.json().catch(function(){ return {}; });
   if (!res.ok) throw new Error(body.error || 'Could not load admin data');
   return body;
@@ -1295,8 +1342,14 @@ async function upsertAgency(a){
 
 async function removeAgency(id){ var { error } = await supabaseClient.from('agencies').delete().eq('id',id); if(error){ console.error('agency del',error); alert('Could not delete: '+error.message); } else await writeThroughD1Mirror('agencies',id,'delete'); }
 async function getEmployers(){
-  try { var { data, error } = await supabaseClient.from('employers').select('id,name,industry,website,contact,email,location,address,photo,verified,manage_token').order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
-  return [];
+  var cols = 'id,name,industry,website,contact,email,location,address,photo,verified,manage_token';
+  var res = await withTimeout(supabaseClient.from('employers').select(cols).order('created_at',{ascending:false}), 30000, 'Employers');
+  if (res.error) {
+    console.warn('employers: retrying without manage_token', res.error);
+    res = await withTimeout(supabaseClient.from('employers').select(cols.replace(',manage_token','')).order('created_at',{ascending:false}), 30000, 'Employers');
+  }
+  if (res.error) throw new Error(res.error.message || 'Employers could not be read');
+  return res.data || [];
 }
 async function getPosters(){
   try { var { data, error } = await supabaseClient.from('employer_posters').select('id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at').order('created_at',{ascending:false}).limit(500); if(!error) return data||[]; console.error('posters load',error); } catch(e){ console.error('posters load',e); }
@@ -1465,42 +1518,63 @@ async function regenerateAllEmployerTokens(){
   else showToast('All '+ok+' employer manager links regenerated');
 }
 
-async function loadAll(){
-  var results = await Promise.all([
-    safeAdminRead('agencies', getAgencies),
-    safeAdminRead('branches', getBranches),
-    safeAdminRead('vacancies', getVacancies),
-    safeAdminRead('employers', getEmployers),
-    safeAdminObjectRead('auxiliary admin data', getAdminAuxiliaryData)
-  ]);
-  cache.agencies = results[0] || [];
-  cache.branches = results[1] || [];
-  cache.vacancies = results[2] || [];
-  cache.employers = results[3] || [];
-  var auxiliary = results[4] || {};
-  cache.reports = Array.isArray(auxiliary.reports) ? auxiliary.reports : [];
-  cache.suggestions = Array.isArray(auxiliary.suggestions) ? auxiliary.suggestions : [];
-  cache.tracks = Array.isArray(auxiliary.tracks) ? auxiliary.tracks : [];
-  cache.poolCandidates = Array.isArray(auxiliary.poolCandidates) ? auxiliary.poolCandidates : [];
-  cache.posters = Array.isArray(auxiliary.posters) ? auxiliary.posters : [];
-  cache.jobEnquiries = Array.isArray(auxiliary.jobEnquiries) ? auxiliary.jobEnquiries : [];
-  cache.houseAds = Array.isArray(auxiliary.houseAds) ? auxiliary.houseAds : [];
-
-  var settings = await Promise.all([
-    getAppSetting('public_vacancy_posting','false'),
-    getAppSetting('public_employer_registration','false'),
-    getAppSetting('public_employer_directory','true')
-  ]);
+function refreshActiveSection(){
+  var el = document.querySelector('.section.active'); if(!el) return;
+  var id = el.id.replace('sec-','');
+  try {
+    if(id==='agencies') renderAgencies(); else if(id==='branches') renderBranches();
+    else if(id==='vacancies') renderVacancies(); else if(id==='employers') renderEmployers();
+    else if(id==='posters') renderPosters(); else if(id==='houseads') renderHouseAds();
+    else if(id==='submissions') renderSubmissions(); else if(id==='poolcandidates') renderPoolCandidates();
+  } catch(e){ console.error('refresh section', id, e); }
+}
+function runLoad(key, task, apply){
+  loadState[key] = 'loading'; delete loadErrors[key];
+  return task().then(function(value){ apply(value); loadState[key] = 'ok'; delete restoredFlags[key]; })
+    .catch(function(error){ loadState[key] = 'failed'; loadErrors[key] = (error && error.message) || String(error); console.error('admin load failed: '+key, error); })
+    .then(function(){ adminDataReady = true; renderNav(); renderDashboard(); refreshActiveSection(); });
+}
+async function loadSettings(){
+  function read(key, fallback){ return withTimeout(getAppSetting(key, fallback), 15000, 'Settings').catch(function(){ return fallback; }); }
+  var settings = await Promise.all([ read('public_vacancy_posting','false'), read('public_employer_registration','false'), read('public_employer_directory','true') ]);
   publicVacancyPostingOpen = (settings[0]===true||settings[0]==='true');
   publicEmployerRegistrationOpen = (settings[1]===true||settings[1]==='true');
   employerDirectoryOpen = (settings[2]===true||settings[2]==='true');
-  updatePostingUI();
-  updateEmployerRegUI();
-  updateEmployerDirectoryUI();
-  fillAgencySelects();
-
+  updatePostingUI(); updateEmployerRegUI(); updateEmployerDirectoryUI();
+}
+// loadAll() reloads everything; loadAll(['agencies','branches',...]) reloads only
+// what changed (e.g. after saving one agency) instead of re-downloading all vacancies.
+async function loadAll(scope){
+  var keys = Array.isArray(scope) && scope.length ? scope : ['agencies','branches','vacancies','employers','aux','settings'];
+  var has = function(k){ return keys.indexOf(k) >= 0; };
+  var jobs = [];
+  if(has('agencies')) jobs.push(runLoad('agencies', getAgencies, function(v){ cache.agencies = v; fillAgencySelects(); }));
+  if(has('branches')) jobs.push(runLoad('branches', getBranches, function(v){ cache.branches = v; }));
+  if(has('employers')) jobs.push(runLoad('employers', getEmployers, function(v){ cache.employers = v; }));
+  if(has('vacancies')){
+    vacancyProgress = 0;
+    jobs.push(runLoad('vacancies', function(){
+      return getVacancies(function(rows){ cache.vacancies = rows; vacancyProgress = rows.length; renderNav(); renderDashboard(); });
+    }, function(v){ cache.vacancies = v; vacancyProgress = v.length; }));
+  }
+  if(has('aux')) jobs.push(runLoad('aux', getAdminAuxiliaryData, function(auxiliary){
+    auxiliary = auxiliary && typeof auxiliary === 'object' ? auxiliary : {};
+    cache.reports = Array.isArray(auxiliary.reports) ? auxiliary.reports : [];
+    cache.suggestions = Array.isArray(auxiliary.suggestions) ? auxiliary.suggestions : [];
+    cache.tracks = Array.isArray(auxiliary.tracks) ? auxiliary.tracks : [];
+    cache.poolCandidates = Array.isArray(auxiliary.poolCandidates) ? auxiliary.poolCandidates : [];
+    cache.posters = Array.isArray(auxiliary.posters) ? auxiliary.posters : [];
+    cache.jobEnquiries = Array.isArray(auxiliary.jobEnquiries) ? auxiliary.jobEnquiries : [];
+    cache.houseAds = Array.isArray(auxiliary.houseAds) ? auxiliary.houseAds : [];
+  }));
+  if(has('settings')) jobs.push(loadSettings().catch(function(e){ console.error('settings load', e); }));
+  await Promise.all(jobs);
+  if(['agencies','branches','employers','vacancies'].some(has)) saveAdminDirectoryCache();
   // Destructive expiry cleanup is intentionally not run during console startup.
-  // It now requires an explicit review/action or a server-side scheduled job.
+}
+function retryLoad(){
+  var failed = Object.keys(loadState).filter(function(k){ return loadState[k]==='failed'; });
+  loadAll(failed.length ? failed : undefined);
 }
 
 // ===== Tap-to-open row toggle (mobile-friendly) =====
@@ -1533,29 +1607,37 @@ function renderNav(){
   var el = document.getElementById('sidebar');
   el.innerHTML = NAV.map(function(n){
     var badge = '';
-    if(adminDataReady && n.id==='agencies') badge = '<span class="nav-badge">'+cache.agencies.length+'</span>';
-    if(adminDataReady && n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
-    if(adminDataReady && n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
-    if(adminDataReady && n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
-    if(adminDataReady && n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
-    if(adminDataReady && n.id==='houseads') badge = '<span class="nav-badge">'+cache.houseAds.length+'</span>';
-    if(adminDataReady && n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
-    if(adminDataReady && n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
-    if(adminDataReady && n.id==='media') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
+    if(dsShown('agencies') && n.id==='agencies') badge = '<span class="nav-badge">'+cache.agencies.length+'</span>';
+    if(dsShown('branches') && n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
+    if(dsShown('vacancies') && n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
+    if(dsShown('employers') && n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
+    if(dsShown('aux') && n.id==='posters') badge = '<span class="nav-badge">'+cache.posters.length+'</span>';
+    if(dsShown('aux') && n.id==='houseads') badge = '<span class="nav-badge">'+cache.houseAds.length+'</span>';
+    if(dsShown('aux') && n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
+    if(dsShown('aux') && n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
+    if(dsShown('aux') && n.id==='media') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
     var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters','houseads'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','media'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
     return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
 function navBadge(id){
-  if(!adminDataReady) return null;
+  if(id==='agencies' && !dsShown('agencies')) return null;
   if(id==='agencies') return cache.agencies.length;
+  if(id==='branches' && !dsShown('branches')) return null;
   if(id==='branches') return cache.branches.length;
+  if(id==='vacancies' && !dsShown('vacancies')) return null;
   if(id==='vacancies') return cache.vacancies.length;
+  if(id==='employers' && !dsShown('employers')) return null;
   if(id==='employers') return cache.employers.length;
+  if(id==='posters' && !dsShown('aux')) return null;
   if(id==='posters') return cache.posters.length;
+  if(id==='houseads' && !dsShown('aux')) return null;
   if(id==='houseads') return cache.houseAds.length;
+  if(id==='submissions' && !dsShown('aux')) return null;
   if(id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length; return c; }
+  if(id==='media' && !dsShown('aux')) return null;
   if(id==='media') return cache.tracks.length;
+  if(id==='poolcandidates' && !dsShown('aux')) return null;
   if(id==='poolcandidates'){ return cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; }
   return null;
 }
@@ -1584,21 +1666,37 @@ function goHome(){
 function renderDashboard(){
   var openReports = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length;
   var poolPending = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length;
+  function tile(key, value, label, loadedLabel){
+    var shown = dsShown(key), partial = key==='vacancies' && (loadState.vacancies==='loading' || loadState.vacancies==='failed') && !restoredFlags.vacancies;
+    var text = shown ? (Number(value).toLocaleString() + (partial ? '+' : '')) : (loadState[key]==='failed' ? '!' : '…');
+    return { v:text, l:(shown && loadedLabel) ? loadedLabel : label, bad: !shown && loadState[key]==='failed' };
+  }
   var stats = [
-    { v:cache.agencies.length, l:'Agencies' },
-    { v:cache.branches.length, l:'Branches' },
-    { v:cache.vacancies.length, l:'Vacancies stored' },
-    { v:publicLiveVacancyCount(cache.vacancies), l:'Public live vacancies' },
-    { v:cache.employers.length, l:'Employers' },
-    { v:cache.posters.length, l:'Vacancy Posters' },
-    { v:cache.reports.length, l:'Reports ('+openReports+' open)' },
-    { v:cache.suggestions.length, l:'Suggestions' },
-    { v:cache.tracks.length, l:'Media tracks' },
-    { v:cache.poolCandidates.length, l:'Talent Pool ('+poolPending+' pending)' }
+    tile('agencies', cache.agencies.length, 'Agencies'),
+    tile('branches', cache.branches.length, 'Branches'),
+    tile('vacancies', cache.vacancies.length, 'Vacancies stored'),
+    tile('vacancies', publicLiveVacancyCount(cache.vacancies), 'Public live vacancies'),
+    tile('employers', cache.employers.length, 'Employers'),
+    tile('aux', cache.posters.length, 'Vacancy Posters'),
+    tile('aux', cache.reports.length, 'Reports', 'Reports ('+openReports+' open)'),
+    tile('aux', cache.suggestions.length, 'Suggestions'),
+    tile('aux', cache.tracks.length, 'Media tracks'),
+    tile('aux', cache.poolCandidates.length, 'Talent Pool', 'Talent Pool ('+poolPending+' pending)')
   ];
   document.getElementById('stats-grid').innerHTML = stats.map(function(s){
-    return '<div class="stat"><div class="v">'+(adminDataReady ? s.v : '…')+'</div><div class="l">'+s.l+'</div></div>';
+    return '<div class="stat'+(s.bad?' bad':'')+'"'+(s.bad?' onclick="retryLoad()" title="Tap to retry"':'')+'><div class="v">'+s.v+'</div><div class="l">'+s.l+'</div></div>';
   }).join('');
+  var banner = document.getElementById('load-banner');
+  if(banner){
+    var failedKeys = Object.keys(loadState).filter(function(k){ return loadState[k]==='failed'; });
+    var bhtml = '';
+    if(failedKeys.length){
+      bhtml = '<div class="load-banner err"><div><strong>Some data could not be loaded</strong>'+failedKeys.map(function(k){ return '<div>'+escapeHtml(LOAD_LABELS[k])+': '+escapeHtml(loadErrors[k]||'failed')+'</div>'; }).join('')+'</div><button class="minibtn" onclick="retryLoad()">Retry</button></div>';
+    } else if(loadState.vacancies==='loading' && vacancyProgress>0){
+      bhtml = '<div class="load-banner">Loading vacancies… '+vacancyProgress.toLocaleString()+' so far</div>';
+    }
+    banner.innerHTML = bhtml;
+  }
   updateVacancyCountSummary();
   // Build the home card grid (grouped like Profile section)
   var homeEl = document.getElementById('home-cards');
@@ -1668,7 +1766,7 @@ function renderAgencies(){
   var list = cache.agencies.slice();
   if(q){ list = list.filter(function(a){ var hay=((a.name||'')+' '+(a.location||'')+' '+(a.trades||'')+' '+(a.companies||'')+' '+(a.email||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   var el = document.getElementById('ag-list');
-  if(!list.length){ el.innerHTML = emptyState('No agencies','Add your first agency or adjust your search.'); return; }
+  if(!list.length){ el.innerHTML = listPlaceholder('agencies','No agencies','Add your first agency or adjust your search.'); return; }
   el.innerHTML = list.map(function(a){
     var sub = [a.contact, a.location, a.email].filter(Boolean).join(' · ');
     var details = '';
@@ -1720,7 +1818,7 @@ function openAgencySheet(id){
   document.getElementById('a-companies').value = a ? (a.companies||'') : '';
   document.getElementById('a-trades').value = a ? (a.trades||'') : '';
   document.getElementById('a-cvpref').value = a ? (a.cvpref||'Email') : 'Email';
-  document.getElementById('a-verified').checked = a ? !!a.verified : false;
+  var verifiedBox = document.getElementById('a-verified'); if(verifiedBox) verifiedBox.checked = a ? !!a.verified : false;
   pendingPhoto = a ? (a.photo||null) : null;
   pendingPhotoBlob = null;
   var prev = document.getElementById('a-photo-preview');
@@ -1850,7 +1948,7 @@ async function saveAgency(){
     companies:document.getElementById('a-companies').value.trim(),
     trades:document.getElementById('a-trades').value.trim(),
     photo:photoUrl,
-    verified:document.getElementById('a-verified').checked
+    verified:(function(){ var box=document.getElementById('a-verified'); if(box) return box.checked; var cur=editing.agency ? agencyById(editing.agency) : null; return !!(cur && cur.verified); })()
   };
   var isNewAgency = !editing.agency;
   if (isNewAgency) payload.manage_token = genToken(); // write once, atomically
@@ -1863,14 +1961,14 @@ async function saveAgency(){
   closeSheet('agency-overlay');
   showToast(editing.agency ? 'Agency updated' : 'Agency added');
   editing.agency = null; pendingPhoto = null; pendingPhotoBlob = null;
-  await loadAll(); renderNav(); renderAgencies(); renderDashboard();
+  await loadAll(['agencies','branches']); renderNav(); renderAgencies(); renderDashboard();
 }
 async function deleteAgency(id){
   var a = agencyById(id);
   if(!confirm('Delete "'+(a?a.name:'this agency')+'"? This also removes its branches & vacancies visibility. This cannot be undone.')) return;
   await removeAgency(id);
   showToast('Agency deleted');
-  await loadAll(); renderNav(); renderAgencies(); renderDashboard();
+  await loadAll(['agencies','branches']); renderNav(); renderAgencies(); renderDashboard();
 }
 async function regenToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;
@@ -1893,7 +1991,7 @@ function renderEmployers(){
   if(q){ list = list.filter(function(e){ var hay=((e.name||'')+' '+(e.industry||'')+' '+(e.location||'')+' '+(e.email||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   list.sort(function(a,b){ if((a.verified?1:0)!==(b.verified?1:0)) return (b.verified?1:0)-(a.verified?1:0); return (a.name||'').localeCompare(b.name||''); });
   var el = document.getElementById('emp-list');
-  if(!list.length){ el.innerHTML = emptyState('No employers','Register an employer or adjust your search.'); return; }
+  if(!list.length){ el.innerHTML = listPlaceholder('employers','No employers','Register an employer or adjust your search.'); return; }
   el.innerHTML = list.map(function(e){
     var jobCount = cache.vacancies.filter(function(v){ return v.employer_id===e.id; }).length;
     var sub = [e.contact, e.industry, e.location, jobCount ? (jobCount+' vacanc'+(jobCount===1?'y':'ies')) : null].filter(Boolean).join(' · ');
@@ -2012,7 +2110,7 @@ async function saveEmployer(){
   closeSheet('employer-overlay');
   showToast(editing.employer ? 'Employer updated' : 'Employer registered');
   editing.employer = null; pendingEmployerPhoto = null; pendingEmployerPhotoBlob = null;
-  await loadAll(); renderNav(); renderEmployers(); renderDashboard();
+  await loadAll(['employers']); renderNav(); renderEmployers(); renderDashboard();
 }
 // ===== Vacancy Posters =====
 var posterQueue = [];      // items waiting to be uploaded: {key, blob, previewUrl, caption, employer_id, agency_id, expires, status, error}
@@ -2073,7 +2171,7 @@ function renderPosters(){
   var list = cache.posters.slice();
   if(q){ list = list.filter(function(p){ return ((p.caption||'')+' '+posterEmployerName(p.employer_id)+' '+posterAgencyName(p.agency_id)).toLowerCase().indexOf(q)!==-1; }); }
   var el = document.getElementById('po-list');
-  if(!list.length){ el.innerHTML = emptyState('No posters', cache.posters.length ? 'Nothing matches your search.' : 'Upload your first vacancy posters.'); return; }
+  if(!list.length){ el.innerHTML = listPlaceholder('aux','No posters', cache.posters.length ? 'Nothing matches your search.' : 'Upload your first vacancy posters.'); return; }
   var now = Date.now();
   el.innerHTML = list.map(function(p){
     var who = [posterEmployerName(p.employer_id), posterAgencyName(p.agency_id)].filter(Boolean).join(' · ');
@@ -2294,7 +2392,7 @@ async function deleteEmployer(id){
   if(!confirm('Delete "'+(e?e.name:'this employer')+'"? '+(linkedVacancies.length ? linkedVacancies.length+' linked vacancy/ies will remain in the Vacancies section and can be deleted separately. ' : '')+'This cannot be undone.')) return;
   await removeEmployer(id);
   showToast('Employer deleted');
-  await loadAll(); renderNav(); renderEmployers(); renderDashboard();
+  await loadAll(['employers']); renderNav(); renderEmployers(); renderDashboard();
 }
 
 // ===== Branches =====
@@ -2313,7 +2411,7 @@ function renderBranches(){
   if(q){ list = list.filter(function(b){ var hay=((b.name||'')+' '+(b.location||'')+' '+(b.phone||'')+' '+((b._ag&&b._ag.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   list.sort(function(a,b){ var c=((a._ag&&a._ag.name)||'').localeCompare((b._ag&&b._ag.name)||''); return c!==0?c:(a.name||'').localeCompare(b.name||''); });
   var el = document.getElementById('br-list');
-  if(!list.length){ el.innerHTML = emptyState('No branches','Add a branch or adjust your search.'); return; }
+  if(!list.length){ el.innerHTML = listPlaceholder('branches','No branches','Add a branch or adjust your search.'); return; }
   el.innerHTML = list.map(function(b){
     var sub = [b.location, b.phone, b.email].filter(Boolean).join(' · ');
     var details = '';
@@ -2360,14 +2458,14 @@ async function saveBranch(){
   closeSheet('branch-overlay');
   showToast(editing.branch ? 'Branch updated' : 'Branch added');
   editing.branch = null;
-  await loadAll(); renderNav(); renderBranches(); renderDashboard();
+  await loadAll(['branches']); renderNav(); renderBranches(); renderDashboard();
 }
 async function deleteBranch(id){
   var b = cache.branches.find(function(x){return x.id===id;});
   if(!confirm('Delete "'+(b?b.name:'this branch')+'"?')) return;
   await removeBranch(id);
   showToast('Branch deleted');
-  await loadAll(); renderNav(); renderBranches(); renderDashboard();
+  await loadAll(['branches']); renderNav(); renderBranches(); renderDashboard();
 }
 
 // ===== Vacancies =====
@@ -2467,7 +2565,7 @@ function renderVacancies(){
   var list = cache.vacancies;
   if(q){ list = list.filter(function(v){ var ag=agencyById(v.agency_id); var emp=v.employer_id?employerById(v.employer_id):null; var hay=((v.title||'')+' '+(v.company||'')+' '+(v.location||'')+' '+(v.notes||'')+((ag&&ag.name)||'')+((emp&&emp.name)||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   var el = document.getElementById('va-list');
-  if(!list.length){ el.innerHTML = emptyState('No vacancies','Add a vacancy or adjust your search.'); return; }
+  if(!list.length){ el.innerHTML = listPlaceholder('vacancies','No vacancies','Add a vacancy or adjust your search.'); return; }
   // Rendering all matches at once (thousands of full detail blocks) was the
   // other half of the slowness — cap the DOM to a page of rows and let
   // "Load more" pull in the rest, same underlying list either way.
@@ -2746,7 +2844,7 @@ async function savePoolCandidate(){
   closeSheet('pool-overlay');
   showToast(editingPool ? 'Candidate updated' : 'Candidate added');
   editingPool = null;
-  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+  await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 async function approvePoolCandidate(id){
   var p = poolCandidateById(id);
@@ -2754,26 +2852,26 @@ async function approvePoolCandidate(id){
   var oneYear = new Date(); oneYear.setFullYear(oneYear.getFullYear()+1);
   await upsertPoolCandidate({ id:id, status:'active', paid_until: oneYear.toISOString() });
   showToast('Approved — now live in the public Talent Pool');
-  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+  await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 async function rejectPoolCandidate(id){
   if(!confirm('Reject this registration? It will not appear publicly.')) return;
   await upsertPoolCandidate({ id:id, status:'rejected' });
   showToast('Registration rejected');
-  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+  await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 async function expirePoolCandidate(id){
   if(!confirm('Mark this candidate as expired? They will be removed from the public Talent Pool.')) return;
   await upsertPoolCandidate({ id:id, status:'expired' });
   showToast('Marked expired');
-  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+  await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 async function deletePoolCandidate(id){
   var p = poolCandidateById(id);
   if(!confirm('Delete "'+(p?p.full_name:'this candidate')+'" permanently?')) return;
   await removePoolCandidate(id);
   showToast('Candidate deleted');
-  await loadAll(); renderNav(); renderPoolCandidates(); renderDashboard();
+  await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 
 // ===== Submissions =====
@@ -2834,21 +2932,21 @@ function renderSubmissions(){
     }).join('');
   }
 }
-async function resolveReport(id){ await updateReportStatus(id,'resolved'); showToast('Marked resolved'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
-async function reopenReport(id){ await updateReportStatus(id,'open'); showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
-async function delReport(id){ if(!confirm('Delete this report?')) return; await deleteReport(id); showToast('Report deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
-async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function resolveReport(id){ await updateReportStatus(id,'resolved'); showToast('Marked resolved'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
+async function reopenReport(id){ await updateReportStatus(id,'open'); showToast('Reopened'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
+async function delReport(id){ if(!confirm('Delete this report?')) return; await deleteReport(id); showToast('Report deleted'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
+async function delSuggestion(id){ if(!confirm('Delete this suggestion?')) return; await deleteSuggestion(id); showToast('Suggestion deleted'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
 async function approveJobEnquiry(id){
   if(!confirm('Approve this request for posting? It will still need to be turned into a vacancy by an admin.')) return;
-  if(!await updateJobEnquiryStatus(id,'approved')) return; showToast('Approved for posting'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard();
+  if(!await updateJobEnquiryStatus(id,'approved')) return; showToast('Approved for posting'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard();
 }
 async function rejectJobEnquiry(id){
   if(!confirm('Reject this job request? It will not be published.')) return;
-  if(!await updateJobEnquiryStatus(id,'rejected')) return; showToast('Request rejected'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard();
+  if(!await updateJobEnquiryStatus(id,'rejected')) return; showToast('Request rejected'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard();
 }
-async function markJobEnquiryContacted(id){ if(!await updateJobEnquiryStatus(id,'contacted')) return; showToast('Marked contacted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
-async function reopenJobEnquiry(id){ if(!await updateJobEnquiryStatus(id,'new')) return; showToast('Reopened'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
-async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) return; if(!await deleteJobEnquiry(id)) return; showToast('Enquiry deleted'); await loadAll(); renderNav(); renderSubmissions(); renderDashboard(); }
+async function markJobEnquiryContacted(id){ if(!await updateJobEnquiryStatus(id,'contacted')) return; showToast('Marked contacted'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
+async function reopenJobEnquiry(id){ if(!await updateJobEnquiryStatus(id,'new')) return; showToast('Reopened'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
+async function delJobEnquiry(id){ if(!confirm('Delete this job enquiry?')) return; if(!await deleteJobEnquiry(id)) return; showToast('Enquiry deleted'); await loadAll(['aux']); renderNav(); renderSubmissions(); renderDashboard(); }
 async function updateJobEnquiryStatus(id,status){ try{ var res=await supabaseClient.from('job_post_enquiries').update({status:status}).eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not update this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not update this enquiry. Check your connection.'); return false; } }
 async function deleteJobEnquiry(id){ try{ var res=await supabaseClient.from('job_post_enquiries').delete().eq('id',id).select('id'); if(res.error || !(res.data && res.data.length)){ alert('Could not delete this enquiry: '+(res.error ? res.error.message : 'no matching record')); return false; } return true; }catch(e){ alert('Could not delete this enquiry. Check your connection.'); return false; } }
 
@@ -3302,6 +3400,11 @@ async function checkTracksTable(){
 }
 
 // ===== Misc =====
+function listPlaceholder(key, title, sub){
+  if(loadState[key]==='loading') return emptyState('Loading…','Fetching the latest records. This can take a moment.');
+  if(loadState[key]==='failed') return '<div class="empty"><h3>Could not load</h3><p>'+escapeHtml(loadErrors[key]||'Something went wrong.')+'</p><button class="minibtn" onclick="retryLoad()">Retry</button></div>';
+  return emptyState(title, sub);
+}
 function emptyState(title, sub){
   return '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg><h3>'+escapeHtml(title)+'</h3><p>'+escapeHtml(sub)+'</p></div>';
 }
