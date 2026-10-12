@@ -1714,6 +1714,49 @@ var worker_default = {
         return await adminD1WriteThroughResponse(request, env, origin);
       }
 
+      // These admin tables are intentionally not broadly readable by the
+      // browser role. The old admin page converted RLS/schema errors into []
+      // and therefore displayed misleading zero badges. Read them here after
+      // verifying the signed-in admin, using the service role only server-side.
+      if (path === "/api/admin/auxiliary" && request.method === "GET") {
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Unauthorized" }, 401, origin);
+        }
+        const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!adminKey || !env.SUPABASE_URL) {
+          return json({ error: "Admin data access is not configured." }, 503, origin);
+        }
+        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}` };
+        const tables = {
+          reports: "reports",
+          suggestions: "suggestions",
+          jobEnquiries: "job_post_enquiries",
+          poolCandidates: "pool_candidates",
+          posters: "employer_posters",
+          houseAds: "house_ads",
+          tracks: "daily_tracks"
+        };
+        const readTable = async (table) => {
+          const query = new URLSearchParams({ select: "*", order: "created_at.desc", limit: "2000" });
+          const response = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}?${query}`, { headers });
+          if (!response.ok) {
+            const detail = await response.text().catch(() => "");
+            throw new Error(`${table}: ${response.status} ${detail.slice(0, 240)}`);
+          }
+          const rows = await response.json();
+          return Array.isArray(rows) ? rows : [];
+        };
+        const entries = await Promise.all(Object.entries(tables).map(async ([key, table]) => {
+          try {
+            return [key, await readTable(table)];
+          } catch (error) {
+            console.error(`admin auxiliary read failed for ${table}`, error);
+            return [key, []];
+          }
+        }));
+        return json(Object.fromEntries(entries), 200, origin);
+      }
+
       // Manual trigger for the D1 mirror sync -- same auth as the other
       // admin-only endpoints. The scheduled() export above runs this
       // automatically on the cron in wrangler.toml; this exists so a sync

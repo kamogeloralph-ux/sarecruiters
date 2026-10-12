@@ -1216,6 +1216,14 @@ async function getAdminSubmissions(){
   if (!res.ok) throw new Error(body.error || 'Could not load submissions');
   return body;
 }
+async function getAdminAuxiliaryData(){
+  var authHdr = await r2AuthHeader();
+  if (!authHdr.Authorization) throw new Error('Admin session expired');
+  var res = await fetch(R2_WORKER_URL + '/api/admin/auxiliary', { headers: authHdr, cache: 'no-store' });
+  var body = await res.json().catch(function(){ return {}; });
+  if (!res.ok) throw new Error(body.error || 'Could not load admin data');
+  return body;
+}
 async function getReports(){
   try { var data = await getAdminSubmissions(); return Array.isArray(data.reports) ? data.reports : []; } catch(e) { console.error('admin reports', e); }
   return [];
@@ -1307,6 +1315,15 @@ async function safeAdminRead(label, loader){
   } catch(error) {
     console.error('admin startup read failed: '+label, error);
     return [];
+  }
+}
+async function safeAdminObjectRead(label, loader){
+  try {
+    var value = await loader();
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  } catch(error) {
+    console.error('admin startup read failed: '+label, error);
+    return {};
   }
 }
 async function upsertEmployer(e){ var result=await supabaseClient.from('employers').upsert(e).select('*').single(); if(result.error){ console.error('employer save',result.error); alert('Could not save employer: '+result.error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } else await writeThroughD1Mirror('employers',Object.assign({},e,result.data||{})); }
@@ -1454,25 +1471,20 @@ async function loadAll(){
     safeAdminRead('branches', getBranches),
     safeAdminRead('vacancies', getVacancies),
     safeAdminRead('employers', getEmployers),
-    safeAdminRead('reports', getReports),
-    safeAdminRead('suggestions', getSuggestions),
-    safeAdminRead('tracks', getTracks),
-    safeAdminRead('pool candidates', getPoolCandidates),
-    safeAdminRead('posters', getPosters),
-    safeAdminRead('job enquiries', getJobEnquiries),
-    safeAdminRead('house ads', getHouseAds)
+    safeAdminObjectRead('auxiliary admin data', getAdminAuxiliaryData)
   ]);
   cache.agencies = results[0] || [];
   cache.branches = results[1] || [];
   cache.vacancies = results[2] || [];
   cache.employers = results[3] || [];
-  cache.reports = results[4] || [];
-  cache.suggestions = results[5] || [];
-  cache.tracks = results[6] || [];
-  cache.poolCandidates = results[7] || [];
-  cache.posters = results[8] || [];
-  cache.jobEnquiries = results[9] || [];
-  cache.houseAds = results[10] || [];
+  var auxiliary = results[4] || {};
+  cache.reports = Array.isArray(auxiliary.reports) ? auxiliary.reports : [];
+  cache.suggestions = Array.isArray(auxiliary.suggestions) ? auxiliary.suggestions : [];
+  cache.tracks = Array.isArray(auxiliary.tracks) ? auxiliary.tracks : [];
+  cache.poolCandidates = Array.isArray(auxiliary.poolCandidates) ? auxiliary.poolCandidates : [];
+  cache.posters = Array.isArray(auxiliary.posters) ? auxiliary.posters : [];
+  cache.jobEnquiries = Array.isArray(auxiliary.jobEnquiries) ? auxiliary.jobEnquiries : [];
+  cache.houseAds = Array.isArray(auxiliary.houseAds) ? auxiliary.houseAds : [];
 
   var settings = await Promise.all([
     getAppSetting('public_vacancy_posting','false'),
