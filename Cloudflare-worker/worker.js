@@ -297,7 +297,7 @@ __name(publicUrlFor, "publicUrlFor");
 // degree, not a new kind of staleness.
 var STARTUP_CACHE_TTL = 3600;
 var STARTUP_STALE_TTL = 10800;
-var PUBLIC_STARTUP_SNAPSHOT_KEY = "snapshots/public-startup-v1.json";
+var PUBLIC_STARTUP_SNAPSHOT_KEY = "snapshots/public-startup-v2-employer-vacancies.json";
 var PUBLIC_VACANCY_SNAPSHOT_KEY = "snapshots/public-vacancies-v1.json";
 async function readPublicStartupSnapshot(env) {
   if (!env.MEDIA_BUCKET) return null;
