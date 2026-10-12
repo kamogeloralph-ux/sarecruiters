@@ -688,11 +688,11 @@ async function loadStartupDataFromD1(env) {
   const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR, sourceVacancyCountR] = await Promise.all([
     env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
-    // Same filter as before: (agency_id != 'general' OR employer_id IS NOT NULL)
-    // AND source_type NOT IN (dedicated list) -- matches vacancyFilter +
-    // the source_type=not.in.(...) param loadStartupData() used to send to
-    // Supabase directly.
-    env.DB.prepare(`SELECT * FROM vacancies WHERE (agency_id IS NOT NULL AND agency_id != 'general' OR employer_id IS NOT NULL) AND (source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE}`).bind(...dedicated).all(),
+    // Keep dedicated feeds lazy for the general directory, but always include
+    // employer-owned rows because the public Hiring Companies cards render
+    // their vacancy lists from this startup payload. Employer postings may be
+    // tagged with a dedicated source such as retail.
+    env.DB.prepare(`SELECT * FROM vacancies WHERE (((agency_id IS NOT NULL AND agency_id != 'general') AND employer_id IS NULL) OR employer_id IS NOT NULL) AND (employer_id IS NOT NULL OR source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE}`).bind(...dedicated).all(),
     env.DB.prepare("SELECT * FROM employers ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT key, value FROM app_settings").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM pool_candidates WHERE status = 'active'").all(),
@@ -983,7 +983,7 @@ __name(loadStartupData, "loadStartupData");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   const dataVersion = await readPublicDataVersion(env);
-  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v9-d1-versioned&version=${dataVersion}`, request.url), request);
+  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v10-employer-vacancies&version=${dataVersion}`, request.url), request);
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
     return new Response(body, { headers: {
