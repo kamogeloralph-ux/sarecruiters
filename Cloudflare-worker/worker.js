@@ -1746,15 +1746,21 @@ var worker_default = {
           const rows = await response.json();
           return Array.isArray(rows) ? rows : [];
         };
+        // A failed table must not look like an empty table. Report each failure
+        // by name so the admin banner can say which table is broken and why.
+        const errors = {};
         const entries = await Promise.all(Object.entries(tables).map(async ([key, table]) => {
           try {
             return [key, await readTable(table)];
           } catch (error) {
             console.error(`admin auxiliary read failed for ${table}`, error);
+            errors[key] = String((error && error.message) || error).slice(0, 300);
             return [key, []];
           }
         }));
-        return json(Object.fromEntries(entries), 200, origin);
+        const payload = Object.fromEntries(entries);
+        if (Object.keys(errors).length) payload.errors = errors;
+        return json(payload, 200, origin);
       }
 
       // Manual trigger for the D1 mirror sync -- same auth as the other
