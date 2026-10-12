@@ -31,8 +31,8 @@ test('admin vacancy reads tolerate D1 mirrors without optional featured columns'
 });
 
 test('admin vacancy UI no longer uses Supabase/PostgREST for the bulk list', () => {
-  const start = admin.indexOf('async function getVacancies()');
-  const end = admin.indexOf('async function getAdminSubmissions()', start);
+  const start = admin.indexOf('async function getVacancies(');
+  const end = admin.indexOf('async function getAdminSubmissions(', start);
   assert.ok(start >= 0 && end > start);
   const loader = admin.slice(start, end);
   assert.match(loader, /\/api\/admin\/vacancies/);
@@ -40,10 +40,31 @@ test('admin vacancy UI no longer uses Supabase/PostgREST for the bulk list', () 
   assert.doesNotMatch(loader, /supabaseClient\.from\(['"]vacancies/);
 });
 
-test('admin startup isolates a failed card loader instead of blanking the whole console', () => {
-  assert.match(admin, /async function safeAdminRead\(label, loader\)/);
-  assert.match(admin, /safeAdminRead\('agencies', getAgencies\)/);
-  assert.match(admin, /safeAdminRead\('pool candidates', getPoolCandidates\)/);
+test('admin startup isolates each loader and reports failures instead of blanking the console', () => {
+  assert.match(admin, /function runLoad\(key, task, apply\)/);
+  assert.match(admin, /runLoad\('agencies', getAgencies/);
+  assert.match(admin, /runLoad\('vacancies'/);
+  assert.match(admin, /runLoad\('aux', getAdminAuxiliaryData/);
+  assert.match(admin, /loadState\[key\] = 'failed'/, 'a failed loader must be marked failed, not silently turned into zero');
+  assert.match(admin, /id="load-banner"/, 'failures must be visible with a retry');
+  assert.match(admin, /fetchWithTimeout\(R2_WORKER_URL \+ '\/api\/admin\/vacancies/, 'worker requests must time out instead of hanging the dashboard');
+});
+
+test('admin agency sheet defines every field the edit and save code reads', () => {
+  const start = admin.indexOf('function openAgencySheet(');
+  const end = admin.indexOf('async function deleteAgency(', start);
+  assert.ok(start >= 0 && end > start);
+  const code = admin.slice(start, end);
+  const ids = [...new Set([...code.matchAll(/getElementById\('([a-z]-[a-z-]+)'\)/g)].map((m) => m[1]))];
+  assert.ok(ids.length > 8);
+  for (const id of ids) {
+    assert.ok(admin.includes(`id="${id}"`), `agency sheet is missing #${id} (the Edit button would crash)`);
+  }
+});
+
+test('admin console loads no third-party scripts', () => {
+  const external = [...admin.matchAll(/<script[^>]+src="(https?:)?\/\/[^"]+"/g)].map((m) => m[0]);
+  assert.deepEqual(external, []);
 });
 
 test('public app-data has no Supabase table reads or public pool fallback', () => {
