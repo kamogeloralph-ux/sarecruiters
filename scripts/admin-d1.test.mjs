@@ -40,6 +40,12 @@ test('admin vacancy UI no longer uses Supabase/PostgREST for the bulk list', () 
   assert.doesNotMatch(loader, /supabaseClient\.from\(['"]vacancies/);
 });
 
+test('admin startup isolates a failed card loader instead of blanking the whole console', () => {
+  assert.match(admin, /async function safeAdminRead\(label, loader\)/);
+  assert.match(admin, /safeAdminRead\('agencies', getAgencies\)/);
+  assert.match(admin, /safeAdminRead\('pool candidates', getPoolCandidates\)/);
+});
+
 test('public app-data has no Supabase table reads or public pool fallback', () => {
   assert.doesNotMatch(appData, /supabaseClient\.from\(['"](?:agencies|employers|branches|vacancies|app_settings|house_ads|posters|pool_candidates_public)['"]\)\s*\.select/);
   assert.doesNotMatch(appData, /Resilience fallback for a temporary Worker\/D1 outage/);

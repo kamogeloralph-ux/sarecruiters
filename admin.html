@@ -1291,6 +1291,17 @@ async function getHouseAds(){
   try { var { data, error } = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at').order('sort_order',{ascending:true}).order('created_at',{ascending:false}); if(!error) return data||[]; console.error('house ads load',error); } catch(e){ console.error('house ads load',e); }
   return [];
 }
+// A missing optional table or one transient read failure must not reject the
+// whole startup batch and make every admin card render from an empty cache.
+async function safeAdminRead(label, loader){
+  try {
+    var value = await loader();
+    return Array.isArray(value) ? value : [];
+  } catch(error) {
+    console.error('admin startup read failed: '+label, error);
+    return [];
+  }
+}
 async function upsertEmployer(e){ var result=await supabaseClient.from('employers').upsert(e).select('*').single(); if(result.error){ console.error('employer save',result.error); alert('Could not save employer: '+result.error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } else await writeThroughD1Mirror('employers',Object.assign({},e,result.data||{})); }
 async function removeEmployer(id){ var { error } = await supabaseClient.from('employers').delete().eq('id',id); if(error){ console.error('employer del',error); alert('Could not delete: '+error.message); } else await writeThroughD1Mirror('employers',id,'delete'); }
 async function upsertBranch(b){ var result=await supabaseClient.from('branches').upsert(b).select('*').single(); if(result.error){ console.error('branch save',result.error); alert('Could not save branch: '+result.error.message); } else await writeThroughD1Mirror('branches',Object.assign({},b,result.data||{})); }
@@ -1432,8 +1443,17 @@ async function regenerateAllEmployerTokens(){
 
 async function loadAll(){
   var results = await Promise.all([
-    getAgencies(), getBranches(), getVacancies(), getEmployers(),
-    getReports(), getSuggestions(), getTracks(), getPoolCandidates(), getPosters(), getJobEnquiries(), getHouseAds()
+    safeAdminRead('agencies', getAgencies),
+    safeAdminRead('branches', getBranches),
+    safeAdminRead('vacancies', getVacancies),
+    safeAdminRead('employers', getEmployers),
+    safeAdminRead('reports', getReports),
+    safeAdminRead('suggestions', getSuggestions),
+    safeAdminRead('tracks', getTracks),
+    safeAdminRead('pool candidates', getPoolCandidates),
+    safeAdminRead('posters', getPosters),
+    safeAdminRead('job enquiries', getJobEnquiries),
+    safeAdminRead('house ads', getHouseAds)
   ]);
   cache.agencies = results[0] || [];
   cache.branches = results[1] || [];
