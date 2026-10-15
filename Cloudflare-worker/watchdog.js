@@ -38,6 +38,9 @@ export const WORKFLOWS = [
   { file: 'weekly-analytics.yml', label: 'Weekly analytics email', staleHours: 8 * 24 },
 ];
 
+// Problems only the 6-hourly deep run can detect.
+const DEEP_ONLY_KEYS = ['snapshot-empty', 'snapshot-unreadable'];
+
 const ACTIVE_RUN_STATES = new Set(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
 const FAILED_CONCLUSIONS = new Set(['failure', 'timed_out', 'startup_failure']);
 
@@ -298,16 +301,17 @@ async function checkSite(ctx) {
     return;
   }
   if (!deep) return;
+  // The app reads its job list from the Worker's D1/R2 mirror, NOT from the old
+  // committed /data/startup.json file (which nothing refreshes any more, so
+  // judging its age raised a permanent false alarm). Freshness of the live data is
+  // already covered by checkD1Sync; here we only make sure the mirror is not empty.
+  if (!env.DB) return;
   try {
-    const response = await fetchImpl(`${site}/data/startup.json`, { signal: AbortSignal.timeout(30000), headers: { 'user-agent': 'sarecruiters-watchdog' } });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const snapshot = await response.json();
-    const count = Array.isArray(snapshot.vacancies) ? snapshot.vacancies.length : 0;
-    const ageHours = snapshot.updated_at ? (now - Date.parse(snapshot.updated_at)) / HOUR : Infinity;
-    if (count < 100) ctx.problems.push({ key: 'snapshot-empty', grace: 1, title: `The public job snapshot has only ${count} vacancies`, detail: 'Visitors would see an almost empty app.' });
-    if (ageHours > 36) ctx.problems.push({ key: 'snapshot-stale', grace: 1, title: `The public job snapshot is ${Number.isFinite(ageHours) ? Math.round(ageHours) + 'h' : 'of unknown age'} old`, detail: 'Normally refreshed twice a day by the scraper workflow.' });
+    const result = await env.DB.prepare('SELECT COUNT(*) AS n FROM vacancies').all();
+    const count = Number(result.results && result.results[0] && result.results[0].n) || 0;
+    if (count < 100) ctx.problems.push({ key: 'snapshot-empty', grace: 1, title: `The public job mirror has only ${count} vacancies`, detail: 'Visitors would see an almost empty app.' });
   } catch (error) {
-    ctx.problems.push({ key: 'snapshot-unreadable', grace: 2, title: 'The public job snapshot could not be read', detail: String(error && error.message || error) });
+    ctx.problems.push({ key: 'snapshot-unreadable', grace: 3, title: 'The public job mirror could not be read', detail: String(error && error.message || error) });
   }
 }
 
@@ -450,6 +454,14 @@ export async function runWatchdog(env, options = {}) {
   settled.forEach((result) => { if (result.status === 'rejected') console.error('watchdog check crashed', result.reason); });
 
   const plan = planAlerts(ctx.problems, state, now);
+  if (!ctx.deep) {
+    // Light runs skip the deep checks, so they must not forget (or "recover") problems
+    // that only deep runs can see -- that made the same alert re-fire every 6 hours.
+    for (const key of DEEP_ONLY_KEYS) {
+      if (state.problems[key] && !plan.nextProblems[key]) plan.nextProblems[key] = state.problems[key];
+    }
+    plan.recovered = plan.recovered.filter((item) => !DEEP_ONLY_KEYS.includes(item.key));
+  }
   let alerted = false;
   if (plan.toAlert.length || plan.recovered.length) {
     const subject = plan.toAlert.length
