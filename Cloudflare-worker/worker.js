@@ -1289,6 +1289,55 @@ async function postersResponse(request, env, origin) {
   return clientResponse(cachedResponse);
 }
 __name(postersResponse, "postersResponse");
+async function houseAdsResponse(request, env, ctx, origin) {
+  const cache = caches.default;
+  const cacheKey = new Request(new URL("/api/house-ads?schema=v1", request.url).toString(), { method: "GET" });
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    const headers = new Headers(cached.headers);
+    headers.set("Access-Control-Allow-Origin", origin || "*");
+    return new Response(cached.body, { status: cached.status, headers });
+  }
+  const now = new Date().toISOString();
+  let ads = [];
+  try {
+    const result = await supabaseGet(env, "house_ads", {
+      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order",
+      is_active: "eq.true",
+      starts_at: `lte.${now}`,
+      or: `(ends_at.is.null,ends_at.gt.${now})`,
+      order: "sort_order.asc,created_at.desc",
+      limit: "50"
+    });
+    ads = Array.isArray(result.body) ? result.body : [];
+  } catch (error) {
+    console.error("house ads read failed", error);
+    // Do not cache a failure; let the next visitor retry.
+    return json({ ads: [], error: "House ads temporarily unavailable" }, 200, origin);
+  }
+  const response = json({ ads }, 200, origin);
+  response.headers.set("Cache-Control", "public, max-age=300");
+  const put = cache.put(cacheKey, response.clone());
+  if (ctx && ctx.waitUntil) ctx.waitUntil(put); else await put;
+  return response;
+}
+__name(houseAdsResponse, "houseAdsResponse");
+async function houseAdEventResponse(request, env, origin) {
+  let body = null;
+  try { body = await request.json(); } catch (e) {}
+  const id = body && String(body.id || "");
+  const event = body && String(body.event || "");
+  if (!/^[0-9a-fA-F-]{36}$/.test(id) || (event !== "impression" && event !== "click")) {
+    return json({ error: "Invalid house ad event" }, 400, origin);
+  }
+  try {
+    await supabaseRpc(env, "record_house_ad_event", { p_ad_id: id, p_event: event });
+  } catch (error) {
+    console.error("house ad event failed", error);
+  }
+  return json({ ok: true }, 200, origin);
+}
+__name(houseAdEventResponse, "houseAdEventResponse");
 var PHOTO_BATCH_SIZE = 20;
 async function migratePhotos(request, env, origin) {
   const authHeader = request.headers.get("Authorization") || "";
@@ -1703,6 +1752,12 @@ var worker_default = {
       }
       if (path === "/api/posters" && request.method === "GET") {
         return await postersResponse(request, env, origin);
+      }
+      if (path === "/api/house-ads" && request.method === "GET") {
+        return await houseAdsResponse(request, env, ctx, origin);
+      }
+      if (path === "/api/house-ads/event" && request.method === "POST") {
+        return await houseAdEventResponse(request, env, origin);
       }
       if (path === "/api/admin/vacancies" && request.method === "GET") {
         return await adminVacanciesResponse(request, env, origin);
