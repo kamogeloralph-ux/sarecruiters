@@ -40,6 +40,7 @@ env:
   ORACLE_ONLY: ""
   RETAIL_PAGE_SIZE: "20"
   RETAIL_DETAIL_CONCURRENCY: "4"
+  INDEED_ENABLED: ${{ vars.INDEED_ENABLED }}
 
 jobs:
   refresh:
@@ -57,43 +58,46 @@ jobs:
         run: npm ci
       - name: Install PDF text extraction
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Restore scraper failure history
+        uses: actions/cache/restore@v4
+        with:
+          path: .scraper-state
+          key: scraper-state-none
+          restore-keys: scraper-state-
       - name: Run source scrapers
         shell: bash
         run: |
           set -uo pipefail
-          failures=0
+          : > failed-sources.txt
           run_source() {
-            echo "--- running $* ---"
+            local name="$1"; shift
+            echo "--- running $name ($*) ---"
             if ! "$@"; then
-              echo "Source failed but refresh will continue: $*" >&2
-              failures=$((failures + 1))
+              echo "Source failed but refresh will continue: $name" >&2
+              echo "$name" >> failed-sources.txt
             fi
           }
-          run_source npm run sync:adzuna
-          run_source npm run sync:indeed
-          run_source npm run sync:himalayas
-          run_source npm run sync:oracle
-          run_source npm run sync:government
-          run_source npm run scrape:retail
-          run_source npm run scrape:simplify
-          run_source npm run scrape:graduates24
-          run_source npm run scrape:careers-page
-          echo "$failures" > scraper-failures.txt
+          run_source adzuna npm run sync:adzuna
+          # Indeed's public RSS feed no longer works (it has never produced a row),
+          # so it is off by default. Set repository variable INDEED_ENABLED=true to retry it.
+          if [ "${INDEED_ENABLED:-}" = "true" ]; then run_source indeed npm run sync:indeed; fi
+          run_source himalayas npm run sync:himalayas
+          run_source oracle npm run sync:oracle
+          run_source government npm run sync:government
+          run_source retail npm run scrape:retail
+          run_source simplify npm run scrape:simplify
+          run_source graduates24 npm run scrape:graduates24
+          run_source careers-page npm run scrape:careers-page
       # Public inventory is mirrored by the scheduled Cloudflare Worker into
       # D1 and published to R2. Do not export or commit a full Supabase table
       # snapshot from Actions; browsers no longer serve that artifact.
-      - name: Email refresh summary when a source fails
+      - name: Report persistent scraper failures
         if: always()
         continue-on-error: true
-        run: |
-          failures=$(cat scraper-failures.txt 2>/dev/null || echo 0)
-          if [ "$failures" -gt 0 ]; then
-            node --input-type=module -e "import { sendOpsEmail } from './scripts/send-ops-email.mjs'; await sendOpsEmail({subject: 'SA Recruiters scraper refresh failed', text: '$failures scraper source(s) failed during the scheduled refresh. Review the GitHub Actions log.'});"
-          fi
-      - name: Report isolated scraper failures
+        run: node scripts/scraper-failure-report.mjs
+      - name: Save scraper failure history
         if: always()
-        run: |
-          failures=$(cat scraper-failures.txt 2>/dev/null || echo 0)
-          if [ "$failures" -gt 0 ]; then
-            echo "$failures source scraper(s) failed; successful sources were still published." >&2
-          fi
+        uses: actions/cache/save@v4
+        with:
+          path: .scraper-state
+          key: scraper-state-${{ github.run_id }}
