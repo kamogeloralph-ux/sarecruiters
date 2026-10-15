@@ -37,8 +37,9 @@ test('public SEO pages expose managed sponsored ad slots', () => {
   assert.match(generator, /publicAdSlot\('middle'\)/);
   assert.match(generator, /publicAdSlot\('bottom'\)/);
   assert.match(generator, /public-ads\.js\?v=\$\{DEPLOY_VERSION\}/);
-  assert.match(publicAds, /target_screens=cs/);
-  assert.match(publicAds, /record_house_ad_event/);
+  assert.match(publicAds, /\/api\/house-ads/);
+  assert.match(publicAds, /\/api\/house-ads\/event/);
+  assert.doesNotMatch(publicAds, /supabase\.co/);
   assert.match(publicAds, /rel=\"sponsored noopener noreferrer\"/);
   assert.match(generator, /function buildLocationHubPage/);
   assert.match(generator, /LOCATION_HUBS\.forEach/);
