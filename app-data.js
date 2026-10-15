@@ -184,18 +184,29 @@ function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-posters-bottom', 'posters', 'bottom');
 }
 async function loadHouseAds() {
-  // House ads are not mirrored into D1 yet. Do not fall back to a public
-  // PostgREST read; an empty ad slot is safer than recreating the egress path.
-  houseAdsCache = [];
+  // Served by the Cloudflare Worker (edge-cached), never a direct browser
+  // read of Supabase. Failures leave the slots hidden.
+  try {
+    var response = await fetch(R2_WORKER_URL + '/api/house-ads', { headers: { Accept: 'application/json' } });
+    var data = response.ok ? await response.json() : null;
+    houseAdsCache = data && Array.isArray(data.ads) ? data.ads : [];
+  } catch (e) {
+    houseAdsCache = [];
+  }
   renderHouseAdSlots();
 }
 function trackHouseAdEvent(id, eventName) {
-  if (!id || !supabaseClient || ['impression','click'].indexOf(eventName) === -1) return;
+  if (!id || ['impression','click'].indexOf(eventName) === -1) return;
   var key = 'sa_house_ad_' + eventName + '_' + id;
   if (eventName === 'impression') {
     try { if (sessionStorage.getItem(key) === '1') return; sessionStorage.setItem(key, '1'); } catch(e) {}
   }
-  supabaseClient.rpc('record_house_ad_event', { p_ad_id: id, p_event: eventName }).then(function(result){ if (result.error) console.warn('house ad tracking', result.error); });
+  try {
+    fetch(R2_WORKER_URL + '/api/house-ads/event', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, event: eventName }), keepalive: true
+    }).catch(function(){});
+  } catch(e) {}
 }
 
 async function getManagedPosters() {

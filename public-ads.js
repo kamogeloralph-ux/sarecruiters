@@ -1,17 +1,9 @@
 /* SA Recruiters public SEO-page house ads. */
 (function () {
   'use strict';
-  var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
-  var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
+  var WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
   var slots = Array.prototype.slice.call(document.querySelectorAll('[data-public-ad-slot]'));
   if (!slots.length) return;
-  var select = 'id,advertiser_name,title,message,image_url,target_url,ad_slot,sort_order';
-  var now = new Date().toISOString();
-  var endpoint = SUPABASE_URL + '/rest/v1/house_ads?select=' + encodeURIComponent(select)
-    + '&target_screens=cs.%7Bpublic%7D&is_active=eq.true&starts_at=lte.' + encodeURIComponent(now)
-    + '&or=' + encodeURIComponent('(ends_at.is.null,ends_at.gt.' + now + ')')
-    + '&order=sort_order.asc,created_at.desc&limit=20';
-  var headers = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY };
   function safeUrl(value) {
     try {
       var url = new URL(String(value || ''), window.location.href);
@@ -24,9 +16,9 @@
     if (eventName === 'impression') {
       try { if (sessionStorage.getItem(key) === '1') return; sessionStorage.setItem(key, '1'); } catch (e) {}
     }
-    fetch(SUPABASE_URL + '/rest/v1/rpc/record_house_ad_event', {
-      method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-      body: JSON.stringify({ p_ad_id: id, p_event: eventName }), keepalive: true
+    fetch(WORKER_URL + '/api/house-ads/event', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, event: eventName }), keepalive: true
     }).catch(function () {});
   }
   function render(slot, ad) {
@@ -44,10 +36,11 @@
   function imageEscape(value) {
     return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-  fetch(endpoint, { headers: headers, cache: 'no-store' }).then(function (response) {
-    return response.ok ? response.json() : [];
-  }).then(function (ads) {
-    ads = Array.isArray(ads) ? ads : [];
+  fetch(WORKER_URL + '/api/house-ads', { headers: { Accept: 'application/json' } }).then(function (response) {
+    return response.ok ? response.json() : {};
+  }).then(function (data) {
+    var ads = data && Array.isArray(data.ads) ? data.ads : [];
+    ads = ads.filter(function (item) { return Array.isArray(item.target_screens) && item.target_screens.indexOf('public') !== -1; });
     slots.forEach(function (slot) {
       var placement = slot.getAttribute('data-public-ad-slot') || 'top';
       var ad = ads.filter(function (item) { return (item.ad_slot || 'top') === placement; })[0];
