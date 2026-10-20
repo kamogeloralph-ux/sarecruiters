@@ -1,0 +1,29 @@
+name: Daily vacancy posters
+on:
+  schedule:
+    - cron: "0 5 * * *"   # 05:00 UTC = 07:00 South Africa
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: daily-poster
+  cancel-in-progress: false
+jobs:
+  poster:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      WORKER_URL: ${{ secrets.WORKER_URL }}
+      POSTER_AUTOMATION_TOKEN: ${{ secrets.POSTER_AUTOMATION_TOKEN }}
+      POSTERS_PER_RUN: "3"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core
+      - run: pip install pillow
+      - run: npm ci
+      - run: node scripts/generate-daily-poster.mjs
