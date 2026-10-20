@@ -2559,6 +2559,32 @@ var worker_default = {
           return json({ error: "Could not publish the poster." }, 502, origin);
         }
       }
+      if (path === "/api/automation/poster" && request.method === "POST") {
+        // Daily auto-poster: GitHub Action uploads a rendered JPEG. Protected by a
+        // shared secret (POSTER_AUTOMATION_TOKEN), never exposed to browsers.
+        const expected = env.POSTER_AUTOMATION_TOKEN || "";
+        const supplied = request.headers.get("X-Automation-Token") || "";
+        let diff = expected.length === supplied.length ? 0 : 1;
+        for (let i = 0; i < Math.max(expected.length, supplied.length); i++) {
+          diff |= (expected.charCodeAt(i) || 0) ^ (supplied.charCodeAt(i) || 0);
+        }
+        if (!expected || diff !== 0) return json({ error: "Not allowed." }, 403, origin);
+        const bytes = await request.arrayBuffer();
+        if (bytes.byteLength === 0 || bytes.byteLength > MAX_POSTER_BYTES || !looksLikeJpeg(bytes)) {
+          return json({ error: "A JPEG poster under 5MB is required." }, 400, origin);
+        }
+        const key = `employer-posters/${randomKey()}.jpg`;
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
+        const imageUrl = publicUrlFor(env, key);
+        const caption = ((url.searchParams.get("caption") || "").trim() || "Vacancy poster").slice(0, 120);
+        try {
+          const posterId = await supabaseRpc(env, "public_submit_poster", { p_image_url: imageUrl, p_caption: caption });
+          return json({ ok: true, id: posterId, url: imageUrl, caption }, 200, origin);
+        } catch (e) {
+          try { await env.MEDIA_BUCKET.delete(key); } catch (_) {}
+          return json({ error: "Could not publish the poster." }, 502, origin);
+        }
+      }
       if (path === "/api/upload/employer-poster" && request.method === "POST") {
         const posterUserId = await verifiedUserId(request, env);
         if (!posterUserId) {
