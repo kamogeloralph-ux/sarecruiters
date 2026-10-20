@@ -2579,6 +2579,17 @@ var worker_default = {
         const caption = ((url.searchParams.get("caption") || "").trim() || "Vacancy poster").slice(0, 120);
         try {
           const posterId = await supabaseRpc(env, "public_submit_poster", { p_image_url: imageUrl, p_caption: caption });
+          // The app reads posters from the D1 mirror, which otherwise only refreshes on the
+          // 6-hourly sync. Mirror this row now and bump the data version so it shows at once.
+          if (env.DB && posterId) {
+            try {
+              const createdAt = new Date();
+              const expiresAt = new Date(createdAt.getTime() + 14 * 86400000);
+              await env.DB.prepare("INSERT OR REPLACE INTO employer_posters (id, employer_id, agency_id, image_url, caption, vacancy_id, created_at, expires_at) VALUES (?, NULL, NULL, ?, ?, NULL, ?, ?)")
+                .bind(String(posterId), imageUrl, caption, createdAt.toISOString(), expiresAt.toISOString()).run();
+              await bumpPublicDataVersion(env);
+            } catch (mirrorError) { console.warn("Could not mirror automation poster to D1", mirrorError); }
+          }
           return json({ ok: true, id: posterId, url: imageUrl, caption }, 200, origin);
         } catch (e) {
           try { await env.MEDIA_BUCKET.delete(key); } catch (_) {}
