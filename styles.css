@@ -2684,3 +2684,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .home-media-track-spotify[hidden],.track-spotify-link[hidden]{display:none}
 .home-media-track-spotify:active,.track-spotify-link:active{transform:scale(.97)}
 [data-theme="dark"] .home-media-track-spotify,[data-theme="dark"] .track-spotify-link{color:#5ff08b}
+
+/* ===== Install app button + help dialog ===== */
+.header-install-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:8px 13px;margin-right:8px;background:var(--accent);color:#fff;font-weight:800;font-size:12.5px;line-height:1;cursor:pointer;white-space:nowrap}
+.header-install-btn[hidden]{display:none}
+.header-install-btn svg{width:15px;height:15px}
+.install-help{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.45);padding:16px}
+.install-help-card{width:100%;max-width:420px;background:var(--card);color:var(--text);border-radius:18px;padding:20px 20px 16px;box-shadow:0 12px 40px rgba(0,0,0,.3);margin-bottom:env(safe-area-inset-bottom,0)}
+.install-help-card h3{margin:0 0 10px;font-size:17px}
+.install-help-card ol{margin:0 0 16px;padding-left:20px;font-size:14px;line-height:1.6;color:var(--text-2)}
+.install-help-card .account-primary-btn{width:100%;padding:11px 12px;font-size:13px}
+@media(min-width:600px){.install-help{align-items:center}}
