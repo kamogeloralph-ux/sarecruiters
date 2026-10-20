@@ -16,6 +16,32 @@
     var btn = document.getElementById('header-install-btn');
     if (card) card.hidden = !show;
     if (btn) btn.hidden = !show;
+    if (!show) removeBanner();
+  }
+
+
+  // Bottom install banner ("Keep SA Recruiters on your phone"), shown once per
+  // dismissal window. Never shown when already installed.
+  var BANNER_KEY = 'sar_install_banner_dismissed';
+  function bannerDismissed() { try { var t = parseInt(localStorage.getItem(BANNER_KEY) || '0', 10); return t && (Date.now() - t) < 7 * 864e5; } catch (e) { return false; } }
+  function removeBanner() { var b = document.getElementById('install-banner'); if (b) b.remove(); }
+  function showBanner() {
+    if (isInstalled() || bannerDismissed() || document.getElementById('install-banner')) return;
+    var b = document.createElement('div');
+    b.id = 'install-banner';
+    b.className = 'install-banner';
+    b.setAttribute('role', 'region');
+    b.setAttribute('aria-label', 'Install SA Recruiters');
+    b.innerHTML = '<span class="install-banner-text">Keep SA Recruiters on your phone</span>' +
+      '<button type="button" class="install-banner-btn" id="install-banner-btn">Install</button>' +
+      '<button type="button" class="install-banner-x" id="install-banner-x" aria-label="Dismiss">&times;</button>';
+    document.body.appendChild(b);
+    document.getElementById('install-banner-btn').addEventListener('click', function () { window.installSaRecruiters(); });
+    document.getElementById('install-banner-x').addEventListener('click', function () {
+      try { localStorage.setItem(BANNER_KEY, String(Date.now())); } catch (e) {}
+      removeBanner(); track('install_banner_dismissed');
+    });
+    track('install_banner_shown');
   }
 
   function closeInstallHelp() { var el = document.getElementById('install-help'); if (el) el.remove(); }
@@ -59,7 +85,7 @@
   };
 
   window.addEventListener('beforeinstallprompt', function (event) { event.preventDefault(); deferredPrompt = event; refreshInstallUI(); track('install_prompt_shown'); });
-  window.addEventListener('appinstalled', function () { deferredPrompt = null; closeInstallHelp(); refreshInstallUI(); track('app_installed'); });
-  window.addEventListener('load', function () { refreshInstallUI(); track('pwa_launch', { installed: isInstalled(), online: navigator.onLine !== false }); });
+  window.addEventListener('appinstalled', function () { deferredPrompt = null; removeBanner(); closeInstallHelp(); refreshInstallUI(); track('app_installed'); });
+  window.addEventListener('load', function () { refreshInstallUI(); setTimeout(showBanner, 2500); track('pwa_launch', { installed: isInstalled(), online: navigator.onLine !== false }); });
   if (document.readyState !== 'loading') refreshInstallUI(); else document.addEventListener('DOMContentLoaded', refreshInstallUI);
 })();
