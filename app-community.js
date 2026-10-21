@@ -1,5 +1,10 @@
 /* SA Recruiters community feed — TipChat */
-var communityMvp = {
+
+import { R2_WORKER_URL, saAuthUser, signInWithGoogle, supabaseClient } from './app-core.js';
+import { processPosterPhoto } from './app-forms.js';
+import { resetActiveScreenScroll, showToast } from './app-ui.js';
+
+export var communityMvp = {
   group: null,
   joined: false,
   moderator: false,
@@ -22,56 +27,56 @@ var communityMvp = {
   pendingReload: false,
   drafts: {}
 };
-var communityComposerType = 'discussion';
-var communityPosterBlob = null;
-var communityPosterPreparing = false;
-var COMMUNITY_SEEN_KEY = 'sa_tipchat_seen_v1';
+export var communityComposerType = 'discussion';
+export var communityPosterBlob = null;
+export var communityPosterPreparing = false;
+export var COMMUNITY_SEEN_KEY = 'sa_tipchat_seen_v1';
 
-function communityEsc(value) {
+export function communityEsc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
     return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
   });
 }
-function communityMissingIdentitySchema(error) {
+export function communityMissingIdentitySchema(error) {
   return String(error && error.message || '').toLowerCase().indexOf('author_photo_url') >= 0;
 }
-function communityAuthorAvatarHtml(label, photo, isOfficial, compact) {
+export function communityAuthorAvatarHtml(label, photo, isOfficial, compact) {
   var safePhoto = /^https:\/\//i.test(String(photo || '')) ? communityEsc(photo) : '';
   var initial = isOfficial ? 'SA' : (String(label || 'Anonymous member').trim().charAt(0).toUpperCase() || 'A');
   var className = compact ? 'community-comment-avatar' : 'community-author-mark';
   return '<span class="' + className + (safePhoto ? ' has-photo' : '') + '" aria-hidden="true">' +
     (safePhoto ? '<img src="' + safePhoto + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : communityEsc(initial)) + '</span>';
 }
-function communityIsRateLimit(error) {
+export function communityIsRateLimit(error) {
   return String(error && error.message || '').toLowerCase().indexOf('rate limit') >= 0 || String(error && error.code || '') === 'P0429';
 }
-function communityRateLimitMessage() {
+export function communityRateLimitMessage() {
   return 'You are doing that too quickly. Please wait a few minutes and try again.';
 }
-function communityToast(message) {
+export function communityToast(message) {
   if (typeof showToast === 'function') showToast(message);
   else console.info('[Community]', message);
 }
-function communityMissingVacancySchema(error) {
+export function communityMissingVacancySchema(error) {
   var code = String(error && (error.code || error.status || '') || '');
   var message = String(error && error.message || '').toLowerCase();
   return code === '42703' || code === 'PGRST204' || message.indexOf('post_type') >= 0 || message.indexOf('vacancy_title') >= 0;
 }
-function communityMissingPosterSchema(error) {
+export function communityMissingPosterSchema(error) {
   var message = String(error && error.message || '').toLowerCase();
   return message.indexOf('poster_image_url') >= 0;
 }
-var COMMUNITY_EMOJIS = [
+export var COMMUNITY_EMOJIS = [
   { type: 'join', label: 'Join in', file: 'sa-recruiters-emoji-01-join.webp' },
   { type: 'good-luck', label: 'Good luck', file: 'sa-recruiters-emoji-02-good-luck.webp' },
   { type: 'interview-win', label: 'Interview win', file: 'sa-recruiters-emoji-03-interview-win.webp' },
   { type: 'ask-question', label: 'Question', file: 'sa-recruiters-emoji-04-ask-question.webp' },
   { type: 'applause', label: 'Applause', file: 'sa-recruiters-emoji-05-applause.webp' }
 ];
-function communityEmojiInfo(type) { return COMMUNITY_EMOJIS.find(function(item) { return item.type === type; }) || COMMUNITY_EMOJIS[0]; }
-function communityEmojiUrl(type) { return 'assets/sa-recruiters-emoji/web/' + communityEmojiInfo(type).file; }
-function communityEmojiToken(type) { return '[sa-emoji:' + communityEmojiInfo(type).type + ']'; }
-function communityRenderBody(value) {
+export function communityEmojiInfo(type) { return COMMUNITY_EMOJIS.find(function(item) { return item.type === type; }) || COMMUNITY_EMOJIS[0]; }
+export function communityEmojiUrl(type) { return 'assets/sa-recruiters-emoji/web/' + communityEmojiInfo(type).file; }
+export function communityEmojiToken(type) { return '[sa-emoji:' + communityEmojiInfo(type).type + ']'; }
+export function communityRenderBody(value) {
   var source = String(value == null ? '' : value), token = /\[sa-emoji:(join|good-luck|interview-win|ask-question|applause)\]/g, html = '', last = 0, match;
   while ((match = token.exec(source))) {
     html += communityEsc(source.slice(last, match.index));
@@ -81,7 +86,7 @@ function communityRenderBody(value) {
   }
   return html + communityEsc(source.slice(last));
 }
-function communitySetComposerType(type) {
+export function communitySetComposerType(type) {
   communityComposerType = type === 'vacancy' && communityMvp.vacancySchemaAvailable ? 'vacancy' : 'discussion';
   document.querySelectorAll('[data-community-compose-type]').forEach(function(button) {
     var active = button.getAttribute('data-community-compose-type') === communityComposerType;
@@ -111,11 +116,11 @@ function communitySetComposerType(type) {
   var submit = document.getElementById('community-post-submit');
   if (submit) submit.textContent = communityComposerType === 'vacancy' ? 'Share vacancy' : 'Post';
 }
-function communityReadVacancyMeta() {
+export function communityReadVacancyMeta() {
   function value(id) { var field = document.getElementById(id); return field ? field.value.trim() : ''; }
   return { title: value('community-vacancy-title'), location: value('community-vacancy-location'), application: value('community-vacancy-application') };
 }
-function communityVacancyMetaHtml(post) {
+export function communityVacancyMetaHtml(post) {
   if (post.post_type !== 'vacancy') return '';
   var meta = [];
   if (post.vacancy_location) meta.push('<span>📍 ' + communityEsc(post.vacancy_location) + '</span>');
@@ -124,13 +129,13 @@ function communityVacancyMetaHtml(post) {
     (post.vacancy_title ? '<h3 class="community-vacancy-title">' + communityEsc(post.vacancy_title) + '</h3>' : '') +
     (meta.length ? '<div class="community-vacancy-meta">' + meta.join('') + '</div>' : '');
 }
-function communityPosterImageHtml(post) {
+export function communityPosterImageHtml(post) {
   if (!post || !post.poster_image_url) return '';
   var title = post.vacancy_title || 'Vacancy poster';
   var url = communityEsc(post.poster_image_url);
   return '<a class="community-post-poster" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="Open poster: ' + communityEsc(title) + '"><img src="' + url + '" alt="' + communityEsc(title) + ' vacancy poster" loading="lazy"><span>Open poster</span></a>';
 }
-function communityHandlePosterPhoto(event) {
+export function communityHandlePosterPhoto(event) {
   var file = event && event.target && event.target.files && event.target.files[0];
   if (!file) return;
   if (!/^image\/(jpeg|png|webp)$/i.test(file.type || '')) {
@@ -164,7 +169,7 @@ function communityHandlePosterPhoto(event) {
     }
   });
 }
-function communityRemovePoster() {
+export function communityRemovePoster() {
   communityPosterBlob = null;
   communityPosterPreparing = false;
   var input = document.getElementById('community-poster-file');
@@ -178,7 +183,7 @@ function communityRemovePoster() {
   }
   if (fallback) { fallback.textContent = 'Poster preview will appear here'; fallback.style.display = 'grid'; }
 }
-async function communityUploadPoster(caption) {
+export async function communityUploadPoster(caption) {
   if (!communityPosterBlob) return null;
   try {
     var sessionResult = await supabaseClient.auth.getSession();
@@ -201,7 +206,7 @@ async function communityUploadPoster(caption) {
   }
 }
 // Best-effort cleanup of an uploaded poster that never became (or no longer is) a post.
-async function communityDeletePosterFile(ref) {
+export async function communityDeletePosterFile(ref) {
   try {
     var key = String(ref || '');
     if (!key) return;
@@ -221,16 +226,16 @@ async function communityDeletePosterFile(ref) {
     console.warn('[TipChat] poster cleanup skipped', error);
   }
 }
-function communityEmojiButton(type, target) {
+export function communityEmojiButton(type, target) {
   var info = communityEmojiInfo(type);
   var action = target.indexOf('post:') === 0
     ? 'communityToggleReaction(\'' + communityEsc(target.slice(5)) + '\',\'' + info.type + '\')'
     : 'communityPickComposerEmoji(\'' + communityEsc(target) + '\',\'' + info.type + '\')';
   return '<button type="button" class="community-emoji-choice" title="' + communityEsc(info.label) + '" aria-label="Add ' + communityEsc(info.label) + ' emoji" onclick="' + action + '"><img src="' + communityEmojiUrl(info.type) + '" alt=""><span>' + communityEsc(info.label) + '</span></button>';
 }
-function communityInitEmojiPicker(id, target) { var picker = document.getElementById(id); if (picker && !picker.dataset.ready) { picker.innerHTML = COMMUNITY_EMOJIS.map(function(item) { return communityEmojiButton(item.type, target); }).join(''); picker.dataset.ready = 'true'; } }
-function communityToggleEmojiPicker(id, target) { var picker = document.getElementById(id); if (!picker) return; communityInitEmojiPicker(id, target); picker.hidden = !picker.hidden; }
-function communityPickComposerEmoji(target, type) {
+export function communityInitEmojiPicker(id, target) { var picker = document.getElementById(id); if (picker && !picker.dataset.ready) { picker.innerHTML = COMMUNITY_EMOJIS.map(function(item) { return communityEmojiButton(item.type, target); }).join(''); picker.dataset.ready = 'true'; } }
+export function communityToggleEmojiPicker(id, target) { var picker = document.getElementById(id); if (!picker) return; communityInitEmojiPicker(id, target); picker.hidden = !picker.hidden; }
+export function communityPickComposerEmoji(target, type) {
   var field = document.getElementById(target); if (!field) return;
   var token = communityEmojiToken(type), start = Number.isInteger(field.selectionStart) ? field.selectionStart : field.value.length, end = Number.isInteger(field.selectionEnd) ? field.selectionEnd : start;
   field.value = field.value.slice(0, start) + token + field.value.slice(end); field.focus(); field.selectionStart = field.selectionEnd = start + token.length;
@@ -238,16 +243,16 @@ function communityPickComposerEmoji(target, type) {
   if (preview) preview.innerHTML = '<img src="' + communityEmojiUrl(type) + '" alt="' + communityEsc(info.label) + ' emoji"><span>' + communityEsc(info.label) + ' added</span>';
   var picker = document.getElementById('community-post-emoji-picker'); if (picker) picker.hidden = true;
 }
-function communitySignedIn() {
+export function communitySignedIn() {
   return typeof saAuthUser !== 'undefined' && !!saAuthUser && !!supabaseClient;
 }
-function communityRequireSignIn() {
+export function communityRequireSignIn() {
   if (communitySignedIn()) return true;
   communityToast('Sign in with Google to join or take part in the community.');
   if (typeof signInWithGoogle === 'function') signInWithGoogle();
   return false;
 }
-function communityWhen(value) {
+export function communityWhen(value) {
   var time = new Date(value).getTime();
   if (!Number.isFinite(time)) return '';
   var seconds = Math.max(0, Math.floor((Date.now() - time) / 1000));
@@ -257,13 +262,13 @@ function communityWhen(value) {
   if (seconds < 604800) return Math.floor(seconds / 86400) + 'd';
   return new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short' }).format(new Date(time));
 }
-function communityStatus(message, kind) {
+export function communityStatus(message, kind) {
   var element = document.getElementById('community-status');
   if (!element) return;
   element.textContent = message || '';
   element.className = 'community-status' + (kind ? ' is-' + kind : '');
 }
-function communitySetScreen(screenId) {
+export function communitySetScreen(screenId) {
   document.querySelectorAll('.screen').forEach(function(screen) { screen.classList.remove('active'); });
   var screen = document.getElementById(screenId);
   if (screen) screen.classList.add('active');
@@ -274,7 +279,7 @@ function communitySetScreen(screenId) {
   if (typeof resetActiveScreenScroll === 'function') resetActiveScreenScroll(screenId);
   else window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
-function openCommunity(fromDeepLink) {
+export function openCommunity(fromDeepLink) {
   var active = document.querySelector('.screen.active');
   if (active && active.id !== 'screen-community') communityMvp.returnScreen = active.id.replace(/^screen-/, '');
   if (!communityMvp.returnScreen) communityMvp.returnScreen = 'home';
@@ -284,13 +289,13 @@ function openCommunity(fromDeepLink) {
   }
   communityLoad();
 }
-function goBackFromCommunity() {
+export function goBackFromCommunity() {
   var screenName = communityMvp.returnScreen || 'home';
   var target = document.getElementById('screen-' + screenName) ? 'screen-' + screenName : 'screen-home';
   communitySetScreen(target);
   if (location.hash === '#community-interview-tips' || location.hash === '#tipchat') history.replaceState(null, '', location.pathname + location.search);
 }
-function communityRenderGroup() {
+export function communityRenderGroup() {
   var join = document.getElementById('community-join-btn');
   if (join) {
     join.textContent = communityMvp.joined ? '✓' : 'Join';
@@ -312,7 +317,7 @@ function communityRenderGroup() {
   communityRenderIdentity();
   communitySetComposerType(communityComposerType);
 }
-async function communityLoad() {
+export async function communityLoad() {
   var host = document.getElementById('community-feed');
   if (!host || !supabaseClient) return;
   if (communityMvp.loading) { communityMvp.pendingReload = true; return; }
@@ -362,7 +367,7 @@ async function communityLoad() {
     if (communityMvp.pendingReload) { communityMvp.pendingReload = false; communityLoad(); }
   }
 }
-async function communityLoadFeed() {
+export async function communityLoadFeed() {
   var host = document.getElementById('community-feed');
   if (!host || !communityMvp.group) return;
   if (!communityMvp.posts.length) host.innerHTML = '<div class="community-empty">Loading posts…</div>';
@@ -431,10 +436,10 @@ async function communityLoadFeed() {
       });
   }
 }
-function communityCurrentReaction(postId) {
+export function communityCurrentReaction(postId) {
   return communityMvp.reactions.get(postId) || (communityMvp.liked.has(postId) ? 'like' : null);
 }
-function communityActionsHtml(post) {
+export function communityActionsHtml(post) {
   var id = communityEsc(post.id);
   var liked = communityMvp.liked.has(post.id);
   var joined = communityMvp.joined && communitySignedIn();
@@ -447,7 +452,7 @@ function communityActionsHtml(post) {
     '<button type="button" class="community-action community-share-action" onclick="communitySharePost(\'' + id + '\')">Share</button>';
 }
 // Update one post's action row in place: no feed reload, no lost scroll position or drafts.
-function communityRefreshActions(postId) {
+export function communityRefreshActions(postId) {
   var post = communityMvp.posts.find(function(item) { return item.id === postId; });
   var article = document.querySelector('.community-post[data-post-id="' + String(postId).replace(/"/g, '') + '"]');
   if (!post || !article) return;
@@ -456,7 +461,7 @@ function communityRefreshActions(postId) {
   var picker = article.querySelector('.community-reaction-picker');
   if (picker) picker.hidden = true;
 }
-function communityRenderFeed() {
+export function communityRenderFeed() {
   var host = document.getElementById('community-feed');
   if (!host) return;
   if (!communityMvp.posts.length) {
@@ -487,7 +492,7 @@ function communityRenderFeed() {
     if (communityMvp.expanded.has(post.id)) communityLoadComments(post.id);
   });
 }
-async function communityJoinGroup() {
+export async function communityJoinGroup() {
   if (!communityRequireSignIn()) return;
   if (!communityMvp.group) return;
   if (communityMvp.joined) {
@@ -504,7 +509,7 @@ async function communityJoinGroup() {
   communityRenderGroup();
   communityRenderFeed();
 }
-function communitySetSort(sort) {
+export function communitySetSort(sort) {
   communityMvp.sort = sort === 'top' ? 'top' : 'new';
   document.querySelectorAll('[data-community-sort]').forEach(function(button) {
     var active = button.getAttribute('data-community-sort') === communityMvp.sort;
@@ -513,11 +518,11 @@ function communitySetSort(sort) {
   });
   communityLoadFeed().catch(function(error) { console.error(error); communityToast('Could not refresh posts.'); });
 }
-function communityPromptParticipation() {
+export function communityPromptParticipation() {
   if (!communityRequireSignIn()) return;
   if (!communityMvp.joined) communityToast('Join TipChat before posting, commenting or reacting.');
 }
-async function communitySubmitPost(event) {
+export async function communitySubmitPost(event) {
   if (event) event.preventDefault();
   if (!communityRequireSignIn()) return false;
   if (!communityMvp.joined) { communityToast('Join TipChat before posting.'); return false; }
@@ -596,10 +601,10 @@ async function communitySubmitPost(event) {
   communityLoadModerationQueue(false);
   return false;
 }
-function communityToggleLike(postId) {
+export function communityToggleLike(postId) {
   return communityToggleReaction(postId, 'like');
 }
-async function communityToggleReaction(postId, reactionType) {
+export async function communityToggleReaction(postId, reactionType) {
   if (!communityRequireSignIn()) return;
   if (!communityMvp.joined) { communityPromptParticipation(); return; }
   if (communityMvp.reactionBusy.has(postId)) return;
@@ -625,7 +630,7 @@ async function communityToggleReaction(postId, reactionType) {
     communityMvp.reactionBusy.delete(postId);
   }
 }
-async function communityToggleComments(postId) {
+export async function communityToggleComments(postId) {
   // Reading comments is public; only posting needs sign-in and membership.
   var panel = document.getElementById('community-comments-' + postId);
   if (!panel) return;
@@ -637,7 +642,7 @@ async function communityToggleComments(postId) {
   if (!opening) { panel.hidden = true; return; }
   await communityLoadComments(postId);
 }
-async function communityLoadComments(postId) {
+export async function communityLoadComments(postId) {
   var panel = document.getElementById('community-comments-' + postId);
   if (!panel) return;
   panel.hidden = false;
@@ -673,7 +678,7 @@ async function communityLoadComments(postId) {
   var draftField = document.getElementById('community-comment-input-' + postId);
   if (draftField && communityMvp.drafts[draftField.id]) draftField.value = communityMvp.drafts[draftField.id];
 }
-async function communitySubmitComment(event, postId) {
+export async function communitySubmitComment(event, postId) {
   if (event) event.preventDefault();
   if (!communityRequireSignIn()) return false;
   if (!communityMvp.joined) { communityToast('Join TipChat before commenting.'); return false; }
@@ -693,7 +698,7 @@ async function communitySubmitComment(event, postId) {
   communityLoadModerationQueue(false);
   return false;
 }
-function communityOpenReport(type, id) {
+export function communityOpenReport(type, id) {
   if (!communityRequireSignIn()) return;
   communityMvp.reportTarget = { type: type === 'comment' ? 'comment' : 'post', id: id };
   var overlay = document.getElementById('community-report-overlay');
@@ -707,12 +712,12 @@ function communityOpenReport(type, id) {
     if (submit) submit.focus();
   }
 }
-function communityCloseReport() {
+export function communityCloseReport() {
   var overlay = document.getElementById('community-report-overlay');
   if (overlay) overlay.hidden = true;
   communityMvp.reportTarget = null;
 }
-async function communitySubmitReport(event) {
+export async function communitySubmitReport(event) {
   if (event) event.preventDefault();
   if (!communityRequireSignIn() || !communityMvp.reportTarget) return false;
   var reason = document.getElementById('community-report-reason');
@@ -735,7 +740,7 @@ async function communitySubmitReport(event) {
   communityLoadModerationQueue(false);
   return false;
 }
-async function communityLoadIdentityState() {
+export async function communityLoadIdentityState() {
   communityMvp.identity = { show: false, has: false };
   if (communitySignedIn()) {
     try {
@@ -745,13 +750,13 @@ async function communityLoadIdentityState() {
   }
   communityRenderIdentity();
 }
-function communityRenderIdentity() {
+export function communityRenderIdentity() {
   var box = document.getElementById('community-identity-box');
   var toggle = document.getElementById('community-identity-toggle');
   if (box) box.hidden = !(communitySignedIn() && communityMvp.joined && communityMvp.identity.has);
   if (toggle) toggle.checked = !!communityMvp.identity.show;
 }
-async function communitySetIdentityVisibility(show) {
+export async function communitySetIdentityVisibility(show) {
   var toggle = document.getElementById('community-identity-toggle');
   if (!communityRequireSignIn()) { if (toggle) toggle.checked = false; return; }
   if (toggle) toggle.disabled = true;
@@ -768,7 +773,7 @@ async function communitySetIdentityVisibility(show) {
   communityToast(communityMvp.identity.show ? 'Your Talent Pool name and photo now show on your TipChat posts and comments.' : 'You now appear as Anonymous member.');
   await communityLoadFeed();
 }
-function communityNotifyDecisions() {
+export function communityNotifyDecisions() {
   var seen = {};
   try { seen = JSON.parse(localStorage.getItem(COMMUNITY_SEEN_KEY) || '{}') || {}; } catch (error) { seen = {}; }
   var approved = 0, hidden = 0, next = {};
@@ -783,7 +788,7 @@ function communityNotifyDecisions() {
   if (approved) communityToast(approved === 1 ? 'Your submission was approved and is now live.' : approved + ' of your submissions were approved and are now live.');
   else if (hidden) communityToast('A submission was not approved. See My submissions for details.');
 }
-async function communityLoadMySubmissions() {
+export async function communityLoadMySubmissions() {
   communityMvp.mine = new Map();
   communityMvp.submissions = [];
   if (communitySignedIn()) {
@@ -797,7 +802,7 @@ async function communityLoadMySubmissions() {
   }
   communityRenderMine();
 }
-function communityRenderMine() {
+export function communityRenderMine() {
   var panel = document.getElementById('community-mine');
   var list = document.getElementById('community-mine-list');
   var count = document.getElementById('community-mine-count');
@@ -815,11 +820,11 @@ function communityRenderMine() {
       '<div class="community-review-actions"><button type="button" class="community-danger-btn" onclick="communityDeleteOwn(\'' + kind + '\',\'' + communityEsc(row.item_id) + '\')">Delete</button></div></article>';
   }).join('');
 }
-function communityToggleMine() {
+export function communityToggleMine() {
   var list = document.getElementById('community-mine-list');
   if (list) list.hidden = !list.hidden;
 }
-async function communityDeleteOwn(kind, id) {
+export async function communityDeleteOwn(kind, id) {
   if (!communityRequireSignIn()) return;
   var type = kind === 'comment' ? 'comment' : 'post';
   if (!window.confirm(type === 'post' ? 'Delete this post? This cannot be undone.' : 'Delete this comment? This cannot be undone.')) return;
@@ -836,7 +841,7 @@ async function communityDeleteOwn(kind, id) {
   await communityLoadFeed();
   if (communityMvp.moderator) await communityLoadModerationQueue(false);
 }
-async function communitySharePost(postId) {
+export async function communitySharePost(postId) {
   var link = location.origin + location.pathname + '#tipchat';
   var post = communityMvp.posts.find(function(item) { return item.id === postId; });
   var text = post ? String(post.body).slice(0, 180) : 'Join TipChat on SA Recruiters — advice, conversations and vacancy posts in one place.';
@@ -848,13 +853,13 @@ async function communitySharePost(postId) {
     if (error && error.name !== 'AbortError') communityToast('Could not share the link.');
   }
 }
-async function communityToggleModeration() {
+export async function communityToggleModeration() {
   var queue = document.getElementById('community-moderation-queue');
   if (!queue) return;
   queue.hidden = !queue.hidden;
   if (!queue.hidden) await communityLoadModerationQueue(true);
 }
-async function communityLoadModerationQueue(showLoading) {
+export async function communityLoadModerationQueue(showLoading) {
   if (!communityMvp.moderator || !supabaseClient) return;
   var queue = document.getElementById('community-moderation-queue');
   var badge = document.getElementById('community-moderation-count');
@@ -911,7 +916,7 @@ async function communityLoadModerationQueue(showLoading) {
   queue.innerHTML = '<section><h3>Waiting for approval <span>' + waiting + '</span></h3>' + (pendingHtml || '<p class="community-review-empty">Nothing is waiting for approval.</p>') + overflowNote(pendingPosts.length, totalPosts) + overflowNote(pendingComments.length, totalComments) + '</section>' +
     '<section><h3>Open reports <span>' + totalReports + '</span></h3>' + (reportHtml || '<p class="community-review-empty">No open reports.</p>') + overflowNote(reports.length, totalReports) + '</section>';
 }
-function communityModerationCard(type, row, status, flags) {
+export function communityModerationCard(type, row, status, flags) {
   var id = communityEsc(row.id);
   var reasons = flags && flags.get(type + ':' + row.id);
   var flagNote = reasons && reasons.length
@@ -919,7 +924,7 @@ function communityModerationCard(type, row, status, flags) {
     : '';
   return '<article class="community-review-card"><div class="community-review-meta">' + (type === 'post' ? (row.post_type === 'vacancy' ? 'Vacancy' : 'Post') : 'Comment') + ' · ' + communityEsc(communityWhen(row.created_at)) + ' · ' + communityEsc(row.author_label) + '</div>' + flagNote + (type === 'post' ? communityVacancyMetaHtml(row) + communityPosterImageHtml(row) : '') + '<p>' + communityEsc(row.body) + '</p><div class="community-review-actions"><button type="button" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'approved\')">Approve</button><button type="button" class="community-danger-btn" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'hidden\')">Hide</button></div></article>';
 }
-async function communityModerate(type, id, status) {
+export async function communityModerate(type, id, status) {
   var table = type === 'comment' ? 'community_comments' : 'community_posts';
   var result = await supabaseClient.from(table).update({ status: status }).eq('id', id).select('id').maybeSingle();
   if (result.error || !result.data) { console.error(result.error); communityToast('Moderation action failed.'); return false; }
@@ -928,14 +933,14 @@ async function communityModerate(type, id, status) {
   await communityLoadFeed();
   return true;
 }
-async function communityReviewReported(reportId, type, targetId, action) {
+export async function communityReviewReported(reportId, type, targetId, action) {
   var moderated = await communityModerate(type, targetId, action === 'hide' ? 'hidden' : 'approved');
   if (!moderated) return;
   var result = await supabaseClient.from('community_reports').update({ status: 'reviewed' }).eq('id', reportId);
   if (result.error) { console.error(result.error); communityToast('Content was moderated, but the report could not be closed.'); }
   await communityLoadModerationQueue(true);
 }
-async function communityDismissReport(reportId) {
+export async function communityDismissReport(reportId) {
   var result = await supabaseClient.from('community_reports').update({ status: 'dismissed' }).eq('id', reportId);
   if (result.error) { console.error(result.error); communityToast('Could not dismiss report.'); return; }
   communityToast('Report dismissed.');
@@ -998,3 +1003,86 @@ window.communityToggleMine = communityToggleMine;
     openCommunity(true);
   }
 })();
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+Object.assign(window, {
+  communityEsc,
+  communityMissingIdentitySchema,
+  communityAuthorAvatarHtml,
+  communityIsRateLimit,
+  communityRateLimitMessage,
+  communityToast,
+  communityMissingVacancySchema,
+  communityMissingPosterSchema,
+  communityEmojiInfo,
+  communityEmojiUrl,
+  communityEmojiToken,
+  communityRenderBody,
+  communitySetComposerType,
+  communityReadVacancyMeta,
+  communityVacancyMetaHtml,
+  communityPosterImageHtml,
+  communityHandlePosterPhoto,
+  communityRemovePoster,
+  communityUploadPoster,
+  communityDeletePosterFile,
+  communityEmojiButton,
+  communityInitEmojiPicker,
+  communityToggleEmojiPicker,
+  communityPickComposerEmoji,
+  communitySignedIn,
+  communityRequireSignIn,
+  communityWhen,
+  communityStatus,
+  communitySetScreen,
+  openCommunity,
+  goBackFromCommunity,
+  communityRenderGroup,
+  communityLoad,
+  communityLoadFeed,
+  communityCurrentReaction,
+  communityActionsHtml,
+  communityRefreshActions,
+  communityRenderFeed,
+  communityJoinGroup,
+  communitySetSort,
+  communityPromptParticipation,
+  communitySubmitPost,
+  communityToggleLike,
+  communityToggleReaction,
+  communityToggleComments,
+  communityLoadComments,
+  communitySubmitComment,
+  communityOpenReport,
+  communityCloseReport,
+  communitySubmitReport,
+  communityLoadIdentityState,
+  communityRenderIdentity,
+  communitySetIdentityVisibility,
+  communityNotifyDecisions,
+  communityLoadMySubmissions,
+  communityRenderMine,
+  communityToggleMine,
+  communityDeleteOwn,
+  communitySharePost,
+  communityToggleModeration,
+  communityLoadModerationQueue,
+  communityModerationCard,
+  communityModerate,
+  communityReviewReported,
+  communityDismissReport,
+});
+Object.defineProperties(window, {
+  communityMvp: { get: () => communityMvp, set: (v) => { communityMvp = v; }, configurable: true, enumerable: true },
+  communityComposerType: { get: () => communityComposerType, set: (v) => { communityComposerType = v; }, configurable: true, enumerable: true },
+  communityPosterBlob: { get: () => communityPosterBlob, set: (v) => { communityPosterBlob = v; }, configurable: true, enumerable: true },
+  communityPosterPreparing: { get: () => communityPosterPreparing, set: (v) => { communityPosterPreparing = v; }, configurable: true, enumerable: true },
+  COMMUNITY_SEEN_KEY: { get: () => COMMUNITY_SEEN_KEY, set: (v) => { COMMUNITY_SEEN_KEY = v; }, configurable: true, enumerable: true },
+  COMMUNITY_EMOJIS: { get: () => COMMUNITY_EMOJIS, set: (v) => { COMMUNITY_EMOJIS = v; }, configurable: true, enumerable: true },
+});

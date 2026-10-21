@@ -2,13 +2,21 @@
  * SA Recruiters -- app.js split 5/8: app-sheets.js
  * Misc sheets: notes, social links, report-a-problem, suggestions, talent pool registration
  *
- * Part of the original monolithic app.js, mechanically split and kept as
- * classic (non-module) scripts loaded in this exact order via <script defer>
- * in index.html, so all functions/vars stay on one shared global scope
- * exactly as before. Do not reorder these files relative to one another.
+ * Part of the original monolithic app.js. Now an ES module: it imports what it
+ * uses from the other app-*.js files and exports its top-level declarations.
+ * A window bridge at the bottom keeps inline onclick="" handlers and the
+ * classic scripts (app-vacancy-v2.js, app-alerts.js, content*.js) working.
+ * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
-function closeSheet(id) {
+import { R2_WORKER_URL, __saManagerLinkMode, agenciesCache, canTrackPublicTraffic, escapeHtml, initials, saAuthUser, supabaseClient, trackEvent } from './app-core.js';
+import { getAppSetting, getPublicPoolCandidatesFromWorker, readLocalReports, submitReportToSupabase, updateStats, writeLocalReports } from './app-data.js';
+import { rememberTalentPoolIdentity, verifiedBadge, verifyTalentPoolMembership } from './app-cards.js';
+import { uploadPoolCvIfAny, uploadPoolPhotoIfAny } from './app-forms.js';
+import { openAccountScreen, showToast, syncPreciseLocationChip } from './app-ui.js';
+
+
+export function closeSheet(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
@@ -20,23 +28,23 @@ function closeSheet(id) {
   el.classList.remove('gate-mandatory');
   if (window.__saSyncFeedbackChat) window.__saSyncFeedbackChat();
 }
-function openSupportSheet() { document.getElementById('support-overlay').classList.add('open'); }
+export function openSupportSheet() { document.getElementById('support-overlay').classList.add('open'); }
 // ===== Private device Notes =====
-var NOTES_KEY = 'sa_recruiters_private_notes_v1';
-function readNotes() {
+export var NOTES_KEY = 'sa_recruiters_private_notes_v1';
+export function readNotes() {
   try { var notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]'); return Array.isArray(notes) ? notes : []; } catch(e) { return []; }
 }
-function writeNotes(notes) {
+export function writeNotes(notes) {
   try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch(e) { showToast('Could not save note'); }
 }
-function openNotesSheet() {
+export function openNotesSheet() {
   resetNoteForm();
   renderNotes();
   loadSocialLinks();
   var overlay = document.getElementById('notes-overlay');
   if (overlay) overlay.classList.add('open');
 }
-function resetNoteForm() {
+export function resetNoteForm() {
   var id = document.getElementById('note-edit-id');
   var title = document.getElementById('note-title');
   var body = document.getElementById('note-body');
@@ -46,7 +54,7 @@ function resetNoteForm() {
   var save = document.querySelector('#notes-overlay .sheet-submit');
   if (save) save.textContent = 'Save note';
 }
-function renderNotes() {
+export function renderNotes() {
   var list = document.getElementById('notes-list');
   if (!list) return;
   var notes = readNotes();
@@ -59,7 +67,7 @@ function renderNotes() {
     return '<article class="note-item"><div class="note-item-title">' + title + '</div><div class="note-item-body">' + body + '</div><div class="note-item-meta">Updated ' + escapeHtml(date) + '</div><div class="note-item-actions"><button data-ripple onclick="editNote(\'' + id + '\')">Edit</button><button data-ripple onclick="deleteNote(\'' + id + '\')">Delete</button></div></article>';
   }).join('');
 }
-function saveNote() {
+export function saveNote() {
   var titleEl = document.getElementById('note-title');
   var bodyEl = document.getElementById('note-body');
   var editEl = document.getElementById('note-edit-id');
@@ -78,7 +86,7 @@ function saveNote() {
   }
   writeNotes(notes); resetNoteForm(); renderNotes();
 }
-function editNote(id) {
+export function editNote(id) {
   var note = readNotes().find(function(n){ return n.id === id; });
   if (!note) return;
   document.getElementById('note-edit-id').value = note.id;
@@ -88,7 +96,7 @@ function editNote(id) {
   if (save) save.textContent = 'Update note';
   document.getElementById('note-title').focus();
 }
-function deleteNote(id) {
+export function deleteNote(id) {
   var notes = readNotes();
   writeNotes(notes.filter(function(n){ return n.id !== id; }));
   renderNotes();
@@ -96,22 +104,22 @@ function deleteNote(id) {
 }
 
 // ===== Social media links (admin-editable, stored in app_settings) =====
-var SOCIAL_ICONS = {
+export var SOCIAL_ICONS = {
   facebook: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.51 1.49-3.9 3.77-3.9 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.88h2.78l-.44 2.91h-2.34V22c4.78-.76 8.44-4.92 8.44-9.94z"/></svg>',
   instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><path d="M17.5 6.5h.01"/></svg>',
   whatsapp: '<svg class="wa-glyph"><use href="icons.svg#i7ebf0f"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.75h3.05l-6.67 7.63 7.85 10.87h-6.14l-4.8-6.65-5.5 6.65H2.17l7.14-8.16L1.75 2.75h6.3l4.35 6.08zm-1.07 16.7h1.7L7.03 4.4H5.2z"/></svg>'
 };
-var SOCIAL_LABELS = { facebook: 'Facebook', instagram: 'Instagram', whatsapp: 'WhatsApp', x: 'X' };
-var SOCIAL_LINKS_KEY = 'social_links';
-async function loadSocialLinks() {
+export var SOCIAL_LABELS = { facebook: 'Facebook', instagram: 'Instagram', whatsapp: 'WhatsApp', x: 'X' };
+export var SOCIAL_LINKS_KEY = 'social_links';
+export async function loadSocialLinks() {
   var container = document.getElementById('social-links-row');
   var raw = await getAppSetting(SOCIAL_LINKS_KEY, '');
   var links = {};
   if (raw) { try { links = JSON.parse(raw) || {}; } catch(e) { links = {}; } }
   renderSocialLinks(links);
 }
-function renderSocialLinks(links) {
+export function renderSocialLinks(links) {
   var container = document.getElementById('social-links-row');
   links = links || {};
   if (container) {
@@ -134,12 +142,12 @@ function renderSocialLinks(links) {
    If editing this file (by hand or with an AI tool), these four
    values must stay exactly as below — do not let them be
    "fixed", reformatted, or replaced with placeholders. */
-var ADMIN_EMAIL = 'sarecruiters.directory@gmail.com';
-var ADMIN_WHATSAPP = '27715531005'; // +27 71 553 1005
-var ADMIN_BANK_ACCOUNT = '2573389037'; // Capitec
-var ADMIN_BANK_HOLDER = 'SA Recruiters';
+export var ADMIN_EMAIL = 'sarecruiters.directory@gmail.com';
+export var ADMIN_WHATSAPP = '27715531005'; // +27 71 553 1005
+export var ADMIN_BANK_ACCOUNT = '2573389037'; // Capitec
+export var ADMIN_BANK_HOLDER = 'SA Recruiters';
 /* ⚠️ END PROTECTED CONTACT DETAILS ⚠️ */
-function showWhatsAppConfirm(opts) {
+export function showWhatsAppConfirm(opts) {
   /* opts: { title, message, waText, skipSaveToast } */
   var titleEl = document.getElementById('wa-confirm-title');
   var msgEl = document.getElementById('wa-confirm-msg');
@@ -156,9 +164,9 @@ function showWhatsAppConfirm(opts) {
 // key lives in the Cloudflare Worker, which refuses submissions the widget
 // did not answer. Site key: add the real one from the Cloudflare dashboard
 // (Turnstile → Add site) for sa-recruiters.co.za.
-var TURNSTILE_SITE_KEY = '0x4AAAAAAE781UzzffMh7u8L';
-var turnstileLoader = null;
-function loadTurnstile() {
+export var TURNSTILE_SITE_KEY = '0x4AAAAAAE781UzzffMh7u8L';
+export var turnstileLoader = null;
+export function loadTurnstile() {
   if (window.turnstile && typeof window.turnstile.render === 'function') return Promise.resolve(window.turnstile);
   if (turnstileLoader) return turnstileLoader;
   // A transient challenge/network failure must not poison the shared promise
@@ -194,13 +202,13 @@ function loadTurnstile() {
   });
   return turnstileLoader;
 }
-function turnstileConfigured() {
+export function turnstileConfigured() {
   return TURNSTILE_SITE_KEY && TURNSTILE_SITE_KEY.indexOf('PLACEHOLDER') === -1;
 }
 // The widget's container is created on demand rather than hardcoded in
 // index.html, so the sheets stay self-contained. It is inserted just above
 // the sheet's submit button.
-function ensureTurnstileSlot(containerId, sheetId) {
+export function ensureTurnstileSlot(containerId, sheetId) {
   var host = document.getElementById(containerId);
   if (host) return host;
   var sheet = document.getElementById(sheetId);
@@ -216,8 +224,8 @@ function ensureTurnstileSlot(containerId, sheetId) {
 }
 // Keep the widget id returned by Turnstile. Passing the id is more reliable
 // than passing a DOM element after a sheet has been opened/closed repeatedly.
-var turnstileWidgets = {};
-function showTurnstileSlotError(host, message) {
+export var turnstileWidgets = {};
+export function showTurnstileSlotError(host, message) {
   if (!host) return;
   host.innerHTML = '';
   var note = document.createElement('div');
@@ -230,7 +238,7 @@ function showTurnstileSlotError(host, message) {
 // Render (or re-render) the widget inside its sheet. Returns the container,
 // or null when Turnstile is not configured — the submit paths treat null as
 // "no token needed" so forms keep working in dev before the keys are added.
-function renderTurnstile(containerId, sheetId) {
+export function renderTurnstile(containerId, sheetId) {
   var host = ensureTurnstileSlot(containerId, sheetId);
   if (!host || !turnstileConfigured()) return null;
   if (turnstileWidgets[containerId] != null && window.turnstile && typeof window.turnstile.remove === 'function') {
@@ -275,7 +283,7 @@ function renderTurnstile(containerId, sheetId) {
   });
   return host;
 }
-function resetTurnstile(containerId) {
+export function resetTurnstile(containerId) {
   var host = document.getElementById(containerId);
   if (!host) return;
   var id = turnstileWidgets[containerId];
@@ -284,7 +292,7 @@ function resetTurnstile(containerId) {
   }
   host.innerHTML = '';
 }
-function getTurnstileResponse(containerId) {
+export function getTurnstileResponse(containerId) {
   if (!turnstileConfigured()) return '';
   var host = document.getElementById(containerId);
   if (!host || !window.turnstile) return '';
@@ -297,7 +305,7 @@ function getTurnstileResponse(containerId) {
 // server-side, writes to Supabase via the secure RPC, and sends the admin
 // notification email via Resend. Falls back to the legacy direct paths when
 // the Worker is unreachable so submissions are never lost.
-async function submitViaWorker(path, payload, turnstileContainerId) {
+export async function submitViaWorker(path, payload, turnstileContainerId) {
   var token = getTurnstileResponse(turnstileContainerId);
   if (turnstileConfigured() && !token) {
     return { ok: false, error: 'Please complete the spam check first.' };
@@ -351,14 +359,14 @@ async function submitViaWorker(path, payload, turnstileContainerId) {
 
 // ===== Employer entry point on the sign-in gate (no Google sign-in, no
 // Talent Pool profile) =====
-function openEmployerGateSheet() {
+export function openEmployerGateSheet() {
   var emailEl = document.getElementById('employer-resend-email');
   if (emailEl) emailEl.value = '';
   var overlay = document.getElementById('employer-gate-overlay');
   if (overlay) overlay.classList.add('open');
   renderTurnstile('employer-resend-turnstile', 'employer-gate-overlay');
 }
-async function resendEmployerManagerLink() {
+export async function resendEmployerManagerLink() {
   var email = (document.getElementById('employer-resend-email') || {}).value || '';
   email = email.trim();
   if (!email) { showToast('Add the email you registered with.'); return; }
@@ -374,7 +382,7 @@ async function resendEmployerManagerLink() {
 // Shown once, right after a successful self-service registration — the
 // link is also emailed (see the Worker route), but shown in-app too since
 // email delivery isn't always instant or reliable.
-function showEmployerManagerLinkSheet(link, email) {
+export function showEmployerManagerLinkSheet(link, email) {
   var body = document.getElementById('employer-manager-link-body');
   if (body) body.value = link;
   var note = document.getElementById('employer-manager-link-note');
@@ -385,7 +393,7 @@ function showEmployerManagerLinkSheet(link, email) {
   var overlay = document.getElementById('employer-manager-link-overlay');
   if (overlay) overlay.classList.add('open');
 }
-function copyEmployerManagerLink() {
+export function copyEmployerManagerLink() {
   var link = window.__pendingEmployerManagerLink;
   if (!link) return;
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -393,7 +401,7 @@ function copyEmployerManagerLink() {
   } else { showToast('Select and copy the link manually.'); }
 }
 
-function openReportSheet(presetAgency) {
+export function openReportSheet(presetAgency) {
   // Populate agency suggestions
   var dl = document.getElementById('r-agency-list');
   if (dl) dl.innerHTML = agenciesCache.map(function(a){ return '<option value="' + escapeHtml(a.name||'') + '">'; }).join('');
@@ -406,7 +414,7 @@ function openReportSheet(presetAgency) {
   document.getElementById('report-overlay').classList.add('open');
   renderTurnstile('report-turnstile', 'report-overlay');
 }
-async function submitReport() {
+export async function submitReport() {
   var agencyName = document.getElementById('r-agency').value.trim();
   var reason = document.getElementById('r-reason').value;
   var details = document.getElementById('r-details').value.trim();
@@ -487,7 +495,7 @@ async function submitReport() {
 // (added alongside user_id ownership — see the 20260919 migration) to scope
 // the rows. Unlike the admin Submissions screen this has no status-toggle or
 // delete controls — it's just visibility into what happened to what you sent.
-async function openMySubmissions() {
+export async function openMySubmissions() {
   if (!saAuthUser) { showToast('Please sign in to view your submissions.'); return; }
   var list = document.getElementById('my-submissions-list');
   if (list) list.innerHTML = '<div class="empty-state"><h3>Loading your submissions…</h3></div>';
@@ -555,21 +563,21 @@ async function openMySubmissions() {
   }).join('');
 }
 
-function reportWhatsAppLink(p) {
+export function reportWhatsAppLink(p) {
   var msg = 'SA Recruiters report:%0A' +
     'Agency: ' + encodeURIComponent(p.agency_name || '-') + '%0A' +
     'Reason: ' + encodeURIComponent(p.reason || '-') + '%0A' +
     'Details: ' + encodeURIComponent(p.details || '-');
   return 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + msg;
 }
-function reportEmailLink(p) {
+export function reportEmailLink(p) {
   var subj = encodeURIComponent('SA Recruiters report: ' + (p.agency_name || 'Listing'));
   var body = encodeURIComponent('Agency: ' + (p.agency_name||'-') + '\nReason: ' + (p.reason||'-') + '\nDetails: ' + (p.details||'-'));
   return 'mailto:' + ADMIN_EMAIL + '?subject=' + subj + '&body=' + body;
 }
 
 // ===== Suggestion / Comment =====
-function openSuggestionSheet() {
+export function openSuggestionSheet() {
   document.getElementById('s-type').selectedIndex = 0;
   document.getElementById('s-agency').value = '';
   document.getElementById('s-details').value = '';
@@ -580,7 +588,7 @@ function openSuggestionSheet() {
   if (window.__saSyncFeedbackChat) window.__saSyncFeedbackChat();
   renderTurnstile('suggestion-turnstile', 'suggestion-overlay');
 }
-async function submitSuggestion() {
+export async function submitSuggestion() {
   var type = document.getElementById('s-type').value;
   var agency = document.getElementById('s-agency').value.trim();
   var details = document.getElementById('s-details').value.trim();
@@ -657,12 +665,12 @@ async function submitSuggestion() {
 // /api/submit/job-enquiry in the Worker. The static /post-a-job/ page
 // (generate-pages.js) posts to the same Worker endpoint independently of
 // this in-app sheet.
-function pjSelectedRoleTypes() {
+export function pjSelectedRoleTypes() {
   var group = document.getElementById('pj-role-types');
   if (!group) return [];
   return Array.prototype.slice.call(group.querySelectorAll('.role-pill.active')).map(function(b){ return b.textContent.trim(); });
 }
-function openPostJobSheet() {
+export function openPostJobSheet() {
   document.getElementById('pj-company').value = '';
   document.getElementById('pj-contact').value = '';
   document.getElementById('pj-email').value = '';
@@ -682,7 +690,7 @@ function openPostJobSheet() {
   document.getElementById('post-job-overlay').classList.add('open');
   renderTurnstile('post-job-turnstile', 'post-job-overlay');
 }
-async function submitJobPostEnquiry() {
+export async function submitJobPostEnquiry() {
   var company = document.getElementById('pj-company').value.trim();
   var contact = document.getElementById('pj-contact').value.trim();
   var email = document.getElementById('pj-email').value.trim();
@@ -731,7 +739,7 @@ async function submitJobPostEnquiry() {
 // Turnstile and consent server-side and stores a PRIVATE request for the admin
 // (public_submit_job_seeker(), 20261014_job_seeker_requests.sql). It never
 // creates a public Talent Pool profile.
-function openJobSeekerSheet() {
+export function openJobSeekerSheet() {
   ['js-name','js-phone','js-email','js-location','js-looking','js-qualification','js-message','js-cv'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
@@ -749,7 +757,7 @@ function openJobSeekerSheet() {
   document.getElementById('job-seeker-overlay').classList.add('open');
   renderTurnstile('job-seeker-turnstile', 'job-seeker-overlay');
 }
-async function submitJobSeekerRequest() {
+export async function submitJobSeekerRequest() {
   var err = document.getElementById('job-seeker-error');
   var btn = document.getElementById('job-seeker-submit');
   function val(id) { return (document.getElementById(id).value || '').trim(); }
@@ -783,19 +791,19 @@ async function submitJobSeekerRequest() {
 }
 
 // ===== TALENT POOL (public browse + self-registration) =====
-var poolCache = [];
-var poolLoaded = false;
-var poolCandidateCount = 0;
-var poolReturnScreen = 'home';
+export var poolCache = [];
+export var poolLoaded = false;
+export var poolCandidateCount = 0;
+export var poolReturnScreen = 'home';
 // Set by a Talent Pool spotlight card so the very next pool render can jump
 // straight to (and expand) that candidate's profile instead of dropping the
 // visitor on the generic, unfiltered Talent Pool list.
-var poolPendingOpenId = null;
+export var poolPendingOpenId = null;
 
 // Lightweight count-only query so the home "Pool Candidates" stat is accurate
 // on first load, without waiting for the full candidate list (which only
 // loads once someone actually opens the Talent Pool screen).
-async function getPoolCandidateCount() {
+export async function getPoolCandidateCount() {
   try {
     var startup = await getPublicPoolCandidatesFromWorker();
     if (startup && startup.counts && typeof startup.counts.candidates === 'number') return startup.counts.candidates;
@@ -803,7 +811,7 @@ async function getPoolCandidateCount() {
   } catch(e) { console.warn('pool count load', e); return null; }
 }
 
-function goPool(returnScreen, openCandidateId) {
+export function goPool(returnScreen, openCandidateId) {
   poolReturnScreen = returnScreen === 'profile' || returnScreen === 'account' || (!returnScreen && document.getElementById('screen-account').classList.contains('active')) ? 'profile' : 'home';
   poolPendingOpenId = openCandidateId || null;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -814,7 +822,7 @@ function goPool(returnScreen, openCandidateId) {
 }
 // Opens (expands) and scrolls to a specific candidate's card in the
 // currently-rendered Talent Pool list, e.g. after tapping a spotlight card.
-function openPoolCandidateCard(id) {
+export function openPoolCandidateCard(id) {
   if (!id) return;
   var card = document.querySelector('.pool-mini-card[data-candidate-id="' + CSS.escape(String(id)) + '"]');
   if (!card) return;
@@ -823,7 +831,7 @@ function openPoolCandidateCard(id) {
   setTimeout(function(){ card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 150);
 }
 
-async function loadPoolCandidates() {
+export async function loadPoolCandidates() {
   var listEl = document.getElementById('pool-list');
   if (listEl && !poolLoaded) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>Loading…</h3></div></div>';
   try {
@@ -862,7 +870,7 @@ async function loadPoolCandidates() {
     openPoolCandidateCard(openId);
   }
 }
-function renderPoolList() {
+export function renderPoolList() {
   var listEl = document.getElementById('pool-list');
   if (!listEl) return;
   var q = ((document.getElementById('pool-search')||{}).value || '').trim().toLowerCase();
@@ -919,7 +927,7 @@ function renderPoolList() {
 // Recruiters on WhatsApp with the candidate's name/position/id, and the
 // team makes the introduction directly rather than exposing phone or
 // email addresses in the app.
-function poolCandidateWhatsAppLink(c) {
+export function poolCandidateWhatsAppLink(c) {
   var msg = 'Hi SA Recruiters, I\'m interested in this Talent Pool candidate:\n' +
     (c.full_name || 'Candidate') + (c.position ? ' — ' + c.position : '') +
     (c.location ? ' (' + c.location + ')' : '') +
@@ -931,8 +939,8 @@ function poolCandidateWhatsAppLink(c) {
 // Talent Pool "profile" state for the currently signed-in user. null = the
 // register sheet is being used to create a brand-new candidate; a candidate
 // id = the sheet is editing (and will UPDATE, not INSERT) that owned row.
-var editingPoolCandidateId = null;
-function resetPoolCvUpload() {
+export var editingPoolCandidateId = null;
+export function resetPoolCvUpload() {
   window.currentPoolCvUrl = null;
   window.pendingPoolCvFile = null;
   var input = document.getElementById('pool-cv');
@@ -940,11 +948,11 @@ function resetPoolCvUpload() {
   if (input) input.value = '';
   if (status) status.textContent = 'Upload your latest CV so employers can be considered through SA Recruiters.';
 }
-function resetPoolTermsAcceptance() {
+export function resetPoolTermsAcceptance() {
   var input = document.getElementById('pool-terms-accept');
   if (input) input.checked = false;
 }
-function setPoolSheetEditMode(isEdit) {
+export function setPoolSheetEditMode(isEdit) {
   var title = document.getElementById('pool-register-title');
   if (title) title.textContent = isEdit ? 'My Talent Pool Profile' : 'Join the Talent Pool';
   var submitBtn = document.getElementById('pool-submit-btn');
@@ -961,7 +969,7 @@ function setPoolSheetEditMode(isEdit) {
   if (laterNote) laterNote.style.display = isEdit ? 'none' : 'block';
 }
 
-function openPoolRegisterSheet() {
+export function openPoolRegisterSheet() {
   // Talent Pool membership is a step that comes AFTER the general account:
   // guests are pointed to the account screen's free sign-in card first.
   if (!saAuthUser) {
@@ -1004,7 +1012,7 @@ function openPoolRegisterSheet() {
 
 // Fills the same register-sheet fields from an existing pool_candidates row
 // (used when a signed-in user opens "My Talent Pool Profile").
-function fillPoolFormFromCandidate(c) {
+export function fillPoolFormFromCandidate(c) {
   document.getElementById('pool-name').value = c.full_name || '';
   window.pendingPoolPhotoBlob = null;
   var poolPreview = document.getElementById('pool-photo-preview');
@@ -1050,7 +1058,7 @@ function fillPoolFormFromCandidate(c) {
 // yet, opens a blank registration pre-filled with the Google name/email —
 // submitting it will auto-link (not duplicate) a matching pre-sign-in
 // registration if the typed email + phone match one (see submitPoolRegistration).
-async function openMyPoolProfile() {
+export async function openMyPoolProfile() {
   if (!saAuthUser) { showToast('Please sign in to manage your Talent Pool profile.'); return; }
   var result;
   try {
@@ -1083,7 +1091,7 @@ async function openMyPoolProfile() {
 // sheet forced open with its close button hidden (.gate-mandatory) until
 // they submit — closeSheet() above strips that class the moment a
 // successful submit/claim/link path calls it.
-async function enforceTalentPoolProfile() {
+export async function enforceTalentPoolProfile() {
   if (!saAuthUser || (typeof __saManagerLinkMode !== 'undefined' && __saManagerLinkMode)) return;
   // Never force SA Recruiters' own admin account (signing into the public
   // site with the same Google login) through candidate profile registration.
@@ -1107,7 +1115,7 @@ async function enforceTalentPoolProfile() {
   showToast('Please complete your Talent Pool profile to start using SA Recruiters.');
 }
 
-async function deleteMyPoolProfile() {
+export async function deleteMyPoolProfile() {
   if (!editingPoolCandidateId) return;
   if (!confirm('Remove your Talent Pool profile? This can\u2019t be undone.')) return;
   var deleteBtn = document.getElementById('pool-delete-btn');
@@ -1129,7 +1137,7 @@ async function deleteMyPoolProfile() {
 // Builds the RPC-shaped field object shared by the edit-save path and the
 // claim-and-update path (both push the sheet's current values into an owned
 // row via candidate_update_own_profile, just for a different candidate id).
-function poolFormToProfileFields() {
+export function poolFormToProfileFields() {
   return {
     p_full_name: document.getElementById('pool-name').value.trim(),
     p_contact_phone: document.getElementById('pool-phone').value.trim(),
@@ -1155,7 +1163,7 @@ function poolFormToProfileFields() {
   };
 }
 
-async function submitPoolRegistration() {
+export async function submitPoolRegistration() {
   var name = document.getElementById('pool-name').value.trim();
   var phone = document.getElementById('pool-phone').value.trim();
   var sector = document.getElementById('pool-sector').value.trim();
@@ -1321,7 +1329,7 @@ async function submitPoolRegistration() {
   showToast('Registration received — you\'ll go live once it\'s reviewed.');
 }
 
-function copyText(text, el) {
+export function copyText(text, el) {
   var done = function() {
     var original = el.querySelector('.hub-contact-value').textContent;
     el.querySelector('.hub-contact-value').textContent = 'Copied ✓';
@@ -1333,3 +1341,87 @@ function copyText(text, el) {
 
 /* SECTION_CONTENT + openContentSheet now live in content.js / content-manager.js
    (admin-editable article system). */
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+export function set_poolCandidateCount(v) { poolCandidateCount = v; return v; }
+Object.assign(window, {
+  closeSheet,
+  openSupportSheet,
+  readNotes,
+  writeNotes,
+  openNotesSheet,
+  resetNoteForm,
+  renderNotes,
+  saveNote,
+  editNote,
+  deleteNote,
+  loadSocialLinks,
+  renderSocialLinks,
+  showWhatsAppConfirm,
+  loadTurnstile,
+  turnstileConfigured,
+  ensureTurnstileSlot,
+  showTurnstileSlotError,
+  renderTurnstile,
+  resetTurnstile,
+  getTurnstileResponse,
+  submitViaWorker,
+  openEmployerGateSheet,
+  resendEmployerManagerLink,
+  showEmployerManagerLinkSheet,
+  copyEmployerManagerLink,
+  openReportSheet,
+  submitReport,
+  openMySubmissions,
+  reportWhatsAppLink,
+  reportEmailLink,
+  openSuggestionSheet,
+  submitSuggestion,
+  pjSelectedRoleTypes,
+  openPostJobSheet,
+  submitJobPostEnquiry,
+  openJobSeekerSheet,
+  submitJobSeekerRequest,
+  getPoolCandidateCount,
+  goPool,
+  openPoolCandidateCard,
+  loadPoolCandidates,
+  renderPoolList,
+  poolCandidateWhatsAppLink,
+  resetPoolCvUpload,
+  resetPoolTermsAcceptance,
+  setPoolSheetEditMode,
+  openPoolRegisterSheet,
+  fillPoolFormFromCandidate,
+  openMyPoolProfile,
+  enforceTalentPoolProfile,
+  deleteMyPoolProfile,
+  poolFormToProfileFields,
+  submitPoolRegistration,
+  copyText,
+});
+Object.defineProperties(window, {
+  NOTES_KEY: { get: () => NOTES_KEY, set: (v) => { NOTES_KEY = v; }, configurable: true, enumerable: true },
+  SOCIAL_ICONS: { get: () => SOCIAL_ICONS, set: (v) => { SOCIAL_ICONS = v; }, configurable: true, enumerable: true },
+  SOCIAL_LABELS: { get: () => SOCIAL_LABELS, set: (v) => { SOCIAL_LABELS = v; }, configurable: true, enumerable: true },
+  SOCIAL_LINKS_KEY: { get: () => SOCIAL_LINKS_KEY, set: (v) => { SOCIAL_LINKS_KEY = v; }, configurable: true, enumerable: true },
+  ADMIN_EMAIL: { get: () => ADMIN_EMAIL, set: (v) => { ADMIN_EMAIL = v; }, configurable: true, enumerable: true },
+  ADMIN_WHATSAPP: { get: () => ADMIN_WHATSAPP, set: (v) => { ADMIN_WHATSAPP = v; }, configurable: true, enumerable: true },
+  ADMIN_BANK_ACCOUNT: { get: () => ADMIN_BANK_ACCOUNT, set: (v) => { ADMIN_BANK_ACCOUNT = v; }, configurable: true, enumerable: true },
+  ADMIN_BANK_HOLDER: { get: () => ADMIN_BANK_HOLDER, set: (v) => { ADMIN_BANK_HOLDER = v; }, configurable: true, enumerable: true },
+  TURNSTILE_SITE_KEY: { get: () => TURNSTILE_SITE_KEY, set: (v) => { TURNSTILE_SITE_KEY = v; }, configurable: true, enumerable: true },
+  turnstileLoader: { get: () => turnstileLoader, set: (v) => { turnstileLoader = v; }, configurable: true, enumerable: true },
+  turnstileWidgets: { get: () => turnstileWidgets, set: (v) => { turnstileWidgets = v; }, configurable: true, enumerable: true },
+  poolCache: { get: () => poolCache, set: (v) => { poolCache = v; }, configurable: true, enumerable: true },
+  poolLoaded: { get: () => poolLoaded, set: (v) => { poolLoaded = v; }, configurable: true, enumerable: true },
+  poolCandidateCount: { get: () => poolCandidateCount, set: (v) => { poolCandidateCount = v; }, configurable: true, enumerable: true },
+  poolReturnScreen: { get: () => poolReturnScreen, set: (v) => { poolReturnScreen = v; }, configurable: true, enumerable: true },
+  poolPendingOpenId: { get: () => poolPendingOpenId, set: (v) => { poolPendingOpenId = v; }, configurable: true, enumerable: true },
+  editingPoolCandidateId: { get: () => editingPoolCandidateId, set: (v) => { editingPoolCandidateId = v; }, configurable: true, enumerable: true },
+});

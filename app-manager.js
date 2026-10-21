@@ -2,14 +2,24 @@
  * SA Recruiters -- app.js split 7/8: app-manager.js
  * Smart Manager admin section + agency self-service Manager Mode
  *
- * Part of the original monolithic app.js, mechanically split and kept as
- * classic (non-module) scripts loaded in this exact order via <script defer>
- * in index.html, so all functions/vars stay on one shared global scope
- * exactly as before. Do not reorder these files relative to one another.
+ * Part of the original monolithic app.js. Now an ES module: it imports what it
+ * uses from the other app-*.js files and exports its top-level declarations.
+ * A window bridge at the bottom keeps inline onclick="" handlers and the
+ * classic scripts (app-vacancy-v2.js, app-alerts.js, content*.js) working.
+ * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
+import { R2_WORKER_URL, agenciesCache, buildManagerLink, employerManagerPendingToken, escapeHtml, getManagerToken, initials, isAdmin, managerAgency, managerMode, managerPendingToken, publicAgencySlug, publicVacancySlug, set_managerAgency, set_managerMode, set_managerPendingToken, trackEvent, vacanciesCache } from './app-core.js';
+import { branchesFor, vacanciesFor, vacancyScreenStateMarkup } from './app-data.js';
+import { ICON_LINK, IS, postersCache, verifiedBadge } from './app-cards.js';
+import { openBranchSheet, set_pendingVacancyAgency } from './app-forms.js';
+import { copyText } from './app-sheets.js';
+import { goBackToHome, showToast } from './app-ui.js';
+import { bumpManagerWatchdog, enterEmployerManagerMode } from './app-manager-employer.js';
+
+
 // ===== SMART MANAGER (admin section) =====
-function goSmartManager() {
+export function goSmartManager() {
   if (!isAdmin) return; // admin-only — managed via admin.html now
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-smartmanager').classList.add('active');
@@ -17,7 +27,7 @@ function goSmartManager() {
   window.scrollTo({ top: 0 });
   renderSmartManager();
 }
-function renderSmartManager() {
+export function renderSmartManager() {
   var list = document.getElementById('smartmanager-list');
   if (!list) return;
   if (!agenciesCache.length) {
@@ -57,16 +67,16 @@ function renderSmartManager() {
   });
   list.innerHTML = html;
 }
-function filterSmartManager() {
+export function filterSmartManager() {
   renderSmartManager();
 }
-function copyManagerLink(agencyId) {
+export function copyManagerLink(agencyId) {
   var token = getManagerToken(agencyId);
   if (!token) { showToast('Link not ready'); return; }
   var link = buildManagerLink(token);
   copyText(link, document.getElementById('sm-link-' + agencyId));
 }
-function shareManagerLink(agencyId) {
+export function shareManagerLink(agencyId) {
   var token = getManagerToken(agencyId);
   if (!token) { showToast('Link not ready'); return; }
   var link = buildManagerLink(token);
@@ -87,7 +97,7 @@ function shareManagerLink(agencyId) {
 /* Share an agency via the OS share sheet, pointing at its static public
    listing page (see generate-pages.js). Falls back to copy-link where
    navigator.share isn't available (desktop browsers). */
-function shareAgency(agencyId) {
+export function shareAgency(agencyId) {
   var a = agenciesCache.find(function(x){ return x.id === agencyId; });
   if (!a) { showToast('Agency not found'); return; }
   var link = window.location.origin + '/agency/' + publicAgencySlug(a) + '/';
@@ -101,7 +111,7 @@ function shareAgency(agencyId) {
     showToast('Link copied — paste it into a message');
   }
 }
-function shareVacancy(vacancyId) {
+export function shareVacancy(vacancyId) {
   var v = vacanciesCache.find(function(x){ return x.id === vacancyId; });
   if (!v) { showToast('Vacancy not found'); return; }
   var agency = v.agency_id ? agenciesCache.find(function(a){ return a.id === v.agency_id; }) : null;
@@ -119,12 +129,12 @@ function shareVacancy(vacancyId) {
 /* Share a vacancy poster. Preferred: the poster image itself through the OS
    share sheet (instant, looks right in WhatsApp) with the public poster page
    link in the text. Falls back to link-only share, then copy-link. */
-function posterPublicSlug(p) {
+export function posterPublicSlug(p) {
   var base = String(p.caption || 'vacancy-poster').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
     .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'vacancy-poster';
   return base + '-' + String(p.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toLowerCase();
 }
-async function sharePoster(posterId) {
+export async function sharePoster(posterId) {
   var p = (typeof postersCache !== 'undefined' ? postersCache : []).find(function(x){ return String(x.id) === String(posterId); });
   if (!p) { showToast('Poster not found'); return; }
   var link = window.location.origin + '/poster/' + posterPublicSlug(p) + '/';
@@ -149,26 +159,26 @@ async function sharePoster(posterId) {
     showToast('Link copied — paste it into a message');
   }
 }
-function openManagerLink(agencyId) {
+export function openManagerLink(agencyId) {
   var token = getManagerToken(agencyId);
   if (!token) { showToast('Link not ready'); return; }
   window.open(buildManagerLink(token), '_blank');
 }
 
 // ===== MANAGER MODE (agency self-service, add-only) =====
-var managerTokenRetries = 0;
-var MANAGER_TOKEN_MAX_RETRIES = 12;   // ~30s of patient retries while data loads
-var managerTokenKind = null;          // 'agency' | 'employer' (for the status screen)
-var managerStatusWatchdog = null;     // safety timeout that flips loading -> error
+export var managerTokenRetries = 0;
+export var MANAGER_TOKEN_MAX_RETRIES = 12;   // ~30s of patient retries while data loads
+export var managerTokenKind = null;          // 'agency' | 'employer' (for the status screen)
+export var managerStatusWatchdog = null;     // safety timeout that flips loading -> error
 // Resolved manager-link identities are cached for the session so repeated
 // renders don't re-hit the verify endpoint.
-var managerSession = { agencyId: null, employerId: null };
+export var managerSession = { agencyId: null, employerId: null };
 
 // SECURITY: verify a manager token SERVER-SIDE via the Cloudflare Worker,
 // which calls the verify_manager_token Postgres RPC. Tokens are no longer
 // comparable against public data in the browser (they are revoked from the
 // anon role), so this is the only reliable resolution path.
-async function verifyManagerTokenServer(kind, token) {
+export async function verifyManagerTokenServer(kind, token) {
   var endpoint = kind === 'employer' ? '/api/verify-employer-manager' : '/api/verify-manager';
   try {
     var controller = typeof AbortController === 'function' ? new AbortController() : null;
@@ -191,7 +201,7 @@ async function verifyManagerTokenServer(kind, token) {
 
 // Show the dedicated manager-link status screen so a token URL never silently
 // drops the visitor onto the normal home screen while it is still resolving.
-function showManagerStatus(state, heading, body) {
+export function showManagerStatus(state, heading, body) {
   var screen = document.getElementById('screen-manager-status');
   if (!screen) return;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -213,13 +223,13 @@ function showManagerStatus(state, heading, body) {
   if (retry) retry.style.display = (state === 'error') ? '' : 'none';
   if (home) home.style.display = (state === 'error') ? '' : 'none';
 }
-function retryManagerTokenFromStatus() {
+export function retryManagerTokenFromStatus() {
   // Re-trigger resolution for whichever token kind is pending.
   if (managerPendingToken) { enterManagerMode(managerPendingToken); return; }
   if (employerManagerPendingToken) { enterEmployerManagerMode(employerManagerPendingToken); return; }
   goBackToHome();
 }
-async function enterManagerMode(token) {
+export async function enterManagerMode(token) {
   // Always surface the status screen first so the visitor sees that their
   // manager link is being opened, not the generic directory home screen.
   if (!managerMode) showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
@@ -237,20 +247,20 @@ async function enterManagerMode(token) {
   if (!record) {
     if (managerTokenRetries < 2) {
       managerTokenRetries++;
-      managerPendingToken = token;
+      set_managerPendingToken( token);
       managerTokenKind = 'agency';
       var backoff = 1500 + managerTokenRetries * 800;
       bumpManagerWatchdog(backoff + 8000);
       setTimeout(function(){
         if (managerPendingToken) {
-          managerPendingToken = null;
+          set_managerPendingToken( null);
           enterManagerMode(token);
         }
       }, backoff);
       return false;
     }
     managerTokenRetries = 0;
-    managerPendingToken = null;
+    set_managerPendingToken( null);
     managerTokenKind = null;
     showManagerStatus('error',
       'This management link is invalid or expired',
@@ -262,16 +272,16 @@ async function enterManagerMode(token) {
   managerSession.agencyName = record.name;
   managerSession.agencyLocation = record.location;
   managerTokenRetries = 0;
-  managerPendingToken = null;
+  set_managerPendingToken( null);
   managerTokenKind = null;
   clearTimeout(managerStatusWatchdog);
   var agency = agenciesCache.find(function(a){ return a.id === record.id; }) ||
     { id: record.id, name: record.name || 'Agency', location: record.location || '', verified: !!record.verified };
   return openManagerScreen(agency, token);
 }
-function openManagerScreen(agency, token) {
-  managerMode = true;
-  managerAgency = agency;
+export function openManagerScreen(agency, token) {
+  set_managerMode( true);
+  set_managerAgency( agency);
   // Keep the token on the in-memory record so vacancy/branch writes can
   // authorize themselves server-side (workerManagerAddBranch etc).
   managerAgency.manage_token = token;
@@ -286,10 +296,10 @@ function openManagerScreen(agency, token) {
   renderManagerMode();
   return true;
 }
-function exitManagerMode() {
-  managerMode = false;
-  managerAgency = null;
-  managerPendingToken = null;
+export function exitManagerMode() {
+  set_managerMode( false);
+  set_managerAgency( null);
+  set_managerPendingToken( null);
   managerSession.agencyId = null;
   managerSession.agencyToken = null;
   // Clean URL
@@ -307,7 +317,7 @@ function exitManagerMode() {
   document.getElementById('screen-home').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'home'); });
 }
-function renderManagerMode() {
+export function renderManagerMode() {
   if (!managerMode || !managerAgency) return;
   renderManagerAgencyProfile();
   // Branches
@@ -344,7 +354,7 @@ function renderManagerMode() {
 // Small profile card shown at the top of the agency self-service screen so
 // the agency can confirm who they're managing — mirrors the admin card's
 // photo + contact details (read-only here; edits go through the admin).
-function renderManagerAgencyProfile() {
+export function renderManagerAgencyProfile() {
   var el = document.getElementById('manager-agency-profile');
   if (!el || !managerAgency) return;
   var a = managerAgency;
@@ -365,15 +375,15 @@ function renderManagerAgencyProfile() {
     '</div>' +
     (rows || '<div class="manager-item-sub">No contact details on file yet.</div>');
 }
-function managerAddBranch() {
+export function managerAddBranch() {
   if (!managerAgency) return;
   // Use openBranchSheet in "add" mode (no branchId) so the title and
   // pendingBranchId stay consistent with the edit-aware branch sheet.
   openBranchSheet(managerAgency.id, null);
 }
-function managerAddVacancy() {
+export function managerAddVacancy() {
   if (!managerAgency) return;
-  pendingVacancyAgency = managerAgency.id;
+  set_pendingVacancyAgency( managerAgency.id);
   document.getElementById('v-title').value = '';
   document.getElementById('v-location').value = '';
   document.getElementById('v-closing').value = '';
@@ -382,3 +392,42 @@ function managerAddVacancy() {
   document.getElementById('vacancy-overlay').classList.add('open');
 }
 
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+export function set_managerTokenKind(v) { managerTokenKind = v; return v; }
+export function set_managerStatusWatchdog(v) { managerStatusWatchdog = v; return v; }
+Object.assign(window, {
+  goSmartManager,
+  renderSmartManager,
+  filterSmartManager,
+  copyManagerLink,
+  shareManagerLink,
+  shareAgency,
+  shareVacancy,
+  posterPublicSlug,
+  sharePoster,
+  openManagerLink,
+  verifyManagerTokenServer,
+  showManagerStatus,
+  retryManagerTokenFromStatus,
+  enterManagerMode,
+  openManagerScreen,
+  exitManagerMode,
+  renderManagerMode,
+  renderManagerAgencyProfile,
+  managerAddBranch,
+  managerAddVacancy,
+});
+Object.defineProperties(window, {
+  managerTokenRetries: { get: () => managerTokenRetries, set: (v) => { managerTokenRetries = v; }, configurable: true, enumerable: true },
+  MANAGER_TOKEN_MAX_RETRIES: { get: () => MANAGER_TOKEN_MAX_RETRIES, set: (v) => { MANAGER_TOKEN_MAX_RETRIES = v; }, configurable: true, enumerable: true },
+  managerTokenKind: { get: () => managerTokenKind, set: (v) => { managerTokenKind = v; }, configurable: true, enumerable: true },
+  managerStatusWatchdog: { get: () => managerStatusWatchdog, set: (v) => { managerStatusWatchdog = v; }, configurable: true, enumerable: true },
+  managerSession: { get: () => managerSession, set: (v) => { managerSession = v; }, configurable: true, enumerable: true },
+});

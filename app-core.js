@@ -2,36 +2,42 @@
  * SA Recruiters -- app.js split 1/8: app-core.js
  * Config, analytics, manager-token helpers, theme, slug/escape utilities
  *
- * Part of the original monolithic app.js, mechanically split and kept as
- * classic (non-module) scripts loaded in this exact order via <script defer>
- * in index.html, so all functions/vars stay on one shared global scope
- * exactly as before. Do not reorder these files relative to one another.
+ * Part of the original monolithic app.js. Now an ES module: it imports what it
+ * uses from the other app-*.js files and exports its top-level declarations.
+ * A window bridge at the bottom keeps inline onclick="" handlers and the
+ * classic scripts (app-vacancy-v2.js, app-alerts.js, content*.js) working.
+ * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
+
+import { saveManagerTokenToSupabase } from './app-data.js';
+import { renderSaved } from './app-cards.js';
+import { closeSiteMenu, renderAccountDetails, renderAccountIdentity, showToast } from './app-ui.js';
+
 
 
 // ===== Supabase config (database only — file storage moved to R2, see below) =====
-var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
-var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
+export var SUPABASE_URL = 'https://ythznnktswgymerdcxky.supabase.co';
+export var SUPABASE_ANON_KEY = 'sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH';
 // ===== Cloudflare R2 upload worker (candidate photos, daily tracks) =====
 // Set this to your deployed Worker URL, e.g.
 // 'https://sarecruiters-uploader.<your-subdomain>.workers.dev'
-var R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
-var STARTUP_DATA_URL = R2_WORKER_URL + '/api/startup';
+export var R2_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
+export var STARTUP_DATA_URL = R2_WORKER_URL + '/api/startup';
 // Public inventory is served by the Cloudflare Worker (D1/R2). Keep the
 // committed snapshot for SEO/build tooling, but do not let browsers use it as
 // a parallel serving layer or fall back to direct Supabase vacancy reads.
-var STATIC_DATA_URL = 'data/startup.json';
-var staticDataEnabled = false;
-var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
+export var STATIC_DATA_URL = 'data/startup.json';
+export var staticDataEnabled = false;
+export var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 if (!supabaseClient) console.warn('[SA Recruiters] Supabase client unavailable; using local read-only fallback until the connection is restored.');
 
 // ===== Required Google sign-in for the public app =====
-var saAuthUser = null;
-var saAuthStarted = false;
-var saAuthStartCallback = null;
-var saAuthRedirecting = false;
+export var saAuthUser = null;
+export var saAuthStarted = false;
+export var saAuthStartCallback = null;
+export var saAuthRedirecting = false;
 
 // ===== Employer / agency Smart Manager links bypass Google sign-in AND the
 // Talent Pool profile gate entirely (see detectManagerMode() in
@@ -40,7 +46,7 @@ var saAuthRedirecting = false;
 // Google auth has had any chance to resolve). A visitor on one of these
 // links is an employer/agency being taken straight to their manager screen;
 // they must never see the consumer sign-in curtain. =====
-var __saManagerLinkMode = false;
+export var __saManagerLinkMode = false;
 window.__saEnterManagerLinkMode = function () {
   if (__saManagerLinkMode) return;
   __saManagerLinkMode = true;
@@ -52,15 +58,15 @@ window.__saEnterManagerLinkMode = function () {
   document.body.classList.add('app-ready');
   __saRevealed = true;
 };
-function authRedirectUrl() {
+export function authRedirectUrl() {
   return window.location.origin + window.location.pathname + window.location.search;
 }
-function isGoogleUser(user) {
+export function isGoogleUser(user) {
   if (!user) return false;
   if (user.app_metadata && user.app_metadata.provider === 'google') return true;
   return Array.isArray(user.identities) && user.identities.some(function(identity) { return identity.provider === 'google'; });
 }
-function renderAuthUser(user) {
+export function renderAuthUser(user) {
   var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Guest';
   var avatar = user && user.user_metadata && (user.user_metadata.profile_photo || user.user_metadata.avatar_url);
   var authName = document.getElementById('welcome-user-name');
@@ -80,7 +86,7 @@ function renderAuthUser(user) {
 // vacancy views, cross-device saved jobs, submissions tracking, and the
 // Talent Pool. There is no blocking gate: the account screen (Profile tab)
 // carries the sign-in card for guests.
-function setAuthGateState(state, message) {
+export function setAuthGateState(state, message) {
   // Legacy name kept: pending-submissions and other modules still call this
   // with friendly status text. The status now lives on the account screen's
   // sign-in card instead of a fullscreen gate.
@@ -89,7 +95,7 @@ function setAuthGateState(state, message) {
   var button = document.getElementById('google-sign-in');
   if (button) button.disabled = state === 'loading' || state === 'redirecting';
 }
-async function signInWithGoogle() {
+export async function signInWithGoogle() {
   if (!supabaseClient || saAuthRedirecting) return;
   saAuthRedirecting = true;
   setAuthGateState('redirecting', 'Opening Google sign-in…');
@@ -127,7 +133,7 @@ async function signInWithGoogle() {
   }
 }
 window.signInWithGoogle = signInWithGoogle;
-async function signOutSaRecruiters() {
+export async function signOutSaRecruiters() {
   if (supabaseClient) await supabaseClient.auth.signOut();
   // No reload: the signed-in-only listeners stay attached, so we just clear
   // the user, reset the guest quota clock, and repaint the account screen
@@ -140,7 +146,7 @@ async function signOutSaRecruiters() {
   closeSiteMenu();
   showToast('Signed out — you can keep browsing as a guest.');
 }
-function startAuthenticatedApp(callback) {
+export function startAuthenticatedApp(callback) {
   saAuthStartCallback = callback;
   // The app boots EXACTLY ONCE, signed in or not: guests boot immediately
   // once the session check resolves, so the directory is browsable without
@@ -217,8 +223,8 @@ function startAuthenticatedApp(callback) {
 // (device-local). Signed-in users are unmetered. The counter resets at
 // midnight via resetGuestQuotaIfNewDay(), which runs on boot, on sign-out,
 // and on the visibility/pageshow resume hooks.
-var GUEST_DAILY_VACANCY_LIMIT = 5;
-function guestQuotaState() {
+export var GUEST_DAILY_VACANCY_LIMIT = 5;
+export function guestQuotaState() {
   try {
     var raw = JSON.parse(localStorage.getItem('sa_guest_quota_v1') || 'null') || {};
     var today = new Date();
@@ -229,11 +235,11 @@ function guestQuotaState() {
     return { day: '', used: 0, limit: GUEST_DAILY_VACANCY_LIMIT };
   }
 }
-function resetGuestQuotaIfNewDay() {
+export function resetGuestQuotaIfNewDay() {
   // Called on boot/resume: writing the fresh day key is the reset.
   guestQuotaState();
 }
-function registerVacancyOpen() {
+export function registerVacancyOpen() {
   // Returns true if the open is allowed. Guests consume one view; signed-in
   // users are always allowed.
   if (saAuthUser) return true;
@@ -244,20 +250,20 @@ function registerVacancyOpen() {
   if (typeof renderAccountDetails === 'function') renderAccountDetails();
   return true;
 }
-function guestViewsRemaining() {
+export function guestViewsRemaining() {
   if (saAuthUser) return Infinity;
   var q = guestQuotaState();
   return Math.max(0, q.limit - q.used);
 }
 
-function analyticsRandomId(prefix) {
+export function analyticsRandomId(prefix) {
   try { if (window.crypto && crypto.randomUUID) return prefix + crypto.randomUUID(); } catch(e) {}
   return prefix + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,10);
 }
-var analyticsVisitorId = (function(){ try { var k='sa_analytics_visitor'; var v=localStorage.getItem(k); if(!v){ v=analyticsRandomId('v_'); localStorage.setItem(k,v); } return v; } catch(e){ return analyticsRandomId('v_'); } })();
-var analyticsSessionId = (function(){ try { var k='sa_analytics_session', t='sa_analytics_session_started', now=Date.now(), v=localStorage.getItem(k), started=Number(localStorage.getItem(t)||0); if(!v || !started || now-started >= 30*60*1000){ v=analyticsRandomId('s_'); localStorage.setItem(k,v); localStorage.setItem(t,String(now)); } return v; } catch(e){ return analyticsRandomId('s_'); } })();
-var analyticsPublicTraffic = null;
-async function canTrackPublicTraffic() {
+export var analyticsVisitorId = (function(){ try { var k='sa_analytics_visitor'; var v=localStorage.getItem(k); if(!v){ v=analyticsRandomId('v_'); localStorage.setItem(k,v); } return v; } catch(e){ return analyticsRandomId('v_'); } })();
+export var analyticsSessionId = (function(){ try { var k='sa_analytics_session', t='sa_analytics_session_started', now=Date.now(), v=localStorage.getItem(k), started=Number(localStorage.getItem(t)||0); if(!v || !started || now-started >= 30*60*1000){ v=analyticsRandomId('s_'); localStorage.setItem(k,v); localStorage.setItem(t,String(now)); } return v; } catch(e){ return analyticsRandomId('s_'); } })();
+export var analyticsPublicTraffic = null;
+export async function canTrackPublicTraffic() {
   if (analyticsPublicTraffic !== null) return analyticsPublicTraffic;
   try {
     var auth = await supabaseClient.auth.getSession();
@@ -271,7 +277,7 @@ async function canTrackPublicTraffic() {
   }
   return analyticsPublicTraffic;
 }
-function trackEvent(eventName, entityType, entityId, metadata) {
+export function trackEvent(eventName, entityType, entityId, metadata) {
   try {
     canTrackPublicTraffic().then(function(allowed){
       if (!allowed || !supabaseClient) return;
@@ -281,64 +287,64 @@ function trackEvent(eventName, entityType, entityId, metadata) {
   } catch(e) {}
 }
 
-var editingId = null;
-var agenciesCache = [];
-var branchesCache = [];
-var vacanciesCache = [];
-var staticVacanciesCache = [];
-var employersCache = [];
-var generalVacancyCount = 0;
-var generalVacancyCountLoaded = false;
-var generalVacancyPageSize = 30;
-var generalVacancyPage = 0;
-var generalVacancyNextCursor = null;
-var generalVacancyHasMore = false;
-var generalVacancyLoading = false;
-var generalVacancyError = false;
-var generalVacancyRows = [];
-var generalVacancyQueryKey = '';
-var generalVacancyRequestId = 0;
+export var editingId = null;
+export var agenciesCache = [];
+export var branchesCache = [];
+export var vacanciesCache = [];
+export var staticVacanciesCache = [];
+export var employersCache = [];
+export var generalVacancyCount = 0;
+export var generalVacancyCountLoaded = false;
+export var generalVacancyPageSize = 30;
+export var generalVacancyPage = 0;
+export var generalVacancyNextCursor = null;
+export var generalVacancyHasMore = false;
+export var generalVacancyLoading = false;
+export var generalVacancyError = false;
+export var generalVacancyRows = [];
+export var generalVacancyQueryKey = '';
+export var generalVacancyRequestId = 0;
 // Dedicated-source vacancy folders (Himalayas/Adzuna/Government/Retail/
 // Learnerships) used to be fully embedded in vacanciesCache via the startup
 // payload -- that was ~95% of all vacancy rows and the main cause of a slow
 // first load. They now lazy-load a page at a time, the same pattern as the
 // General Vacancies folder just above, sharing this one state machine since
 // only one folder is ever open at a time.
-var dedicatedVacancyFolder = '';
-var dedicatedVacancyPageSize = 30;
-var dedicatedVacancyPage = 0;
-var dedicatedVacancyNextCursor = null;
-var dedicatedVacancyHasMore = false;
-var dedicatedVacancyLoading = false;
-var dedicatedVacancyError = false;
-var dedicatedVacancyRows = [];
-var dedicatedVacancyQueryKey = '';
-var dedicatedVacancyRequestId = 0;
+export var dedicatedVacancyFolder = '';
+export var dedicatedVacancyPageSize = 30;
+export var dedicatedVacancyPage = 0;
+export var dedicatedVacancyNextCursor = null;
+export var dedicatedVacancyHasMore = false;
+export var dedicatedVacancyLoading = false;
+export var dedicatedVacancyError = false;
+export var dedicatedVacancyRows = [];
+export var dedicatedVacancyQueryKey = '';
+export var dedicatedVacancyRequestId = 0;
 // Folder counts for the overview grid (Himalayas · N vacancies, etc.),
 // populated from startup.counts.dedicated -- a handful of small indexed
 // COUNT queries server-side, not the rows themselves.
-var dedicatedVacancyCounts = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0 };
-var dedicatedVacancyCountsLoaded = false;
+export var dedicatedVacancyCounts = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0 };
+export var dedicatedVacancyCountsLoaded = false;
 // Numbered-page browsing for vacancy listings (General/Agency/dedicated
 // source folders all share this one page size). Rows still load from the
 // server in batches behind the scenes -- see goToGeneralVacancyPage() /
 // goToDedicatedVacancyPage() / goToAgencyFolderPage() in app-ui.js -- but
 // the visible list only ever shows one page's worth of cards at a time.
-var VAC_PAGE_SIZE = 10;
-var generalVacancyDisplayPage = 1;
-var dedicatedVacancyDisplayPage = 1;
-var agencyFolderDisplayPage = 1;
+export var VAC_PAGE_SIZE = 10;
+export var generalVacancyDisplayPage = 1;
+export var dedicatedVacancyDisplayPage = 1;
+export var agencyFolderDisplayPage = 1;
 // Public static listing URLs are generated from the same deterministic maps
 // used by generate-pages.js. This keeps links correct when names repeat.
-var publicAgencySlugs = Object.create(null);
-var publicVacancySlugs = Object.create(null);
-var publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMap() : null;
-var isAdmin = false;
-var publicVacancyPostingOpen = false;
-var publicEmployerRegistrationOpen = false;
-var employerDirectoryOpen = true; // when false, only Supabase-verified Talent Pool registrants may browse employers and employer vacancies
-var talentPoolVerified = false;
-var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
+export var publicAgencySlugs = Object.create(null);
+export var publicVacancySlugs = Object.create(null);
+export var publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMap() : null;
+export var isAdmin = false;
+export var publicVacancyPostingOpen = false;
+export var publicEmployerRegistrationOpen = false;
+export var employerDirectoryOpen = true; // when false, only Supabase-verified Talent Pool registrants may browse employers and employer vacancies
+export var talentPoolVerified = false;
+export var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
 // ===== Saved vacancies: per-account sync (saved_vacancies table) =====
 // savedSet above still seeds instantly from localStorage so Saved renders
 // with zero lag, but Supabase (RLS: one row per signed-in user) is now the
@@ -347,8 +353,8 @@ var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'
 // merges in both directions: pulls the account's saved rows into savedSet,
 // and pushes up any vacancies that were only saved locally pre-sign-in so
 // that history isn't lost.
-var savedVacanciesSynced = false;
-async function loadSavedVacanciesFromSupabase() {
+export var savedVacanciesSynced = false;
+export async function loadSavedVacanciesFromSupabase() {
   if (!supabaseClient || !saAuthUser || savedVacanciesSynced) return;
   savedVacanciesSynced = true;
   try {
@@ -366,7 +372,7 @@ async function loadSavedVacanciesFromSupabase() {
     }
   } catch(e) { console.error('load saved_vacancies', e); }
 }
-function syncSavedVacancy(vacancyId, isSaved) {
+export function syncSavedVacancy(vacancyId, isSaved) {
   if (!supabaseClient || !saAuthUser) return;
   try {
     if (isSaved) {
@@ -377,28 +383,28 @@ function syncSavedVacancy(vacancyId, isSaved) {
   } catch(e) {}
 }
 // ===== SMART MANAGER: agency self-service links =====
-var managerMode = false;   // true when URL has ?manage=TOKEN
-var managerAgency = null;  // the agency object the manager is allowed to update
-var managerTokenMap = {};  // { tokenId: agencyId } — persisted in localStorage
-var managerPendingToken = null; // token detected before agencies loaded
+export var managerMode = false;   // true when URL has ?manage=TOKEN
+export var managerAgency = null;  // the agency object the manager is allowed to update
+export var managerTokenMap = {};  // { tokenId: agencyId } — persisted in localStorage
+export var managerPendingToken = null; // token detected before agencies loaded
 // ===== SMART MANAGER: employer self-service links (vacancies only) =====
-var employerManagerMode = false;   // true when URL has ?manage_employer=TOKEN
-var managerEmployer = null;        // the employer object the manager is allowed to post vacancies for
-var employerManagerTokenMap = {};  // { tokenId: employerId } — persisted in localStorage
-var employerManagerPendingToken = null; // token detected before employers loaded
+export var employerManagerMode = false;   // true when URL has ?manage_employer=TOKEN
+export var managerEmployer = null;        // the employer object the manager is allowed to post vacancies for
+export var employerManagerTokenMap = {};  // { tokenId: employerId } — persisted in localStorage
+export var employerManagerPendingToken = null; // token detected before employers loaded
 
 // Seed editable content sections (FAQ, CV prep, etc.) with defaults if needed
 if (window.ContentMgr) ContentMgr.ensureSeeded();
 
-function genToken() {
+export function genToken() {
   // 12-char URL-safe token
   var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   var s = '';
   for (var i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)];
   return s;
 }
-function managerTokenKey(agencyId) { return 'sa_manager_token_' + agencyId; }
-function getManagerToken(agencyId) {
+export function managerTokenKey(agencyId) { return 'sa_manager_token_' + agencyId; }
+export function getManagerToken(agencyId) {
   // Source of truth is Supabase (agenciesCache), so the token resolves on
   // any device, not just the one that generated it. Fall back to a local
   // cache copy only if the agency isn't in agenciesCache yet (e.g. called
@@ -407,7 +413,7 @@ function getManagerToken(agencyId) {
   if (a && a.manage_token) return a.manage_token;
   try { return localStorage.getItem(managerTokenKey(agencyId)) || ''; } catch(e){ return ''; }
 }
-function setManagerToken(agencyId, token) {
+export function setManagerToken(agencyId, token) {
   // Update in-memory cache immediately so the UI reflects it right away
   var a = agenciesCache.find(function(x){ return x.id === agencyId; });
   if (a) a.manage_token = token;
@@ -416,7 +422,7 @@ function setManagerToken(agencyId, token) {
   // Persist to Supabase so the link works from any device
   saveManagerTokenToSupabase(agencyId, token);
 }
-function agencyIdFromToken(token) {
+export function agencyIdFromToken(token) {
   if (!token) return null;
   // check cache first
   if (managerTokenMap[token]) return managerTokenMap[token];
@@ -439,7 +445,7 @@ function agencyIdFromToken(token) {
   }
   return null;
 }
-function buildManagerLink(token) {
+export function buildManagerLink(token) {
   // Use the current app URL with ?manage=TOKEN
   var base = window.location.origin + window.location.pathname;
   return base + '?manage=' + token;
@@ -448,20 +454,20 @@ function buildManagerLink(token) {
 // ----- Employer manager tokens (mirrors the agency ones above, but keyed
 // off the `employers` table and its own ?manage_employer=TOKEN param, so
 // the two self-service links never collide) -----
-function employerManagerTokenKey(employerId) { return 'sa_emp_manager_token_' + employerId; }
-function getEmployerManagerToken(employerId) {
+export function employerManagerTokenKey(employerId) { return 'sa_emp_manager_token_' + employerId; }
+export function getEmployerManagerToken(employerId) {
   var e = employersCache.find(function(x){ return x.id === employerId; });
   if (e && e.manage_token) return e.manage_token;
   try { return localStorage.getItem(employerManagerTokenKey(employerId)) || ''; } catch(e){ return ''; }
 }
-function setEmployerManagerToken(employerId, token) {
+export function setEmployerManagerToken(employerId, token) {
   var e = employersCache.find(function(x){ return x.id === employerId; });
   if (e) e.manage_token = token;
   employerManagerTokenMap[token] = employerId;
   try { localStorage.setItem(employerManagerTokenKey(employerId), token); } catch(e){}
   saveEmployerManagerTokenToSupabase(employerId, token);
 }
-async function saveEmployerManagerTokenToSupabase(employerId, token) {
+export async function saveEmployerManagerTokenToSupabase(employerId, token) {
   // Token writes are privileged (see supabase/migrations/20260918_lock_down_manager_tokens.sql):
   // signed-in admins go through the admin_set_employer_manager_token RPC; the
   // direct update below is a fallback for deployments where the authenticated
@@ -478,7 +484,7 @@ async function saveEmployerManagerTokenToSupabase(employerId, token) {
     }
   } catch(e) { console.error('employer manage_token save', e); }
 }
-function employerIdFromToken(token) {
+export function employerIdFromToken(token) {
   if (!token) return null;
   if (employerManagerTokenMap[token]) return employerManagerTokenMap[token];
   for (var i = 0; i < employersCache.length; i++) {
@@ -497,7 +503,7 @@ function employerIdFromToken(token) {
   }
   return null;
 }
-function buildEmployerManagerLink(token) {
+export function buildEmployerManagerLink(token) {
   var base = window.location.origin + window.location.pathname;
   return base + '?manage_employer=' + token;
 }
@@ -516,21 +522,21 @@ function buildEmployerManagerLink(token) {
    or two before the content behind it had actually painted, briefly
    exposing an empty/half-loaded shell that then visibly popped in a
    moment later as data streamed in. ───────────────────────────────── */
-var __saDataReady = false;
-var __saAuthReady = false;
-var __saRevealed = false;
+export var __saDataReady = false;
+export var __saAuthReady = false;
+export var __saRevealed = false;
 
-function __saHideOverlayNow(el, removeFromDom) {
+export function __saHideOverlayNow(el, removeFromDom) {
   if (!el) return;
   if (removeFromDom) { if (el.parentNode) el.parentNode.removeChild(el); }
   else { el.style.display = 'none'; }
 }
-function __saHideOverlayWithFade(el, removeFromDom) {
+export function __saHideOverlayWithFade(el, removeFromDom) {
   if (!el || el.classList.contains('hide')) return;
   el.classList.add('hide');
   setTimeout(function () { __saHideOverlayNow(el, removeFromDom); }, 300);
 }
-function __saApplyReveal(usingViewTransition) {
+export function __saApplyReveal(usingViewTransition) {
   if (typeof window.__saNormalizeStartupScreen === 'function') window.__saNormalizeStartupScreen();
   document.body.classList.add('app-ready');
   if (typeof __saClearSlowLoadStatus === 'function') __saClearSlowLoadStatus();
@@ -570,7 +576,7 @@ window.__saTryReveal = function () {
     });
   });
 };
-function markAppDataReady() {
+export function markAppDataReady() {
   __saDataReady = true;
   window.__saTryReveal();
 }
@@ -581,17 +587,17 @@ function markAppDataReady() {
    with the three animated dots — reassurance that something is happening
    rather than the app being stuck. Cleared the moment the real reveal
    happens, wherever that fires from. ───────────────────────────────── */
-var SA_SLOW_LOAD_DELAY = 1400; // ms before we admit the load is taking a while
-var SA_SLOW_LOAD_MESSAGES = [
+export var SA_SLOW_LOAD_DELAY = 1400; // ms before we admit the load is taking a while
+export var SA_SLOW_LOAD_MESSAGES = [
   { title: 'Getting things ready…', sub: 'Loading the latest listings' },
   { title: 'Almost there…', sub: 'Fetching vacancies and agency data' },
   { title: 'Just a moment…', sub: 'This is taking a little longer than usual' }
 ];
-var __saSlowLoadTimer = null;
-var __saSlowLoadCycleTimer = null;
-var __saSlowLoadIndex = 0;
+export var __saSlowLoadTimer = null;
+export var __saSlowLoadCycleTimer = null;
+export var __saSlowLoadIndex = 0;
 
-function __saCycleSlowLoadMessage() {
+export function __saCycleSlowLoadMessage() {
   var titleEl = document.getElementById('app-splash-title');
   var subEl = document.getElementById('app-splash-sub');
   if (!titleEl || !subEl) return;
@@ -600,7 +606,7 @@ function __saCycleSlowLoadMessage() {
   subEl.textContent = msg.sub;
   __saSlowLoadIndex++;
 }
-function __saShowSlowLoadStatus() {
+export function __saShowSlowLoadStatus() {
   if (__saRevealed) return; // already loaded by the time the delay elapsed
   var status = document.getElementById('app-splash-status');
   if (!status) return;
@@ -608,7 +614,7 @@ function __saShowSlowLoadStatus() {
   __saCycleSlowLoadMessage();
   __saSlowLoadCycleTimer = setInterval(__saCycleSlowLoadMessage, 2200);
 }
-function __saClearSlowLoadStatus() {
+export function __saClearSlowLoadStatus() {
   if (__saSlowLoadTimer) { clearTimeout(__saSlowLoadTimer); __saSlowLoadTimer = null; }
   if (__saSlowLoadCycleTimer) { clearInterval(__saSlowLoadCycleTimer); __saSlowLoadCycleTimer = null; }
 }
@@ -623,7 +629,7 @@ setTimeout(function () {
 }, 2500);
 
 /* ── Theme (day / night) ───────────────────────────── */
-function applyTheme(theme) {
+export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   var meta = document.getElementById('meta-theme');
   if (meta) meta.setAttribute('content', theme === 'light' ? '#F2F2F7' : '#000000');
@@ -647,7 +653,7 @@ function applyTheme(theme) {
   }
   if (siteMenuThemeLabel) siteMenuThemeLabel.textContent = theme === 'light' ? 'Switch to night mode' : 'Switch to day mode';
 }
-function toggleTheme() {
+export function toggleTheme() {
   var current = document.documentElement.getAttribute('data-theme') || 'light';
   var next = current === 'dark' ? 'light' : 'dark';
   localStorage.setItem('saTheme', next);
@@ -658,7 +664,7 @@ function toggleTheme() {
   applyTheme(saved);
 })();
 
-function slugify(str) {
+export function slugify(str) {
   return (str || '')
     .toString()
     .toLowerCase()
@@ -668,7 +674,7 @@ function slugify(str) {
     .slice(0, 80) || 'listing';
 }
 
-function rebuildPublicListingSlugs() {
+export function rebuildPublicListingSlugs() {
   publicAgencySlugs = Object.create(null);
   publicVacancySlugs = Object.create(null);
   publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMap() : null;
@@ -703,18 +709,189 @@ function rebuildPublicListingSlugs() {
     if (publicVacancyRecordSlugs) publicVacancyRecordSlugs.set(v, slug);
   });
 }
-function publicAgencySlug(a) {
+export function publicAgencySlug(a) {
   return publicAgencySlugs[a && a.id] || slugify(a && a.name);
 }
-function publicVacancySlug(v) {
+export function publicVacancySlug(v) {
   return (v && publicVacancyRecordSlugs && publicVacancyRecordSlugs.get(v)) || publicVacancySlugs[v && v.id] || slugify(v && v.title);
 }
 
-function escapeHtml(s) {
+export function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, function(c) {
     return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
   });
 }
-function initials(n) {
+export function initials(n) {
   return (n || '?').trim().split(/\s+/).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
 }
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+export function set_saAuthUser(v) { saAuthUser = v; return v; }
+export function set_editingId(v) { editingId = v; return v; }
+export function set_agenciesCache(v) { agenciesCache = v; return v; }
+export function set_branchesCache(v) { branchesCache = v; return v; }
+export function set_vacanciesCache(v) { vacanciesCache = v; return v; }
+export function set_staticVacanciesCache(v) { staticVacanciesCache = v; return v; }
+export function set_employersCache(v) { employersCache = v; return v; }
+export function set_generalVacancyCount(v) { generalVacancyCount = v; return v; }
+export function set_generalVacancyCountLoaded(v) { generalVacancyCountLoaded = v; return v; }
+export function set_generalVacancyPage(v) { generalVacancyPage = v; return v; }
+export function set_generalVacancyNextCursor(v) { generalVacancyNextCursor = v; return v; }
+export function set_generalVacancyHasMore(v) { generalVacancyHasMore = v; return v; }
+export function set_generalVacancyLoading(v) { generalVacancyLoading = v; return v; }
+export function set_generalVacancyError(v) { generalVacancyError = v; return v; }
+export function set_generalVacancyRows(v) { generalVacancyRows = v; return v; }
+export function set_generalVacancyQueryKey(v) { generalVacancyQueryKey = v; return v; }
+export function set_generalVacancyRequestId(v) { generalVacancyRequestId = v; return v; }
+export function set_dedicatedVacancyFolder(v) { dedicatedVacancyFolder = v; return v; }
+export function set_dedicatedVacancyPage(v) { dedicatedVacancyPage = v; return v; }
+export function set_dedicatedVacancyNextCursor(v) { dedicatedVacancyNextCursor = v; return v; }
+export function set_dedicatedVacancyHasMore(v) { dedicatedVacancyHasMore = v; return v; }
+export function set_dedicatedVacancyLoading(v) { dedicatedVacancyLoading = v; return v; }
+export function set_dedicatedVacancyError(v) { dedicatedVacancyError = v; return v; }
+export function set_dedicatedVacancyRows(v) { dedicatedVacancyRows = v; return v; }
+export function set_dedicatedVacancyQueryKey(v) { dedicatedVacancyQueryKey = v; return v; }
+export function set_dedicatedVacancyRequestId(v) { dedicatedVacancyRequestId = v; return v; }
+export function set_dedicatedVacancyCounts(v) { dedicatedVacancyCounts = v; return v; }
+export function set_dedicatedVacancyCountsLoaded(v) { dedicatedVacancyCountsLoaded = v; return v; }
+export function set_generalVacancyDisplayPage(v) { generalVacancyDisplayPage = v; return v; }
+export function set_dedicatedVacancyDisplayPage(v) { dedicatedVacancyDisplayPage = v; return v; }
+export function set_agencyFolderDisplayPage(v) { agencyFolderDisplayPage = v; return v; }
+export function set_publicVacancyPostingOpen(v) { publicVacancyPostingOpen = v; return v; }
+export function set_publicEmployerRegistrationOpen(v) { publicEmployerRegistrationOpen = v; return v; }
+export function set_employerDirectoryOpen(v) { employerDirectoryOpen = v; return v; }
+export function set_talentPoolVerified(v) { talentPoolVerified = v; return v; }
+export function set_managerMode(v) { managerMode = v; return v; }
+export function set_managerAgency(v) { managerAgency = v; return v; }
+export function set_managerPendingToken(v) { managerPendingToken = v; return v; }
+export function set_employerManagerMode(v) { employerManagerMode = v; return v; }
+export function set_managerEmployer(v) { managerEmployer = v; return v; }
+export function set_employerManagerPendingToken(v) { employerManagerPendingToken = v; return v; }
+Object.assign(window, {
+  authRedirectUrl,
+  isGoogleUser,
+  renderAuthUser,
+  setAuthGateState,
+  signInWithGoogle,
+  signOutSaRecruiters,
+  startAuthenticatedApp,
+  guestQuotaState,
+  resetGuestQuotaIfNewDay,
+  registerVacancyOpen,
+  guestViewsRemaining,
+  analyticsRandomId,
+  canTrackPublicTraffic,
+  trackEvent,
+  loadSavedVacanciesFromSupabase,
+  syncSavedVacancy,
+  genToken,
+  managerTokenKey,
+  getManagerToken,
+  setManagerToken,
+  agencyIdFromToken,
+  buildManagerLink,
+  employerManagerTokenKey,
+  getEmployerManagerToken,
+  setEmployerManagerToken,
+  saveEmployerManagerTokenToSupabase,
+  employerIdFromToken,
+  buildEmployerManagerLink,
+  __saHideOverlayNow,
+  __saHideOverlayWithFade,
+  __saApplyReveal,
+  markAppDataReady,
+  __saCycleSlowLoadMessage,
+  __saShowSlowLoadStatus,
+  __saClearSlowLoadStatus,
+  applyTheme,
+  toggleTheme,
+  slugify,
+  rebuildPublicListingSlugs,
+  publicAgencySlug,
+  publicVacancySlug,
+  escapeHtml,
+  initials,
+});
+Object.defineProperties(window, {
+  SUPABASE_URL: { get: () => SUPABASE_URL, set: (v) => { SUPABASE_URL = v; }, configurable: true, enumerable: true },
+  SUPABASE_ANON_KEY: { get: () => SUPABASE_ANON_KEY, set: (v) => { SUPABASE_ANON_KEY = v; }, configurable: true, enumerable: true },
+  R2_WORKER_URL: { get: () => R2_WORKER_URL, set: (v) => { R2_WORKER_URL = v; }, configurable: true, enumerable: true },
+  STARTUP_DATA_URL: { get: () => STARTUP_DATA_URL, set: (v) => { STARTUP_DATA_URL = v; }, configurable: true, enumerable: true },
+  STATIC_DATA_URL: { get: () => STATIC_DATA_URL, set: (v) => { STATIC_DATA_URL = v; }, configurable: true, enumerable: true },
+  staticDataEnabled: { get: () => staticDataEnabled, set: (v) => { staticDataEnabled = v; }, configurable: true, enumerable: true },
+  supabaseClient: { get: () => supabaseClient, set: (v) => { supabaseClient = v; }, configurable: true, enumerable: true },
+  saAuthUser: { get: () => saAuthUser, set: (v) => { saAuthUser = v; }, configurable: true, enumerable: true },
+  saAuthStarted: { get: () => saAuthStarted, set: (v) => { saAuthStarted = v; }, configurable: true, enumerable: true },
+  saAuthStartCallback: { get: () => saAuthStartCallback, set: (v) => { saAuthStartCallback = v; }, configurable: true, enumerable: true },
+  saAuthRedirecting: { get: () => saAuthRedirecting, set: (v) => { saAuthRedirecting = v; }, configurable: true, enumerable: true },
+  __saManagerLinkMode: { get: () => __saManagerLinkMode, set: (v) => { __saManagerLinkMode = v; }, configurable: true, enumerable: true },
+  GUEST_DAILY_VACANCY_LIMIT: { get: () => GUEST_DAILY_VACANCY_LIMIT, set: (v) => { GUEST_DAILY_VACANCY_LIMIT = v; }, configurable: true, enumerable: true },
+  analyticsVisitorId: { get: () => analyticsVisitorId, set: (v) => { analyticsVisitorId = v; }, configurable: true, enumerable: true },
+  analyticsSessionId: { get: () => analyticsSessionId, set: (v) => { analyticsSessionId = v; }, configurable: true, enumerable: true },
+  analyticsPublicTraffic: { get: () => analyticsPublicTraffic, set: (v) => { analyticsPublicTraffic = v; }, configurable: true, enumerable: true },
+  editingId: { get: () => editingId, set: (v) => { editingId = v; }, configurable: true, enumerable: true },
+  agenciesCache: { get: () => agenciesCache, set: (v) => { agenciesCache = v; }, configurable: true, enumerable: true },
+  branchesCache: { get: () => branchesCache, set: (v) => { branchesCache = v; }, configurable: true, enumerable: true },
+  vacanciesCache: { get: () => vacanciesCache, set: (v) => { vacanciesCache = v; }, configurable: true, enumerable: true },
+  staticVacanciesCache: { get: () => staticVacanciesCache, set: (v) => { staticVacanciesCache = v; }, configurable: true, enumerable: true },
+  employersCache: { get: () => employersCache, set: (v) => { employersCache = v; }, configurable: true, enumerable: true },
+  generalVacancyCount: { get: () => generalVacancyCount, set: (v) => { generalVacancyCount = v; }, configurable: true, enumerable: true },
+  generalVacancyCountLoaded: { get: () => generalVacancyCountLoaded, set: (v) => { generalVacancyCountLoaded = v; }, configurable: true, enumerable: true },
+  generalVacancyPageSize: { get: () => generalVacancyPageSize, set: (v) => { generalVacancyPageSize = v; }, configurable: true, enumerable: true },
+  generalVacancyPage: { get: () => generalVacancyPage, set: (v) => { generalVacancyPage = v; }, configurable: true, enumerable: true },
+  generalVacancyNextCursor: { get: () => generalVacancyNextCursor, set: (v) => { generalVacancyNextCursor = v; }, configurable: true, enumerable: true },
+  generalVacancyHasMore: { get: () => generalVacancyHasMore, set: (v) => { generalVacancyHasMore = v; }, configurable: true, enumerable: true },
+  generalVacancyLoading: { get: () => generalVacancyLoading, set: (v) => { generalVacancyLoading = v; }, configurable: true, enumerable: true },
+  generalVacancyError: { get: () => generalVacancyError, set: (v) => { generalVacancyError = v; }, configurable: true, enumerable: true },
+  generalVacancyRows: { get: () => generalVacancyRows, set: (v) => { generalVacancyRows = v; }, configurable: true, enumerable: true },
+  generalVacancyQueryKey: { get: () => generalVacancyQueryKey, set: (v) => { generalVacancyQueryKey = v; }, configurable: true, enumerable: true },
+  generalVacancyRequestId: { get: () => generalVacancyRequestId, set: (v) => { generalVacancyRequestId = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyFolder: { get: () => dedicatedVacancyFolder, set: (v) => { dedicatedVacancyFolder = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyPageSize: { get: () => dedicatedVacancyPageSize, set: (v) => { dedicatedVacancyPageSize = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyPage: { get: () => dedicatedVacancyPage, set: (v) => { dedicatedVacancyPage = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyNextCursor: { get: () => dedicatedVacancyNextCursor, set: (v) => { dedicatedVacancyNextCursor = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyHasMore: { get: () => dedicatedVacancyHasMore, set: (v) => { dedicatedVacancyHasMore = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyLoading: { get: () => dedicatedVacancyLoading, set: (v) => { dedicatedVacancyLoading = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyError: { get: () => dedicatedVacancyError, set: (v) => { dedicatedVacancyError = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyRows: { get: () => dedicatedVacancyRows, set: (v) => { dedicatedVacancyRows = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyQueryKey: { get: () => dedicatedVacancyQueryKey, set: (v) => { dedicatedVacancyQueryKey = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyRequestId: { get: () => dedicatedVacancyRequestId, set: (v) => { dedicatedVacancyRequestId = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyCounts: { get: () => dedicatedVacancyCounts, set: (v) => { dedicatedVacancyCounts = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyCountsLoaded: { get: () => dedicatedVacancyCountsLoaded, set: (v) => { dedicatedVacancyCountsLoaded = v; }, configurable: true, enumerable: true },
+  VAC_PAGE_SIZE: { get: () => VAC_PAGE_SIZE, set: (v) => { VAC_PAGE_SIZE = v; }, configurable: true, enumerable: true },
+  generalVacancyDisplayPage: { get: () => generalVacancyDisplayPage, set: (v) => { generalVacancyDisplayPage = v; }, configurable: true, enumerable: true },
+  dedicatedVacancyDisplayPage: { get: () => dedicatedVacancyDisplayPage, set: (v) => { dedicatedVacancyDisplayPage = v; }, configurable: true, enumerable: true },
+  agencyFolderDisplayPage: { get: () => agencyFolderDisplayPage, set: (v) => { agencyFolderDisplayPage = v; }, configurable: true, enumerable: true },
+  publicAgencySlugs: { get: () => publicAgencySlugs, set: (v) => { publicAgencySlugs = v; }, configurable: true, enumerable: true },
+  publicVacancySlugs: { get: () => publicVacancySlugs, set: (v) => { publicVacancySlugs = v; }, configurable: true, enumerable: true },
+  publicVacancyRecordSlugs: { get: () => publicVacancyRecordSlugs, set: (v) => { publicVacancyRecordSlugs = v; }, configurable: true, enumerable: true },
+  isAdmin: { get: () => isAdmin, set: (v) => { isAdmin = v; }, configurable: true, enumerable: true },
+  publicVacancyPostingOpen: { get: () => publicVacancyPostingOpen, set: (v) => { publicVacancyPostingOpen = v; }, configurable: true, enumerable: true },
+  publicEmployerRegistrationOpen: { get: () => publicEmployerRegistrationOpen, set: (v) => { publicEmployerRegistrationOpen = v; }, configurable: true, enumerable: true },
+  employerDirectoryOpen: { get: () => employerDirectoryOpen, set: (v) => { employerDirectoryOpen = v; }, configurable: true, enumerable: true },
+  talentPoolVerified: { get: () => talentPoolVerified, set: (v) => { talentPoolVerified = v; }, configurable: true, enumerable: true },
+  savedSet: { get: () => savedSet, set: (v) => { savedSet = v; }, configurable: true, enumerable: true },
+  savedVacanciesSynced: { get: () => savedVacanciesSynced, set: (v) => { savedVacanciesSynced = v; }, configurable: true, enumerable: true },
+  managerMode: { get: () => managerMode, set: (v) => { managerMode = v; }, configurable: true, enumerable: true },
+  managerAgency: { get: () => managerAgency, set: (v) => { managerAgency = v; }, configurable: true, enumerable: true },
+  managerTokenMap: { get: () => managerTokenMap, set: (v) => { managerTokenMap = v; }, configurable: true, enumerable: true },
+  managerPendingToken: { get: () => managerPendingToken, set: (v) => { managerPendingToken = v; }, configurable: true, enumerable: true },
+  employerManagerMode: { get: () => employerManagerMode, set: (v) => { employerManagerMode = v; }, configurable: true, enumerable: true },
+  managerEmployer: { get: () => managerEmployer, set: (v) => { managerEmployer = v; }, configurable: true, enumerable: true },
+  employerManagerTokenMap: { get: () => employerManagerTokenMap, set: (v) => { employerManagerTokenMap = v; }, configurable: true, enumerable: true },
+  employerManagerPendingToken: { get: () => employerManagerPendingToken, set: (v) => { employerManagerPendingToken = v; }, configurable: true, enumerable: true },
+  __saDataReady: { get: () => __saDataReady, set: (v) => { __saDataReady = v; }, configurable: true, enumerable: true },
+  __saAuthReady: { get: () => __saAuthReady, set: (v) => { __saAuthReady = v; }, configurable: true, enumerable: true },
+  __saRevealed: { get: () => __saRevealed, set: (v) => { __saRevealed = v; }, configurable: true, enumerable: true },
+  SA_SLOW_LOAD_DELAY: { get: () => SA_SLOW_LOAD_DELAY, set: (v) => { SA_SLOW_LOAD_DELAY = v; }, configurable: true, enumerable: true },
+  SA_SLOW_LOAD_MESSAGES: { get: () => SA_SLOW_LOAD_MESSAGES, set: (v) => { SA_SLOW_LOAD_MESSAGES = v; }, configurable: true, enumerable: true },
+  __saSlowLoadTimer: { get: () => __saSlowLoadTimer, set: (v) => { __saSlowLoadTimer = v; }, configurable: true, enumerable: true },
+  __saSlowLoadCycleTimer: { get: () => __saSlowLoadCycleTimer, set: (v) => { __saSlowLoadCycleTimer = v; }, configurable: true, enumerable: true },
+  __saSlowLoadIndex: { get: () => __saSlowLoadIndex, set: (v) => { __saSlowLoadIndex = v; }, configurable: true, enumerable: true },
+});

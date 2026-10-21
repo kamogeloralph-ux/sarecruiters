@@ -2,15 +2,24 @@
  * SA Recruiters -- app.js split 4/8: app-forms.js
  * Agency/employer/branch/vacancy forms (create, edit, save, delete)
  *
- * Part of the original monolithic app.js, mechanically split and kept as
- * classic (non-module) scripts loaded in this exact order via <script defer>
- * in index.html, so all functions/vars stay on one shared global scope
- * exactly as before. Do not reorder these files relative to one another.
+ * Part of the original monolithic app.js. Now an ES module: it imports what it
+ * uses from the other app-*.js files and exports its top-level declarations.
+ * A window bridge at the bottom keeps inline onclick="" handlers and the
+ * classic scripts (app-vacancy-v2.js, app-alerts.js, content*.js) working.
+ * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
+import { R2_WORKER_URL, agenciesCache, branchesCache, editingId, employerManagerMode, employersCache, escapeHtml, genToken, isAdmin, managerAgency, managerEmployer, managerMode, publicEmployerRegistrationOpen, publicVacancyPostingOpen, saAuthUser, setManagerToken, set_editingId, set_vacanciesCache, supabaseClient, vacanciesCache } from './app-core.js';
+import { loadAll, openEmployerLockedSheet, openVacancyLockedSheet, readLocal, removeAgency, removeBranch, removeEmployer, removeVacancy, saveDataCache, sortVacancies, upsertAgency, upsertBranch, upsertEmployer, upsertVacancy, writeThroughD1Mirror } from './app-data.js';
+import { loadPosterFeed, renderAllEmployersList } from './app-cards.js';
+import { closeSheet, getTurnstileResponse, renderTurnstile, resetTurnstile, showEmployerManagerLinkSheet, submitViaWorker, turnstileConfigured } from './app-sheets.js';
+import { showToast } from './app-ui.js';
+import { renderManagerMode } from './app-manager.js';
+
+
 // ===== Agency form =====
-function openForm(id) {
-  editingId = id || null;
+export function openForm(id) {
+  set_editingId( id || null);
   var a = id ? agenciesCache.find(function(x){ return x.id === id; }) : null;
   document.getElementById('form-title').textContent = id ? 'Edit agency' : 'Add agency';
   document.getElementById('f-name').value = a ? a.name : '';
@@ -32,7 +41,7 @@ function openForm(id) {
   document.getElementById('hub-list') && document.querySelectorAll('.hub-card.open').forEach(function(c){ c.classList.remove('open'); });
   document.getElementById('form-overlay').classList.add('open');
 }
-function handlePhoto(evt) {
+export function handlePhoto(evt) {
   var file = evt.target.files[0];
   if (!file) return;
   var img = new Image();
@@ -60,7 +69,7 @@ function handlePhoto(evt) {
 // Photos are centre-cropped to a fixed 512x512 square so every candidate's
 // photo is a consistent, predictable size wherever it's used — the pool
 // list avatar, their expanded card, and the home screen candidate spotlight.
-function handlePoolPhoto(evt) {
+export function handlePoolPhoto(evt) {
   var file = evt.target.files[0];
   if (!file) return;
   var preview = document.getElementById('pool-photo-preview');
@@ -88,9 +97,9 @@ function handlePoolPhoto(evt) {
   };
   reader.readAsDataURL(file);
 }
-var MAX_POOL_CV_BYTES = 3 * 1024 * 1024;
-var POOL_CV_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
-function handlePoolCv(evt) {
+export var MAX_POOL_CV_BYTES = 3 * 1024 * 1024;
+export var POOL_CV_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
+export function handlePoolCv(evt) {
   var file = evt.target.files && evt.target.files[0];
   var status = document.getElementById('pool-cv-status');
   window.pendingPoolCvFile = null;
@@ -113,7 +122,7 @@ function handlePoolCv(evt) {
   window.pendingPoolCvFile = file;
   if (status) status.textContent = file.name + ' selected (' + (file.size / 1024 / 1024).toFixed(2) + ' MB).';
 }
-async function uploadPoolCvIfAny() {
+export async function uploadPoolCvIfAny() {
   var file = window.pendingPoolCvFile;
   if (!file) return null;
   try {
@@ -136,7 +145,7 @@ async function uploadPoolCvIfAny() {
 // candidate-photos bucket and returns its public URL, or null if no
 // photo was selected or the bucket/policies haven't been set up yet
 // (registration still succeeds without a photo either way).
-async function uploadPoolPhotoIfAny() {
+export async function uploadPoolPhotoIfAny() {
   if (!window.pendingPoolPhotoBlob) return null;
   try {
     var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-photo', {
@@ -149,7 +158,7 @@ async function uploadPoolPhotoIfAny() {
     return data.url || null;
   } catch(e) { console.error('pool photo upload', e); return null; }
 }
-async function saveAgency() {
+export async function saveAgency() {
   var name = document.getElementById('f-name').value.trim();
   if (!name) { alert('Add at least the agency name.'); return; }
   var id = editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
@@ -175,10 +184,10 @@ async function saveAgency() {
   }
   closeSheet('form-overlay');
   showToast(editingId ? 'Agency updated' : 'Agency added — SMART MANAGER link created');
-  editingId = null;
+  set_editingId( null);
   await loadAll();
 }
-async function deleteAgencyById(id) {
+export async function deleteAgencyById(id) {
   if (!confirm('Delete this agency? This cannot be undone.')) return;
   await removeAgency(id);
   showToast('Agency deleted');
@@ -186,8 +195,8 @@ async function deleteAgencyById(id) {
 }
 
 // ===== Employer form =====
-var editingEmployerId = null;
-function openEmployerForm(id) {
+export var editingEmployerId = null;
+export function openEmployerForm(id) {
   if (!id && !isAdmin && !publicEmployerRegistrationOpen) { openEmployerLockedSheet(); return; }
   editingEmployerId = id || null;
   var e = id ? employersCache.find(function(x){ return x.id === id; }) : null;
@@ -211,7 +220,7 @@ function openEmployerForm(id) {
   document.getElementById('employer-form-overlay').classList.add('open');
   if (!id && !isAdmin) renderTurnstile('employer-turnstile', 'employer-form-overlay');
 }
-function handleEmployerPhoto(evt) {
+export function handleEmployerPhoto(evt) {
   var file = evt.target.files[0];
   if (!file) return;
   var img = new Image();
@@ -238,7 +247,7 @@ function handleEmployerPhoto(evt) {
 // are portrait, like a printed flyer) instead of square-cropping.
 // done(error, blob) is optional: it lets callers react to unreadable images instead of
 // leaving the preview stuck on "Preparing…" and block submits while a poster is processing.
-function processPosterPhoto(evt, blobKey, previewId, fallbackId, done) {
+export function processPosterPhoto(evt, blobKey, previewId, fallbackId, done) {
   var file = evt.target.files[0];
   if (!file) return;
   function finish(error, blob) {
@@ -279,9 +288,9 @@ function processPosterPhoto(evt, blobKey, previewId, fallbackId, done) {
   };
   reader.readAsDataURL(file);
 }
-function handlePosterPhoto(evt) { processPosterPhoto(evt, 'pendingPosterBlob', 'poster-preview', 'poster-fallback'); }
-function handlePublicPosterPhoto(evt) { processPosterPhoto(evt, 'publicPosterBlob', 'public-poster-preview', 'public-poster-fallback'); }
-async function submitPublicPoster() {
+export function handlePosterPhoto(evt) { processPosterPhoto(evt, 'pendingPosterBlob', 'poster-preview', 'poster-fallback'); }
+export function handlePublicPosterPhoto(evt) { processPosterPhoto(evt, 'publicPosterBlob', 'public-poster-preview', 'public-poster-fallback'); }
+export async function submitPublicPoster() {
   if (!window.publicPosterBlob) { showToast('Choose a poster image first.'); return; }
   var token = getTurnstileResponse('public-poster-turnstile');
   if (turnstileConfigured() && !token) { showToast('Please complete the spam check first.'); return; }
@@ -301,7 +310,7 @@ async function submitPublicPoster() {
   } catch (e) { showToast('Could not reach SA Recruiters — please try again.'); }
   finally { if (submit) { submit.disabled = false; submit.textContent = 'Post poster'; } }
 }
-function openPublicPosterSheet() {
+export function openPublicPosterSheet() {
   window.publicPosterBlob = null;
   var preview = document.getElementById('public-poster-preview');
   var fallback = document.getElementById('public-poster-fallback');
@@ -314,7 +323,7 @@ function openPublicPosterSheet() {
   renderTurnstile('public-poster-turnstile', 'public-poster-overlay');
 }
 
-async function uploadPosterIfAny(caption) {
+export async function uploadPosterIfAny(caption) {
   if (!window.pendingPosterBlob) return null;
   try {
     var url = R2_WORKER_URL + '/api/upload/employer-poster' + (caption ? '?caption=' + encodeURIComponent(caption) : '');
@@ -329,7 +338,7 @@ async function uploadPosterIfAny(caption) {
   } catch(e) { console.error('poster upload', e); showToast('Could not upload poster — check your connection.'); return null; }
 }
 
-function openPosterUploadSheet(employerId) {
+export function openPosterUploadSheet(employerId) {
   window.pendingPosterEmployerId = employerId || null;
   window.pendingPosterBlob = null;
   var preview = document.getElementById('poster-preview');
@@ -342,7 +351,7 @@ function openPosterUploadSheet(employerId) {
   if (overlay) overlay.classList.add('open');
 }
 
-async function savePoster() {
+export async function savePoster() {
   if (!window.pendingPosterBlob) { alert('Choose a poster image first.'); return; }
   var enteredCaption = ((document.getElementById('poster-caption') || {}).value || '').trim();
   var uploadedPoster = await uploadPosterIfAny(enteredCaption);
@@ -365,7 +374,7 @@ async function savePoster() {
   if (typeof loadPosterFeed === 'function') loadPosterFeed();
 }
 
-async function saveEmployer() {
+export async function saveEmployer() {
   var name = document.getElementById('e-name').value.trim();
   if (!name) { alert('Add at least the company name.'); return; }
   var id = editingEmployerId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
@@ -415,7 +424,7 @@ async function saveEmployer() {
   await loadAll();
   if (document.getElementById('screen-allemployers').classList.contains('active')) renderAllEmployersList();
 }
-async function deleteEmployerById(id) {
+export async function deleteEmployerById(id) {
   if (!confirm('Delete this employer? Their posted vacancies will remain listed as unattributed unless you also remove them.')) return;
   await removeEmployer(id);
   showToast('Employer deleted');
@@ -424,9 +433,9 @@ async function deleteEmployerById(id) {
 }
 
 // ===== Branch form =====
-var pendingBranchAgency = null;
-var pendingBranchId = null; // set when EDITING an existing branch; null when adding
-function openBranchSheet(agencyId, branchId) {
+export var pendingBranchAgency = null;
+export var pendingBranchId = null; // set when EDITING an existing branch; null when adding
+export function openBranchSheet(agencyId, branchId) {
   pendingBranchAgency = agencyId;
   pendingBranchId = branchId || null;
   // Find existing branch (for editing) — looks in both cache and localStorage fallback
@@ -448,7 +457,7 @@ function openBranchSheet(agencyId, branchId) {
   document.getElementById('b-email').value = existing ? (existing.email || '') : '';
   document.getElementById('branch-overlay').classList.add('open');
 }
-async function saveBranch() {
+export async function saveBranch() {
   var name = document.getElementById('b-name').value.trim();
   if (!name) { alert('Add a branch name.'); return; }
   // Reuse existing id when editing; generate a new one only when adding
@@ -472,7 +481,7 @@ async function saveBranch() {
   var card = document.getElementById('hub-' + pendingBranchAgency);
   if (card) { card.classList.add('open'); switchHubTab(card.querySelector('.hub-tab'), pendingBranchAgency, 'branches'); }
 }
-async function deleteBranch(id, agencyId) {
+export async function deleteBranch(id, agencyId) {
   if (!confirm('Delete this branch?')) return;
   await removeBranch(id);
   await loadAll();
@@ -481,15 +490,15 @@ async function deleteBranch(id, agencyId) {
 }
 
 // ===== VACANCY TERMS (vacancy posting T&Cs) =====
-var MANAGER_TERMS_VERSION = '1.1';
-var MANAGER_TERMS_PDF = 'terms/vacancy-posting-terms.pdf';
-function resetVacancyTermsAcceptance() {
+export var MANAGER_TERMS_VERSION = '1.1';
+export var MANAGER_TERMS_PDF = 'terms/vacancy-posting-terms.pdf';
+export function resetVacancyTermsAcceptance() {
   ['vacancy-terms-accept', 'general-vacancy-terms-accept'].forEach(function(id) {
     var input = document.getElementById(id);
     if (input) input.checked = false;
   });
 }
-function requireVacancyTermsAcceptance(inputId) {
+export function requireVacancyTermsAcceptance(inputId) {
   var input = document.getElementById(inputId);
   if (!input || !input.checked) {
     alert('Please read the SA Recruiters Vacancy Posting Terms & Conditions and tick the agreement box before publishing.');
@@ -498,12 +507,12 @@ function requireVacancyTermsAcceptance(inputId) {
   }
   return true;
 }
-function currentTermsManagerType() {
+export function currentTermsManagerType() {
   if (managerMode) return 'agency';
   if (employerManagerMode) return 'employer';
   return 'public';
 }
-async function recordVacancyTermsAcceptance(vacancyId, agencyId, employerId) {
+export async function recordVacancyTermsAcceptance(vacancyId, agencyId, employerId) {
   try {
     var result = await supabaseClient.from('manager_terms_acceptances').insert({
       manager_type: currentTermsManagerType(),
@@ -518,8 +527,8 @@ async function recordVacancyTermsAcceptance(vacancyId, agencyId, employerId) {
     return true;
   } catch (e) { console.warn('terms acceptance record failed', e); return false; }
 }
-var pendingVacancyAgency = null;
-function openVacancySheet(agencyId) {
+export var pendingVacancyAgency = null;
+export function openVacancySheet(agencyId) {
   pendingVacancyAgency = agencyId;
   document.getElementById('v-title').value = '';
   document.getElementById('v-location').value = '';
@@ -535,7 +544,7 @@ function openVacancySheet(agencyId) {
   resetVacancyTermsAcceptance();
   document.getElementById('vacancy-overlay').classList.add('open');
 }
-function normalizeVacancyLink(value) {
+export function normalizeVacancyLink(value) {
   var link = (value || '').trim();
   if (!link || /^https?:\/\//i.test(link)) return link;
   return /^[^\s/]+\.[^\s/]+/.test(link) ? 'https://' + link : link;
@@ -547,7 +556,7 @@ function normalizeVacancyLink(value) {
 // A null/false result means the token was rejected (invalid link). A thrown
 // error means the Worker or database is unreachable — callers then fall back
 // to the legacy direct write so nothing regresses while the Worker deploys.
-async function workerManagerAddBranch(token, branch) {
+export async function workerManagerAddBranch(token, branch) {
   try {
     var res = await fetch(R2_WORKER_URL + '/api/manager/branch', {
       method: 'POST',
@@ -569,7 +578,7 @@ async function workerManagerAddBranch(token, branch) {
     return upsertBranch(branch);
   }
 }
-async function workerManagerAddVacancy(token, v) {
+export async function workerManagerAddVacancy(token, v) {
   try {
     var res = await fetch(R2_WORKER_URL + '/api/manager/vacancy', {
       method: 'POST',
@@ -598,7 +607,7 @@ async function workerManagerAddVacancy(token, v) {
     return upsertVacancy(v);
   }
 }
-async function workerManagerEmployerAddVacancy(token, v) {
+export async function workerManagerEmployerAddVacancy(token, v) {
   try {
     var res = await fetch(R2_WORKER_URL + '/api/manager/employer-vacancy', {
       method: 'POST',
@@ -631,13 +640,13 @@ async function workerManagerEmployerAddVacancy(token, v) {
     return upsertVacancy(v);
   }
 }
-function setVacancySaveBusy(busy) {
+export function setVacancySaveBusy(busy) {
   document.querySelectorAll('#vacancy-overlay .sheet-submit,#general-vacancy-overlay .sheet-submit').forEach(function(btn) {
     btn.disabled = !!busy;
     if (busy) btn.setAttribute('aria-busy', 'true'); else btn.removeAttribute('aria-busy');
   });
 }
-function alertPreferenceMatches(preference, value) {
+export function alertPreferenceMatches(preference, value) {
   var text = String(preference || '').trim().toLowerCase();
   if (!text) return true;
   var haystack = String(value || '').toLowerCase();
@@ -645,7 +654,7 @@ function alertPreferenceMatches(preference, value) {
     return haystack.indexOf(part) !== -1;
   });
 }
-async function sendTalentPoolVacancyAlerts(vacancy) {
+export async function sendTalentPoolVacancyAlerts(vacancy) {
   if (!isAdmin || !supabaseClient || !vacancy || !vacancy.title) return;
   try {
     var candidatesResult = await supabaseClient.from('pool_candidates')
@@ -680,7 +689,7 @@ async function sendTalentPoolVacancyAlerts(vacancy) {
   }
 }
 
-async function saveVacancy() {
+export async function saveVacancy() {
   var title = document.getElementById('v-title').value.trim();
   if (!title) { alert('Add a role/title.'); return; }
   if (!isAdmin && !requireVacancyTermsAcceptance('vacancy-terms-accept')) return;
@@ -718,7 +727,7 @@ async function saveVacancy() {
         var liveManagerVacancy = Object.assign({}, vacancy, { created_at: vacancy.created_at || new Date().toISOString(), source_type: 'manager' });
         if (existingManagerVacancy >= 0) vacanciesCache[existingManagerVacancy] = Object.assign({}, vacanciesCache[existingManagerVacancy], liveManagerVacancy);
         else vacanciesCache.unshift(liveManagerVacancy);
-        vacanciesCache = sortVacancies(vacanciesCache);
+        set_vacanciesCache( sortVacancies(vacanciesCache));
         saveDataCache();
       }
       renderManagerMode();
@@ -733,7 +742,7 @@ async function saveVacancy() {
     setVacancySaveBusy(false);
   }
 }
-async function deleteVacancy(id, agencyId) {
+export async function deleteVacancy(id, agencyId) {
   if (!confirm('Delete this vacancy?')) return;
   await removeVacancy(id);
   await loadAll();
@@ -742,9 +751,9 @@ async function deleteVacancy(id, agencyId) {
 }
 
 // ===== General vacancy posting (profile section, admin) =====
-var editingGeneralVacancyId = null;
-var pendingVacancyEmployer = null; // set when posting/editing a vacancy from an employer's profile
-function openGeneralVacancySheet() {
+export var editingGeneralVacancyId = null;
+export var pendingVacancyEmployer = null; // set when posting/editing a vacancy from an employer's profile
+export function openGeneralVacancySheet() {
   if (!isAdmin && !publicVacancyPostingOpen) { openVacancyLockedSheet(); return; }
   editingGeneralVacancyId = null;
   pendingVacancyEmployer = null;
@@ -773,7 +782,7 @@ function openGeneralVacancySheet() {
 // company field is locked to the employer's name and the saved vacancy is
 // tagged with employer_id so it shows the employer's logo/verified badge
 // and appears in both the employer's profile AND the main Vacancies list.
-function openEmployerVacancySheet(employerId) {
+export function openEmployerVacancySheet(employerId) {
   var isSelfManaging = employerManagerMode && managerEmployer && managerEmployer.id === employerId;
   if (!isAdmin && !isSelfManaging) { showToast('Vacancy posting for employers is managed by the admin.'); return; }
   var emp = employersCache.find(function(x){ return x.id === employerId; });
@@ -801,7 +810,7 @@ function openEmployerVacancySheet(employerId) {
   resetVacancyTermsAcceptance();
   document.getElementById('general-vacancy-overlay').classList.add('open');
 }
-function openEditGeneralVacancySheet(id) {
+export function openEditGeneralVacancySheet(id) {
   var v = vacanciesCache.find(function(x) { return x.id === id; });
   if (!v) { showToast('Vacancy not found'); return; }
   editingGeneralVacancyId = id;
@@ -827,7 +836,7 @@ function openEditGeneralVacancySheet(id) {
   resetVacancyTermsAcceptance();
   document.getElementById('general-vacancy-overlay').classList.add('open');
 }
-async function saveGeneralVacancy() {
+export async function saveGeneralVacancy() {
   var title = document.getElementById('gv-role').value.trim();
   if (!title) { alert('Add a role/title.'); return; }
   if (!isAdmin && !requireVacancyTermsAcceptance('general-vacancy-terms-accept')) return;
@@ -887,7 +896,7 @@ async function saveGeneralVacancy() {
     editingGeneralVacancyId = null;
     pendingVacancyEmployer = null;
     await loadAll();
-    if (document.getElementById('screen-allvacancies').classList.contains('active')) renderAllVacanciesList();
+    if (document.getElementById('screen-allvacancies').classList.contains('active')) window.renderAllVacanciesList();
     if (wasEmployerPost && employerIdForRefresh && document.getElementById('screen-allemployers').classList.contains('active')) {
       renderAllEmployersList();
       var empCard = document.getElementById('emphub-' + employerIdForRefresh);
@@ -900,13 +909,13 @@ async function saveGeneralVacancy() {
     setVacancySaveBusy(false);
   }
 }
-async function deleteGeneralVacancy(id) {
+export async function deleteGeneralVacancy(id) {
   if (!confirm('Delete this vacancy?')) return;
   await removeVacancy(id);
   showToast('Vacancy deleted');
   await loadAll();
   if (document.getElementById('screen-allvacancies').classList.contains('active')) {
-    renderAllVacanciesList();
+    window.renderAllVacanciesList();
   }
   if (document.getElementById('screen-allemployers').classList.contains('active')) {
     renderAllEmployersList();
@@ -916,11 +925,11 @@ async function deleteGeneralVacancy(id) {
 // ===== Sheets / misc =====
 
 // ===== CV Builder (AI CV Revamp — provider-ready Worker contract) =====
-var CV_BUILDER_TEMPLATES = { ats: true, modern: true, graduate: true, trade: true, executive: true };
-function normaliseCvTemplate(value) {
+export var CV_BUILDER_TEMPLATES = { ats: true, modern: true, graduate: true, trade: true, executive: true };
+export function normaliseCvTemplate(value) {
   return CV_BUILDER_TEMPLATES[value] ? value : 'ats';
 }
-function cvBuilderTemplateChanged(value) {
+export function cvBuilderTemplateChanged(value) {
   window.__cvBuilderTemplate = normaliseCvTemplate(value);
   var formSelect = document.getElementById('cvb-template');
   var resultSelect = document.getElementById('cvb-template-result');
@@ -928,7 +937,7 @@ function cvBuilderTemplateChanged(value) {
   if (resultSelect) resultSelect.value = window.__cvBuilderTemplate;
   if (window.__cvBuilderLast) renderCvBuilderResult(window.__cvBuilderLast);
 }
-function resetCvBuilderForm() {
+export function resetCvBuilderForm() {
   document.getElementById('cvb-name').value = '';
   document.getElementById('cvb-role').value = '';
   document.getElementById('cvb-raw').value = '';
@@ -938,15 +947,15 @@ function resetCvBuilderForm() {
   window.__cvBuilderTemplate = 'ats';
   cvBuilderTemplateChanged('ats');
 }
-function showCvBuilderFormView() {
+export function showCvBuilderFormView() {
   document.getElementById('cvbuilder-form-view').style.display = '';
   document.getElementById('cvbuilder-result-view').style.display = 'none';
 }
-function showCvBuilderResultView() {
+export function showCvBuilderResultView() {
   document.getElementById('cvbuilder-form-view').style.display = 'none';
   document.getElementById('cvbuilder-result-view').style.display = '';
 }
-function openCvBuilderSheet() {
+export function openCvBuilderSheet() {
   if (!saAuthUser) {
     showToast('Please sign in to use the CV Builder.');
     return;
@@ -961,10 +970,10 @@ function openCvBuilderSheet() {
   document.getElementById('cv-builder-overlay').classList.add('open');
   renderTurnstile('cvbuilder-turnstile', 'cv-builder-overlay');
 }
-function cvBuilderEditAgain() {
+export function cvBuilderEditAgain() {
   showCvBuilderFormView();
 }
-async function generateCv() {
+export async function generateCv() {
   var err = document.getElementById('cvbuilder-error');
   err.style.display = 'none';
   err.textContent = '';
@@ -1007,7 +1016,7 @@ async function generateCv() {
   renderCvBuilderResult(result.data.cv);
   showCvBuilderResultView();
 }
-function renderCvBuilderResult(cv) {
+export function renderCvBuilderResult(cv) {
   var html = '<div class="cvb-header"><div class="cvb-name">' + escapeHtml(cv.fullName || '') + '</div>' +
     (cv.jobTitle ? '<div class="cvb-role">' + escapeHtml(cv.jobTitle) + '</div>' : '') + '</div>';
   if (cv.summary) {
@@ -1044,7 +1053,7 @@ function renderCvBuilderResult(cv) {
   preview.className = 'cvb-preview cvb-template-' + normaliseCvTemplate(window.__cvBuilderTemplate);
   preview.innerHTML = html;
 }
-function cvToPlainText(cv) {
+export function cvToPlainText(cv) {
   var lines = [];
   lines.push(cv.fullName || '');
   if (cv.jobTitle) lines.push(cv.jobTitle);
@@ -1067,7 +1076,7 @@ function cvToPlainText(cv) {
   }
   return lines.join('\n').trim();
 }
-function copyCvText() {
+export function copyCvText() {
   var cv = window.__cvBuilderLast;
   if (!cv) return;
   var text = cvToPlainText(cv);
@@ -1077,7 +1086,7 @@ function copyCvText() {
     prompt('Copy this:', text);
   }
 }
-function printCvBuilder() {
+export function printCvBuilder() {
   var cv = window.__cvBuilderLast;
   if (!cv) return;
   var previewHtml = document.getElementById('cvbuilder-preview').innerHTML;
@@ -1101,3 +1110,81 @@ function printCvBuilder() {
   w.focus();
   setTimeout(function () { w.print(); }, 300);
 }
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+export function set_pendingVacancyAgency(v) { pendingVacancyAgency = v; return v; }
+Object.assign(window, {
+  openForm,
+  handlePhoto,
+  handlePoolPhoto,
+  handlePoolCv,
+  uploadPoolCvIfAny,
+  uploadPoolPhotoIfAny,
+  saveAgency,
+  deleteAgencyById,
+  openEmployerForm,
+  handleEmployerPhoto,
+  processPosterPhoto,
+  handlePosterPhoto,
+  handlePublicPosterPhoto,
+  submitPublicPoster,
+  openPublicPosterSheet,
+  uploadPosterIfAny,
+  openPosterUploadSheet,
+  savePoster,
+  saveEmployer,
+  deleteEmployerById,
+  openBranchSheet,
+  saveBranch,
+  deleteBranch,
+  resetVacancyTermsAcceptance,
+  requireVacancyTermsAcceptance,
+  currentTermsManagerType,
+  recordVacancyTermsAcceptance,
+  openVacancySheet,
+  normalizeVacancyLink,
+  workerManagerAddBranch,
+  workerManagerAddVacancy,
+  workerManagerEmployerAddVacancy,
+  setVacancySaveBusy,
+  alertPreferenceMatches,
+  sendTalentPoolVacancyAlerts,
+  saveVacancy,
+  deleteVacancy,
+  openGeneralVacancySheet,
+  openEmployerVacancySheet,
+  openEditGeneralVacancySheet,
+  saveGeneralVacancy,
+  deleteGeneralVacancy,
+  normaliseCvTemplate,
+  cvBuilderTemplateChanged,
+  resetCvBuilderForm,
+  showCvBuilderFormView,
+  showCvBuilderResultView,
+  openCvBuilderSheet,
+  cvBuilderEditAgain,
+  generateCv,
+  renderCvBuilderResult,
+  cvToPlainText,
+  copyCvText,
+  printCvBuilder,
+});
+Object.defineProperties(window, {
+  MAX_POOL_CV_BYTES: { get: () => MAX_POOL_CV_BYTES, set: (v) => { MAX_POOL_CV_BYTES = v; }, configurable: true, enumerable: true },
+  POOL_CV_TYPES: { get: () => POOL_CV_TYPES, set: (v) => { POOL_CV_TYPES = v; }, configurable: true, enumerable: true },
+  editingEmployerId: { get: () => editingEmployerId, set: (v) => { editingEmployerId = v; }, configurable: true, enumerable: true },
+  pendingBranchAgency: { get: () => pendingBranchAgency, set: (v) => { pendingBranchAgency = v; }, configurable: true, enumerable: true },
+  pendingBranchId: { get: () => pendingBranchId, set: (v) => { pendingBranchId = v; }, configurable: true, enumerable: true },
+  MANAGER_TERMS_VERSION: { get: () => MANAGER_TERMS_VERSION, set: (v) => { MANAGER_TERMS_VERSION = v; }, configurable: true, enumerable: true },
+  MANAGER_TERMS_PDF: { get: () => MANAGER_TERMS_PDF, set: (v) => { MANAGER_TERMS_PDF = v; }, configurable: true, enumerable: true },
+  pendingVacancyAgency: { get: () => pendingVacancyAgency, set: (v) => { pendingVacancyAgency = v; }, configurable: true, enumerable: true },
+  editingGeneralVacancyId: { get: () => editingGeneralVacancyId, set: (v) => { editingGeneralVacancyId = v; }, configurable: true, enumerable: true },
+  pendingVacancyEmployer: { get: () => pendingVacancyEmployer, set: (v) => { pendingVacancyEmployer = v; }, configurable: true, enumerable: true },
+  CV_BUILDER_TEMPLATES: { get: () => CV_BUILDER_TEMPLATES, set: (v) => { CV_BUILDER_TEMPLATES = v; }, configurable: true, enumerable: true },
+});

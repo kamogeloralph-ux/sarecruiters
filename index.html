@@ -1540,15 +1540,14 @@
   window.openContentSheet=stub;
 })();
 </script>
-<!-- app.js was split into 8 files for maintainability (2026-09-16 refactor):
-     app-core, app-data, app-cards, app-forms, app-sheets, app-ui,
-     app-manager, app-manager-employer. They're concatenated + minified
-     into the single bundle below by scripts/bundle-app.js on every build
-     (see generate-pages.js), in that same order — do not reorder the
-     source files. The ?v= hash is rewritten automatically each build for
-     cache-busting; don't hand-edit it. The 8 source files stay in the repo
-     for editing — only index.html references the built bundle. -->
-<script src="app.bundle.min.js?v=be682670f5" defer></script>
+<!-- The app is a set of ES modules (app-core, app-data, app-cards, app-forms, app-sheets,
+     app-ui, app-manager, app-manager-employer, app-pending-submissions, app-community,
+     app-install) imported from app-entry.js and bundled by Vite (scripts/bundle-app.js, run
+     from generate-pages.js on every build). The ?v= hash is rewritten automatically each build
+     for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
+     exposed on window by the bridge block at the bottom of each app-*.js file. The classic
+     scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
+<script type="module" src="app.bundle.min.js?v=c5048b051d"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

@@ -2,11 +2,20 @@
  * SA Recruiters -- app.js split 2/8: app-data.js
  * Data layer: agencies, employers, branches, vacancies, app settings, daily track, local cache, loadAll()
  *
- * Part of the original monolithic app.js, mechanically split and kept as
- * classic (non-module) scripts loaded in this exact order via <script defer>
- * in index.html, so all functions/vars stay on one shared global scope
- * exactly as before. Do not reorder these files relative to one another.
+ * Part of the original monolithic app.js. Now an ES module: it imports what it
+ * uses from the other app-*.js files and exports its top-level declarations.
+ * A window bridge at the bottom keeps inline onclick="" handlers and the
+ * classic scripts (app-vacancy-v2.js, app-alerts.js, content*.js) working.
+ * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
+
+import { R2_WORKER_URL, STARTUP_DATA_URL, STATIC_DATA_URL, agenciesCache, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyNextCursor, dedicatedVacancyPageSize, employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyNextCursor, generalVacancyPageSize, initials, isAdmin, managerMode, managerPendingToken, publicVacancyPostingOpen, rebuildPublicListingSlugs, set_agenciesCache, set_branchesCache, set_dedicatedVacancyCounts, set_dedicatedVacancyCountsLoaded, set_dedicatedVacancyNextCursor, set_employerDirectoryOpen, set_employerManagerPendingToken, set_employersCache, set_generalVacancyCount, set_generalVacancyCountLoaded, set_generalVacancyNextCursor, set_managerPendingToken, set_publicEmployerRegistrationOpen, set_publicVacancyPostingOpen, set_staticVacanciesCache, set_vacanciesCache, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
+import { autoClaimGateRegistration, filterAndRenderCached, loadPosterFeed, restoreTalentPoolMembership, verifiedBadge } from './app-cards.js';
+import { getPoolCandidateCount, openPostJobSheet, poolCache, poolCandidateCount, poolLoaded, set_poolCandidateCount } from './app-sheets.js';
+import { renderRestoredScreenContent, setRetryBanner, showToast, vacancyOverviewExtraRows } from './app-ui.js';
+import { enterManagerMode, renderManagerMode, renderSmartManager } from './app-manager.js';
+import { enterEmployerManagerMode, renderEmployerManagerMode } from './app-manager-employer.js';
+
 
 // ===== Data: AGENCIES (live Supabase table that works) =====
 // SECURITY NOTE: manage_token is intentionally NOT selected here. The column
@@ -14,7 +23,7 @@
 // supabase/migrations/20260918_lock_down_manager_tokens.sql) so public reads
 // can never leak Smart Manager links. Token resolution happens server-side
 // via the Worker's /api/verify-manager endpoint (see app-manager.js).
-async function getAgencies() {
+export async function getAgencies() {
   var startup = await getStartupData();
   if (startup && Array.isArray(startup.agencies)) return startup.agencies;
   return markLoadError([]);
@@ -25,7 +34,7 @@ async function getAgencies() {
 // kept as a fallback for deployments where the authenticated role still has
 // the column grant. Anonymous visitors can no longer write tokens at all —
 // that is the point of the lockdown migration.
-async function saveManagerTokenToSupabase(agencyId, token) {
+export async function saveManagerTokenToSupabase(agencyId, token) {
   try {
     var rpc = await supabaseClient.rpc('admin_set_manager_token', { p_agency_id: agencyId, p_token: token });
     if (!rpc.error && rpc.data === true) return;
@@ -38,7 +47,7 @@ async function saveManagerTokenToSupabase(agencyId, token) {
     }
   } catch(e) { console.error('manage_token save', e); }
 }
-var D1_WRITE_THROUGH_COLUMNS = {
+export var D1_WRITE_THROUGH_COLUMNS = {
   agencies: ['id','name','website','contact','email','location','address','cvpref','photo','companies','trades','verified','created_at'],
   branches: ['id','agency_id','name','location','phone','email'],
   vacancies: ['id','agency_id','employer_id','title','company','company_photo','location','closing_date','notes','link','email','phone','remote','experience_level','employment_type','contract_type','work_schedule','hours','salary','start_date','created_at','updated_at','source_type','is_featured','featured_until','featured_order'],
@@ -47,7 +56,7 @@ var D1_WRITE_THROUGH_COLUMNS = {
   employer_posters: ['id','employer_id','agency_id','image_url','caption','vacancy_id','created_at','expires_at'],
   pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','photo_url','verified','status','created_at']
 };
-async function writeThroughD1Mirror(table, value, operation) {
+export async function writeThroughD1Mirror(table, value, operation) {
   if (!isAdmin || !supabaseClient || !R2_WORKER_URL) return false;
   try {
     var sessionResult = await supabaseClient.auth.getSession();
@@ -96,7 +105,7 @@ async function writeThroughD1Mirror(table, value, operation) {
   } catch (error) { console.warn('D1 write-through unavailable after Supabase save', table, error); return false; }
 }
 
-async function upsertAgency(a) {
+export async function upsertAgency(a) {
   var safe = Object.assign({}, a);
   var mutation = supabaseClient.from('agencies').upsert(safe);
   var result = isAdmin ? await mutation.select('*').single() : await mutation;
@@ -118,7 +127,7 @@ async function upsertAgency(a) {
   }
   console.error('agency save', result.error); alert('Could not save. Check your Supabase setup.');
 }
-async function removeAgency(id) {
+export async function removeAgency(id) {
   var { error } = await supabaseClient.from('agencies').delete().eq('id', id);
   if (error) { console.error('agency delete', error); alert('Could not delete. Check your Supabase setup.'); return; }
   if (isAdmin) await writeThroughD1Mirror('agencies', id, 'delete');
@@ -129,25 +138,25 @@ async function removeAgency(id) {
    pattern as branches/vacancies, so this works immediately even before the
    `employers` table + `employer_id` vacancies column are created — run
    CREATE_EMPLOYERS_TABLE.sql in the Supabase SQL Editor to make it live. */
-async function getEmployers() {
+export async function getEmployers() {
   var startup = await getStartupData();
   if (startup && Array.isArray(startup.employers)) return startup.employers;
   return markLoadError([]);
 }
 // ===== First-party house ads =====
-var houseAdsCache = [];
-function safeHouseAdUrl(value) {
+export var houseAdsCache = [];
+export function safeHouseAdUrl(value) {
   try {
     var url = new URL(String(value || ''), window.location.href);
     return /^https?:$/.test(url.protocol) ? url.href : '';
   } catch(e) { return ''; }
 }
-function houseAdPlacementMatches(ad, placement, slot) {
+export function houseAdPlacementMatches(ad, placement, slot) {
   var targets = Array.isArray(ad && ad.target_screens) ? ad.target_screens : null;
   var screenMatch = targets && targets.length ? targets.indexOf(placement) !== -1 : (ad && (ad.placement === placement || ad.placement === 'directories'));
   return !!ad && screenMatch && (ad.ad_slot || 'top') === slot;
 }
-function renderHouseAdSlot(targetId, placement, slot) {
+export function renderHouseAdSlot(targetId, placement, slot) {
   var target = document.getElementById(targetId);
   if (!target) return;
   var ad = (houseAdsCache || []).filter(function(item){ return houseAdPlacementMatches(item, placement, slot || 'top'); })[0];
@@ -167,7 +176,7 @@ function renderHouseAdSlot(targetId, placement, slot) {
   '</a>';
   trackHouseAdEvent(ad.id, 'impression');
 }
-function renderHouseAdSlots() {
+export function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-home-middle', 'home', 'middle');
   renderHouseAdSlot('house-ad-home-bottom', 'home', 'bottom');
   renderHouseAdSlot('house-ad-agencies-top', 'agencies', 'top');
@@ -183,7 +192,7 @@ function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-posters-middle', 'posters', 'middle');
   renderHouseAdSlot('house-ad-posters-bottom', 'posters', 'bottom');
 }
-async function loadHouseAds() {
+export async function loadHouseAds() {
   // Served by the Cloudflare Worker (edge-cached), never a direct browser
   // read of Supabase. Failures leave the slots hidden.
   try {
@@ -195,7 +204,7 @@ async function loadHouseAds() {
   }
   renderHouseAdSlots();
 }
-function trackHouseAdEvent(id, eventName) {
+export function trackHouseAdEvent(id, eventName) {
   if (!id || ['impression','click'].indexOf(eventName) === -1) return;
   var key = 'sa_house_ad_' + eventName + '_' + id;
   if (eventName === 'impression') {
@@ -209,12 +218,12 @@ function trackHouseAdEvent(id, eventName) {
   } catch(e) {}
 }
 
-async function getManagedPosters() {
+export async function getManagedPosters() {
   // Managed campaign posters are not part of the D1 mirror yet. Keep this
   // public bundle Cloudflare-only rather than issuing a Supabase fallback.
   return [];
 }
-function renderManagedPoster(poster, targetId) {
+export function renderManagedPoster(poster, targetId) {
   var target = document.getElementById(targetId);
   if (!target) return;
   if (!poster || !poster.image_url) { target.hidden = true; target.innerHTML = ''; return; }
@@ -222,7 +231,7 @@ function renderManagedPoster(poster, targetId) {
   target.innerHTML = '<img loading="lazy" decoding="async" src="'+escapeHtml(poster.image_url)+'" alt="'+escapeHtml(poster.title || '')+'" onerror="this.closest(\'.managed-poster\').hidden=true">' +
     ((poster.title || poster.subtitle) ? '<div class="managed-poster-copy">'+(poster.title?'<strong>'+escapeHtml(poster.title)+'</strong>':'')+(poster.subtitle?'<span>'+escapeHtml(poster.subtitle)+'</span>':'')+'</div>' : '');
 }
-function renderManagedPosters(posters) {
+export function renderManagedPosters(posters) {
   var target = document.getElementById('poster-managed-poster');
   if (!target) return;
   posters = (posters || []).filter(function(p){ return p && p.image_url; });
@@ -245,8 +254,8 @@ function renderManagedPosters(posters) {
 // tapping a card sends the visitor to the full Talent Pool for the
 // complete Mini-CV. RLS only ever returns status = 'active' rows to
 // anonymous visitors, but the status filter below is defense-in-depth.
-var publicPoolStartupPromise = null;
-async function getPublicPoolCandidatesFromWorker() {
+export var publicPoolStartupPromise = null;
+export async function getPublicPoolCandidatesFromWorker() {
   if (window.__saStartupPayload && Array.isArray(window.__saStartupPayload.pool_candidates)) {
     return window.__saStartupPayload;
   }
@@ -265,9 +274,9 @@ async function getPublicPoolCandidatesFromWorker() {
     return null;
   }
 }
-var candidateSpotlightLoaded = false;
-var candidateSpotlightList = [];
-async function loadCandidateSpotlight() {
+export var candidateSpotlightLoaded = false;
+export var candidateSpotlightList = [];
+export async function loadCandidateSpotlight() {
   var menuTarget = document.getElementById('candidate-spotlight-deck');
   var homeTarget = document.getElementById('home-candidate-spotlight-deck');
   if (!menuTarget && !homeTarget) return;
@@ -313,7 +322,7 @@ async function loadCandidateSpotlight() {
   candidateSpotlightLoaded = true;
   renderCandidateSpotlight(candidateSpotlightList, menuTarget, homeTarget);
 }
-function renderCandidateSpotlight(list, menuTarget, homeTarget) {
+export function renderCandidateSpotlight(list, menuTarget, homeTarget) {
   var targets = [menuTarget || document.getElementById('candidate-spotlight-deck'), homeTarget || document.getElementById('home-candidate-spotlight-deck')].filter(Boolean);
   if (!targets.length) return;
   if (!list.length) {
@@ -338,7 +347,7 @@ function renderCandidateSpotlight(list, menuTarget, homeTarget) {
   targets.forEach(function(target) { target.innerHTML = markup; });
 }
 
-async function upsertEmployer(e) {
+export async function upsertEmployer(e) {
   try {
     var mutation = supabaseClient.from('employers').upsert(e);
     var result = isAdmin ? await mutation.select('*').single() : await mutation;
@@ -353,7 +362,7 @@ async function upsertEmployer(e) {
   writeLocal('employers', arr);
   return false;
 }
-async function removeEmployer(id) {
+export async function removeEmployer(id) {
   try {
     var result = await supabaseClient.from('employers').delete().eq('id', id);
     if (!result.error && isAdmin) await writeThroughD1Mirror('employers', id, 'delete');
@@ -371,21 +380,21 @@ async function removeEmployer(id) {
      2) FALL BACK to localStorage so nothing is ever lost and the UX works.
    When a save is NOT live, saveVacancy()/saveGeneralVacancy() now show a
    clear warning toast.                                              */
-function localKey(kind) { return 'sa_' + kind + '_local'; }
-function readLocal(kind) {
+export function localKey(kind) { return 'sa_' + kind + '_local'; }
+export function readLocal(kind) {
   try { return JSON.parse(localStorage.getItem(localKey(kind)) || '[]'); } catch(e){ return []; }
 }
-function writeLocal(kind, arr) {
+export function writeLocal(kind, arr) {
   try { localStorage.setItem(localKey(kind), JSON.stringify(arr)); } catch(e){ console.warn('storage full', e); }
 }
 
 // ----- Branches -----
-async function getBranches() {
+export async function getBranches() {
   var startup = await getStartupData();
   if (startup && Array.isArray(startup.branches)) return startup.branches;
   return markLoadError([]);
 }
-async function upsertBranch(b) {
+export async function upsertBranch(b) {
   try {
     var mutation = supabaseClient.from('branches').upsert(b);
     var result = isAdmin ? await mutation.select('*').single() : await mutation;
@@ -400,7 +409,7 @@ async function upsertBranch(b) {
   writeLocal('branches', arr);
   return false;
 }
-async function removeBranch(id) {
+export async function removeBranch(id) {
   try {
     var result = await supabaseClient.from('branches').delete().eq('id', id);
     if (!result.error && isAdmin) await writeThroughD1Mirror('branches', id, 'delete');
@@ -409,14 +418,14 @@ async function removeBranch(id) {
   writeLocal('branches', arr);
 }
 // ----- App settings (admin-controlled, e.g. public vacancy posting toggle) -----
-async function getAppSetting(key, fallback) {
+export async function getAppSetting(key, fallback) {
   try {
     var startup = await getStartupData();
     var settings = startup && startup.settings;
     return settings && Object.prototype.hasOwnProperty.call(settings, key) ? settings[key] : fallback;
   } catch(e) { return fallback; }
 }
-async function setAppSetting(key, value) {
+export async function setAppSetting(key, value) {
   try {
     var mutation = supabaseClient.from('app_settings').upsert({ key: key, value: value, updated_at: new Date().toISOString() });
     var result = isAdmin ? await mutation.select('key,value').single() : await mutation;
@@ -425,27 +434,27 @@ async function setAppSetting(key, value) {
     return true;
   } catch(e) { return false; }
 }
-async function loadPostingSetting() {
+export async function loadPostingSetting() {
   var v = await getAppSetting('public_vacancy_posting', 'false');
-  publicVacancyPostingOpen = (v === true || v === 'true');
+  set_publicVacancyPostingOpen( (v === true || v === 'true'));
   updatePostingToggleUI();
 }
-function updatePostingToggleUI() {
+export function updatePostingToggleUI() {
   var input = document.getElementById('posting-toggle-input');
   if (input) input.checked = !!publicVacancyPostingOpen;
   var sub = document.getElementById('posting-toggle-sub');
   if (sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
 }
-async function loadEmployerRegSetting() {
+export async function loadEmployerRegSetting() {
   var v = await getAppSetting('public_employer_registration', 'false');
-  publicEmployerRegistrationOpen = (v === true || v === 'true');
+  set_publicEmployerRegistrationOpen( (v === true || v === 'true'));
 }
 
 /* ===== Home Media ===== */
-var DEFAULT_MEDIA_YOUTUBE_URL = 'https://youtu.be/HV64XG91tE4';
-var mediaYoutubeUrl = DEFAULT_MEDIA_YOUTUBE_URL;
+export var DEFAULT_MEDIA_YOUTUBE_URL = 'https://youtu.be/HV64XG91tE4';
+export var mediaYoutubeUrl = DEFAULT_MEDIA_YOUTUBE_URL;
 
-function youtubeEmbedUrl(value) {
+export function youtubeEmbedUrl(value) {
   var raw = String(value || '').trim();
   if (!raw) return '';
   try {
@@ -460,7 +469,7 @@ function youtubeEmbedUrl(value) {
   } catch (e) { return ''; }
 }
 
-function renderHomeMediaSection() {
+export function renderHomeMediaSection() {
   var section = document.getElementById('home-media-section');
   var frame = document.getElementById('home-media-video');
   if (!section || !frame) return;
@@ -474,7 +483,7 @@ function renderHomeMediaSection() {
   if (frame.getAttribute('src') !== embed) frame.setAttribute('src', embed);
 }
 
-async function loadMediaSetting() {
+export async function loadMediaSetting() {
   var value = await getAppSetting('media_youtube_url', DEFAULT_MEDIA_YOUTUBE_URL);
   mediaYoutubeUrl = youtubeEmbedUrl(value) ? String(value).trim() : DEFAULT_MEDIA_YOUTUBE_URL;
   renderHomeMediaSection();
@@ -485,12 +494,12 @@ async function loadMediaSetting() {
    the `daily_tracks` table (Supabase). This keeps an uploaded track available
    to visitors for at least seven days instead of showing it only on its upload
    date. The audio file is served from the `daily-tracks` storage bucket. */
-var TRACKS_PUBLIC_BASE_URL = 'https://pub-911e4cd402674c6f85c747b12212772f.r2.dev';
-var todayTrack = null;       // {id,title,artist,track_date,file_url,spotify_url}
-var trackAudio = null;       // <audio> element
-var trackIsPlaying = false;
+export var TRACKS_PUBLIC_BASE_URL = 'https://pub-911e4cd402674c6f85c747b12212772f.r2.dev';
+export var todayTrack = null;       // {id,title,artist,track_date,file_url,spotify_url}
+export var trackAudio = null;       // <audio> element
+export var trackIsPlaying = false;
 
-function todayISO() {
+export function todayISO() {
   var d = new Date();
   var y = d.getFullYear();
   var m = String(d.getMonth() + 1).padStart(2, '0');
@@ -498,7 +507,7 @@ function todayISO() {
   return y + '-' + m + '-' + day;
 }
 
-async function loadTodayTrack() {
+export async function loadTodayTrack() {
   try {
     var today = todayISO();
     var cutoff = new Date();
@@ -534,7 +543,7 @@ async function loadTodayTrack() {
   }
 }
 
-function renderTrackEmpty() {
+export function renderTrackEmpty() {
   var card = document.getElementById('track-card');
   var info = document.getElementById('track-info');
   var btn = document.getElementById('track-play');
@@ -559,7 +568,7 @@ function renderTrackEmpty() {
   if (prog) prog.style.display = 'none';
 }
 
-function renderTrackReady() {
+export function renderTrackReady() {
   if (!todayTrack) { renderTrackEmpty(); return; }
   var card = document.getElementById('track-card');
   var info = document.getElementById('track-info');
@@ -586,7 +595,7 @@ function renderTrackReady() {
   trackAudio = document.getElementById('track-audio');
 }
 
-function toggleTrackPlay() {
+export function toggleTrackPlay() {
   if (!todayTrack || !trackAudio || !todayTrack.file_url) return;
   if (trackIsPlaying) {
     trackAudio.pause();
@@ -599,7 +608,7 @@ function toggleTrackPlay() {
   }
 }
 
-function updateTrackPlayButtons() {
+export function updateTrackPlayButtons() {
   var iconPath = trackIsPlaying ? 'M6 4h4v16H6zM14 4h4v16h-4z' : 'M8 5v14l11-7z';
   var label = trackIsPlaying ? 'Pause Track of the Day' : 'Play Track of the Day';
   ['track-play', 'home-media-track-play'].forEach(function(id) {
@@ -611,11 +620,11 @@ function updateTrackPlayButtons() {
   });
 }
 
-function onTrackLoaded() {
+export function onTrackLoaded() {
   // metadata loaded — nothing needed yet
 }
 
-function updateTrackProgress() {
+export function updateTrackProgress() {
   if (!trackAudio) return;
   var prog = document.getElementById('track-progress');
   var fill = document.getElementById('track-progress-fill');
@@ -628,7 +637,7 @@ function updateTrackProgress() {
   fill.style.width = pct + '%';
 }
 
-function onTrackEnded() {
+export function onTrackEnded() {
   trackIsPlaying = false;
   var card = document.getElementById('track-card');
   var icon = document.getElementById('track-play-icon');
@@ -660,10 +669,10 @@ document.addEventListener('pause', function(e){
     updateTrackPlayButtons();
   }
 }, true);
-async function togglePublicPosting(checked) {
+export async function togglePublicPosting(checked) {
   var ok = await setAppSetting('public_vacancy_posting', checked ? 'true' : 'false');
   if (ok) {
-    publicVacancyPostingOpen = checked;
+    set_publicVacancyPostingOpen( checked);
     showToast(checked ? 'Vacancy posting opened to the public' : 'Vacancy posting locked');
   } else {
     showToast('Could not update setting — try again');
@@ -676,16 +685,16 @@ async function togglePublicPosting(checked) {
 // openPostJobSheet() in app-sheets.js, which opens the always-open
 // "Post a job" enquiry form (post-job-overlay, FirstJobly-style lead form).
 // WhatsApp stays available as a secondary link inside that sheet.
-function openVacancyLockedSheet() { openPostJobSheet(); }
-function openEmployerLockedSheet() { openPostJobSheet(); }
+export function openVacancyLockedSheet() { openPostJobSheet(); }
+export function openEmployerLockedSheet() { openPostJobSheet(); }
 
 // ----- Employer posters (swipeable poster feed) -----
-var posterTotalCount = null;
-function updatePosterStat() {
+export var posterTotalCount = null;
+export function updatePosterStat() {
   var el = document.getElementById('stat-posters');
   if (el && posterTotalCount !== null) el.textContent = posterTotalCount;
 }
-async function getEmployerPosters() {
+export async function getEmployerPosters() {
   try {
     var response = await fetch(R2_WORKER_URL + '/api/posters', {
       method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }
@@ -716,7 +725,7 @@ async function getEmployerPosters() {
 }
 
 // ----- Vacancies -----
-function parseVacancyClosingDate(value) {
+export function parseVacancyClosingDate(value) {
   if (!value) return null;
   var s = String(value).trim(), m;
   if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
@@ -729,17 +738,17 @@ function parseVacancyClosingDate(value) {
   }
   return null;
 }
-function isVacancyExpired(v) {
+export function isVacancyExpired(v) {
   var closing = parseVacancyClosingDate(v && v.closing_date);
   if (!closing || isNaN(closing.getTime())) return false;
   var today = new Date();
   var todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
   return closing.getTime() < todayUtc;
 }
-function filterExpiredVacancies(rows) {
+export function filterExpiredVacancies(rows) {
   return (rows || []).filter(function(v) { return !isVacancyExpired(v); });
 }
-async function getVacancies() {
+export async function getVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var pageSize = 1000;
   var rows = [];
@@ -748,19 +757,19 @@ async function getVacancies() {
   // unavailable; authenticated manager/admin writes remain below unchanged.
   return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
 }
-async function getEmployerVacancies() {
+export async function getEmployerVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
   var pageSize = 1000;
   // Employer vacancy browsing is public and must stay on the bounded Worker
   // API; do not reintroduce a direct PostgREST table scan here.
   return [];
 }
-async function getAgencyAdzunaVacancies() {
+export async function getAgencyAdzunaVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
   // Public source pages use fetchVacancyPageFromWorker() below.
   return [];
 }
-async function getGeneralVacancyCount() {
+export async function getGeneralVacancyCount() {
   // Counts come from /api/startup, backed by D1. A failed Worker request must
   // not turn into a public PostgREST count request.
   return null;
@@ -769,27 +778,27 @@ async function getGeneralVacancyCount() {
 // direct Supabase reads — mirrors the worker's per-folder counts (see
 // DEDICATED_FOLDERS in Cloudflare-worker/worker.js) with 5 small indexed
 // count queries instead of one big row fetch.
-async function getDedicatedVacancyCounts() {
+export async function getDedicatedVacancyCounts() {
   var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government','dpsa'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], learnerships: ['learnerships'], careers_page: ['careers_page'] };
   var out = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0, careers_page: 0 };
   return null;
 }
-function isDedicatedVacancySource(sourceType) {
+export function isDedicatedVacancySource(sourceType) {
   return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships', 'careers_page'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
-function isGeneralDirectoryVacancy(v) {
+export function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
 }
-function hasAssignedAgency(v) {
+export function hasAssignedAgency(v) {
   // Dedicated external sources (Himalayas, Adzuna, DPSA, retail feeds) must
   // only ever appear in their own folder, never counted or listed as an
   // agency vacancy, even if agency_id was ever set on the row.
   return !!v && !!v.agency_id && v.agency_id !== 'general' && !isDedicatedVacancySource(v.source_type);
 }
-function normalizeAgencyMatchText(value) {
+export function normalizeAgencyMatchText(value) {
   return String(value || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 }
-function matchVacanciesToAgencies(rows, agencies) {
+export function matchVacanciesToAgencies(rows, agencies) {
   var list = rows || [];
   var directory = agencies || agenciesCache || [];
   var prepared = directory.map(function(a) {
@@ -820,17 +829,17 @@ function matchVacanciesToAgencies(rows, agencies) {
   });
   return list;
 }
-function generalVacancyQueryState() {
+export function generalVacancyQueryState() {
   return {
     q: ((document.getElementById('allvacancies-search')||{}).value || '').trim(),
     remote: ((document.getElementById('allvacancies-remote')||{}).value || ''),
     exp: ((document.getElementById('allvacancies-exp')||{}).value || '')
   };
 }
-function generalVacancyQueryKeyFor(state) {
+export function generalVacancyQueryKeyFor(state) {
   return [state.q, state.remote, state.exp].join('|').toLowerCase();
 }
-async function fetchVacancyPageFromWorker(params) {
+export async function fetchVacancyPageFromWorker(params) {
   if (R2_WORKER_URL) {
     try {
       var url = new URL(R2_WORKER_URL + '/api/vacancies');
@@ -863,13 +872,13 @@ async function fetchVacancyPageFromWorker(params) {
   }
   return null;
 }
-async function fetchGeneralVacancyPage(state, page) {
+export async function fetchGeneralVacancyPage(state, page) {
   var workerPage = await fetchVacancyPageFromWorker({
     scope: 'general', q: state.q, remote: state.remote, experience: state.exp,
     limit: generalVacancyPageSize, cursor: page > 0 ? generalVacancyNextCursor : ''
   });
   if (workerPage) {
-    generalVacancyNextCursor = workerPage.next_cursor || null;
+    set_generalVacancyNextCursor( workerPage.next_cursor || null);
     return workerPage.vacancies;
   }
   var from = page * generalVacancyPageSize;
@@ -880,7 +889,7 @@ async function fetchGeneralVacancyPage(state, page) {
 // Source-type groupings for the 5 dedicated-source folders, mirroring the
 // classifier functions in renderAllVacanciesList() (isHimalayasVacancy etc.)
 // and DEDICATED_FOLDERS in Cloudflare-worker/worker.js.
-var DEDICATED_VACANCY_FOLDER_SOURCES = {
+export var DEDICATED_VACANCY_FOLDER_SOURCES = {
   himalayas: ['himalayas'],
   adzuna: ['adzuna'],
   government: ['government', 'dpsa'],
@@ -893,7 +902,7 @@ var DEDICATED_VACANCY_FOLDER_SOURCES = {
 // vacanciesCache. That cache no longer carries these ~8,700 rows (see
 // worker.js loadStartupData), so each folder now fetches its own page
 // directly, the same way fetchGeneralVacancyPage() already does.
-async function fetchDedicatedVacancyPage(folder, state, page) {
+export async function fetchDedicatedVacancyPage(folder, state, page) {
   var sources = DEDICATED_VACANCY_FOLDER_SOURCES[folder];
   if (!sources) return [];
   var workerPage = await fetchVacancyPageFromWorker({
@@ -901,12 +910,12 @@ async function fetchDedicatedVacancyPage(folder, state, page) {
     limit: dedicatedVacancyPageSize, cursor: page > 0 ? dedicatedVacancyNextCursor : ''
   });
   if (workerPage) {
-    dedicatedVacancyNextCursor = workerPage.next_cursor || null;
+    set_dedicatedVacancyNextCursor( workerPage.next_cursor || null);
     return workerPage.vacancies;
   }
   return [];
 }
-async function upsertVacancy(v) {
+export async function upsertVacancy(v) {
   try {
     var mutation = supabaseClient.from('vacancies').upsert(v);
     var result = isAdmin ? await mutation.select('*').single() : await mutation;
@@ -931,7 +940,7 @@ async function upsertVacancy(v) {
   writeLocal('vacancies', arr);
   return false;
 }
-async function removeVacancy(id) {
+export async function removeVacancy(id) {
   try {
     var result = await supabaseClient.from('vacancies').delete().eq('id', id);
     if (!result.error && isAdmin) await writeThroughD1Mirror('vacancies', id, 'delete');
@@ -958,13 +967,13 @@ async function removeVacancy(id) {
    `reports` table exists but RLS blocks anonymous inserts. We try the
    live insert first; if RLS blocks it we store locally AND offer to send
    via the support WhatsApp/email so the report always reaches the admin. */
-function readLocalReports() {
+export function readLocalReports() {
   try { return JSON.parse(localStorage.getItem('sa_reports_local') || '[]'); } catch(e){ return []; }
 }
-function writeLocalReports(arr) {
+export function writeLocalReports(arr) {
   try { localStorage.setItem('sa_reports_local', JSON.stringify(arr)); } catch(e){}
 }
-async function submitReportToSupabase(payload) {
+export async function submitReportToSupabase(payload) {
   // Use same pattern as suggestions: insert without .select()
   // (.select() requires SELECT RLS permission which anon users don't have)
   var safePayload = {
@@ -986,7 +995,7 @@ async function submitReportToSupabase(payload) {
 // see a plain array. loadAll() checks this flag to decide whether to (a)
 // keep showing the last good cached data instead of wiping it to empty, and
 // (b) surface the retry banner. See initIdleResumeRefresh/retryLoadAll.
-function markLoadError(arr) { try { arr.__loadError = true; } catch(e) {} return arr; }
+export function markLoadError(arr) { try { arr.__loadError = true; } catch(e) {} return arr; }
 
 // ----- Local data cache: lets the app paint instantly from the last
 // successful load while fresh data streams in behind the scenes, instead
@@ -1000,13 +1009,13 @@ function markLoadError(arr) { try { arr.__loadError = true; } catch(e) {} return
 // main thread, so it never blocks a render. We keep a tiny hand-rolled
 // promise wrapper here rather than pulling in idb/Dexie as a dependency,
 // since this is the only place in the app that needs it.
-var DATA_CACHE_DB = 'sa_data_cache_db';
-var DATA_CACHE_STORE = 'kv';
-var DATA_CACHE_KEY = 'sa_data_cache_v1';
-var lastDataRefreshAt = null;
-var cachedVacancyTotal = null;
+export var DATA_CACHE_DB = 'sa_data_cache_db';
+export var DATA_CACHE_STORE = 'kv';
+export var DATA_CACHE_KEY = 'sa_data_cache_v1';
+export var lastDataRefreshAt = null;
+export var cachedVacancyTotal = null;
 
-function openDataCacheDB() {
+export function openDataCacheDB() {
   return new Promise(function(resolve, reject) {
     if (!window.indexedDB) { reject(new Error('IndexedDB unavailable')); return; }
     var req = indexedDB.open(DATA_CACHE_DB, 1);
@@ -1017,7 +1026,7 @@ function openDataCacheDB() {
     req.onerror = function() { reject(req.error); };
   });
 }
-async function idbGet(key) {
+export async function idbGet(key) {
   var db = await openDataCacheDB();
   return new Promise(function(resolve, reject) {
     var req = db.transaction(DATA_CACHE_STORE, 'readonly').objectStore(DATA_CACHE_STORE).get(key);
@@ -1025,7 +1034,7 @@ async function idbGet(key) {
     req.onerror = function() { reject(req.error); };
   });
 }
-async function idbSet(key, value) {
+export async function idbSet(key, value) {
   var db = await openDataCacheDB();
   return new Promise(function(resolve, reject) {
     var tx = db.transaction(DATA_CACHE_STORE, 'readwrite');
@@ -1035,7 +1044,7 @@ async function idbSet(key, value) {
   });
 }
 
-function formatDataAge(timestamp) {
+export function formatDataAge(timestamp) {
   if (!timestamp) return '';
   var age = Math.max(0, Date.now() - timestamp);
   if (age < 60000) return 'just now';
@@ -1045,7 +1054,7 @@ function formatDataAge(timestamp) {
   if (hours < 24) return hours + ' hr ago';
   return Math.floor(hours / 24) + ' days ago';
 }
-function vacancyScreenStateMarkup(screen, hasRows, hasQuery) {
+export function vacancyScreenStateMarkup(screen, hasRows, hasQuery) {
   if (hasRows) return '';
   var message = 'New listings will appear here once they are posted.';
   if (screen === 'search') message = hasQuery ? 'Try a different agency name, trade, role, or location.' : 'Find agencies, vacancies, trades, or locations.';
@@ -1056,7 +1065,7 @@ function vacancyScreenStateMarkup(screen, hasRows, hasQuery) {
   return '<div class="screen-state" data-screen="' + screen + '" data-vacancy-state="empty">' + message + '</div>';
 }
 
-function connectionStatusLabel(state, timestamp, isOnline) {
+export function connectionStatusLabel(state, timestamp, isOnline) {
   var isOffline = state === 'offline' || !isOnline;
   if (state === 'loading') return 'Updating listings…';
   if (isOffline) return timestamp ? 'Offline · showing saved listings from ' + formatDataAge(timestamp) : 'Offline · saved listings only';
@@ -1065,7 +1074,7 @@ function connectionStatusLabel(state, timestamp, isOnline) {
   if (state === 'live') return 'Live listings · updated ' + formatDataAge(timestamp || Date.now());
   return '';
 }
-function setConnectionStatus(state, timestamp) {
+export function setConnectionStatus(state, timestamp) {
   var el = document.getElementById('connection-status');
   if (!el) return;
   var isOffline = state === 'offline' || !navigator.onLine;
@@ -1076,7 +1085,7 @@ function setConnectionStatus(state, timestamp) {
   el.title = timestamp ? 'Last successful listing refresh: ' + new Date(timestamp).toLocaleString() : '';
 }
 
-function initConnectionStatus() {
+export function initConnectionStatus() {
   window.addEventListener('offline', function() { setConnectionStatus('offline', lastDataRefreshAt); try { trackEvent('offline_detected', 'pwa', null); } catch(e) {} });
   window.addEventListener('online', function() {
     setConnectionStatus('loading', lastDataRefreshAt);
@@ -1084,7 +1093,7 @@ function initConnectionStatus() {
   });
   setConnectionStatus(navigator.onLine ? (lastDataRefreshAt ? 'cached' : 'loading') : 'offline', lastDataRefreshAt);
 }
-async function saveDataCache() {
+export async function saveDataCache() {
   var payload = {
     agencies: agenciesCache,
     branches: branchesCache,
@@ -1108,7 +1117,7 @@ async function saveDataCache() {
     try { localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(payload)); } catch(e2) { /* storage full or unavailable — safe to skip */ }
   }
 }
-async function loadDataCache() {
+export async function loadDataCache() {
   var d = null;
   try { d = await idbGet(DATA_CACHE_KEY); } catch(e) { /* IndexedDB unavailable — fall through */ }
   if (!d) {
@@ -1124,14 +1133,14 @@ async function loadDataCache() {
     } catch(e) {}
   }
   if (!d || !Array.isArray(d.agencies)) return false;
-  agenciesCache = d.agencies || [];
-  branchesCache = d.branches || [];
-  vacanciesCache = d.vacancies || [];
-  staticVacanciesCache = d.allVacancies || d.vacancies || [];
-  generalVacancyCount = (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0;
+  set_agenciesCache( d.agencies || []);
+  set_branchesCache( d.branches || []);
+  set_vacanciesCache( d.vacancies || []);
+  set_staticVacanciesCache( d.allVacancies || d.vacancies || []);
+  set_generalVacancyCount( (typeof d.generalVacancyCount === 'number') ? d.generalVacancyCount : 0);
   cachedVacancyTotal = (typeof d.vacancyTotal === 'number') ? d.vacancyTotal : null;
-  employersCache = d.employers || [];
-  poolCandidateCount = (typeof d.poolCount === 'number') ? d.poolCount : 0;
+  set_employersCache( d.employers || []);
+  set_poolCandidateCount( (typeof d.poolCount === 'number') ? d.poolCount : 0);
   // Restore the cached poster total too, so the Posters stat card paints
   // instantly alongside the others instead of sitting on its placeholder
   // until the (deliberately deferred) live poster fetch resolves.
@@ -1140,10 +1149,10 @@ async function loadDataCache() {
   return true;
 }
 
-var startupDataPromise = null;
-var startupDataSource = '';
-var startupDataResolved = false;
-async function fetchStartupDataOnce() {
+export var startupDataPromise = null;
+export var startupDataSource = '';
+export var startupDataResolved = false;
+export async function fetchStartupDataOnce() {
   startupDataSource = '';
   var earlyStartup = window.__saStartupEarly;
   window.__saStartupEarly = null;
@@ -1183,8 +1192,8 @@ async function fetchStartupDataOnce() {
 // data/startup.json ships vacancies WITHOUT their `notes` (about half of its bytes) so the first
 // screen can render sooner. The descriptions live in data/vacancy-notes.json ({ id: notes }); we
 // fetch that at idle after first render and merge it into every in-memory vacancy list.
-var deferredNotesStarted = false;
-function applyDeferredVacancyNotes(map) {
+export var deferredNotesStarted = false;
+export function applyDeferredVacancyNotes(map) {
   var payload = window.__saStartupPayload;
   var lists = [
     payload && payload.vacancies,
@@ -1198,7 +1207,7 @@ function applyDeferredVacancyNotes(map) {
     });
   });
 }
-function scheduleDeferredVacancyNotes(startup) {
+export function scheduleDeferredVacancyNotes(startup) {
   if (!startup || !startup.notes_url || deferredNotesStarted) return;
   deferredNotesStarted = true;
   var refresh = function(attempt) {
@@ -1207,7 +1216,7 @@ function scheduleDeferredVacancyNotes(startup) {
     if (openCard && attempt < 6) { setTimeout(function() { refresh(attempt + 1); }, 2000); return; }
     if (typeof filterAndRenderCached === 'function') filterAndRenderCached();
     var screen = document.getElementById('screen-allvacancies');
-    if (screen && screen.classList.contains('active') && !openCard && typeof renderAllVacanciesList === 'function') renderAllVacanciesList();
+    if (screen && screen.classList.contains('active') && !openCard && typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList();
   };
   var run = function() {
     fetch(startup.notes_url, { method: 'GET', cache: 'no-cache', headers: { Accept: 'application/json' } })
@@ -1227,7 +1236,7 @@ function scheduleDeferredVacancyNotes(startup) {
   }, 300);
 }
 
-function getStartupData(forceFresh) {
+export function getStartupData(forceFresh) {
   if (forceFresh) {
     startupDataPromise = null;
     startupDataSource = '';
@@ -1242,17 +1251,17 @@ function getStartupData(forceFresh) {
   }, function(){ startupDataResolved = true; startupDataPromise = null; });
   return startupDataPromise;
 }
-async function refreshSecondaryStartupData() {
+export async function refreshSecondaryStartupData() {
   try {
     var employerRows = await getEmployerVacancies();
     var adzunaAgencyRows = await getAgencyAdzunaVacancies();
     var merged = (vacanciesCache || []).concat(employerRows || [], adzunaAgencyRows || []);
     var seen = {};
-    vacanciesCache = sortVacancies(merged.filter(function(v) {
+    set_vacanciesCache( sortVacancies(merged.filter(function(v) {
       if (!v || !v.id || seen[v.id]) return false;
       seen[v.id] = true;
       return !isGeneralDirectoryVacancy(v);
-    }));
+    })));
     matchVacanciesToAgencies(vacanciesCache, agenciesCache);
     filterAndRenderCached();
     saveDataCache();
@@ -1260,8 +1269,8 @@ async function refreshSecondaryStartupData() {
   try {
     var liveGeneralCount = await getGeneralVacancyCount();
     if (typeof liveGeneralCount === 'number') {
-      generalVacancyCount = liveGeneralCount;
-      generalVacancyCountLoaded = true;
+      set_generalVacancyCount( liveGeneralCount);
+      set_generalVacancyCountLoaded( true);
       updateStats();
       saveDataCache();
     }
@@ -1277,13 +1286,13 @@ async function refreshSecondaryStartupData() {
 (function loadPreAuthEmployerRegFlag() {
   getStartupData().then(function(startup) {
     if (startup && startup.settings) {
-      publicEmployerRegistrationOpen = (startup.settings.public_employer_registration === true || startup.settings.public_employer_registration === 'true');
+      set_publicEmployerRegistrationOpen( (startup.settings.public_employer_registration === true || startup.settings.public_employer_registration === 'true'));
     }
   }).catch(function(){});
 })();
 
-var loadAllRequestId = 0;
-async function loadAll(options) {
+export var loadAllRequestId = 0;
+export async function loadAll(options) {
   var requestId = ++loadAllRequestId;
   var forceFresh = !!(options && options.fresh);
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
@@ -1302,7 +1311,7 @@ async function loadAll(options) {
   var startup = await getStartupData(forceFresh);
   window.__saStartupPayload = startup;
   window.__saStaticData = (startup && startup.schema === 1 && Array.isArray(startup.vacancies)) ? startup : null;
-  if (window.__saStaticData) staticVacanciesCache = filterExpiredVacancies(startup.vacancies || []);
+  if (window.__saStaticData) set_staticVacanciesCache( filterExpiredVacancies(startup.vacancies || []));
   var authoritativeStartupVacancyTotal = startup && startup.counts && typeof startup.counts.vacancies === 'number'
     ? startup.counts.vacancies : null;
   if (authoritativeStartupVacancyTotal !== null) cachedVacancyTotal = authoritativeStartupVacancyTotal;
@@ -1344,26 +1353,26 @@ async function loadAll(options) {
   // make the directory look emptier than it did a moment ago. Track whether
   // anything failed so we can surface the retry banner below.
   var hadLoadError = false;
-  if (results[0].__loadError) { hadLoadError = true; } else { agenciesCache = results[0]; }
-  if (results[1].__loadError) { hadLoadError = true; } else { branchesCache = results[1]; }
+  if (results[0].__loadError) { hadLoadError = true; } else { set_agenciesCache( results[0]); }
+  if (results[1].__loadError) { hadLoadError = true; } else { set_branchesCache( results[1]); }
   if (results[2].__loadError) { hadLoadError = true; } else {
     // Resolve imported/general records against the agency directory before
     // splitting the startup cache from the lazy General Vacancies feed.
     results[2] = filterExpiredVacancies(results[2]);
     matchVacanciesToAgencies(results[2], agenciesCache);
-    vacanciesCache = sortVacancies((window.__saStaticData ? results[2] : results[2].filter(function(v){
+    set_vacanciesCache( sortVacancies((window.__saStaticData ? results[2] : results[2].filter(function(v){
       // General-folder rows are loaded lazily. Do not retain them here or
       // updateStats() would add them a second time to generalVacancyCount.
       return !isGeneralDirectoryVacancy(v);
-    })));
+    }))));
   }
-  if (results[3].__loadError) { hadLoadError = true; } else { employersCache = results[3]; }
-  if (typeof results[4] === 'number') { generalVacancyCount = results[4]; generalVacancyCountLoaded = true; }
+  if (results[3].__loadError) { hadLoadError = true; } else { set_employersCache( results[3]); }
+  if (typeof results[4] === 'number') { set_generalVacancyCount( results[4]); set_generalVacancyCountLoaded( true); }
   else if (results[4] === null) hadLoadError = true;
   // Not treated as a load error: the dedicated folder count badges are
   // cosmetic (they just label the folder cards), so a miss here shouldn't
   // trigger the retry banner the way a core data fetch failing would.
-  if (results[9] && typeof results[9] === 'object') { dedicatedVacancyCounts = results[9]; dedicatedVacancyCountsLoaded = true; }
+  if (results[9] && typeof results[9] === 'object') { set_dedicatedVacancyCounts( results[9]); set_dedicatedVacancyCountsLoaded( true); }
   if (authoritativeStartupVacancyTotal === null && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
     cachedVacancyTotal = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
   }
@@ -1371,12 +1380,12 @@ async function loadAll(options) {
   if (hadLoadError) { try { trackEvent('data_refresh_failed', 'data', null, { online: navigator.onLine !== false }); } catch(e) {} }
   if (!hadLoadError) lastDataRefreshAt = Date.now();
   setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
-  publicVacancyPostingOpen = (results[5] === true || results[5] === 'true');
-  publicEmployerRegistrationOpen = (results[6] === true || results[6] === 'true');
-  employerDirectoryOpen = (results[7] === true || results[7] === 'true');
+  set_publicVacancyPostingOpen( (results[5] === true || results[5] === 'true'));
+  set_publicEmployerRegistrationOpen( (results[6] === true || results[6] === 'true'));
+  set_employerDirectoryOpen( (results[7] === true || results[7] === 'true'));
   // Only overwrite the count if the query succeeded — a failed count fetch
   // should leave the last-known number on screen rather than dropping to 0.
-  if (typeof results[8] === 'number') poolCandidateCount = results[8];
+  if (typeof results[8] === 'number') set_poolCandidateCount( results[8]);
   // Sort employers: verified first, then alphabetical
   employersCache.sort(function(a,b){
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
@@ -1407,7 +1416,7 @@ async function loadAll(options) {
   // request.
   if (window.__saStaticData && !Array.isArray(startup.pool_candidates)) {
     getPoolCandidateCount().then(function (n) {
-      if (typeof n === 'number') { poolCandidateCount = n; updateStats(); }
+      if (typeof n === 'number') { set_poolCandidateCount( n); updateStats(); }
     }).catch(function () {});
   }
   filterAndRenderCached();
@@ -1435,12 +1444,12 @@ async function loadAll(options) {
   // If a pending manager token was detected before agencies loaded, enter manager mode now
   if (managerPendingToken) {
     var tok = managerPendingToken;
-    managerPendingToken = null;
+    set_managerPendingToken( null);
     enterManagerMode(tok);
   }
   if (employerManagerPendingToken) {
     var etok = employerManagerPendingToken;
-    employerManagerPendingToken = null;
+    set_employerManagerPendingToken( null);
     enterEmployerManagerMode(etok);
   }
   // If admin is viewing SMART MANAGER section, re-render it
@@ -1449,13 +1458,13 @@ async function loadAll(options) {
   }
 }
 
-function dedicatedVacancyGrandTotal() {
+export function dedicatedVacancyGrandTotal() {
   var c = dedicatedVacancyCounts || {};
   return (c.himalayas||0) + (c.adzuna||0) + (c.government||0) + (c.retail||0) + (c.learnerships||0) + (c.careers_page||0);
 }
 // Compact display for big totals: 16861 -> "16k", 1530 -> "1.5k". Rounds DOWN so the label never
 // overstates the real total. (To round to the nearest thousand instead, change Math.floor to Math.round.)
-function formatCompactCount(n) {
+export function formatCompactCount(n) {
   n = Number(n) || 0;
   if (n < 1000) return String(n);
   if (n < 10000) return (Math.floor(n / 100) / 10) + 'k';
@@ -1463,13 +1472,13 @@ function formatCompactCount(n) {
 }
 window.formatCompactCount = formatCompactCount;
 
-function setVacancyStat(el, total) {
+export function setVacancyStat(el, total) {
   el.textContent = formatCompactCount(total);
   el.setAttribute('data-count', total);          // exact number kept for card sorting
   el.title = Number(total).toLocaleString() + ' vacancies';
 }
 
-function updateStats() {
+export function updateStats() {
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   updatePosterStat();
   var vacancyStat = document.getElementById('stat-vacancies');
@@ -1501,7 +1510,7 @@ function updateStats() {
 // Uses a lightweight FLIP animation (record position -> reorder the DOM ->
 // offset back to the old spot -> animate to zero) so cards visibly glide
 // into their new place instead of jumping.
-function reorderStatCardsByCount() {
+export function reorderStatCardsByCount() {
   var container = document.getElementById('home-stats');
   if (!container) return;
   var cards = Array.prototype.slice.call(container.querySelectorAll('.stat-card'));
@@ -1552,7 +1561,7 @@ function reorderStatCardsByCount() {
 // pipeline finishes and funnelled into the same cards updateStats() owns,
 // so guests and signed-in users alike see live totals (the retired sign-in
 // gate used to own this fetch; the open app now does).
-function gateVacancyTotal(agencies, vacancies, counts) {
+export function gateVacancyTotal(agencies, vacancies, counts) {
   // Platform-wide total: general pool + agency-attributed +
   // dedicated-source (DPSA/retail/Adzuna/…) rows. counts.vacancies is
   // exactly that, computed server-side; fall back to the general count,
@@ -1568,8 +1577,8 @@ function gateVacancyTotal(agencies, vacancies, counts) {
 }
 
 
-function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
-function vacanciesFor(agencyId) {
+export function branchesFor(agencyId) { return branchesCache.filter(function(b){ return b.agency_id === agencyId; }); }
+export function vacanciesFor(agencyId) {
   // Adzuna rows explicitly assigned to an agency belong in that agency's
   // section as well as the Adzuna folder. Other dedicated feeds remain in
   // their dedicated folders unless explicitly handled by their own section.
@@ -1577,13 +1586,13 @@ function vacanciesFor(agencyId) {
     return v.agency_id === agencyId && (String(v.source_type || '').toLowerCase() === 'adzuna' || !isDedicatedVacancySource(v.source_type));
   }));
 }
-function vacanciesForEmployer(employerId) { return sortVacancies(vacanciesCache.filter(function(v){ return v.employer_id === employerId; })); }
+export function vacanciesForEmployer(employerId) { return sortVacancies(vacanciesCache.filter(function(v){ return v.employer_id === employerId; })); }
 
 // Best-effort parse of the free-text closing_date field (e.g. "26 August
 // 2026", "2026-08-26") into a timestamp. Returns null when it can't be
 // parsed (blank, "ASAP", etc.) so callers can push those to the end
 // instead of mis-sorting them.
-function parseClosingDate(str) {
+export function parseClosingDate(str) {
   if (!str) return null;
   var t = Date.parse(str);
   return isNaN(t) ? null : t;
@@ -1593,7 +1602,7 @@ function parseClosingDate(str) {
 // in the same batch/moment, where created_at ties — soonest closing date
 // first, so deadlines run in order rather than appearing scrambled.
 // Vacancies with no parseable closing date sort after ones that have one.
-function sortVacancies(list) {
+export function sortVacancies(list) {
   return list.slice().sort(function(a, b) {
     var ca = new Date(a.created_at || 0).getTime();
     var cb = new Date(b.created_at || 0).getTime();
@@ -1606,3 +1615,137 @@ function sortVacancies(list) {
     return da - db;
   });
 }
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+Object.assign(window, {
+  getAgencies,
+  saveManagerTokenToSupabase,
+  writeThroughD1Mirror,
+  upsertAgency,
+  removeAgency,
+  getEmployers,
+  safeHouseAdUrl,
+  houseAdPlacementMatches,
+  renderHouseAdSlot,
+  renderHouseAdSlots,
+  loadHouseAds,
+  trackHouseAdEvent,
+  getManagedPosters,
+  renderManagedPoster,
+  renderManagedPosters,
+  getPublicPoolCandidatesFromWorker,
+  loadCandidateSpotlight,
+  renderCandidateSpotlight,
+  upsertEmployer,
+  removeEmployer,
+  localKey,
+  readLocal,
+  writeLocal,
+  getBranches,
+  upsertBranch,
+  removeBranch,
+  getAppSetting,
+  setAppSetting,
+  loadPostingSetting,
+  updatePostingToggleUI,
+  loadEmployerRegSetting,
+  youtubeEmbedUrl,
+  renderHomeMediaSection,
+  loadMediaSetting,
+  todayISO,
+  loadTodayTrack,
+  renderTrackEmpty,
+  renderTrackReady,
+  toggleTrackPlay,
+  updateTrackPlayButtons,
+  onTrackLoaded,
+  updateTrackProgress,
+  onTrackEnded,
+  togglePublicPosting,
+  openVacancyLockedSheet,
+  openEmployerLockedSheet,
+  updatePosterStat,
+  getEmployerPosters,
+  parseVacancyClosingDate,
+  isVacancyExpired,
+  filterExpiredVacancies,
+  getVacancies,
+  getEmployerVacancies,
+  getAgencyAdzunaVacancies,
+  getGeneralVacancyCount,
+  getDedicatedVacancyCounts,
+  isDedicatedVacancySource,
+  isGeneralDirectoryVacancy,
+  hasAssignedAgency,
+  normalizeAgencyMatchText,
+  matchVacanciesToAgencies,
+  generalVacancyQueryState,
+  generalVacancyQueryKeyFor,
+  fetchVacancyPageFromWorker,
+  fetchGeneralVacancyPage,
+  fetchDedicatedVacancyPage,
+  upsertVacancy,
+  removeVacancy,
+  readLocalReports,
+  writeLocalReports,
+  submitReportToSupabase,
+  markLoadError,
+  openDataCacheDB,
+  idbGet,
+  idbSet,
+  formatDataAge,
+  vacancyScreenStateMarkup,
+  connectionStatusLabel,
+  setConnectionStatus,
+  initConnectionStatus,
+  saveDataCache,
+  loadDataCache,
+  fetchStartupDataOnce,
+  applyDeferredVacancyNotes,
+  scheduleDeferredVacancyNotes,
+  getStartupData,
+  refreshSecondaryStartupData,
+  loadAll,
+  dedicatedVacancyGrandTotal,
+  formatCompactCount,
+  setVacancyStat,
+  updateStats,
+  reorderStatCardsByCount,
+  gateVacancyTotal,
+  branchesFor,
+  vacanciesFor,
+  vacanciesForEmployer,
+  parseClosingDate,
+  sortVacancies,
+});
+Object.defineProperties(window, {
+  D1_WRITE_THROUGH_COLUMNS: { get: () => D1_WRITE_THROUGH_COLUMNS, set: (v) => { D1_WRITE_THROUGH_COLUMNS = v; }, configurable: true, enumerable: true },
+  houseAdsCache: { get: () => houseAdsCache, set: (v) => { houseAdsCache = v; }, configurable: true, enumerable: true },
+  publicPoolStartupPromise: { get: () => publicPoolStartupPromise, set: (v) => { publicPoolStartupPromise = v; }, configurable: true, enumerable: true },
+  candidateSpotlightLoaded: { get: () => candidateSpotlightLoaded, set: (v) => { candidateSpotlightLoaded = v; }, configurable: true, enumerable: true },
+  candidateSpotlightList: { get: () => candidateSpotlightList, set: (v) => { candidateSpotlightList = v; }, configurable: true, enumerable: true },
+  DEFAULT_MEDIA_YOUTUBE_URL: { get: () => DEFAULT_MEDIA_YOUTUBE_URL, set: (v) => { DEFAULT_MEDIA_YOUTUBE_URL = v; }, configurable: true, enumerable: true },
+  mediaYoutubeUrl: { get: () => mediaYoutubeUrl, set: (v) => { mediaYoutubeUrl = v; }, configurable: true, enumerable: true },
+  TRACKS_PUBLIC_BASE_URL: { get: () => TRACKS_PUBLIC_BASE_URL, set: (v) => { TRACKS_PUBLIC_BASE_URL = v; }, configurable: true, enumerable: true },
+  todayTrack: { get: () => todayTrack, set: (v) => { todayTrack = v; }, configurable: true, enumerable: true },
+  trackAudio: { get: () => trackAudio, set: (v) => { trackAudio = v; }, configurable: true, enumerable: true },
+  trackIsPlaying: { get: () => trackIsPlaying, set: (v) => { trackIsPlaying = v; }, configurable: true, enumerable: true },
+  posterTotalCount: { get: () => posterTotalCount, set: (v) => { posterTotalCount = v; }, configurable: true, enumerable: true },
+  DEDICATED_VACANCY_FOLDER_SOURCES: { get: () => DEDICATED_VACANCY_FOLDER_SOURCES, set: (v) => { DEDICATED_VACANCY_FOLDER_SOURCES = v; }, configurable: true, enumerable: true },
+  DATA_CACHE_DB: { get: () => DATA_CACHE_DB, set: (v) => { DATA_CACHE_DB = v; }, configurable: true, enumerable: true },
+  DATA_CACHE_STORE: { get: () => DATA_CACHE_STORE, set: (v) => { DATA_CACHE_STORE = v; }, configurable: true, enumerable: true },
+  DATA_CACHE_KEY: { get: () => DATA_CACHE_KEY, set: (v) => { DATA_CACHE_KEY = v; }, configurable: true, enumerable: true },
+  lastDataRefreshAt: { get: () => lastDataRefreshAt, set: (v) => { lastDataRefreshAt = v; }, configurable: true, enumerable: true },
+  cachedVacancyTotal: { get: () => cachedVacancyTotal, set: (v) => { cachedVacancyTotal = v; }, configurable: true, enumerable: true },
+  startupDataPromise: { get: () => startupDataPromise, set: (v) => { startupDataPromise = v; }, configurable: true, enumerable: true },
+  startupDataSource: { get: () => startupDataSource, set: (v) => { startupDataSource = v; }, configurable: true, enumerable: true },
+  startupDataResolved: { get: () => startupDataResolved, set: (v) => { startupDataResolved = v; }, configurable: true, enumerable: true },
+  deferredNotesStarted: { get: () => deferredNotesStarted, set: (v) => { deferredNotesStarted = v; }, configurable: true, enumerable: true },
+  loadAllRequestId: { get: () => loadAllRequestId, set: (v) => { loadAllRequestId = v; }, configurable: true, enumerable: true },
+});

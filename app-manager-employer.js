@@ -2,20 +2,30 @@
  * SA Recruiters -- app.js split 8/8: app-manager-employer.js
  * Employer self-service Manager Mode, alert unsubscribe, URL manager-token detection, idle refresh, PWA shortcut handling
  *
- * Part of the original monolithic app.js, mechanically split and kept as
- * classic (non-module) scripts loaded in this exact order via <script defer>
- * in index.html, so all functions/vars stay on one shared global scope
- * exactly as before. Do not reorder these files relative to one another.
+ * Part of the original monolithic app.js. Now an ES module: it imports what it
+ * uses from the other app-*.js files and exports its top-level declarations.
+ * A window bridge at the bottom keeps inline onclick="" handlers and the
+ * classic scripts (app-vacancy-v2.js, app-alerts.js, content*.js) working.
+ * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
+
+import { employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, initials, isAdmin, loadSavedVacanciesFromSupabase, managerEmployer, managerPendingToken, markAppDataReady, resetGuestQuotaIfNewDay, saAuthUser, set_employerManagerMode, set_employerManagerPendingToken, set_managerEmployer, set_managerPendingToken, startAuthenticatedApp, supabaseClient, trackEvent } from './app-core.js';
+import { initConnectionStatus, loadAll, loadDataCache, loadTodayTrack, updateStats, vacanciesForEmployer, vacancyScreenStateMarkup } from './app-data.js';
+import { ICON_LINK, IS, filterAndRenderCached, verifiedBadge } from './app-cards.js';
+import { openEmployerVacancySheet, openGeneralVacancySheet } from './app-forms.js';
+import { loadSocialLinks, openSuggestionSheet } from './app-sheets.js';
+import { openDeepLinkedSection, renderRestoredScreenContent, showToast } from './app-ui.js';
+import { enterManagerMode, managerSession, managerStatusWatchdog, set_managerStatusWatchdog, set_managerTokenKind, showManagerStatus, verifyManagerTokenServer } from './app-manager.js';
+
 
 // ===== EMPLOYER MANAGER MODE (employer self-service, vacancies only) =====
 // Mirrors the agency manager mode above, but scoped to a single employer's
 // vacancies via ?manage_employer=TOKEN. Employers can add vacancies for
 // themselves here; everything else (contact details, verification) stays
 // admin-controlled. Once saved, a vacancy is read-only from this screen.
-var employerManagerTokenRetries = 0;
-var EMPLOYER_MANAGER_TOKEN_MAX_RETRIES = 2;
-async function enterEmployerManagerMode(token) {
+export var employerManagerTokenRetries = 0;
+export var EMPLOYER_MANAGER_TOKEN_MAX_RETRIES = 2;
+export async function enterEmployerManagerMode(token) {
   if (!employerManagerMode) showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
   // Fast path: an already-resolved session for this token.
   if (managerSession.employerId && managerSession.employerToken === token) {
@@ -28,21 +38,21 @@ async function enterEmployerManagerMode(token) {
   if (!record) {
     if (employerManagerTokenRetries < EMPLOYER_MANAGER_TOKEN_MAX_RETRIES) {
       employerManagerTokenRetries++;
-      employerManagerPendingToken = token;
-      managerTokenKind = 'employer';
+      set_employerManagerPendingToken( token);
+      set_managerTokenKind( 'employer');
       var backoff = 1500 + employerManagerTokenRetries * 800;
       bumpManagerWatchdog(backoff + 8000);
       setTimeout(function(){
         if (employerManagerPendingToken) {
-          employerManagerPendingToken = null;
+          set_employerManagerPendingToken( null);
           enterEmployerManagerMode(token);
         }
       }, backoff);
       return false;
     }
     employerManagerTokenRetries = 0;
-    employerManagerPendingToken = null;
-    managerTokenKind = null;
+    set_employerManagerPendingToken( null);
+    set_managerTokenKind( null);
     showManagerStatus('error',
       'This management link is invalid or expired',
       'We couldn\'t find a company for this link. It may have expired or been replaced. Please request a new link from SA Recruiters, or try again in case the connection was interrupted.');
@@ -53,16 +63,16 @@ async function enterEmployerManagerMode(token) {
   managerSession.employerName = record.name;
   managerSession.employerLocation = record.location;
   employerManagerTokenRetries = 0;
-  employerManagerPendingToken = null;
-  managerTokenKind = null;
+  set_employerManagerPendingToken( null);
+  set_managerTokenKind( null);
   clearTimeout(managerStatusWatchdog);
   var employer = employersCache.find(function(e){ return e.id === record.id; }) ||
     { id: record.id, name: record.name || 'Company', location: record.location || '', verified: !!record.verified };
   return openEmployerManagerScreen(employer, token);
 }
-function openEmployerManagerScreen(employer, token) {
-  employerManagerMode = true;
-  managerEmployer = employer;
+export function openEmployerManagerScreen(employer, token) {
+  set_employerManagerMode( true);
+  set_managerEmployer( employer);
   // Keep the token on the in-memory record so writes authorize server-side.
   managerEmployer.manage_token = token;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -75,10 +85,10 @@ function openEmployerManagerScreen(employer, token) {
   renderEmployerManagerMode();
   return true;
 }
-function exitEmployerManagerMode() {
-  employerManagerMode = false;
-  managerEmployer = null;
-  employerManagerPendingToken = null;
+export function exitEmployerManagerMode() {
+  set_employerManagerMode( false);
+  set_managerEmployer( null);
+  set_employerManagerPendingToken( null);
   managerSession.employerId = null;
   managerSession.employerToken = null;
   if (window.history && window.history.replaceState) {
@@ -93,7 +103,7 @@ function exitEmployerManagerMode() {
   document.getElementById('screen-home').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'home'); });
 }
-function renderEmployerManagerMode() {
+export function renderEmployerManagerMode() {
   if (!employerManagerMode || !managerEmployer) return;
   renderManagerEmployerProfile();
   var vacancies = vacanciesForEmployer(managerEmployer.id);
@@ -111,7 +121,7 @@ function renderEmployerManagerMode() {
 }
 // Same idea as renderManagerAgencyProfile(), scoped to the employer
 // self-service screen (?manage_employer=TOKEN).
-function renderManagerEmployerProfile() {
+export function renderManagerEmployerProfile() {
   var el = document.getElementById('manager-employer-profile');
   if (!el || !managerEmployer) return;
   var e = managerEmployer;
@@ -133,12 +143,12 @@ function renderManagerEmployerProfile() {
     '</div>' +
     (rows || '<div class="manager-item-sub">No contact details on file yet.</div>');
 }
-function managerEmployerAddVacancy() {
+export function managerEmployerAddVacancy() {
   if (!managerEmployer) return;
   openEmployerVacancySheet(managerEmployer.id);
 }
 // ===== Talent Pool email-alert unsubscribe =====
-async function processAlertUnsubscribe() {
+export async function processAlertUnsubscribe() {
   var token = new URLSearchParams(window.location.search).get('unsubscribe');
   if (!token) return;
   try {
@@ -161,22 +171,22 @@ async function processAlertUnsubscribe() {
 // the error screen showed up before the app had even finished trying — which
 // is why "Try again" kept appearing on slow connections. Every retry now
 // pushes this watchdog forward instead of racing it.
-function bumpManagerWatchdog(delayMs) {
+export function bumpManagerWatchdog(delayMs) {
   clearTimeout(managerStatusWatchdog);
-  managerStatusWatchdog = setTimeout(function() {
+  set_managerStatusWatchdog( setTimeout(function() {
     if (managerPendingToken || employerManagerPendingToken) {
       showManagerStatus('error',
         'Couldn\'t load your manager link',
         'We weren\'t able to reach SA Recruiters. Please check your connection and try again.');
     }
-  }, delayMs);
+  }, delayMs));
 }
 
 // Fast-path token resolution is now server-side: enterManagerMode /
 // enterEmployerManagerMode call verifyManagerTokenServer() directly, so there
 // is nothing useful to pre-fetch here. Kept as a no-op for compatibility with
 // older retry timers that may still reference it.
-async function fastResolveManagerToken() { /* resolution is server-side now */ }
+export async function fastResolveManagerToken() { /* resolution is server-side now */ }
 
 // ===== Detect manager mode from URL (?manage=TOKEN or ?manage_employer=TOKEN) =====
 (function detectManagerMode() {
@@ -191,13 +201,13 @@ async function fastResolveManagerToken() { /* resolution is server-side now */ }
   }
   if (token) {
     // Agencies aren't loaded yet; set pending token — loadAll() will enter manager mode
-    managerPendingToken = token;
-    managerTokenKind = 'agency';
+    set_managerPendingToken( token);
+    set_managerTokenKind( 'agency');
   }
   if (empToken) {
     // Employers aren't loaded yet; set pending token — loadAll() will enter employer manager mode
-    employerManagerPendingToken = empToken;
-    managerTokenKind = 'employer';
+    set_employerManagerPendingToken( empToken);
+    set_managerTokenKind( 'employer');
   }
   // If a manager token is present in the URL, immediately take over the
   // screen with the manager-link status view. This prevents the normal home
@@ -215,7 +225,7 @@ async function fastResolveManagerToken() { /* resolution is server-side now */ }
   }
 })();
 
-function bootAuthenticatedApp() {
+export function bootAuthenticatedApp() {
 // Paint immediately from whatever was cached on the last successful load
 // (if any), then loadAll() below fetches fresh data in the background and
 // silently re-renders once it lands — so repeat visits never show a blank
@@ -351,8 +361,33 @@ startAuthenticatedApp(bootAuthenticatedApp);
 
 
 // Public Talent Pool cards use their own toggle so expanded details stay hidden until opened.
-function togglePoolCard(card){
+export function togglePoolCard(card){
   if (!card) return;
   var expanded = card.classList.toggle('expanded');
   card.setAttribute('aria-expanded', expanded ? 'true' : 'false');
 }
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+Object.assign(window, {
+  enterEmployerManagerMode,
+  openEmployerManagerScreen,
+  exitEmployerManagerMode,
+  renderEmployerManagerMode,
+  renderManagerEmployerProfile,
+  managerEmployerAddVacancy,
+  processAlertUnsubscribe,
+  bumpManagerWatchdog,
+  fastResolveManagerToken,
+  bootAuthenticatedApp,
+  togglePoolCard,
+});
+Object.defineProperties(window, {
+  employerManagerTokenRetries: { get: () => employerManagerTokenRetries, set: (v) => { employerManagerTokenRetries = v; }, configurable: true, enumerable: true },
+  EMPLOYER_MANAGER_TOKEN_MAX_RETRIES: { get: () => EMPLOYER_MANAGER_TOKEN_MAX_RETRIES, set: (v) => { EMPLOYER_MANAGER_TOKEN_MAX_RETRIES = v; }, configurable: true, enumerable: true },
+});

@@ -2,27 +2,34 @@
  * SA Recruiters -- app.js split 3/8: app-cards.js
  * Hub cards (agency/employer), talent pool access gating, search screen, vacancy card rendering
  *
- * Part of the original monolithic app.js, mechanically split and kept as
- * classic (non-module) scripts loaded in this exact order via <script defer>
- * in index.html, so all functions/vars stay on one shared global scope
- * exactly as before. Do not reorder these files relative to one another.
+ * Part of the original monolithic app.js. Now an ES module: it imports what it
+ * uses from the other app-*.js files and exports its top-level declarations.
+ * A window bridge at the bottom keeps inline onclick="" handlers and the
+ * classic scripts (app-vacancy-v2.js, app-alerts.js, content*.js) working.
+ * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
+import { agenciesCache, analyticsSessionId, branchesCache, employerDirectoryOpen, employersCache, escapeHtml, guestViewsRemaining, initials, isAdmin, publicAgencySlug, publicVacancySlug, registerVacancyOpen, saAuthUser, savedSet, set_talentPoolVerified, staticVacanciesCache, supabaseClient, syncSavedVacancy, talentPoolVerified, trackEvent, vacanciesCache } from './app-core.js';
+import { branchesFor, getEmployerPosters, isVacancyExpired, renderHouseAdSlots, vacanciesFor, vacanciesForEmployer, vacancyScreenStateMarkup } from './app-data.js';
+import { closeSheet } from './app-sheets.js';
+import { renderHomeFeaturedPoster, renderHomeFeed, showAllVacancies, showToast, syncPreciseLocationChip } from './app-ui.js';
+
+
 // ===== Shared verified badge (one look for every section) =====
-var VERIFIED_SEAL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2l2.4 2.1 3.2-.2 1 3 2.7 1.8-.9 3.1.9 3.1-2.7 1.8-1 3-3.2-.2L12 22l-2.4-2.1-3.2.2-1-3-2.7-1.8.9-3.1-.9-3.1 2.7-1.8 1-3 3.2.2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-function verifiedBadge(title, withLabel) {
+export var VERIFIED_SEAL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2l2.4 2.1 3.2-.2 1 3 2.7 1.8-.9 3.1.9 3.1-2.7 1.8-1 3-3.2-.2L12 22l-2.4-2.1-3.2.2-1-3-2.7-1.8.9-3.1-.9-3.1 2.7-1.8 1-3 3.2.2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+export function verifiedBadge(title, withLabel) {
   title = title || 'Verified';
   var badge = '<span class="verified-check" role="img" title="' + title + '" aria-label="' + title + '">' + VERIFIED_SEAL_SVG + '</span>';
   return withLabel ? '<span class="verified-tag">' + badge + '<span>' + (withLabel === true ? 'Verified' : withLabel) + '</span></span>' : badge;
 }
 
 // ===== Hub card (agency) =====
-function avatarHtml(a) {
+export function avatarHtml(a) {
   if (a.photo) return '<div class="avatar"><img src="' + a.photo + '" alt="" loading="lazy" decoding="async" width="42" height="42"></div>';
   return '<div class="avatar">' + initials(a.name) + '</div>';
 }
 
-function hubCard(a) {
+export function hubCard(a) {
   var bCount = branchesFor(a.id).length;
   var headOfficeLocation = (a.location || a.address || '').trim();
   var verifiedCheck = a.verified ? '' + verifiedBadge('Verified') + '' : '';
@@ -60,7 +67,7 @@ function hubCard(a) {
   '</div>';
 }
 
-function hubVacancies(a) {
+export function hubVacancies(a) {
   var list = vacanciesFor(a.id);
   var html = '<div class="hub-list" style="padding:4px 0;">';
   if (!list.length) {
@@ -68,7 +75,7 @@ function hubVacancies(a) {
   } else {
     list.forEach(function(v) {
       /* Use the new expandable vacancy card (agency vacancies show the agency photo) */
-      html += vacancyCard(v, a);
+      html += window.vacancyCard(v, a);
       if (isAdmin) {
         html += '<div style="text-align:right;margin:-4px 0 10px;"><button class="hub-row-del" data-ripple onclick="deleteVacancy(\'' + v.id + '\',\'' + a.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>';
       }
@@ -81,7 +88,7 @@ function hubVacancies(a) {
   return html;
 }
 
-function hubBranches(a) {
+export function hubBranches(a) {
   var list = branchesFor(a.id);
   var html = '';
   if (!list.length) {
@@ -123,7 +130,7 @@ function hubBranches(a) {
   return html;
 }
 
-function hubContact(a) {
+export function hubContact(a) {
   var ICON_SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
   var html = '<div class="det-plain">';
   var headOfficeAddress = a.address || a.location || '';
@@ -148,7 +155,7 @@ function hubContact(a) {
   return html;
 }
 
-function hubCountBadge(icon, count, noun) {
+export function hubCountBadge(icon, count, noun) {
   var label = count + ' ' + noun + (count === 1 ? '' : noun === 'branch' ? 'es' : 's');
   if (noun === 'vacancy') label = count + (count === 1 ? ' vacancy' : ' vacancies');
   var employerClass = (noun === 'job' || noun === 'poster') ? ' hub-employer-count' : '';
@@ -160,7 +167,7 @@ function hubCountBadge(icon, count, noun) {
 // employers only ever appear in the Employers section, and posting a
 // vacancy from here tags it with employer_id so it also shows in the
 // main Vacancies list/section.
-function employerHubCard(e) {
+export function employerHubCard(e) {
   var vCount = typeof e.vacancy_count === 'number' ? e.vacancy_count : vacanciesForEmployer(e.id).length;
   var pCount = postersForEmployer(e.id).length;
   var verifiedCheck = e.verified ? '' + verifiedBadge('Verified') + '' : '';
@@ -191,14 +198,14 @@ function employerHubCard(e) {
   '</div>';
 }
 
-function employerHubVacancies(e) {
+export function employerHubVacancies(e) {
   var list = vacanciesForEmployer(e.id);
   var html = '';
   if (!list.length) {
     html += vacancyScreenStateMarkup('employer', false, false);
   } else {
     list.forEach(function(v) {
-      html += vacancyCard(v, {});
+      html += window.vacancyCard(v, {});
       if (isAdmin) {
         html += '<div style="text-align:right;margin:-4px 0 10px;"><button class="hub-row-del" data-ripple onclick="deleteGeneralVacancy(\'' + v.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>';
       }
@@ -214,7 +221,7 @@ function employerHubVacancies(e) {
 
 // Posters are kept apart from vacancies: they have their own tab and never
 // appear in the Vacancies tab above.
-function employerHubPosters(e) {
+export function employerHubPosters(e) {
   var list = postersForEmployer(e.id);
   var html = '<div class="poster-list" style="padding:4px 0;">';
   if (!list.length) html += '<div class="poster-feed-empty">No posters from this employer yet.</div>';
@@ -226,7 +233,7 @@ function employerHubPosters(e) {
   return html;
 }
 
-function employerHubContact(e) {
+export function employerHubContact(e) {
   var html = '<div class="det-plain">';
   if (e.contact) html += '<div class="det-row"><span class="det-label">Contact:</span> ' + telLink(e.contact) + '</div>';
   if (e.email) html += '<div class="det-row"><span class="det-label">Email:</span> ' + mailLink(e.email) + '</div>';
@@ -275,30 +282,30 @@ window.switchEmpHubTab = function(btn, employerId, tab) {
   if (tab === 'contact') target.innerHTML = employerHubContact(e);
 };
 
-var directoryReturnScreen = 'home';
+export var directoryReturnScreen = 'home';
 
-function talentPoolIdentityRecord() {
+export function talentPoolIdentityRecord() {
   try { return JSON.parse(localStorage.getItem('sa_pool_identity') || 'null'); } catch(e) { return null; }
 }
-function hasTalentPoolAccess() {
+export function hasTalentPoolAccess() {
   return employerDirectoryOpen || talentPoolVerified;
 }
-function rememberTalentPoolIdentity(phone, email) {
+export function rememberTalentPoolIdentity(phone, email) {
   try { localStorage.setItem('sa_pool_identity', JSON.stringify({ phone: phone || '', email: email || '' })); } catch(e) {}
 }
-async function verifyTalentPoolMembership(phone, email, quiet) {
+export async function verifyTalentPoolMembership(phone, email, quiet) {
   phone = (phone || '').trim(); email = (email || '').trim().toLowerCase();
   if (!phone || !email) { if (!quiet) showToast('Enter the email and phone number used for Talent Pool registration.'); return false; }
   try {
     var result = await supabaseClient.rpc('verify_talent_pool_access', { p_email: email, p_phone: phone });
     if (result.error) { console.error('Talent Pool verification', result.error); if (!quiet) showToast('Membership verification is not configured yet. Run CREATE_TALENT_POOL_ACCESS.sql in Supabase.'); return false; }
-    talentPoolVerified = result.data === true;
+    set_talentPoolVerified( result.data === true);
     if (talentPoolVerified) rememberTalentPoolIdentity(phone, email);
     else if (!quiet) showToast('We could not verify that Talent Pool registration. Check your details.');
     return talentPoolVerified;
   } catch(e) { if (!quiet) showToast('Could not verify Talent Pool membership right now.'); return false; }
 }
-async function restoreTalentPoolMembership() {
+export async function restoreTalentPoolMembership() {
   if (employerDirectoryOpen) return;
   var identity = talentPoolIdentityRecord();
   if (identity) await verifyTalentPoolMembership(identity.phone, identity.email, true);
@@ -308,7 +315,7 @@ async function restoreTalentPoolMembership() {
 // row to their account on first sign-in via candidate_claim_profile —
 // matching the email + phone they registered with. Quiet on any failure;
 // openMyPoolProfile() remains the manual fallback.
-async function autoClaimGateRegistration() {
+export async function autoClaimGateRegistration() {
   if (!saAuthUser || !supabaseClient) return;
   try { if (localStorage.getItem('sa_gate_registration_pending') !== 'pending') return; } catch(e) { return; }
   var identity = talentPoolIdentityRecord();
@@ -318,7 +325,7 @@ async function autoClaimGateRegistration() {
     if (!claim.error && claim.data) { try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e){} }
   } catch(e) { /* manual link via My Talent Pool profile still works */ }
 }
-function openEmployerDirectoryAccessMessage() {
+export function openEmployerDirectoryAccessMessage() {
   var sheet = document.getElementById('employer-directory-locked-overlay');
   var identity = talentPoolIdentityRecord();
   var phone = document.getElementById('employer-access-phone');
@@ -328,7 +335,7 @@ function openEmployerDirectoryAccessMessage() {
   if (sheet) sheet.classList.add('open');
   else showToast('Please verify your Talent Pool registration first to browse employers and employer vacancies.');
 }
-async function verifyEmployerDirectoryAccess() {
+export async function verifyEmployerDirectoryAccess() {
   var phone = (document.getElementById('employer-access-phone') || {}).value || '';
   var email = (document.getElementById('employer-access-email') || {}).value || '';
   var ok = await verifyTalentPoolMembership(phone, email, false);
@@ -338,13 +345,13 @@ async function verifyEmployerDirectoryAccess() {
     showAllEmployers();
   }
 }
-function requireEmployerDirectoryAccess() {
+export function requireEmployerDirectoryAccess() {
   if (employerDirectoryOpen || talentPoolVerified) return true;
   openEmployerDirectoryAccessMessage();
   return false;
 }
 
-function showAllEmployers() {
+export function showAllEmployers() {
   if (!requireEmployerDirectoryAccess()) return;
   directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -354,7 +361,7 @@ function showAllEmployers() {
   renderAllEmployersList();
 }
 
-function renderAllEmployersList() {
+export function renderAllEmployersList() {
   var q = ((document.getElementById('allemployers-search')||{}).value || '').trim().toLowerCase();
   syncPreciseLocationChip('allemployers', q);
   var el = document.getElementById('allemployers-list');
@@ -376,7 +383,7 @@ function renderAllEmployersList() {
   renderHouseAdSlots();
 }
 
-function prefIcon(pref) {
+export function prefIcon(pref) {
   var p = (pref||'').toLowerCase();
   if (p === 'whatsapp') return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg>';
   if (p === 'email') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
@@ -384,57 +391,57 @@ function prefIcon(pref) {
   if (p === 'walk-in') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
   return '';
 }
-function mailLink(email) {
+export function mailLink(email) {
   // email may contain multiple comma separated
   var first = email.split(',')[0].trim();
   return '<a href="mailto:' + escapeHtml(first) + '" class="contact-link">' + escapeHtml(email) + '</a>';
 }
-function webLink(url) {
+export function webLink(url) {
   var href = url;
   if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
   return '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener" class="contact-link">' + escapeHtml(url) + '</a>';
 }
-function telLink(phone) {
+export function telLink(phone) {
   // Extract first phone number, strip non-dial chars for tel:
   var raw = phone.split(',')[0].trim();
   var dial = raw.replace(/[^\d+]/g, '');
   if (dial.charAt(0) === '0' && dial.length > 9) dial = '+27' + dial.substring(1);
   return '<a href="tel:' + escapeHtml(dial) + '" class="contact-link">' + escapeHtml(phone) + '</a>';
 }
-function mapsLink(location) {
+export function mapsLink(location) {
   var href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(location);
   return '<a href="' + href + '" target="_blank" rel="noopener" class="contact-link">' + escapeHtml(location) + '</a>';
 }
 
-var ICON_CHEVRON = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-var STAR_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+export var ICON_CHEVRON = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+export var STAR_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
 
 /* ── Modern flat black-and-white icon set (currentColor, 2px stroke) ── */
-var IS = ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
-var ICON_LOCK    = '<svg viewBox="0 0 24 24"' + IS + '><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-var ICON_UNLOCK  = '<svg viewBox="0 0 24 24"' + IS + '><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
-var ICON_LINK    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>';
-var ICON_CHAT    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg>';
-var ICON_HEART   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
-var ICON_FLAG    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg>';
-var ICON_BOOK    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg>';
-var ICON_DOC     = '<svg viewBox="0 0 24 24"' + IS + '><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg>';
-var ICON_SPARKLE = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg>';
-var ICON_MIC     = '<svg viewBox="0 0 24 24"' + IS + '><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
-var ICON_SCALES  = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg>';
-var ICON_HELP    = '<svg viewBox="0 0 24 24"' + IS + '><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg>';
-var ICON_PIN     = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
-var ICON_BRIEFCASE = '<svg viewBox="0 0 24 24"' + IS + '><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>';
-var ICON_BUILDING = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M14 21V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v12M4 21h16"/><path d="M7 7h2M7 11h2M7 15h2"/></svg>';
-var ICON_PHONE   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>';
-var ICON_MAIL    = '<svg viewBox="0 0 24 24"' + IS + '><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
-var ICON_WARN    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
-var ICON_CHECK   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M20 6L9 17l-5-5"/></svg>';
-var ICON_CLOSE   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M18 6L6 18M6 6l12 12"/></svg>';
+export var IS = ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+export var ICON_LOCK    = '<svg viewBox="0 0 24 24"' + IS + '><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+export var ICON_UNLOCK  = '<svg viewBox="0 0 24 24"' + IS + '><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
+export var ICON_LINK    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>';
+export var ICON_CHAT    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg>';
+export var ICON_HEART   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
+export var ICON_FLAG    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg>';
+export var ICON_BOOK    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5H6.5A2.5 2.5 0 0 0 4 19.5z"/></svg>';
+export var ICON_DOC     = '<svg viewBox="0 0 24 24"' + IS + '><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg>';
+export var ICON_SPARKLE = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg>';
+export var ICON_MIC     = '<svg viewBox="0 0 24 24"' + IS + '><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+export var ICON_SCALES  = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg>';
+export var ICON_HELP    = '<svg viewBox="0 0 24 24"' + IS + '><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg>';
+export var ICON_PIN     = '<svg viewBox="0 0 24 24"' + IS + '><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+export var ICON_BRIEFCASE = '<svg viewBox="0 0 24 24"' + IS + '><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>';
+export var ICON_BUILDING = '<svg viewBox="0 0 24 24"' + IS + '><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M14 21V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v12M4 21h16"/><path d="M7 7h2M7 11h2M7 15h2"/></svg>';
+export var ICON_PHONE   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>';
+export var ICON_MAIL    = '<svg viewBox="0 0 24 24"' + IS + '><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+export var ICON_WARN    = '<svg viewBox="0 0 24 24"' + IS + '><path d="M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+export var ICON_CHECK   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M20 6L9 17l-5-5"/></svg>';
+export var ICON_CLOSE   = '<svg viewBox="0 0 24 24"' + IS + '><path d="M18 6L6 18M6 6l12 12"/></svg>';
 /* Wrap an icon for a 18px menu slot */
-function miSvg(svg) { return '<span class="mi-icon">' + svg + '</span>'; }
+export function miSvg(svg) { return '<span class="mi-icon">' + svg + '</span>'; }
 /* Small inline icon (12-14px) for stats / sub-text */
-function tinySvg(svg) { return '<span class="ti">' + svg + '</span>'; }
+export function tinySvg(svg) { return '<span class="ti">' + svg + '</span>'; }
 
 window.switchHubTab = function(btn, agencyId, tab) {
   btn.parentElement.querySelectorAll('.hub-tab').forEach(function(t){ t.classList.remove('active'); });
@@ -468,17 +475,17 @@ window.toggleHub = function(id) {
   }
 };
 
-var AGENCY_RENDER_BATCH_SIZE = 20;
-var agencyRenderGeneration = 0;
-var homeSearchTimer = 0;
-function scheduleCachedSearch() {
+export var AGENCY_RENDER_BATCH_SIZE = 20;
+export var agencyRenderGeneration = 0;
+export var homeSearchTimer = 0;
+export function scheduleCachedSearch() {
   if (homeSearchTimer) clearTimeout(homeSearchTimer);
   homeSearchTimer = setTimeout(function() {
     homeSearchTimer = 0;
     filterAndRenderCached();
   }, 80);
 }
-function renderAgencyBatch(list, generation, offset) {
+export function renderAgencyBatch(list, generation, offset) {
   if (generation !== agencyRenderGeneration) return;
   var target = document.getElementById('hub-list');
   if (!target) return;
@@ -496,13 +503,13 @@ function renderAgencyBatch(list, generation, offset) {
 
 
 // ===== Home feed (jobs-first landing; agency list only shows while searching) =====
-function homeFeedIndustry(v) {
+export function homeFeedIndustry(v) {
   var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
   var raw = [v.industry, v.sector, v.category, agency.trades].filter(Boolean).join(',');
   var first = raw.split(/[,|;\/]+/).map(function(x){ return x.trim(); }).filter(Boolean)[0];
   return first || 'General';
 }
-function homeFeedJobs() {
+export function homeFeedJobs() {
   var seen = {}, out = [];
   (vacanciesCache || []).forEach(function(v) {
     if (!v || seen[v.id] || isVacancyExpired(v)) return;
@@ -512,7 +519,7 @@ function homeFeedJobs() {
 }
 // Category titles come from the roles actually in the app (grouped from live vacancy titles);
 // each opens the vacancies screen searching its main keyword.
-var HOME_CATEGORIES = [
+export var HOME_CATEGORIES = [
   { name: 'Sales & Retail', hint: 'Cashier, sales rep', q: 'sales', icon: '▤' },
   { name: 'Engineering & Technical', hint: 'Technician, artisan', q: 'engineer', icon: '⚙' },
   { name: 'Admin & Clerical', hint: 'Admin clerk, receptionist', q: 'admin', icon: '▦' },
@@ -524,42 +531,12 @@ window.openHomeCategory = function(i) {
   var c = HOME_CATEGORIES[i]; if (!c) return;
   showAllVacancies();
   var box = document.getElementById('allvacancies-search');
-  if (box) { box.value = c.q; if (typeof renderAllVacanciesList === 'function') renderAllVacanciesList(); }
+  if (box) { box.value = c.q; if (typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList(); }
 };
-var homeFeedRetry = 0;
-function renderHomeFeed() {
-  var el = document.getElementById('home-feed');
-  if (!el) return;
-  var jobs = homeFeedJobs();
-  var activeCount = (vacanciesCache || []).filter(function(v){ return v && !isVacancyExpired(v); }).length;
-  var sum = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
-  var html = '';
-  if (sum) {
-    html += '<section class="hf-section hf-sources" aria-labelledby="home-sources-title"><div class="hf-head"><h2 id="home-sources-title">Browse by source</h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div><div class="hf-source-grid">' +
-      sum.order.map(function(t){ return '<button type="button" class="hf-source-card" data-ripple onclick="openVacancyFolder(\'' + t + '\')"><span class="hf-category-icon">' + sum.icons[t] + '</span><span><strong>' + escapeHtml(sum.labels[t]) + '</strong><small>' + (sum.ready ? sum.counts[t].toLocaleString() + ' role' + (sum.counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></section>';
-    if (!sum.ready && homeFeedRetry++ < 12) setTimeout(function(){ if (!document.getElementById('home-search').value) renderHomeFeed(); }, 1500);
-  }
-  html += '<section class="hf-section hf-available" aria-labelledby="home-available-title">' +
-    '<div class="hf-head"><h2 id="home-available-title">Available roles <span>(' + activeCount + ' active)</span></h2><button type="button" class="hf-link" onclick="showAllVacancies()">See all →</button></div>';
-  html += jobs.length ? '<div class="hf-vacancy-rail">' + jobs.map(function(v) {
-    var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
-    return vacancyCard(v, agency);
-  }).join('') + '</div>' : '<p class="hf-empty">Loading live vacancies…</p>';
-  html += '</section>';
-  html += '<section class="hf-actions" aria-label="Quick actions">' +
-    '<button type="button" data-ripple onclick="openPoolRegisterSheet()"><span class="hf-action-icon">▤</span><strong>Upload your CV</strong></button>' +
-    '<button type="button" data-ripple onclick="openGeneralVacancySheet()"><span class="hf-action-icon">⚑</span><strong>Post a Vacancy</strong></button></section>';
-  html += '<section class="hf-section hf-categories"><div class="hf-head"><h2>Top Categories</h2></div><div class="hf-chips">' +
-    HOME_CATEGORIES.map(function(c, i){ return '<button type="button" data-ripple onclick="openHomeCategory(' + i + ')"><span class="hf-category-icon">' + c.icon + '</span><span><strong>' + escapeHtml(c.name) + '</strong><small>' + escapeHtml(c.hint) + '</small></span></button>'; }).join('') + '</div></section>';
-  html += '<aside class="hf-sponsor" aria-label="Sponsored"><span>Sponsored Content</span><strong>Feature your company here</strong><a href="mailto:info@sa-recruiters.co.za?subject=Advertising%20on%20SA%20Recruiters">Advertise with us</a></aside>';
-  html += '<section class="hf-section"><div class="hf-head"><h2>Career advice</h2><button type="button" class="hf-link" onclick="openContentSheet(\'learning-hub\')">Learning Hub →</button></div><div class="hf-advice">' +
-    '<button type="button" data-ripple onclick="openContentSheet(\'interview-tips\')">Interview tips</button>' +
-    '<button type="button" data-ripple onclick="openContentSheet(\'cv-prep\')">Prepare your CV</button>' +
-    '<button type="button" data-ripple onclick="openContentSheet(\'cv-revamp\')">CV revamp service</button></div></section>';
-  el.innerHTML = html;
-}
+export var homeFeedRetry = 0;
+/* duplicate definition of renderHomeFeed() removed during the ES-module migration: the later definition always won at runtime. */
 
-function filterAndRenderCached() {
+export function filterAndRenderCached() {
   if (typeof renderHomeFeed === 'function') {
     renderHomeFeed();
     return;
@@ -617,20 +594,7 @@ window.toggleSave = function(btn, key) {
   renderSaved();
 };
 
-function renderSaved() {
-  var source = (window.__saStaticData && staticVacanciesCache.length) ? staticVacanciesCache : vacanciesCache;
-  var list = source.filter(function(v){ return savedSet.has(v.id) && !isVacancyExpired(v); });
-  var el = document.getElementById('saved-list');
-  if (el) el.dataset.state = list.length ? 'ready' : 'empty';
-  if (!list.length) {
-    el.innerHTML = vacancyScreenStateMarkup('saved', false, false);
-    return;
-  }
-  el.innerHTML = list.map(function(v) {
-    var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
-    return vacancyCard(v, agency);
-  }).join('');
-}
+/* duplicate definition of renderSaved() removed during the ES-module migration: the later definition always won at runtime. */
 
 // ===== Search screen =====
 window.handleSearchScreen = function(val) {
@@ -665,14 +629,14 @@ window.handleSearchScreen = function(val) {
   if (vm.length) {
     vm.forEach(function(v) {
       var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
-      html += vacancyCard(v, agency);
+      html += window.vacancyCard(v, agency);
     });
   }
   el.dataset.state = 'ready';
   el.innerHTML = html;
 };
 
-function vacancyCard(v, agency, options) {
+export function vacancyCard(v, agency, options) {
   options = options || {};
   var key = v.id;
   var saved = savedSet.has(key);
@@ -833,7 +797,7 @@ function vacancyCard(v, agency, options) {
 }
 
 /* Human-friendly relative time, Indeed-style ("Just posted", "1 day ago", "3 days ago"...) */
-function timeAgo(dateStr) {
+export function timeAgo(dateStr) {
   if (!dateStr) return '';
   var then = new Date(dateStr).getTime();
   if (!then || isNaN(then)) return '';
@@ -854,7 +818,7 @@ function timeAgo(dateStr) {
 /* Shorten a full street address down to "Suburb, City" for compact collapsed rows.
    Drops a trailing postal code / "South Africa" if present, then keeps the last
    two comma-separated segments. Falls back gracefully for short addresses. */
-function shortLocation(loc) {
+export function shortLocation(loc) {
   if (!loc) return '';
   var parts = loc.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
   while (parts.length > 2 && (/^\d+$/.test(parts[parts.length - 1]) || /^south africa$/i.test(parts[parts.length - 1]))) {
@@ -865,13 +829,13 @@ function shortLocation(loc) {
 }
 
 /* Helper: detail row with icon + label + value */
-function vacDetRow(icn, label, val) {
+export function vacDetRow(icn, label, val) {
   return '<div class="vac-detail-row"><span class="vac-detail-icon">' + icn + '</span><div><div class="vac-detail-label">' + label + '</div><div class="vac-detail-value">' + val + '</div></div></div>';
 }
 
 /* Helper: deterministic gradient class from a name (so each company gets a stable color) */
-var VAC_GRADS = ['grad-blue','grad-green','grad-orange','grad-purple','grad-teal','grad-pink','grad-indigo','grad-mint','grad-amber','grad-red','grad-brown','grad-gray'];
-function vacGradFor(name) {
+export var VAC_GRADS = ['grad-blue','grad-green','grad-orange','grad-purple','grad-teal','grad-pink','grad-indigo','grad-mint','grad-amber','grad-red','grad-brown','grad-gray'];
+export function vacGradFor(name) {
   if (!name) return 'grad-gray';
   var h = 0;
   for (var i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
@@ -879,7 +843,7 @@ function vacGradFor(name) {
 }
 
 /* Vacancy card small inline icons (white stroke, sized by CSS) */
-var VAC_ICONS = {
+export var VAC_ICONS = {
   pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
   briefcase:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>',
   doc:'<svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>',
@@ -898,7 +862,7 @@ var VAC_ICONS = {
 };
 
 /* Share icon for the vacancy card's share button (node network glyph, matches vac-save sizing) */
-var SHARE_SVG = '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg>';
+export var SHARE_SVG = '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg>';
 
 /* Toggle expand/collapse of a vacancy card */
 window.toggleVac = function(target) {
@@ -962,7 +926,7 @@ window.toggleSave = function(btn, key) {
   renderSaved();
 };
 
-function renderSaved() {
+export function renderSaved() {
   var source = (window.__saStaticData && staticVacanciesCache.length) ? staticVacanciesCache : vacanciesCache;
   var list = source.filter(function(v){ return savedSet.has(v.id) && !isVacancyExpired(v); });
   var el = document.getElementById('saved-list');
@@ -973,7 +937,7 @@ function renderSaved() {
   }
   el.innerHTML = list.map(function(v) {
     var agency = agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {};
-    return vacancyCard(v, agency);
+    return window.vacancyCard(v, agency);
   }).join('');
 }
 
@@ -982,12 +946,12 @@ function renderSaved() {
 // distinct from the small company_photo logo shown on a vacancyCard.
 // Posters render as a vertical list on their own screen (screen-allposters),
 // separate from vacancies (see .poster-list in styles.css).
-var postersCache = [];
-function postersForEmployer(employerId) {
+export var postersCache = [];
+export function postersForEmployer(employerId) {
   return postersCache.filter(function(p){ return p.employer_id && String(p.employer_id) === String(employerId); });
 }
 
-function posterCard(p) {
+export function posterCard(p) {
   var caption = p.caption ? '<div class="poster-caption-text">' + escapeHtml(p.caption) + '</div>' : '<div class="poster-caption-text"></div>';
   return '<div class="poster-card" data-poster-id="' + escapeHtml(p.id) + '" ' +
     'onclick="openPosterLightbox(\'' + escapeHtml(p.image_url) + '\')">' +
@@ -998,7 +962,7 @@ function posterCard(p) {
     '</div></div>';
 }
 
-function renderPosterFeed(posters) {
+export function renderPosterFeed(posters) {
   var container = document.getElementById('poster-feed');
   postersCache = posters || [];
   if (!container) return;
@@ -1013,7 +977,7 @@ function renderPosterFeed(posters) {
   renderHouseAdSlots();
 }
 
-async function loadPosterFeed() {
+export async function loadPosterFeed() {
   var posters = await getEmployerPosters();
   renderPosterFeed(posters);
   if (typeof renderHomeFeaturedPoster === 'function') renderHomeFeaturedPoster(posters);
@@ -1036,3 +1000,94 @@ window.closePosterLightbox = function() {
   var overlay = document.getElementById('poster-lightbox-overlay');
   if (overlay) overlay.classList.remove('open');
 };
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+export function set_directoryReturnScreen(v) { directoryReturnScreen = v; return v; }
+Object.assign(window, {
+  verifiedBadge,
+  avatarHtml,
+  hubCard,
+  hubVacancies,
+  hubBranches,
+  hubContact,
+  hubCountBadge,
+  employerHubCard,
+  employerHubVacancies,
+  employerHubPosters,
+  employerHubContact,
+  talentPoolIdentityRecord,
+  hasTalentPoolAccess,
+  rememberTalentPoolIdentity,
+  verifyTalentPoolMembership,
+  restoreTalentPoolMembership,
+  autoClaimGateRegistration,
+  openEmployerDirectoryAccessMessage,
+  verifyEmployerDirectoryAccess,
+  requireEmployerDirectoryAccess,
+  showAllEmployers,
+  renderAllEmployersList,
+  prefIcon,
+  mailLink,
+  webLink,
+  telLink,
+  mapsLink,
+  miSvg,
+  tinySvg,
+  scheduleCachedSearch,
+  renderAgencyBatch,
+  homeFeedIndustry,
+  homeFeedJobs,
+  filterAndRenderCached,
+  vacancyCard,
+  timeAgo,
+  shortLocation,
+  vacDetRow,
+  vacGradFor,
+  renderSaved,
+  postersForEmployer,
+  posterCard,
+  renderPosterFeed,
+  loadPosterFeed,
+});
+Object.defineProperties(window, {
+  VERIFIED_SEAL_SVG: { get: () => VERIFIED_SEAL_SVG, set: (v) => { VERIFIED_SEAL_SVG = v; }, configurable: true, enumerable: true },
+  directoryReturnScreen: { get: () => directoryReturnScreen, set: (v) => { directoryReturnScreen = v; }, configurable: true, enumerable: true },
+  ICON_CHEVRON: { get: () => ICON_CHEVRON, set: (v) => { ICON_CHEVRON = v; }, configurable: true, enumerable: true },
+  STAR_SVG: { get: () => STAR_SVG, set: (v) => { STAR_SVG = v; }, configurable: true, enumerable: true },
+  IS: { get: () => IS, set: (v) => { IS = v; }, configurable: true, enumerable: true },
+  ICON_LOCK: { get: () => ICON_LOCK, set: (v) => { ICON_LOCK = v; }, configurable: true, enumerable: true },
+  ICON_UNLOCK: { get: () => ICON_UNLOCK, set: (v) => { ICON_UNLOCK = v; }, configurable: true, enumerable: true },
+  ICON_LINK: { get: () => ICON_LINK, set: (v) => { ICON_LINK = v; }, configurable: true, enumerable: true },
+  ICON_CHAT: { get: () => ICON_CHAT, set: (v) => { ICON_CHAT = v; }, configurable: true, enumerable: true },
+  ICON_HEART: { get: () => ICON_HEART, set: (v) => { ICON_HEART = v; }, configurable: true, enumerable: true },
+  ICON_FLAG: { get: () => ICON_FLAG, set: (v) => { ICON_FLAG = v; }, configurable: true, enumerable: true },
+  ICON_BOOK: { get: () => ICON_BOOK, set: (v) => { ICON_BOOK = v; }, configurable: true, enumerable: true },
+  ICON_DOC: { get: () => ICON_DOC, set: (v) => { ICON_DOC = v; }, configurable: true, enumerable: true },
+  ICON_SPARKLE: { get: () => ICON_SPARKLE, set: (v) => { ICON_SPARKLE = v; }, configurable: true, enumerable: true },
+  ICON_MIC: { get: () => ICON_MIC, set: (v) => { ICON_MIC = v; }, configurable: true, enumerable: true },
+  ICON_SCALES: { get: () => ICON_SCALES, set: (v) => { ICON_SCALES = v; }, configurable: true, enumerable: true },
+  ICON_HELP: { get: () => ICON_HELP, set: (v) => { ICON_HELP = v; }, configurable: true, enumerable: true },
+  ICON_PIN: { get: () => ICON_PIN, set: (v) => { ICON_PIN = v; }, configurable: true, enumerable: true },
+  ICON_BRIEFCASE: { get: () => ICON_BRIEFCASE, set: (v) => { ICON_BRIEFCASE = v; }, configurable: true, enumerable: true },
+  ICON_BUILDING: { get: () => ICON_BUILDING, set: (v) => { ICON_BUILDING = v; }, configurable: true, enumerable: true },
+  ICON_PHONE: { get: () => ICON_PHONE, set: (v) => { ICON_PHONE = v; }, configurable: true, enumerable: true },
+  ICON_MAIL: { get: () => ICON_MAIL, set: (v) => { ICON_MAIL = v; }, configurable: true, enumerable: true },
+  ICON_WARN: { get: () => ICON_WARN, set: (v) => { ICON_WARN = v; }, configurable: true, enumerable: true },
+  ICON_CHECK: { get: () => ICON_CHECK, set: (v) => { ICON_CHECK = v; }, configurable: true, enumerable: true },
+  ICON_CLOSE: { get: () => ICON_CLOSE, set: (v) => { ICON_CLOSE = v; }, configurable: true, enumerable: true },
+  AGENCY_RENDER_BATCH_SIZE: { get: () => AGENCY_RENDER_BATCH_SIZE, set: (v) => { AGENCY_RENDER_BATCH_SIZE = v; }, configurable: true, enumerable: true },
+  agencyRenderGeneration: { get: () => agencyRenderGeneration, set: (v) => { agencyRenderGeneration = v; }, configurable: true, enumerable: true },
+  homeSearchTimer: { get: () => homeSearchTimer, set: (v) => { homeSearchTimer = v; }, configurable: true, enumerable: true },
+  HOME_CATEGORIES: { get: () => HOME_CATEGORIES, set: (v) => { HOME_CATEGORIES = v; }, configurable: true, enumerable: true },
+  homeFeedRetry: { get: () => homeFeedRetry, set: (v) => { homeFeedRetry = v; }, configurable: true, enumerable: true },
+  VAC_GRADS: { get: () => VAC_GRADS, set: (v) => { VAC_GRADS = v; }, configurable: true, enumerable: true },
+  VAC_ICONS: { get: () => VAC_ICONS, set: (v) => { VAC_ICONS = v; }, configurable: true, enumerable: true },
+  SHARE_SVG: { get: () => SHARE_SVG, set: (v) => { SHARE_SVG = v; }, configurable: true, enumerable: true },
+  postersCache: { get: () => postersCache, set: (v) => { postersCache = v; }, configurable: true, enumerable: true },
+});

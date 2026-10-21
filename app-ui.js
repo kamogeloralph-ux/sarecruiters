@@ -2,33 +2,42 @@
  * SA Recruiters -- app.js split 6/8: app-ui.js
  * Admin stubs, bottom nav, toast, force-update, retry banner, version badge, ripple, submissions + all-list views, vacancy folder rendering
  *
- * Part of the original monolithic app.js, mechanically split and kept as
- * classic (non-module) scripts loaded in this exact order via <script defer>
- * in index.html, so all functions/vars stay on one shared global scope
- * exactly as before. Do not reorder these files relative to one another.
+ * Part of the original monolithic app.js. Now an ES module: it imports what it
+ * uses from the other app-*.js files and exports its top-level declarations.
+ * A window bridge at the bottom keeps inline onclick="" handlers and the
+ * classic scripts (app-vacancy-v2.js, app-alerts.js, content*.js) working.
+ * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
+
+import { R2_WORKER_URL, VAC_PAGE_SIZE, agenciesCache, agencyFolderDisplayPage, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyDisplayPage, dedicatedVacancyError, dedicatedVacancyFolder, dedicatedVacancyHasMore, dedicatedVacancyLoading, dedicatedVacancyPage, dedicatedVacancyPageSize, dedicatedVacancyQueryKey, dedicatedVacancyRequestId, dedicatedVacancyRows, employerManagerMode, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyDisplayPage, generalVacancyError, generalVacancyHasMore, generalVacancyLoading, generalVacancyPage, generalVacancyPageSize, generalVacancyQueryKey, generalVacancyRequestId, generalVacancyRows, guestQuotaState, isAdmin, managerMode, renderAuthUser, saAuthUser, set_agencyFolderDisplayPage, set_dedicatedVacancyDisplayPage, set_dedicatedVacancyError, set_dedicatedVacancyFolder, set_dedicatedVacancyHasMore, set_dedicatedVacancyLoading, set_dedicatedVacancyNextCursor, set_dedicatedVacancyPage, set_dedicatedVacancyQueryKey, set_dedicatedVacancyRequestId, set_dedicatedVacancyRows, set_generalVacancyDisplayPage, set_generalVacancyError, set_generalVacancyHasMore, set_generalVacancyLoading, set_generalVacancyNextCursor, set_generalVacancyPage, set_generalVacancyQueryKey, set_generalVacancyRequestId, set_generalVacancyRows, set_saAuthUser, signOutSaRecruiters, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
+import { DEDICATED_VACANCY_FOLDER_SOURCES, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, loadCandidateSpotlight, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
+import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, loadPosterFeed, mailLink, mapsLink, postersCache, renderAllEmployersList, renderPosterFeed, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
+import { closeSheet, copyText, goPool, loadPoolCandidates, openMyPoolProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnScreen, renderPoolList } from './app-sheets.js';
+import { exitManagerMode } from './app-manager.js';
+import { exitEmployerManagerMode } from './app-manager-employer.js';
+
 
 // ===== ADMIN (removed from public app — admin console now lives in admin.html) =====
 // isAdmin is permanently false in the public app. All admin-only UI is hidden.
 // The ?manage=TOKEN agency self-service flow (managerMode) remains fully functional.
-var ADMIN_PIN = '';          // PIN removed — no longer used
-var pinVerified = false;     // kept for backward-compat references
-function getPinAttempts() { return 0; }
-function setPinAttempts() {}
-function getPinLockTime() { return 0; }
-function setPinLockTime() {}
-function isPinLocked() { return 0; }
-function formatRemainingTime() { return ''; }
-function verifyPin() {}
-function showPinLockMsg() {}
+export var ADMIN_PIN = '';          // PIN removed — no longer used
+export var pinVerified = false;     // kept for backward-compat references
+export function getPinAttempts() { return 0; }
+export function setPinAttempts() {}
+export function getPinLockTime() { return 0; }
+export function setPinLockTime() {}
+export function isPinLocked() { return 0; }
+export function formatRemainingTime() { return ''; }
+export function verifyPin() {}
+export function showPinLockMsg() {}
 
-function openAdminSheet() {
+export function openAdminSheet() {
   // Admin access has moved to the separate admin.html console.
   alert('Admin access has moved.\n\nPlease use the separate admin console URL (admin.html).');
 }
-async function adminLogin() {}
-async function adminLogout() {}
-function updateAdminUI() {
+export async function adminLogin() {}
+export async function adminLogout() {}
+export function updateAdminUI() {
   // No admin UI in public app — keep as no-op for any callers.
   var fabAdmin = document.getElementById('fab-admin');
   if (fabAdmin) fabAdmin.style.display = 'none';
@@ -37,26 +46,26 @@ function updateAdminUI() {
 // (Supabase session restore + admin console handled in admin.html.)
 
 // ===== Bottom nav =====
-var SA_ACTIVE_SCREEN_KEY = 'sa_active_screen_v1';
-var SA_RESTORABLE_SCREENS = {
+export var SA_ACTIVE_SCREEN_KEY = 'sa_active_screen_v1';
+export var SA_RESTORABLE_SCREENS = {
   home: true, account: true, saved: true, menu: true,
   allagencies: true, allbranches: true, allvacancies: true,
   allemployers: true, allposters: true, pool: true
 };
-function isRestorableScreen(name) {
+export function isRestorableScreen(name) {
   return !!SA_RESTORABLE_SCREENS[name];
 }
-function persistActiveScreen(name) {
+export function persistActiveScreen(name) {
   if (!isRestorableScreen(name)) return;
   try { sessionStorage.setItem(SA_ACTIVE_SCREEN_KEY, name); } catch(e) {}
 }
-function restoredScreenName() {
+export function restoredScreenName() {
   try {
     var name = sessionStorage.getItem(SA_ACTIVE_SCREEN_KEY);
     return isRestorableScreen(name) ? name : 'home';
   } catch(e) { return 'home'; }
 }
-function closeTransientOutsideUi() {
+export function closeTransientOutsideUi() {
   document.querySelectorAll('.sheet-scrim.open').forEach(function (overlay) {
     if (overlay.id === 'pool-register-overlay' && overlay.classList.contains('gate-mandatory')) return;
     overlay.classList.remove('open');
@@ -75,7 +84,7 @@ function closeTransientOutsideUi() {
 }
 window.__saCloseTransientOutsideUi = closeTransientOutsideUi;
 window.addEventListener('pagehide', closeTransientOutsideUi);
-function normalizeStartupScreen() {
+export function normalizeStartupScreen() {
   var params = new URLSearchParams(window.location.search);
   closeTransientOutsideUi();
   // Explicit manager/action/deep-link URLs are intentional entry points.
@@ -95,32 +104,32 @@ function normalizeStartupScreen() {
   window.__saRestoredScreen = 'home';
 }
 window.__saNormalizeStartupScreen = normalizeStartupScreen;
-function restoreActiveScreenBeforeReveal() {
+export function restoreActiveScreenBeforeReveal() {
   normalizeStartupScreen();
 }
 restoreActiveScreenBeforeReveal();
 
 // ===== Vacancy-first home feed =====
-var homeLocationFilter = '';
-var homeCategoryFilter = '';
-var HOME_VACANCY_CARD_LIMIT = 8;
+export var homeLocationFilter = '';
+export var homeCategoryFilter = '';
+export var HOME_VACANCY_CARD_LIMIT = 8;
 if (!Array.isArray(window.retailPriorityPreviewRows)) window.retailPriorityPreviewRows = [];
-var retailPriorityPreviewPromise = null;
-var retailPriorityPreviewLoaded = false;
-var HOME_JOB_CATEGORIES = [
+export var retailPriorityPreviewPromise = null;
+export var retailPriorityPreviewLoaded = false;
+export var HOME_JOB_CATEGORIES = [
   { key: 'finance', label: 'Finance & accounting', sub: 'Accounts, audit and finance', icon: 'R' },
   { key: 'technology', label: 'IT & technology', sub: 'Software, data and digital', icon: 'IT' },
   { key: 'trades', label: 'Trades & engineering', sub: 'Technical and skilled work', icon: '+' },
   { key: 'sales', label: 'Sales & marketing', sub: 'Sales, brand and growth', icon: '↗' }
 ];
 
-function setHomeLocationFilter(filter) {
+export function setHomeLocationFilter(filter) {
   filter = filter || '';
   homeLocationFilter = homeLocationFilter === filter && filter ? '' : filter;
   filterAndRenderCached();
 }
 
-function setHomeCategoryFilter(filter) {
+export function setHomeCategoryFilter(filter) {
   var category = HOME_JOB_CATEGORIES.find(function (item) { return item.key === filter; });
   if (!category) return;
   // Category tiles are navigation cards: take the visitor to the full vacancy
@@ -129,11 +138,11 @@ function setHomeCategoryFilter(filter) {
   var search = document.getElementById('allvacancies-search');
   if (search) {
     search.value = category.key;
-    if (typeof renderAllVacanciesList === 'function') renderAllVacanciesList();
+    if (typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList();
   }
 }
 
-function clearHomeFeedFilters() {
+export function clearHomeFeedFilters() {
   homeLocationFilter = '';
   homeCategoryFilter = '';
   var search = document.getElementById('home-search');
@@ -141,7 +150,7 @@ function clearHomeFeedFilters() {
   filterAndRenderCached();
 }
 
-function openHomeTalentPoolProfile() {
+export function openHomeTalentPoolProfile() {
   if (typeof saAuthUser !== 'undefined' && saAuthUser) {
     openMyPoolProfile();
     return;
@@ -149,7 +158,7 @@ function openHomeTalentPoolProfile() {
   openPoolRegisterSheet();
 }
 
-function homeSourceVacancies() {
+export function homeSourceVacancies() {
   var rows = [], seen = {};
   function add(list) {
     if (!Array.isArray(list)) return;
@@ -167,7 +176,7 @@ function homeSourceVacancies() {
   return rows;
 }
 
-function isRetailPriorityVacancy(v) {
+export function isRetailPriorityVacancy(v) {
   if (!v) return false;
   var source = String(v.source_type || '').toLowerCase();
   var id = String(v.id || '').toLowerCase();
@@ -183,7 +192,7 @@ function isRetailPriorityVacancy(v) {
 }
 window.isRetailPriorityVacancy = isRetailPriorityVacancy;
 
-function ensureRetailPriorityVacancies() {
+export function ensureRetailPriorityVacancies() {
   if (retailPriorityPreviewLoaded) return Promise.resolve(window.retailPriorityPreviewRows || []);
   if (retailPriorityPreviewPromise) return retailPriorityPreviewPromise;
   // The committed Pages snapshot already contains the full live vacancy set,
@@ -216,7 +225,7 @@ function ensureRetailPriorityVacancies() {
       var home = document.getElementById('screen-home');
       if (home && home.classList.contains('active') && typeof filterAndRenderCached === 'function') filterAndRenderCached();
       var vacancies = document.getElementById('screen-allvacancies');
-      if (vacancies && vacancies.classList.contains('active') && typeof renderAllVacanciesList === 'function') renderAllVacanciesList();
+      if (vacancies && vacancies.classList.contains('active') && typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList();
       return window.retailPriorityPreviewRows;
     })
     .catch(function (error) {
@@ -228,7 +237,7 @@ function ensureRetailPriorityVacancies() {
 }
 window.ensureRetailPriorityVacancies = ensureRetailPriorityVacancies;
 
-function homeVacancyText(v) {
+export function homeVacancyText(v) {
   var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined'
     ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
   var employer = v.employer_id && typeof employersCache !== 'undefined'
@@ -238,7 +247,7 @@ function homeVacancyText(v) {
     .join(' ').toLowerCase();
 }
 
-function homeVacancyMatchesLocation(v, filter) {
+export function homeVacancyMatchesLocation(v, filter) {
   if (!filter) return true;
   var text = [v.location, v.address, v.province, v.remote, v.work_arrangement].join(' ').toLowerCase();
   var patterns = {
@@ -256,7 +265,7 @@ function homeVacancyMatchesLocation(v, filter) {
   return !!(patterns[filter] && patterns[filter].test(text));
 }
 
-function homeVacancyMatchesCategory(v, filter) {
+export function homeVacancyMatchesCategory(v, filter) {
   if (!filter) return true;
   var text = homeVacancyText(v);
   var patterns = {
@@ -268,20 +277,20 @@ function homeVacancyMatchesCategory(v, filter) {
   return !!(patterns[filter] && patterns[filter].test(text));
 }
 
-function openCompanyFeatureInquiry() {
+export function openCompanyFeatureInquiry() {
   if (typeof openSuggestionSheet !== 'function') return;
   openSuggestionSheet();
   var type = document.getElementById('s-type');
   if (type) type.value = 'Feature request';
 }
 
-function openFeaturedCompanyWebsite(event) {
+export function openFeaturedCompanyWebsite(event) {
   if (event && event.target && event.target.closest && event.target.closest('button')) return;
   var url = 'https://jwprojects.co.za/';
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function homeVacancySourceMarkup() {
+export function homeVacancySourceMarkup() {
   var summary = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
   var order = summary && summary.order ? summary.order : ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
   var labels = summary && summary.labels ? summary.labels : {
@@ -299,7 +308,7 @@ function homeVacancySourceMarkup() {
     }).join('') + '</div></section>';
 }
 
-function getDailyFeaturedPoster(posters) {
+export function getDailyFeaturedPoster(posters) {
   var list = (Array.isArray(posters) ? posters : []).filter(function (poster) { return poster && poster.image_url; }).slice().sort(function (a, b) {
     return String(a.id || a.image_url).localeCompare(String(b.id || b.image_url));
   });
@@ -308,7 +317,7 @@ function getDailyFeaturedPoster(posters) {
   var day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
   return list[((day % list.length) + list.length) % list.length];
 }
-function renderHomeFeaturedPoster(posters) {
+export function renderHomeFeaturedPoster(posters) {
   var slot = document.getElementById('home-featured-poster-slot');
   if (!slot) return;
   var featured = getDailyFeaturedPoster(posters);
@@ -322,7 +331,7 @@ function renderHomeFeaturedPoster(posters) {
     button.addEventListener('click', function () { openPosterLightbox(button.getAttribute('data-featured-poster-url')); });
   });
 }
-var HOME_WEEKLY_PROVINCES = [
+export var HOME_WEEKLY_PROVINCES = [
   { key: 'gauteng', label: 'Gauteng', pattern: /gauteng|johannesburg|joburg|pretoria|centurion|sandton|randburg|midrand|benoni|kempton park|eastrand|roodepoort|krugersdorp/i },
   { key: 'western-cape', label: 'Western Cape', pattern: /western[\s-]?cape|cape town|stellenbosch|paarl|george|mossel bay|bellville|worcester/i },
   { key: 'kwazulu-natal', label: 'KwaZulu-Natal', pattern: /kwazulu[\s-]?natal|durban|pietermaritzburg|richards bay|newcastle|ballito/i },
@@ -333,12 +342,12 @@ var HOME_WEEKLY_PROVINCES = [
   { key: 'north-west', label: 'North West', pattern: /north[\s-]?west|rustenburg|mahikeng|mafikeng|klerksdorp|potchefstroom|brits|vryburg/i },
   { key: 'northern-cape', label: 'Northern Cape', pattern: /northern[\s-]?cape|kimberley|upington|kuruman|de aar|springbok|kathu/i }
 ];
-function homeWeeklyProvince(v) {
+export function homeWeeklyProvince(v) {
   var text = [v && v.province, v && v.province_name, v && v.state, v && v.region, v && v.location, v && v.address].filter(Boolean).join(' ');
   for (var i = 0; i < HOME_WEEKLY_PROVINCES.length; i++) if (HOME_WEEKLY_PROVINCES[i].pattern.test(text)) return HOME_WEEKLY_PROVINCES[i];
   return null;
 }
-function homeWeeklyRows() {
+export function homeWeeklyRows() {
   var now = Date.now(), week = 7 * 864e5, rows = [], seen = {};
   homeSourceVacancies().forEach(function (v) {
     if (!v || seen[v.id]) return;
@@ -355,7 +364,7 @@ function homeWeeklyRows() {
     return { province: province, items: items.slice(0, 5), total: items.length };
   }).filter(function (group) { return group.total > 0; }).sort(function (a, b) { return b.total - a.total || b.items[0].score - a.items[0].score; }).slice(0, 3);
 }
-function homeWeeklyTopJobsMarkup() {
+export function homeWeeklyTopJobsMarkup() {
   var groups = homeWeeklyRows();
   if (!groups.length) return '<section class="home-weekly-section" aria-labelledby="home-weekly-title"><div class="home-section-heading"><div><span class="home-section-kicker">This week</span><h2 id="home-weekly-title">Top Jobs This Week</h2><p>Provincial highlights will appear as this week’s listings arrive.</p></div></div><div class="home-weekly-empty">No new provincial highlights are available yet.</div></section>';
   return '<section class="home-weekly-section" aria-labelledby="home-weekly-title"><div class="home-section-heading"><div><span class="home-section-kicker">This week</span><h2 id="home-weekly-title">Top Jobs This Week</h2><p>The three provinces with the strongest new vacancy activity this week.</p></div><button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all<span aria-hidden="true"> →</span></button></div><div class="home-weekly-grid">' + groups.map(function (group) {
@@ -374,10 +383,10 @@ window.openHomeWeeklyVacancy = function (id) {
     var card = Array.prototype.find.call(document.querySelectorAll('#screen-allvacancies [data-vacancy-id]'), function (node) { return String(node.getAttribute('data-vacancy-id')) === String(id); });
     if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); var head = card.querySelector('.vx-head'); if (head) head.click(); return; }
     var search = document.getElementById('allvacancies-search');
-    if (search && source) { search.value = source.title || ''; if (typeof renderAllVacanciesList === 'function') renderAllVacanciesList(); }
+    if (search && source) { search.value = source.title || ''; if (typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList(); }
   }, 120);
 };
-function homeAvailableRoleGroups(rows) {
+export function homeAvailableRoleGroups(rows) {
   var grouped = {};
   (rows || []).forEach(function (v) {
     var province = homeWeeklyProvince(v);
@@ -394,7 +403,7 @@ function homeAvailableRoleGroups(rows) {
     .sort(function (a, b) { return b.rows.length - a.rows.length || a.province.label.localeCompare(b.province.label); })
     .slice(0, 3);
 }
-function homeAvailableRolesMarkup(rows) {
+export function homeAvailableRolesMarkup(rows) {
   var groups = homeAvailableRoleGroups(rows);
   if (!groups.length) return '<div class="home-feed-empty" role="status"><strong>No provincial roles match yet.</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
   return '<div class="home-available-groups">' + groups.map(function (group) {
@@ -403,7 +412,7 @@ function homeAvailableRolesMarkup(rows) {
     }).join('') + (group.rows.length > 8 ? '<button type="button" class="home-available-more" onclick="openHomeWeeklyVacancy(\'' + String(group.rows[0].id).replace(/[\\']/g, '\\$&') + '\')">+' + (group.rows.length - 8) + ' more roles</button>' : '') + '</div></article>';
   }).join('') + '</div>';
 }
-function renderHomeFeed() {
+export function renderHomeFeed() {
   var target = document.getElementById('home-feed');
   if (!target) return;
   ensureRetailPriorityVacancies();
@@ -491,19 +500,19 @@ function renderHomeFeed() {
 // serve the normal PWA shell while the link remains stable and easy to share:
 // /?section=vacancies, /?section=agencies, /?section=candidates,
 // /?section=posters and /?section=employers.
-var SA_SECTION_LINKS = {
+export var SA_SECTION_LINKS = {
   vacancies: { label: 'Vacancies', title: 'SA Recruiters — Vacancies' },
   agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
   candidates: { label: 'Join the Talent Pool', title: 'SA Recruiters — Join the Talent Pool', shareKey: 'talent-pool' },
   posters: { label: 'Vacancy posters', title: 'SA Recruiters — Vacancy Posters' },
   employers: { label: 'Employers', title: 'SA Recruiters — Employers' }
 };
-function getSectionLink(section) {
+export function getSectionLink(section) {
   if (!SA_SECTION_LINKS[section]) return '';
   var key = SA_SECTION_LINKS[section].shareKey || section;
   return window.location.origin + '/?section=' + encodeURIComponent(key);
 }
-function shareSectionLink(section) {
+export function shareSectionLink(section) {
   var meta = SA_SECTION_LINKS[section];
   var link = getSectionLink(section);
   if (!meta || !link) return;
@@ -516,7 +525,7 @@ function shareSectionLink(section) {
     showToast(meta.label + ' link copied');
   }
 }
-function openDeepLinkedSection() {
+export function openDeepLinkedSection() {
   var section = new URLSearchParams(window.location.search).get('section');
   if (section === 'talent-pool') section = 'candidates';
   if (!SA_SECTION_LINKS[section]) return;
@@ -551,7 +560,7 @@ if (window.MutationObserver) {
     });
   }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
 }
-function openSiteMenu() {
+export function openSiteMenu() {
   var drawer = document.getElementById('site-menu-drawer');
   var backdrop = document.getElementById('site-menu-backdrop');
   var trigger = document.getElementById('site-menu-trigger');
@@ -563,7 +572,7 @@ function openSiteMenu() {
   document.querySelectorAll('.site-menu-trigger').forEach(function(btn) { btn.setAttribute('aria-expanded', 'true'); });
   document.body.classList.add('site-menu-open');
 }
-function closeSiteMenu() {
+export function closeSiteMenu() {
   var drawer = document.getElementById('site-menu-drawer');
   var backdrop = document.getElementById('site-menu-backdrop');
   var trigger = document.getElementById('site-menu-trigger');
@@ -593,7 +602,7 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
   });
 });
 
-function renderRestoredScreenContent() {
+export function renderRestoredScreenContent() {
   var name = window.__saRestoredScreen;
   if (!name) return;
   if (name === 'account' && typeof renderAccountDetails === 'function') renderAccountDetails();
@@ -601,7 +610,7 @@ function renderRestoredScreenContent() {
   else if (name === 'allagencies' && typeof renderAllAgenciesList === 'function') renderAllAgenciesList();
   else if (name === 'allbranches' && typeof renderAllBranchesList === 'function') renderAllBranchesList();
   else if (name === 'allemployers' && typeof renderAllEmployersList === 'function') renderAllEmployersList();
-  else if (name === 'allvacancies' && typeof renderAllVacanciesList === 'function') renderAllVacanciesList();
+  else if (name === 'allvacancies' && typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList();
   else if (name === 'allposters') {
     if (typeof renderPosterFeed === 'function') renderPosterFeed(postersCache);
     if (typeof loadPosterFeed === 'function') loadPosterFeed();
@@ -612,14 +621,14 @@ function renderRestoredScreenContent() {
 window.renderRestoredScreenContent = renderRestoredScreenContent;
 
 // ===== Home horizontal navigation =====
-function scrollStats(direction) {
+export function scrollStats(direction) {
   var row = document.getElementById('home-stats');
   if (!row) return;
   var card = row.querySelector('.stat-card');
   var amount = card ? card.getBoundingClientRect().width + 8 : row.clientWidth * 0.8;
   row.scrollBy({ left: direction * amount, behavior: 'smooth' });
 }
-function updateCtaDots() {
+export function updateCtaDots() {
   var carousel = document.getElementById('cta-carousel');
   var dots = document.querySelectorAll('.cta-swipe-dots button');
   if (!carousel || !dots.length) return;
@@ -630,13 +639,13 @@ function updateCtaDots() {
     dot.setAttribute('aria-selected', i === index ? 'true' : 'false');
   });
 }
-function scrollCtaPanel(direction) {
+export function scrollCtaPanel(direction) {
   var carousel = document.getElementById('cta-carousel');
   if (!carousel) return;
   carousel.scrollBy({ left: direction * carousel.clientWidth, behavior: 'smooth' });
   setTimeout(updateCtaDots, 220);
 }
-function setCtaPanel(index) {
+export function setCtaPanel(index) {
   var carousel = document.getElementById('cta-carousel');
   if (!carousel) return;
   carousel.scrollTo({ left: Math.max(0, Math.min(2, index)) * carousel.clientWidth, behavior: 'smooth' });
@@ -646,14 +655,14 @@ function setCtaPanel(index) {
   var carousel = document.getElementById('cta-carousel');
   if (carousel) carousel.addEventListener('scroll', updateCtaDots, { passive: true });
 })();
-function refreshHome() {
+export function refreshHome() {
   // Home is already hydrated; returning here must not refetch or rebuild the app.
   if (typeof goBackToHome === 'function') goBackToHome();
 }
 
 // ===== Toast =====
-var toastTimer;
-function showToast(msg) {
+export var toastTimer;
+export function showToast(msg) {
   var t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
@@ -661,7 +670,7 @@ function showToast(msg) {
 }
 
 // ===== Force update: activate the waiting production worker safely =====
-function forceUpdate() {
+export function forceUpdate() {
   showToast('Updating SA Recruiters…');
   if (!('serviceWorker' in navigator)) { window.location.reload(); return; }
   var reloaded = false;
@@ -681,13 +690,13 @@ function forceUpdate() {
   }).catch(reloadOnce);
 }
 
-function dismissUpdateBanner() {
+export function dismissUpdateBanner() {
   var banner = document.getElementById('update-banner');
   if (banner) { banner.classList.remove('show'); banner.hidden = true; }
   try { sessionStorage.setItem('sa_update_dismissed', '1'); } catch (e) {}
   try { trackEvent('service_worker_update_dismissed', 'pwa', null); } catch (e) {}
 }
-function forceUpdateReload() {
+export function forceUpdateReload() {
   var banner = document.getElementById('update-banner');
   if (banner) { banner.classList.remove('show'); banner.hidden = true; }
   try { sessionStorage.removeItem('sa_update_dismissed'); } catch (e) {}
@@ -701,12 +710,12 @@ function forceUpdateReload() {
 // the *data* refresh failed while the app itself is fine — the person can
 // see it happened and tap to try again, instead of the screen silently
 // staying frozen or looking emptier than it should.
-function setRetryBanner(show) {
+export function setRetryBanner(show) {
   var el = document.getElementById('retry-banner');
   if (!el) return;
   el.classList.toggle('show', !!show);
 }
-function retryLoadAll() {
+export function retryLoadAll() {
   var btn = document.querySelector('#retry-banner button');
   if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
   loadAll({ fresh: true }).finally(function() {
@@ -730,11 +739,11 @@ document.addEventListener('pointerdown', function(e) {
 });
 
 // ===== SUBMISSIONS (admin section — reports & suggestions) =====
-var subCurrentTab = 'reports';
-var subReportsCache = [];
-var subSuggestionsCache = [];
+export var subCurrentTab = 'reports';
+export var subReportsCache = [];
+export var subSuggestionsCache = [];
 
-function goSubmissions() {
+export function goSubmissions() {
   if (!isAdmin) return;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-submissions').classList.add('active');
@@ -744,7 +753,7 @@ function goSubmissions() {
   switchSubTab('reports');
 }
 
-function closeTalentPool() {
+export function closeTalentPool() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   var targetId = poolReturnScreen === 'profile' ? 'screen-account' : 'screen-home';
   var target = document.getElementById(targetId);
@@ -753,10 +762,10 @@ function closeTalentPool() {
   resetActiveScreenScroll(targetId);
 }
 window.closeTalentPool = closeTalentPool;
-function goBackFromPool() {
+export function goBackFromPool() {
   closeTalentPool();
 }
-function goBackToProfile() {
+export function goBackToProfile() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-account').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'account'); });
@@ -767,9 +776,9 @@ function goBackToProfile() {
 // A general account view — Google identity, preferences and activity — that is
 // deliberately separate from the Talent Pool product. The Talent Pool listing
 // stays a scoped section inside it ("Your listing"), not the account itself.
-var accountReturnScreen = 'profile';
+export var accountReturnScreen = 'profile';
 
-function openAccountScreen() {
+export function openAccountScreen() {
   var active = document.querySelector('.screen.active');
   accountReturnScreen = active && active.id !== 'screen-account' ? active.id.replace(/^screen-/, '') : accountReturnScreen || 'profile';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -783,7 +792,7 @@ window.openAccountScreen = openAccountScreen;
 // Keyboard activation for the drawer's account card (role="button" div):
 // Enter/Space opens the account screen, other keys are ignored. Clicks are
 // handled by the card's own onclick.
-function activateAccountFromMenu(e) {
+export function activateAccountFromMenu(e) {
   if (!e || (e.key !== 'Enter' && e.key !== ' ')) return;
   e.preventDefault();
   closeSiteMenu();
@@ -803,7 +812,7 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-function goBackFromAccount() {
+export function goBackFromAccount() {
   var targetId = 'screen-' + (accountReturnScreen || 'profile');
   if (!document.getElementById(targetId)) targetId = 'screen-account';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -817,7 +826,7 @@ window.goBackFromAccount = goBackFromAccount;
 // Mirrors the identity (renderAuthUser) into the account hero card and
 // switches the screen between guest mode (sign-in card + daily quota) and
 // signed-in mode (Google identity + sign-out group).
-function renderAccountIdentity(user) {
+export function renderAccountIdentity(user) {
   var name = user && (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email) || 'Guest';
   var avatar = user && user.user_metadata && (user.user_metadata.profile_photo || user.user_metadata.avatar_url);
   var isGuest = !user;
@@ -852,7 +861,7 @@ function renderAccountIdentity(user) {
 }
 
 // Daily free-view meter shown to guests on the account screen.
-function renderAccountQuota() {
+export function renderAccountQuota() {
   var countEl = document.getElementById('account-quota-count');
   var fillEl = document.getElementById('account-quota-fill');
   var noteEl = document.getElementById('account-quota-note');
@@ -875,7 +884,7 @@ function renderAccountQuota() {
 // pool_candidates row linked, so the account view stays honest about the fact
 // that the Talent Pool is a product scoped to pool_candidates — not the
 // account itself.
-async function renderAccountPoolStatus() {
+export async function renderAccountPoolStatus() {
   var el = document.getElementById('account-pool-status');
   if (!el) return;
   if (!saAuthUser || !supabaseClient) { el.textContent = 'Join free — available after you create an account'; return; }
@@ -885,7 +894,7 @@ async function renderAccountPoolStatus() {
   } catch(e) { /* keep default copy on failure */ }
 }
 
-function renderAccountDetails() {
+export function renderAccountDetails() {
   renderAccountIdentity(saAuthUser);
   renderAccountPoolStatus();
   renderProfileSettingsVisibility();
@@ -897,22 +906,22 @@ window.renderAccountDetails = renderAccountDetails;
 // user (user_metadata.full_name) and the photo is uploaded through the
 // Worker's media endpoint (candidate-photos bucket, same pipeline as Talent
 // Pool photos) with the URL kept in user_metadata.profile_photo.
-function renderProfileSettingsVisibility() {
+export function renderProfileSettingsVisibility() {
   var group = document.getElementById('account-settings-group');
   if (group) group.style.display = saAuthUser ? 'block' : 'none';
 }
 window.renderProfileSettingsVisibility = renderProfileSettingsVisibility;
 
-function setProfileSettingsStatus(id, msg) {
+export function setProfileSettingsStatus(id, msg) {
   var el = document.getElementById(id);
   if (el) el.textContent = msg || '';
 }
 
-function profilePhotoUrl() {
+export function profilePhotoUrl() {
   return saAuthUser && saAuthUser.user_metadata && saAuthUser.user_metadata.profile_photo || null;
 }
 
-function openEditProfileSheet() {
+export function openEditProfileSheet() {
   if (!saAuthUser) { showToast('Create your free account first — open sign-in below.'); return; }
   var nameEl = document.getElementById('ep-name');
   var emailEl = document.getElementById('ep-email');
@@ -924,7 +933,7 @@ function openEditProfileSheet() {
 }
 window.openEditProfileSheet = openEditProfileSheet;
 
-async function saveProfileEdits() {
+export async function saveProfileEdits() {
   var nameEl = document.getElementById('ep-name');
   var btn = document.getElementById('edit-profile-save-btn');
   var name = (nameEl && nameEl.value || '').trim();
@@ -939,7 +948,7 @@ async function saveProfileEdits() {
     setProfileSettingsStatus('edit-profile-status', 'Could not save — ' + res.error.message);
     return;
   }
-  saAuthUser = res && res.user ? res.user : saAuthUser;
+  set_saAuthUser( res && res.user ? res.user : saAuthUser);
   renderAuthUser(saAuthUser);
   renderAccountDetails();
   closeSheet('edit-profile-overlay');
@@ -947,7 +956,7 @@ async function saveProfileEdits() {
 }
 window.saveProfileEdits = saveProfileEdits;
 
-function openProfilePhotoSheet() {
+export function openProfilePhotoSheet() {
   if (!saAuthUser) { showToast('Create your free account first — open sign-in below.'); return; }
   var url = profilePhotoUrl();
   var preview = document.getElementById('pp-preview');
@@ -967,7 +976,7 @@ window.openProfilePhotoSheet = openProfilePhotoSheet;
 
 // Reuses the Talent Pool photo pipeline: centre-crop to a 512x512 square and
 // keep the blob locally until Save, so nothing uploads until the user commits.
-function handleProfilePhoto(evt) {
+export function handleProfilePhoto(evt) {
   var file = evt.target.files && evt.target.files[0];
   if (!file) return;
   var img = new Image();
@@ -997,7 +1006,7 @@ function handleProfilePhoto(evt) {
 }
 window.handleProfilePhoto = handleProfilePhoto;
 
-async function saveProfilePhoto() {
+export async function saveProfilePhoto() {
   var btn = document.getElementById('profile-photo-save-btn');
   if (!supabaseClient || !saAuthUser) { setProfileSettingsStatus('profile-photo-status', 'You need to be signed in.'); return; }
   var meta = Object.assign({}, saAuthUser.user_metadata);
@@ -1029,7 +1038,7 @@ async function saveProfilePhoto() {
     setProfileSettingsStatus('profile-photo-status', 'Could not save — ' + upd.error.message);
     return;
   }
-  saAuthUser = upd && upd.user ? upd.user : saAuthUser;
+  set_saAuthUser( upd && upd.user ? upd.user : saAuthUser);
   window.pendingProfilePhotoBlob = null;
   renderAuthUser(saAuthUser);
   renderAccountDetails();
@@ -1038,7 +1047,7 @@ async function saveProfilePhoto() {
 }
 window.saveProfilePhoto = saveProfilePhoto;
 
-async function removeProfilePhoto() {
+export async function removeProfilePhoto() {
   if (!supabaseClient || !saAuthUser) return;
   var meta = Object.assign({}, saAuthUser.user_metadata);
   delete meta.profile_photo;
@@ -1050,7 +1059,7 @@ async function removeProfilePhoto() {
     setProfileSettingsStatus('profile-photo-status', 'Could not remove the photo — please try again.');
     return;
   }
-  saAuthUser = upd && upd.user ? upd.user : saAuthUser;
+  set_saAuthUser( upd && upd.user ? upd.user : saAuthUser);
   window.pendingProfilePhotoBlob = null;
   renderAuthUser(saAuthUser);
   renderAccountDetails();
@@ -1064,7 +1073,7 @@ async function removeProfilePhoto() {
 }
 window.removeProfilePhoto = removeProfilePhoto;
 
-function openDeleteAccountSheet() {
+export function openDeleteAccountSheet() {
   if (!saAuthUser) { showToast('You are browsing as a guest — nothing to delete.'); return; }
   var confirmEl = document.getElementById('da-confirm');
   if (confirmEl) confirmEl.value = '';
@@ -1074,7 +1083,7 @@ function openDeleteAccountSheet() {
 }
 window.openDeleteAccountSheet = openDeleteAccountSheet;
 
-async function confirmDeleteAccount() {
+export async function confirmDeleteAccount() {
   var confirmEl = document.getElementById('da-confirm');
   var btn = document.getElementById('delete-account-btn');
   if (!confirmEl || (confirmEl.value || '').trim().toUpperCase() !== 'DELETE') {
@@ -1115,7 +1124,7 @@ async function confirmDeleteAccount() {
 }
 window.confirmDeleteAccount = confirmDeleteAccount;
 
-function goBackToHome() {
+export function goBackToHome() {
   // If we're leaving a manager/manager-status screen, restore the normal app
   // chrome (bottom nav + admin FAB) that those screens hide on entry.
   if (managerMode) { try { exitManagerMode(); return; } catch(e){} }
@@ -1142,15 +1151,15 @@ window.toggleContactCard = function(headEl) {
 };
 
 // ===== Stats bar: clickable list views =====
-function goBackHome() {
-  directoryReturnScreen = 'home';
+export function goBackHome() {
+  set_directoryReturnScreen( 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-home').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === 'home'); });
   resetActiveScreenScroll('screen-home');
 }
 
-function resetActiveScreenScroll(screenId) {
+export function resetActiveScreenScroll(screenId) {
   var screen = document.getElementById(screenId);
   if (!screen) return;
   var scroll = screen.querySelector('.screen-scroll');
@@ -1158,7 +1167,7 @@ function resetActiveScreenScroll(screenId) {
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
 
-function goBackFromDirectory() {
+export function goBackFromDirectory() {
   var target = directoryReturnScreen || 'home';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   var targetScreen = document.getElementById('screen-' + target);
@@ -1168,8 +1177,8 @@ function goBackFromDirectory() {
   resetActiveScreenScroll(targetScreen.id);
 }
 
-function showAllAgencies() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
+export function showAllAgencies() {
+  set_directoryReturnScreen( arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home'));
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allagencies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -1177,8 +1186,8 @@ function showAllAgencies() {
   renderAllAgenciesList();
 }
 
-function showAllBranches() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
+export function showAllBranches() {
+  set_directoryReturnScreen( arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home'));
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allbranches').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -1186,19 +1195,19 @@ function showAllBranches() {
   renderAllBranchesList();
 }
 
-function showAllVacancies() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
+export function showAllVacancies() {
+  set_directoryReturnScreen( arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home'));
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allvacancies').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
   allVacanciesFolder = null;
-  renderAllVacanciesList();
+  window.renderAllVacanciesList();
   resetActiveScreenScroll('screen-allvacancies');
 }
 
 // Vacancy posters live on their own screen, separate from All Vacancies.
-function showVacancyPosters() {
-  directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
+export function showVacancyPosters() {
+  set_directoryReturnScreen( arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home'));
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allposters').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
@@ -1218,16 +1227,16 @@ function showVacancyPosters() {
 // same result as typing the area in. The reverse-geocode lookup resolves to
 // the actual locality (e.g. "Wattville" rather than the wider "Benoni"),
 // which is as precise as this text-matching approach can get.
-var PRECISE_LOCATION_SCREENS = {
+export var PRECISE_LOCATION_SCREENS = {
   allagencies: { search: 'allagencies-search', chip: 'allagencies-geo-chip', text: 'allagencies-geo-text', render: function(){ renderAllAgenciesList(); } },
   allbranches: { search: 'allbranches-search', chip: 'allbranches-geo-chip', text: 'allbranches-geo-text', render: function(){ renderAllBranchesList(); } },
   allemployers: { search: 'allemployers-search', chip: 'allemployers-geo-chip', text: 'allemployers-geo-text', render: function(){ renderAllEmployersList(); } },
-  allvacancies: { search: 'allvacancies-search', chip: 'allvacancies-geo-chip', text: 'allvacancies-geo-text', render: function(){ renderAllVacanciesList(); } },
+  allvacancies: { search: 'allvacancies-search', chip: 'allvacancies-geo-chip', text: 'allvacancies-geo-text', render: function(){ window.renderAllVacanciesList(); } },
   pool: { search: 'pool-search', chip: 'pool-geo-chip', text: 'pool-geo-text', render: function(){ renderPoolList(); } }
 };
-var preciseLocationState = {};
+export var preciseLocationState = {};
 
-function resetPreciseLocationChipVisual(key) {
+export function resetPreciseLocationChipVisual(key) {
   var cfg = PRECISE_LOCATION_SCREENS[key];
   if (!cfg) return;
   var chip = document.getElementById(cfg.chip);
@@ -1239,12 +1248,12 @@ function resetPreciseLocationChipVisual(key) {
 
 // Called from each list's render function so the chip auto-reverts to idle
 // if the person edits the search box by hand after applying a location.
-function syncPreciseLocationChip(key, currentQueryLower) {
+export function syncPreciseLocationChip(key, currentQueryLower) {
   var state = preciseLocationState[key];
   if (state && state.active && currentQueryLower !== state.query) resetPreciseLocationChipVisual(key);
 }
 
-function usePreciseLocation(key) {
+export function usePreciseLocation(key) {
   var cfg = PRECISE_LOCATION_SCREENS[key];
   if (!cfg) return;
   var chip = document.getElementById(cfg.chip);
@@ -1280,7 +1289,7 @@ function usePreciseLocation(key) {
   }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 });
 }
 
-function reverseGeocodeArea(key, lat, lon) {
+export function reverseGeocodeArea(key, lat, lon) {
   detectAreaFromCoords(lat, lon)
     .then(function(loc) { applyPreciseLocation(key, loc.query); })
     .catch(function() {
@@ -1290,7 +1299,7 @@ function reverseGeocodeArea(key, lat, lon) {
 }
 
 // Shared by the per-screen "Use precise location" chips.
-function detectAreaFromCoords(lat, lon) {
+export function detectAreaFromCoords(lat, lon) {
   return fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en')
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -1302,7 +1311,7 @@ function detectAreaFromCoords(lat, lon) {
     });
 }
 
-function applyPreciseLocation(key, query) {
+export function applyPreciseLocation(key, query) {
   var cfg = PRECISE_LOCATION_SCREENS[key];
   if (!cfg) return;
   var chip = document.getElementById(cfg.chip);
@@ -1316,7 +1325,7 @@ function applyPreciseLocation(key, query) {
   showToast('Showing results near ' + query);
 }
 
-function renderAllAgenciesList() {
+export function renderAllAgenciesList() {
   var q = ((document.getElementById('allagencies-search')||{}).value || '').trim().toLowerCase();
   syncPreciseLocationChip('allagencies', q);
   var el = document.getElementById('allagencies-list');
@@ -1338,7 +1347,7 @@ function renderAllAgenciesList() {
   renderHouseAdSlots();
 }
 
-function renderAllBranchesList() {
+export function renderAllBranchesList() {
   var q = ((document.getElementById('allbranches-search')||{}).value || '').trim().toLowerCase();
   syncPreciseLocationChip('allbranches', q);
   var el = document.getElementById('allbranches-list');
@@ -1398,7 +1407,7 @@ function renderAllBranchesList() {
 // Delete a branch from the All Branches list (admin). Looks up the branch
 // name for the confirm dialog so branch names with apostrophes/quotes are
 // safe, then reloads the data and re-renders the list.
-async function deleteBranchAllList(id) {
+export async function deleteBranchAllList(id) {
   var b = branchesCache.find(function(x){ return x.id === id; });
   var name = b ? (b.name || 'this branch') : 'this branch';
   if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
@@ -1410,10 +1419,10 @@ async function deleteBranchAllList(id) {
 
 // Combined overview: null shows source folders; a folder value shows that
 // source's complete filtered list.
-var allVacanciesFolder = null;
-var vacancyFolderDisplayLimit = 30;
-var vacancyFolderDisplayKey = '';
-function handleVacanciesBack() {
+export var allVacanciesFolder = null;
+export var vacancyFolderDisplayLimit = 30;
+export var vacancyFolderDisplayKey = '';
+export function handleVacanciesBack() {
   if (allVacanciesFolder) closeVacancyFolder();
   else goBackFromDirectory();
 }
@@ -1421,9 +1430,9 @@ function handleVacanciesBack() {
    vacancy folders. gotoFn is the name of a global function accepting a
    single 1-based page number (goToGeneralVacancyPage, etc). Shows at most
    5 page numbers centred on the current page, plus prev/next arrows. */
-var VAC_PAGE_PREV_SVG = '<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>';
-var VAC_PAGE_NEXT_SVG = '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
-function vacPaginationBar(page, totalPages, gotoFn) {
+export var VAC_PAGE_PREV_SVG = '<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>';
+export var VAC_PAGE_NEXT_SVG = '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
+export function vacPaginationBar(page, totalPages, gotoFn) {
   totalPages = Math.max(1, totalPages || 1);
   page = Math.max(1, Math.min(page || 1, totalPages));
   if (totalPages <= 1) return '';
@@ -1440,7 +1449,7 @@ function vacPaginationBar(page, totalPages, gotoFn) {
     '<button class="vac-page-arrow" ' + (page >= totalPages ? 'disabled' : '') + ' onclick="' + gotoFn + '(' + (page + 1) + ')" aria-label="Next page">' + VAC_PAGE_NEXT_SVG + '</button>' +
   '</nav>';
 }
-function updateVacanciesBackButton() {
+export function updateVacanciesBackButton() {
   var btn = document.getElementById('allvacancies-back');
   if (!btn) return;
   btn.setAttribute('aria-label', allVacanciesFolder ? 'Back to vacancy categories' : 'Back to home menu');
@@ -1448,18 +1457,18 @@ function updateVacanciesBackButton() {
 }
 // Overview filter hooks are kept separate from folder filters so the home
 // directory can add compact filter controls without changing folder state.
-var vacancyOverviewFilter = 'all';
-var vacancyOverviewSource = 'all';
-function vacancyMatchesOverviewSource(v) {
+export var vacancyOverviewFilter = 'all';
+export var vacancyOverviewSource = 'all';
+export function vacancyMatchesOverviewSource(v) {
   if (vacancyOverviewSource === 'all') return true;
   if (vacancyOverviewSource === 'government') return ['government', 'dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1;
   return String(v.source_type || '').toLowerCase() === vacancyOverviewSource;
 }
-function setVacancyOverviewSource(source) {
+export function setVacancyOverviewSource(source) {
   vacancyOverviewSource = source || 'all';
-  renderAllVacanciesList();
+  window.renderAllVacanciesList();
 }
-function vacancyMatchesOverviewFilter(v) {
+export function vacancyMatchesOverviewFilter(v) {
   var source = String(v.source_type || '').toLowerCase();
   var id = String(v.id || '');
   var government = ['government', 'dpsa'].indexOf(source) !== -1 || /^(government|dpsa)-/i.test(id);
@@ -1469,14 +1478,14 @@ function vacancyMatchesOverviewFilter(v) {
   if (vacancyOverviewFilter === 'remote') return remote;
   return true;
 }
-var vacancyOverviewExtraRows = [];
-var vacancyOverviewLoading = false;
-async function setVacancyOverviewFilter(filter) {
+export var vacancyOverviewExtraRows = [];
+export var vacancyOverviewLoading = false;
+export async function setVacancyOverviewFilter(filter) {
   vacancyOverviewFilter = filter || 'all';
   vacancyOverviewExtraRows = [];
   if (vacancyOverviewFilter === 'government' || vacancyOverviewFilter === 'remote') {
     vacancyOverviewLoading = true;
-    renderAllVacanciesList();
+    window.renderAllVacanciesList();
     try {
       var folder = vacancyOverviewFilter === 'government' ? 'government' : 'himalayas';
       vacancyOverviewExtraRows = filterExpiredVacancies(await fetchDedicatedVacancyPage(folder, generalVacancyQueryState(), 0));
@@ -1486,9 +1495,9 @@ async function setVacancyOverviewFilter(filter) {
       vacancyOverviewLoading = false;
     }
   }
-  renderAllVacanciesList();
+  window.renderAllVacanciesList();
 }
-function openVacancyFolder(type) {
+export function openVacancyFolder(type) {
   // Source cards live on Home, so explicitly open the vacancy screen before
   // applying the selected source. Previously the filter state changed while
   // Home remained active, making the tap appear to do nothing.
@@ -1496,35 +1505,35 @@ function openVacancyFolder(type) {
   allVacanciesFolder = type;
   vacancyFolderDisplayLimit = 30;
   vacancyFolderDisplayKey = '';
-  generalVacancyDisplayPage = 1;
-  dedicatedVacancyDisplayPage = 1;
-  agencyFolderDisplayPage = 1;
+  set_generalVacancyDisplayPage( 1);
+  set_dedicatedVacancyDisplayPage( 1);
+  set_agencyFolderDisplayPage( 1);
   if (type === 'general') {
-    generalVacancyQueryKey = '__open__';
-    generalVacancyHasMore = true;
+    set_generalVacancyQueryKey( '__open__');
+    set_generalVacancyHasMore( true);
   } else if (DEDICATED_VACANCY_FOLDER_SOURCES[type]) {
     // Switching to a different dedicated folder (or opening one fresh)
     // always needs a new fetch — force loadDedicatedVacancies() to reset.
-    dedicatedVacancyFolder = type;
-    dedicatedVacancyQueryKey = '__open__';
-    dedicatedVacancyHasMore = true;
+    set_dedicatedVacancyFolder( type);
+    set_dedicatedVacancyQueryKey( '__open__');
+    set_dedicatedVacancyHasMore( true);
   }
   // Filters are shared by the folder picker and its listing view, so a user
   // can narrow the category before opening it and keep that context.
-  renderAllVacanciesList();
+  window.renderAllVacanciesList();
   resetActiveScreenScroll('screen-allvacancies');
 }
-function closeVacancyFolder() {
+export function closeVacancyFolder() {
   allVacanciesFolder = null;
   vacancyFolderDisplayLimit = 30;
   vacancyFolderDisplayKey = '';
-  generalVacancyDisplayPage = 1;
-  dedicatedVacancyDisplayPage = 1;
-  agencyFolderDisplayPage = 1;
-  renderAllVacanciesList();
+  set_generalVacancyDisplayPage( 1);
+  set_dedicatedVacancyDisplayPage( 1);
+  set_agencyFolderDisplayPage( 1);
+  window.renderAllVacanciesList();
   resetActiveScreenScroll('screen-allvacancies');
 }
-function renderGeneralVacancyCards(append) {
+export function renderGeneralVacancyCards(append) {
   var el = document.getElementById('allvacancies-list');
   var loadMore = document.getElementById('allvacancies-loadmore');
   var countLabel = document.getElementById('allvacancies-result-count');
@@ -1541,90 +1550,90 @@ function renderGeneralVacancyCards(append) {
   } else {
     el.dataset.state = 'ready';
     var totalPages = Math.max(1, Math.ceil((generalVacancyCount || generalVacancyRows.length) / VAC_PAGE_SIZE));
-    if (generalVacancyDisplayPage > totalPages) generalVacancyDisplayPage = totalPages;
+    if (generalVacancyDisplayPage > totalPages) set_generalVacancyDisplayPage( totalPages);
     var pageStart = (generalVacancyDisplayPage - 1) * VAC_PAGE_SIZE;
     var pageRows = generalVacancyRows.slice(pageStart, pageStart + VAC_PAGE_SIZE);
     var cards = pageRows.map(function(v){
       var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
-      return vacancyCard(v, agency, { hideBadges: true });
+      return window.vacancyCard(v, agency, { hideBadges: true });
     }).join('');
     el.innerHTML = '<div class="pgroup-label">General Vacancies</div>' + (pageRows.length ? cards : '<div class="empty-state"><h3>Loading vacancies…</h3></div>') + vacPaginationBar(generalVacancyDisplayPage, totalPages, 'goToGeneralVacancyPage');
   }
   if (countLabel) countLabel.textContent = generalVacancyCount ? generalVacancyRows.length + ' of ' + generalVacancyCount + ' loaded' : generalVacancyRows.length + ' loaded';
   if (loadMore) loadMore.style.display = 'none';
 }
-async function goToGeneralVacancyPage(n) {
+export async function goToGeneralVacancyPage(n) {
   if (allVacanciesFolder !== 'general') return;
   n = Math.max(1, n);
   while (generalVacancyRows.length < n * VAC_PAGE_SIZE && generalVacancyHasMore && !generalVacancyLoading) {
     await loadGeneralVacancies(false);
   }
   var totalPages = Math.max(1, Math.ceil((generalVacancyCount || generalVacancyRows.length) / VAC_PAGE_SIZE));
-  generalVacancyDisplayPage = Math.max(1, Math.min(n, totalPages));
+  set_generalVacancyDisplayPage( Math.max(1, Math.min(n, totalPages)));
   renderGeneralVacancyCards(false);
   var listEl = document.getElementById('allvacancies-list');
   if (listEl && listEl.scrollIntoView) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-async function loadGeneralVacancies(reset) {
+export async function loadGeneralVacancies(reset) {
   var state = generalVacancyQueryState();
   var key = generalVacancyQueryKeyFor(state);
   var queryChanged = reset || key !== generalVacancyQueryKey;
   if (queryChanged) {
-    generalVacancyRequestId++;
-    generalVacancyQueryKey = key;
-    generalVacancyPage = 0;
-    generalVacancyNextCursor = null;
-    generalVacancyRows = [];
-    generalVacancyHasMore = true;
-    generalVacancyLoading = false;
-    generalVacancyError = false;
-    generalVacancyDisplayPage = 1;
+    set_generalVacancyRequestId(generalVacancyRequestId + 1);
+    set_generalVacancyQueryKey( key);
+    set_generalVacancyPage( 0);
+    set_generalVacancyNextCursor( null);
+    set_generalVacancyRows( []);
+    set_generalVacancyHasMore( true);
+    set_generalVacancyLoading( false);
+    set_generalVacancyError( false);
+    set_generalVacancyDisplayPage( 1);
     var industrySel = document.getElementById('allvacancies-industry');
     if (industrySel) industrySel.style.display = 'none';
   }
   if (generalVacancyLoading || !generalVacancyHasMore) { renderGeneralVacancyCards(false); return; }
-  var requestId = ++generalVacancyRequestId;
-  generalVacancyLoading = true;
+  var requestId = set_generalVacancyRequestId(generalVacancyRequestId + 1);
+  set_generalVacancyLoading( true);
   renderGeneralVacancyCards(false);
   try {
     var page = await fetchGeneralVacancyPage(state, generalVacancyPage);
     if (requestId !== generalVacancyRequestId) return;
-    generalVacancyError = false;
+    set_generalVacancyError( false);
     var visiblePage = filterExpiredVacancies(page);
     matchVacanciesToAgencies(visiblePage, agenciesCache);
     visiblePage.forEach(function(v){
       if (v.agency_id && v.agency_id !== 'general' && !vacanciesCache.some(function(x){ return x.id === v.id; })) vacanciesCache.push(v);
     });
     // A matched record belongs in its agency section, not General Vacancies.
-    generalVacancyRows = generalVacancyRows.concat(visiblePage.filter(isGeneralDirectoryVacancy));
-    generalVacancyHasMore = page.length === generalVacancyPageSize;
-    generalVacancyPage += 1;
+    set_generalVacancyRows( generalVacancyRows.concat(visiblePage.filter(isGeneralDirectoryVacancy)));
+    set_generalVacancyHasMore( page.length === generalVacancyPageSize);
+    set_generalVacancyPage(generalVacancyPage + ( 1));
     renderGeneralVacancyCards(true);
   } catch(e) {
     if (requestId !== generalVacancyRequestId) return;
-    generalVacancyError = true;
-    generalVacancyHasMore = true;
+    set_generalVacancyError( true);
+    set_generalVacancyHasMore( true);
   } finally {
     if (requestId === generalVacancyRequestId) {
-      generalVacancyLoading = false;
+      set_generalVacancyLoading( false);
       renderGeneralVacancyCards(false);
     }
   }
 }
-function loadMoreGeneralVacancies() {
+export function loadMoreGeneralVacancies() {
   if (allVacanciesFolder === 'general') loadGeneralVacancies(false);
   else if (DEDICATED_VACANCY_FOLDER_SOURCES[allVacanciesFolder]) loadDedicatedVacancies(false);
   else {
     vacancyFolderDisplayLimit += 30;
-    renderAllVacanciesList();
+    window.renderAllVacanciesList();
   }
 }
 // Mirrors renderGeneralVacancyCards()/loadGeneralVacancies() above for the
 // 5 dedicated-source folders (Himalayas/Adzuna/Government/Retail/
 // Learnerships). One shared state machine since only one folder is open at
 // a time — see dedicatedVacancy* globals in app-core.js.
-var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships', careers_page: 'Cruise careers' };
-function renderDedicatedVacancyCards(append) {
+export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships', careers_page: 'Cruise careers' };
+export function renderDedicatedVacancyCards(append) {
   var el = document.getElementById('allvacancies-list');
   var loadMore = document.getElementById('allvacancies-loadmore');
   var countLabel = document.getElementById('allvacancies-result-count');
@@ -1643,16 +1652,16 @@ function renderDedicatedVacancyCards(append) {
   } else {
     el.dataset.state = 'ready';
     var totalPages = Math.max(1, Math.ceil((folderCount || dedicatedVacancyRows.length) / VAC_PAGE_SIZE));
-    if (dedicatedVacancyDisplayPage > totalPages) dedicatedVacancyDisplayPage = totalPages;
+    if (dedicatedVacancyDisplayPage > totalPages) set_dedicatedVacancyDisplayPage( totalPages);
     var pageStart = (dedicatedVacancyDisplayPage - 1) * VAC_PAGE_SIZE;
     var pageRows = dedicatedVacancyRows.slice(pageStart, pageStart + VAC_PAGE_SIZE);
-    var cards = pageRows.map(function(v){ return vacancyCard(v, {}, { hideBadges: true }); }).join('');
+    var cards = pageRows.map(function(v){ return window.vacancyCard(v, {}, { hideBadges: true }); }).join('');
     el.innerHTML = '<div class="pgroup-label">' + escapeHtml(folderLabel) + '</div>' + (pageRows.length ? cards : '<div class="empty-state"><h3>Loading vacancies…</h3></div>') + vacPaginationBar(dedicatedVacancyDisplayPage, totalPages, 'goToDedicatedVacancyPage');
   }
   if (countLabel) countLabel.textContent = folderCount ? dedicatedVacancyRows.length + ' of ' + folderCount + ' loaded' : dedicatedVacancyRows.length + ' loaded';
   if (loadMore) loadMore.style.display = 'none';
 }
-async function goToDedicatedVacancyPage(n) {
+export async function goToDedicatedVacancyPage(n) {
   var folder = allVacanciesFolder;
   if (!DEDICATED_VACANCY_FOLDER_SOURCES[folder]) return;
   n = Math.max(1, n);
@@ -1661,53 +1670,53 @@ async function goToDedicatedVacancyPage(n) {
     await loadDedicatedVacancies(false);
   }
   var totalPages = Math.max(1, Math.ceil((folderCount || dedicatedVacancyRows.length) / VAC_PAGE_SIZE));
-  dedicatedVacancyDisplayPage = Math.max(1, Math.min(n, totalPages));
+  set_dedicatedVacancyDisplayPage( Math.max(1, Math.min(n, totalPages)));
   renderDedicatedVacancyCards(false);
   var listEl = document.getElementById('allvacancies-list');
   if (listEl && listEl.scrollIntoView) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-async function loadDedicatedVacancies(reset) {
+export async function loadDedicatedVacancies(reset) {
   var folder = allVacanciesFolder;
   if (!DEDICATED_VACANCY_FOLDER_SOURCES[folder]) return;
   var state = generalVacancyQueryState();
   var key = folder + '|' + generalVacancyQueryKeyFor(state);
   var queryChanged = reset || folder !== dedicatedVacancyFolder || key !== dedicatedVacancyQueryKey;
   if (queryChanged) {
-    dedicatedVacancyRequestId++;
-    dedicatedVacancyFolder = folder;
-    dedicatedVacancyQueryKey = key;
-    dedicatedVacancyPage = 0;
-    dedicatedVacancyNextCursor = null;
-    dedicatedVacancyRows = [];
-    dedicatedVacancyHasMore = true;
-    dedicatedVacancyLoading = false;
-    dedicatedVacancyError = false;
-    dedicatedVacancyDisplayPage = 1;
+    set_dedicatedVacancyRequestId(dedicatedVacancyRequestId + 1);
+    set_dedicatedVacancyFolder( folder);
+    set_dedicatedVacancyQueryKey( key);
+    set_dedicatedVacancyPage( 0);
+    set_dedicatedVacancyNextCursor( null);
+    set_dedicatedVacancyRows( []);
+    set_dedicatedVacancyHasMore( true);
+    set_dedicatedVacancyLoading( false);
+    set_dedicatedVacancyError( false);
+    set_dedicatedVacancyDisplayPage( 1);
   }
   if (dedicatedVacancyLoading || !dedicatedVacancyHasMore) { renderDedicatedVacancyCards(false); return; }
-  var requestId = ++dedicatedVacancyRequestId;
-  dedicatedVacancyLoading = true;
+  var requestId = set_dedicatedVacancyRequestId(dedicatedVacancyRequestId + 1);
+  set_dedicatedVacancyLoading( true);
   renderDedicatedVacancyCards(false);
   try {
     var page = await fetchDedicatedVacancyPage(folder, state, dedicatedVacancyPage);
     if (requestId !== dedicatedVacancyRequestId) return;
-    dedicatedVacancyError = false;
-    dedicatedVacancyRows = dedicatedVacancyRows.concat(filterExpiredVacancies(page));
-    dedicatedVacancyHasMore = page.length === dedicatedVacancyPageSize;
-    dedicatedVacancyPage += 1;
+    set_dedicatedVacancyError( false);
+    set_dedicatedVacancyRows( dedicatedVacancyRows.concat(filterExpiredVacancies(page)));
+    set_dedicatedVacancyHasMore( page.length === dedicatedVacancyPageSize);
+    set_dedicatedVacancyPage(dedicatedVacancyPage + ( 1));
     renderDedicatedVacancyCards(true);
   } catch(e) {
     if (requestId !== dedicatedVacancyRequestId) return;
-    dedicatedVacancyError = true;
-    dedicatedVacancyHasMore = true;
+    set_dedicatedVacancyError( true);
+    set_dedicatedVacancyHasMore( true);
   } finally {
     if (requestId === dedicatedVacancyRequestId) {
-      dedicatedVacancyLoading = false;
+      set_dedicatedVacancyLoading( false);
       renderDedicatedVacancyCards(false);
     }
   }
 }
-function renderAllVacanciesList() {
+export function renderAllVacanciesList() {
   updateVacanciesBackButton();
 
   if (allVacanciesFolder === 'general') {
@@ -1748,7 +1757,7 @@ function renderAllVacanciesList() {
   if (displayKey !== vacancyFolderDisplayKey) {
     vacancyFolderDisplayKey = displayKey;
     vacancyFolderDisplayLimit = 30;
-    agencyFolderDisplayPage = 1;
+    set_agencyFolderDisplayPage( 1);
   }
   var list = allVacanciesFolder === 'agency'
     ? visible.filter(hasAssignedAgency)
@@ -1895,7 +1904,7 @@ function renderAllVacanciesList() {
         (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
           (list.length ? list.slice(0, 12).map(function(v) {
             var agency = v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function(a){ return a.id === v.agency_id; }) || {}) : {};
-            return vacancyCard(v, agency, { hideBadges: true });
+            return window.vacancyCard(v, agency, { hideBadges: true });
           }).join('') : '<div class="empty-state"><p>No vacancies match this filter yet.</p></div>')) +
       '</div></section>';
     el.innerHTML = sourceRail +
@@ -1915,7 +1924,7 @@ function renderAllVacanciesList() {
 
   var totalFolderRows = list.length;
   var agencyTotalPages = Math.max(1, Math.ceil(totalFolderRows / VAC_PAGE_SIZE));
-  if (agencyFolderDisplayPage > agencyTotalPages) agencyFolderDisplayPage = agencyTotalPages;
+  if (agencyFolderDisplayPage > agencyTotalPages) set_agencyFolderDisplayPage( agencyTotalPages);
   var agencyPageStart = (agencyFolderDisplayPage - 1) * VAC_PAGE_SIZE;
   var displayList = list.slice(agencyPageStart, agencyPageStart + VAC_PAGE_SIZE);
   var resultCount = document.getElementById('allvacancies-result-count');
@@ -1978,18 +1987,18 @@ function renderAllVacanciesList() {
     // Plain cards only, no wrapping <section> — matches the flat General
     // Vacancies list exactly, so every folder's cards render identically
     // regardless of source.
-    return group.items.map(function(v){ return vacancyCard(v, agency, { hideBadges: true }); }).join('');
+    return group.items.map(function(v){ return window.vacancyCard(v, agency, { hideBadges: true }); }).join('');
   }).join('') + vacPaginationBar(agencyFolderDisplayPage, agencyTotalPages, 'goToAgencyFolderPage');
 }
-function goToAgencyFolderPage(n) {
+export function goToAgencyFolderPage(n) {
   if (allVacanciesFolder !== 'agency') return;
-  agencyFolderDisplayPage = Math.max(1, n);
-  renderAllVacanciesList();
+  set_agencyFolderDisplayPage( Math.max(1, n));
+  window.renderAllVacanciesList();
   var listEl = document.getElementById('allvacancies-list');
   if (listEl && listEl.scrollIntoView) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function switchSubTab(tab) {
+export function switchSubTab(tab) {
   subCurrentTab = tab;
   document.getElementById('sub-tab-reports').classList.toggle('active', tab === 'reports');
   document.getElementById('sub-tab-suggestions').classList.toggle('active', tab === 'suggestions');
@@ -1999,7 +2008,7 @@ function switchSubTab(tab) {
   if (tab === 'suggestions' && subSuggestionsCache.length === 0) loadSuggestionsFromSupabase();
 }
 
-async function loadReportsFromSupabase() {
+export async function loadReportsFromSupabase() {
   var list = document.getElementById('submissions-list');
   if (list) list.innerHTML = '<div class="empty-state"><h3>Loading reports…</h3></div>';
   var supaReports = [];
@@ -2040,7 +2049,7 @@ async function loadReportsFromSupabase() {
   }
 }
 
-async function loadSuggestionsFromSupabase() {
+export async function loadSuggestionsFromSupabase() {
   var list = document.getElementById('submissions-list');
   if (list) list.innerHTML = '<div class="empty-state"><h3>Loading suggestions…</h3></div>';
   var supaSugg = [];
@@ -2078,7 +2087,7 @@ async function loadSuggestionsFromSupabase() {
   }
 }
 
-function updateSubBadges() {
+export function updateSubBadges() {
   var reportsOpen = subReportsCache.filter(function(r){ return (r.status || 'open') === 'open'; }).length;
   var suggOpen = subSuggestionsCache.filter(function(s){ return (s.status || 'open') === 'open'; }).length;
   var rb = document.getElementById('reports-badge');
@@ -2089,7 +2098,7 @@ function updateSubBadges() {
   else { sb.style.display = 'none'; }
 }
 
-function renderSubmissionsList() {
+export function renderSubmissionsList() {
   var list = document.getElementById('submissions-list');
   if (!list) return;
   var items = subCurrentTab === 'reports' ? subReportsCache : subSuggestionsCache;
@@ -2129,7 +2138,7 @@ function renderSubmissionsList() {
   list.innerHTML = html;
 }
 
-async function toggleSubStatus(table, id) {
+export async function toggleSubStatus(table, id) {
   if (!id) { showToast('Cannot update — missing ID'); return; }
   var cache = table === 'reports' ? subReportsCache : subSuggestionsCache;
   // Support both real Supabase id and local _localId
@@ -2175,7 +2184,7 @@ async function toggleSubStatus(table, id) {
   }
 }
 
-async function deleteSubmission(table, id) {
+export async function deleteSubmission(table, id) {
   if (!id) { showToast('Cannot delete — missing ID'); return; }
   if (!confirm('Delete this submission? This cannot be undone.')) return;
   // Delete from Supabase only if it's a real DB row
@@ -2207,3 +2216,164 @@ async function deleteSubmission(table, id) {
 // Homepage source cards use inline actions in rendered markup. Export the
 // handler explicitly because the bundled UI code has its own scope.
 window.openVacancyFolder = openVacancyFolder;
+
+
+// ===== window bridge (generated by the ES-module migration) =====
+// Inline onclick=""/oninput="" handlers in index.html, string-built handlers in the
+// templates above, and the classic scripts (app-vacancy-v2.js, app-alerts.js,
+// content*.js) look these names up on window, exactly like they did when every
+// file shared one global scope. Remove an entry only after checking nothing
+// outside the module graph reads it.
+Object.assign(window, {
+  getPinAttempts,
+  setPinAttempts,
+  getPinLockTime,
+  setPinLockTime,
+  isPinLocked,
+  formatRemainingTime,
+  verifyPin,
+  showPinLockMsg,
+  openAdminSheet,
+  adminLogin,
+  adminLogout,
+  updateAdminUI,
+  isRestorableScreen,
+  persistActiveScreen,
+  restoredScreenName,
+  closeTransientOutsideUi,
+  normalizeStartupScreen,
+  restoreActiveScreenBeforeReveal,
+  setHomeLocationFilter,
+  setHomeCategoryFilter,
+  clearHomeFeedFilters,
+  openHomeTalentPoolProfile,
+  homeSourceVacancies,
+  isRetailPriorityVacancy,
+  ensureRetailPriorityVacancies,
+  homeVacancyText,
+  homeVacancyMatchesLocation,
+  homeVacancyMatchesCategory,
+  openCompanyFeatureInquiry,
+  openFeaturedCompanyWebsite,
+  homeVacancySourceMarkup,
+  getDailyFeaturedPoster,
+  renderHomeFeaturedPoster,
+  homeWeeklyProvince,
+  homeWeeklyRows,
+  homeWeeklyTopJobsMarkup,
+  homeAvailableRoleGroups,
+  homeAvailableRolesMarkup,
+  renderHomeFeed,
+  getSectionLink,
+  shareSectionLink,
+  openDeepLinkedSection,
+  openSiteMenu,
+  closeSiteMenu,
+  renderRestoredScreenContent,
+  scrollStats,
+  updateCtaDots,
+  scrollCtaPanel,
+  setCtaPanel,
+  refreshHome,
+  showToast,
+  forceUpdate,
+  dismissUpdateBanner,
+  forceUpdateReload,
+  setRetryBanner,
+  retryLoadAll,
+  goSubmissions,
+  closeTalentPool,
+  goBackFromPool,
+  goBackToProfile,
+  openAccountScreen,
+  activateAccountFromMenu,
+  goBackFromAccount,
+  renderAccountIdentity,
+  renderAccountQuota,
+  renderAccountPoolStatus,
+  renderAccountDetails,
+  renderProfileSettingsVisibility,
+  setProfileSettingsStatus,
+  profilePhotoUrl,
+  openEditProfileSheet,
+  saveProfileEdits,
+  openProfilePhotoSheet,
+  handleProfilePhoto,
+  saveProfilePhoto,
+  removeProfilePhoto,
+  openDeleteAccountSheet,
+  confirmDeleteAccount,
+  goBackToHome,
+  goBackHome,
+  resetActiveScreenScroll,
+  goBackFromDirectory,
+  showAllAgencies,
+  showAllBranches,
+  showAllVacancies,
+  showVacancyPosters,
+  resetPreciseLocationChipVisual,
+  syncPreciseLocationChip,
+  usePreciseLocation,
+  reverseGeocodeArea,
+  detectAreaFromCoords,
+  applyPreciseLocation,
+  renderAllAgenciesList,
+  renderAllBranchesList,
+  deleteBranchAllList,
+  handleVacanciesBack,
+  vacPaginationBar,
+  updateVacanciesBackButton,
+  vacancyMatchesOverviewSource,
+  setVacancyOverviewSource,
+  vacancyMatchesOverviewFilter,
+  setVacancyOverviewFilter,
+  openVacancyFolder,
+  closeVacancyFolder,
+  renderGeneralVacancyCards,
+  goToGeneralVacancyPage,
+  loadGeneralVacancies,
+  loadMoreGeneralVacancies,
+  renderDedicatedVacancyCards,
+  goToDedicatedVacancyPage,
+  loadDedicatedVacancies,
+  renderAllVacanciesList,
+  goToAgencyFolderPage,
+  switchSubTab,
+  loadReportsFromSupabase,
+  loadSuggestionsFromSupabase,
+  updateSubBadges,
+  renderSubmissionsList,
+  toggleSubStatus,
+  deleteSubmission,
+});
+Object.defineProperties(window, {
+  ADMIN_PIN: { get: () => ADMIN_PIN, set: (v) => { ADMIN_PIN = v; }, configurable: true, enumerable: true },
+  pinVerified: { get: () => pinVerified, set: (v) => { pinVerified = v; }, configurable: true, enumerable: true },
+  SA_ACTIVE_SCREEN_KEY: { get: () => SA_ACTIVE_SCREEN_KEY, set: (v) => { SA_ACTIVE_SCREEN_KEY = v; }, configurable: true, enumerable: true },
+  SA_RESTORABLE_SCREENS: { get: () => SA_RESTORABLE_SCREENS, set: (v) => { SA_RESTORABLE_SCREENS = v; }, configurable: true, enumerable: true },
+  homeLocationFilter: { get: () => homeLocationFilter, set: (v) => { homeLocationFilter = v; }, configurable: true, enumerable: true },
+  homeCategoryFilter: { get: () => homeCategoryFilter, set: (v) => { homeCategoryFilter = v; }, configurable: true, enumerable: true },
+  HOME_VACANCY_CARD_LIMIT: { get: () => HOME_VACANCY_CARD_LIMIT, set: (v) => { HOME_VACANCY_CARD_LIMIT = v; }, configurable: true, enumerable: true },
+  retailPriorityPreviewPromise: { get: () => retailPriorityPreviewPromise, set: (v) => { retailPriorityPreviewPromise = v; }, configurable: true, enumerable: true },
+  retailPriorityPreviewLoaded: { get: () => retailPriorityPreviewLoaded, set: (v) => { retailPriorityPreviewLoaded = v; }, configurable: true, enumerable: true },
+  HOME_JOB_CATEGORIES: { get: () => HOME_JOB_CATEGORIES, set: (v) => { HOME_JOB_CATEGORIES = v; }, configurable: true, enumerable: true },
+  HOME_WEEKLY_PROVINCES: { get: () => HOME_WEEKLY_PROVINCES, set: (v) => { HOME_WEEKLY_PROVINCES = v; }, configurable: true, enumerable: true },
+  SA_SECTION_LINKS: { get: () => SA_SECTION_LINKS, set: (v) => { SA_SECTION_LINKS = v; }, configurable: true, enumerable: true },
+  toastTimer: { get: () => toastTimer, set: (v) => { toastTimer = v; }, configurable: true, enumerable: true },
+  subCurrentTab: { get: () => subCurrentTab, set: (v) => { subCurrentTab = v; }, configurable: true, enumerable: true },
+  subReportsCache: { get: () => subReportsCache, set: (v) => { subReportsCache = v; }, configurable: true, enumerable: true },
+  subSuggestionsCache: { get: () => subSuggestionsCache, set: (v) => { subSuggestionsCache = v; }, configurable: true, enumerable: true },
+  accountReturnScreen: { get: () => accountReturnScreen, set: (v) => { accountReturnScreen = v; }, configurable: true, enumerable: true },
+  PRECISE_LOCATION_SCREENS: { get: () => PRECISE_LOCATION_SCREENS, set: (v) => { PRECISE_LOCATION_SCREENS = v; }, configurable: true, enumerable: true },
+  preciseLocationState: { get: () => preciseLocationState, set: (v) => { preciseLocationState = v; }, configurable: true, enumerable: true },
+  allVacanciesFolder: { get: () => allVacanciesFolder, set: (v) => { allVacanciesFolder = v; }, configurable: true, enumerable: true },
+  vacancyFolderDisplayLimit: { get: () => vacancyFolderDisplayLimit, set: (v) => { vacancyFolderDisplayLimit = v; }, configurable: true, enumerable: true },
+  vacancyFolderDisplayKey: { get: () => vacancyFolderDisplayKey, set: (v) => { vacancyFolderDisplayKey = v; }, configurable: true, enumerable: true },
+  VAC_PAGE_PREV_SVG: { get: () => VAC_PAGE_PREV_SVG, set: (v) => { VAC_PAGE_PREV_SVG = v; }, configurable: true, enumerable: true },
+  VAC_PAGE_NEXT_SVG: { get: () => VAC_PAGE_NEXT_SVG, set: (v) => { VAC_PAGE_NEXT_SVG = v; }, configurable: true, enumerable: true },
+  vacancyOverviewFilter: { get: () => vacancyOverviewFilter, set: (v) => { vacancyOverviewFilter = v; }, configurable: true, enumerable: true },
+  vacancyOverviewSource: { get: () => vacancyOverviewSource, set: (v) => { vacancyOverviewSource = v; }, configurable: true, enumerable: true },
+  vacancyOverviewExtraRows: { get: () => vacancyOverviewExtraRows, set: (v) => { vacancyOverviewExtraRows = v; }, configurable: true, enumerable: true },
+  vacancyOverviewLoading: { get: () => vacancyOverviewLoading, set: (v) => { vacancyOverviewLoading = v; }, configurable: true, enumerable: true },
+  DEDICATED_VACANCY_FOLDER_LABELS: { get: () => DEDICATED_VACANCY_FOLDER_LABELS, set: (v) => { DEDICATED_VACANCY_FOLDER_LABELS = v; }, configurable: true, enumerable: true },
+});
