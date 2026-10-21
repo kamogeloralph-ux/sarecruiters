@@ -16,6 +16,9 @@ on:
       - "data/**"
       - "generate-pages.js"
       - "scripts/bundle-app.js"
+      - "vite.config.mjs"
+      - "package.json"
+      - "package-lock.json"
       - "scripts/verify-critical-globals.js"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
