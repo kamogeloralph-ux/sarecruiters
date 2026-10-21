@@ -82,6 +82,32 @@ function extractOnAttrCalledNames(html) {
   return Array.from(names);
 }
 
+
+// The app bundle is now an ES-module graph with minified identifiers, so a
+// function's own name no longer appears in the output. What does survive
+// minification is the window bridge each app-*.js file ends with
+// (Object.assign(window, { name: ... }) for functions/consts and
+// Object.defineProperties(window, { name: { get, set } }) for mutable vars),
+// because object keys are never renamed. Those keys ARE the names that
+// inline onclick="..." handlers and the classic scripts can call.
+function collectBridgeNames(code) {
+  const names = new Set();
+  let m;
+  const assignRe = /Object\.assign\(\s*window\s*,\s*\{([^}]*)\}\s*\)/g;
+  while ((m = assignRe.exec(code))) {
+    for (const part of m[1].split(',')) {
+      const key = part.split(':')[0].trim();
+      if (/^[A-Za-z_$][\w$]*$/.test(key)) names.add(key);
+    }
+  }
+  const liveRe = /([A-Za-z_$][\w$]*)\s*:\s*\{\s*get\s*:/g;
+  while ((m = liveRe.exec(code))) names.add(m[1]);
+  // Explicit window.NAME = ... assignments made by the modules themselves.
+  const winRe = /\bwindow\.([A-Za-z_$][\w$]*)\s*=(?!=)/g;
+  while ((m = winRe.exec(code))) names.add(m[1]);
+  return names;
+}
+
 function isDeclaredInBundle(name, bundleCode) {
   const re = new RegExp(
     '\\bfunction\\s+' + name + '\\s*\\(' +
@@ -135,16 +161,25 @@ function verifyCriticalGlobals(rootDir, bundleCode) {
     const p = path.join(rootDir, f);
     if (fs.existsSync(p)) extraScripts += '\n' + fs.readFileSync(p, 'utf8');
   }
-  const fullPageCode = bundleCode + extraScripts;
+  // Names exported on window by the ES-module bridge (survives minification).
+  const bridge = collectBridgeNames(bundleCode);
+  if (bridge.size < 100) {
+    problems.push(
+      'The built bundle exposes only ' + bridge.size + ' names on window (expected several hundred). ' +
+      'The window bridge at the bottom of the app-*.js files is missing or the bundler changed its output shape; ' +
+      'every inline onclick="..." handler would break.'
+    );
+  }
+  const isExposed = (name) => bridge.has(name) || isDeclaredInBundle(name, extraScripts);
 
   // 1. Everything index.html's inline handlers call by name.
   const indexHtml = fs.readFileSync(path.join(rootDir, 'index.html'), 'utf8');
   const referencedNames = extractOnAttrCalledNames(indexHtml);
   for (const name of referencedNames) {
-    if (!isDeclaredInBundle(name, fullPageCode)) {
+    if (!isExposed(name)) {
       problems.push(
         `index.html calls "${name}(...)" from an inline event handler, but ` +
-        `"${name}" is not declared anywhere in the built JS bundle or ` +
+        `"${name}" is not exposed on window by the built JS bundle or ` +
         `content.js/content-manager.js. That button will silently do nothing ` +
         `when clicked.`
       );
@@ -154,7 +189,7 @@ function verifyCriticalGlobals(rootDir, bundleCode) {
   // 2. Explicit manager-link business-critical functions (covers JS-to-JS
   //    calls that the HTML scan above wouldn't catch).
   for (const name of CRITICAL_MANAGER_FUNCTIONS) {
-    if (!isDeclaredInBundle(name, fullPageCode)) {
+    if (!isExposed(name)) {
       problems.push(
         `Manager-link critical function "${name}" is missing from the built ` +
         `bundle. This will break agency/employer manager links.`
@@ -165,7 +200,7 @@ function verifyCriticalGlobals(rootDir, bundleCode) {
   // 3. The manage_token column itself (public reads) + the server-side
   //    verification helper (checked against the actual bundle output).
   problems.push(...verifyManageTokenSelected(rootDir));
-  if (!isDeclaredInBundle('verifyManagerTokenServer', bundleCode)) {
+  if (!bridge.has('verifyManagerTokenServer')) {
     problems.push(
       "verifyManagerTokenServer() is missing from the built bundle. " +
       "Manager links resolve through it (Worker /api/verify-manager); without it " +

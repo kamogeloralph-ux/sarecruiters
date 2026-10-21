@@ -12,6 +12,10 @@ const read = (p) => readFileSync(join(root, p), 'utf8');
 const migration = read('supabase/migrations/20261012_tipchat_audit_fixes.sql');
 const identityMigration = read('supabase/migrations/20261011_community_candidate_public_identity.sql');
 const appSource = read('app-community.js');
+// app-community.js is an ES module now (imports/exports + a window bridge). The vm sandbox below runs it
+// as a classic script with fake globals, so drop the import lines and export keywords first; the free
+// names (saAuthUser, showToast, supabaseClient, ...) then resolve from the sandbox exactly as before.
+const classicAppSource = appSource.replace(/^import [^\n]*\n/gm, '').replace(/^export /gm, '');
 const html = read('index.html');
 const worker = read('Cloudflare-worker/worker.js');
 
@@ -43,7 +47,7 @@ function makeSandbox({ rpc } = {}) {
   };
   sandbox.window.window = sandbox.window;
   vm.createContext(sandbox);
-  vm.runInContext(appSource + '\nthis.__mvp = communityMvp;', sandbox);
+  vm.runInContext(classicAppSource + '\nthis.__mvp = communityMvp;', sandbox);
   return { sandbox, toasts, calls, el };
 }
 

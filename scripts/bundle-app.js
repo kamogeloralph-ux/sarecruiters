@@ -1,27 +1,41 @@
 // ============================================================
 //  SA RECRUITERS — scripts/bundle-app.js
 // ============================================================
-//  Concatenates the split app-*.js files (app-core, app-data,
-//  app-cards, app-forms, app-sheets, app-ui, app-manager,
-//  app-manager-employer, app-pending-submissions, app-community) into a single minified bundle, and
-//  rewrites index.html's script tag to point at it with a
-//  content-hash query string for cache-busting.
+//  Builds the app bundle from the ES-module graph rooted at
+//  app-entry.js (app-core, app-data, app-cards, app-forms,
+//  app-sheets, app-ui, app-manager, app-manager-employer,
+//  app-pending-submissions, app-community, app-install) into one
+//  minified app.bundle.min.js, then rewrites index.html's script
+//  tag to point at it with a content-hash query string for
+//  cache-busting.
+//
+//  Bundler: Vite (vite.config.mjs). If Vite is not installed or its
+//  build fails, falls back to a plain esbuild bundle of the same
+//  entry so a tooling problem never blocks a deploy (set
+//  SA_BUNDLER=esbuild to force the fallback, SA_BUNDLER=vite to
+//  make a Vite failure fatal).
 //
 //  Called from generate-pages.js at the start of every build, so
 //  it runs automatically on every Cloudflare Pages deploy (both
 //  git-push builds and the cron-triggered rebuilds) without
 //  needing a separate build command.
 //
-//  If esbuild is unavailable for any reason, falls back to an
-//  unminified concatenation rather than failing the whole build —
-//  a slower bundle is far better than no deploy at all.
+//  Unlike the old concatenated bundle, identifiers ARE minified
+//  now: every name that index.html's inline onclick="..." handlers
+//  or the classic scripts need is exported on window by the bridge
+//  block at the bottom of each app-*.js file, as an object key that
+//  survives minification. verify-critical-globals.js checks those
+//  keys in the built output.
 // ============================================================
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execFileSync } = require('child_process');
 const { verifyCriticalGlobals } = require('./verify-critical-globals');
 
+const ENTRY = 'app-entry.js';
+// Every module the entry must import (order matches app-entry.js).
 const FILES = [
   'app-core.js',
   'app-data.js',
@@ -37,62 +51,86 @@ const FILES = [
 ];
 
 const BUNDLE_NAME = 'app.bundle.min.js';
-// Matches: <script src="app.bundle.min.js?v=ANYTHING" defer></script>
-const SCRIPT_TAG_RE = /<script src="app\.bundle\.min\.js\?v=[^"]*" defer><\/script>/;
+const VITE_OUT_DIR = 'build-tmp';
+// Matches the old classic tag and the new module tag:
+//   <script src="app.bundle.min.js?v=ANYTHING" defer></script>
+//   <script type="module" src="app.bundle.min.js?v=ANYTHING"></script>
+const SCRIPT_TAG_RE = /<script (?:type="module" )?src="app\.bundle\.min\.js\?v=[^"]*"(?: defer)?><\/script>/;
 
-function concatenateSource(rootDir) {
-  return FILES.map((f) => {
-    const filePath = path.join(rootDir, f);
-    const code = fs.readFileSync(filePath, 'utf8');
-    return `/* ---- ${f} ---- */\n${code}`;
-  }).join('\n;\n');
+function checkEntryImportsEveryModule(rootDir) {
+  const entry = fs.readFileSync(path.join(rootDir, ENTRY), 'utf8');
+  const missing = FILES.filter((f) => !entry.includes("'./" + f + "'"));
+  if (missing.length) {
+    throw new Error('[bundle-app] ' + ENTRY + ' does not import: ' + missing.join(', ') + '. Every app module must be imported by the entry or it will silently be left out of the bundle.');
+  }
 }
 
-function minify(code) {
-  // Lazily require esbuild so a missing/broken install degrades
-  // gracefully instead of crashing the entire site build.
-  const esbuild = require('esbuild');
-  // IMPORTANT: minifyIdentifiers is deliberately OFF. This bundle is a
-  // concatenation of classic (non-module) scripts that declare top-level
-  // functions/vars referenced by NAME from static onclick="..."/oninput="..."
-  // attributes in index.html (e.g. onclick="retryManagerTokenFromStatus()",
-  // managerAddBranch(), etc. — 50+ of these). esbuild's identifier minifier
-  // has no way to see those HTML-string references, so with it on it
-  // silently renames the functions those attributes call, breaking them at
-  // runtime with no error surfaced anywhere obvious. Whitespace + syntax
-  // minification are both safe (they don't touch top-level names) and still
-  // give most of the size win.
-  const result = esbuild.transformSync(code, {
-    minifyWhitespace: true,
-    minifySyntax: true,
-    minifyIdentifiers: false,
-    target: 'es2018',
-    loader: 'js',
+function resolveViteBin(rootDir) {
+  try {
+    const pkg = require.resolve('vite/package.json', { paths: [rootDir] });
+    const bin = path.join(path.dirname(pkg), 'bin', 'vite.js');
+    return fs.existsSync(bin) ? bin : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function buildWithVite(rootDir, viteBin) {
+  const outFile = path.join(rootDir, VITE_OUT_DIR, BUNDLE_NAME);
+  fs.rmSync(path.join(rootDir, VITE_OUT_DIR), { recursive: true, force: true });
+  execFileSync(process.execPath, [viteBin, 'build', '--config', 'vite.config.mjs', '--logLevel', 'warn'], {
+    cwd: rootDir,
+    stdio: 'inherit',
   });
-  return result.code;
+  if (!fs.existsSync(outFile)) {
+    throw new Error('vite build finished but ' + VITE_OUT_DIR + '/' + BUNDLE_NAME + ' was not produced (check build.rollupOptions.output.entryFileNames in vite.config.mjs).');
+  }
+  return fs.readFileSync(outFile, 'utf8');
+}
+
+function buildWithEsbuild(rootDir) {
+  const esbuild = require('esbuild');
+  const result = esbuild.buildSync({
+    entryPoints: [path.join(rootDir, ENTRY)],
+    bundle: true,
+    format: 'esm',
+    minify: true,
+    target: 'es2018',
+    write: false,
+    logLevel: 'error',
+  });
+  return result.outputFiles[0].text;
+}
+
+function buildBundleSource(rootDir) {
+  const forced = process.env.SA_BUNDLER;
+  if (forced !== 'esbuild') {
+    const viteBin = resolveViteBin(rootDir);
+    if (viteBin) {
+      try {
+        return { code: buildWithVite(rootDir, viteBin), bundler: 'vite' };
+      } catch (err) {
+        if (forced === 'vite') throw err;
+        console.warn('[bundle-app] vite build failed, falling back to esbuild:', err && err.message ? err.message : err);
+      }
+    } else if (forced === 'vite') {
+      throw new Error('[bundle-app] SA_BUNDLER=vite but vite is not installed. Run "npm ci" (vite is a devDependency).');
+    } else {
+      console.warn('[bundle-app] vite is not installed, falling back to esbuild. Run "npm ci" to build with Vite.');
+    }
+  }
+  return { code: buildWithEsbuild(rootDir), bundler: 'esbuild' };
 }
 
 function runBundle(rootDir) {
-  const concatenated = concatenateSource(rootDir);
+  checkEntryImportsEveryModule(rootDir);
 
-  let output;
-  let minified = true;
-  try {
-    output = minify(concatenated);
-  } catch (err) {
-    console.warn(
-      '[bundle-app] esbuild minification failed, falling back to unminified bundle:',
-      err && err.message ? err.message : err
-    );
-    output = concatenated;
-    minified = false;
-  }
+  const { code: output, bundler } = buildBundleSource(rootDir);
 
-  // Hard safety net: abort the whole build (not just skip minification)
-  // if the result would break a function referenced by name from static
-  // HTML, break the manager-link business flow specifically, or if the
-  // manage_token column has been dropped from the agency/employer
-  // queries. See verify-critical-globals.js for why this exists.
+  // Hard safety net: abort the whole build if the result would break a
+  // function referenced by name from static HTML, break the manager-link
+  // business flow specifically, or if the manage_token column has been
+  // dropped from the agency/employer queries. See verify-critical-globals.js.
   verifyCriticalGlobals(rootDir, output);
 
   const outPath = path.join(rootDir, BUNDLE_NAME);
@@ -105,24 +143,23 @@ function runBundle(rootDir) {
   if (!SCRIPT_TAG_RE.test(html)) {
     throw new Error(
       `[bundle-app] Could not find the app.bundle.min.js script tag in index.html. ` +
-      `Expected a tag like <script src="app.bundle.min.js?v=..." defer></script>.`
+      `Expected a tag like <script type="module" src="app.bundle.min.js?v=..."></script>.`
     );
   }
   const newHtml = html.replace(
     SCRIPT_TAG_RE,
-    `<script src="${BUNDLE_NAME}?v=${hash}" defer></script>`
+    `<script type="module" src="${BUNDLE_NAME}?v=${hash}"></script>`
   );
   fs.writeFileSync(indexPath, newHtml);
 
-  const rawBytes = concatenated.length;
+  const rawBytes = FILES.reduce((n, f) => n + fs.statSync(path.join(rootDir, f)).size, 0);
   const outBytes = output.length;
   console.log(
-    `[bundle-app] Bundled ${FILES.length} files (${(rawBytes / 1024).toFixed(1)}KB raw) ` +
-    `into ${BUNDLE_NAME} (${(outBytes / 1024).toFixed(1)}KB${minified ? ', minified' : ', NOT minified — esbuild unavailable'}) ` +
-    `[v=${hash}]`
+    `[bundle-app] Bundled ${FILES.length} modules via ${bundler} (${(rawBytes / 1024).toFixed(1)}KB source) ` +
+    `into ${BUNDLE_NAME} (${(outBytes / 1024).toFixed(1)}KB, minified) [v=${hash}]`
   );
 
-  return { outPath, hash, minified, rawBytes, outBytes };
+  return { outPath, hash, bundler, rawBytes, outBytes };
 }
 
 // ---- Self-hosted Supabase client (replaces the unpkg.com <script>) ----
