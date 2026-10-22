@@ -785,7 +785,10 @@ export function openGeneralVacancySheet() {
 export function openEmployerVacancySheet(employerId) {
   var isSelfManaging = employerManagerMode && managerEmployer && managerEmployer.id === employerId;
   if (!isAdmin && !isSelfManaging) { showToast('Vacancy posting for employers is managed by the admin.'); return; }
-  var emp = employersCache.find(function(x){ return x.id === employerId; });
+  // The directory cache may not contain this employer (not yet listed, or the
+  // directory data hasn't loaded); a self-managing employer was already
+  // verified server-side, so fall back to that record instead of blocking them.
+  var emp = employersCache.find(function(x){ return x.id === employerId; }) || (isSelfManaging ? managerEmployer : null);
   if (!emp) { showToast('Employer not found'); return; }
   editingGeneralVacancyId = null;
   pendingVacancyEmployer = employerId;

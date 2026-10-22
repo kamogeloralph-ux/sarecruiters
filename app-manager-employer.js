@@ -9,13 +9,13 @@
  * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
-import { employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, initials, isAdmin, loadSavedVacanciesFromSupabase, managerEmployer, managerPendingToken, markAppDataReady, resetGuestQuotaIfNewDay, saAuthUser, set_employerManagerMode, set_employerManagerPendingToken, set_managerEmployer, set_managerPendingToken, startAuthenticatedApp, supabaseClient, trackEvent } from './app-core.js';
+import { employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, initials, isAdmin, loadSavedVacanciesFromSupabase, managerEmployer, managerMode, managerPendingToken, markAppDataReady, resetGuestQuotaIfNewDay, saAuthUser, set_employerManagerMode, set_employerManagerPendingToken, set_managerEmployer, set_managerPendingToken, startAuthenticatedApp, supabaseClient, trackEvent } from './app-core.js';
 import { initConnectionStatus, loadAll, loadDataCache, loadTodayTrack, updateStats, vacanciesForEmployer, vacancyScreenStateMarkup } from './app-data.js';
 import { ICON_LINK, IS, filterAndRenderCached, verifiedBadge } from './app-cards.js';
 import { openEmployerVacancySheet, openGeneralVacancySheet } from './app-forms.js';
 import { loadSocialLinks, openSuggestionSheet } from './app-sheets.js';
 import { openDeepLinkedSection, renderRestoredScreenContent, showToast } from './app-ui.js';
-import { enterManagerMode, managerSession, managerStatusWatchdog, set_managerStatusWatchdog, set_managerTokenKind, showManagerStatus, verifyManagerTokenServer } from './app-manager.js';
+import { enterManagerMode, isManagerStatusError, managerSession, managerStatusWatchdog, set_managerStatusWatchdog, set_managerTokenKind, showManagerStatus, verifyManagerTokenServer } from './app-manager.js';
 
 
 // ===== EMPLOYER MANAGER MODE (employer self-service, vacancies only) =====
@@ -174,7 +174,10 @@ export async function processAlertUnsubscribe() {
 export function bumpManagerWatchdog(delayMs) {
   clearTimeout(managerStatusWatchdog);
   set_managerStatusWatchdog( setTimeout(function() {
-    if (managerPendingToken || employerManagerPendingToken) {
+    // Fire whenever the visitor is still stuck on the loading screen, not only
+    // when a token is "pending": a failed/aborted resolution can leave neither
+    // pending flag set and the spinner would then spin forever.
+    if (!managerMode && !employerManagerMode && !isManagerStatusError()) {
       showManagerStatus('error',
         'Couldn\'t load your manager link',
         'We weren\'t able to reach SA Recruiters. Please check your connection and try again.');
@@ -220,8 +223,24 @@ export async function fastResolveManagerToken() { /* resolution is server-side n
     // token against the Worker immediately, in parallel with the directory
     // load below (whose tail also re-enters manager mode if the token is
     // still pending — that path is idempotent).
-    if (token) enterManagerMode(token);
-    if (empToken) enterEmployerManagerMode(empToken);
+    //
+    // IMPORTANT: defer to a microtask. This IIFE runs while the module graph is
+    // still being evaluated, and app-manager.js <-> app-manager-employer.js
+    // import each other. Calling enterManagerMode()/enterEmployerManagerMode()
+    // synchronously here ran them BEFORE app-manager.js had initialised
+    // `managerSession`, so they threw "Cannot read properties of undefined
+    // (reading 'employerId')", never contacted the Worker, and the spinner
+    // stayed up forever. A microtask runs after the whole bundle has evaluated.
+    var failManagerLink = function(err) {
+      try { console.error('[SA Recruiters] manager link failed', err); } catch (e) {}
+      showManagerStatus('error',
+        'Couldn\'t load your manager link',
+        'Something went wrong while opening your link. Please tap Try again.');
+    };
+    Promise.resolve().then(function() {
+      if (token) enterManagerMode(token).catch(failManagerLink);
+      if (empToken) enterEmployerManagerMode(empToken).catch(failManagerLink);
+    });
   }
 })();
 

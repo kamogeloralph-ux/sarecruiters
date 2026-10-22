@@ -201,6 +201,8 @@ export async function verifyManagerTokenServer(kind, token) {
 
 // Show the dedicated manager-link status screen so a token URL never silently
 // drops the visitor onto the normal home screen while it is still resolving.
+var managerStatusIsError = false;
+export function isManagerStatusError() { return managerStatusIsError; }
 export function showManagerStatus(state, heading, body) {
   var screen = document.getElementById('screen-manager-status');
   if (!screen) return;
@@ -216,6 +218,9 @@ export function showManagerStatus(state, heading, body) {
   var retry = document.getElementById('manager-status-retry');
   var home = document.getElementById('manager-status-home');
   var ctx = document.querySelector('#screen-manager-status .screen-context');
+  // A final error state must not be overwritten by the loading watchdog.
+  managerStatusIsError = (state === 'error');
+  if (state === 'error') clearTimeout(managerStatusWatchdog);
   if (spinner) spinner.style.display = (state === 'loading') ? '' : 'none';
   if (h) h.textContent = heading || '';
   if (p) p.textContent = body || '';
@@ -227,6 +232,19 @@ export function retryManagerTokenFromStatus() {
   // Re-trigger resolution for whichever token kind is pending.
   if (managerPendingToken) { enterManagerMode(managerPendingToken); return; }
   if (employerManagerPendingToken) { enterEmployerManagerMode(employerManagerPendingToken); return; }
+  // Neither flag is set once a resolution attempt has finished or failed, so
+  // fall back to the token still sitting in the URL instead of dumping the
+  // visitor on the home screen.
+  var qs = new URLSearchParams(window.location.search);
+  var urlToken = qs.get('manage');
+  var urlEmpToken = qs.get('manage_employer');
+  if (urlToken || urlEmpToken) {
+    showManagerStatus('loading', 'Loading your manager link…', 'We\'re connecting to SA Recruiters. This usually takes a moment.');
+    bumpManagerWatchdog(20000);
+    if (urlToken) enterManagerMode(urlToken);
+    if (urlEmpToken) enterEmployerManagerMode(urlEmpToken);
+    return;
+  }
   goBackToHome();
 }
 export async function enterManagerMode(token) {
