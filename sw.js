@@ -6,7 +6,7 @@
  * Static assets are stale-while-revalidate, while startup data is network-first
  * because it changes independently of the app shell.
  */
-const VERSION = 'sa-recruiters-7fc0d695b4';
+const VERSION = 'sa-recruiters-mono1';
 const CACHE_NAME = VERSION + '-runtime';
 const PRECACHE_URLS = [
   '/',
@@ -14,6 +14,7 @@ const PRECACHE_URLS = [
   '/manifest.json',
   '/styles.css',
   '/community.css',
+  '/mono.css',
   '/static-pages.css',
   '/app.bundle.min.js',
   '/vendor/supabase.min.js',

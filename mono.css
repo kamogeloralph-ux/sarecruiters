@@ -1,0 +1,208 @@
+/* ==========================================================================
+   SA Recruiters — Monochrome layer (pure black & white)
+   Loaded LAST. styles.css / ios-blue-ui.css / vacancy-v2.css / community.css
+   were already converted to grey tokens; this file adds the structure that
+   makes a black-and-white UI clear:
+     • black "chrome" panels (header, nav, menus) that stay black in both themes
+     • one primary button style (solid ink) + one secondary (2px outline)
+     • meaning carried by shape/weight/icons, never by colour
+     • visible keyboard focus, underlined links, greyscale imagery
+   To bring photos/logos back in colour: set  --mono-photo-filter:none  on :root.
+   ========================================================================== */
+
+/* ---------- 1. Black chrome panels: tokens flip inside so children stay legible ---------- */
+#screen-home .screen-fixed,
+.bottom-nav,
+#screen-home .home-bottom-hero,
+#screen-menu .menu-hero,
+.account-hero,
+.site-menu-drawer,
+.update-banner,
+.retry-banner,
+.home-chat-banner,
+.pool-feature-card,
+.candidate-cta,
+.home-tool-card--employer,
+.home-tool-card--seeker,
+.toast,
+.install-banner,
+#app-splash{
+  --text:#fff;--text-2:#cfcfcf;--text-3:#a9a9a9;
+  --m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.10);--m-wash-2:rgba(255,255,255,.16);
+  --accent:#fff;--accent-soft:rgba(255,255,255,.12);
+  --card:#111;--card-2:#1a1a1a;--card-3:#262626;--border:#3a3a3a;--border-strong:#8a8a8a;--separator:#2a2a2a;
+  background:#000!important;color:#fff;background-image:none!important;
+}
+[data-theme="dark"] #screen-home .screen-fixed{border-bottom:1px solid #2e2e2e}
+[data-theme="dark"] .bottom-nav{border-top:1px solid #2e2e2e}
+[data-theme="dark"] #screen-home .home-bottom-hero,[data-theme="dark"] #screen-menu .menu-hero,[data-theme="dark"] .account-hero{border:1px solid #2e2e2e}
+
+/* Home header pieces */
+#screen-home .logo-text,#screen-home .logo-slogan{color:#fff}
+#screen-home .logo-slogan{color:#cfcfcf}
+#screen-home .search-inner{background:#fff;color:#000;border:2px solid #fff;--text:#000;--text-2:#4a4a4a;--text-3:#6b6b6b}
+#screen-home .search-inner input{color:#000}
+#screen-home .search-inner input::placeholder{color:#595959;opacity:1}
+#screen-home .search-inner svg{stroke:#000;color:#000}
+#screen-home .home-filter-chip{background:transparent;color:#fff;border:1px solid #8a8a8a}
+#screen-home .home-filter-chip small{color:#cfcfcf}
+#screen-home .home-filter-chip:hover,#screen-home .home-filter-chip:focus-visible{background:#fff;color:#000;border-color:#fff}
+#screen-home .home-filter-chip:hover small{color:#333}
+#screen-home .home-filter-chip.active{background:#fff;color:#000;border-color:#fff}
+#screen-home .stat-card{background:#0f0f0f;color:#fff;border:1px solid #4a4a4a;box-shadow:none}
+#screen-home .stat-card *{color:inherit}
+#screen-home .stat-card:hover,#screen-home .stat-card:focus-visible{background:#fff;color:#000;border-color:#fff}
+#screen-home .stat-card:hover *{color:#000}
+#screen-home .stat-arrow{color:#fff}
+.stats-scroll-btn{background:#fff;color:#000;border:1px solid #fff}
+.header-install-btn{background:#fff;color:#000;border:2px solid #fff;font-weight:800}
+.site-menu-trigger{background:transparent!important;border:2px solid #fff!important;color:#fff}
+.site-menu-trigger span{background:#fff}
+.screen:not(#screen-home) .site-menu-trigger{background:var(--m-ink)!important;border:2px solid var(--m-ink)!important;color:var(--m-on-ink)}
+.screen:not(#screen-home) .site-menu-trigger span{background:var(--m-on-ink)}
+.connection-status{background:var(--m-wash);color:var(--text);border:1px solid var(--border)}
+
+/* ---------- 2. Bottom navigation ---------- */
+.bottom-nav .navbtn,.bottom-nav .navbtn .navbtn-label{color:#cfcfcf!important}
+.bottom-nav .navbtn svg{stroke:#cfcfcf!important;color:#cfcfcf!important}
+.bottom-nav .navbtn.active,.bottom-nav .navbtn.active .navbtn-label{color:#fff!important;font-weight:800}
+.bottom-nav .navbtn.active svg{stroke:#fff!important;color:#fff!important}
+.bottom-nav .navbtn.active{box-shadow:inset 0 3px 0 #fff}
+[data-theme="light"] .bottom-nav .navbtn:not(.active),[data-theme="light"] .bottom-nav .navbtn:not(.active) .navbtn-label{color:#cfcfcf!important}
+[data-theme="light"] .bottom-nav .navbtn:not(.active) svg{stroke:#cfcfcf!important;color:#cfcfcf!important}
+
+/* ---------- 3. Screen headers (pushed screens) ---------- */
+.screen:not(#screen-home) .screen-fixed{background:var(--bg);border-bottom:2px solid var(--m-ink);backdrop-filter:none;-webkit-backdrop-filter:none}
+.screen:not(#screen-home) .screen-title-group .logo-text{color:var(--text);font-weight:850}
+.screen:not(#screen-home) .screen-context{color:var(--text-2);font-weight:650}
+.screen:not(#screen-home) .screen-scroll{background:var(--bg)}
+.theme-toggle,.menu-more-btn,.screen-close-btn,.screen-back-btn{background:var(--card)!important;color:var(--text)!important;border:2px solid var(--m-ink)!important}
+.screen:not(#screen-home) .theme-toggle,.screen:not(#screen-home) .screen-close-btn{background:var(--card)!important;color:var(--text)!important}
+#screen-home .theme-toggle,#screen-menu .theme-toggle,#screen-menu .menu-more-btn{background:transparent!important;color:#fff!important;border:2px solid #fff!important}
+
+/* ---------- 4. Buttons: ONE primary, ONE secondary ---------- */
+.btn-primary,.sheet-submit,.vac-apply,.manager-add-btn,.force-update-btn,.access-lock-sheet .sheet-submit,
+.pool-contact-btn,.candidate-cta,.wa-btn,.pool-whatsapp-btn,.floating-whatsapp,.update-banner button,.retry-banner button{
+  background:var(--m-ink);color:var(--m-on-ink);border:2px solid var(--m-ink);box-shadow:none;font-weight:800;letter-spacing:0;
+}
+.btn-primary:hover,.sheet-submit:hover,.vac-apply:hover{opacity:.88}
+.btn-primary:active,.sheet-submit:active,.vac-apply:active{transform:scale(.985)}
+.btn-primary:disabled,.sheet-submit:disabled,.vac-apply:disabled,button[disabled].btn-primary{background:var(--card-3);color:var(--text-3);border-color:var(--border-strong);cursor:not-allowed;opacity:1}
+.vac-apply svg,.wa-btn svg,.sheet-submit svg{stroke:currentColor;color:currentColor}
+.vac-apply-secondary,.btn-secondary,.btn-ghost,.quick-card-actions button,.vac-load-more,.vacancy-overview-filter{
+  background:transparent;color:var(--text);border:2px solid var(--m-ink);box-shadow:none;font-weight:750;
+}
+.vac-apply-secondary:hover,.btn-secondary:hover,.quick-card-actions button:hover,.vac-load-more:hover{background:var(--m-ink);color:var(--m-on-ink)}
+.quick-card-employers .quick-card-actions button:last-child,#screen-home .home-community-card>button{background:var(--m-ink);color:var(--m-on-ink)}
+.vacancy-overview-filter.active,.vac-filter-chip.active,.chip.active{background:var(--m-ink);color:var(--m-on-ink);border-color:var(--m-ink)}
+.update-banner,.retry-banner{border:1px solid #4a4a4a}
+.update-banner button,.retry-banner button{background:#fff;color:#000;border-color:#fff}
+
+/* destructive actions: same ink language, marked by a dashed outline and bold label */
+.btn-danger,.danger-btn,[data-action="delete"],.delete-btn,#delete-account-btn,.vac-delete,.manager-delete-btn{
+  background:transparent!important;color:var(--text)!important;border:2px dashed var(--m-ink)!important;font-weight:800;
+}
+.btn-danger:hover,.danger-btn:hover,.delete-btn:hover{background:var(--m-ink)!important;color:var(--m-on-ink)!important;border-style:solid!important}
+
+/* touch targets */
+button,.btn,[role="button"],.navbtn{min-height:40px}
+.navbtn{min-height:52px}
+
+/* ---------- 5. Form fields ---------- */
+input,select,textarea{color:var(--text)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea,.search-inner{background:var(--card);border:1.5px solid var(--border-strong)}
+input::placeholder,textarea::placeholder{color:var(--text-3);opacity:1}
+input:focus,select:focus,textarea:focus,.search-inner:focus-within{outline:none;border-color:var(--m-ink);box-shadow:0 0 0 3px var(--m-wash-2)}
+input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--m-ink)}
+label{color:var(--text)}
+
+/* ---------- 6. Focus (keyboard) — always visible ---------- */
+:focus-visible{outline:3px solid var(--m-ink)!important;outline-offset:2px!important}
+#screen-home .screen-fixed :focus-visible,.bottom-nav :focus-visible,.site-menu-drawer :focus-visible,#screen-menu .menu-hero :focus-visible{outline-color:#fff!important}
+#screen-home .search-inner :focus-visible{outline:none!important}
+
+/* ---------- 7. Links ---------- */
+.screen-scroll a:not(.btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn){text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px}
+.home-site-footer a,.legal a,.account-legal a{text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- 8. Badges and status: shape + weight + icon, not colour ---------- */
+.verified-check,.verified-tag{color:var(--text)}
+.verified-check svg{fill:currentColor;stroke:none}
+.badge,.tag,.vx-tag,.vac-tag,.sub-tab-badge,.pill,[class*="-badge"]{background:var(--m-wash);color:var(--text);border:1px solid var(--border-strong);font-weight:750}
+.sub-tab-badge{background:var(--m-ink);color:var(--m-on-ink);border-color:var(--m-ink)}
+.vx-tag--warn{background:transparent;color:var(--text);border:1.5px dashed var(--m-ink)}
+.vx-tag--ok,.vx-tag--new{background:var(--m-ink);color:var(--m-on-ink);border-color:var(--m-ink)}
+.vx-tool.saved,.vac-save.saved{background:var(--m-ink);color:var(--m-on-ink)}
+.vx-tool.saved svg,.vac-save.saved svg{fill:currentColor;stroke:currentColor}
+.contact-warning{background:var(--m-wash-2);color:var(--text);border:2px solid var(--m-ink);border-left-width:8px}
+.error,.form-error,.field-error,.sheet-error,[role="alert"]{color:var(--text);border-left:4px solid var(--m-ink);padding-left:10px;font-weight:700}
+.success,.form-success,.sheet-success{color:var(--text);border-left:4px solid var(--m-ink);padding-left:10px;font-weight:700}
+.account-quota-fill{background:var(--m-ink)}
+.account-quota-track,.progress-track{background:var(--card-3);border:1px solid var(--border-strong)}
+
+/* ---------- 9. Cards, lists and surfaces: hairline borders, no tinted shadows ---------- */
+.card,.hub-card,.directory-group,.vacancy-overview-section,.profile-card,.contact-card,.pgrouped-list,.account-signin-card,.account-quota-card,
+.quick-card,.spotlight-mini,.home-community-card,.vacancy-card,.vac-card,.vac-folder-card,.hub-list,.empty-state,.screen-state,.screen-intro{
+  background:var(--card);border:1.5px solid var(--border);box-shadow:none;
+}
+.vac-card:active,.vac-folder-card:active,.hub-row:active{background:var(--card-2)!important;border-color:var(--m-ink)}
+.vac-folder-icon,.quick-card-icon,.vac-detail-icon,.directory-icon-vacancies,.directory-icon-employers,.directory-icon-branches,.vacancy-group-icon,.wa-tile{background:var(--m-wash-2);color:var(--text)}
+.vac-folder-icon svg,.quick-card-icon svg,.vac-detail-icon svg{stroke:currentColor}
+.section-head,.screen:not(#screen-home) .section-head{color:var(--text)}
+.vac-result-meta,.vac-company,.hub-row-sub{color:var(--text-2)}
+.sheet,.sheet-scrim .sheet{background:var(--card);color:var(--text);border-top:2px solid var(--m-ink)}
+.sheet-scrim{background:rgba(0,0,0,.6)}
+.vac-title,.hub-row-title{color:var(--text)}
+
+/* initials / gradient avatars -> solid ink discs */
+[class^="grad-"],[class*=" grad-"],.profile-avatar-ios,.spotlight-initials,.pool-mini-avatar,.hub-row-avatar:not(:has(img)){background:var(--m-ink)!important;color:var(--m-on-ink)!important}
+
+/* ---------- 10. Site menu drawer + menu hero ---------- */
+.site-menu-drawer a,.site-menu-drawer button,.site-menu-nav-item{color:#fff}
+.site-menu-nav-item{border:1px solid #3a3a3a;background:#0f0f0f}
+.site-menu-nav-item:hover,.site-menu-nav-item:focus-visible{background:#fff;color:#000}
+.site-menu-nav-item:hover *{color:#000}
+.site-menu-nav-icon{background:#1f1f1f;color:#fff;border:1px solid #3a3a3a}
+.site-menu-nav-item:hover .site-menu-nav-icon{background:#000;color:#fff}
+.site-menu-backdrop{background:rgba(0,0,0,.7)}
+#screen-menu .menu-hero *,.account-hero *{color:inherit}
+#screen-menu .menu-hero .track-card{background:#0f0f0f;border:1px solid #4a4a4a}
+
+/* ---------- 11. Imagery: greyscale to match the brand ---------- */
+img:not(.keep-colour),.vac-logo,.hub-row-avatar img,.profile-avatar-ios img{filter:var(--mono-photo-filter)}
+img[src*="qr"],img.keep-colour{filter:none}
+
+/* ---------- 12. Splash ---------- */
+#app-splash .sa-splash-dots span{background:#fff!important}
+#app-splash .sa-splash-title{color:#fff}
+#app-splash .sa-splash-sub{color:#cfcfcf}
+#app-splash img{box-shadow:none}
+
+/* ---------- 13. Respect reduced motion ---------- */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* ---------- 14. Corrections ---------- */
+/* inputs nested in a search pill must not get their own box */
+.search-inner input,.search-inner input:focus{background:transparent!important;border:0!important;box-shadow:none!important;outline:none!important}
+/* bottom nav: active tab = white label + bar above the icon, no pill */
+.bottom-nav .navbtn,.bottom-nav .navbtn.active{background:transparent!important;border-radius:0;border:0}
+.bottom-nav .navbtn.active{box-shadow:inset 0 3px 0 #fff;background:rgba(255,255,255,.08)!important}
+.contact-warning,.contact-warning *{color:var(--text)}
+.contact-warning-title{font-weight:850}
+
+/* dark-theme literal greys that were authored for the old navy surfaces */
+.account-signin-card strong,.account-signin-card p,.account-signin-card span,.account-quota-card strong,.account-quota-card span{color:var(--text)}
+.account-signin-card p,.account-quota-card p{color:var(--text-2)}
+.vx-attr,.vx-attr a,.adzuna-attribution,.adzuna-attribution a,.himalayas-attribution,.himalayas-attribution a{background:transparent!important;color:var(--text-2)!important}
+.adzuna-mark{background:var(--m-ink);color:var(--m-on-ink)}
+.account-signin-copy strong,.account-signin-copy span,.account-signin-copy *{color:var(--text)!important}
+.account-signin-copy span{color:var(--text-2)!important}
+.account-signin-terms,.account-signin-terms *{color:var(--text-2)}
+.account-signin-terms .gate-terms-link{color:var(--text);text-decoration:underline;font-weight:700}
+/* Google's sign-in button keeps its required light look in both themes */
+.gsi-material-button{background:#fff!important;color:#1f1f1f!important;border:1.5px solid #747775}
+.gsi-material-button .gsi-material-button-contents{color:#1f1f1f!important}
+
+.home-media-video-wrap{background:#000!important;border:1.5px solid var(--border-strong);color:#fff}
+/* verified seal: check mark always contrasts with the seal (black on white in dark mode) */
+.verified-check svg path:nth-child(2){stroke:var(--m-on-ink)}

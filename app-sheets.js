@@ -231,7 +231,7 @@ export function showTurnstileSlotError(host, message) {
   var note = document.createElement('div');
   note.className = 'turnstile-error';
   note.setAttribute('role', 'alert');
-  note.style.cssText = 'font-size:13px;line-height:1.4;color:#b91c1c;';
+  note.style.cssText = 'font-size:13px;line-height:1.4;color:inherit;font-weight:700;';
   note.textContent = message;
   host.appendChild(note);
 }

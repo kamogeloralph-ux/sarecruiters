@@ -503,7 +503,7 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, her
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#06162c">
+<meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="light dark">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">

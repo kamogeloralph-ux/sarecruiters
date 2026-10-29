@@ -25,16 +25,17 @@
      styles.css (loaded async below) has a chance to arrive. This is what
      stops the raw unstyled shell (zeroed stat cards, plain-text banners)
      from ever being visible on load / refresh / relaunch from idle. -->
-<style id="critical-shell-css">
+<style id="critical-shell-css">:root,[data-theme="light"]{--m-ink:#000;--m-on-ink:#fff;--m-wash:rgba(0,0,0,.05);--m-wash-2:rgba(0,0,0,.09);--mono-photo-filter:grayscale(1) contrast(1.05)}[data-theme="dark"]{--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}@media (prefers-color-scheme:dark){:root:not([data-theme]){--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}}
+
   @font-face{font-family:'Inter Fallback';src:local('Arial'),local('Helvetica');size-adjust:107.4%;ascent-override:90.2%;descent-override:22.5%;line-gap-override:0%;font-display:swap}
   html,body{margin:0;min-height:100%}
-  [data-theme="light"] body{background:#F2F2F7}
+  [data-theme="light"] body{background:#f3f3f3}
   [data-theme="dark"] body{background:#000000}
   #app-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
-  [data-theme="light"] #app-splash{background:#F2F2F7}
+  [data-theme="light"] #app-splash{background:#f3f3f3}
   [data-theme="dark"] #app-splash{background:#000000}
   #app-splash .sa-splash-inner{display:flex;flex-direction:column;align-items:center}
-  #app-splash img{width:76px;height:76px;border-radius:20px;box-shadow:0 10px 40px -12px rgba(10,132,255,.5);animation:sa-splash-pulse 1.4s ease-in-out infinite}
+  #app-splash img{width:76px;height:76px;border-radius:20px;box-shadow:0 10px 40px -12px rgba(0,0,0,0.5);animation:sa-splash-pulse 1.4s ease-in-out infinite}
   @keyframes sa-splash-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.94);opacity:.85}}
   #app-splash.hide{opacity:0;pointer-events:none}
   /* Slow-load status: hidden by default, only faded in by app-core.js once
@@ -44,13 +45,13 @@
   #app-splash .sa-splash-status.show{opacity:1}
   #app-splash .sa-splash-dots{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
   #app-splash .sa-splash-dots span{width:9px;height:9px;border-radius:50%;display:inline-block;animation:sa-dot-bounce 1.2s ease-in-out infinite}
-  #app-splash .sa-splash-dots span:nth-child(1){background:#E52420;animation-delay:0s}
-  #app-splash .sa-splash-dots span:nth-child(2){background:#007A5E;animation-delay:.15s}
-  #app-splash .sa-splash-dots span:nth-child(3){background:#F5B400;animation-delay:.3s}
+  #app-splash .sa-splash-dots span:nth-child(1){background:var(--m-ink);animation-delay:0s}
+  #app-splash .sa-splash-dots span:nth-child(2){background:var(--m-ink);animation-delay:.15s}
+  #app-splash .sa-splash-dots span:nth-child(3){background:var(--m-ink);animation-delay:.3s}
   @keyframes sa-dot-bounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-6px);opacity:1}}
-  #app-splash .sa-splash-title{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:18px;font-weight:800;margin:0 0 6px;color:#0A0A23}
-  [data-theme="dark"] #app-splash .sa-splash-title{color:#F2F2F7}
-  #app-splash .sa-splash-sub{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:13.5px;line-height:1.4;color:#8A8A8E;margin:0}
+  #app-splash .sa-splash-title{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:18px;font-weight:800;margin:0 0 6px;color:#0d0d0d}
+  [data-theme="dark"] #app-splash .sa-splash-title{color:#f3f3f3}
+  #app-splash .sa-splash-sub{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:13.5px;line-height:1.4;color:#8a8a8a;margin:0}
   body:not(.app-ready) .app{visibility:hidden}
   /* Keep every body-level portal outside .app hidden until real content is ready. */
   body:not(.app-ready) > :not(#app-splash):not(.app):not(script):not(style):not(link):not(svg){display:none!important}
@@ -76,7 +77,7 @@
   .gsi-material-button:disabled{cursor:wait;background-color:#ffffff61;border-color:#1f1f1f1f}
   .gsi-material-button:disabled .gsi-material-button-contents,.gsi-material-button:disabled .gsi-material-button-icon{opacity:.38}
   .gsi-material-button:not(:disabled):active .gsi-material-button-state,.gsi-material-button:not(:disabled):focus .gsi-material-button-state{background-color:#303030;opacity:.12}
-  .gsi-material-button:not(:disabled):hover{box-shadow:0 1px 2px 0 rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);transform:translateY(-1px)}
+  .gsi-material-button:not(:disabled):hover{box-shadow:0 1px 2px 0 rgba(0,0,0,0.3),0 1px 3px 1px rgba(0,0,0,0.15);transform:translateY(-1px)}
   .gsi-material-button:not(:disabled):hover .gsi-material-button-state{background-color:#303030;opacity:.08}
 </style>
 
@@ -97,7 +98,7 @@
 
 <!-- PWA / Manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#F2F2F7" id="meta-theme">
+<meta name="theme-color" content="#000000" id="meta-theme">
 
 <!-- Favicons (single logo source: icons/icon-*.png) -->
 <link rel="icon" href="/favicon-v2.ico" sizes="48x48">
@@ -174,12 +175,13 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-7fc0d695b4">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-7fc0d695b4" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=sa-recruiters-mono1">
+<link rel="stylesheet" href="styles.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="community.css?v=sa-recruiters-7fc0d695b4" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-7fc0d695b4"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-7fc0d695b4"></noscript>
+<link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="mono.css?v=mono-1" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-1"></noscript>
 </head>
 <body>
 
@@ -1520,8 +1522,8 @@
      content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
      the browser fetch them at idle priority (and keep generate-pages.js cache-busting them);
      openContentSheet() below loads them on demand and then hands over to the real implementation. -->
-<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-7fc0d695b4" data-sa-lazy="content">
-<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-7fc0d695b4" data-sa-lazy="content-manager">
+<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-mono1" data-sa-lazy="content">
+<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-mono1" data-sa-lazy="content-manager">
 <script>
 (function(){
   var pending=null;
@@ -1547,7 +1549,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=4758d1b753"></script>
+<script type="module" src="app.bundle.min.js?v=mono1"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

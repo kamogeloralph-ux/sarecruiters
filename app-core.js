@@ -632,7 +632,7 @@ setTimeout(function () {
 export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   var meta = document.getElementById('meta-theme');
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#F2F2F7' : '#000000');
+  if (meta) meta.setAttribute('content', '#000000');
   // Update menu label/icon
   var mIcon = document.getElementById('theme-menu-icon');
   var mLabel = document.getElementById('theme-menu-label');

@@ -8,18 +8,32 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="/favicon-v2.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="icons/v2-icon-192.png">
-<style>
+<style>:root,[data-theme="light"]{--m-ink:#000;--m-on-ink:#fff;--m-wash:rgba(0,0,0,.05);--m-wash-2:rgba(0,0,0,.09);--mono-photo-filter:grayscale(1) contrast(1.05)}[data-theme="dark"]{--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}@media (prefers-color-scheme:dark){:root:not([data-theme]){--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}}
+
   *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Inter',sans-serif}
   html,body{height:100%}
-  body{background:#F2F2F7;color:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;-webkit-font-smoothing:antialiased}
-  .logo{width:96px;height:96px;border-radius:24px;overflow:hidden;margin-bottom:24px;box-shadow:0 10px 40px -12px rgba(10,132,255,.5)}
+  body{background:#f3f3f3;color:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;-webkit-font-smoothing:antialiased}
+  .logo{width:96px;height:96px;border-radius:24px;overflow:hidden;margin-bottom:24px;box-shadow:0 10px 40px -12px rgba(0,0,0,0.5)}
   .logo img{width:100%;height:100%;display:block}
   h1{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px}
-  p{color:#8E8E93;font-size:15px;line-height:1.55;max-width:420px;margin-bottom:26px}
-  .btn{display:inline-flex;align-items:center;gap:8px;background:#0A84FF;color:#fff;border:none;border-radius:999px;padding:14px 28px;font-size:15px;font-weight:700;cursor:pointer;transition:transform .15s,opacity .2s}
+  p{color:#8f8f8f;font-size:15px;line-height:1.55;max-width:420px;margin-bottom:26px}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--m-ink);color: var(--m-on-ink);border:none;border-radius:999px;padding:14px 28px;font-size:15px;font-weight:700;cursor:pointer;transition:transform .15s,opacity .2s}
   .btn:active{transform:scale(.96)}
   .btn svg{width:18px;height:18px}
   .hint{margin-top:34px;font-size:12px;color:#48484A;max-width:360px}
+</style>
+<style id="mono-legal">
+/* Monochrome: black text on white, white text on black — follows the visitor's setting */
+:root{--pbg:#fff;--pfg:#000;--pmuted:#4a4a4a;--psurf:#f4f4f4;--pline:#cfcfcf;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--pbg:#000;--pfg:#fff;--pmuted:#bdbdbd;--psurf:#121212;--pline:#3a3a3a}}
+html body{background:var(--pbg);color:var(--pfg)}
+html body :is(p,li,span,div,summary,h1,h2,h3,h4,td,th,strong,em,label,dt,dd,code){color:var(--pfg)}
+html body :is(.back,.updated,small,.muted,.sub,.meta){color:var(--pmuted)}
+html body :is(.intro,.notice,details,.card,.box,.callout,pre,blockquote,table,th,td){background:var(--psurf);border-color:var(--pline)}
+html body .notice{border-left:4px solid var(--pfg)}
+html body a{color:var(--pfg);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px}
+html body :focus-visible{outline:3px solid var(--pfg);outline-offset:2px}
+html body button,html body .btn{background:var(--pfg);color:var(--pbg);border:2px solid var(--pfg)}
 </style>
 </head>
 <body>
