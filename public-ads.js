@@ -4,6 +4,11 @@
   var WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
   var slots = Array.prototype.slice.call(document.querySelectorAll('[data-public-ad-slot]'));
   if (!slots.length) return;
+  // Crawlers and automated browsers render these pages by the thousand. They never
+  // see or click the ads, so don't spend Worker requests (ad list + impression
+  // event) on them -- just keep the empty slots hidden.
+  var isBot = !!navigator.webdriver || /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|bingpreview/i.test(navigator.userAgent || '');
+  if (isBot) { slots.forEach(function (slot) { slot.hidden = true; }); return; }
   function safeUrl(value) {
     try {
       var url = new URL(String(value || ''), window.location.href);
@@ -12,7 +17,7 @@
   }
   function track(id, eventName, slot) {
     if (!id || (eventName !== 'impression' && eventName !== 'click')) return;
-    var key = 'sa_public_ad_' + eventName + '_' + id + '_' + slot + '_' + window.location.pathname;
+    var key = 'sa_public_ad_' + eventName + '_' + id + '_' + slot;
     if (eventName === 'impression') {
       try { if (sessionStorage.getItem(key) === '1') return; sessionStorage.setItem(key, '1'); } catch (e) {}
     }
@@ -31,7 +36,18 @@
       + (ad.message ? '<span class="public-house-ad-message">' + imageEscape(ad.message) + '</span>' : '')
       + '</a>';
     slot.querySelector('a').addEventListener('click', function () { track(ad.id, 'click', slot.getAttribute('data-public-ad-slot')); });
-    track(ad.id, 'impression', slot.getAttribute('data-public-ad-slot'));
+    var slotName = slot.getAttribute('data-public-ad-slot');
+    if ('IntersectionObserver' in window) {
+      var seen = new IntersectionObserver(function (entries) {
+        if (entries.some(function (entry) { return entry.isIntersecting; })) {
+          seen.disconnect();
+          track(ad.id, 'impression', slotName);
+        }
+      }, { threshold: 0.5 });
+      seen.observe(slot);
+    } else {
+      track(ad.id, 'impression', slotName);
+    }
   }
   function imageEscape(value) {
     return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');

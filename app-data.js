@@ -192,13 +192,18 @@ export function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-posters-middle', 'posters', 'middle');
   renderHouseAdSlot('house-ad-posters-bottom', 'posters', 'bottom');
 }
+var houseAdsLoadedAt = 0;
 export async function loadHouseAds() {
   // Served by the Cloudflare Worker (edge-cached), never a direct browser
-  // read of Supabase. Failures leave the slots hidden.
+  // read of Supabase. Failures leave the slots hidden. loadAll() runs on boot,
+  // on every return to the app and after saves, so reuse a recent successful
+  // load instead of spending a Worker request each time.
+  if (houseAdsLoadedAt && Date.now() - houseAdsLoadedAt < 10 * 60 * 1000) { renderHouseAdSlots(); return; }
   try {
     var response = await fetch(R2_WORKER_URL + '/api/house-ads', { headers: { Accept: 'application/json' } });
     var data = response.ok ? await response.json() : null;
     houseAdsCache = data && Array.isArray(data.ads) ? data.ads : [];
+    if (data && Array.isArray(data.ads)) houseAdsLoadedAt = Date.now();
   } catch (e) {
     houseAdsCache = [];
   }
@@ -261,7 +266,7 @@ export async function getPublicPoolCandidatesFromWorker() {
   }
   if (!publicPoolStartupPromise) {
     publicPoolStartupPromise = fetch(R2_WORKER_URL + '/api/startup', {
-      method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }
+      method: 'GET', headers: { Accept: 'application/json' }
     }).then(function(response) {
       if (!response.ok) throw new Error('Talent Pool Worker request failed');
       return response.json();
@@ -697,7 +702,7 @@ export function updatePosterStat() {
 export async function getEmployerPosters() {
   try {
     var response = await fetch(R2_WORKER_URL + '/api/posters', {
-      method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }
+      method: 'GET', headers: { Accept: 'application/json' }
     });
     if (!response.ok) throw new Error('Poster Worker request failed');
     var payload = await response.json();
@@ -847,7 +852,7 @@ export async function fetchVacancyPageFromWorker(params) {
         var value = params[key];
         if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
       });
-      var response = await fetch(url.toString(), { method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' } });
+      var response = await fetch(url.toString(), { method: 'GET', headers: { Accept: 'application/json' } });
       if (response.ok) {
         var payload = await response.json();
         if (payload && Array.isArray(payload.vacancies)) return payload;
@@ -1172,7 +1177,7 @@ export async function fetchStartupDataOnce() {
     try {
       var controller = typeof AbortController === 'function' ? new AbortController() : null;
       var timeout = controller ? setTimeout(function(){ controller.abort(); }, 7000) : null;
-      var response = await fetch(STARTUP_DATA_URL, { method:'GET', cache:'no-store', headers:{ Accept:'application/json' }, signal:controller ? controller.signal : undefined });
+      var response = await fetch(STARTUP_DATA_URL, { method:'GET', headers:{ Accept:'application/json' }, signal:controller ? controller.signal : undefined });
       if (timeout) clearTimeout(timeout);
       if (response.ok) workerPayload = await response.json();
     } catch(e) { console.warn('Worker startup data load', e); }

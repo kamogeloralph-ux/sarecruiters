@@ -289,7 +289,7 @@ startAuthenticatedApp(bootAuthenticatedApp);
 // has been hidden for more than a couple of minutes and becomes visible again.
 (function initIdleResumeRefresh() {
   var hiddenAt = null;
-  var MIN_HIDDEN_MS = 2 * 60 * 1000; // only refetch if it's been idle a while
+  var MIN_HIDDEN_MS = 15 * 60 * 1000; // only refetch if it's been idle a good while
   document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
       hiddenAt = Date.now();
