@@ -1007,7 +1007,7 @@ async function startupResponse(request, env, ctx, origin) {
   }
   function clientResponse(response) {
     const headers = new Headers(response.headers);
-    headers.set("Cache-Control", "no-store");
+    headers.set("Cache-Control", "public, max-age=60");
     headers.set("X-Data-Version", String(dataVersion));
     headers.set("Access-Control-Allow-Origin", "*");
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
@@ -1068,7 +1068,8 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   function clientResponse(cachedResponse) {
     const headers = new Headers(cachedResponse.headers);
-    headers.set("Cache-Control", "no-store");
+    headers.set("Cache-Control", "public, max-age=60");
+    headers.append("Vary", "Origin");
     headers.set("X-Data-Version", String(dataVersion));
     headers.set("Access-Control-Allow-Origin", origin || "*");
     return new Response(cachedResponse.body, { status: cachedResponse.status, statusText: cachedResponse.statusText, headers });
@@ -1264,7 +1265,8 @@ async function postersResponse(request, env, origin) {
   const cacheKey = new Request(new URL(`/api/posters?schema=d1-v6-versioned&version=${dataVersion}`, request.url), request);
   function clientResponse(response) {
     const headers = new Headers(response.headers);
-    headers.set("Cache-Control", "no-store");
+    headers.set("Cache-Control", "public, max-age=60");
+    headers.append("Vary", "Origin");
     headers.set("X-Data-Version", String(dataVersion));
     headers.set("Access-Control-Allow-Origin", origin || "*");
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
