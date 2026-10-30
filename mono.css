@@ -277,3 +277,14 @@ input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--m-gr
 /* app frame: its desktop drop-shadow showed as a grey strip down the right edge on phones */
 .app{box-shadow:none!important}
 @media (min-width:900px){.app{box-shadow:0 0 0 1.5px var(--border-strong)!important}}
+
+/* ---------- 18. Final polish ---------- */
+/* closed side-menu drawer sits just off-screen; its shadow bled onto the right edge of every page */
+.site-menu-drawer{box-shadow:none!important}
+.site-menu-drawer.open,.site-menu-drawer[aria-hidden="false"],.site-menu.open .site-menu-drawer{border-left:2px solid #fff}
+.app::before,.app::after{background-image:none!important}
+/* "See all" and other outlined header buttons use the green accent */
+html body #screen-home .spotlight-mini-head button{color:var(--m-green)!important;border-color:var(--m-green)!important;background:transparent}
+html body #screen-home .stat-card .stat-arrow{color:inherit}
+/* real colours for logos and candidate photos (set --mono-photo-filter:grayscale(1) on :root for B&W photos) */
+img,.vac-logo,.hub-row-avatar img,.profile-avatar-ios img{filter:none}

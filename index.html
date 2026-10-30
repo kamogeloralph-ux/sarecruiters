@@ -25,7 +25,7 @@
      styles.css (loaded async below) has a chance to arrive. This is what
      stops the raw unstyled shell (zeroed stat cards, plain-text banners)
      from ever being visible on load / refresh / relaunch from idle. -->
-<style id="critical-shell-css">:root,[data-theme="light"]{--m-ink:#000;--m-on-ink:#fff;--m-wash:rgba(0,0,0,.05);--m-wash-2:rgba(0,0,0,.09);--mono-photo-filter:grayscale(1) contrast(1.05)}[data-theme="dark"]{--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}@media (prefers-color-scheme:dark){:root:not([data-theme]){--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}}
+<style id="critical-shell-css">:root,[data-theme="light"]{--m-ink:#000;--m-on-ink:#fff;--m-wash:rgba(0,0,0,.05);--m-wash-2:rgba(0,0,0,.09);--mono-photo-filter:none}[data-theme="dark"]{--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}@media (prefers-color-scheme:dark){:root:not([data-theme]){--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}}
 
   @font-face{font-family:'Inter Fallback';src:local('Arial'),local('Helvetica');size-adjust:107.4%;ascent-override:90.2%;descent-override:22.5%;line-gap-override:0%;font-display:swap}
   html,body{margin:0;min-height:100%}
@@ -180,8 +180,8 @@
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="mono.css?v=mono-6" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-6"></noscript>
+<link rel="stylesheet" href="mono.css?v=mono-7" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
 </head>
 <body>
 

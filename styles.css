@@ -1,5 +1,5 @@
 /* ===== Monochrome tokens (black & white). m-ink = strong fill / primary action. ===== */
-:root,[data-theme="light"]{--m-ink:#000;--m-on-ink:#fff;--m-wash:rgba(0,0,0,.05);--m-wash-2:rgba(0,0,0,.09);--m-fixed-black:#000;--m-fixed-white:#fff;--mono-photo-filter:grayscale(1) contrast(1.05)}
+:root,[data-theme="light"]{--m-ink:#000;--m-on-ink:#fff;--m-wash:rgba(0,0,0,.05);--m-wash-2:rgba(0,0,0,.09);--m-fixed-black:#000;--m-fixed-white:#fff;--mono-photo-filter:none}
 [data-theme="dark"]{--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}
 
 /* ============ THEME: DARK (iOS-style) ============ */
