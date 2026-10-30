@@ -134,7 +134,6 @@ label{color:var(--text)}
 .vx-tag--ok,.vx-tag--new{background:var(--m-ink);color:var(--m-on-ink);border-color:var(--m-ink)}
 .vx-tool.saved,.vac-save.saved{background:var(--m-ink);color:var(--m-on-ink)}
 .vx-tool.saved svg,.vac-save.saved svg{fill:currentColor;stroke:currentColor}
-.contact-warning{background:var(--m-wash-2);color:var(--text);border:2px solid var(--m-ink);border-left-width:8px}
 .error,.form-error,.field-error,.sheet-error,[role="alert"]{color:var(--text);border-left:4px solid var(--m-ink);padding-left:10px;font-weight:700}
 .success,.form-success,.sheet-success{color:var(--text);border-left:4px solid var(--m-ink);padding-left:10px;font-weight:700}
 .account-quota-fill{background:var(--m-ink)}
@@ -187,8 +186,6 @@ img[src*="qr"],img.keep-colour{filter:none}
 /* bottom nav: active tab = white label + bar above the icon, no pill */
 .bottom-nav .navbtn,.bottom-nav .navbtn.active{background:transparent!important;border-radius:0;border:0}
 .bottom-nav .navbtn.active{box-shadow:inset 0 3px 0 #fff;background:rgba(255,255,255,.08)!important}
-.contact-warning,.contact-warning *{color:var(--text)}
-.contact-warning-title{font-weight:850}
 
 /* dark-theme literal greys that were authored for the old navy surfaces */
 .account-signin-card strong,.account-signin-card p,.account-signin-card span,.account-quota-card strong,.account-quota-card span{color:var(--text)}
@@ -206,3 +203,37 @@ img[src*="qr"],img.keep-colour{filter:none}
 .home-media-video-wrap{background:#000!important;border:1.5px solid var(--border-strong);color:#fff}
 /* verified seal: check mark always contrasts with the seal (black on white in dark mode) */
 .verified-check svg path:nth-child(2){stroke:var(--m-on-ink)}
+
+
+/* ==========================================================================
+   15. Accent exceptions: GREEN = verified / positive / active, RED = safety warning
+   ========================================================================== */
+:root,[data-theme="light"]{--m-green:#0b7a35;--m-on-green:#fff;--m-green-soft:rgba(11,122,53,.12)}
+[data-theme="dark"]{--m-green:#3ddc84;--m-on-green:#000;--m-green-soft:rgba(61,220,132,.16)}
+/* inside the always-black chrome the bright green is used */
+#screen-home .screen-fixed,.bottom-nav,#screen-home .home-bottom-hero,#screen-menu .menu-hero,.account-hero,.site-menu-drawer,.update-banner,.retry-banner,.home-chat-banner,.toast,.install-banner{--m-green:#3ddc84;--m-on-green:#000;--m-green-soft:rgba(61,220,132,.16)}
+
+/* verified seal + tag */
+.verified-check,.verified-tag{color:var(--m-green)}
+.verified-check svg path:nth-child(2){stroke:var(--m-on-green)}
+/* positive / highlight states */
+.vac-chip.green,.vx-tag--ok,.vx-tag--new,.sub-status-pill.resolved{background:var(--m-green-soft);color:var(--m-green);border:1.5px solid var(--m-green);font-weight:800}
+.connection-status[data-state="live"]{color:var(--m-green);border-color:var(--m-green);background:var(--m-green-soft)}
+.switch input:checked+.track{background:var(--m-green)}
+.account-quota-fill{background:var(--m-green)}
+.vx-tool.saved,.vac-save.saved,.star-btn.saved,.star-btn.active{background:var(--m-green-soft);color:var(--m-green)}
+.vx-tool.saved svg,.vac-save.saved svg,.star-btn.saved svg,.star-btn.active svg{fill:currentColor;stroke:currentColor}
+.sub-card-icon.suggestion{background:var(--m-green-soft);color:var(--m-green)}
+.sub-tab-badge{background:var(--m-green);color:var(--m-on-green);border-color:var(--m-green)}
+/* active bottom-nav tab */
+.bottom-nav .navbtn.active,.bottom-nav .navbtn.active .navbtn-label{color:var(--m-green)!important}
+.bottom-nav .navbtn.active svg{stroke:var(--m-green)!important;color:var(--m-green)!important}
+.bottom-nav .navbtn.active{box-shadow:inset 0 3px 0 var(--m-green)}
+[data-theme="light"] .bottom-nav .navbtn.active{--m-green:#3ddc84}
+
+/* SAFETY WARNING — red panel, white text, both themes */
+.contact-warning{background:linear-gradient(135deg,#d32f2f,#b71c1c)!important;border:0!important;border-radius:14px;padding:14px 16px;text-align:center;box-shadow:none}
+.contact-warning,.contact-warning *{color:#fff!important}
+.contact-warning-title{font-size:12.5px;font-weight:850;line-height:1.5;letter-spacing:.02em}
+.contact-warning-emergency{font-size:18px;font-weight:850;margin-top:8px;letter-spacing:.04em}
+.account-signin-terms .gate-terms-link,.gate-terms-link{background:transparent!important;border:0!important;padding:0;min-height:0;color:var(--text)!important;text-decoration:underline}

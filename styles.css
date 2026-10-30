@@ -2493,10 +2493,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
    calm, high-contrast card system as the community experience. */
 [data-theme="light"] #screen-account .account-signin-card,
 #screen-account .account-signin-card{
-  background:linear-gradient(145deg,#f5f5f5 0%,#ffffff 72%)!important;
-  border:1px solid #d8d8d8!important;
-  color:#222222!important;
-  box-shadow:0 8px 22px rgba(0,0,0,0.1)!important}
+  background:var(--card)!important;
+  border:1.5px solid var(--border-strong)!important;
+  color:var(--text)!important;
+  box-shadow:none!important}
 #screen-account .account-signin-copy strong{color:var(--text)!important}
 #screen-account .account-signin-copy span{color:var(--text-2)!important}
 #screen-account .account-signin-card .gsi-material-button{
