@@ -32,7 +32,8 @@ database_id = "7d1a4327-6056-45cf-ae62-b5b26a454627"
 # 6-hourly tick. It restarts stale/disabled GitHub workflows, backs up the TipChat
 # Autopilot sweep if pg_cron stalls, and emails only when self-healing fails.
 [triggers]
-crons = ["0 */6 * * *", "15,45 * * * *"]
+crons = ["0 0 * * *"]
+
 
 # Sampled request logs (10%) so Workers & Pages -> this Worker -> Observability
 # shows which paths and IPs generate traffic. Raise/lower head_sampling_rate as needed.
