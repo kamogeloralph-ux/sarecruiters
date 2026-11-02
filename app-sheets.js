@@ -1,6 +1,6 @@
 /*
  * SA Recruiters -- app.js split 5/8: app-sheets.js
- * Misc sheets: notes, social links, report-a-problem, suggestions, talent pool registration
+ * Misc sheets: notes, social links, report-a-problem, suggestions, CV Box registration
  *
  * Part of the original monolithic app.js. Now an ES module: it imports what it
  * uses from the other app-*.js files and exports its top-level declarations.
@@ -358,7 +358,7 @@ export async function submitViaWorker(path, payload, turnstileContainerId) {
 }
 
 // ===== Employer entry point on the sign-in gate (no Google sign-in, no
-// Talent Pool profile) =====
+// CV Box upload) =====
 export function openEmployerGateSheet() {
   var emailEl = document.getElementById('employer-resend-email');
   if (emailEl) emailEl.value = '';
@@ -738,7 +738,7 @@ export async function submitJobPostEnquiry() {
 // Always open (no sign-in). Posts to /api/submit/job-seeker, which verifies
 // Turnstile and consent server-side and stores a PRIVATE request for the admin
 // (public_submit_job_seeker(), 20261014_job_seeker_requests.sql). It never
-// creates a public Talent Pool profile.
+// creates a public CV Box upload.
 export function openJobSeekerSheet() {
   ['js-name','js-phone','js-email','js-location','js-looking','js-qualification','js-message','js-cv'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
@@ -795,14 +795,14 @@ export var poolCache = [];
 export var poolLoaded = false;
 export var poolCandidateCount = 0;
 export var poolReturnScreen = 'home';
-// Set by a Talent Pool spotlight card so the very next pool render can jump
+// Set by a CV Box spotlight card so the very next pool render can jump
 // straight to (and expand) that candidate's profile instead of dropping the
-// visitor on the generic, unfiltered Talent Pool list.
+// visitor on the generic, unfiltered CV Box list.
 export var poolPendingOpenId = null;
 
 // Lightweight count-only query so the home "Pool Candidates" stat is accurate
 // on first load, without waiting for the full candidate list (which only
-// loads once someone actually opens the Talent Pool screen).
+// loads once someone actually opens the CV Box screen).
 export async function getPoolCandidateCount() {
   try {
     var startup = await getPublicPoolCandidatesFromWorker();
@@ -821,7 +821,7 @@ export function goPool(returnScreen, openCandidateId) {
   loadPoolCandidates();
 }
 // Opens (expands) and scrolls to a specific candidate's card in the
-// currently-rendered Talent Pool list, e.g. after tapping a spotlight card.
+// currently-rendered CV Box list, e.g. after tapping a spotlight card.
 export function openPoolCandidateCard(id) {
   if (!id) return;
   var card = document.querySelector('.pool-mini-card[data-candidate-id="' + CSS.escape(String(id)) + '"]');
@@ -890,7 +890,7 @@ export function renderPoolList() {
     return (String(b.photo_url || '').trim() ? 1 : 0) - (String(a.photo_url || '').trim() ? 1 : 0);
   });
   if (!list.length) {
-    listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>No candidates yet</h3><p>Be the first to join the Talent Pool.</p></div></div>';
+    listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>No candidates yet</h3><p>Be the first to join the CV Box.</p></div></div>';
     return;
   }
   var middleAt = Math.max(1, Math.ceil(list.length / 2));
@@ -928,7 +928,7 @@ export function renderPoolList() {
 // team makes the introduction directly rather than exposing phone or
 // email addresses in the app.
 export function poolCandidateWhatsAppLink(c) {
-  var msg = 'Hi SA Recruiters, I\'m interested in this Talent Pool candidate:\n' +
+  var msg = 'Hi SA Recruiters, I\'m interested in this CV Box candidate:\n' +
     (c.full_name || 'Candidate') + (c.position ? ' — ' + c.position : '') +
     (c.location ? ' (' + c.location + ')' : '') +
     '\nCandidate ID: ' + (c.id || '') +
@@ -954,7 +954,7 @@ export function openCvDownloadRequest(c) {
   overlay.classList.add('open');
 }
 
-// Talent Pool "profile" state for the currently signed-in user. null = the
+// CV Box "profile" state for the currently signed-in user. null = the
 // register sheet is being used to create a brand-new candidate; a candidate
 // id = the sheet is editing (and will UPDATE, not INSERT) that owned row.
 export var editingPoolCandidateId = null;
@@ -972,7 +972,7 @@ export function resetPoolTermsAcceptance() {
 }
 export function setPoolSheetEditMode(isEdit) {
   var title = document.getElementById('pool-register-title');
-  if (title) title.textContent = isEdit ? 'My Talent Pool Profile' : 'Join the Talent Pool';
+  if (title) title.textContent = isEdit ? 'My CV Box Profile' : 'Upload to the CV Box';
   var submitBtn = document.getElementById('pool-submit-btn');
   if (submitBtn) submitBtn.textContent = isEdit ? 'Save changes' : 'Submit registration';
   var deleteBtn = document.getElementById('pool-delete-btn');
@@ -988,10 +988,10 @@ export function setPoolSheetEditMode(isEdit) {
 }
 
 export function openPoolRegisterSheet() {
-  // Talent Pool membership is a step that comes AFTER the general account:
+  // CV Box membership is a step that comes AFTER the general account:
   // guests are pointed to the account screen's free sign-in card first.
   if (!saAuthUser) {
-    showToast('Create your free account first — then join the Talent Pool.');
+    showToast('Create your free account first — then join the CV Box.');
     openAccountScreen();
     return;
   }
@@ -1029,7 +1029,7 @@ export function openPoolRegisterSheet() {
 }
 
 // Fills the same register-sheet fields from an existing pool_candidates row
-// (used when a signed-in user opens "My Talent Pool Profile").
+// (used when a signed-in user opens "My CV Box Profile").
 export function fillPoolFormFromCandidate(c) {
   document.getElementById('pool-name').value = c.full_name || '';
   window.pendingPoolPhotoBlob = null;
@@ -1069,7 +1069,7 @@ export function fillPoolFormFromCandidate(c) {
   if (alertOptIn) alertOptIn.checked = !!c.email_alert_opt_in;
 }
 
-// Entry point for "My Talent Pool Profile" (site menu + Talent Pool screen).
+// Entry point for "My CV Box Profile" (site menu + CV Box screen).
 // Loads the row linked to the signed-in user (via pool_candidates.user_id +
 // the pool_select_own RLS policy added alongside candidate self-service) and
 // opens it in the same register sheet, in edit mode. If nothing is linked
@@ -1077,7 +1077,7 @@ export function fillPoolFormFromCandidate(c) {
 // submitting it will auto-link (not duplicate) a matching pre-sign-in
 // registration if the typed email + phone match one (see submitPoolRegistration).
 export async function openMyPoolProfile() {
-  if (!saAuthUser) { showToast('Please sign in to manage your Talent Pool profile.'); return; }
+  if (!saAuthUser) { showToast('Please sign in to manage your CV Box upload.'); return; }
   var result;
   try {
     result = await supabaseClient.from('pool_candidates').select('*').eq('user_id', saAuthUser.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -1100,12 +1100,12 @@ export async function openMyPoolProfile() {
   }
 }
 
-// ===== Mandatory Talent Pool profile gate =====
+// ===== Mandatory CV Box upload gate =====
 // Called once per sign-in (see startAuthenticatedApp's onAuthStateChange
 // handler in app-core.js) right after a Google session is established.
 // Skipped entirely for employer/agency manager-link visitors, who never
 // sign in with Google at all (window.__saManagerLinkMode). A signed-in user
-// with no linked pool_candidates row gets the Talent Pool registration
+// with no linked pool_candidates row gets the CV Box registration
 // sheet forced open with its close button hidden (.gate-mandatory) until
 // they submit — closeSheet() above strips that class the moment a
 // successful submit/claim/link path calls it.
@@ -1130,12 +1130,12 @@ export async function enforceTalentPoolProfile() {
   if (overlay) overlay.classList.add('gate-mandatory');
   var title = document.getElementById('pool-register-title');
   if (title) title.textContent = 'One last step — complete your profile';
-  showToast('Please complete your Talent Pool profile to start using SA Recruiters.');
+  showToast('Please complete your CV Box upload to start using SA Recruiters.');
 }
 
 export async function deleteMyPoolProfile() {
   if (!editingPoolCandidateId) return;
-  if (!confirm('Remove your Talent Pool profile? This can\u2019t be undone.')) return;
+  if (!confirm('Remove your CV Box upload? This can\u2019t be undone.')) return;
   var deleteBtn = document.getElementById('pool-delete-btn');
   if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.textContent = 'Removing…'; }
   try {
@@ -1146,7 +1146,7 @@ export async function deleteMyPoolProfile() {
   editingPoolCandidateId = null;
   try { localStorage.removeItem('sa_gate_registration_pending'); } catch(e){}
   closeSheet('pool-register-overlay');
-  showToast('Your Talent Pool profile has been removed.');
+  showToast('Your CV Box upload has been removed.');
   poolLoaded = false; // force a fresh load next time the list is viewed
 }
 
@@ -1217,7 +1217,7 @@ export async function submitPoolRegistration() {
     if (editResult.error || editResult.data !== true) { console.error('pool self update', editResult.error); showToast('Could not save — please try again.'); if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
     if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
     closeSheet('pool-register-overlay');
-    showToast('Your Talent Pool profile has been updated.');
+    showToast('Your CV Box upload has been updated.');
     poolLoaded = false; // force a fresh load next time the list is viewed
     return;
   }

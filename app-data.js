@@ -253,10 +253,10 @@ export function renderManagedPosters(posters) {
 }
 
 // ===== HOME SCREEN CANDIDATE SPOTLIGHT =====
-// Advertises real Talent Pool candidates on the home CTA carousel: their
+// Advertises real CV Box candidates on the home CTA carousel: their
 // square profile photo, name, and position/experience heading. Pulled
 // straight from pool_candidates (no separate admin upload needed) —
-// tapping a card sends the visitor to the full Talent Pool for the
+// tapping a card sends the visitor to the full CV Box for the
 // complete Mini-CV. RLS only ever returns status = 'active' rows to
 // anonymous visitors, but the status filter below is defense-in-depth.
 export var publicPoolStartupPromise = null;
@@ -268,7 +268,7 @@ export async function getPublicPoolCandidatesFromWorker() {
     publicPoolStartupPromise = fetch(R2_WORKER_URL + '/api/startup', {
       method: 'GET', headers: { Accept: 'application/json' }
     }).then(function(response) {
-      if (!response.ok) throw new Error('Talent Pool Worker request failed');
+      if (!response.ok) throw new Error('CV Box Worker request failed');
       return response.json();
     });
   }
@@ -331,7 +331,7 @@ export function renderCandidateSpotlight(list, menuTarget, homeTarget) {
   var targets = [menuTarget || document.getElementById('candidate-spotlight-deck'), homeTarget || document.getElementById('home-candidate-spotlight-deck')].filter(Boolean);
   if (!targets.length) return;
   if (!list.length) {
-    targets.forEach(function(target) { target.innerHTML = '<div class="poster-empty">Candidates will appear here as people join the Talent Pool.</div>'; });
+    targets.forEach(function(target) { target.innerHTML = '<div class="poster-empty">Candidates will appear here as people join the CV Box.</div>'; });
     return;
   }
   var markup = list.map(function(c) {
@@ -348,7 +348,7 @@ export function renderCandidateSpotlight(list, menuTarget, homeTarget) {
       '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</strong>' +
       '<span class="spotlight-role">'+escapeHtml(role)+'</span><span class="spotlight-location">'+escapeHtml(location)+'</span>' +
       '<span class="spotlight-view">View profile <span aria-hidden="true">→</span></span></span></button>';
-  }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>Talent Pool</span></button>';
+  }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>CV Box</span></button>';
   targets.forEach(function(target) { target.innerHTML = markup; });
 }
 
@@ -1411,8 +1411,8 @@ export async function loadAll(options) {
   updateStats();
   loadMediaSetting();
   // The committed static snapshot (data/startup.json) historically omitted the
-  // Talent Pool rows and hard-coded counts.candidates = 0, so the home
-  // "Talent Pool Candidates" card sat at 0 until the visitor opened the Talent
+  // CV Box rows and hard-coded counts.candidates = 0, so the home
+  // "CV Box Candidates" card sat at 0 until the visitor opened the Talent
   // Pool screen (which fetches the live count). When the snapshot doesn't carry
   // its own pool_candidates, backfill the real number from the Worker so the
   // card is correct on first paint. Once the snapshot ships pool_candidates

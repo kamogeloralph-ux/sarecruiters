@@ -402,7 +402,7 @@ function appTiles() {
   return `<div class="tiles tiles-3">${[
     ['/?section=vacancies', 'Vacancies', 'search', 'Browse every listed vacancy'],
     ['/?section=agencies', 'Recruitment agencies', 'building', 'Verified agencies and branches'],
-    ['/?section=candidates', 'Talent Pool', 'users', 'Get found by recruiters'],
+    ['/?section=candidates', 'CV Box', 'users', 'Get found by recruiters'],
     ['/?section=posters', 'Vacancy posters', 'image', 'Shareable hiring posters'],
     ['/?section=employers', 'Employers', 'briefcase', 'Companies that are hiring'],
     ['/post-a-job/', 'Post a job', 'tag', 'Free to list, admin reviewed'],
@@ -484,7 +484,7 @@ function footerHtml() {
 <div class="sp-contact"><a href="tel:+27715531005">${icon('phone', 16)} 071 553 1005</a><a href="https://wa.me/27715531005" target="_blank" rel="noopener noreferrer">${icon('chat', 16)} WhatsApp us</a><a href="mailto:sarecruiters.directory@gmail.com">${icon('mail', 16)} Email us</a><a href="https://g.page/r/CbL3q0tBfGAsEBI" target="_blank" rel="noopener noreferrer">${icon('pin', 16)} Find us on Google</a></div>
 </div>
 <div><h3>Explore</h3><div class="sp-footer-links"><a href="/careers/">Careers</a><a href="/apply/">Apply</a><a href="/contact/">Contact</a><a href="/register/">Register</a><a href="/candidates/">Candidates</a><a href="/about/">About</a><a href="/post-a-job/">Post a job</a></div></div>
-<div><h3>In the app</h3><div class="sp-foot-col"><a href="/?section=vacancies">Vacancies</a><a href="/?section=agencies">Agencies</a><a href="/?section=candidates">Talent Pool</a><a href="/?section=posters">Vacancy posters</a><a href="/?section=employers">Employers</a></div></div>
+<div><h3>In the app</h3><div class="sp-foot-col"><a href="/?section=vacancies">Vacancies</a><a href="/?section=agencies">Agencies</a><a href="/?section=candidates">CV Box</a><a href="/?section=posters">Vacancy posters</a><a href="/?section=employers">Employers</a></div></div>
 ${provs ? `<div><h3>Jobs by province</h3><div class="sp-foot-col">${provs}</div></div>` : ''}
 ${cats ? `<div><h3>Browse by type</h3><div class="sp-foot-col">${cats}</div></div>` : ''}
 </div>
@@ -1233,11 +1233,11 @@ document.getElementById('pj-form').addEventListener('submit', async function(e){
 // These use normal anchor links instead of JavaScript-only actions so search
 // engines can discover a stable internal-link graph for sitelink candidates.
 const SEO_LANDING_PAGES = [
-  { slug: 'careers', title: 'Careers and Vacancies in South Africa | SA Recruiters', description: 'Browse current careers and job vacancies from recruitment agencies and employers across South Africa.', heading: 'Careers and Vacancies', intro: 'Find your next opportunity through SA Recruiters. Browse current vacancies by location, category and work style.', links: [['/jobs/gauteng/', 'Browse Gauteng vacancies'], ['/browse/category/remote/', 'Find remote and work-from-home jobs'], ['/browse/category/government/', 'Browse government vacancies'], ['/browse/category/learnership/', 'Find learnerships'], ['/candidates/', 'Candidate resources and Talent Pool']] },
+  { slug: 'careers', title: 'Careers and Vacancies in South Africa | SA Recruiters', description: 'Browse current careers and job vacancies from recruitment agencies and employers across South Africa.', heading: 'Careers and Vacancies', intro: 'Find your next opportunity through SA Recruiters. Browse current vacancies by location, category and work style.', links: [['/jobs/gauteng/', 'Browse Gauteng vacancies'], ['/browse/category/remote/', 'Find remote and work-from-home jobs'], ['/browse/category/government/', 'Browse government vacancies'], ['/browse/category/learnership/', 'Find learnerships'], ['/candidates/', 'Candidate resources and CV Box']] },
   { slug: 'apply', title: 'Apply for a Vacancy | SA Recruiters', description: 'Learn how to apply for jobs listed by South African recruitment agencies and employers on SA Recruiters.', heading: 'Apply for a Vacancy', intro: 'Open a vacancy, review the employer or agency instructions, and use the application link or contact details provided on the listing.', links: [['/careers/', 'Browse careers and vacancies'], ['/browse/category/remote/', 'Browse remote vacancies'], ['/contact/', 'Contact SA Recruiters']] },
   { slug: 'contact', title: 'Contact Us | SA Recruiters', description: 'Contact SA Recruiters about recruitment agencies, vacancies, candidate support and employer listings.', heading: 'Contact Us', intro: 'Need help with a listing, agency information or the SA Recruiters platform? Contact our team using the details below.', contact: true, links: [['/careers/', 'Browse vacancies'], ['/post-a-job/', 'Post a job'], ['/register/', 'Register as a candidate or employer']] },
-  { slug: 'register', title: 'Register as a Candidate or Employer | SA Recruiters', description: 'Register with SA Recruiters to join the Talent Pool or submit recruitment opportunities for your company.', heading: 'Register with SA Recruiters', intro: 'Candidates can join the Talent Pool and employers can submit vacancies for consideration. Registration is free.', links: [['/candidates/', 'Join the Candidate Talent Pool'], ['/post-a-job/', 'Post a job as an employer'], ['/contact/', 'Contact us for registration help']] },
-  { slug: 'candidates', title: 'Candidates and Talent Pool | SA Recruiters', description: 'Candidate resources, job-search guidance and Talent Pool registration for South African job seekers.', heading: 'Candidates', intro: 'Discover vacancies, prepare for your job search and make it easier for recruitment agencies and employers to find you.', links: [['/careers/', 'Search careers and vacancies'], ['/register/', 'Join the Talent Pool'], ['/browse/category/learnership/', 'Browse learnerships'], ['/browse/category/internship/', 'Browse internships']] },
+  { slug: 'register', title: 'Register as a Candidate or Employer | SA Recruiters', description: 'Register with SA Recruiters to join the CV Box or submit recruitment opportunities for your company.', heading: 'Register with SA Recruiters', intro: 'Candidates can join the CV Box and employers can submit vacancies for consideration. Registration is free.', links: [['/candidates/', 'Join the Candidate CV Box'], ['/post-a-job/', 'Post a job as an employer'], ['/contact/', 'Contact us for registration help']] },
+  { slug: 'candidates', title: 'Candidates and CV Box | SA Recruiters', description: 'Candidate resources, job-search guidance and CV Box registration for South African job seekers.', heading: 'Candidates', intro: 'Discover vacancies, prepare for your job search and make it easier for recruitment agencies and employers to find you.', links: [['/careers/', 'Search careers and vacancies'], ['/register/', 'Upload to the CV Box'], ['/browse/category/learnership/', 'Browse learnerships'], ['/browse/category/internship/', 'Browse internships']] },
   { slug: 'about', title: 'About SA Recruiters | South African Recruitment Directory', description: 'Learn how SA Recruiters helps candidates, recruitment agencies and employers connect through a practical South African jobs directory.', heading: 'About SA Recruiters', intro: 'SA Recruiters is a practical starting point for South African hiring. We bring vacancies, recruitment agencies, employers and candidate resources together in one easy-to-use directory.', about: true, links: [['/careers/', 'Browse vacancies'], ['/candidates/', 'Candidate resources'], ['/post-a-job/', 'Post a job'], ['/contact/', 'Contact Us']] },
 ];
 
@@ -1245,8 +1245,8 @@ const LANDING_CTAS = {
   careers: [['/?section=vacancies', 'Browse all vacancies', 'primary', 'search'], ['/post-a-job/', 'Post a job', 'ghost', 'tag']],
   apply: [['/careers/', 'Browse vacancies', 'primary', 'search'], ['/contact/', 'Need help?', 'ghost', 'chat']],
   contact: [['tel:+27715531005', 'Call 071 553 1005', 'primary', 'phone'], ['https://wa.me/27715531005', 'WhatsApp us', 'ghost', 'chat']],
-  register: [['/?section=candidates', 'Join the Talent Pool', 'primary', 'users'], ['/post-a-job/', 'Post a job', 'ghost', 'tag']],
-  candidates: [['/?section=candidates', 'Join the Talent Pool', 'primary', 'users'], ['/careers/', 'Search vacancies', 'ghost', 'search']],
+  register: [['/?section=candidates', 'Upload to the CV Box', 'primary', 'users'], ['/post-a-job/', 'Post a job', 'ghost', 'tag']],
+  candidates: [['/?section=candidates', 'Upload to the CV Box', 'primary', 'users'], ['/careers/', 'Search vacancies', 'ghost', 'search']],
   about: [['/careers/', 'Browse vacancies', 'primary', 'search'], ['/contact/', 'Contact us', 'ghost', 'mail']],
 };
 
@@ -1255,7 +1255,7 @@ const TILE_INFO = {
   '/apply/': ['briefcase', 'How to apply the right way'],
   '/contact/': ['chat', 'Talk to the SA Recruiters team'],
   '/register/': ['users', 'Free for candidates and employers'],
-  '/candidates/': ['users', 'Resources and the Talent Pool'],
+  '/candidates/': ['users', 'Resources and the CV Box'],
   '/post-a-job/': ['tag', 'Free to list, reviewed by an admin'],
 };
 
@@ -1296,7 +1296,7 @@ function buildSeoLandingPage(page) {
     <section class="about-section">
       <h2>For candidates</h2>
       <p>Explore current vacancies by category, location and work style. Each listing should be read carefully because the relevant agency or employer sets the requirements, application process and closing date. When a role interests you, follow the application link or contact details shown on the vacancy page.</p>
-      <p>You can also use the Candidate Talent Pool to make your skills easier for participating recruiters and employers to discover.</p>
+      <p>You can also use the Candidate CV Box to make your skills easier for participating recruiters and employers to discover.</p>
     </section>
     <section class="about-section">
       <h2>Quality, clarity and responsible browsing</h2>

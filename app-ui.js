@@ -460,13 +460,13 @@ export function renderHomeFeed() {
       '<div class="home-available-roles-wrap" aria-live="polite">' + (rows.length ? homeAvailableRolesMarkup(rows) : empty) + '</div>' +
     '</section>' +
     '<button type="button" class="tipchat-home-logo" onclick="openCommunity()" aria-label="Open TipChat community"><img src="icons/tipchat-logo.svg" alt="TipChat" width=260 height=90 loading="lazy" decoding="async"><span>Join the conversation <b aria-hidden="true">→</b></span></button>' +
-    '<section class="spotlight-mini home-spotlight" aria-labelledby="home-spotlight-title"><div class="spotlight-mini-head"><div><div class="quick-access-label">Talent Pool spotlight</div><h2 id="home-spotlight-title">Meet our candidates</h2></div><button type="button" data-ripple onclick="goPool(\'profile\')">See all &#8594;</button></div><div class="spotlight-deck" id="home-candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"><div class="poster-empty">Loading candidates…</div></div></section>' +
+    '<section class="spotlight-mini home-spotlight" aria-labelledby="home-spotlight-title"><div class="spotlight-mini-head"><div><div class="quick-access-label">CV Box spotlight</div><h2 id="home-spotlight-title">Browse CVs</h2></div><button type="button" data-ripple onclick="goPool(\'profile\')">See all &#8594;</button></div><div class="spotlight-deck" id="home-candidate-spotlight-deck" aria-label="Featured CV Box candidates"><div class="poster-empty">Loading candidates…</div></div></section>' +
     '<section class="home-categories-section" aria-labelledby="home-categories-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Find your next move</span><h2 id="home-categories-title">Explore top job categories</h2></div></div>' +
       '<div class="home-category-grid">' + categoryMarkup + '</div></section>' +
     '<div id="house-ad-home-middle" class="house-ad-slot" hidden></div>' +
     '<section class="home-tools-section" aria-labelledby="home-tools-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Start here</span><h2 id="home-tools-title">Take your next step</h2><p>Whether you’re looking for work or hiring talent, start here.</p></div></div>' +
       '<div class="home-tools-grid">' +
-        '<article class="home-tool-card home-tool-card--seeker"><div class="home-tool-top"><div class="home-tool-icon" aria-hidden="true">CV</div><span class="home-tool-badge">Free to use</span></div><div class="home-tool-copy"><h3>Get discovered by recruiters</h3><p>Upload your CV to the Talent Pool and browse current opportunities.</p></div><div class="home-tool-actions"><button type="button" onclick="openHomeTalentPoolProfile()">Upload / update CV <span aria-hidden="true">→</span></button><button type="button" class="secondary" onclick="showAllVacancies(\'home\')">Browse vacancies <span aria-hidden="true">→</span></button></div></article>' +
+        '<article class="home-tool-card home-tool-card--seeker"><div class="home-tool-top"><div class="home-tool-icon" aria-hidden="true">CV</div><span class="home-tool-badge">Free to use</span></div><div class="home-tool-copy"><h3>Get discovered by recruiters</h3><p>Upload your CV to the CV Box and browse current opportunities.</p></div><div class="home-tool-actions"><button type="button" onclick="openHomeTalentPoolProfile()">Upload / update CV <span aria-hidden="true">→</span></button><button type="button" class="secondary" onclick="showAllVacancies(\'home\')">Browse vacancies <span aria-hidden="true">→</span></button></div></article>' +
         '<article class="home-tool-card home-tool-card--employer"><div class="home-tool-top"><div class="home-tool-icon" aria-hidden="true">＋</div><span class="home-tool-badge">Reach active candidates</span></div><div class="home-tool-copy"><h3>Reach active candidates</h3><p>Post a vacancy or share a recruitment poster with the SA job-seeking community.</p></div><div class="home-tool-actions"><button type="button" onclick="openGeneralVacancySheet()">Post a vacancy <span aria-hidden="true">→</span></button><button type="button" class="secondary" onclick="openPublicPosterSheet()">Post a poster</button><button type="button" class="secondary" onclick="goPool(\'profile\')">Browse candidates</button></div></article>' +
       '</div></section>';
 
@@ -503,7 +503,7 @@ export function renderHomeFeed() {
 export var SA_SECTION_LINKS = {
   vacancies: { label: 'Vacancies', title: 'SA Recruiters — Vacancies' },
   agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
-  candidates: { label: 'Join the Talent Pool', title: 'SA Recruiters — Join the Talent Pool', shareKey: 'talent-pool' },
+  candidates: { label: 'Upload to the CV Box', title: 'SA Recruiters — Upload to the CV Box', shareKey: 'talent-pool' },
   posters: { label: 'Vacancy posters', title: 'SA Recruiters — Vacancy Posters' },
   employers: { label: 'Employers', title: 'SA Recruiters — Employers' }
 };
@@ -516,7 +516,7 @@ export function shareSectionLink(section) {
   var meta = SA_SECTION_LINKS[section];
   var link = getSectionLink(section);
   if (!meta || !link) return;
-  var shareLabel = section === 'candidates' ? 'Join the Talent Pool' : meta.label;
+  var shareLabel = section === 'candidates' ? 'Upload to the CV Box' : meta.label;
   var text = (section === 'candidates' ? shareLabel : 'Explore ' + shareLabel.toLowerCase()) + ' on SA Recruiters: ' + link;
   if (navigator.share) {
     navigator.share({ title: meta.title, text: text, url: link }).catch(function() {});
@@ -774,7 +774,7 @@ export function goBackToProfile() {
 
 // ===== MY ACCOUNT (general signed-in profile) =====
 // A general account view — Google identity, preferences and activity — that is
-// deliberately separate from the Talent Pool product. The Talent Pool listing
+// deliberately separate from the CV Box product. The CV Box listing
 // stays a scoped section inside it ("Your listing"), not the account itself.
 export var accountReturnScreen = 'profile';
 
@@ -882,7 +882,7 @@ export function renderAccountQuota() {
 
 // "Your listing" status: reflects whether the signed-in user currently has a
 // pool_candidates row linked, so the account view stays honest about the fact
-// that the Talent Pool is a product scoped to pool_candidates — not the
+// that the CV Box is a product scoped to pool_candidates — not the
 // account itself.
 export async function renderAccountPoolStatus() {
   var el = document.getElementById('account-pool-status');
@@ -974,7 +974,7 @@ export function openProfilePhotoSheet() {
 }
 window.openProfilePhotoSheet = openProfilePhotoSheet;
 
-// Reuses the Talent Pool photo pipeline: centre-crop to a 512x512 square and
+// Reuses the CV Box photo pipeline: centre-crop to a 512x512 square and
 // keep the blob locally until Save, so nothing uploads until the user commits.
 export function handleProfilePhoto(evt) {
   var file = evt.target.files && evt.target.files[0];
@@ -1731,7 +1731,7 @@ export function renderAllVacanciesList() {
   var el = document.getElementById('allvacancies-list');
   if (el) el.dataset.state = 'ready';
   // Employer-posted vacancies are exclusive to their employer's own hub card
-  // (see employerHubVacancies) and are gated behind Talent Pool verification
+  // (see employerHubVacancies) and are gated behind CV Box verification
   // there — they never appear in this general/public vacancies list.
   // Source folders are independent views: a vacancy may also belong to its
   // matched agency or employer. Keep source rows visible in Adzuna/Retail

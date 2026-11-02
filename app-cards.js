@@ -1,6 +1,6 @@
 /*
  * SA Recruiters -- app.js split 3/8: app-cards.js
- * Hub cards (agency/employer), talent pool access gating, search screen, vacancy card rendering
+ * Hub cards (agency/employer), CV Box access gating, search screen, vacancy card rendering
  *
  * Part of the original monolithic app.js. Now an ES module: it imports what it
  * uses from the other app-*.js files and exports its top-level declarations.
@@ -295,15 +295,15 @@ export function rememberTalentPoolIdentity(phone, email) {
 }
 export async function verifyTalentPoolMembership(phone, email, quiet) {
   phone = (phone || '').trim(); email = (email || '').trim().toLowerCase();
-  if (!phone || !email) { if (!quiet) showToast('Enter the email and phone number used for Talent Pool registration.'); return false; }
+  if (!phone || !email) { if (!quiet) showToast('Enter the email and phone number used for CV Box registration.'); return false; }
   try {
     var result = await supabaseClient.rpc('verify_talent_pool_access', { p_email: email, p_phone: phone });
-    if (result.error) { console.error('Talent Pool verification', result.error); if (!quiet) showToast('Membership verification is not configured yet. Run CREATE_TALENT_POOL_ACCESS.sql in Supabase.'); return false; }
+    if (result.error) { console.error('CV Box verification', result.error); if (!quiet) showToast('Membership verification is not configured yet. Run CREATE_TALENT_POOL_ACCESS.sql in Supabase.'); return false; }
     set_talentPoolVerified( result.data === true);
     if (talentPoolVerified) rememberTalentPoolIdentity(phone, email);
-    else if (!quiet) showToast('We could not verify that Talent Pool registration. Check your details.');
+    else if (!quiet) showToast('We could not verify that CV Box registration. Check your details.');
     return talentPoolVerified;
-  } catch(e) { if (!quiet) showToast('Could not verify Talent Pool membership right now.'); return false; }
+  } catch(e) { if (!quiet) showToast('Could not verify CV Box membership right now.'); return false; }
 }
 export async function restoreTalentPoolMembership() {
   if (employerDirectoryOpen) return;
@@ -311,7 +311,7 @@ export async function restoreTalentPoolMembership() {
   if (identity) await verifyTalentPoolMembership(identity.phone, identity.email, true);
 }
 // Gate registration follow-through: if the visitor registered for the
-// Talent Pool from the sign-in screen (row created pre-auth), link that
+// CV Box from the sign-in screen (row created pre-auth), link that
 // row to their account on first sign-in via candidate_claim_profile —
 // matching the email + phone they registered with. Quiet on any failure;
 // openMyPoolProfile() remains the manual fallback.
@@ -323,7 +323,7 @@ export async function autoClaimGateRegistration() {
   try {
     var claim = await supabaseClient.rpc('candidate_claim_profile', { p_email: identity.email, p_phone: identity.phone });
     if (!claim.error && claim.data) { try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e){} }
-  } catch(e) { /* manual link via My Talent Pool profile still works */ }
+  } catch(e) { /* manual link via My CV Box upload still works */ }
 }
 export function openEmployerDirectoryAccessMessage() {
   var sheet = document.getElementById('employer-directory-locked-overlay');
@@ -333,7 +333,7 @@ export function openEmployerDirectoryAccessMessage() {
   if (phone && identity) phone.value = identity.phone || '';
   if (email && identity) email.value = identity.email || '';
   if (sheet) sheet.classList.add('open');
-  else showToast('Please verify your Talent Pool registration first to browse employers and employer vacancies.');
+  else showToast('Please verify your CV Box registration first to browse employers and employer vacancies.');
 }
 export async function verifyEmployerDirectoryAccess() {
   var phone = (document.getElementById('employer-access-phone') || {}).value || '';
@@ -341,7 +341,7 @@ export async function verifyEmployerDirectoryAccess() {
   var ok = await verifyTalentPoolMembership(phone, email, false);
   if (ok) {
     closeSheet('employer-directory-locked-overlay');
-    showToast('Talent Pool membership verified');
+    showToast('CV Box membership verified');
     showAllEmployers();
   }
 }

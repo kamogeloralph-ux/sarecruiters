@@ -214,8 +214,8 @@
     <button type="button" data-ripple onclick="closeSiteMenu();openPostJobSheet()"><span class="site-menu-nav-icon">⊕</span><span>Post a job<small>Tell us about the roles you're hiring for</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();showAllVacancies('home')"><span class="site-menu-nav-icon">⌕</span><span>Browse vacancies<small>Find your next opportunity</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();showAllAgencies()"><span class="site-menu-nav-icon">⌂</span><span>Recruitment agencies<small>Explore agencies and branches</small></span><b>›</b></button>
-    <button type="button" data-ripple onclick="closeSiteMenu();goPool('profile')"><span class="site-menu-nav-icon">♙</span><span>Talent Pool<small>Meet candidates and join</small></span><b>›</b></button>
-    <button type="button" data-ripple onclick="closeSiteMenu();openMyPoolProfile()"><span class="site-menu-nav-icon">☺</span><span>My Talent Pool profile<small>Edit or remove your listing</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();goPool('profile')"><span class="site-menu-nav-icon">♙</span><span>CV Box<small>Browse CVs and upload yours</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();openMyPoolProfile()"><span class="site-menu-nav-icon">☺</span><span>My CV Box upload<small>Edit or remove your listing</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openMySubmissions()"><span class="site-menu-nav-icon">✉</span><span>My submissions<small>Track reports and suggestions you've sent</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();window.open('/privacy/','_blank','noopener')"><span class="site-menu-nav-icon">◌</span><span>Privacy policy<small>How your data is protected</small></span><b>›</b></button>
   </nav>
@@ -281,7 +281,7 @@
       <div class="stat-card stat-card-posters" data-ripple onclick="showVacancyPosters()" role="button" tabindex="0" aria-label="View vacancy posters"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><div class="stat-value" id="stat-posters">…</div><div class="stat-label"><span>Vacancy<br>Posters</span></div></div>
       <div class="stat-card stat-card-vacancies" data-ripple onclick="showAllVacancies()" role="button" tabindex="0" aria-label="View available vacancies"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div class="stat-value" id="stat-vacancies">…</div><div class="stat-label"><span>Available<br>Vacancies</span></div></div>
       <div class="stat-card stat-card-employers" data-ripple onclick="showAllEmployers()" role="button" tabindex="0" aria-label="View hiring companies"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/></svg></span><div class="stat-value" id="stat-employers">…</div><div class="stat-label"><span>Hiring<br>Companies</span></div></div>
-      <div class="stat-card stat-card-pool" data-ripple onclick="goPool('home')" role="button" tabindex="0" aria-label="View Talent Pool candidates"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M16 11a3 3 0 1 0 0-6M17 15c2.4.4 3.7 2 4 5"/></svg></span><div class="stat-value" id="stat-pool">…</div><div class="stat-label"><span>Talent Pool<br>Candidates</span></div></div>
+      <div class="stat-card stat-card-pool" data-ripple onclick="goPool('home')" role="button" tabindex="0" aria-label="View CV Box candidates"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M16 11a3 3 0 1 0 0-6M17 15c2.4.4 3.7 2 4 5"/></svg></span><div class="stat-value" id="stat-pool">…</div><div class="stat-label"><span>CV Box<br>Profiles</span></div></div>
       </div>
       <button class="stats-scroll-btn stats-scroll-next" type="button" data-ripple onclick="scrollStats(1)" aria-label="Show next statistics">›</button>
     </div>
@@ -383,7 +383,7 @@
 
       <div class="pgroup-label">Your listing</div>
       <div class="pgrouped-list">
-        <button class="profile-menu-item" data-ripple onclick="openMyPoolProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Talent Pool profile<span class="mi-sub" id="account-pool-status">Your Mini-CV shown to recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="openMyPoolProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>CV Box upload<span class="mi-sub" id="account-pool-status">Your Mini-CV shown to recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     <button data-ripple onclick="openJobSeekerSheet()" style="display:block;margin:-6px 16px 14px;width:calc(100% - 32px);background:none;border:none;color:var(--text-2);font-size:12.5px;font-weight:600;text-align:center;padding:4px">Just need help finding work? <span style="color:var(--accent)">Send us a quick request</span></button>
       </div>
 
@@ -483,18 +483,18 @@
       <div class="quick-access-label">Quick access</div>
       <div class="quick-access-grid">
         <div class="quick-card quick-card-candidates">
-          <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or join the Talent Pool</small></div></div>
-          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openPoolRegisterSheet()">Join Talent Pool</button></div>
+          <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or upload a CV</small></div></div>
+          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openPoolRegisterSheet()">Upload a CV</button></div>
         </div>
         <div class="quick-card quick-card-employers">
           <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div><strong>Employers</strong><small>Find candidates or post a vacancy</small></div></div>
-          <div class="quick-card-actions"><button data-ripple onclick="goPool('profile')">Browse candidates</button><button data-ripple onclick="openGeneralVacancySheet()">Post vacancy</button></div>
+          <div class="quick-card-actions"><button data-ripple onclick="goPool('profile')">Browse CV Box</button><button data-ripple onclick="openGeneralVacancySheet()">Post vacancy</button></div>
         </div>
       </div>
     </section>
     <section class="spotlight-mini" aria-labelledby="spotlight-mini-title">
-      <div class="spotlight-mini-head"><div><div class="quick-access-label">Talent Pool spotlight</div><h2 id="spotlight-mini-title">Meet our candidates</h2></div><button data-ripple onclick="goPool('profile')">See all &#8594;</button></div>
-      <div class="spotlight-deck" id="candidate-spotlight-deck" aria-label="Featured Talent Pool candidates"></div>
+      <div class="spotlight-mini-head"><div><div class="quick-access-label">CV Box spotlight</div><h2 id="spotlight-mini-title">Browse CVs</h2></div><button data-ripple onclick="goPool('profile')">See all &#8594;</button></div>
+      <div class="spotlight-deck" id="candidate-spotlight-deck" aria-label="Featured CV Box candidates"></div>
     </section>
 
     <div class="pgroup-label">Community</div>
@@ -558,7 +558,7 @@
       <div class="community-feed" id="community-feed" aria-live="polite"><div class="community-empty">Loading TipChat…</div></div>
       <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
         <div class="community-compose-head"><strong id="community-compose-heading">Start a conversation</strong><span>Anonymous by default</span></div>
-        <div class="community-identity-box" id="community-identity-box" hidden><label for="community-identity-toggle"><input type="checkbox" id="community-identity-toggle" onchange="communitySetIdentityVisibility(this.checked)"><span>Show my Talent Pool name and photo on my TipChat posts and comments</span></label><small>Off by default. You can switch this off any time and your past posts return to “Anonymous member”.</small></div>
+        <div class="community-identity-box" id="community-identity-box" hidden><label for="community-identity-toggle"><input type="checkbox" id="community-identity-toggle" onchange="communitySetIdentityVisibility(this.checked)"><span>Show my CV Box name and photo on my TipChat posts and comments</span></label><small>Off by default. You can switch this off any time and your past posts return to “Anonymous member”.</small></div>
         <div class="community-compose-type" role="group" aria-label="Choose what to post"><button type="button" data-community-compose-type="discussion" class="is-active" aria-pressed="true" onclick="communitySetComposerType('discussion')">Ask / share a tip</button><button type="button" data-community-compose-type="vacancy" aria-pressed="false" onclick="communitySetComposerType('vacancy')">Post a vacancy</button></div>
         <p class="community-vacancy-help" id="community-vacancy-help" hidden>Share a vacancy in text, attach its poster, or do both. Include a job title and location when you can.</p>
         <div class="community-vacancy-fields" id="community-vacancy-fields" hidden>
@@ -856,7 +856,7 @@
       <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="closeTalentPool()" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <div class="section-title-with-link"><div class="logo-text">Talent Pool</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('candidates')" aria-label="Share Join the Talent Pool link" title="Share Join the Talent Pool link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Join the Talent Pool</span></button></div>
+      <div class="section-title-with-link"><div class="logo-text">CV Box</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('candidates')" aria-label="Share Upload your CV link" title="Share Upload your CV link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Upload your CV</span></button></div>
     </header>
     <div class="cv-box-hero">
       <div class="cv-box-kicker">SA RECRUITERS CV BOX</div>
@@ -917,7 +917,7 @@
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">&times;</button>
     <h3>You've used your 5 free views</h3>
     <div class="manager-banner" style="padding:0 0 12px">
-      <p>Create your free SA Recruiters account to keep browsing every vacancy — plus save jobs across devices, get alerts, and join the Talent Pool whenever you're ready.</p>
+      <p>Create your free SA Recruiters account to keep browsing every vacancy — plus save jobs across devices, get alerts, and upload a CV whenever you're ready.</p>
     </div>
     <button id="guest-limit-signin" class="gsi-material-button" type="button" onclick="signInWithGoogle()">
       <div class="gsi-material-button-state"></div>
@@ -973,7 +973,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('delete-account-overlay')" aria-label="Close" title="Close">×</button>
     <h3>Delete my account</h3>
-    <div class="manager-banner" style="padding:0 0 12px"><p>This permanently removes your SA Recruiters sign-in, your saved vacancies, and your Talent Pool listing if you have one. This cannot be undone.</p></div>
+    <div class="manager-banner" style="padding:0 0 12px"><p>This permanently removes your SA Recruiters sign-in, your saved vacancies, and your CV Box listing if you have one. This cannot be undone.</p></div>
     <div class="field"><label>Type DELETE to confirm</label><input id="da-confirm" placeholder="DELETE" autocomplete="off"></div>
     <p class="account-signin-status" id="delete-account-status" role="status" aria-live="polite" style="min-height:16px;margin:4px 0 8px;font-size:12px;color:var(--text-2)"></p>
     <button class="sheet-submit danger" data-ripple onclick="confirmDeleteAccount()" id="delete-account-btn">Delete my account permanently</button>
@@ -1143,7 +1143,7 @@
   <div class="sheet pool-sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <div class="pool-sheet-head">
-      <h3 id="pool-register-title">Upload to the CV Box</h3>
+      <h3 id="pool-register-title">Upload your CV</h3>
       <span class="pool-time-chip">⏱ ~1 min</span>
     </div>
     <div class="manager-banner pool-intro" style="padding:0 0 12px">
@@ -1159,10 +1159,10 @@
         <input id="pool-phone"><input id="pool-sector"><input id="pool-location"><select id="pool-gender"><option value="">—</option></select><select id="pool-grade12"><option value="">—</option></select><select id="pool-criminal"><option value="">—</option></select><select id="pool-experience"><option value="">—</option></select><input id="pool-qualification"><select id="pool-drivers-license"><option value="">—</option></select><select id="pool-transport"><option value="">—</option></select><select id="pool-relocate"><option value="">—</option></select><input id="pool-availability"><select id="pool-employment"><option value="">—</option></select><input id="pool-salary"><select id="pool-work-authorized"><option value="">—</option></select><textarea id="pool-about"></textarea><input id="pool-email-alerts" type="checkbox">
       </div>
     </div>
-    <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the Talent Pool, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
+    <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the CV Box, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
     <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Upload CV</button>
     <button class="sheet-submit danger" data-ripple onclick="deleteMyPoolProfile()" id="pool-delete-btn" style="display:none">Remove my profile</button>
-    <p class="pool-finish-later-note" id="pool-finish-later-note">You're almost in — add the Mini-CV now, or skip it and complete it anytime from “My Talent Pool Profile”.</p>
+    <p class="pool-finish-later-note" id="pool-finish-later-note">You're almost in — add the Mini-CV now, or skip it and complete it anytime from “My CV Box upload”.</p>
   </div>
 </div>
 
@@ -1182,7 +1182,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('employer-gate-overlay')" aria-label="Close" title="Close">×</button>
     <h3>Employer access</h3>
-    <div class="manager-banner" style="padding:0 0 12px"><p>Employers manage their listing through a private Manager Link — no Google account and no Talent Pool profile needed.</p></div>
+    <div class="manager-banner" style="padding:0 0 12px"><p>Employers manage their listing through a private Manager Link — no Google account and no CV Box upload needed.</p></div>
     <button class="sheet-submit" data-ripple onclick="closeSheet('employer-gate-overlay');openEmployerForm();">Register your company — get a Manager Link</button>
     <div class="field" style="margin-top:18px"><label>Already registered? Email me my Manager Link</label><input id="employer-resend-email" type="email" placeholder="you@company.co.za" autocomplete="email"></div>
     <button class="sheet-submit" data-ripple onclick="resendEmployerManagerLink()" id="employer-resend-btn">Email my Manager Link</button>
@@ -1246,7 +1246,7 @@
 </div>
 
 <!-- ============ LOOKING FOR WORK? — quick job-seeker intake (always open) ============ -->
-<!-- Creates a private request for the admin only. It never creates a public Talent Pool
+<!-- Creates a private request for the admin only. It never creates a public CV Box
      profile; an admin reviews it and can convert it. -->
 <div class="sheet-scrim" id="job-seeker-overlay">
   <div class="sheet">
@@ -1292,15 +1292,15 @@
   <div class="sheet access-lock-sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <div class="access-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
-    <h3>Talent Pool registration required</h3>
-    <p class="access-lock-copy">The Employer Directory and employer vacancies are currently available only to registered Talent Pool members.</p>
+    <h3>CV Box access required</h3>
+    <p class="access-lock-copy">The Employer Directory and employer vacancies are currently available only to CV Box users.</p>
     <p class="access-lock-copy muted">Enter the same email and phone number used when you registered.</p>
     <div class="access-verify-fields">
       <label>Email address<input id="employer-access-email" type="email" autocomplete="email" placeholder="you@example.com"></label>
       <label>Phone number<input id="employer-access-phone" type="tel" autocomplete="tel" placeholder="082 000 0000"></label>
     </div>
-    <button class="sheet-submit" data-ripple onclick="verifyEmployerDirectoryAccess()">Verify Talent Pool membership</button>
-    <button class="access-register-link" data-ripple onclick="closeSheet('employer-directory-locked-overlay');openPoolRegisterSheet();">Not registered? Join Talent Pool</button>
+    <button class="sheet-submit" data-ripple onclick="verifyEmployerDirectoryAccess()">Verify CV Box membership</button>
+    <button class="access-register-link" data-ripple onclick="closeSheet('employer-directory-locked-overlay');openPoolRegisterSheet();">Not registered? Upload a CV</button>
   </div>
 </div>
 
@@ -1519,7 +1519,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=2bc4530902"></script>
+<script type="module" src="app.bundle.min.js?v=4043fda45f"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

@@ -59,7 +59,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'faq-free',
       title: 'Is it free to use?',
-      body: '<p>Yes. Browsing public vacancies, exploring agencies and reading the candidate resources are free. Some features, such as saved jobs across devices and the Talent Pool, use an optional account. Always check the application instructions on the listing and never pay someone just to apply for a job.</p>'
+      body: '<p>Yes. Browsing public vacancies, exploring agencies and reading the candidate resources are free. Some features, such as saved jobs across devices and the CV Box, use an optional account. Always check the application instructions on the listing and never pay someone just to apply for a job.</p>'
     },
     {
       id: 'faq-listed',
@@ -94,12 +94,12 @@ var DEFAULT_CONTENT = {
     {
       id: 'faq-data',
       title: 'How is my data handled?',
-      body: '<p>You can browse as a guest. If you use Google sign-in, Talent Pool registration, saved jobs, reports or employer forms, we handle the information needed for that feature. Private notes and offline data remain in browser storage on your device. Public listing and approved Talent Pool information may be visible to other visitors. Read the <a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a> for the full details.</p>'
+      body: '<p>You can browse as a guest. If you use Google sign-in, CV Box registration, saved jobs, reports or employer forms, we handle the information needed for that feature. Private notes and offline data remain in browser storage on your device. Public listing and approved CV Box information may be visible to other visitors. Read the <a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a> for the full details.</p>'
     },
     {
       id: 'faq-talent-pool',
-      title: 'What is the Talent Pool?',
-      body: '<p>The Talent Pool lets job seekers create an optional profile that can help employers discover their skills, experience, sector and location. Your public profile does not expose your phone number, email address or CV as direct contact details. Interested employers are directed to SA Recruiters so our team can help manage the introduction.</p>'
+      title: 'What is the CV Box?',
+      body: '<p>The CV Box lets job seekers create an optional profile that can help employers discover their skills, experience, sector and location. Your public profile does not expose your phone number, email address or CV as direct contact details. Interested employers are directed to SA Recruiters so our team can help manage the introduction.</p>'
     },
     {
       id: 'faq-safety',
@@ -281,7 +281,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'priv-collect',
       title: 'What we collect',
-      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Directory data</strong> \u2014 agency, branch and employer details and vacancies, submitted by users, agency managers (via private Smart Manager links) or the admin. This information is publicly visible to anyone using the app. Do not submit personal information you do not want displayed publicly.</li><li><strong>Talent Pool profiles</strong> \u2014 if you join, we store your registration details (name, photo, phone number, email, sector, position, location, experience and mini-CV answers, plus an optional CV link). Only your name, photo, position, location, experience and "about me" are shown publicly; your phone number, email and CV link stay private with our team.</li><li><strong>Saved vacancies</strong> \u2014 synced to your account so your saved list follows you across devices.</li><li><strong>Reports &amp; suggestions</strong> \u2014 including any contact details you optionally provide. You can see your own submissions under "My submissions".</li><li><strong>Notes</strong> \u2014 private reminders you write are stored only on your device.</li><li><strong>Photos</strong> \u2014 profile photos submitted for agencies, employers and Talent Pool candidates, stored by our hosting provider (Cloudflare).</li><li><strong>Admin login</strong> \u2014 administrator accounts (email/password or Google) used to manage the directory. This is stored securely by Supabase and is not accessible to other users.</li></ul>'
+      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Directory data</strong> \u2014 agency, branch and employer details and vacancies, submitted by users, agency managers (via private Smart Manager links) or the admin. This information is publicly visible to anyone using the app. Do not submit personal information you do not want displayed publicly.</li><li><strong>CV Box uploads</strong> \u2014 if you join, we store your registration details (name, photo, phone number, email, sector, position, location, experience and mini-CV answers, plus an optional CV link). Only your name, photo, position, location, experience and "about me" are shown publicly; your phone number, email and CV link stay private with our team.</li><li><strong>Saved vacancies</strong> \u2014 synced to your account so your saved list follows you across devices.</li><li><strong>Reports &amp; suggestions</strong> \u2014 including any contact details you optionally provide. You can see your own submissions under "My submissions".</li><li><strong>Notes</strong> \u2014 private reminders you write are stored only on your device.</li><li><strong>Photos</strong> \u2014 profile photos submitted for agencies, employers and CV Box candidates, stored by our hosting provider (Cloudflare).</li><li><strong>Admin login</strong> \u2014 administrator accounts (email/password or Google) used to manage the directory. This is stored securely by Supabase and is not accessible to other users.</li></ul>'
     },
     {
       id: 'priv-location',
@@ -291,7 +291,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'priv-alerts',
       title: 'Email vacancy alerts',
-      body: '<p>If you opt in during Talent Pool registration, we use your email address to send alerts about vacancies matching your sector and location. Every alert includes an unsubscribe link, and you can also ask us to remove your profile. We send no other marketing email.</p>'
+      body: '<p>If you opt in during CV Box registration, we use your email address to send alerts about vacancies matching your sector and location. Every alert includes an unsubscribe link, and you can also ask us to remove your profile. We send no other marketing email.</p>'
     },
     {
       id: 'priv-analytics',
@@ -301,17 +301,17 @@ var DEFAULT_CONTENT = {
     {
       id: 'priv-use',
       title: 'How data is used',
-      body: '<p>Directory data is used to run the public directory; Talent Pool data to connect candidates with employers through our team; account data to sync your saved vacancies; and reports and suggestions to improve listings. Data is not sold and is not shared with advertisers. Anonymous analytics are used to understand aggregate usage and improve the app.</p>'
+      body: '<p>Directory data is used to run the public directory; CV Box data to connect candidates with employers through our team; account data to sync your saved vacancies; and reports and suggestions to improve listings. Data is not sold and is not shared with advertisers. Anonymous analytics are used to understand aggregate usage and improve the app.</p>'
     },
     {
       id: 'priv-storage',
       title: 'Data storage &amp; third parties',
-      body: '<p>Data is stored by our database provider, <strong>Supabase</strong> (accounts, directory, Talent Pool, saved vacancies, analytics), and by <strong>Cloudflare</strong> (hosting, photo storage, spam-protected forms and manager-link changes). Messages you send in the live chat assistant are processed by <strong>SendPulse</strong>. <strong>Google</strong> is the sign-in provider, and a location lookup service receives your coordinates only when you tap "Use precise location". Data is transmitted over HTTPS. Smart Manager links are private tokens verified on our server \u2014 agency managers can only add to their own listing, never edit or delete.</p>'
+      body: '<p>Data is stored by our database provider, <strong>Supabase</strong> (accounts, directory, CV Box, saved vacancies, analytics), and by <strong>Cloudflare</strong> (hosting, photo storage, spam-protected forms and manager-link changes). Messages you send in the live chat assistant are processed by <strong>SendPulse</strong>. <strong>Google</strong> is the sign-in provider, and a location lookup service receives your coordinates only when you tap "Use precise location". Data is transmitted over HTTPS. Smart Manager links are private tokens verified on our server \u2014 agency managers can only add to their own listing, never edit or delete.</p>'
     },
     {
       id: 'priv-choices',
       title: 'Your choices',
-      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Sign out</strong> \u2014 from the site menu or Menu tab, any time.</li><li><strong>Remove your Talent Pool profile</strong> \u2014 open "My Talent Pool profile" and choose Remove, or contact us.</li><li><strong>Stop email alerts</strong> \u2014 use the unsubscribe link in any alert email.</li><li><strong>Correct or remove a listing</strong> \u2014 contact us using the details below and we\'ll action it directly, since edits and deletions are admin-only within the app.</li></ul>'
+      body: '<ul style="margin:8px 0 8px 18px;line-height:1.7"><li><strong>Sign out</strong> \u2014 from the site menu or Menu tab, any time.</li><li><strong>Remove your CV Box upload</strong> \u2014 open "My CV Box upload" and choose Remove, or contact us.</li><li><strong>Stop email alerts</strong> \u2014 use the unsubscribe link in any alert email.</li><li><strong>Correct or remove a listing</strong> \u2014 contact us using the details below and we\'ll action it directly, since edits and deletions are admin-only within the app.</li></ul>'
     },
     {
       id: 'priv-children',
