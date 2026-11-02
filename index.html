@@ -849,7 +849,7 @@
     <div class="screen-fixed">
       <header class="vac-simple-header">
         <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="closeCvBox()" aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6 6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <div class="logo-text">CV Box</div>
         <button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('candidates')" aria-label="Share CV Box link" title="Share CV Box link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button>
@@ -1135,13 +1135,13 @@
       <span class="pool-time-chip">⏱ ~1 min</span>
     </div>
     <div class="manager-banner pool-intro" style="padding:0 0 12px">
-      <p>Upload your CV in under a minute. We only need your name and the position you want to be considered for. Your CV is reviewed before it appears in the CV Box.</p>
+      <p>Upload your CV in under a minute. We only need your name and the position you want to be considered for. Your profile is reviewed before it appears in the CV Box; the full CV stays off public profiles and is shared through a secure download.</p>
     </div>
     <div class="cv-box-form">
       <div class="cv-box-form-icon" aria-hidden="true">CV</div>
       <div class="field"><label>Full name *</label><input id="pool-name" placeholder="e.g. Thabo Nkosi" autocomplete="name"></div>
       <div class="field"><label>Position / role *</label><input id="pool-position" placeholder="e.g. Forklift Driver, Accountant or Sales Manager"></div>
-      <div class="field"><label>Upload your CV *</label><input id="pool-cv" type="file" accept="application/pdf,image/png,image/jpeg" onchange="handlePoolCv(event)"><small class="helper-note" id="pool-cv-status">PDF, PNG or JPG · maximum 3 MB</small></div>
+      <div class="field"><label>Upload your CV *</label><input id="pool-cv" type="file" accept="application/pdf,image/png,image/jpeg" onchange="handlePoolCv(event)"><small class="helper-note" id="pool-cv-status">PDF, PNG or JPG · maximum 3 MB</small><a id="pool-cv-current-link" class="pool-cv-link pool-cv-owner-link" target="_blank" rel="noopener noreferrer" aria-label="Open your uploaded CV in a new tab" hidden>Open your uploaded CV <span aria-hidden="true">↗</span></a></div>
       <div class="field cv-box-contact-field"><label>Email for CV enquiries <span class="field-optional">optional</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Kept private. We use it only to contact you about your CV.</small></div>
       <div class="cv-box-legacy-fields" aria-hidden="true">
         <input id="pool-phone"><input id="pool-sector"><input id="pool-location"><select id="pool-gender"><option value="">—</option></select><select id="pool-grade12"><option value="">—</option></select><select id="pool-criminal"><option value="">—</option></select><select id="pool-experience"><option value="">—</option></select><input id="pool-qualification"><select id="pool-drivers-license"><option value="">—</option></select><select id="pool-transport"><option value="">—</option></select><select id="pool-relocate"><option value="">—</option></select><input id="pool-availability"><select id="pool-employment"><option value="">—</option></select><input id="pool-salary"><select id="pool-work-authorized"><option value="">—</option></select><textarea id="pool-about"></textarea><input id="pool-email-alerts" type="checkbox">
@@ -1503,7 +1503,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=71bda33139"></script>
+<script type="module" src="app.bundle.min.js?v=2031bf88d1"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

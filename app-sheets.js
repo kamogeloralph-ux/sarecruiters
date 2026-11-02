@@ -794,7 +794,8 @@ export async function submitJobSeekerRequest() {
 export var poolCache = [];
 export var poolLoaded = false;
 export var poolCandidateCount = 0;
-export var poolReturnScreen = 'home';
+export var poolReturnScreen = 'screen-home';
+export var poolReturnNavTab = 'home';
 // Set by a CV Box spotlight card so the very next pool render can jump
 // straight to (and expand) that candidate's profile instead of dropping the
 // visitor on the generic, unfiltered CV Box list.
@@ -811,7 +812,20 @@ export async function getPoolCandidateCount() {
 }
 
 export function goPool(returnScreen, openCandidateId) {
-  poolReturnScreen = returnScreen === 'profile' || returnScreen === 'account' || (!returnScreen && document.getElementById('screen-account').classList.contains('active')) ? 'profile' : 'home';
+  var activeScreen = document.querySelector('.screen.active');
+  var requestedScreen = returnScreen === 'profile' || returnScreen === 'account'
+    ? 'screen-account'
+    : returnScreen === 'home'
+      ? 'screen-home'
+      : (typeof returnScreen === 'string' && document.getElementById(returnScreen) ? returnScreen : null);
+  poolReturnScreen = activeScreen && activeScreen.id !== 'screen-pool'
+    ? activeScreen.id
+    : (requestedScreen && requestedScreen !== 'screen-pool' ? requestedScreen : 'screen-home');
+  var activeNav = document.querySelector('.navbtn.active');
+  if (activeNav && activeNav.dataset.tab === 'menu') activeNav = null;
+  poolReturnNavTab = activeNav && activeNav.dataset.tab
+    ? activeNav.dataset.tab
+    : (poolReturnScreen === 'screen-account' ? 'account' : poolReturnScreen === 'screen-home' ? 'home' : '');
   poolPendingOpenId = openCandidateId || null;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-pool').classList.add('active');
@@ -987,8 +1001,10 @@ export function resetPoolCvUpload() {
   window.pendingPoolCvFile = null;
   var input = document.getElementById('pool-cv');
   var status = document.getElementById('pool-cv-status');
+  var currentLink = document.getElementById('pool-cv-current-link');
   if (input) input.value = '';
   if (status) status.textContent = 'Upload your latest CV so employers can be considered through SA Recruiters.';
+  if (currentLink) { currentLink.hidden = true; currentLink.removeAttribute('href'); }
 }
 export function resetPoolTermsAcceptance() {
   var input = document.getElementById('pool-terms-accept');
@@ -1087,8 +1103,20 @@ export function fillPoolFormFromCandidate(c) {
   if (aboutEl) { aboutEl.value = c.about_you || ''; aboutEl.dispatchEvent(new Event('input')); }
   resetPoolCvUpload();
   var cvStatus = document.getElementById('pool-cv-status');
+  var currentCvLink = document.getElementById('pool-cv-current-link');
+  var safeCvUrl = '';
+  try {
+    var parsedCvUrl = new URL(String(c.cv_link || ''), window.location.href);
+    if (parsedCvUrl.protocol === 'https:') safeCvUrl = parsedCvUrl.href;
+  } catch (e) {}
+  if (currentCvLink) {
+    if (safeCvUrl) { currentCvLink.href = safeCvUrl; currentCvLink.hidden = false; }
+    else { currentCvLink.hidden = true; currentCvLink.removeAttribute('href'); }
+  }
   window.currentPoolCvUrl = c.cv_link || null;
-  if (cvStatus && c.cv_link) cvStatus.textContent = 'A CV is already uploaded. Choose a new file to replace it.';
+  if (cvStatus && c.cv_link) cvStatus.textContent = safeCvUrl
+    ? 'A CV is already uploaded. Choose a new file to replace it.'
+    : 'A CV is already uploaded, but its link is not secure. Upload a new file to replace it.';
   var alertOptIn = document.getElementById('pool-email-alerts');
   if (alertOptIn) alertOptIn.checked = !!c.email_alert_opt_in;
 }
@@ -1467,6 +1495,7 @@ Object.defineProperties(window, {
   poolLoaded: { get: () => poolLoaded, set: (v) => { poolLoaded = v; }, configurable: true, enumerable: true },
   poolCandidateCount: { get: () => poolCandidateCount, set: (v) => { poolCandidateCount = v; }, configurable: true, enumerable: true },
   poolReturnScreen: { get: () => poolReturnScreen, set: (v) => { poolReturnScreen = v; }, configurable: true, enumerable: true },
+  poolReturnNavTab: { get: () => poolReturnNavTab, set: (v) => { poolReturnNavTab = v; }, configurable: true, enumerable: true },
   poolPendingOpenId: { get: () => poolPendingOpenId, set: (v) => { poolPendingOpenId = v; }, configurable: true, enumerable: true },
   editingPoolCandidateId: { get: () => editingPoolCandidateId, set: (v) => { editingPoolCandidateId = v; }, configurable: true, enumerable: true },
 });

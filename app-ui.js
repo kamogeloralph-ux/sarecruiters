@@ -12,7 +12,7 @@
 import { R2_WORKER_URL, VAC_PAGE_SIZE, agenciesCache, agencyFolderDisplayPage, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyDisplayPage, dedicatedVacancyError, dedicatedVacancyFolder, dedicatedVacancyHasMore, dedicatedVacancyLoading, dedicatedVacancyPage, dedicatedVacancyPageSize, dedicatedVacancyQueryKey, dedicatedVacancyRequestId, dedicatedVacancyRows, employerManagerMode, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyDisplayPage, generalVacancyError, generalVacancyHasMore, generalVacancyLoading, generalVacancyPage, generalVacancyPageSize, generalVacancyQueryKey, generalVacancyRequestId, generalVacancyRows, guestQuotaState, isAdmin, managerMode, renderAuthUser, saAuthUser, set_agencyFolderDisplayPage, set_dedicatedVacancyDisplayPage, set_dedicatedVacancyError, set_dedicatedVacancyFolder, set_dedicatedVacancyHasMore, set_dedicatedVacancyLoading, set_dedicatedVacancyNextCursor, set_dedicatedVacancyPage, set_dedicatedVacancyQueryKey, set_dedicatedVacancyRequestId, set_dedicatedVacancyRows, set_generalVacancyDisplayPage, set_generalVacancyError, set_generalVacancyHasMore, set_generalVacancyLoading, set_generalVacancyNextCursor, set_generalVacancyPage, set_generalVacancyQueryKey, set_generalVacancyRequestId, set_generalVacancyRows, set_saAuthUser, signOutSaRecruiters, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
 import { DEDICATED_VACANCY_FOLDER_SOURCES, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
 import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, loadPosterFeed, mailLink, mapsLink, postersCache, renderAllEmployersList, renderPosterFeed, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
-import { closeSheet, copyText, goPool, loadPoolCandidates, openMyCvBoxProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnScreen, renderPoolList } from './app-sheets.js';
+import { closeSheet, copyText, goPool, loadPoolCandidates, openMyCvBoxProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnNavTab, poolReturnScreen, renderPoolList } from './app-sheets.js';
 import { exitManagerMode } from './app-manager.js';
 import { exitEmployerManagerMode } from './app-manager-employer.js';
 
@@ -765,10 +765,10 @@ export function goSubmissions() {
 
 export function closeCvBox() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  var targetId = poolReturnScreen === 'profile' ? 'screen-account' : 'screen-home';
+  var targetId = document.getElementById(poolReturnScreen) && poolReturnScreen !== 'screen-pool' ? poolReturnScreen : 'screen-home';
   var target = document.getElementById(targetId);
   if (target) target.classList.add('active');
-  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === (poolReturnScreen === 'profile' ? 'account' : 'home')); });
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === poolReturnNavTab); });
   resetActiveScreenScroll(targetId);
 }
 window.closeCvBox = closeCvBox;

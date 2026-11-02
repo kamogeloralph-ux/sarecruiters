@@ -61,6 +61,31 @@ test('CV Box terminology is consistent while existing database names and deep-li
   assert.match(html, /shareSectionLink\('candidates'\)/);
 });
 
+test('CV Box back action restores the exact originating screen and active tab', () => {
+  assert.match(appSheets, /var activeScreen = document\.querySelector\('\.screen\.active'\)/);
+  assert.match(appSheets, /poolReturnScreen = activeScreen && activeScreen\.id !== 'screen-pool'/);
+  assert.match(appSheets, /poolReturnNavTab = activeNav && activeNav\.dataset\.tab/);
+  assert.match(appSheets, /activeNav\.dataset\.tab === 'menu'\) activeNav = null/);
+  assert.match(appUi, /var targetId = document\.getElementById\(poolReturnScreen\) && poolReturnScreen !== 'screen-pool'/);
+  assert.match(appUi, /b\.dataset\.tab === poolReturnNavTab/);
+  assert.match(html, /<path d="M15 18l-6-6 6-6"\/>/);
+});
+
+test('saved CV is viewable by its signed-in owner but private in public listings', () => {
+  assert.match(html, /id="pool-cv-current-link"[^>]*hidden/);
+  assert.match(appSheets, /var currentCvLink = document\.getElementById\('pool-cv-current-link'\)/);
+  assert.match(appSheets, /parsedCvUrl\.protocol === 'https:'\) safeCvUrl = parsedCvUrl\.href/);
+  assert.match(appSheets, /currentCvLink\.href = safeCvUrl/);
+  assert.match(appSheets, /currentCvLink\.hidden = true; currentCvLink\.removeAttribute\('href'\)/);
+  assert.match(appSheets, /\.eq\('user_id', saAuthUser\.id\)/);
+  const start = worker.indexOf('async function cvBoxResponse(');
+  const end = worker.indexOf('function yocoSecretKey(', start);
+  const publicBox = worker.slice(start, end);
+  assert.match(publicBox, /select:\s*"id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at"/);
+  assert.doesNotMatch(publicBox, /cv_link/);
+  assert.match(appSheets, /Pay to download CV/);
+});
+
 test('guest CV Box registrations can link to a Google account later without creating a directory gate', () => {
   assert.match(appCards, /function autoClaimCvBoxRegistration\(/);
   assert.match(appCards, /candidate_claim_profile/);
