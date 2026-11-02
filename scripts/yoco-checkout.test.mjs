@@ -42,6 +42,13 @@ test('CV Box payment sheet collects delivery email and keeps WhatsApp fallback',
   assert.match(sheets, /window\.location\.assign\(result\.redirectUrl\)/);
 });
 
+test('CV Box checkout displays all deployed payment-brand SVGs accessibly', () => {
+  for (const [file, label] of [['yoco.svg', 'Yoco'], ['applepay.svg', 'Apple Pay'], ['googlepay.svg', 'Google Pay'], ['visa.svg', 'Visa'], ['amex.svg', 'American Express'], ['mastercard.svg', 'Mastercard']]) {
+    assert.match(html, new RegExp(`<img[^>]+src="/${file}"[^>]+alt="${label}"`));
+  }
+  assert.match(html, /class="cv-payment-methods"/);
+});
+
 test('checkout return text waits for webhook confirmation and removes its one-time query flag', () => {
   const ui = read('../app-ui.js');
   assert.match(ui, /If your payment succeeded, we’ll email your private CV download link after Yoco confirms it/);

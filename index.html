@@ -175,13 +175,13 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=cvbox-yoco1">
-<link rel="stylesheet" href="styles.css?v=cvbox-yoco1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=cvbox-yoco-logos1">
+<link rel="stylesheet" href="styles.css?v=cvbox-yoco-logos1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="mono.css?v=mono-7" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=cvbox-yoco1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=cvbox-yoco-logos1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
 </head>
 <body>
 
@@ -1162,6 +1162,17 @@
     <p class="manager-banner" style="padding:0 0 12px">Pay securely by card. After Yoco confirms payment, we’ll email a private CV download link. Candidate contact details are not included.</p>
     <div class="field"><label for="cv-download-email">Email for your download link</label><input type="email" id="cv-download-email" autocomplete="email" maxlength="254" placeholder="you@example.com" required></div>
     <button class="sheet-submit" data-ripple id="cv-download-checkout">Pay R49 and download CV</button>
+    <div class="cv-payment-methods" role="group" aria-label="Payment methods">
+      <span class="cv-payment-methods-label">Pay securely with</span>
+      <div class="cv-payment-logo-row">
+        <img class="cv-payment-logo cv-payment-logo--yoco" src="/yoco.svg" alt="Yoco" decoding="async">
+        <img class="cv-payment-logo" src="/applepay.svg" alt="Apple Pay" decoding="async">
+        <img class="cv-payment-logo" src="/googlepay.svg" alt="Google Pay" decoding="async">
+        <img class="cv-payment-logo" src="/visa.svg" alt="Visa" decoding="async">
+        <img class="cv-payment-logo" src="/amex.svg" alt="American Express" decoding="async">
+        <img class="cv-payment-logo" src="/mastercard.svg" alt="Mastercard" decoding="async">
+      </div>
+    </div>
     <button class="cv-download-whatsapp-fallback" type="button" id="cv-download-whatsapp">Need help? Contact SA Recruiters</button>
     <p class="helper-note">Private download links expire after 72 hours.</p>
   </div>
