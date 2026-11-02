@@ -28,10 +28,20 @@ export var STARTUP_DATA_URL = R2_WORKER_URL + '/api/startup';
 // a parallel serving layer or fall back to direct Supabase vacancy reads.
 export var STATIC_DATA_URL = 'data/startup.json';
 export var staticDataEnabled = false;
-export var supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
-if (!supabaseClient) console.warn('[SA Recruiters] Supabase client unavailable; using local read-only fallback until the connection is restored.');
+export var supabaseClient = null;
+export function initializeSupabaseClient() {
+  if (supabaseClient) return supabaseClient.auth ? supabaseClient : null;
+  var sdk = window.supabase;
+  if (!sdk || typeof sdk.createClient !== 'function') return null;
+  try {
+    supabaseClient = sdk.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (error) {
+    console.error('[SA Recruiters] Supabase client initialization failed', error);
+    return null;
+  }
+  return supabaseClient && supabaseClient.auth ? supabaseClient : null;
+}
+initializeSupabaseClient();
 
 // ===== Required Google sign-in for the public app =====
 export var saAuthUser = null;
@@ -96,7 +106,12 @@ export function setAuthGateState(state, message) {
   if (button) button.disabled = state === 'loading' || state === 'redirecting';
 }
 export async function signInWithGoogle() {
-  if (!supabaseClient || saAuthRedirecting) return;
+  var client = initializeSupabaseClient();
+  if (saAuthRedirecting) return;
+  if (!client || !client.auth) {
+    setAuthGateState('error', 'Sign-in is unavailable right now. Browsing still works.');
+    return;
+  }
   saAuthRedirecting = true;
   setAuthGateState('redirecting', 'Opening Google sign-in…');
   var timeoutId;
@@ -105,7 +120,7 @@ export async function signInWithGoogle() {
       timeoutId = window.setTimeout(function() { reject(new Error('Google sign-in request timed out.')); }, 12000);
     });
     var result = await Promise.race([
-      supabaseClient.auth.signInWithOAuth({
+      client.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: authRedirectUrl(),
@@ -162,60 +177,81 @@ export function startAuthenticatedApp(callback) {
   document.querySelectorAll('#google-sign-in').forEach(function(button) {
     button.addEventListener('click', signInWithGoogle);
   });
-  if (!supabaseClient || !supabaseClient.auth) {
-    setAuthGateState('error', 'Sign-in is unavailable right now. Browsing still works.');
-    bootOnce();
-    return;
+  var authWired = false;
+  function connectAuth(client) {
+    if (authWired || !client || !client.auth) return false;
+    authWired = true;
+    setAuthGateState('ready', '');
+    // Do not make an offline launch wait for Supabase's session request. The
+    // service-worker shell and IndexedDB directory cache are sufficient for a
+    // useful guest session; auth can resolve later when connectivity returns.
+    if (navigator.onLine === false) bootOnce();
+    client.auth.onAuthStateChange(function(event, session) {
+      saAuthUser = session && session.user ? session.user : null;
+      if (saAuthUser && !isGoogleUser(saAuthUser)) {
+        saAuthUser = null;
+        client.auth.signOut();
+        setAuthGateState('error', 'Please continue with Google.');
+        return;
+      }
+      renderAuthUser(saAuthUser);
+      if (saAuthUser && !saAuthStarted) {
+        saAuthStarted = true;
+        __saAuthReady = true;
+        bootOnce();
+        // Covers the rare guest → signed-in transition without a page reload
+        // (boot already ran, so its signed-in-only sync was skipped).
+        if (typeof loadSavedVacanciesFromSupabase === 'function') loadSavedVacanciesFromSupabase();
+        if (typeof renderAccountDetails === 'function') renderAccountDetails();
+      } else if (!saAuthUser && saAuthStarted) {
+        // Session expired mid-session: drop back to guest mode in place.
+        saAuthStarted = false;
+        __saAuthReady = false;
+        renderAccountDetails();
+        showToast('Your session ended — you can keep browsing as a guest.');
+      }
+    });
+    client.auth.getSession().then(async function(result) {
+      if (result.error) throw result.error;
+      var session = result.data && result.data.session;
+      saAuthUser = session && session.user ? session.user : null;
+      if (saAuthUser && !isGoogleUser(saAuthUser)) {
+        await client.auth.signOut();
+        saAuthUser = null;
+      }
+      renderAuthUser(saAuthUser);
+      if (saAuthUser && !saAuthStarted) {
+        saAuthStarted = true;
+        __saAuthReady = true;
+      }
+      // Guests and signed-in users both boot here.
+      bootOnce();
+    }).catch(function(error) {
+      console.error('Supabase auth session', error);
+      // Browsing must still work when the auth check fails.
+      bootOnce();
+    });
+    return true;
   }
-  // Do not make an offline launch wait for Supabase's session request. The
-  // service-worker shell and IndexedDB directory cache are sufficient for a
-  // useful guest session; auth can resolve later when connectivity returns.
+  if (connectAuth(initializeSupabaseClient())) return;
+
+  // The vendor SDK is a deferred script and can arrive after this module on a
+  // cold/mobile load. Retry briefly rather than permanently disabling sign-in.
+  setAuthGateState('loading', 'Connecting to secure sign-in…');
   if (navigator.onLine === false) bootOnce();
-  supabaseClient.auth.onAuthStateChange(function(event, session) {
-    saAuthUser = session && session.user ? session.user : null;
-    if (saAuthUser && !isGoogleUser(saAuthUser)) {
-      saAuthUser = null;
-      supabaseClient.auth.signOut();
-      setAuthGateState('error', 'Please continue with Google.');
+  var attempts = 0;
+  var authRetryTimer = window.setInterval(function() {
+    if (connectAuth(initializeSupabaseClient())) {
+      window.clearInterval(authRetryTimer);
       return;
     }
-    renderAuthUser(saAuthUser);
-    if (saAuthUser && !saAuthStarted) {
-      saAuthStarted = true;
-      __saAuthReady = true;
+    attempts += 1;
+    if (attempts >= 80) {
+      window.clearInterval(authRetryTimer);
+      setAuthGateState('error', 'Sign-in is unavailable right now. Browsing still works.');
       bootOnce();
-      // Covers the rare guest → signed-in transition without a page reload
-      // (boot already ran, so its signed-in-only sync was skipped).
-      if (typeof loadSavedVacanciesFromSupabase === 'function') loadSavedVacanciesFromSupabase();
-      if (typeof renderAccountDetails === 'function') renderAccountDetails();
-    } else if (!saAuthUser && saAuthStarted) {
-      // Session expired mid-session: drop back to guest mode in place.
-      saAuthStarted = false;
-      __saAuthReady = false;
-      renderAccountDetails();
-      showToast('Your session ended — you can keep browsing as a guest.');
     }
-  });
-  supabaseClient.auth.getSession().then(async function(result) {
-    if (result.error) throw result.error;
-    var session = result.data && result.data.session;
-    saAuthUser = session && session.user ? session.user : null;
-    if (saAuthUser && !isGoogleUser(saAuthUser)) {
-      await supabaseClient.auth.signOut();
-      saAuthUser = null;
-    }
-    renderAuthUser(saAuthUser);
-    if (saAuthUser && !saAuthStarted) {
-      saAuthStarted = true;
-      __saAuthReady = true;
-    }
-    // Guests and signed-in users both boot here.
-    bootOnce();
-  }).catch(function(error) {
-    console.error('Supabase auth session', error);
-    // Browsing must still work when the auth check fails.
-    bootOnce();
-  });
+  }, 100);
 }
 
 // ===== Guest free-view quota =====

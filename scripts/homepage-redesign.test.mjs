@@ -347,3 +347,15 @@ test('CV Box empty state is compact and keeps search/filter for populated lists'
   assert.match(sheets, /No CVs in the box yet/);
   assert.match(data, /placement === 'candidates' && \(!poolLoaded \|\| !poolCache\.length\)/);
 });
+
+test('Google sign-in recovers when the deferred Supabase SDK loads after app startup', () => {
+  assert.match(core, /export function initializeSupabaseClient\(\)/);
+  assert.match(core, /supabaseClient = sdk\.createClient\(SUPABASE_URL, SUPABASE_ANON_KEY\)/);
+  const signIn = core.match(/export async function signInWithGoogle\(\) \{[\s\S]*?\n\}/)?.[0] || '';
+  assert.match(signIn, /initializeSupabaseClient\(\)/);
+  const startup = core.match(/export function startAuthenticatedApp\(callback\) \{[\s\S]*?(?=\n\/\/ ===== Guest free-view quota)/)?.[0] || '';
+  assert.match(startup, /connectAuth\(initializeSupabaseClient\(\)\)/);
+  assert.match(startup, /window\.setInterval\(function\(\)/);
+  assert.match(startup, /Connecting to secure sign-in/);
+  assert.match(startup, /attempts >= 80/);
+});
