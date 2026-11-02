@@ -359,3 +359,10 @@ test('Google sign-in recovers when the deferred Supabase SDK loads after app sta
   assert.match(startup, /Connecting to secure sign-in/);
   assert.match(startup, /attempts >= 80/);
 });
+
+test('startup data retries the public Worker once before falling back after a transient failure', () => {
+  const startupLoader = data.slice(data.indexOf('export async function fetchStartupDataOnce()'), data.indexOf('// ----- Deferred job descriptions -----'));
+  assert.match(startupLoader, /workerAttempt < 2 && !validStartup\(workerPayload\)/);
+  assert.match(startupLoader, /Worker startup data load attempt/);
+  assert.match(startupLoader, /workerPayload = response\.ok \? await response\.json\(\) : null/);
+});

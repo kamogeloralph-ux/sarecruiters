@@ -1084,14 +1084,18 @@ export async function fetchStartupDataOnce() {
     } catch(e) { workerPayload = null; }
     if (earlyTimer) clearTimeout(earlyTimer);
   }
-  if (!validStartup(workerPayload)) {
+  for (var workerAttempt = 0; workerAttempt < 2 && !validStartup(workerPayload); workerAttempt++) {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timeout = controller ? setTimeout(function(){ controller.abort(); }, 7000) : null;
     try {
-      var controller = typeof AbortController === 'function' ? new AbortController() : null;
-      var timeout = controller ? setTimeout(function(){ controller.abort(); }, 7000) : null;
       var response = await fetch(STARTUP_DATA_URL, { method:'GET', headers:{ Accept:'application/json' }, signal:controller ? controller.signal : undefined });
       if (timeout) clearTimeout(timeout);
-      if (response.ok) workerPayload = await response.json();
-    } catch(e) { console.warn('Worker startup data load', e); }
+      workerPayload = response.ok ? await response.json() : null;
+    } catch(e) {
+      if (timeout) clearTimeout(timeout);
+      workerPayload = null;
+      console.warn('Worker startup data load attempt ' + (workerAttempt + 1), e);
+    }
   }
   if (validStartup(workerPayload)) { startupDataSource = 'worker'; return workerPayload; }
   if (staticDataEnabled) {
