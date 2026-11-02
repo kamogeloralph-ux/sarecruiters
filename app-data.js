@@ -260,8 +260,10 @@ export function renderManagedPosters(posters) {
 // the startup R2 snapshot, or the D1 mirror. This ensures deleted profiles do
 // not reappear from stale public snapshots.
 export async function getPublicPoolCandidatesFromWorker() {
+  // `cache: 'no-store'` already prevents reuse. Do not add a custom
+  // Cache-Control request header: it forces a CORS preflight on browsers.
   var response = await fetch(R2_WORKER_URL + '/api/cv-box', {
-    method: 'GET', cache: 'no-store', headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
+    method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }
   });
   if (!response.ok) throw new Error('CV Box live request failed (' + response.status + ')');
   var payload = await response.json();

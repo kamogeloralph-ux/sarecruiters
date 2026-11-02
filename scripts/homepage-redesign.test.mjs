@@ -338,6 +338,11 @@ test('Home has no legacy candidate spotlight and CV Box uses live profile reads'
   assert.doesNotMatch(ui, /home-candidate-spotlight-deck|loadCandidateSpotlight/);
   assert.match(data, /\/api\/cv-box/);
   assert.match(data, /cache: 'no-store'/);
+  const loaderStart = data.indexOf('export async function getPublicPoolCandidatesFromWorker()');
+  const loaderEnd = data.indexOf('export async function upsertEmployer(', loaderStart);
+  const loader = data.slice(loaderStart, loaderEnd);
+  assert.match(loader, /headers: \{ Accept: 'application\/json' \}/);
+  assert.doesNotMatch(loader, /headers:\s*\{[^}]*Cache-Control/);
   assert.doesNotMatch(data, /pool_candidates\)\s*\{/);
 });
 
