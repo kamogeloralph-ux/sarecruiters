@@ -24,7 +24,7 @@ test('worker enforces Turnstile, consent and contact details before storing a re
   assert.match(handler, /body\.consent !== true/);
   assert.match(handler, /!phone && !email/);
   assert.match(handler, /public_submit_job_seeker/);
-  assert.match(handler, /\/\?section=talent-pool/, 'auto-reply links to the Talent Pool');
+  assert.match(handler, /\/\?section=candidates/, 'auto-reply links to the CV Box');
 });
 
 test('admin reads job seekers through the Worker and manages them via an admin-only route', () => {

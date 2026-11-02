@@ -45,3 +45,12 @@ test('vacancy deletion reconciliation is not run on every six-hour sync', () => 
   assert.match(worker, /VACANCY_RECONCILE_INTERVAL_SECONDS = 86400/);
   assert.match(worker, /vacancies_last_reconciled_at/);
 });
+
+test('CV Box reads active profiles live and never shares startup cache', () => {
+  assert.match(worker, /async function cvBoxResponse\(/);
+  assert.match(worker, /path === "\/api\/cv-box"/);
+  assert.match(worker, /"Cache-Control": "no-store, max-age=0"/);
+  assert.match(worker, /pool_candidates_public/);
+  assert.match(worker, /schema=featured-vacancies-v12-live-cv-box/);
+  assert.match(worker, /return Number\.isSafeInteger\(value\) && value >= 0 \? value \+ 1 : 1/);
+});

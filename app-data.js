@@ -99,8 +99,6 @@ export async function writeThroughD1Mirror(table, value, operation) {
     startupDataResolved = false;
     window.__saStartupPayload = null;
     window.__saStaticData = null;
-    publicPoolStartupPromise = null;
-    candidateSpotlightLoaded = false;
     return requests.length > 0;
   } catch (error) { console.warn('D1 write-through unavailable after Supabase save', table, error); return false; }
 }
@@ -252,106 +250,18 @@ export function renderManagedPosters(posters) {
     '<div class="managed-poster-copy"><strong>'+escapeHtml(p.title || label)+'</strong>'+(p.subtitle?'<span>'+escapeHtml(p.subtitle)+'</span>':'')+'</div></article>';
 }
 
-// ===== HOME SCREEN CANDIDATE SPOTLIGHT =====
-// Advertises real CV Box candidates on the home CTA carousel: their
-// square profile photo, name, and position/experience heading. Pulled
-// straight from pool_candidates (no separate admin upload needed) —
-// tapping a card sends the visitor to the full CV Box for the
-// complete Mini-CV. RLS only ever returns status = 'active' rows to
-// anonymous visitors, but the status filter below is defense-in-depth.
-export var publicPoolStartupPromise = null;
+// CV Box is deliberately loaded from a live endpoint, never from startup.json,
+// the startup R2 snapshot, or the D1 mirror. This ensures deleted profiles do
+// not reappear from stale public snapshots.
 export async function getPublicPoolCandidatesFromWorker() {
-  if (window.__saStartupPayload && Array.isArray(window.__saStartupPayload.pool_candidates)) {
-    return window.__saStartupPayload;
-  }
-  if (!publicPoolStartupPromise) {
-    publicPoolStartupPromise = fetch(R2_WORKER_URL + '/api/startup', {
-      method: 'GET', headers: { Accept: 'application/json' }
-    }).then(function(response) {
-      if (!response.ok) throw new Error('CV Box Worker request failed');
-      return response.json();
-    });
-  }
-  try {
-    return await publicPoolStartupPromise;
-  } catch (e) {
-    publicPoolStartupPromise = null;
-    return null;
-  }
-}
-export var candidateSpotlightLoaded = false;
-export var candidateSpotlightList = [];
-export async function loadCandidateSpotlight() {
-  var menuTarget = document.getElementById('candidate-spotlight-deck');
-  var homeTarget = document.getElementById('home-candidate-spotlight-deck');
-  if (!menuTarget && !homeTarget) return;
-  if (candidateSpotlightLoaded) {
-    renderCandidateSpotlight(candidateSpotlightList, menuTarget, homeTarget);
-    return;
-  }
-  var list = [];
-  try {
-    var startup = await getPublicPoolCandidatesFromWorker();
-    if (startup && Array.isArray(startup.pool_candidates)) {
-      list = startup.pool_candidates.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice(0, 12);
-    }
-  } catch (e) { console.warn('candidate spotlight load', e); list = []; }
-  // Keep photo profiles ahead of no-photo profiles. Within those groups, keep
-  // complete profiles ahead of partial profiles. A profile is considered
-  // complete for the public spotlight when its useful professional summary is
-  // present: name, position, sector, location, experience and about text.
-  // Photo is intentionally optional and does not make a candidate look
-  // incomplete. Verified status remains the tie-breaker within each group.
-  function spotlightCompleteness(c) {
-    var score = 0;
-    if (String(c.full_name || '').trim()) score++;
-    if (String(c.position || '').trim()) score++;
-    if (String(c.sector || '').trim()) score++;
-    if (String(c.location || '').trim()) score++;
-    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') score++;
-    if (String(c.about_you || '').trim()) score++;
-    return score;
-  }
-  list.sort(function(a, b) {
-    var aPhoto = String(a.photo_url || '').trim() ? 1 : 0;
-    var bPhoto = String(b.photo_url || '').trim() ? 1 : 0;
-    if (aPhoto !== bPhoto) return bPhoto - aPhoto;
-    var aScore = spotlightCompleteness(a), bScore = spotlightCompleteness(b);
-    var aComplete = aScore === 6, bComplete = bScore === 6;
-    if (aComplete !== bComplete) return aComplete ? -1 : 1;
-    if (aScore !== bScore) return bScore - aScore;
-    if ((b.verified?1:0) !== (a.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
-    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  var response = await fetch(R2_WORKER_URL + '/api/cv-box', {
+    method: 'GET', cache: 'no-store', headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
   });
-  candidateSpotlightList = list.slice(0, 10);
-  candidateSpotlightLoaded = true;
-  renderCandidateSpotlight(candidateSpotlightList, menuTarget, homeTarget);
+  if (!response.ok) throw new Error('CV Box live request failed (' + response.status + ')');
+  var payload = await response.json();
+  if (!payload || !Array.isArray(payload.candidates)) throw new Error('CV Box response was invalid');
+  return payload;
 }
-export function renderCandidateSpotlight(list, menuTarget, homeTarget) {
-  var targets = [menuTarget || document.getElementById('candidate-spotlight-deck'), homeTarget || document.getElementById('home-candidate-spotlight-deck')].filter(Boolean);
-  if (!targets.length) return;
-  if (!list.length) {
-    targets.forEach(function(target) { target.innerHTML = '<div class="poster-empty">Candidates will appear here as people join the CV Box.</div>'; });
-    return;
-  }
-  var markup = list.map(function(c) {
-    var expText = (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '')
-      ? (c.experience_years >= 10 ? '10+ yrs exp' : c.experience_years + ' yrs exp')
-      : '';
-    var role = c.position || 'Open to opportunities';
-    var location = c.location || 'South Africa';
-    var expText = (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '')
-      ? (c.experience_years >= 10 ? '10+ yrs experience' : c.experience_years + ' yrs experience')
-      : '';
-    return '<button type="button" class="spotlight-card" data-ripple onclick="goPool(\'profile\',\''+escapeHtml(c.id)+'\')">' +
-      (c.photo_url ? '<span class="spotlight-photo"><img loading="lazy" decoding="async" src="'+escapeHtml(c.photo_url)+'" alt="'+escapeHtml(c.full_name||'Candidate')+'"></span>' : '<span class="spotlight-photo spotlight-initials">'+initials(c.full_name)+'</span>') +
-      '<span class="spotlight-copy"><strong>'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</strong>' +
-      '<span class="spotlight-role">'+escapeHtml(role)+'</span><span class="spotlight-location">'+escapeHtml(location)+'</span>' +
-      '<span class="spotlight-view">View profile <span aria-hidden="true">→</span></span></span></button>';
-  }).join('') + '<button type="button" class="spotlight-card spotlight-more" data-ripple onclick="goPool(\'profile\')"><span class="spotlight-more-copy">View full<br>CV Box</span></button>';
-  targets.forEach(function(target) { target.innerHTML = markup; });
-}
-
 export async function upsertEmployer(e) {
   try {
     var mutation = supabaseClient.from('employers').upsert(e);
@@ -1410,24 +1320,14 @@ export async function loadAll(options) {
   rebuildPublicListingSlugs();
   updateStats();
   loadMediaSetting();
-  // The committed static snapshot (data/startup.json) historically omitted the
-  // CV Box rows and hard-coded counts.candidates = 0, so the home
-  // "CV Box Candidates" card sat at 0 until the visitor opened the Talent
-  // Pool screen (which fetches the live count). When the snapshot doesn't carry
-  // its own pool_candidates, backfill the real number from the Worker so the
-  // card is correct on first paint. Once the snapshot ships pool_candidates
-  // (see scripts/export-static-data.mjs) this is a no-op. Reuses the same
-  // Worker fetch loadCandidateSpotlight() already makes, so there's no extra
-  // request.
-  if (window.__saStaticData && !Array.isArray(startup.pool_candidates)) {
-    getPoolCandidateCount().then(function (n) {
-      if (typeof n === 'number') { set_poolCandidateCount( n); updateStats(); }
-    }).catch(function () {});
-  }
+  // Candidate totals are refreshed from the live CV Box endpoint. The startup
+  // payload and its static fallback intentionally carry no candidate rows.
+  getPoolCandidateCount().then(function (n) {
+    if (typeof n === 'number') { set_poolCandidateCount(n); updateStats(); }
+  }).catch(function () {});
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   if (startup && !window.__saStaticData) refreshSecondaryStartupData();
-  // Candidate spotlight is loaded on demand when the Menu is opened.
   // Poster feed and first-party ads are non-critical to the first render.
   if (typeof loadPosterFeed === 'function') loadPosterFeed();
   loadHouseAds();
@@ -1645,8 +1545,6 @@ Object.assign(window, {
   renderManagedPoster,
   renderManagedPosters,
   getPublicPoolCandidatesFromWorker,
-  loadCandidateSpotlight,
-  renderCandidateSpotlight,
   upsertEmployer,
   removeEmployer,
   localKey,
@@ -1732,9 +1630,6 @@ Object.assign(window, {
 Object.defineProperties(window, {
   D1_WRITE_THROUGH_COLUMNS: { get: () => D1_WRITE_THROUGH_COLUMNS, set: (v) => { D1_WRITE_THROUGH_COLUMNS = v; }, configurable: true, enumerable: true },
   houseAdsCache: { get: () => houseAdsCache, set: (v) => { houseAdsCache = v; }, configurable: true, enumerable: true },
-  publicPoolStartupPromise: { get: () => publicPoolStartupPromise, set: (v) => { publicPoolStartupPromise = v; }, configurable: true, enumerable: true },
-  candidateSpotlightLoaded: { get: () => candidateSpotlightLoaded, set: (v) => { candidateSpotlightLoaded = v; }, configurable: true, enumerable: true },
-  candidateSpotlightList: { get: () => candidateSpotlightList, set: (v) => { candidateSpotlightList = v; }, configurable: true, enumerable: true },
   DEFAULT_MEDIA_YOUTUBE_URL: { get: () => DEFAULT_MEDIA_YOUTUBE_URL, set: (v) => { DEFAULT_MEDIA_YOUTUBE_URL = v; }, configurable: true, enumerable: true },
   mediaYoutubeUrl: { get: () => mediaYoutubeUrl, set: (v) => { mediaYoutubeUrl = v; }, configurable: true, enumerable: true },
   TRACKS_PUBLIC_BASE_URL: { get: () => TRACKS_PUBLIC_BASE_URL, set: (v) => { TRACKS_PUBLIC_BASE_URL = v; }, configurable: true, enumerable: true },

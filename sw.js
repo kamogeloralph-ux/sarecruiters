@@ -102,6 +102,12 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
+  // CV Box data is privacy-sensitive and must reflect current approved rows;
+  // never serve an offline or previously cached profile list.
+  if (url.pathname === '/api/cv-box') {
+    event.respondWith(fetch(request));
+    return;
+  }
   if (url.pathname === '/data/startup.json' || url.pathname.indexOf('/api/') === 0) {
     event.respondWith(networkFirst(request));
     return;

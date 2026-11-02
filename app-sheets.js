@@ -805,9 +805,8 @@ export var poolPendingOpenId = null;
 // loads once someone actually opens the CV Box screen).
 export async function getPoolCandidateCount() {
   try {
-    var startup = await getPublicPoolCandidatesFromWorker();
-    if (startup && startup.counts && typeof startup.counts.candidates === 'number') return startup.counts.candidates;
-    return null;
+    var payload = await getPublicPoolCandidatesFromWorker();
+    return payload.count;
   } catch(e) { console.warn('pool count load', e); return null; }
 }
 
@@ -835,16 +834,15 @@ export async function loadPoolCandidates() {
   var listEl = document.getElementById('pool-list');
   if (listEl && !poolLoaded) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>Loading…</h3></div></div>';
   try {
-    var startup = await getPublicPoolCandidatesFromWorker();
-    var data = startup && Array.isArray(startup.pool_candidates) ? startup.pool_candidates : null;
-    if (!data) data = [];
+    var payload = await getPublicPoolCandidatesFromWorker();
+    var data = payload.candidates;
     poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){
       var aPhoto = String(a.photo_url || '').trim() ? 1 : 0;
       var bPhoto = String(b.photo_url || '').trim() ? 1 : 0;
       if (aPhoto !== bPhoto) return bPhoto - aPhoto;
       return (b.verified?1:0) - (a.verified?1:0);
     });
-  } catch(e) { console.error('pool load', e); poolCache = []; }
+  } catch(e) { console.error('pool load', e); poolCache = []; if (listEl) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>CV Box unavailable</h3><p>Could not refresh profiles. Check your connection and try again.</p><button type="button" onclick="loadPoolCandidates()">Try again</button></div></div>'; return; }
   poolLoaded = true;
   poolCandidateCount = poolCache.length;
   // Populate sector filter options from whatever is currently listed

@@ -251,10 +251,10 @@ test('public directory sections expose stable share links and deep-link routing'
   }
 });
 
-test('candidate share copy promotes joining the Talent Pool', () => {
-  assert.match(appUi, /shareLabel = section === 'candidates' \? 'Join the Talent Pool'/);
+test('candidate share copy promotes joining the CV Box', () => {
+  assert.match(appUi, /shareLabel = section === 'candidates' \? 'Upload to the CV Box'/);
   assert.match(appUi, /section === 'talent-pool'/);
-  assert.match(appUi, /shareKey: 'talent-pool'/);
+  assert.match(appUi, /shareKey: 'candidates'/);
 });
 
 test('Menu exposes an About action outside the bottom navigation', () => {

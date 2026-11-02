@@ -464,7 +464,9 @@ async function readPublicDataVersion(env) {
   try {
     const raw = await readSyncMeta(env, PUBLIC_DATA_VERSION_KEY);
     const value = Number.parseInt(raw || "0", 10);
-    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+    // Epoch 1 invalidates the prior public startup/cache generation after the
+    // CV Box snapshot removal, even before the first D1 reconciliation runs.
+    return Number.isSafeInteger(value) && value >= 0 ? value + 1 : 1;
   } catch (error) { return 0; }
 }
 __name(readPublicDataVersion, "readPublicDataVersion");
@@ -738,8 +740,7 @@ async function loadStartupDataFromD1(env) {
       ...employer,
       vacancy_count: employerCountMap[employer.id] || 0
     })),
-    pool_candidates: poolCandidatesR.results || [],
-    featured_vacancies: (featuredVacanciesR.results || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
+        featured_vacancies: (featuredVacanciesR.results || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
     counts: {
       agencies: (agenciesR.results || []).length,
       branches: (branchesR.results || []).length,
@@ -751,7 +752,7 @@ async function loadStartupDataFromD1(env) {
       vacancies: n(sourceVacancyCountR),
       general: n(generalCountR) + n(generalPoolCountR),
       employers: (employersR.results || []).length,
-      candidates: n(poolCountR),
+      candidates: 0,
       dedicated: Object.fromEntries(folderCounts),
       provinces: provinceCounts
     },
@@ -965,8 +966,7 @@ async function loadStartupData(env) {
       ...employer,
       vacancy_count: employerCountMap[employer.id] || 0
     })),
-    pool_candidates: poolCandidates.body || [],
-    featured_vacancies: (featuredVacancies.body || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
+        featured_vacancies: (featuredVacancies.body || []).filter((v) => !v.featured_until || new Date(v.featured_until).getTime() >= Date.now()),
     counts: {
       agencies: Array.isArray(agencies.body) ? agencies.body.length : 0,
       branches: Array.isArray(branches.body) ? branches.body.length : 0,
@@ -979,7 +979,7 @@ async function loadStartupData(env) {
       // app-data.js loadAll() for the client-side half of this fix.
       general: (readCount(generalCount.headers) ?? 0) + (readCount(generalPoolCount.headers) ?? 0),
       employers: Array.isArray(employers.body) ? employers.body.length : 0,
-      candidates: readCount(poolCount.headers) ?? 0,
+      candidates: 0,
       // Per-folder counts for the dedicated-source vacancy folders (Himalayas/
       // Adzuna/Government/Retail/Learnerships), which no longer ship their
       // rows in this payload -- see fetchDedicatedVacancyPage() client-side.
@@ -993,10 +993,35 @@ async function loadStartupData(env) {
   };
 }
 __name(loadStartupData, "loadStartupData");
+async function cvBoxResponse(request, env, origin) {
+  // Candidate profiles must never come from the startup snapshot or D1 mirror:
+  // those are intentionally optimized/cached for general directory startup.
+  // Read the redacted public view directly so deletions and approvals are live.
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return json({ error: "CV Box is temporarily unavailable" }, 503, origin);
+  let result;
+  try {
+    result = await supabaseGet(env, "pool_candidates_public", {
+      select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
+      status: "eq.active",
+      order: "created_at.desc",
+      limit: "1000"
+    });
+  } catch (error) {
+    console.error("CV Box live read failed", error);
+    return json({ error: "CV Box could not be loaded" }, 502, origin);
+  }
+  if (!Array.isArray(result.body)) return json({ error: "CV Box returned an invalid response" }, 502, origin);
+  const candidates = result.body.filter((row) => (row.status || "pending") === "active");
+  return new Response(JSON.stringify({ candidates, count: candidates.length, generated_at: new Date().toISOString() }), {
+    status: 200,
+    headers: { ...corsHeaders(origin), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "CDN-Cache-Control": "no-store", "X-CV-Box-Source": "supabase-live" }
+  });
+}
+__name(cvBoxResponse, "cvBoxResponse");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   const dataVersion = await readPublicDataVersion(env);
-  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v11-employer-vacancies&version=${dataVersion}`, request.url), request);
+  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v12-live-cv-box&version=${dataVersion}`, request.url), request);
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
     return new Response(body, { headers: {
@@ -1746,6 +1771,9 @@ var worker_default = {
       return new Response(null, { headers: corsHeaders(origin) });
     }
     try {
+      if (path === "/api/cv-box" && request.method === "GET") {
+        return await cvBoxResponse(request, env, origin);
+      }
       if (path === "/api/startup" && request.method === "GET") {
         return await startupResponse(request, env, ctx, origin);
       }
@@ -2322,7 +2350,7 @@ var worker_default = {
             notification_type: "JOB SEEKER",
             notification_title: "Thanks, " + fullName.split(" ")[0] + " — we've got your details",
             notification_intro: "Our team will review your request. In the meantime, these will help you move faster:",
-            notification_body: "1. Join the free Talent Pool so employers can find you:\n" + site + "/?section=talent-pool" +
+            notification_body: "1. Join the free Talent Pool so employers can find you:\n" + site + "/?section=candidates" +
               "\n\n2. Browse the latest vacancies and set up alerts for the roles you want:\n" + site + "/?section=vacancies" +
               "\n\n3. Build a professional CV in the app (menu → CV Builder).\n\n" +
               "Please note: SA Recruiters is a directory — we cannot guarantee placement, and we never charge job seekers to apply for vacancies. Beware of anyone asking you to pay for a job."

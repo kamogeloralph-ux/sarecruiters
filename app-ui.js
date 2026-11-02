@@ -10,7 +10,7 @@
  */
 
 import { R2_WORKER_URL, VAC_PAGE_SIZE, agenciesCache, agencyFolderDisplayPage, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyDisplayPage, dedicatedVacancyError, dedicatedVacancyFolder, dedicatedVacancyHasMore, dedicatedVacancyLoading, dedicatedVacancyPage, dedicatedVacancyPageSize, dedicatedVacancyQueryKey, dedicatedVacancyRequestId, dedicatedVacancyRows, employerManagerMode, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyDisplayPage, generalVacancyError, generalVacancyHasMore, generalVacancyLoading, generalVacancyPage, generalVacancyPageSize, generalVacancyQueryKey, generalVacancyRequestId, generalVacancyRows, guestQuotaState, isAdmin, managerMode, renderAuthUser, saAuthUser, set_agencyFolderDisplayPage, set_dedicatedVacancyDisplayPage, set_dedicatedVacancyError, set_dedicatedVacancyFolder, set_dedicatedVacancyHasMore, set_dedicatedVacancyLoading, set_dedicatedVacancyNextCursor, set_dedicatedVacancyPage, set_dedicatedVacancyQueryKey, set_dedicatedVacancyRequestId, set_dedicatedVacancyRows, set_generalVacancyDisplayPage, set_generalVacancyError, set_generalVacancyHasMore, set_generalVacancyLoading, set_generalVacancyNextCursor, set_generalVacancyPage, set_generalVacancyQueryKey, set_generalVacancyRequestId, set_generalVacancyRows, set_saAuthUser, signOutSaRecruiters, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
-import { DEDICATED_VACANCY_FOLDER_SOURCES, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, loadCandidateSpotlight, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
+import { DEDICATED_VACANCY_FOLDER_SOURCES, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
 import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, loadPosterFeed, mailLink, mapsLink, postersCache, renderAllEmployersList, renderPosterFeed, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
 import { closeSheet, copyText, goPool, loadPoolCandidates, openMyPoolProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnScreen, renderPoolList } from './app-sheets.js';
 import { exitManagerMode } from './app-manager.js';
@@ -460,7 +460,7 @@ export function renderHomeFeed() {
       '<div class="home-available-roles-wrap" aria-live="polite">' + (rows.length ? homeAvailableRolesMarkup(rows) : empty) + '</div>' +
     '</section>' +
     '<button type="button" class="tipchat-home-logo" onclick="openCommunity()" aria-label="Open TipChat community"><img src="icons/tipchat-logo.svg" alt="TipChat" width=260 height=90 loading="lazy" decoding="async"><span>Join the conversation <b aria-hidden="true">→</b></span></button>' +
-    '<section class="spotlight-mini home-spotlight" aria-labelledby="home-spotlight-title"><div class="spotlight-mini-head"><div><div class="quick-access-label">CV Box spotlight</div><h2 id="home-spotlight-title">Browse CVs</h2></div><button type="button" data-ripple onclick="goPool(\'profile\')">See all &#8594;</button></div><div class="spotlight-deck" id="home-candidate-spotlight-deck" aria-label="Featured CV Box candidates"><div class="poster-empty">Loading candidates…</div></div></section>' +
+
     '<section class="home-categories-section" aria-labelledby="home-categories-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Find your next move</span><h2 id="home-categories-title">Explore top job categories</h2></div></div>' +
       '<div class="home-category-grid">' + categoryMarkup + '</div></section>' +
     '<div id="house-ad-home-middle" class="house-ad-slot" hidden></div>' +
@@ -476,7 +476,6 @@ export function renderHomeFeed() {
   if (typeof renderHouseAdSlots === 'function') renderHouseAdSlots();
   if (typeof todayTrack !== 'undefined' && todayTrack) renderTrackReady();
   else if (typeof renderTrackEmpty === 'function') renderTrackEmpty();
-  if (typeof loadCandidateSpotlight === 'function') loadCandidateSpotlight();
   if (previouslyOpenId) {
     target.querySelectorAll('.vac-card').forEach(function (card) {
       if (card.getAttribute('data-vacancy-id') === previouslyOpenId) {
@@ -503,7 +502,7 @@ export function renderHomeFeed() {
 export var SA_SECTION_LINKS = {
   vacancies: { label: 'Vacancies', title: 'SA Recruiters — Vacancies' },
   agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
-  candidates: { label: 'Upload to the CV Box', title: 'SA Recruiters — Upload to the CV Box', shareKey: 'talent-pool' },
+  candidates: { label: 'Upload to the CV Box', title: 'SA Recruiters — Upload to the CV Box', shareKey: 'candidates' },
   posters: { label: 'Vacancy posters', title: 'SA Recruiters — Vacancy Posters' },
   employers: { label: 'Employers', title: 'SA Recruiters — Employers' }
 };
@@ -598,7 +597,6 @@ document.querySelectorAll('.navbtn').forEach(function(btn) {
     window.scrollTo({ top: 0 });
     if (btn.dataset.tab === 'saved') renderSaved();
     if (btn.dataset.tab === 'account') renderAccountDetails();
-    if (btn.dataset.tab === 'menu' && typeof loadCandidateSpotlight === 'function') loadCandidateSpotlight();
   });
 });
 

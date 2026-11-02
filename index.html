@@ -18,7 +18,7 @@
 <!-- Start downloading the D1-backed public directory immediately instead of
      after the JS bundle has downloaded + executed. -->
 <script>
-(function(){try{window.__saStartupEarly=fetch('https://sarecruiters-uploader.kamogeloralph.workers.dev/api/startup',{method:'GET',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}catch(e){}})();
+(function(){try{window.__saStartupEarly=fetch('https://sarecruiters-uploader.kamogeloralph.workers.dev/api/startup',{method:'GET',cache:'no-store',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}catch(e){}})();
 </script>
 
 <!-- Critical shell CSS + first-paint splash, inline so it applies before
@@ -492,11 +492,6 @@
         </div>
       </div>
     </section>
-    <section class="spotlight-mini" aria-labelledby="spotlight-mini-title">
-      <div class="spotlight-mini-head"><div><div class="quick-access-label">CV Box spotlight</div><h2 id="spotlight-mini-title">Browse CVs</h2></div><button data-ripple onclick="goPool('profile')">See all &#8594;</button></div>
-      <div class="spotlight-deck" id="candidate-spotlight-deck" aria-label="Featured CV Box candidates"></div>
-    </section>
-
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><img class="tipchat-menu-logo" src="icons/tipchat-mark.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span><span>TipChat<span class="mi-sub">Share advice and vacancies by text or poster</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -1519,7 +1514,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=4043fda45f"></script>
+<script type="module" src="app.bundle.min.js?v=39d40d6db0"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

@@ -330,18 +330,10 @@ test('Home is one continuous scroll surface with founder and legal footer inform
   assert.match(html, /href="\/terms\/"/);
 });
 
-test('Home includes the Talent Pool Spotlight section with live candidate loading', () => {
-  assert.match(ui, /id="home-candidate-spotlight-deck"/);
-  assert.match(ui, /id="home-spotlight-title"[^>]*>Meet our candidates/);
-  assert.match(ui, /typeof loadCandidateSpotlight === 'function'\) loadCandidateSpotlight\(\)/);
-  assert.match(data, /home-candidate-spotlight-deck/);
-  assert.match(data, /candidateSpotlightList = list\.slice\(0, 10\);/);
-  assert.match(css, /#screen-home \.spotlight-mini/);
-});
-
-test('Talent Pool Spotlight does not get stuck loading after Home re-renders', () => {
-  assert.match(data, /var candidateSpotlightList = \[\];/);
-  assert.match(data, /if \(candidateSpotlightLoaded\) \{[\s\S]*renderCandidateSpotlight\(candidateSpotlightList, menuTarget, homeTarget\)/);
-  assert.match(data, /candidateSpotlightList = list\.slice\(0, 10\);/);
-  assert.match(data, /candidateSpotlightLoaded = true;/);
+test('Home has no legacy candidate spotlight and CV Box uses live profile reads', () => {
+  assert.doesNotMatch(html, /candidate-spotlight-deck|CV Box spotlight/);
+  assert.doesNotMatch(ui, /home-candidate-spotlight-deck|loadCandidateSpotlight/);
+  assert.match(data, /\/api\/cv-box/);
+  assert.match(data, /cache: 'no-store'/);
+  assert.doesNotMatch(data, /pool_candidates\)\s*\{/);
 });
