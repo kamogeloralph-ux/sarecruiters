@@ -37,6 +37,7 @@ test('Track save validates size, uploads to R2, confirms the Supabase upsert, an
   assert.match(save, /async function rollbackPendingUpload\(\)/);
   assert.match(save, /deleteR2Object\(pendingPath\)/);
   assert.match(save, /Writes require a signed-in account listed in public\.admin_users/);
+  assert.match(save, /spotify_url:\s*spotifyUrl \|\| null/);
   assert.ok(save.indexOf("'/api/upload/daily-track") < save.indexOf("from('daily_tracks').upsert(row)"), 'audio must upload before the metadata row is committed');
 });
 

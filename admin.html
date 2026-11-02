@@ -3492,7 +3492,7 @@ async function saveTrack(){
       track_date: date,
       file_url: fileUrl,
       file_path: filePath,
-      spotify_url: spotifyUrl
+      spotify_url: spotifyUrl || null
     };
     var dbRes = await supabaseClient.from('daily_tracks').upsert(row).select('id').single();
     if(dbRes.error){
