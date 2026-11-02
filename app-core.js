@@ -163,10 +163,9 @@ export async function signOutSaRecruiters() {
 }
 export function startAuthenticatedApp(callback) {
   saAuthStartCallback = callback;
-  // The app boots EXACTLY ONCE, signed in or not: guests boot immediately
-  // once the session check resolves, so the directory is browsable without
-  // any account. The boot callback is consumed on first run so a later
-  // auth event can never double-boot (loadAll twice).
+  // Public browsing must not wait on auth or a slow session restore. Boot the
+  // directory once as a guest, while auth resolves in parallel; the callback
+  // is consumed on first run so a later auth event cannot double-boot.
   var booted = false;
   function bootOnce() {
     if (booted) return;
@@ -177,6 +176,9 @@ export function startAuthenticatedApp(callback) {
   document.querySelectorAll('#google-sign-in').forEach(function(button) {
     button.addEventListener('click', signInWithGoogle);
   });
+  // Listings, saved views, and the public directory are not gated by sign-in.
+  // Start data loading now; a later signed-in event separately syncs saved jobs.
+  bootOnce();
   var authWired = false;
   function connectAuth(client) {
     if (authWired || !client || !client.auth) return false;

@@ -366,3 +366,9 @@ test('startup data retries the public Worker once before falling back after a tr
   assert.match(startupLoader, /Worker startup data load attempt/);
   assert.match(startupLoader, /workerPayload = response\.ok \? await response\.json\(\) : null/);
 });
+
+test('public directory boot is not blocked on a Supabase session check', () => {
+  const authStartup = core.slice(core.indexOf('export function startAuthenticatedApp(callback)'), core.indexOf('// ===== Guest free-view quota ====='));
+  assert.match(authStartup, /bootOnce\(\);\s*var authWired = false;/);
+  assert.ok(authStartup.indexOf('bootOnce();') < authStartup.indexOf('client.auth.getSession()'), 'public data boot should begin before the auth session request resolves');
+});
