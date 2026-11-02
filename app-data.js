@@ -157,6 +157,7 @@ export function houseAdPlacementMatches(ad, placement, slot) {
 export function renderHouseAdSlot(targetId, placement, slot) {
   var target = document.getElementById(targetId);
   if (!target) return;
+  if (placement === 'candidates' && (!poolLoaded || !poolCache.length)) { target.hidden = true; target.innerHTML = ''; return; }
   var ad = (houseAdsCache || []).filter(function(item){ return houseAdPlacementMatches(item, placement, slot || 'top'); })[0];
   var imageUrl = ad && safeHouseAdUrl(ad.image_url);
   var targetUrl = ad && safeHouseAdUrl(ad.target_url);

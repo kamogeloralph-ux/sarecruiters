@@ -2683,3 +2683,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .cv-box-hero h2{margin:0 0 6px;font-size:24px;letter-spacing:-.03em}
 .cv-box-hero p{margin:0;color:rgba(255,255,255,.82);font-size:13px;line-height:1.5}
 .cv-box-form{padding:4px 0 2px}.cv-box-form-icon{width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:900;letter-spacing:-.06em;margin-bottom:10px}.cv-box-form .field{margin-bottom:14px}.cv-box-legacy-fields{display:none!important}.cv-box-upload-btn{background:var(--accent)!important}.cv-box-upload-btn .mi-icon{display:inline-flex}.cv-download-sheet .helper-note{margin-top:12px;text-align:center}.pool-cv-download-btn{border:0;background:var(--accent);color:#fff;border-radius:10px;padding:9px 12px;font-weight:800;font-size:12px;cursor:pointer}.pool-mini-actions{flex-wrap:wrap}.pool-intro p{font-size:13px;line-height:1.5}.cv-box-contact-field{margin-top:4px}
+
+/* CV Box: keep the empty screen useful without pushing the list below the fold. */
+.cv-box-actions{padding:2px 16px 8px;display:flex;flex-direction:column;gap:3px}
+.cv-box-actions .cv-box-upload-btn{width:100%;min-height:56px;margin:0;border-radius:14px}
+.cv-box-free-label{font-size:12px;opacity:.82}
+.cv-box-manage-btn{display:block;width:100%;padding:8px 6px;border:0;background:transparent;color:var(--text-2);font-size:12px;text-align:center}
+.cv-box-manage-btn strong{color:var(--accent)}
+.cv-box-filters{padding:8px 16px 12px;display:grid;grid-template-columns:1fr;gap:8px}
+.cv-box-filters[hidden]{display:none}
+.cv-box-filters input,.cv-box-filters select{width:100%;height:44px;border:1px solid var(--border-strong);border-radius:12px;background:var(--card);color:var(--text);padding:0 12px;font-size:14px}
+.cv-box-empty{margin:6px 16px 18px;padding:18px 16px;border:1px solid var(--border);border-radius:14px;background:var(--card);display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:var(--text-2);font-size:13px}
+.cv-box-empty strong{color:var(--text);font-size:15px}
+.cv-box-empty-error button{margin-top:4px;padding:8px 12px;border:0;border-radius:9px;background:var(--accent);color:#fff;font-weight:700}

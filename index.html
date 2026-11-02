@@ -847,33 +847,25 @@
   <!-- ============ TALENT POOL ============ -->
   <div class="screen" id="screen-pool">
     <div class="screen-fixed">
-    <header class="vac-simple-header">
-      <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="closeTalentPool()" aria-label="Back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div class="section-title-with-link"><div class="logo-text">CV Box</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('candidates')" aria-label="Share Upload your CV link" title="Share Upload your CV link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Upload your CV</span></button></div>
-    </header>
-    <div class="cv-box-hero">
-      <div class="cv-box-kicker">SA RECRUITERS CV BOX</div>
-      <h2>Find your next hire faster</h2>
-      <p>Job seekers upload a CV. Recruiters browse names and positions, then pay to download the CV they need.</p>
-    </div>
-    <div style="margin:0 16px 12px">
-      <select id="pool-sector-filter" onchange="renderPoolList()" style="width:100%;height:44px;border-radius:12px;border:1px solid var(--border-strong);background:var(--card);color:var(--text);padding:0 12px;font-size:13.5px">
-        <option value="">All sectors</option>
-      </select>
-    </div>
+      <header class="vac-simple-header">
+        <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="closeTalentPool()" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="logo-text">CV Box</div>
+      </header>
     </div>
     <div class="screen-scroll">
-    <button class="manager-add-btn cv-box-upload-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:0 16px 8px;width:calc(100% - 32px)"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span> Upload your CV — Free</button>
-    <button data-ripple onclick="openMyPoolProfile()" style="display:block;margin:0 16px 16px;width:calc(100% - 32px);background:none;border:none;color:var(--accent);font-size:12.5px;font-weight:600;text-align:center;padding:4px">Already uploaded? Manage my CV</button>
-    <div class="pool-privacy-notice">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-      <span><strong>Candidate contact details are kept private. To connect with someone, tap "Contact SA Recruiters" on their profile and our team will help set up the introduction.</span>
-    </div>
-    <div id="house-ad-candidates-top" class="house-ad-slot" hidden></div>
-    <div id="pool-list"></div>
-    <div id="house-ad-candidates-bottom" class="house-ad-slot" hidden></div>
+      <div class="cv-box-actions">
+        <button class="manager-add-btn cv-box-upload-btn" data-ripple onclick="openPoolRegisterSheet()"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span>Upload your CV <span class="cv-box-free-label">— Free</span></button>
+        <button class="cv-box-manage-btn" data-ripple onclick="openMyPoolProfile()">Already uploaded? <strong>Manage my CV</strong></button>
+      </div>
+      <div class="cv-box-filters" id="pool-filters" hidden>
+        <input type="search" id="pool-search" oninput="renderPoolList()" placeholder="Search names, roles, location" aria-label="Search CV Box profiles">
+        <select id="pool-sector-filter" onchange="renderPoolList()" aria-label="Filter by sector"><option value="">All sectors</option></select>
+      </div>
+      <div id="house-ad-candidates-top" class="house-ad-slot" hidden></div>
+      <div id="pool-list"></div>
+      <div id="house-ad-candidates-bottom" class="house-ad-slot" hidden></div>
     </div>
   </div>
 
@@ -1514,7 +1506,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=39d40d6db0"></script>
+<script type="module" src="app.bundle.min.js?v=e960a3d677"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

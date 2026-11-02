@@ -842,9 +842,11 @@ export async function loadPoolCandidates() {
       if (aPhoto !== bPhoto) return bPhoto - aPhoto;
       return (b.verified?1:0) - (a.verified?1:0);
     });
-  } catch(e) { console.error('pool load', e); poolCache = []; if (listEl) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>CV Box unavailable</h3><p>Could not refresh profiles. Check your connection and try again.</p><button type="button" onclick="loadPoolCandidates()">Try again</button></div></div>'; return; }
+  } catch(e) { console.error('pool load', e); poolCache = []; var filters = document.getElementById('pool-filters'); if (filters) filters.hidden = true; if (listEl) listEl.innerHTML = '<div class="cv-box-empty cv-box-empty-error"><strong>CV Box unavailable</strong><span>Check your connection and try again.</span><button type="button" onclick="loadPoolCandidates()">Retry</button></div>'; return; }
   poolLoaded = true;
   poolCandidateCount = poolCache.length;
+  var filters = document.getElementById('pool-filters');
+  if (filters) filters.hidden = poolCache.length === 0;
   // Populate sector filter options from whatever is currently listed
   var sel = document.getElementById('pool-sector-filter');
   if (sel) {
@@ -852,9 +854,8 @@ export async function loadPoolCandidates() {
     var sectors = Array.from(new Set(poolCache.map(function(c){ return (c.sector||'').trim(); }).filter(Boolean))).sort();
     sel.innerHTML = '<option value="">All sectors</option>' + sectors.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
     sel.value = sectors.indexOf(current) !== -1 ? current : '';  }
-  // A spotlight card asked for a specific candidate -- clear any leftover
-  // search/sector filter from a previous visit so that candidate is
-  // guaranteed to be in the rendered list, then open their card.
+  // A deep link may target a specific candidate; clear filters so the
+  // requested profile remains visible and can be expanded.
   if (poolPendingOpenId) {
     var searchEl = document.getElementById('pool-search');
     if (searchEl) searchEl.value = '';
@@ -862,6 +863,7 @@ export async function loadPoolCandidates() {
   }
   updateStats();
   renderPoolList();
+  if (typeof window.renderHouseAdSlots === 'function') window.renderHouseAdSlots();
   if (poolPendingOpenId) {
     var openId = poolPendingOpenId;
     poolPendingOpenId = null;
@@ -888,7 +890,7 @@ export function renderPoolList() {
     return (String(b.photo_url || '').trim() ? 1 : 0) - (String(a.photo_url || '').trim() ? 1 : 0);
   });
   if (!list.length) {
-    listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>No candidates yet</h3><p>Be the first to join the CV Box.</p></div></div>';
+    listEl.innerHTML = poolCache.length ? '<div class="cv-box-empty">No profiles match those filters.</div>' : '<div class="cv-box-empty"><strong>No CVs in the box yet</strong><span>Be the first to upload a CV.</span></div>';
     return;
   }
   var middleAt = Math.max(1, Math.ceil(list.length / 2));

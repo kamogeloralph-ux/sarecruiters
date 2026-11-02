@@ -337,3 +337,13 @@ test('Home has no legacy candidate spotlight and CV Box uses live profile reads'
   assert.match(data, /cache: 'no-store'/);
   assert.doesNotMatch(data, /pool_candidates\)\s*\{/);
 });
+
+test('CV Box empty state is compact and keeps search/filter for populated lists', () => {
+  const start = html.indexOf('id="screen-pool"');
+  const screen = html.slice(start, start + 2800);
+  assert.doesNotMatch(screen, /cv-box-hero|pool-privacy-notice|section-share-btn/);
+  assert.match(screen, /id="pool-search"/);
+  assert.match(screen, /id="pool-sector-filter"/);
+  assert.match(sheets, /No CVs in the box yet/);
+  assert.match(data, /placement === 'candidates' && \(!poolLoaded \|\| !poolCache\.length\)/);
+});
