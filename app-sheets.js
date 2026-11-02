@@ -916,7 +916,7 @@ export function renderPoolList() {
     return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
       '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div><div class="pool-mini-location">'+escapeHtml(location)+'</div></div><div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
       '<div class="pool-mini-meta"><span class="pool-status">'+escapeHtml(status)+'</span>'+(frontBits.length ? '<span>'+frontBits.join(' · ')+'</span>' : '')+'</div>' +
-      '<div class="pool-mini-actions"><button type="button" class="pool-view-btn" onclick="event.stopPropagation();togglePoolCard(this.closest(\'.pool-mini-card\'))">View Mini-CV <span aria-hidden="true">↓</span></button><a class="pool-contact-btn" href="'+poolCandidateWhatsAppLink(c)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Contact</a></div>' +
+      '<div class="pool-mini-actions"><button type="button" class="pool-view-btn" onclick="event.stopPropagation();togglePoolCard(this.parentElement.parentElement)">View profile <span aria-hidden="true">↓</span></button><button type="button" class="pool-cv-download-btn" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)">Pay to download CV</button></div>' +
       '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
       '</div>'
   }).join('');
@@ -934,6 +934,24 @@ export function poolCandidateWhatsAppLink(c) {
     '\nCandidate ID: ' + (c.id || '') +
     '\nCould you please share their contact details or help set up an introduction?';
   return 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg);
+}
+export function openCvDownloadRequestById(id) {
+  var c = poolCache.find(function(candidate){ return String(candidate.id) === String(id); });
+  if (c) openCvDownloadRequest(c);
+}
+export function openCvDownloadRequest(c) {
+  c = c || {};
+  var overlay = document.getElementById('cv-download-overlay');
+  var title = document.getElementById('cv-download-title');
+  var button = document.getElementById('cv-download-whatsapp');
+  if (!overlay || !button) return;
+  if (title) title.textContent = 'Request CV: ' + (c.full_name || 'Candidate');
+  var msg = 'Hi SA Recruiters, I want to pay to download this CV.\n' +
+    'Candidate: ' + (c.full_name || 'Candidate') + '\n' +
+    'Position: ' + (c.position || 'Not specified') + '\n' +
+    'Candidate ID: ' + (c.id || '') + '\nPlease send the payment instructions and secure CV download link.';
+  button.onclick = function(){ window.open('https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg), '_blank', 'noopener'); };
+  overlay.classList.add('open');
 }
 
 // Talent Pool "profile" state for the currently signed-in user. null = the
@@ -1165,20 +1183,20 @@ export function poolFormToProfileFields() {
 
 export async function submitPoolRegistration() {
   var name = document.getElementById('pool-name').value.trim();
-  var phone = document.getElementById('pool-phone').value.trim();
-  var sector = document.getElementById('pool-sector').value.trim();
-  var location = document.getElementById('pool-location').value.trim();
-  var gender = document.getElementById('pool-gender').value;
-  var grade12 = document.getElementById('pool-grade12').value;
-  var criminal = document.getElementById('pool-criminal').value;
-  var experience = document.getElementById('pool-experience').value;
-  var email = document.getElementById('pool-email').value.trim();
+  var phone = (document.getElementById('pool-phone') || {}).value || '';
+  var sector = (document.getElementById('pool-sector') || {}).value || 'CV Box';
+  var location = (document.getElementById('pool-location') || {}).value || 'South Africa';
+  var gender = (document.getElementById('pool-gender') || {}).value || '';
+  var grade12 = (document.getElementById('pool-grade12') || {}).value || '';
+  var criminal = (document.getElementById('pool-criminal') || {}).value || '';
+  var experience = (document.getElementById('pool-experience') || {}).value || '';
+  var email = (document.getElementById('pool-email') || {}).value.trim();
   var alertOptIn = !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked);
-  if (!name || !phone || !email || !sector || !location) { showToast('Please fill in name, email, phone, sector and location. Email is used for cross-device Talent Pool verification.'); return; }
+  if (!name || !document.getElementById('pool-position').value.trim()) { showToast('Please add your name and the position you want to be considered for.'); return; }
+  if (!window.currentPoolCvUrl && !window.pendingPoolCvFile) { showToast('Please upload your CV before submitting.'); return; }
   var termsAccepted = document.getElementById('pool-terms-accept');
   if (!termsAccepted || !termsAccepted.checked) { showToast('Please accept the SA Recruiters Terms and Conditions to continue.'); return; }
   if (alertOptIn && !email) { showToast('Add your email address to receive vacancy alerts.'); return; }
-  if (!gender || !grade12 || !criminal || experience === '') { showToast('Please answer gender, Grade 12, criminal record and experience.'); return; }
 
   var btn = document.getElementById('pool-submit-btn');
   var defaultBtnLabel = editingPoolCandidateId ? 'Save changes' : 'Submit registration';
@@ -1270,7 +1288,7 @@ export async function submitPoolRegistration() {
     gender: gender,
     grade12: grade12,
     criminal_record: criminal,
-    experience_years: parseInt(experience, 10),
+    experience_years: experience === '' ? null : parseInt(experience, 10),
     qualification: document.getElementById('pool-qualification').value.trim(),
     drivers_license: document.getElementById('pool-drivers-license').value,
     reliable_transport: document.getElementById('pool-transport').value,
@@ -1394,6 +1412,8 @@ Object.assign(window, {
   loadPoolCandidates,
   renderPoolList,
   poolCandidateWhatsAppLink,
+  openCvDownloadRequest,
+  openCvDownloadRequestById,
   resetPoolCvUpload,
   resetPoolTermsAcceptance,
   setPoolSheetEditMode,

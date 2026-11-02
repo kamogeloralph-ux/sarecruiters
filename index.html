@@ -858,6 +858,11 @@
       </button>
       <div class="section-title-with-link"><div class="logo-text">Talent Pool</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('candidates')" aria-label="Share Join the Talent Pool link" title="Share Join the Talent Pool link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Join the Talent Pool</span></button></div>
     </header>
+    <div class="cv-box-hero">
+      <div class="cv-box-kicker">SA RECRUITERS CV BOX</div>
+      <h2>Find your next hire faster</h2>
+      <p>Job seekers upload a CV. Recruiters browse names and positions, then pay to download the CV they need.</p>
+    </div>
     <div style="margin:0 16px 12px">
       <select id="pool-sector-filter" onchange="renderPoolList()" style="width:100%;height:44px;border-radius:12px;border:1px solid var(--border-strong);background:var(--card);color:var(--text);padding:0 12px;font-size:13.5px">
         <option value="">All sectors</option>
@@ -865,8 +870,8 @@
     </div>
     </div>
     <div class="screen-scroll">
-    <button class="manager-add-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:0 16px 8px;width:calc(100% - 32px)"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span> Join the Talent Pool — Free</button>
-    <button data-ripple onclick="openMyPoolProfile()" style="display:block;margin:0 16px 16px;width:calc(100% - 32px);background:none;border:none;color:var(--accent);font-size:12.5px;font-weight:600;text-align:center;padding:4px">Already registered? Manage my profile</button>
+    <button class="manager-add-btn cv-box-upload-btn" data-ripple onclick="openPoolRegisterSheet()" style="margin:0 16px 8px;width:calc(100% - 32px)"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span> Upload your CV — Free</button>
+    <button data-ripple onclick="openMyPoolProfile()" style="display:block;margin:0 16px 16px;width:calc(100% - 32px);background:none;border:none;color:var(--accent);font-size:12.5px;font-weight:600;text-align:center;padding:4px">Already uploaded? Manage my CV</button>
     <div class="pool-privacy-notice">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
       <span><strong>Candidate contact details are kept private. To connect with someone, tap "Contact SA Recruiters" on their profile and our team will help set up the introduction.</span>
@@ -1138,75 +1143,40 @@
   <div class="sheet pool-sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
     <div class="pool-sheet-head">
-      <h3 id="pool-register-title">Join the Talent Pool</h3>
+      <h3 id="pool-register-title">Upload to the CV Box</h3>
       <span class="pool-time-chip">⏱ ~1 min</span>
     </div>
     <div class="manager-banner pool-intro" style="padding:0 0 12px">
-      <p>It's free to join — pop in your basic details below and you're in. Your name, photo, position, location and experience are shown publicly; your phone number, email and CV stay private with our team, who'll reach out to connect you when an employer is interested.</p>
+      <p>Upload your CV in under a minute. We only need your name and the position you want to be considered for. Your CV is reviewed before it appears in the CV Box.</p>
     </div>
-
-    <div class="pool-section">
-      <div class="pool-section-head"><span class="pool-section-num">1</span><div><h4>Your details</h4><p>So we know who you are</p></div></div>
-      <div class="field"><label>Full name *</label><input id="pool-name" placeholder="e.g. Thabo Nkosi"></div>
-      <div class="photo-row">
-        <div class="avatar" style="width:56px;height:56px;">
-          <img id="pool-photo-preview" style="display:none;">
-          <span id="pool-photo-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
-        </div>
-        <label>Add photo <span class="field-optional">optional</span><input type="file" accept="image/*" onchange="handlePoolPhoto(event)"></label>
-      </div>
-      <div class="field"><label>Phone *</label><input id="pool-phone" type="tel" placeholder="e.g. 082 123 4567"></div>
-      <div class="field"><label>Email address *</label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Used to verify you across devices and for vacancy alerts below.</small></div>
-      <div class="alert-optin-card">
-        <div class="alert-optin-title"><svg aria-hidden="true"><use href="icons.svg#i36ccb3"></use></svg><span>Email vacancy alerts</span><em>Optional</em></div>
-        <label class="alert-optin-row"><input type="checkbox" id="pool-email-alerts"> <span><strong>Notify me about matching vacancies</strong><small>We’ll email you when a vacancy matches your sector and location. You can unsubscribe anytime.</small></span></label>
+    <div class="cv-box-form">
+      <div class="cv-box-form-icon" aria-hidden="true">CV</div>
+      <div class="field"><label>Full name *</label><input id="pool-name" placeholder="e.g. Thabo Nkosi" autocomplete="name"></div>
+      <div class="field"><label>Position / role *</label><input id="pool-position" placeholder="e.g. Forklift Driver, Accountant or Sales Manager"></div>
+      <div class="field"><label>Upload your CV *</label><input id="pool-cv" type="file" accept="application/pdf,image/png,image/jpeg" onchange="handlePoolCv(event)"><small class="helper-note" id="pool-cv-status">PDF, PNG or JPG · maximum 3 MB</small></div>
+      <div class="field cv-box-contact-field"><label>Email for CV enquiries <span class="field-optional">optional</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Kept private. We use it only to contact you about your CV.</small></div>
+      <div class="cv-box-legacy-fields" aria-hidden="true">
+        <input id="pool-phone"><input id="pool-sector"><input id="pool-location"><select id="pool-gender"><option value="">—</option></select><select id="pool-grade12"><option value="">—</option></select><select id="pool-criminal"><option value="">—</option></select><select id="pool-experience"><option value="">—</option></select><input id="pool-qualification"><select id="pool-drivers-license"><option value="">—</option></select><select id="pool-transport"><option value="">—</option></select><select id="pool-relocate"><option value="">—</option></select><input id="pool-availability"><select id="pool-employment"><option value="">—</option></select><input id="pool-salary"><select id="pool-work-authorized"><option value="">—</option></select><textarea id="pool-about"></textarea><input id="pool-email-alerts" type="checkbox">
       </div>
     </div>
-
-    <div class="pool-section">
-      <div class="pool-section-head"><span class="pool-section-num">2</span><div><h4>Work basics</h4><p>Helps employers find the right fit</p></div></div>
-      <div class="field"><label>Sector / industry *</label><input id="pool-sector" placeholder="e.g. Logistics, Construction, Finance"></div>
-      <div class="field"><label>Location *</label><input id="pool-location" placeholder="e.g. Durban, KZN"></div>
-      <div class="field-row">
-        <div class="field"><label>Gender *</label><select id="pool-gender"><option value="">— Select —</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
-        <div class="field"><label>Grade 12? *</label><select id="pool-grade12"><option value="">— Select —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Criminal record? *</label><select id="pool-criminal"><option value="">— Select —</option><option value="Clear">Clear</option><option value="Yes">Yes</option></select></div>
-        <div class="field"><label>Experience *</label><select id="pool-experience"><option value="">— Select —</option><option value="0">0 years</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
-      </div>
-    </div>
-
-    <details class="pool-minicv" id="pool-minicv-details">
-      <summary class="pool-minicv-summary">
-        <span class="pool-minicv-summary-icon">✨</span>
-        <span class="pool-minicv-summary-text"><strong>Mini-CV details</strong><small>Optional — boosts your visibility to employers. Add now or finish later from your profile.</small></span>
-        <svg class="pool-minicv-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-      </summary>
-      <div class="pool-minicv-body">
-        <div class="field"><label>Position / role</label><input id="pool-position" placeholder="e.g. Forklift Driver"></div>
-        <div class="field"><label>Highest qualification</label><input id="pool-qualification" placeholder="e.g. Diploma in Office Administration"></div>
-        <div class="field-row">
-          <div class="field"><label>Driver’s licence?</label><select id="pool-drivers-license"><option value="">— Select —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-          <div class="field"><label>Reliable transport?</label><select id="pool-transport"><option value="">— Select —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-        </div>
-        <div class="field"><label>Willing to relocate?</label><select id="pool-relocate"><option value="">— Select —</option><option value="Yes">Yes</option><option value="No">No</option><option value="Negotiable">Negotiable</option></select></div>
-        <div class="field"><label>When can you start?</label><input id="pool-availability" placeholder="e.g. Immediately, 1 October 2026"></div>
-        <div class="field"><label>Preferred employment type</label><select id="pool-employment"><option value="">— Select —</option><option value="Permanent">Permanent</option><option value="Contract">Contract</option><option value="Temporary">Temporary</option><option value="Part-time">Part-time</option><option value="Any">Any suitable opportunity</option></select></div>
-        <div class="field"><label>Salary expectation</label><input id="pool-salary" placeholder="e.g. R12,000 per month"></div>
-        <div class="field"><label>Legally eligible to work in South Africa?</label><select id="pool-work-authorized"><option value="">— Select —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-        <div class="field"><label>Sell yourself to employers <span class="field-optional">150 characters</span></label><textarea id="pool-about" maxlength="150" placeholder="A short statement about your strengths, experience, and what you can offer..."></textarea><small class="char-counter" data-for="pool-about">0 / 150</small></div>
-        <div class="field"><label>Upload your C.V. <span class="field-optional">optional · PDF, PNG or JPG · max 3 MB</span></label><input id="pool-cv" type="file" accept="application/pdf,image/png,image/jpeg" onchange="handlePoolCv(event)"><small class="helper-note" id="pool-cv-status">Upload your latest CV so employers can be considered through SA Recruiters.</small></div>
-      </div>
-    </details>
-
     <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the Talent Pool, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
-    <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Submit registration</button>
+    <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Upload CV</button>
     <button class="sheet-submit danger" data-ripple onclick="deleteMyPoolProfile()" id="pool-delete-btn" style="display:none">Remove my profile</button>
     <p class="pool-finish-later-note" id="pool-finish-later-note">You're almost in — add the Mini-CV now, or skip it and complete it anytime from “My Talent Pool Profile”.</p>
   </div>
 </div>
 
+<!-- ============ PAID CV DOWNLOAD REQUEST ============ -->
+<div class="sheet-scrim" id="cv-download-overlay">
+  <div class="sheet cv-download-sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('cv-download-overlay')" aria-label="Close" title="Close">×</button>
+    <div class="cv-box-kicker">PAID CV DOWNLOAD</div>
+    <h3 id="cv-download-title">Request this CV</h3>
+    <p class="manager-banner" style="padding:0 0 14px">CV downloads are paid so recruiters can access the candidate document while candidate contact details stay private. Continue on WhatsApp for the payment instructions and secure download link.</p>
+    <button class="sheet-submit" data-ripple id="cv-download-whatsapp">Request payment details on WhatsApp</button>
+    <p class="helper-note">The CV will be released after payment is confirmed by SA Recruiters.</p>
+  </div>
+</div>
 <!-- ============ EMPLOYER GATE (public, no Google sign-in / no profile) ============ -->
 <div class="sheet-scrim" id="employer-gate-overlay">
   <div class="sheet">
@@ -1549,7 +1519,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=b8b37fa9cc"></script>
+<script type="module" src="app.bundle.min.js?v=2bc4530902"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
