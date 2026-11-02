@@ -11,7 +11,7 @@
 
 import { R2_WORKER_URL, __saManagerLinkMode, agenciesCache, canTrackPublicTraffic, escapeHtml, initials, saAuthUser, supabaseClient, trackEvent } from './app-core.js';
 import { getAppSetting, getPublicPoolCandidatesFromWorker, readLocalReports, submitReportToSupabase, updateStats, writeLocalReports } from './app-data.js';
-import { rememberTalentPoolIdentity, verifiedBadge, verifyTalentPoolMembership } from './app-cards.js';
+import { rememberCvBoxIdentity, verifiedBadge, cvBoxMemberExists, autoClaimCvBoxRegistration } from './app-cards.js';
 import { uploadPoolCvIfAny, uploadPoolPhotoIfAny } from './app-forms.js';
 import { openAccountScreen, showToast, syncPreciseLocationChip } from './app-ui.js';
 
@@ -20,7 +20,7 @@ export function closeSheet(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
-  // Only ever set on pool-register-overlay by enforceTalentPoolProfile()
+  // Only ever set on pool-register-overlay by enforceCvBoxProfile()
   // below; harmless no-op on every other sheet. closeSheet is only reached
   // here via a successful submit/claim/link path (the close button itself
   // is hidden while mandatory — see the CSS rule), so stripping it here is
@@ -490,7 +490,7 @@ export async function submitReport() {
   });
 }
 // ===== MY SUBMISSIONS (read-only, signed-in user's own reports + suggestions) =====
-// Mirrors openMyPoolProfile()'s pattern: query by the signed-in user's id and
+// Mirrors openMyCvBoxProfile()'s pattern: query by the signed-in user's id and
 // rely on the reports_select_own / suggestions_select_own RLS policies
 // (added alongside user_id ownership — see the 20260919 migration) to scope
 // the rows. Unlike the admin Submissions screen this has no status-toggle or
@@ -790,7 +790,7 @@ export async function submitJobSeekerRequest() {
   showToast(payload.email ? "Request sent — we've emailed you some helpful links." : 'Request sent — our team will be in touch.');
 }
 
-// ===== TALENT POOL (public browse + self-registration) =====
+// ===== CV BOX (public browse + self-registration) =====
 export var poolCache = [];
 export var poolLoaded = false;
 export var poolCandidateCount = 0;
@@ -1100,8 +1100,9 @@ export function fillPoolFormFromCandidate(c) {
 // yet, opens a blank registration pre-filled with the Google name/email —
 // submitting it will auto-link (not duplicate) a matching pre-sign-in
 // registration if the typed email + phone match one (see submitPoolRegistration).
-export async function openMyPoolProfile() {
+export async function openMyCvBoxProfile() {
   if (!saAuthUser) { showToast('Please sign in to manage your CV Box upload.'); return; }
+  await autoClaimCvBoxRegistration();
   var result;
   try {
     result = await supabaseClient.from('pool_candidates').select('*').eq('user_id', saAuthUser.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -1133,7 +1134,7 @@ export async function openMyPoolProfile() {
 // sheet forced open with its close button hidden (.gate-mandatory) until
 // they submit — closeSheet() above strips that class the moment a
 // successful submit/claim/link path calls it.
-export async function enforceTalentPoolProfile() {
+export async function enforceCvBoxProfile() {
   if (!saAuthUser || (typeof __saManagerLinkMode !== 'undefined' && __saManagerLinkMode)) return;
   // Never force SA Recruiters' own admin account (signing into the public
   // site with the same Google login) through candidate profile registration.
@@ -1249,7 +1250,7 @@ export async function submitPoolRegistration() {
   // ----- New registration: a user re-entering details on a fresh device
   // may already be a verified member — register nothing, just mark the
   // device and send them to sign-in (prevents duplicate rows).
-  var alreadyMember = await verifyTalentPoolMembership(phone, email, true);
+  var alreadyMember = await cvBoxMemberExists(phone, email, true);
   if (alreadyMember) {
     try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e){}
     // Signed-in already (e.g. re-entering matching details to clear the
@@ -1286,8 +1287,8 @@ export async function submitPoolRegistration() {
         var claimUpdate = await supabaseClient.rpc('candidate_update_own_profile', claimFields);
         if (claimUpdate.error) console.error('pool claim update', claimUpdate.error);
         if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
-        rememberTalentPoolIdentity(phone, email);
-        verifyTalentPoolMembership(phone, email, true);
+        rememberCvBoxIdentity(phone, email);
+        cvBoxMemberExists(phone, email, true);
         closeSheet('pool-register-overlay');
         showToast('Found your existing registration and linked it to your account.');
         return;
@@ -1363,9 +1364,9 @@ export async function submitPoolRegistration() {
     if (result.error) { console.error('pool submit', result.error); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent=defaultBtnLabel; } return; }
   } catch(e) { console.error('pool submit', e); showToast('Could not submit — please try again.'); if (btn){ btn.disabled=false; btn.textContent=defaultBtnLabel; } return; }
   if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
-  rememberTalentPoolIdentity(phone, email);
-  try { localStorage.setItem('sa_gate_registration_pending', 'pending'); } catch(e){}
-  verifyTalentPoolMembership(phone, email, true);
+  rememberCvBoxIdentity(phone, email);
+  try { localStorage.setItem('sa_gate_registration_pending', saAuthUser ? 'linked' : 'pending'); } catch(e){}
+  cvBoxMemberExists(phone, email, true);
   trackEvent('candidate_registration_submitted', 'candidate', null, { alert_opt_in: alertOptIn });
   closeSheet('pool-register-overlay');
   showToast('Registration received — you\'ll go live once it\'s reviewed.');
@@ -1443,8 +1444,8 @@ Object.assign(window, {
   setPoolSheetEditMode,
   openPoolRegisterSheet,
   fillPoolFormFromCandidate,
-  openMyPoolProfile,
-  enforceTalentPoolProfile,
+  openMyCvBoxProfile,
+  enforceCvBoxProfile,
   deleteMyPoolProfile,
   poolFormToProfileFields,
   submitPoolRegistration,

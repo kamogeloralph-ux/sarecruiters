@@ -1,6 +1,6 @@
 -- TipChat audit fixes.
 --  1. Reaction counts: likes_count counts only real likes; one atomic reaction RPC.
---  2. Opt-in public identity (Talent Pool name/photo) instead of automatic exposure.
+--  2. Opt-in public identity (CV Box name/photo) instead of automatic exposure.
 --  3. Authors can see their own submissions and delete their own content.
 --  4. Moderators see automated risk flags; flags close when content is moderated.
 --  5. Per-user rate limits on posts, comments and reports.
@@ -112,7 +112,7 @@ alter table public.community_member_settings enable row level security;
 revoke all on public.community_member_settings from anon, authenticated;
 
 -- Resolve what name/photo (if any) may be shown publicly for a user.
--- Anonymous unless the member opted in AND has an active Talent Pool profile.
+-- Anonymous unless the member opted in AND has an active CV Box profile.
 create or replace function public.community_resolve_identity(p_user_id uuid, out o_label text, out o_photo text)
 language plpgsql
 security definer
@@ -255,7 +255,7 @@ grant execute on function public.community_set_identity_visibility(boolean) to a
 
 -- Welcome post: the old copy promised anonymity unconditionally.
 update public.community_posts
-   set body = 'Welcome to TipChat. Ask a question, share an interview lesson, post a vacancy or help another job seeker prepare. Keep names, contact details and confidential employer information out of posts. Posts appear as “Anonymous member” unless you choose to show your Talent Pool name and photo, and every post is reviewed before it goes live.'
+   set body = 'Welcome to TipChat. Ask a question, share an interview lesson, post a vacancy or help another job seeker prepare. Keep names, contact details and confidential employer information out of posts. Posts appear as “Anonymous member” unless you choose to show your CV Box name and photo, and every post is reviewed before it goes live.'
  where system_key = 'interview-tips-welcome-v1';
 
 -- ---------------------------------------------------------------------------

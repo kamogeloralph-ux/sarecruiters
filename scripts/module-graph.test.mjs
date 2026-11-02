@@ -10,8 +10,8 @@ const read = (f) => fs.readFileSync(new URL('../' + f, import.meta.url), 'utf8')
 const entry = read('app-entry.js');
 const sources = Object.fromEntries(FILES.map((f) => [f, read(f)]));
 
-// Names a module exposes: the keys of its window bridge (every top-level
-// declaration is listed there) plus its set_<var> setters.
+// Names a module exposes: its declared ES exports and window-bridge keys
+// (including set_<var> setters used by classic scripts and inline handlers).
 function bridgeNames(src) {
   const at = src.indexOf('// ===== window bridge');
   assert.ok(at !== -1, 'missing window bridge');
@@ -21,6 +21,7 @@ function bridgeNames(src) {
     for (const line of m[1].split('\n')) { const n = line.trim().replace(/,$/, ''); if (n) names.add(n); }
   }
   for (const m of bridge.matchAll(/^  ([A-Za-z_$][\w$]*): \{ get:/gm)) names.add(m[1]);
+  for (const m of src.matchAll(/^export\s+(?:async\s+)?(?:function|class|var|let|const)\s+([A-Za-z_$][\w$]*)/gm)) names.add(m[1]);
   for (const m of bridge.matchAll(/export function (set_[A-Za-z_$][\w$]*)\(/g)) names.add(m[1]);
   return names;
 }

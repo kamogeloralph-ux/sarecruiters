@@ -80,5 +80,5 @@ test('CV Box approval reports success only after the active status is saved', ()
   const handler = admin.slice(start, end);
   assert.match(handler, /var saved = await upsertPoolCandidate\(\{ id:id, status:'active'/);
   assert.match(handler, /if\(!saved\)\{ showToast\('Could not approve candidate — save failed\. Please retry\.'\); return; \}/);
-  assert.ok(handler.indexOf('if(!saved)') < handler.indexOf("showToast('Approved — now live in the public Talent Pool')"), 'success must only be shown after the save succeeds');
+  assert.ok(handler.indexOf('if(!saved)') < handler.indexOf("showToast('Approved — now live in the public CV Box')"), 'success must only be shown after the save succeeds');
 });

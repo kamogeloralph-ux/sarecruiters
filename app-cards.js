@@ -1,6 +1,6 @@
 /*
  * SA Recruiters -- app.js split 3/8: app-cards.js
- * Hub cards (agency/employer), CV Box access gating, search screen, vacancy card rendering
+ * Hub cards (agency/employer), CV Box identity linking, search screen, vacancy card rendering
  *
  * Part of the original monolithic app.js. Now an ES module: it imports what it
  * uses from the other app-*.js files and exports its top-level declarations.
@@ -9,7 +9,7 @@
  * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
-import { agenciesCache, analyticsSessionId, branchesCache, employerDirectoryOpen, employersCache, escapeHtml, guestViewsRemaining, initials, isAdmin, publicAgencySlug, publicVacancySlug, registerVacancyOpen, saAuthUser, savedSet, set_talentPoolVerified, staticVacanciesCache, supabaseClient, syncSavedVacancy, talentPoolVerified, trackEvent, vacanciesCache } from './app-core.js';
+import { agenciesCache, analyticsSessionId, branchesCache, employersCache, escapeHtml, guestViewsRemaining, initials, isAdmin, publicAgencySlug, publicVacancySlug, registerVacancyOpen, saAuthUser, savedSet, staticVacanciesCache, supabaseClient, syncSavedVacancy, trackEvent, vacanciesCache } from './app-core.js';
 import { branchesFor, getEmployerPosters, isVacancyExpired, renderHouseAdSlots, vacanciesFor, vacanciesForEmployer, vacancyScreenStateMarkup } from './app-data.js';
 import { closeSheet } from './app-sheets.js';
 import { renderHomeFeaturedPoster, renderHomeFeed, showAllVacancies, showToast, syncPreciseLocationChip } from './app-ui.js';
@@ -253,7 +253,6 @@ export function employerHubContact(e) {
 }
 
 window.toggleEmpHub = function(id) {
-  if (!requireEmployerDirectoryAccess()) return;
   var card = null;
   var active = document.querySelector('.screen.active');
   if (active) card = active.querySelector('#emphub-' + id);
@@ -270,7 +269,6 @@ window.toggleEmpHub = function(id) {
 };
 
 window.switchEmpHubTab = function(btn, employerId, tab) {
-  if (!requireEmployerDirectoryAccess()) return;
   btn.parentElement.querySelectorAll('.hub-tab').forEach(function(t){ t.classList.remove('active'); });
   btn.classList.add('active');
   var e = employersCache.find(function(x){ return x.id === employerId; });
@@ -284,75 +282,51 @@ window.switchEmpHubTab = function(btn, employerId, tab) {
 
 export var directoryReturnScreen = 'home';
 
-export function talentPoolIdentityRecord() {
+export function cvBoxIdentityRecord() {
   try { return JSON.parse(localStorage.getItem('sa_pool_identity') || 'null'); } catch(e) { return null; }
 }
-export function hasTalentPoolAccess() {
-  return employerDirectoryOpen || talentPoolVerified;
-}
-export function rememberTalentPoolIdentity(phone, email) {
+
+export function rememberCvBoxIdentity(phone, email) {
   try { localStorage.setItem('sa_pool_identity', JSON.stringify({ phone: phone || '', email: email || '' })); } catch(e) {}
 }
-export async function verifyTalentPoolMembership(phone, email, quiet) {
+export async function cvBoxMemberExists(phone, email, quiet) {
   phone = (phone || '').trim(); email = (email || '').trim().toLowerCase();
   if (!phone || !email) { if (!quiet) showToast('Enter the email and phone number used for CV Box registration.'); return false; }
   try {
     var result = await supabaseClient.rpc('verify_talent_pool_access', { p_email: email, p_phone: phone });
-    if (result.error) { console.error('CV Box verification', result.error); if (!quiet) showToast('Membership verification is not configured yet. Run CREATE_TALENT_POOL_ACCESS.sql in Supabase.'); return false; }
-    set_talentPoolVerified( result.data === true);
-    if (talentPoolVerified) rememberTalentPoolIdentity(phone, email);
+    if (result.error) { console.error('CV Box verification', result.error); if (!quiet) showToast('CV Box verification is temporarily unavailable. Please try again later.'); return false; }
+    var verified = result.data === true;
+    if (verified) rememberCvBoxIdentity(phone, email);
     else if (!quiet) showToast('We could not verify that CV Box registration. Check your details.');
-    return talentPoolVerified;
+    return verified;
   } catch(e) { if (!quiet) showToast('Could not verify CV Box membership right now.'); return false; }
 }
-export async function restoreTalentPoolMembership() {
-  if (employerDirectoryOpen) return;
-  var identity = talentPoolIdentityRecord();
-  if (identity) await verifyTalentPoolMembership(identity.phone, identity.email, true);
-}
-// Gate registration follow-through: if the visitor registered for the
-// CV Box from the sign-in screen (row created pre-auth), link that
-// row to their account on first sign-in via candidate_claim_profile —
-// matching the email + phone they registered with. Quiet on any failure;
-// openMyPoolProfile() remains the manual fallback.
-export async function autoClaimGateRegistration() {
-  if (!saAuthUser || !supabaseClient) return;
-  try { if (localStorage.getItem('sa_gate_registration_pending') !== 'pending') return; } catch(e) { return; }
-  var identity = talentPoolIdentityRecord();
-  if (!identity || !identity.email || !identity.phone) return;
-  try {
-    var claim = await supabaseClient.rpc('candidate_claim_profile', { p_email: identity.email, p_phone: identity.phone });
-    if (!claim.error && claim.data) { try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e){} }
-  } catch(e) { /* manual link via My CV Box upload still works */ }
-}
-export function openEmployerDirectoryAccessMessage() {
-  var sheet = document.getElementById('employer-directory-locked-overlay');
-  var identity = talentPoolIdentityRecord();
-  var phone = document.getElementById('employer-access-phone');
-  var email = document.getElementById('employer-access-email');
-  if (phone && identity) phone.value = identity.phone || '';
-  if (email && identity) email.value = identity.email || '';
-  if (sheet) sheet.classList.add('open');
-  else showToast('Please verify your CV Box registration first to browse employers and employer vacancies.');
-}
-export async function verifyEmployerDirectoryAccess() {
-  var phone = (document.getElementById('employer-access-phone') || {}).value || '';
-  var email = (document.getElementById('employer-access-email') || {}).value || '';
-  var ok = await verifyTalentPoolMembership(phone, email, false);
-  if (ok) {
-    closeSheet('employer-directory-locked-overlay');
-    showToast('CV Box membership verified');
-    showAllEmployers();
-  }
-}
-export function requireEmployerDirectoryAccess() {
-  if (employerDirectoryOpen || talentPoolVerified) return true;
-  openEmployerDirectoryAccessMessage();
-  return false;
+
+var cvBoxAutoClaimPromise = null;
+export function autoClaimCvBoxRegistration() {
+  if (cvBoxAutoClaimPromise) return cvBoxAutoClaimPromise;
+  if (!saAuthUser || !supabaseClient) return Promise.resolve(false);
+  var pending = false;
+  try { pending = localStorage.getItem('sa_gate_registration_pending') === 'pending'; } catch(e) { return Promise.resolve(false); }
+  if (!pending) return Promise.resolve(false);
+  var identity = cvBoxIdentityRecord();
+  if (!identity || !identity.email || !identity.phone) return Promise.resolve(false);
+  cvBoxAutoClaimPromise = (async function() {
+    try {
+      var claim = await supabaseClient.rpc('candidate_claim_profile', { p_email: identity.email, p_phone: identity.phone });
+      if (claim.error || !claim.data) return false;
+      try { localStorage.setItem('sa_gate_registration_pending', 'linked'); } catch(e) {}
+      if (typeof window.renderAccountDetails === 'function') window.renderAccountDetails();
+      return true;
+    } catch(e) {
+      console.warn('CV Box auto-link', e);
+      return false;
+    }
+  })().finally(function() { cvBoxAutoClaimPromise = null; });
+  return cvBoxAutoClaimPromise;
 }
 
 export function showAllEmployers() {
-  if (!requireEmployerDirectoryAccess()) return;
   directoryReturnScreen = arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home');
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-allemployers').classList.add('active');
@@ -643,7 +617,6 @@ export function vacancyCard(v, agency, options) {
   var isGeneral = v.agency_id === 'general';
   var employer = v.employer_id ? (employersCache.find(function(e){ return e.id === v.employer_id; }) || null) : null;
   var isEmployerPost = !!employer;
-  var employerAccessLocked = isEmployerPost && !employerDirectoryOpen && !hasTalentPoolAccess();
   var orgName = isEmployerPost ? (employer.name || 'Employer') : (isGeneral ? (v.company || 'General Vacancy') : (agency.name || ''));
   var isAdzuna = String(v.id || '').indexOf('adzuna-') === 0;
   var isHimalayas = v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0;
@@ -772,7 +745,7 @@ export function vacancyCard(v, agency, options) {
   }
 
   return '' +
-  '<article class="vac-card' + (employerAccessLocked ? ' vac-card-locked' : '') + (v.is_featured ? ' vac-card-featured' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" aria-expanded="false" aria-controls="vd-' + key + '" onclick="' + (employerAccessLocked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' +
+  '<article class="vac-card' + (v.is_featured ? ' vac-card-featured' : '') + '" id="vc-' + key + '" data-vacancy-id="' + escapeHtml(v.id) + '" role="button" tabindex="0" aria-label="' + escapeHtml(title || 'View vacancy') + '" aria-expanded="false" aria-controls="vd-' + key + '" onclick="toggleVac(this)">' +
     '<div class="vac-card-main">' +
       logo +
       '<div class="vac-body">' +
@@ -876,15 +849,6 @@ window.toggleVac = function(target) {
       var sheet = document.getElementById('guest-limit-overlay');
       if (sheet) sheet.classList.add('open');
       return;
-    }
-    if (opening) {
-      var qEl = document.getElementById('account-quota-note');
-      if (qEl && !saAuthUser && typeof guestViewsRemaining === 'function') {
-        var left = guestViewsRemaining();
-        qEl.textContent = left > 0
-          ? left + (left === 1 ? ' free view left today.' : ' free views left today.')
-          : 'Free views used — create an account for unlimited access.';
-      }
     }
     c.classList.toggle('open');
     c.setAttribute('aria-expanded', opening ? 'true' : 'false');
@@ -1021,15 +985,9 @@ Object.assign(window, {
   employerHubVacancies,
   employerHubPosters,
   employerHubContact,
-  talentPoolIdentityRecord,
-  hasTalentPoolAccess,
-  rememberTalentPoolIdentity,
-  verifyTalentPoolMembership,
-  restoreTalentPoolMembership,
-  autoClaimGateRegistration,
-  openEmployerDirectoryAccessMessage,
-  verifyEmployerDirectoryAccess,
-  requireEmployerDirectoryAccess,
+  rememberCvBoxIdentity,
+  cvBoxMemberExists,
+  autoClaimCvBoxRegistration,
   showAllEmployers,
   renderAllEmployersList,
   prefIcon,

@@ -147,7 +147,7 @@ export function managerEmployerAddVacancy() {
   if (!managerEmployer) return;
   openEmployerVacancySheet(managerEmployer.id);
 }
-// ===== Talent Pool email-alert unsubscribe =====
+// ===== CV Box email-alert unsubscribe =====
 export async function processAlertUnsubscribe() {
   var token = new URLSearchParams(window.location.search).get('unsubscribe');
   if (!token) return;
@@ -197,7 +197,7 @@ export async function fastResolveManagerToken() { /* resolution is server-side n
   var token = params.get('manage');
   var empToken = params.get('manage_employer');
   // Employers/agencies on a Smart Manager link must never see the Google
-  // sign-in gate or the Talent Pool profile gate — take the screen over
+  // sign-in gate or the CV Box profile gate — take the screen over
   // immediately, before Google auth has had any chance to resolve.
   if ((token || empToken) && typeof window.__saEnterManagerLinkMode === 'function') {
     window.__saEnterManagerLinkMode();
@@ -379,7 +379,7 @@ startAuthenticatedApp(bootAuthenticatedApp);
 })();
 
 
-// Public Talent Pool cards use their own toggle so expanded details stay hidden until opened.
+// Public CV Box cards use their own toggle so expanded details stay hidden until opened.
 export function togglePoolCard(card){
   if (!card) return;
   var expanded = card.classList.toggle('expanded');

@@ -44,7 +44,7 @@ test('member posts and comments default to pending review and Anonymous member l
   assert.match(migration, /community_comments_admin_moderate/);
 });
 
-test('active Talent Pool profiles identify TipChat content without exposing account IDs', () => {
+test('active CV Box profiles identify TipChat content without exposing account IDs', () => {
   assert.match(candidateIdentityMigration, /c\.user_id = new\.author_id[\s\S]*?c\.status = 'active'/i);
   assert.match(candidateIdentityMigration, /new\.author_label := 'Anonymous member'/);
   assert.match(candidateIdentityMigration, /after insert or update or delete on public\.pool_candidates/i);
@@ -54,7 +54,7 @@ test('active Talent Pool profiles identify TipChat content without exposing acco
   assert.match(app, /communityAuthorAvatarHtml\(post\.author_label, post\.author_photo_url/);
   assert.match(app, /communityAuthorAvatarHtml\(comment\.author_label, comment\.author_photo_url/);
   assert.match(app, /authorIdentityAvailable/);
-  assert.doesNotMatch(html, /Active Talent Pool members are shown with their profile name and photo/);
+  assert.doesNotMatch(html, /Active CV Box members are shown with their profile name and photo/);
 });
 
 test('participation insert policies use a private current-user membership verifier', () => {

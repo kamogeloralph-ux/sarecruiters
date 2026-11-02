@@ -97,7 +97,7 @@ var DEFAULT_CONTENT = {
       body: '<p>You can browse as a guest. If you use Google sign-in, CV Box registration, saved jobs, reports or employer forms, we handle the information needed for that feature. Private notes and offline data remain in browser storage on your device. Public listing and approved CV Box information may be visible to other visitors. Read the <a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a> for the full details.</p>'
     },
     {
-      id: 'faq-talent-pool',
+      id: 'faq-cv-box',
       title: 'What is the CV Box?',
       body: '<p>The CV Box lets job seekers create an optional profile that can help employers discover their skills, experience, sector and location. Your public profile does not expose your phone number, email address or CV as direct contact details. Interested employers are directed to SA Recruiters so our team can help manage the introduction.</p>'
     },

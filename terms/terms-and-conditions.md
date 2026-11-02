@@ -4,11 +4,11 @@
 
 **Effective date:** 9 October 2026  |  **Email:** sarecruiters.directory@gmail.com  |  **WhatsApp:** +27 71 553 1005
 
-These Terms and Conditions explain the rules for using SA Recruiters, including the website, installed progressive web app (PWA), public recruitment directory, vacancy search, Talent Pool, CV Builder, candidate resources, community features and related forms (together, the **“Service”**).
+These Terms and Conditions explain the rules for using SA Recruiters, including the website, installed progressive web app (PWA), public recruitment directory, vacancy search, CV Box, CV Builder, candidate resources, community features and related forms (together, the **“Service”**).
 
 SA Recruiters is a South African recruitment directory and jobs platform. We are not an employment agency for every vacancy shown on the Service, are not the employer or recruiter named in a listing, and do not guarantee that you will be contacted, shortlisted, interviewed, hired or paid.
 
-By browsing or using the Service, submitting information, creating an account, joining the Talent Pool, posting or suggesting a listing, using the CV Builder, or participating in the community, you agree to these Terms. If you do not agree, do not use the relevant feature. Our [Privacy Policy](/privacy/) explains how information is handled.
+By browsing or using the Service, submitting information, creating an account, joining the CV Box, posting or suggesting a listing, using the CV Builder, or participating in the community, you agree to these Terms. If you do not agree, do not use the relevant feature. Our [Privacy Policy](/privacy/) explains how information is handled.
 
 ## 1. What SA Recruiters provides
 
@@ -19,7 +19,7 @@ Depending on availability, the Service allows you to:
 - follow an application link or use contact details supplied by an agency, employer or other listing source;
 - submit agency, employer, vacancy, poster, report and suggestion information for review;
 - create an optional Google-linked account for account features;
-- join and manage an optional Talent Pool profile so approved employers or recruiters can discover relevant candidate information;
+- join and manage an optional CV Box profile so approved employers or recruiters can discover relevant candidate information;
 - use candidate resources, interview guidance, job-search information and the public Tips Chat/community where enabled;
 - use the CV Builder to turn information you provide into a structured CV draft, select a template, copy the text or print/save it as a PDF; and
 - receive vacancy alerts only where you opt in and the alert feature is available.
@@ -56,13 +56,13 @@ If you submit or request publication of an agency, employer, vacancy or poster, 
 
 Submission does not guarantee publication, a particular position, continued display or a response. We may request verification, edit for clarity and safety, decline or remove content, and limit future submissions. Public information may be indexed, copied or shared by others.
 
-## 5. Talent Pool
+## 5. CV Box
 
-The Talent Pool is an optional candidate profile and introduction service. You are responsible for the accuracy and appropriateness of information, photo and CV material you submit. You must not upload another person’s CV or personal information without permission, and you should not include passwords, banking details, identity numbers or information you do not want considered for publication.
+The CV Box is an optional candidate profile and introduction service. You are responsible for the accuracy and appropriateness of information, photo and CV material you submit. You must not upload another person’s CV or personal information without permission, and you should not include passwords, banking details, identity numbers or information you do not want considered for publication.
 
 Only approved or active profiles may be shown publicly. A public candidate card may show information such as name, photo, position, sector, location, experience and an approved summary. The app is designed not to display your phone number, email address or uploaded CV as public direct contact details. Interested employers or recruiters may contact SA Recruiters to request an introduction; we do not guarantee that an introduction or job opportunity will result.
 
-You may edit or request removal of your own Talent Pool profile through the available account controls or by contacting us. We may suspend or remove profiles that are inaccurate, inactive, unsafe, unauthorised or inconsistent with these Terms.
+You may edit or request removal of your own CV Box profile through the available account controls or by contacting us. We may suspend or remove profiles that are inaccurate, inactive, unsafe, unauthorised or inconsistent with these Terms.
 
 ## 6. CV Builder and candidate resources
 
@@ -89,7 +89,7 @@ You must not:
 - harvest contact details, scrape or copy the directory at scale, or use automated access without written permission;
 - send spam, phishing messages, malware or harmful code;
 - interfere with the Service, bypass access controls, probe security or attempt to access another user’s account or data;
-- use vacancy, agency, employer or Talent Pool information to harass, stalk, discriminate against or exploit another person;
+- use vacancy, agency, employer or CV Box information to harass, stalk, discriminate against or exploit another person;
 - infringe copyright, trade marks, privacy, confidentiality or other rights; or
 - use the Service to recruit for an unlawful scheme, collect prohibited fees or misrepresent SA Recruiters.
 
@@ -115,7 +115,7 @@ To the maximum extent permitted by South African law, SA Recruiters is not respo
 
 ## 12. Privacy and public information
 
-Our [Privacy Policy](/privacy/) describes the information handled by the Service, including account information, Talent Pool data, public listings, community activity, CV Builder requests, local device storage and service providers. By using a feature, you agree that we may handle information as described there.
+Our [Privacy Policy](/privacy/) describes the information handled by the Service, including account information, CV Box data, public listings, community activity, CV Builder requests, local device storage and service providers. By using a feature, you agree that we may handle information as described there.
 
 Do not submit information for public display unless you are comfortable with it being visible, indexed, copied or accessed from outside South Africa. You are responsible for obtaining the permissions needed for information about other people.
 
@@ -123,7 +123,7 @@ Do not submit information for public display unless you are comfortable with it 
 
 We may update these Terms when the Service, features or legal requirements change. The effective date above will be updated for a material revision. Continued use after an update means you accept the updated Terms. If you do not accept a change, stop using the affected feature.
 
-You may stop using the Service, sign out, unsubscribe from alerts, remove available local data and request deletion of account-linked or Talent Pool information as described in the Privacy Policy. Provisions about content, intellectual property, privacy, acceptable use, disclaimers, liability and disputes may continue where their purpose requires it.
+You may stop using the Service, sign out, unsubscribe from alerts, remove available local data and request deletion of account-linked or CV Box information as described in the Privacy Policy. Provisions about content, intellectual property, privacy, acceptable use, disclaimers, liability and disputes may continue where their purpose requires it.
 
 ## 14. South African law and contact
 

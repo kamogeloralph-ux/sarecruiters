@@ -595,7 +595,7 @@ export async function communitySubmitPost(event) {
   ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
   communityRemovePoster();
   communitySetComposerType('discussion');
-  communityStatus('Thanks — your post is being checked and will appear as soon as it passes. Track it under My submissions; ' + (communityMvp.identity.show && communityMvp.identity.has ? 'it will show your Talent Pool name and photo once it is live.' : 'it will appear as Anonymous member.'), 'success');
+  communityStatus('Thanks — your post is being checked and will appear as soon as it passes. Track it under My submissions; ' + (communityMvp.identity.show && communityMvp.identity.has ? 'it will show your CV Box name and photo once it is live.' : 'it will appear as Anonymous member.'), 'success');
   communityRenderGroup();
   communityLoadMySubmissions();
   communityLoadModerationQueue(false);
@@ -770,7 +770,7 @@ export async function communitySetIdentityVisibility(show) {
   }
   communityMvp.identity = { show: !!result.data.show_profile, has: !!result.data.has_profile };
   communityRenderIdentity();
-  communityToast(communityMvp.identity.show ? 'Your Talent Pool name and photo now show on your TipChat posts and comments.' : 'You now appear as Anonymous member.');
+  communityToast(communityMvp.identity.show ? 'Your CV Box name and photo now show on your TipChat posts and comments.' : 'You now appear as Anonymous member.');
   await communityLoadFeed();
 }
 export function communityNotifyDecisions() {

@@ -147,7 +147,7 @@ test('home available roles use compact province groups and the existing exact-va
   assert.match(vacancyV2, /class="home-vacancy-apply"/);
   assert.match(html, /app-vacancy-v2\.js\?v=vx-retail-3/);
   assert.match(cards, /if \(typeof renderHomeFeed === 'function'\) \{\s*renderHomeFeed\(\);\s*return;/);
-  assert.match(ui, /onclick="openHomeTalentPoolProfile\(\)"/);
+  assert.match(ui, /onclick="openHomeCvBoxProfile\(\)"/);
   assert.match(ui, /onclick="openGeneralVacancySheet\(\)"/);
   assert.match(ui, /onclick="openPublicPosterSheet\(\)">Post a poster/);
   assert.match(ui, /house-ad-home-middle/);
@@ -208,13 +208,16 @@ test('Google sign-in redirects explicitly and recovers from a stuck OAuth reques
   assert.match(core, /window\.location\.assign\(oauthUrl\)/);
   assert.match(core, /saAuthRedirecting = false;[\s\S]*?Google sign-in is taking too long/);
   assert.match(html, /Save jobs, track applications, and unlock unlimited vacancy views/);
-  assert.match(css, /account-signin-card \.gsi-material-button:disabled \.gsi-material-button-contents\{opacity:1!important;color:#243653!important\}/);
+  assert.match(core, /loading: 'Connecting to Google…'/);
+  assert.match(core, /error: 'Try Google sign-in again'/);
+  assert.match(core, /tap “Try Google sign-in again” to retry/);
   assert.match(css, /account-signin-status:empty\{display:none\}/);
-  assert.match(css, /account-signin-card\{width:min\(100%,420px\);margin:10px auto 4px;padding:13px 14px/);
+  assert.match(css, /account-signin-card \.gsi-material-button:disabled \.gsi-material-button-contents\{opacity:1!important;color:var\(--text\)!important\}/);
+  assert.match(css, /#screen-account \.account-hero,[\s\S]*?#screen-account \.account-quota-card\{[\s\S]*?width:min\(100%,420px\)[\s\S]*?border-radius:16px!important/);
 });
 
 test('home conversion sections use the compact Interview Tips card language', () => {
-  assert.match(css, /#screen-account \.account-signin-card[\s\S]*?background:linear-gradient\(145deg,#eef6ff/);
+  assert.match(css, /#screen-account \.account-signin-card,[\s\S]*?#screen-account \.account-quota-card\{[\s\S]*?background:var\(--card\)!important/);
   assert.match(css, /#screen-home \.quick-card[\s\S]*?border:1px solid var\(--it-line\)!important/);
   assert.match(css, /#screen-home \.spotlight-mini[\s\S]*?box-shadow:var\(--it-shadow\)!important/);
   assert.match(css, /#screen-home \.home-section-heading h2,[\s\S]*?#screen-home \.hf-head h2\{font-size:17px!important/);
@@ -341,7 +344,8 @@ test('Home has no legacy candidate spotlight and CV Box uses live profile reads'
 test('CV Box empty state is compact and keeps search/filter for populated lists', () => {
   const start = html.indexOf('id="screen-pool"');
   const screen = html.slice(start, start + 2800);
-  assert.doesNotMatch(screen, /cv-box-hero|pool-privacy-notice|section-share-btn/);
+  assert.doesNotMatch(screen, /cv-box-hero|pool-privacy-notice/);
+  assert.match(screen, /class="section-share-btn"[^>]*onclick="shareSectionLink\('candidates'\)"/);
   assert.match(screen, /id="pool-search"/);
   assert.match(screen, /id="pool-sector-filter"/);
   assert.match(sheets, /No CVs in the box yet/);

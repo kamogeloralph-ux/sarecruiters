@@ -1,0 +1,86 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = (name) => readFileSync(path.join(root, name), 'utf8');
+const appCore = read('app-core.js');
+const appData = read('app-data.js');
+const appCards = read('app-cards.js');
+const appSheets = read('app-sheets.js');
+const appUi = read('app-ui.js');
+const appForms = read('app-forms.js');
+const worker = read('Cloudflare-worker/worker.js');
+const html = read('index.html');
+const admin = read('admin.html');
+const css = read('styles.css');
+const vacancyCss = read('vacancy-v2.css');
+const content = read('content.js');
+
+test('employer directory and vacancies have no membership lock UI or card state', () => {
+  for (const source of [appCards, appSheets, appUi, appData, html]) {
+    assert.doesNotMatch(source, /requireEmployerDirectoryAccess|employerAccessLocked|hasTalentPoolAccess|employer-directory-locked-overlay/);
+  }
+  assert.doesNotMatch(css, /access-lock|access-verify-fields|access-register-link|vac-card-locked/);
+  assert.doesNotMatch(vacancyCss, /vx-card--locked/);
+  assert.match(html, /id="screen-allemployers"/);
+});
+
+test('public posting and employer registration remain fixed closed without startup toggle reads', () => {
+  assert.match(appCore, /publicVacancyPostingOpen = false/);
+  assert.match(appCore, /publicEmployerRegistrationOpen = false/);
+  assert.doesNotMatch(appData, /publicVacancyPostingOpen|publicEmployerRegistrationOpen|publicEmployerDirectoryOpen/);
+  const d1Start = worker.indexOf('async function loadStartupDataFromD1');
+  assert.ok(d1Start >= 0);
+  const d1End = worker.indexOf('\nasync function ', d1Start + 12);
+  const d1Startup = worker.slice(d1Start, d1End < 0 ? undefined : d1End);
+  assert.doesNotMatch(d1Startup, /SELECT key, value FROM app_settings/);
+  const supabaseStart = worker.indexOf('async function loadStartupData(');
+  assert.ok(supabaseStart >= 0);
+  const supabaseEnd = worker.indexOf('\nasync function ', supabaseStart + 12);
+  const supabaseStartup = worker.slice(supabaseStart, supabaseEnd < 0 ? undefined : supabaseEnd);
+  assert.doesNotMatch(supabaseStartup, /supabaseGet\(env,\s*"app_settings"/);
+  assert.match(worker, /public_vacancy_posting: "false"/);
+  assert.match(worker, /public_employer_registration: "false"/);
+  assert.match(admin, /CV Box/);
+  assert.doesNotMatch(admin, /Public vacancy posting|Public employer registration|R20\/year/);
+});
+
+test('CV Box terminology is consistent while existing database names and deep-link alias stay intact', () => {
+  assert.match(content, /id: 'faq-cv-box'/);
+  assert.match(appCards, /rpc\('verify_talent_pool_access'/);
+  assert.match(worker, /body\.talent_pool_id/);
+  assert.match(appUi, /section === 'talent-pool'\) section = 'candidates'/);
+  assert.match(appUi, /function openHomeCvBoxProfile\(/);
+  assert.match(appSheets, /function openMyCvBoxProfile\(/);
+  assert.match(appSheets, /function enforceCvBoxProfile\(/);
+  assert.match(appForms, /function sendCvBoxVacancyAlerts\(/);
+  assert.match(appUi, /function closeCvBox\(/);
+  assert.match(html, /shareSectionLink\('candidates'\)/);
+});
+
+test('guest CV Box registrations can link to a Google account later without creating a directory gate', () => {
+  assert.match(appCards, /function autoClaimCvBoxRegistration\(/);
+  assert.match(appCards, /candidate_claim_profile/);
+  assert.match(appCore, /window\.autoClaimCvBoxRegistration\(\)/);
+  assert.match(appSheets, /await autoClaimCvBoxRegistration\(\)/);
+  assert.match(appSheets, /saAuthUser \? 'linked' : 'pending'/);
+  assert.doesNotMatch(appCards, /requireEmployerDirectoryAccess|employerAccessLocked/);
+});
+
+test('guest Profile cards, contact details, help action, and account headings remain accessible and legible', () => {
+  assert.match(html, /id="account-signin-card"[^>]*aria-hidden="false"/);
+  assert.match(html, /id="account-settings-label" hidden>Profile settings/);
+  assert.match(html, /id="account-signout-label" hidden>Account/);
+  assert.match(html, /class="account-help-action"[^>]*onclick="openJobSeekerSheet\(\)"/);
+  assert.match(appUi, /if \(settingsLabel\) settingsLabel\.hidden = isGuest/);
+  assert.match(appUi, /if \(signoutLabel\) signoutLabel\.hidden = isGuest/);
+  assert.match(css, /\.contact-value\{[^}]*color:var\(--text\)/);
+  assert.match(css, /\.contact-row:not\(\.contact-row-static\) \.contact-value\{color:var\(--accent\)\}/);
+  assert.match(css, /#screen-account \.account-hero,[\s\S]*?#screen-account \.account-quota-card\{[\s\S]*?width:min\(100%,420px\)[\s\S]*?border-radius:16px!important/);
+  assert.match(css, /#screen-account \.account-avatar\.account-avatar-btn:disabled::after\{display:none\}/);
+  assert.match(appCore, /tap “Try Google sign-in again” to retry/);
+  assert.match(appCore, /error: 'Try Google sign-in again'/);
+});

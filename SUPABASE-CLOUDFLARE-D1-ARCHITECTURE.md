@@ -95,8 +95,8 @@ Important current tables include:
 | `agencies` | Agency directory | 137 |
 | `branches` | Agency branch directory | 103 |
 | `employers` | Employer directory | 12 |
-| `pool_candidates` | Private/user-owned talent pool data | 29 |
-| `pool_candidates_public` | Redacted public talent-pool view | 29 source rows |
+| `pool_candidates` | Private/user-owned CV Box data | 29 |
+| `pool_candidates_public` | Redacted public CV Box view | 29 source rows |
 | `employer_posters` | Public vacancy poster feed | 29 |
 | `analytics_events` | Anonymous product analytics | 845 |
 | `reports` / `suggestions` | User submissions | Small |
@@ -241,7 +241,7 @@ Browser
   → R2 image URL for the selected poster
 ```
 
-### 3.4 Public Talent Pool
+### 3.4 Public CV Box
 
 The app uses both Worker and direct Supabase paths for pool candidate data. Public reads should use the redacted `pool_candidates_public` view only. Private profile reads and writes should remain authenticated and user-scoped.
 

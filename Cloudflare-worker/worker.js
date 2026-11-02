@@ -700,7 +700,7 @@ async function loadStartupDataFromD1(env) {
     careers_page: ["careers_page"]
   };
 
-  const [agenciesR, branchesR, vacanciesR, employersR, settingsR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR, sourceVacancyCountR] = await Promise.all([
+  const [agenciesR, branchesR, vacanciesR, employersR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR, sourceVacancyCountR] = await Promise.all([
     env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
     // Keep dedicated feeds lazy for the general directory, but always include
@@ -709,7 +709,6 @@ async function loadStartupDataFromD1(env) {
     // tagged with a dedicated source such as retail.
     env.DB.prepare(`SELECT * FROM vacancies WHERE (((agency_id IS NOT NULL AND agency_id != 'general') AND employer_id IS NULL) OR employer_id IS NOT NULL) AND (employer_id IS NOT NULL OR source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE}`).bind(...dedicated).all(),
     env.DB.prepare("SELECT * FROM employers ORDER BY created_at DESC").all(),
-    env.DB.prepare("SELECT key, value FROM app_settings").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM pool_candidates WHERE status = 'active'").all(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL").all(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NOT NULL AND source_type NOT IN (${dedicatedPlaceholders})`).bind(...dedicated).all(),
@@ -730,7 +729,6 @@ async function loadStartupDataFromD1(env) {
   const employerCountMap = Object.fromEntries((employerCountsR.results || []).map((row) => [row.employer_id, row.n || 0]));
 
   const n = (r) => r.results[0]?.n || 0;
-  const settingMap = Object.fromEntries((settingsR.results || []).map((row) => [row.key, row.value]));
   return {
     generated_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: agenciesR.results || [],
@@ -757,9 +755,9 @@ async function loadStartupDataFromD1(env) {
       provinces: provinceCounts
     },
     settings: {
-      public_vacancy_posting: settingMap.public_vacancy_posting ?? "false",
-      public_employer_registration: settingMap.public_employer_registration ?? "false",
-      public_employer_directory: settingMap.public_employer_directory ?? "true"
+      public_vacancy_posting: "false",
+      public_employer_registration: "false",
+      public_employer_directory: "true"
     }
   };
 }
@@ -837,7 +835,7 @@ async function loadStartupData(env) {
     learnerships: ["learnerships"],
     careers_page: ["careers_page"]
   };
-  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, settings, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
+  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
       order: "created_at.desc"
@@ -904,11 +902,10 @@ async function loadStartupData(env) {
       source_type: `not.in.${dedicatedSources}`,
       limit: "0"
     }, { prefer: "count=exact" }),
-    Promise.all(["public_vacancy_posting", "public_employer_registration", "public_employer_directory"].map((key) => supabaseGet(env, "app_settings", { select: "key,value", key: `eq.${key}` }))),
     // pool_candidates itself is admin-only under RLS now (see
     // CREATE_POOL_PUBLIC_ACCESS.sql) -- counting it with the anon key here
     // always returned 0, which is why the home "Candidates" stat showed 0
-    // until someone opened the Talent Pool screen (which queries the public
+    // until someone opened the CV Box screen (which queries the public
     // view directly and got the real number). Count the public view instead,
     // matching getPoolCandidateCount() on the client.
     supabaseGet(env, "pool_candidates_public", { select: "id", limit: "0" }, { prefer: "count=exact" }),
@@ -948,10 +945,6 @@ async function loadStartupData(env) {
     return [employer.id, readCountHeader(result.headers)];
   }));
   const employerCountMap = Object.fromEntries(employerVacancyCounts);
-  const settingMap = Object.fromEntries(settings.map(({ body }) => {
-    const row = Array.isArray(body) ? body[0] : null;
-    return [row?.key, row?.value];
-  }).filter(([key]) => key));
   const readCount = /* @__PURE__ */ __name((headers) => {
     const range = headers.get("content-range") || "";
     const match = range.match(/\/(\d+)$/);
@@ -986,9 +979,9 @@ async function loadStartupData(env) {
       dedicated: Object.fromEntries(folderCounts)
     },
     settings: {
-      public_vacancy_posting: settingMap.public_vacancy_posting ?? "false",
-      public_employer_registration: settingMap.public_employer_registration ?? "false",
-      public_employer_directory: settingMap.public_employer_directory ?? "true"
+      public_vacancy_posting: "false",
+      public_employer_registration: "false",
+      public_employer_directory: "true"
     }
   };
 }
@@ -1288,7 +1281,7 @@ __name(cvDownloadResponse, "cvDownloadResponse");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   const dataVersion = await readPublicDataVersion(env);
-  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v12-live-cv-box&version=${dataVersion}`, request.url), request);
+  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v13-live-cv-box&version=${dataVersion}`, request.url), request);
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
     return new Response(body, { headers: {
@@ -2235,7 +2228,7 @@ var worker_default = {
       }
 
       // "Looking for work?" requests: status updates (new / contacted / added /
-      // closed, plus the linked Talent Pool id) and deletion, service role only.
+      // closed, plus the linked CV Box id) and deletion, service role only.
       const adminSeekerMatch = path.match(/^\/api\/admin\/job-seekers\/([A-Za-z0-9_-]{1,64})$/);
       if (adminSeekerMatch && (request.method === "POST" || request.method === "DELETE")) {
         if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
@@ -2557,7 +2550,7 @@ var worker_default = {
       // ---------- "Looking for work?" quick intake (public, Turnstile-protected) ----------
       // Replaces people messaging the admin free-text ("may I send my CV?") with
       // one structured request. It never creates a public profile: an admin
-      // triages it and can convert it into a Talent Pool candidate.
+      // triages it and can convert it into a CV Box candidate.
       if (path === "/api/submit/job-seeker" && request.method === "POST") {
         const ts = await verifyTurnstile(request, env, origin, true);
         if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
@@ -2626,7 +2619,7 @@ var worker_default = {
             notification_type: "JOB SEEKER",
             notification_title: "Thanks, " + fullName.split(" ")[0] + " — we've got your details",
             notification_intro: "Our team will review your request. In the meantime, these will help you move faster:",
-            notification_body: "1. Join the free Talent Pool so employers can find you:\n" + site + "/?section=candidates" +
+            notification_body: "1. Join the free CV Box so employers can find you:\n" + site + "/?section=candidates" +
               "\n\n2. Browse the latest vacancies and set up alerts for the roles you want:\n" + site + "/?section=vacancies" +
               "\n\n3. Build a professional CV in the app (menu → CV Builder).\n\n" +
               "Please note: SA Recruiters is a directory — we cannot guarantee placement, and we never charge job seekers to apply for vacancies. Beware of anyone asking you to pay for a job."
@@ -2634,7 +2627,7 @@ var worker_default = {
         }
         return json({ ok: true, email: adminEmail, auto_reply: autoReply.sent === true }, 200, origin);
       }
-      // ---------- Employer self-service registration (no Google sign-in, no Talent Pool profile) ----------
+      // ---------- Employer self-service registration (no Google sign-in, no CV Box profile) ----------
       // A brand-new employer registers here and gets back a working Smart
       // Manager link (manage_token) for the row this same call created —
       // see public_register_employer() for why that's safe even though
@@ -2731,7 +2724,7 @@ var worker_default = {
             email_subject: `SA Recruiters | New vacancy: ${String(vacancy.title).slice(0, 180)}`,
             notification_type: "VACANCY ALERT",
             notification_title: "New vacancy opportunity",
-            notification_intro: "A new vacancy matching your Talent Pool preferences has been posted.",
+            notification_intro: "A new vacancy matching your CV Box preferences has been posted.",
             notification_body: [
               `Role: ${vacancy.title || "-"}`,
               `Company: ${vacancy.company || "-"}`,
@@ -2772,7 +2765,7 @@ var worker_default = {
         // The user's access token is verified server-side; the Supabase admin
         // API then removes the auth user. auth.users cascades delete the
         // saved_vacancies rows (FK ON DELETE CASCADE), and reports/suggestions
-        // keep only a nullified user_id (ON DELETE SET NULL). The Talent Pool
+        // keep only a nullified user_id (ON DELETE SET NULL). The CV Box
         // listing is a separate pool_candidates row, cleared here explicitly.
         const deleteUserId = await verifiedUserId(request, env);
         if (!deleteUserId) {
@@ -2788,12 +2781,12 @@ var worker_default = {
           "Content-Type": "application/json"
         };
         try {
-          // Talent Pool listing rows are linked by user_id but not FK-cascaded.
+          // CV Box listing rows are linked by user_id but not FK-cascaded.
           const poolRes = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?user_id=eq.${deleteUserId}`, {
             method: "DELETE",
             headers: authHeaders
           });
-          if (!poolRes.ok) return json({ error: "Could not remove your Talent Pool listing." }, 502, origin);
+          if (!poolRes.ok) return json({ error: "Could not remove your CV Box listing." }, 502, origin);
           const delRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${deleteUserId}`, {
             method: "DELETE",
             headers: authHeaders

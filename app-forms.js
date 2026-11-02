@@ -63,7 +63,7 @@ export function handlePhoto(evt) {
   };
   reader.readAsDataURL(file);
 }
-// Talent Pool candidate photos go into Supabase Storage (not the DB row)
+// CV Box candidate photos go into Supabase Storage (not the DB row)
 // so thousands of registrations don't eat into the 500MB database cap —
 // only a short URL is stored on the candidate record.
 // Photos are centre-cropped to a fixed 512x512 square so every candidate's
@@ -654,7 +654,7 @@ export function alertPreferenceMatches(preference, value) {
     return haystack.indexOf(part) !== -1;
   });
 }
-export async function sendTalentPoolVacancyAlerts(vacancy) {
+export async function sendCvBoxVacancyAlerts(vacancy) {
   if (!isAdmin || !supabaseClient || !vacancy || !vacancy.title) return;
   try {
     var candidatesResult = await supabaseClient.from('pool_candidates')
@@ -682,10 +682,10 @@ export async function sendTalentPoolVacancyAlerts(vacancy) {
     });
     var result = await response.json().catch(function() { return {}; });
     if (!response.ok || !result.ok) throw new Error((result && result.error) || 'alert dispatch failed');
-    console.info('[SA Recruiters] Talent Pool vacancy alerts dispatched', result);
+    console.info('[SA Recruiters] CV Box vacancy alerts dispatched', result);
   } catch (error) {
     // Alert delivery must never make a successfully published vacancy fail.
-    console.warn('[SA Recruiters] Talent Pool alert dispatch failed', error);
+    console.warn('[SA Recruiters] CV Box alert dispatch failed', error);
   }
 }
 
@@ -717,7 +717,7 @@ export async function saveVacancy() {
       live = await upsertVacancy(vacancy);
     }
     var termsRecorded = live ? await recordVacancyTermsAcceptance(id, managerMode && managerAgency ? managerAgency.id : pendingVacancyAgency, null) : false;
-    if (live && isAdmin && !managerMode) sendTalentPoolVacancyAlerts(vacancy);
+    if (live && isAdmin && !managerMode) sendCvBoxVacancyAlerts(vacancy);
     closeSheet('vacancy-overlay');
     showToast(live ? (termsRecorded ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
     await loadAll();
@@ -892,7 +892,7 @@ export async function saveGeneralVacancy() {
       data.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
       var live3 = await upsertVacancy(data);
       termsRecordedGeneral = live3 ? await recordVacancyTermsAcceptance(data.id, null, pendingVacancyEmployer || (employerManagerMode && managerEmployer ? managerEmployer.id : null)) : false;
-      if (live3 && isAdmin) sendTalentPoolVacancyAlerts(data);
+      if (live3 && isAdmin) sendCvBoxVacancyAlerts(data);
       closeSheet('general-vacancy-overlay');
       showToast(live3 ? (termsRecordedGeneral ? 'Vacancy published' : 'Vacancy published — terms acceptance could not be recorded') : '⚠ Only saved on THIS device — other users will NOT see it. The Supabase vacancies table is missing (see CREATE_VACANCIES_TABLE.sql).');
     }
@@ -1157,7 +1157,7 @@ Object.assign(window, {
   workerManagerEmployerAddVacancy,
   setVacancySaveBusy,
   alertPreferenceMatches,
-  sendTalentPoolVacancyAlerts,
+  sendCvBoxVacancyAlerts,
   saveVacancy,
   deleteVacancy,
   openGeneralVacancySheet,

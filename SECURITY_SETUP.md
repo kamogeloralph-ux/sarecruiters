@@ -4,7 +4,7 @@ This covers the three changes shipped together:
 
 1. **Smart Manager token lockdown** — `manage_token` is no longer readable or
    writable by the public; manager links are verified server-side.
-2. **Server-side email (Resend)** — all transactional and Talent Pool alert
+2. **Server-side email (Resend)** — all transactional and CV Box alert
    notifications are sent from the Cloudflare Worker; email credentials never
    reach the browser.
 3. **Turnstile spam protection** — public report/suggestion forms are gated by
@@ -37,7 +37,7 @@ Both are idempotent (safe to re-run). Together they:
   admin token rotation (requires a Supabase Auth session).
 - Revokes direct anon INSERT on branches/vacancies/reports/suggestions (all
   four now go through token-authorized or Turnstile-gated RPCs).
-- Keeps anon INSERT on `pool_candidates` (public Talent Pool self-registration
+- Keeps anon INSERT on `pool_candidates` (public CV Box self-registration
   is intentional; RLS keeps pending rows invisible).
 - Part 2 keeps anon SELECT/INSERT/UPDATE on every `agencies`/`employers`
   column EXCEPT `manage_token` (admin = `authenticated` role and the

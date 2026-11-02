@@ -43,14 +43,14 @@ export function initializeSupabaseClient() {
 }
 initializeSupabaseClient();
 
-// ===== Required Google sign-in for the public app =====
+// ===== Optional Google sign-in for the public app =====
 export var saAuthUser = null;
 export var saAuthStarted = false;
 export var saAuthStartCallback = null;
 export var saAuthRedirecting = false;
 
 // ===== Employer / agency Smart Manager links bypass Google sign-in AND the
-// Talent Pool profile gate entirely (see detectManagerMode() in
+// CV Box profile gate entirely (see detectManagerMode() in
 // app-manager-employer.js, which calls window.__saEnterManagerLinkMode() the
 // moment it sees ?manage=TOKEN or ?manage_employer=TOKEN in the URL — before
 // Google auth has had any chance to resolve). A visitor on one of these
@@ -93,8 +93,8 @@ export function renderAuthUser(user) {
 }
 // ===== Open app: auth is optional =====
 // The app is browsable by guests; a Google account unlocks unlimited
-// vacancy views, cross-device saved jobs, submissions tracking, and the
-// Talent Pool. There is no blocking gate: the account screen (Profile tab)
+// vacancy views, cross-device saved jobs, submissions tracking, and CV Box.
+// There is no blocking gate: the account screen (Profile tab)
 // carries the sign-in card for guests.
 export function setAuthGateState(state, message) {
   // Legacy name kept: pending-submissions and other modules still call this
@@ -102,14 +102,25 @@ export function setAuthGateState(state, message) {
   // sign-in card instead of a fullscreen gate.
   var status = document.getElementById('account-signin-status');
   if (status && typeof message === 'string') status.textContent = message;
-  var button = document.getElementById('google-sign-in');
-  if (button) button.disabled = state === 'loading' || state === 'redirecting';
+  var labels = {
+    ready: "Sign in with Google — it's free",
+    loading: 'Connecting to Google…',
+    redirecting: 'Opening Google sign-in…',
+    error: 'Try Google sign-in again'
+  };
+  var busy = state === 'loading' || state === 'redirecting';
+  document.querySelectorAll('#google-sign-in, #guest-limit-signin').forEach(function(button) {
+    button.disabled = busy;
+    button.setAttribute('aria-busy', busy ? 'true' : 'false');
+    var contents = button.querySelector('.gsi-material-button-contents');
+    if (contents) contents.textContent = labels[state] || labels.ready;
+  });
 }
 export async function signInWithGoogle() {
   var client = initializeSupabaseClient();
   if (saAuthRedirecting) return;
   if (!client || !client.auth) {
-    setAuthGateState('error', 'Sign-in is unavailable right now. Browsing still works.');
+    setAuthGateState('error', 'Sign-in is temporarily unavailable. Check your connection, then tap “Try Google sign-in again” to retry.');
     return;
   }
   saAuthRedirecting = true;
@@ -142,8 +153,8 @@ export async function signInWithGoogle() {
     saAuthRedirecting = false;
     var timedOut = error && /timed out/i.test(String(error.message || error));
     setAuthGateState('error', timedOut
-      ? 'Google sign-in is taking too long. Check your connection and try again.'
-      : 'Google sign-in could not start. Please try again.');
+      ? 'Google sign-in is taking too long. Check your connection, then tap “Try Google sign-in again”.'
+      : 'Google sign-in could not start. Check your connection, then tap “Try Google sign-in again”.');
     console.error('Google sign-in', error);
   }
 }
@@ -205,6 +216,7 @@ export function startAuthenticatedApp(callback) {
         // (boot already ran, so its signed-in-only sync was skipped).
         if (typeof loadSavedVacanciesFromSupabase === 'function') loadSavedVacanciesFromSupabase();
         if (typeof renderAccountDetails === 'function') renderAccountDetails();
+        if (typeof window.autoClaimCvBoxRegistration === 'function') window.autoClaimCvBoxRegistration();
       } else if (!saAuthUser && saAuthStarted) {
         // Session expired mid-session: drop back to guest mode in place.
         saAuthStarted = false;
@@ -250,7 +262,7 @@ export function startAuthenticatedApp(callback) {
     attempts += 1;
     if (attempts >= 80) {
       window.clearInterval(authRetryTimer);
-      setAuthGateState('error', 'Sign-in is unavailable right now. Browsing still works.');
+      setAuthGateState('error', 'Sign-in is temporarily unavailable. Check your connection, then tap “Try Google sign-in again” to retry.');
       bootOnce();
     }
   }, 100);
@@ -378,10 +390,8 @@ export var publicAgencySlugs = Object.create(null);
 export var publicVacancySlugs = Object.create(null);
 export var publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMap() : null;
 export var isAdmin = false;
-export var publicVacancyPostingOpen = false;
-export var publicEmployerRegistrationOpen = false;
-export var employerDirectoryOpen = true; // when false, only Supabase-verified Talent Pool registrants may browse employers and employer vacancies
-export var talentPoolVerified = false;
+export var publicVacancyPostingOpen = false; // fixed closed; job enquiries remain available
+export var publicEmployerRegistrationOpen = false; // fixed closed
 export var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
 // ===== Saved vacancies: per-account sync (saved_vacancies table) =====
 // savedSet above still seeds instantly from localStorage so Saved renders
@@ -801,10 +811,6 @@ export function set_dedicatedVacancyCountsLoaded(v) { dedicatedVacancyCountsLoad
 export function set_generalVacancyDisplayPage(v) { generalVacancyDisplayPage = v; return v; }
 export function set_dedicatedVacancyDisplayPage(v) { dedicatedVacancyDisplayPage = v; return v; }
 export function set_agencyFolderDisplayPage(v) { agencyFolderDisplayPage = v; return v; }
-export function set_publicVacancyPostingOpen(v) { publicVacancyPostingOpen = v; return v; }
-export function set_publicEmployerRegistrationOpen(v) { publicEmployerRegistrationOpen = v; return v; }
-export function set_employerDirectoryOpen(v) { employerDirectoryOpen = v; return v; }
-export function set_talentPoolVerified(v) { talentPoolVerified = v; return v; }
 export function set_managerMode(v) { managerMode = v; return v; }
 export function set_managerAgency(v) { managerAgency = v; return v; }
 export function set_managerPendingToken(v) { managerPendingToken = v; return v; }
@@ -868,6 +874,8 @@ Object.defineProperties(window, {
   saAuthStarted: { get: () => saAuthStarted, set: (v) => { saAuthStarted = v; }, configurable: true, enumerable: true },
   saAuthStartCallback: { get: () => saAuthStartCallback, set: (v) => { saAuthStartCallback = v; }, configurable: true, enumerable: true },
   saAuthRedirecting: { get: () => saAuthRedirecting, set: (v) => { saAuthRedirecting = v; }, configurable: true, enumerable: true },
+  publicVacancyPostingOpen: { get: () => publicVacancyPostingOpen, configurable: true, enumerable: true },
+  publicEmployerRegistrationOpen: { get: () => publicEmployerRegistrationOpen, configurable: true, enumerable: true },
   __saManagerLinkMode: { get: () => __saManagerLinkMode, set: (v) => { __saManagerLinkMode = v; }, configurable: true, enumerable: true },
   GUEST_DAILY_VACANCY_LIMIT: { get: () => GUEST_DAILY_VACANCY_LIMIT, set: (v) => { GUEST_DAILY_VACANCY_LIMIT = v; }, configurable: true, enumerable: true },
   analyticsVisitorId: { get: () => analyticsVisitorId, set: (v) => { analyticsVisitorId = v; }, configurable: true, enumerable: true },
@@ -910,10 +918,6 @@ Object.defineProperties(window, {
   publicVacancySlugs: { get: () => publicVacancySlugs, set: (v) => { publicVacancySlugs = v; }, configurable: true, enumerable: true },
   publicVacancyRecordSlugs: { get: () => publicVacancyRecordSlugs, set: (v) => { publicVacancyRecordSlugs = v; }, configurable: true, enumerable: true },
   isAdmin: { get: () => isAdmin, set: (v) => { isAdmin = v; }, configurable: true, enumerable: true },
-  publicVacancyPostingOpen: { get: () => publicVacancyPostingOpen, set: (v) => { publicVacancyPostingOpen = v; }, configurable: true, enumerable: true },
-  publicEmployerRegistrationOpen: { get: () => publicEmployerRegistrationOpen, set: (v) => { publicEmployerRegistrationOpen = v; }, configurable: true, enumerable: true },
-  employerDirectoryOpen: { get: () => employerDirectoryOpen, set: (v) => { employerDirectoryOpen = v; }, configurable: true, enumerable: true },
-  talentPoolVerified: { get: () => talentPoolVerified, set: (v) => { talentPoolVerified = v; }, configurable: true, enumerable: true },
   savedSet: { get: () => savedSet, set: (v) => { savedSet = v; }, configurable: true, enumerable: true },
   savedVacanciesSynced: { get: () => savedVacanciesSynced, set: (v) => { savedVacanciesSynced = v; }, configurable: true, enumerable: true },
   managerMode: { get: () => managerMode, set: (v) => { managerMode = v; }, configurable: true, enumerable: true },

@@ -12,7 +12,7 @@
 import { R2_WORKER_URL, VAC_PAGE_SIZE, agenciesCache, agencyFolderDisplayPage, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyDisplayPage, dedicatedVacancyError, dedicatedVacancyFolder, dedicatedVacancyHasMore, dedicatedVacancyLoading, dedicatedVacancyPage, dedicatedVacancyPageSize, dedicatedVacancyQueryKey, dedicatedVacancyRequestId, dedicatedVacancyRows, employerManagerMode, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyDisplayPage, generalVacancyError, generalVacancyHasMore, generalVacancyLoading, generalVacancyPage, generalVacancyPageSize, generalVacancyQueryKey, generalVacancyRequestId, generalVacancyRows, guestQuotaState, isAdmin, managerMode, renderAuthUser, saAuthUser, set_agencyFolderDisplayPage, set_dedicatedVacancyDisplayPage, set_dedicatedVacancyError, set_dedicatedVacancyFolder, set_dedicatedVacancyHasMore, set_dedicatedVacancyLoading, set_dedicatedVacancyNextCursor, set_dedicatedVacancyPage, set_dedicatedVacancyQueryKey, set_dedicatedVacancyRequestId, set_dedicatedVacancyRows, set_generalVacancyDisplayPage, set_generalVacancyError, set_generalVacancyHasMore, set_generalVacancyLoading, set_generalVacancyNextCursor, set_generalVacancyPage, set_generalVacancyQueryKey, set_generalVacancyRequestId, set_generalVacancyRows, set_saAuthUser, signOutSaRecruiters, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
 import { DEDICATED_VACANCY_FOLDER_SOURCES, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
 import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, loadPosterFeed, mailLink, mapsLink, postersCache, renderAllEmployersList, renderPosterFeed, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
-import { closeSheet, copyText, goPool, loadPoolCandidates, openMyPoolProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnScreen, renderPoolList } from './app-sheets.js';
+import { closeSheet, copyText, goPool, loadPoolCandidates, openMyCvBoxProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnScreen, renderPoolList } from './app-sheets.js';
 import { exitManagerMode } from './app-manager.js';
 import { exitEmployerManagerMode } from './app-manager-employer.js';
 
@@ -150,9 +150,9 @@ export function clearHomeFeedFilters() {
   filterAndRenderCached();
 }
 
-export function openHomeTalentPoolProfile() {
+export function openHomeCvBoxProfile() {
   if (typeof saAuthUser !== 'undefined' && saAuthUser) {
-    openMyPoolProfile();
+    openMyCvBoxProfile();
     return;
   }
   openPoolRegisterSheet();
@@ -466,7 +466,7 @@ export function renderHomeFeed() {
     '<div id="house-ad-home-middle" class="house-ad-slot" hidden></div>' +
     '<section class="home-tools-section" aria-labelledby="home-tools-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Start here</span><h2 id="home-tools-title">Take your next step</h2><p>Whether you’re looking for work or hiring talent, start here.</p></div></div>' +
       '<div class="home-tools-grid">' +
-        '<article class="home-tool-card home-tool-card--seeker"><div class="home-tool-top"><div class="home-tool-icon" aria-hidden="true">CV</div><span class="home-tool-badge">Free to use</span></div><div class="home-tool-copy"><h3>Get discovered by recruiters</h3><p>Upload your CV to the CV Box and browse current opportunities.</p></div><div class="home-tool-actions"><button type="button" onclick="openHomeTalentPoolProfile()">Upload / update CV <span aria-hidden="true">→</span></button><button type="button" class="secondary" onclick="showAllVacancies(\'home\')">Browse vacancies <span aria-hidden="true">→</span></button></div></article>' +
+        '<article class="home-tool-card home-tool-card--seeker"><div class="home-tool-top"><div class="home-tool-icon" aria-hidden="true">CV</div><span class="home-tool-badge">Free to use</span></div><div class="home-tool-copy"><h3>Get discovered by recruiters</h3><p>Upload your CV to the CV Box and browse current opportunities.</p></div><div class="home-tool-actions"><button type="button" onclick="openHomeCvBoxProfile()">Upload / update CV <span aria-hidden="true">→</span></button><button type="button" class="secondary" onclick="showAllVacancies(\'home\')">Browse vacancies <span aria-hidden="true">→</span></button></div></article>' +
         '<article class="home-tool-card home-tool-card--employer"><div class="home-tool-top"><div class="home-tool-icon" aria-hidden="true">＋</div><span class="home-tool-badge">Reach active candidates</span></div><div class="home-tool-copy"><h3>Reach active candidates</h3><p>Post a vacancy or share a recruitment poster with the SA job-seeking community.</p></div><div class="home-tool-actions"><button type="button" onclick="openGeneralVacancySheet()">Post a vacancy <span aria-hidden="true">→</span></button><button type="button" class="secondary" onclick="openPublicPosterSheet()">Post a poster</button><button type="button" class="secondary" onclick="goPool(\'profile\')">Browse candidates</button></div></article>' +
       '</div></section>';
 
@@ -763,7 +763,7 @@ export function goSubmissions() {
   switchSubTab('reports');
 }
 
-export function closeTalentPool() {
+export function closeCvBox() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   var targetId = poolReturnScreen === 'profile' ? 'screen-account' : 'screen-home';
   var target = document.getElementById(targetId);
@@ -771,9 +771,9 @@ export function closeTalentPool() {
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === (poolReturnScreen === 'profile' ? 'account' : 'home')); });
   resetActiveScreenScroll(targetId);
 }
-window.closeTalentPool = closeTalentPool;
+window.closeCvBox = closeCvBox;
 export function goBackFromPool() {
-  closeTalentPool();
+  closeCvBox();
 }
 export function goBackToProfile() {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -848,6 +848,9 @@ export function renderAccountIdentity(user) {
   if (emailEl) emailEl.textContent = user ? (user.email || '—') : 'Browsing as a guest';
   if (avatarEl) {
     avatarEl.innerHTML = avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" decoding="async" referrerpolicy="no-referrer">' : '<span>' + escapeHtml((name || 'A').charAt(0).toUpperCase()) + '</span>';
+    avatarEl.disabled = isGuest;
+    avatarEl.setAttribute('aria-label', isGuest ? 'Profile photo editing is available after sign-in' : 'Change profile photo');
+    avatarEl.title = isGuest ? 'Sign in to change your profile photo' : 'Change profile photo';
   }
   if (providerEl) providerEl.style.display = user ? 'inline-flex' : 'none';
   // Guest chrome: sign-in card + quota meter. Signed-in chrome: sign-out.
@@ -858,8 +861,14 @@ export function renderAccountIdentity(user) {
   }
   var quotaCard = document.getElementById('account-quota-card');
   if (quotaCard) quotaCard.hidden = !isGuest;
+  var settingsGroup = document.getElementById('account-settings-group');
+  var settingsLabel = document.getElementById('account-settings-label');
+  if (settingsGroup) settingsGroup.hidden = isGuest;
+  if (settingsLabel) settingsLabel.hidden = isGuest;
   var signoutGroup = document.getElementById('account-signout-group');
+  var signoutLabel = document.getElementById('account-signout-label');
   if (signoutGroup) signoutGroup.hidden = isGuest;
+  if (signoutLabel) signoutLabel.hidden = isGuest;
   var guestTeaser = document.getElementById('guest-teaser');
   if (guestTeaser) guestTeaser.style.display = user ? 'none' : 'flex';
   var meta = document.getElementById('account-meta');
@@ -886,8 +895,8 @@ export function renderAccountQuota() {
     fillEl.classList.toggle('low', left <= 1);
   }
   if (noteEl) noteEl.textContent = left > 0
-    ? left + (left === 1 ? ' free view left today.' : ' free views left today — full access is unlocked with a free account.')
-    : 'Free views used — create an account for unlimited access.';
+    ? 'Sign in for unlimited views and to save jobs across devices.'
+    : 'Create a free account to keep exploring vacancies without a daily limit.';
 }
 
 // "Your listing" status: reflects whether the signed-in user currently has a
@@ -914,11 +923,14 @@ window.renderAccountDetails = renderAccountDetails;
 // ===== PROFILE SETTINGS (edit name, photo, delete account) =====
 // Available to signed-in users only. The name is stored on the Supabase auth
 // user (user_metadata.full_name) and the photo is uploaded through the
-// Worker's media endpoint (candidate-photos bucket, same pipeline as Talent
-// Pool photos) with the URL kept in user_metadata.profile_photo.
+// Worker's media endpoint (candidate-photos bucket, same pipeline as CV Box
+// photos) with the URL kept in user_metadata.profile_photo.
 export function renderProfileSettingsVisibility() {
+  var visible = !!saAuthUser;
   var group = document.getElementById('account-settings-group');
-  if (group) group.style.display = saAuthUser ? 'block' : 'none';
+  var label = document.getElementById('account-settings-label');
+  if (group) group.hidden = !visible;
+  if (label) label.hidden = !visible;
 }
 window.renderProfileSettingsVisibility = renderProfileSettingsVisibility;
 
@@ -2256,7 +2268,7 @@ Object.assign(window, {
   setHomeLocationFilter,
   setHomeCategoryFilter,
   clearHomeFeedFilters,
-  openHomeTalentPoolProfile,
+  openHomeCvBoxProfile,
   homeSourceVacancies,
   isRetailPriorityVacancy,
   ensureRetailPriorityVacancies,
@@ -2292,7 +2304,7 @@ Object.assign(window, {
   setRetryBanner,
   retryLoadAll,
   goSubmissions,
-  closeTalentPool,
+  closeCvBox,
   goBackFromPool,
   goBackToProfile,
   openAccountScreen,

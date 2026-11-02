@@ -448,9 +448,9 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div id="sub-list"></div>
       </div>
 
-      <!-- TALENT POOL -->
+      <!-- CV BOX -->
       <div class="section section-review" id="sec-poolcandidates">
-        <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>Talent Pool</h2></div>
+        <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>CV Box</h2></div>
         <div class="muted" style="margin-bottom:14px">CV uploads land here as <strong>Pending</strong>. Review the CV and position, then Approve to publish the candidate in the public CV Box. Recruiters request paid downloads through SA Recruiters.</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
           <button class="minibtn" id="pool-tab-pending" onclick="switchPoolTab('pending')">Pending <span class="nav-badge" id="pool-badge-pending"></span></button>
@@ -475,39 +475,6 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <!-- SETTINGS -->
       <div class="section section-settings" id="sec-settings">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Settings</h2></div>
-        <div class="toggle-row">
-          <div><div class="t-label">Public vacancy posting</div><div class="t-sub" id="posting-sub">Loading…</div></div>
-          <label class="switch"><input type="checkbox" id="posting-toggle" onchange="togglePosting(this.checked)"><span class="track"><span class="knob"></span></span></label>
-        </div>
-        <div style="margin-top:14px" class="muted">When ON, anyone can post a general vacancy from the public app. When OFF, posting is locked and users are asked to message the admin on WhatsApp.</div>
-
-        <div class="toggle-row" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
-          <div><div class="t-label">Public employer registration</div><div class="t-sub" id="emp-reg-sub">Loading…</div></div>
-          <label class="switch"><input type="checkbox" id="emp-reg-toggle" onchange="toggleEmployerReg(this.checked)"><span class="track"><span class="knob"></span></span></label>
-        </div>
-        <div style="margin-top:14px" class="muted">When ON, anyone can register their company from the public app. When OFF, registration is locked and users are asked to message the admin on WhatsApp. Employers never post vacancies directly in the public app — send each one their Smart Manager link (in their employer profile) so they can add vacancies themselves.</div>
-
-        <div class="toggle-row" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
-          <div><div class="t-label">Employer Directory access</div><div class="t-sub" id="emp-dir-sub">Loading…</div></div>
-          <label class="switch"><input type="checkbox" id="emp-dir-toggle" onchange="toggleEmployerDirectory(this.checked)"><span class="track"><span class="knob"></span></span></label>
-        </div>
-        <div style="margin-top:14px" class="muted">When ON, everyone can browse employers and their vacancies. When OFF, only users who have registered for the Talent Pool can open the Employer Directory and employer vacancies.</div>
-
-        <details class="banking-accordion">
-          <summary>
-            <span class="banking-summary-copy"><span class="t-label">Talent Pool banking details</span><span class="muted">Tap to view or edit payment information</span></span>
-            <span class="banking-summary-chevron" aria-hidden="true">⌄</span>
-          </summary>
-          <div class="banking-accordion-body">
-            <div class="muted banking-help">Shown to job seekers on the public "Join the Talent Pool" registration form so they know where to pay their R20/year.</div>
-            <div class="field"><label>Account name</label><input id="bank-account-name" placeholder="e.g. SA Recruiters"></div>
-            <div class="field"><label>Bank</label><input id="bank-name" placeholder="e.g. Capitec Business"></div>
-            <div class="field"><label>Account number</label><input id="bank-account-number" placeholder="e.g. 1234567890"></div>
-            <div class="field"><label>Branch code</label><input id="bank-branch-code" placeholder="e.g. 470010"></div>
-            <button class="btn" onclick="savePoolBankingDetails()">Save banking details</button>
-          </div>
-        </details>
-
         <details class="banking-accordion">
           <summary>
             <span class="banking-summary-copy"><span class="t-label">Social media links</span><span class="muted">Tap to view or edit the links shown in the app's Notes sheet</span></span>
@@ -533,7 +500,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
           <div class="field"><label for="media-youtube-url">YouTube URL</label><input id="media-youtube-url" type="url" placeholder="https://youtu.be/HV64XG91tE4"></div>
           <button class="btn" onclick="saveMediaYoutubeUrl()">Save media video</button>
         </div>
-        <div class="muted" style="margin-bottom:14px">Upload an MP3 or add a Spotify link to feature as "Track of the Day" in the public app. Set the date to control which day each track plays. The newest track for a given date is shown. <strong>Tracks are kept for 7 days</strong> and automatically deleted after one week.</div>
+        <div class="muted" style="margin-bottom:14px">Upload an MP3 or add a Spotify link to feature as "Track of the Day" in the public app. MP3 audio is stored in Cloudflare R2; track details are saved in Supabase <code>daily_tracks</code>. The Supabase Storage bucket is not used by this upload flow. Set the date to control which day each track plays. The newest track for a given date is shown. <strong>Tracks are kept for 7 days</strong> and automatically deleted after one week.</div>
         <div id="track-setup-warn" class="card card-pad" style="margin-bottom:14px;display:none;border-color:var(--danger);color:var(--danger);font-size:13px;line-height:1.5"></div>
         <div id="track-list"></div>
       </div>
@@ -718,7 +685,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   </div>
 </div>
 
-<!-- ============ TALENT POOL CANDIDATE SHEET ============ -->
+<!-- ============ CV BOX CANDIDATE SHEET ============ -->
 <div class="scrim" id="pool-overlay">
   <div class="sheet">
     <h3 id="pool-sheet-title">Candidate</h3>
@@ -882,8 +849,10 @@ async function deleteR2Object(key) {
   if (!key) return;
   try {
     var authHdr = await r2AuthHeader();
-    await fetch(R2_WORKER_URL + '/api/delete?key=' + encodeURIComponent(key), { method: 'DELETE', headers: authHdr });
-  } catch (e) { console.error('r2 delete', e); }
+    var res = await fetch(R2_WORKER_URL + '/api/delete?key=' + encodeURIComponent(key), { method: 'DELETE', headers: authHdr });
+    if(!res.ok){ console.error('r2 delete failed', res.status, key); return false; }
+    return true;
+  } catch (e) { console.error('r2 delete', e); return false; }
 }
 
 var ADMIN_WHATSAPP = '27715531005';
@@ -897,7 +866,7 @@ var loadState = { agencies:'loading', branches:'loading', vacancies:'loading', e
 var loadErrors = {};
 var restoredFlags = {};
 var vacancyProgress = 0;
-var LOAD_LABELS = { agencies:'Agencies', branches:'Branches', vacancies:'Vacancies', employers:'Employers', aux:'Reports, posters, Talent Pool & media' };
+var LOAD_LABELS = { agencies:'Agencies', branches:'Branches', vacancies:'Vacancies', employers:'Employers', aux:'Reports, posters, CV Box & media' };
 function resetLoadState(){ Object.keys(loadState).forEach(function(k){ loadState[k]='loading'; }); loadErrors={}; restoredFlags={}; vacancyProgress=0; }
 function dsShown(k){ return loadState[k]==='ok' || !!restoredFlags[k] || (k==='vacancies' && vacancyProgress>0); }
 function withTimeout(promise, ms, label){
@@ -1001,9 +970,6 @@ var editing = { agency: null, branch: null, vacancy: null, employer: null, artic
 var pendingPhoto = null;
 var pendingPhotoBlob = null;
 var subTab = 'reports';
-var publicVacancyPostingOpen = false;
-var publicEmployerRegistrationOpen = false;
-var employerDirectoryOpen = true;
 
 // ===== Theme =====
 function applyTheme(t){
@@ -1328,8 +1294,22 @@ async function upsertPoolCandidate(p){
 
 async function removePoolCandidate(id){ var { error } = await supabaseClient.from('pool_candidates').delete().eq('id',id); if(error) console.error('pool del', error); else await writeThroughD1Mirror('pool_candidates',id,'delete'); }
 async function getTracks(){
-  try { var { data, error } = await supabaseClient.from('daily_tracks').select('id,title,artist,file_path,file_url,spotify_url,track_date,created_at').order('track_date',{ascending:false}).order('created_at',{ascending:false}); if(!error) return data||[]; } catch(e){}
-  return [];
+  try {
+    var { data, error } = await supabaseClient.from('daily_tracks').select('id,title,artist,file_path,file_url,spotify_url,track_date,created_at').order('track_date',{ascending:false}).order('created_at',{ascending:false});
+    if(error){
+      window._tracksLoadError = error.message || 'Supabase could not read track metadata.';
+      window._tracksTableMissing = /Could not find|schema cache|PGRST205/i.test(error.message || '');
+      console.error('daily_tracks load', error);
+      return [];
+    }
+    window._tracksLoadError = '';
+    window._tracksTableMissing = false;
+    return data || [];
+  } catch(e){
+    window._tracksLoadError = e && e.message ? e.message : String(e);
+    console.error('daily_tracks load', e);
+    return [];
+  }
 }
 async function upsertAgency(a){
   var mutation = a.id && editing.agency
@@ -1448,8 +1428,8 @@ function alertMatchesVacancy(candidate, vacancy){
 async function queueAndSendVacancyAlerts(vacancy){
   try{
     var result=await supabaseClient.from('pool_candidates').select('id,full_name,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status').in('status',['pending','active']).eq('email_alert_opt_in',true);
-    if(result.error){ console.warn('Talent Pool alert candidate query failed',result.error); showToast('Alert setup error: run CREATE_EMAIL_ALERTS.sql in Supabase.'); return {sent:0,reason:'candidate-query'}; }
-    if(!result.data || !result.data.length){ showToast('No Talent Pool members are opted in for email alerts.'); return {sent:0,reason:'no-opt-ins'}; }
+    if(result.error){ console.warn('CV Box alert candidate query failed',result.error); showToast('Alert setup error: run CREATE_EMAIL_ALERTS.sql in Supabase.'); return {sent:0,reason:'candidate-query'}; }
+    if(!result.data || !result.data.length){ showToast('No CV Box members are opted in for email alerts.'); return {sent:0,reason:'no-opt-ins'}; }
     var matches=result.data.filter(function(c){return c.contact_email && alertMatchesVacancy(c,vacancy);});
     if(!matches.length){ showToast('No opted-in members matched this vacancy location.'); return {sent:0,reason:'no-match'}; }
     var rows=matches.map(function(c){return {vacancy_id:vacancy.id,candidate_id:c.id,recipient_email:c.contact_email,status:'queued'};});
@@ -1554,14 +1534,6 @@ function runLoad(key, task, apply){
     .catch(function(error){ loadState[key] = 'failed'; loadErrors[key] = (error && error.message) || String(error); console.error('admin load failed: '+key, error); })
     .then(function(){ adminDataReady = true; renderNav(); renderDashboard(); refreshActiveSection(); });
 }
-async function loadSettings(){
-  function read(key, fallback){ return withTimeout(getAppSetting(key, fallback), 15000, 'Settings').catch(function(){ return fallback; }); }
-  var settings = await Promise.all([ read('public_vacancy_posting','false'), read('public_employer_registration','false'), read('public_employer_directory','true') ]);
-  publicVacancyPostingOpen = (settings[0]===true||settings[0]==='true');
-  publicEmployerRegistrationOpen = (settings[1]===true||settings[1]==='true');
-  employerDirectoryOpen = (settings[2]===true||settings[2]==='true');
-  updatePostingUI(); updateEmployerRegUI(); updateEmployerDirectoryUI();
-}
 // loadAll() reloads everything; loadAll(['agencies','branches',...]) reloads only
 // what changed (e.g. after saving one agency) instead of re-downloading all vacancies.
 async function loadAll(scope){
@@ -1594,7 +1566,6 @@ async function loadAll(scope){
       throw new Error('Could not read ' + Object.keys(auxErrors).map(function(k){ return k + ' (' + auxErrors[k] + ')'; }).join('; '));
     }
   }));
-  if(has('settings')) jobs.push(loadSettings().catch(function(e){ console.error('settings load', e); }));
   await Promise.all(jobs);
   if(['agencies','branches','employers','vacancies'].some(has)) saveAdminDirectoryCache();
   // Destructive expiry cleanup is intentionally not run during console startup.
@@ -1625,7 +1596,7 @@ var NAV = [
   { id:'posters', label:'Vacancy Posters', tile:'hc-tile-pink', sub:'Upload & edit recruitment-ad posters', icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
   { id:'houseads', label:'House Ads', tile:'hc-tile-teal', sub:'Create & schedule your own banners', icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5V3M16 5V3"/>' },
   { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
-  { id:'poolcandidates', label:'Talent Pool', tile:'hc-tile-blue', sub:'CV uploads & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
+  { id:'poolcandidates', label:'CV Box', tile:'hc-tile-blue', sub:'CV uploads & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
   { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
   { id:'media', label:'Media', tile:'hc-tile-pink', sub:'YouTube video & Track of the Day', icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/>' },
   { id:'content', label:'Content', tile:'hc-tile-teal', sub:'FAQ, guides & articles', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' }
@@ -1681,7 +1652,7 @@ function goSection(id){
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
   if(id==='media'){ renderDailyTracks(); loadMediaYoutubeUrl(); }
-  if(id==='settings'){ updatePostingUI(); updateEmployerRegUI(); loadPoolBankingDetails(); loadSocialLinksSettings(); }
+  if(id==='settings'){ loadSocialLinksSettings(); }
   if(id==='poolcandidates') renderPoolCandidates();
   window.scrollTo(0,0);
 }
@@ -1708,7 +1679,7 @@ function renderDashboard(){
     tile('aux', cache.reports.length, 'Reports', 'Reports ('+openReports+' open)'),
     tile('aux', cache.suggestions.length, 'Suggestions'),
     tile('aux', cache.tracks.length, 'Media tracks'),
-    tile('aux', cache.poolCandidates.length, 'Talent Pool', 'Talent Pool ('+poolPending+' pending)')
+    tile('aux', cache.poolCandidates.length, 'CV Box', 'CV Box ('+poolPending+' pending)')
   ];
   document.getElementById('stats-grid').innerHTML = stats.map(function(s){
     return '<div class="stat'+(s.bad?' bad':'')+'"'+(s.bad?' onclick="retryLoad()" title="Tap to retry"':'')+'><div class="v">'+s.v+'</div><div class="l">'+s.l+'</div></div>';
@@ -1924,7 +1895,7 @@ async function propagateCompanyPhoto(company, photoUrl){
   if(result.error) console.error('company photo propagate', result.error);
   else if(result.data && result.data.length) await writeThroughD1Mirror('vacancies', result.data);
 }
-// Talent Pool candidate photos go into the same Supabase Storage bucket the
+// CV Box candidate photos go into the same Supabase Storage bucket the
 // public registration form uses, so admin-added/edited photos don't eat
 // into the 500MB database cap either — only the resulting URL is stored.
 var pendingPoolAdminPhotoBlob = null;
@@ -2720,10 +2691,10 @@ async function deleteVacancy(id){
   if (document.getElementById('sec-employers').classList.contains('active')) renderEmployers();
 }
 
-// ===== Talent Pool =====
+// ===== CV Box =====
 var poolTab = 'pending';
 var editingPool = null;
-var editingSeeker = null;   // set while a job-seeker request is being converted to a Talent Pool profile
+var editingSeeker = null;   // set while a job-seeker request is being converted to a CV Box profile
 function poolCandidateById(id){ return cache.poolCandidates.find(function(p){return p.id===id;}); }
 function switchPoolTab(tab){
   poolTab = tab;
@@ -2883,7 +2854,7 @@ async function approvePoolCandidate(id){
   var oneYear = new Date(); oneYear.setFullYear(oneYear.getFullYear()+1);
   var saved = await upsertPoolCandidate({ id:id, status:'active', paid_until: oneYear.toISOString() });
   if(!saved){ showToast('Could not approve candidate — save failed. Please retry.'); return; }
-  showToast('Approved — now live in the public Talent Pool');
+  showToast('Approved — now live in the public CV Box');
   await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 async function rejectPoolCandidate(id){
@@ -2893,7 +2864,7 @@ async function rejectPoolCandidate(id){
   await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
 }
 async function expirePoolCandidate(id){
-  if(!confirm('Mark this candidate as expired? They will be removed from the public Talent Pool.')) return;
+  if(!confirm('Mark this candidate as expired? They will be removed from the public CV Box.')) return;
   await upsertPoolCandidate({ id:id, status:'expired' });
   showToast('Marked expired');
   await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
@@ -3020,7 +2991,7 @@ function renderJobSeekersList(){
       cv ? '<a class="minibtn" target="_blank" rel="noopener" href="'+escapeHtml(cv)+'" onclick="stopProp(event)">View CV</a>' : ''
     ].join('');
     return '<div class="row-item sub-item"><div class="row-main">'+
-      '<div class="row-title">'+escapeHtml(j.full_name||'Unnamed')+' <span class="badge '+badgeCls+'">'+(st==='added'?'in talent pool':st)+'</span>'+(j.work_status==='work_visa'?' <span class="badge verified">Work visa</span>':'')+'</div>'+
+      '<div class="row-title">'+escapeHtml(j.full_name||'Unnamed')+' <span class="badge '+badgeCls+'">'+(st==='added'?'in CV Box':st)+'</span>'+(j.work_status==='work_visa'?' <span class="badge verified">Work visa</span>':'')+'</div>'+
       '<div class="row-sub" style="white-space:normal"><strong>Looking for:</strong> '+escapeHtml(j.looking_for||'—')+'</div>'+
       '<div class="row-sub" style="white-space:normal">'+[
         j.location?escapeHtml(j.location):'', j.qualification?escapeHtml(j.qualification):'',
@@ -3031,7 +3002,7 @@ function renderJobSeekersList(){
       '<div class="muted" style="margin-top:3px">'+fmtDate(j.created_at)+'</div>'+
       (contactLinks?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'+contactLinks+'</div>':'')+
     '</div><div class="row-actions">'+
-      (st!=='added'?'<button class="minibtn ok" onclick="seekerToTalentPool(\''+id+'\')">Add to Talent Pool</button>':'')+
+      (st!=='added'?'<button class="minibtn ok" onclick="seekerToTalentPool(\''+id+'\')">Add to CV Box</button>':'')+
       (st==='new'?'<button class="minibtn" onclick="setSeekerStatus(\''+id+'\',\'contacted\')">Mark contacted</button>':'')+
       ((st==='new'||st==='contacted')?'<button class="minibtn" onclick="setSeekerStatus(\''+id+'\',\'closed\')">Close</button>':'')+
       ((st==='closed'||st==='contacted')?'<button class="minibtn" onclick="setSeekerStatus(\''+id+'\',\'new\')">Reopen</button>':'')+
@@ -3052,7 +3023,7 @@ async function delSeeker(id){
   catch(e){ console.error('job seeker delete',e); alert('Could not delete this request: '+(e.message||'check your connection')); return; }
   dropFromCache('jobSeekers', id); showToast('Request deleted'); refreshSubmissionsUI();
 }
-// Convert -> opens the normal Talent Pool sheet prefilled. The request is only
+// Convert -> opens the normal CV Box sheet prefilled. The request is only
 // marked "added" once the candidate is really saved (see linkSeekerToPool).
 // Only fields that are safe to show publicly are prefilled as profile data;
 // the free-text message goes to INTERNAL admin notes, never the public bio.
@@ -3060,7 +3031,7 @@ function seekerToTalentPool(id){
   var j = seekerById(id); if(!j) return;
   openPoolSheet(null);                          // resets editingPool / editingSeeker
   editingSeeker = String(j.id);
-  document.getElementById('pool-sheet-title').textContent = 'Add to Talent Pool';
+  document.getElementById('pool-sheet-title').textContent = 'Add to CV Box';
   document.getElementById('pc-name').value = j.full_name || '';
   document.getElementById('pc-phone').value = j.phone || '';
   document.getElementById('pc-email').value = j.email || '';
@@ -3179,26 +3150,6 @@ async function saveJobEnquiryEdit(){
   closeSheet('job-enquiry-overlay'); renderSubmissions(); renderNav(); showToast('Job enquiry updated');
 }
 // ===== Settings =====
-async function loadPoolBankingDetails(){
-  var raw = await getAppSetting('pool_banking_details','');
-  var d = { account_name:'SA Recruiters', bank:'', account_number:'', branch_code:'' };
-  if(raw){ try{ Object.assign(d, JSON.parse(raw)); }catch(e){} }
-  document.getElementById('bank-account-name').value = d.account_name || '';
-  document.getElementById('bank-name').value = d.bank || '';
-  document.getElementById('bank-account-number').value = d.account_number || '';
-  document.getElementById('bank-branch-code').value = d.branch_code || '';
-}
-async function savePoolBankingDetails(){
-  var d = {
-    account_name: document.getElementById('bank-account-name').value.trim() || 'SA Recruiters',
-    bank: document.getElementById('bank-name').value.trim(),
-    account_number: document.getElementById('bank-account-number').value.trim(),
-    branch_code: document.getElementById('bank-branch-code').value.trim()
-  };
-  var ok = await setAppSetting('pool_banking_details', JSON.stringify(d));
-  if(ok) showToast('Banking details saved');
-  else alert('Could not save banking details. Check your Supabase app_settings table.');
-}
 async function loadSocialLinksSettings(){
   var raw = await getAppSetting('social_links','');
   var d = { facebook:'', instagram:'', whatsapp:'', x:'' };
@@ -3243,34 +3194,6 @@ async function saveMediaYoutubeUrl(){
   if(ok) showToast('Media video saved — it will appear on the Home screen.');
   else alert('Could not save the media video. Check your Supabase app_settings table.');
 }
-function updatePostingUI(){
-  var t = document.getElementById('posting-toggle'); if(t) t.checked = !!publicVacancyPostingOpen;
-  var sub = document.getElementById('posting-sub'); if(sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
-}
-async function togglePosting(checked){
-  var ok = await setAppSetting('public_vacancy_posting', checked?'true':'false');
-  if(ok){ publicVacancyPostingOpen = checked; updatePostingUI(); showToast(checked?'Vacancy posting opened':'Vacancy posting locked'); }
-  else { updatePostingUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
-}
-function updateEmployerRegUI(){
-  var t = document.getElementById('emp-reg-toggle'); if(t) t.checked = !!publicEmployerRegistrationOpen;
-  var sub = document.getElementById('emp-reg-sub'); if(sub) sub.textContent = publicEmployerRegistrationOpen ? 'Open — anyone can register a company right now' : 'Closed — spam protected';
-}
-async function toggleEmployerReg(checked){
-  var ok = await setAppSetting('public_employer_registration', checked?'true':'false');
-  if(ok){ publicEmployerRegistrationOpen = checked; updateEmployerRegUI(); showToast(checked?'Employer registration opened':'Employer registration locked'); }
-  else { updateEmployerRegUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
-}
-function updateEmployerDirectoryUI(){
-  var t = document.getElementById('emp-dir-toggle'); if(t) t.checked = !!employerDirectoryOpen;
-  var sub = document.getElementById('emp-dir-sub'); if(sub) sub.textContent = employerDirectoryOpen ? 'Open — all users can browse employers and employer vacancies' : 'Closed — Talent Pool registration required';
-}
-async function toggleEmployerDirectory(checked){
-  var ok = await setAppSetting('public_employer_directory', checked?'true':'false');
-  if(ok){ employerDirectoryOpen = checked; updateEmployerDirectoryUI(); showToast(checked?'Employer Directory opened':'Employer Directory locked to Talent Pool members'); }
-  else { updateEmployerDirectoryUI(); alert('Could not update setting. Check your Supabase app_settings table.'); }
-}
-
 // ===== Content =====
 function sectionMeta(){ try{ return window.SECTION_META || {}; }catch(e){ return {}; } }
 function cm(){ return (typeof ContentManager !== 'undefined' && ContentManager) ? ContentManager : (typeof ContentMgr !== 'undefined' ? ContentMgr : null); }
@@ -3343,7 +3266,7 @@ function restoreDefaults(){
 }
 
 // ===== Daily Track management =====
-// var BUCKET = 'daily-tracks'; // no longer used — files now live in R2 under daily-tracks/
+// MP3 bytes are stored in Cloudflare R2; Supabase daily_tracks stores metadata.
 var TRACK_RETENTION_DAYS = 7;
 var editingTrackId = null;
 var trackFileChosen = null;   // File object chosen in the sheet
@@ -3358,19 +3281,22 @@ function fmtTrackDate(d){
 function renderDailyTracks(){
   var el = document.getElementById('track-list');
   if(!el) return;
-  // Show setup warning if the table appears empty AND there might be a setup issue
   var warn = document.getElementById('track-setup-warn');
   if(warn){
-    // Detect if the daily_tracks table is missing: we check via the cache length + a flag
     if(cache.tracks.length === 0 && window._tracksTableMissing){
       warn.style.display = 'block';
-      warn.innerHTML = '<strong>Setup needed:</strong> The <code>daily_tracks</code> table or the <code>daily-tracks</code> storage bucket hasn\'t been created yet. Run <code>CREATE_DAILY_TRACKS.sql</code> in the Supabase SQL Editor, then reload this page.';
+      warn.innerHTML = '<strong>Setup needed:</strong> Supabase could not find the <code>public.daily_tracks</code> table. Check that the Track of the Day database migration has been applied.';
+    } else if(cache.tracks.length === 0 && window._tracksLoadError){
+      warn.style.display = 'block';
+      warn.innerHTML = '<strong>Could not load track details from Supabase:</strong> ' + escapeHtml(window._tracksLoadError) + ' Sign in with an authorized admin account and retry.';
     } else {
       warn.style.display = 'none';
     }
   }
   if(!cache.tracks.length){
-    el.innerHTML = emptyState('No tracks yet', 'Click "Upload track" to add an MP3 for the Track of the Day.');
+    el.innerHTML = window._tracksLoadError
+      ? emptyState('Could not load tracks', 'Supabase daily_tracks read failed: ' + window._tracksLoadError)
+      : emptyState('No tracks yet', 'Click "Upload track" to add an MP3 for the Track of the Day.');
     return;
   }
   el.innerHTML = cache.tracks.map(function(t){
@@ -3489,6 +3415,7 @@ async function saveTrack(){
   var date = document.getElementById('t-date').value;
   if(!title){ alert('Please enter a track title.'); return; }
   if(!date){ alert('Please pick a date.'); return; }
+  if(trackFileChosen && trackFileChosen.size > 25 * 1024 * 1024){ alert('The MP3 must be 25 MB or smaller.'); return; }
 
   var isEditing = !!editingTrackId;
   var existing = isEditing ? cache.tracks.find(function(x){ return x.id === editingTrackId; }) : null;
@@ -3502,31 +3429,51 @@ async function saveTrack(){
   saveBtn.disabled = true;
   var prog = document.getElementById('t-progress');
   prog.style.display = 'block';
-  prog.textContent = 'Uploading…';
+  prog.textContent = trackFileChosen ? 'Uploading audio to Cloudflare R2…' : 'Saving track metadata to Supabase…';
+  var uploadedPath = '';
+  async function rollbackPendingUpload(){
+    if(!uploadedPath) return '';
+    var pendingPath = uploadedPath;
+    uploadedPath = '';
+    return await deleteR2Object(pendingPath)
+      ? '\nThe uncommitted MP3 was removed from Cloudflare R2.'
+      : '\nCloudflare R2 cleanup could not be confirmed; the MP3 may remain there.';
+  }
 
   try {
     var id = editingTrackId || (Date.now().toString(36) + Math.random().toString(36).slice(2));
     var filePath = '';
     var fileUrl = '';
 
-    // Upload file to storage if a new file was chosen
+    // Audio bytes go to R2; only the metadata row is written to Supabase.
     if(trackFileChosen){
       var ext = (trackFileChosen.name.match(/\.(\w+)$/) || [,'mp3'])[1];
       var authHdr = await r2AuthHeader();
+      if(!authHdr.Authorization) throw new Error('Your admin session has expired. Sign in again before uploading audio.');
+      uploadedPath = 'daily-tracks/' + id + '.' + ext;
       var upRes = await fetch(R2_WORKER_URL + '/api/upload/daily-track?id=' + encodeURIComponent(id) + '&ext=' + encodeURIComponent(ext), {
         method: 'POST',
         headers: Object.assign({ 'Content-Type': trackFileChosen.type || 'audio/mpeg' }, authHdr),
         body: trackFileChosen
       });
-      var upData = await upRes.json();
+      var upData = await upRes.json().catch(function(){ return null; });
       if(!upRes.ok){
+        var uploadCleanup = await rollbackPendingUpload();
         prog.style.display = 'none';
         saveBtn.disabled = false;
-        alert('Upload failed: ' + (upData && upData.error || 'Could not upload file'));
+        alert('Audio upload to Cloudflare R2 failed (HTTP ' + upRes.status + '): ' + (upData && upData.error || 'Could not upload file') + uploadCleanup);
+        return;
+      }
+      if(!upData || !upData.key || !upData.url){
+        var responseCleanup = await rollbackPendingUpload();
+        prog.style.display = 'none';
+        saveBtn.disabled = false;
+        alert('Cloudflare R2 returned an incomplete upload response.' + responseCleanup);
         return;
       }
       filePath = upData.key;
       fileUrl = upData.url;
+      uploadedPath = filePath;
     } else if(isEditing && existing) {
       // Keep the existing MP3 when no replacement was selected.
       filePath = existing.file_path || '';
@@ -3537,7 +3484,7 @@ async function saveTrack(){
       fileUrl = '';
     }
 
-    prog.textContent = 'Saving details…';
+    prog.textContent = 'Saving track metadata to Supabase…';
     var row = {
       id: id,
       title: title,
@@ -3547,13 +3494,15 @@ async function saveTrack(){
       file_path: filePath,
       spotify_url: spotifyUrl
     };
-    var dbRes = await supabaseClient.from('daily_tracks').upsert(row);
+    var dbRes = await supabaseClient.from('daily_tracks').upsert(row).select('id').single();
     if(dbRes.error){
+      var dbCleanup = await rollbackPendingUpload();
       prog.style.display = 'none';
       saveBtn.disabled = false;
-      alert('Could not save track: ' + (dbRes.error.message || 'Database error') + '\n\nMake sure the daily_tracks table exists. Run CREATE_DAILY_TRACKS.sql in Supabase.');
+      alert('Supabase could not save the track metadata: ' + (dbRes.error.message || 'Database error') + '\n\nWrites require a signed-in account listed in public.admin_users.' + dbCleanup);
       return;
     }
+    uploadedPath = '';
 
     // If editing and we uploaded a new file, optionally delete the old file
     if(isEditing && existing && existing.file_path && existing.file_path !== filePath){
@@ -3567,11 +3516,12 @@ async function saveTrack(){
     closeSheet('track-overlay');
     saveBtn.disabled = false;
     prog.style.display = 'none';
-    showToast(isEditing ? 'Track updated' : 'Track uploaded');
+    showToast(window._tracksLoadError ? 'Track saved; list refresh failed' : (isEditing ? 'Track updated' : 'Track uploaded'));
   } catch(e){
+    var catchCleanup = await rollbackPendingUpload();
     prog.style.display = 'none';
     saveBtn.disabled = false;
-    alert('Something went wrong: ' + (e.message || e));
+    alert('Track save failed: ' + (e.message || e) + catchCleanup);
   }
 }
 

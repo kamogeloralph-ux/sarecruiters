@@ -174,7 +174,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .poster-cta-heading{padding:14px 16px 8px}.poster-cta-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--accent);margin-bottom:5px}.poster-cta-heading h2{margin:0;font-size:18px;letter-spacing:-.02em;color:var(--text)}.poster-cta-heading p{margin:5px 0 0;color:var(--text-2);font-size:12.5px;line-height:1.4}
 .poster-deck{padding:0 14px 10px;display:flex;flex-direction:column}.poster-page-card{margin:0;border-radius:16px}.poster-page-card img{display:block;width:100%;height:150px;max-height:150px;object-fit:contain;background:var(--card-2)}.home-featured-poster-card{position:relative;width:100%;padding:0;border:0;overflow:hidden;cursor:pointer;background:var(--card-2);text-align:left}.home-featured-poster-card img{height:190px;max-height:260px;object-fit:contain}.home-featured-poster-card:active{transform:scale(.99)}.poster-empty{height:150px;display:grid;place-items:center;padding:20px;border:1px dashed var(--border-strong);border-radius:16px;color:var(--text-2);font-size:13px;text-align:center;box-sizing:border-box}@media(min-width:620px){.poster-page-card img,.poster-empty{height:190px;max-height:190px}}
 
-/* Home screen candidate spotlight — square Talent Pool photos in a swipeable strip */
+/* Home screen candidate spotlight — square CV Box photos in a swipeable strip */
 .spotlight-deck{padding:2px 14px 14px;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}.spotlight-deck::-webkit-scrollbar{display:none}
 .spotlight-card{flex:0 0 auto;width:118px;scroll-snap-align:start;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:14px;background:var(--card-2);overflow:hidden;text-align:left;padding:0;cursor:pointer;transition:transform .15s var(--ease)}
 .spotlight-card:active{transform:scale(.96)}
@@ -329,7 +329,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .hub-contact-preferred svg{width:12px;height:12px}
 /* Compact "Label: value" contact rows — same neat, low-space layout as admin.html.
    Standardized app-wide: bold black label (the question), grey value (the answer) —
-   used by agency/branch/employer contact rows (.det-plain) and Talent Pool cards (.pool-mini-details). */
+   used by agency/branch/employer contact rows (.det-plain) and CV Box cards (.pool-mini-details). */
 .det-plain{padding:2px 2px 6px;font-size:13px;line-height:1.6}
 .det-row{word-break:break-word;overflow-wrap:break-word;color:var(--text-2);margin-bottom:5px}
 .det-row:last-child{margin-bottom:0}
@@ -477,7 +477,8 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .contact-row:active{background:var(--card-2)}
 .contact-row-static{cursor:default}
 .contact-label{font-size:12px;color:var(--text-2);flex-shrink:0}
-.contact-value{font-size:13px;font-weight:600;color:var(--badge-text);text-align:right;word-break:break-word}
+.contact-value{font-size:13px;font-weight:600;color:var(--text);text-align:right;word-break:break-word}
+.contact-row:not(.contact-row-static) .contact-value{color:var(--accent)}
 
 /* ===== iOS-STYLE GROUPED PROFILE MENU ===== */
 .profile-card-ios{margin:8px 0 4px;text-align:center;padding:8px 0}
@@ -678,7 +679,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .navbtn-label{font-size:9.5px;font-weight:600}
 
 .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:60}
-/* Talent Pool / Employer registration sheets can be opened straight from the
+/* CV Box / Employer registration sheets can be opened straight from the
    sign-in gate (before Google auth resolves) or forced open as the
    mandatory post-sign-in profile step — in both cases the gate curtain
    (z-index 100000) is still in the DOM, so these sheets need to render
@@ -695,7 +696,7 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
 .admin-warning strong{color:var(--text)}
 /* ================================================================
    UNIFIED FORM FIELDS — every fill-up form (agency, employer, vacancy,
-   Talent Pool, reports, suggestions, CV builder, notes) shares this one
+   CV Box, reports, suggestions, CV builder, notes) shares this one
    surface: bold label, tall rounded input, accent focus ring and a
    standard helper-note style, matching the reference design.
    ================================================================ */
@@ -711,7 +712,7 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
 .field .helper-note,.helper-note{display:block;font-size:11.5px;color:var(--text-2);margin-top:6px;line-height:1.5}
 
 /* ================================================================
-   TALENT POOL SHEET — quick-join layout: required basics grouped into
+   CV BOX SHEET — quick-join layout: required basics grouped into
    numbered cards up top, optional Mini-CV extras tucked into a collapsible
    section so joining feels like a 1-minute step, not a long application.
    ================================================================ */
@@ -764,7 +765,7 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
    hub-add-btn, sm-copy-btn) are mapped onto these styles so every
    existing call site inherits the same look without markup changes.
    ================================================================ */
-.btn-primary,.sheet-submit,.manager-add-btn,.access-lock-sheet .sheet-submit{width:100%;min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--accent) 0%,color-mix(in srgb,var(--accent) 76%,#000) 100%);color: var(--m-on-ink);border:none;padding:14px 18px;border-radius:14px;font-size:15px;font-weight:800;letter-spacing:-.01em;margin-top:6px;box-shadow:0 10px 22px -10px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .18s var(--ease),filter .18s,box-shadow .18s}
+.btn-primary,.sheet-submit,.manager-add-btn{width:100%;min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--accent) 0%,color-mix(in srgb,var(--accent) 76%,#000) 100%);color: var(--m-on-ink);border:none;padding:14px 18px;border-radius:14px;font-size:15px;font-weight:800;letter-spacing:-.01em;margin-top:6px;box-shadow:0 10px 22px -10px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .18s var(--ease),filter .18s,box-shadow .18s}
 .btn-primary svg,.sheet-submit svg,.manager-add-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .btn-primary:active,.sheet-submit:active,.manager-add-btn:active{transform:scale(.98);filter:brightness(1.06)}
 .btn-primary:disabled,.sheet-submit:disabled,.manager-add-btn:disabled{opacity:.55;transform:none;filter:none;box-shadow:none;cursor:wait}
@@ -925,14 +926,14 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
 .contact-card-icon{width:28px;height:28px;color:var(--text-2)}
 .contact-card-icon svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-/* Talent Pool email-alert consent */
+/* CV Box email-alert consent */
 .alert-optin-row{display:flex;align-items:flex-start;gap:10px;margin:14px 0 16px;padding:12px 13px;border:1px solid var(--border);border-radius:14px;background:var(--card-2);color:var(--text);font-size:13px;line-height:1.35;cursor:pointer}
 .alert-optin-row input{width:18px;height:18px;accent-color:var(--accent);margin:1px 0 0;flex:none}
 .alert-optin-row span{display:flex;flex-direction:column;gap:4px}
 .alert-optin-row strong{font-weight:700}
 .alert-optin-row small{font-size:11.5px;color:var(--text-2);line-height:1.45}
 
-/* Visible Talent Pool email-alert block */
+/* Visible CV Box email-alert block */
 .field-optional{font-size:10px;font-weight:500;color:var(--accent);text-transform:none;letter-spacing:0}
 .alert-optin-card{margin:4px 0 16px;padding:12px 12px 2px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));border-radius:16px;background:var(--accent-soft);box-shadow:0 4px 14px rgba(0,0,0,0.08)}
 .alert-optin-title{display:flex;align-items:center;gap:7px;color:var(--accent);font-size:13px;font-weight:800;margin:0 2px 2px}
@@ -942,21 +943,6 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
 .alert-optin-card .alert-optin-row strong{font-size:13px}
 .alert-optin-card .alert-optin-row small{font-size:11.5px}
 @supports not (color:color-mix(in srgb, black, white)){.alert-optin-card{border-color:var(--border-strong)}}
-
-/* Employer Directory access gate */
-.access-lock-sheet{text-align:center;padding-top:18px}
-.access-lock-icon{width:54px;height:54px;margin:4px auto 12px;border-radius:18px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
-.access-lock-icon svg{width:27px;height:27px}
-.access-lock-sheet h3{margin:0 0 10px;font-size:21px}
-.access-lock-copy{max-width:360px;margin:0 auto 10px;color:var(--text-2);font-size:14px;line-height:1.5}
-.access-lock-sheet .sheet-submit{margin-top:16px}
-.vac-card-locked{cursor:pointer}
-.vac-card-locked .vac-card-side .chevron{opacity:.45}
-
-.access-verify-fields{display:grid;gap:10px;text-align:left;max-width:360px;margin:14px auto 0}
-.access-verify-fields label{font-size:12px;font-weight:700;color:var(--text-2)}
-.access-verify-fields input{display:block;width:100%;margin-top:5px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface-2);color:var(--text);font:inherit;box-sizing:border-box}
-.access-register-link{display:block;margin:12px auto 0;border:0;background:none;color:var(--accent);font-weight:700;font:inherit;cursor:pointer}
 
 /* Compact home directory mode: keeps five agency cards visible on common mobile heights. */
 @media (max-width:520px){
@@ -970,7 +956,7 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
 }
 
 
-/* Talent Pool mini-CV */
+/* CV Box mini-CV */
 .mini-cv-heading{margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 .char-counter{display:block;text-align:right;margin-top:4px;color:var(--text-2);font-size:11px}
 .pool-mini-card{position:relative;cursor:pointer;padding-right:40px}
@@ -987,17 +973,17 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
 @media (max-width:520px){.pool-mini-card{padding-right:38px}.pool-mini-card .row-chevron{right:12px}}
 
 
-/* Public Talent Pool mini-CV cards: closed until tapped */
+/* Public CV Box mini-CV cards: closed until tapped */
 .pool-mini-card .pool-mini-details{display:none}
 .pool-mini-card.expanded .pool-mini-details{display:block}
 .pool-mini-card.expanded .row-chevron svg{transform:rotate(180deg)}
 
 
-/* Collapsed Talent Pool summary emphasis */
+/* Collapsed CV Box summary emphasis */
 .pool-mini-card > .manager-item-sub{color:var(--text);font-weight:600}
 
 
-/* Public Talent Pool CV action */
+/* Public CV Box CV action */
 .pool-cv-row{margin-top:10px}
 .pool-cv-link{display:inline-flex;align-items:center;gap:5px;color:var(--accent);font-weight:800;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 .pool-cv-link:hover{color:var(--accent-strong,var(--accent))}
@@ -1926,6 +1912,8 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 /* Approved Rolaz house-ad motion: subtle glow, spark, and tester flicker. */
 .house-ad-creative{position:relative;width:100%;aspect-ratio:1200 / 400;overflow:hidden;background:#fff}
 .house-ad-creative>img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
+.house-ad-creative--ikhaya{aspect-ratio:1640 / 624;background:#08080a}
+.house-ad-creative--ikhaya>img{background:#08080a}
 .house-ad-bulb-glow{position:absolute;left:66.8%;top:43%;width:19%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,var(--card-3) 0 8%,var(--m-wash-2) 23%,var(--m-wash) 48%,transparent 72%);transform:translate(-50%,-50%) scale(.75);mix-blend-mode:screen;animation:houseAdBulbGlow 2.2s ease-in-out infinite;pointer-events:none}
 .house-ad-bulb-core{position:absolute;left:66.8%;top:43%;width:4.5%;aspect-ratio:1;border-radius:50%;background:var(--card-3);filter:blur(6px);transform:translate(-50%,-50%);animation:houseAdCorePulse 1.15s ease-in-out infinite;pointer-events:none}
 .house-ad-spark{position:absolute;left:69.9%;top:35%;width:3.2%;aspect-ratio:1;border:2px solid var(--border);border-radius:50%;filter:drop-shadow(0 0 5px rgba(0,0,0,0.55));opacity:0;animation:houseAdSparkFlash 2.8s steps(1,end) infinite;pointer-events:none}
@@ -2584,7 +2572,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #screen-home .hf-sponsor-note a{color:var(--accent);font-weight:800;text-decoration:none;white-space:nowrap}
 @media(max-width:390px){#screen-home .hf-sponsor-note{align-items:flex-start;flex-direction:column;gap:3px}#screen-home .hf-sponsor-note a{align-self:flex-end}}
 
-/* Talent Pool candidate hierarchy: identity first, then role, location and action. */
+/* CV Box candidate hierarchy: identity first, then role, location and action. */
 .spotlight-card{width:164px;min-width:164px;border-radius:16px;background:var(--card);border-color:color-mix(in srgb,var(--accent) 18%,var(--border));box-shadow:0 6px 16px rgba(0,0,0,0.08)}
 .spotlight-photo{width:164px;height:116px;background:var(--card-2)}
 .spotlight-copy{gap:3px;padding:10px 11px 12px}
@@ -2703,3 +2691,44 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .cv-payment-logo-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 12px}
 .cv-payment-logo{display:block;width:auto;height:24px;max-width:54px;object-fit:contain}
 .cv-payment-logo--yoco{width:62px;height:auto;max-width:62px}
+
+/* Guest Profile polish: consistent card geometry and clear actions in both themes. */
+#screen-account .account-hero,
+#screen-account .account-signin-card,
+#screen-account .account-quota-card{
+  box-sizing:border-box;
+  width:min(100%,420px);
+  margin:10px auto 4px;
+  border-radius:16px!important;
+}
+#screen-account .account-hero{
+  border:1px solid var(--border)!important;
+  box-shadow:0 8px 20px rgba(0,0,0,.045)!important;
+}
+#screen-account .account-signin-card,
+#screen-account .account-quota-card{
+  padding:14px;
+  border:1px solid var(--border)!important;
+  background:var(--card)!important;
+  box-shadow:0 8px 20px rgba(0,0,0,.045)!important;
+}
+[data-theme="dark"] #screen-account .account-hero,
+[data-theme="dark"] #screen-account .account-signin-card,
+[data-theme="dark"] #screen-account .account-quota-card{box-shadow:0 8px 20px rgba(0,0,0,.18)!important}
+#screen-account .account-signin-card .gsi-material-button{border-radius:13px!important}
+#screen-account .account-signin-card .gsi-material-button:disabled{cursor:wait;opacity:.78}
+#screen-account .account-signin-card .gsi-material-button:disabled .gsi-material-button-contents{opacity:1!important;color:var(--text)!important}
+#screen-account .account-avatar.account-avatar-btn:disabled{cursor:default;opacity:1}
+#screen-account .account-avatar.account-avatar-btn:disabled::after{display:none}
+#screen-account .account-avatar.account-avatar-btn:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:3px}
+#screen-account .account-signin-status{min-height:0;margin:8px 0 0;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,var(--card));color:var(--text-2);font-size:12px;line-height:1.45;text-align:center}
+#screen-account .account-signin-status:empty{display:none}
+#screen-account .account-signin-status:not(:empty){border:1px solid color-mix(in srgb,var(--accent) 18%,var(--border))}
+.account-help-action{display:flex;align-items:center;gap:12px;width:min(100%,420px);min-height:68px;margin:12px auto 4px;padding:12px 14px;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--text);text-align:left;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.035);font:inherit}
+.account-help-action:active{transform:scale(.99)}
+.account-help-icon{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-weight:900;font-size:18px}
+.account-help-action>span:nth-child(2){display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.account-help-action strong{font-size:13px;font-weight:800}
+.account-help-action small{color:var(--text-2);font-size:11.5px;line-height:1.4}
+.account-help-arrow{color:var(--accent);font-size:22px;font-weight:700}
+#account-settings-label[hidden],#account-signout-label[hidden]{display:none!important}

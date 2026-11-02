@@ -9,8 +9,8 @@
  * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
-import { R2_WORKER_URL, STARTUP_DATA_URL, STATIC_DATA_URL, agenciesCache, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyNextCursor, dedicatedVacancyPageSize, employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyNextCursor, generalVacancyPageSize, initials, isAdmin, managerMode, managerPendingToken, publicVacancyPostingOpen, rebuildPublicListingSlugs, set_agenciesCache, set_branchesCache, set_dedicatedVacancyCounts, set_dedicatedVacancyCountsLoaded, set_dedicatedVacancyNextCursor, set_employerDirectoryOpen, set_employerManagerPendingToken, set_employersCache, set_generalVacancyCount, set_generalVacancyCountLoaded, set_generalVacancyNextCursor, set_managerPendingToken, set_publicEmployerRegistrationOpen, set_publicVacancyPostingOpen, set_staticVacanciesCache, set_vacanciesCache, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
-import { autoClaimGateRegistration, filterAndRenderCached, loadPosterFeed, restoreTalentPoolMembership, verifiedBadge } from './app-cards.js';
+import { R2_WORKER_URL, STARTUP_DATA_URL, STATIC_DATA_URL, agenciesCache, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyNextCursor, dedicatedVacancyPageSize, employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyNextCursor, generalVacancyPageSize, initials, isAdmin, managerMode, managerPendingToken, rebuildPublicListingSlugs, set_agenciesCache, set_branchesCache, set_dedicatedVacancyCounts, set_dedicatedVacancyCountsLoaded, set_dedicatedVacancyNextCursor, set_employerManagerPendingToken, set_employersCache, set_generalVacancyCount, set_generalVacancyCountLoaded, set_generalVacancyNextCursor, set_managerPendingToken, set_staticVacanciesCache, set_vacanciesCache, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
+import { filterAndRenderCached, loadPosterFeed, verifiedBadge } from './app-cards.js';
 import { getPoolCandidateCount, openPostJobSheet, poolCache, poolCandidateCount, poolLoaded, set_poolCandidateCount } from './app-sheets.js';
 import { renderRestoredScreenContent, setRetryBanner, showToast, vacancyOverviewExtraRows } from './app-ui.js';
 import { enterManagerMode, renderManagerMode, renderSmartManager } from './app-manager.js';
@@ -163,12 +163,17 @@ export function renderHouseAdSlot(targetId, placement, slot) {
   var targetUrl = ad && safeHouseAdUrl(ad.target_url);
   if (!ad || !imageUrl || !targetUrl) { target.hidden = true; target.innerHTML = ''; return; }
   target.hidden = false;
-  var isRolazAd = /rolaz/i.test(String(ad.advertiser_name || '') + ' ' + String(ad.title || ''));
+  var adIdentity = String(ad.advertiser_name || '') + ' ' + String(ad.title || '');
+  var isRolazAd = /rolaz/i.test(adIdentity);
+  var isIkhayaAd = /ikhaya/i.test(adIdentity);
   var motionOverlay = isRolazAd ? '<span class="house-ad-bulb-glow" aria-hidden="true"></span><span class="house-ad-bulb-core" aria-hidden="true"></span><span class="house-ad-spark" aria-hidden="true"></span><span class="house-ad-tester-flicker" aria-hidden="true"></span>' : '';
+  var creativeClass = isIkhayaAd ? ' house-ad-creative--ikhaya' : '';
+  var imageWidth = isIkhayaAd ? 1640 : 1200;
+  var imageHeight = isIkhayaAd ? 624 : 400;
   target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
     '<div class="house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong></div>' +
-    '<div class="house-ad-creative">' +
-      '<img loading="lazy" decoding="async" width="1200" height="400" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
+    '<div class="house-ad-creative' + creativeClass + '">' +
+      '<img loading="lazy" decoding="async" width="' + imageWidth + '" height="' + imageHeight + '" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
       motionOverlay +
     '</div>' +
     '<div class="house-ad-message"><small><span class="house-ad-message-copy">' + escapeHtml(ad.message || ((ad.title || ad.advertiser_name || '').toLowerCase().includes('rolaz') ? 'Keeping your home brighter' : '')) + '</span><span class="house-ad-sponsored">Sponsored</span></small></div>' +
@@ -333,7 +338,7 @@ export async function removeBranch(id) {
   var arr = readLocal('branches').filter(function(x){ return x.id !== id; });
   writeLocal('branches', arr);
 }
-// ----- App settings (admin-controlled, e.g. public vacancy posting toggle) -----
+// ----- App settings used for public media and social links. -----
 export async function getAppSetting(key, fallback) {
   try {
     var startup = await getStartupData();
@@ -350,21 +355,7 @@ export async function setAppSetting(key, value) {
     return true;
   } catch(e) { return false; }
 }
-export async function loadPostingSetting() {
-  var v = await getAppSetting('public_vacancy_posting', 'false');
-  set_publicVacancyPostingOpen( (v === true || v === 'true'));
-  updatePostingToggleUI();
-}
-export function updatePostingToggleUI() {
-  var input = document.getElementById('posting-toggle-input');
-  if (input) input.checked = !!publicVacancyPostingOpen;
-  var sub = document.getElementById('posting-toggle-sub');
-  if (sub) sub.textContent = publicVacancyPostingOpen ? 'Open — anyone can post right now' : 'Closed — spam protected';
-}
-export async function loadEmployerRegSetting() {
-  var v = await getAppSetting('public_employer_registration', 'false');
-  set_publicEmployerRegistrationOpen( (v === true || v === 'true'));
-}
+
 
 /* ===== Home Media ===== */
 export var DEFAULT_MEDIA_YOUTUBE_URL = 'https://youtu.be/HV64XG91tE4';
@@ -409,7 +400,7 @@ export async function loadMediaSetting() {
    Reads the newest track published within the seven-day retention window from
    the `daily_tracks` table (Supabase). This keeps an uploaded track available
    to visitors for at least seven days instead of showing it only on its upload
-   date. The audio file is served from the `daily-tracks` storage bucket. */
+   date. The audio file is served from Cloudflare R2; Supabase stores its metadata. */
 export var TRACKS_PUBLIC_BASE_URL = 'https://pub-911e4cd402674c6f85c747b12212772f.r2.dev';
 export var todayTrack = null;       // {id,title,artist,track_date,file_url,spotify_url}
 export var trackAudio = null;       // <audio> element
@@ -585,19 +576,9 @@ document.addEventListener('pause', function(e){
     updateTrackPlayButtons();
   }
 }, true);
-export async function togglePublicPosting(checked) {
-  var ok = await setAppSetting('public_vacancy_posting', checked ? 'true' : 'false');
-  if (ok) {
-    set_publicVacancyPostingOpen( checked);
-    showToast(checked ? 'Vacancy posting opened to the public' : 'Vacancy posting locked');
-  } else {
-    showToast('Could not update setting — try again');
-  }
-  updatePostingToggleUI();
-}
-// Self-service vacancy posting / employer registration is admin-gated (see
-// publicVacancyPostingOpen / publicEmployerRegistrationOpen above), but a
-// visitor should never just hit a WhatsApp-only wall for that — see
+
+// Direct vacancy posting and employer registration stay closed, but visitors
+// can still contact the team through the always-open form — see
 // openPostJobSheet() in app-sheets.js, which opens the always-open
 // "Post a job" enquiry form (post-job-overlay, FirstJobly-style lead form).
 // WhatsApp stays available as a secondary link inside that sheet.
@@ -1197,20 +1178,6 @@ export async function refreshSecondaryStartupData() {
   } catch(e) {}
 }
 
-// The Employer entry point on the sign-in gate (openEmployerGateSheet ->
-// openEmployerForm) is reachable BEFORE Google sign-in, so
-// publicEmployerRegistrationOpen can't wait for the normal loadAll(), which
-// only ever runs after auth resolves (see bootAuthenticatedApp). Fetch just
-// the public settings independently, immediately at page load — this is
-// the same public, version-aware /api/startup endpoint loadAll() itself uses.
-(function loadPreAuthEmployerRegFlag() {
-  getStartupData().then(function(startup) {
-    if (startup && startup.settings) {
-      set_publicEmployerRegistrationOpen( (startup.settings.public_employer_registration === true || startup.settings.public_employer_registration === 'true'));
-    }
-  }).catch(function(){});
-})();
-
 export var loadAllRequestId = 0;
 export async function loadAll(options) {
   var requestId = ++loadAllRequestId;
@@ -1237,36 +1204,15 @@ export async function loadAll(options) {
   if (authoritativeStartupVacancyTotal !== null) cachedVacancyTotal = authoritativeStartupVacancyTotal;
   var results = startup ? [
     startup.agencies, startup.branches, startup.vacancies, startup.employers,
-    // Prefer the worker's own counts.general (NULL-source rows + non-dedicated-
-    // source rows, matching exactly what the General Vacancies tab shows).
-    // The old (counts.vacancies - startup.vacancies.length) subtraction
-    // assumed startup.vacancies only ever held "matched" rows, but it
-    // actually also carries general-pool rows tagged with a scraper
-    // source_type (careerjunction/jobmail/graduates24/etc. — anything not in
-    // the worker's small "dedicated" list), which get filtered back out
-    // downstream by isGeneralDirectoryVacancy(). Once the general pool is
-    // mostly made of exactly those rows (as it is here), the subtraction
-    // collapses toward zero and the displayed total undercounts by roughly
-    // the size of the whole general pool. counts.general is computed
-    // directly server-side and isn't subject to that drift. Fall back to the
-    // old subtraction only for an older cached worker response that hasn't
-    // rolled counts.general out yet.
     typeof startup.counts.general === 'number'
       ? startup.counts.general
       : (typeof startup.counts.vacancies === 'number'
           ? Math.max(0, startup.counts.vacancies - startup.vacancies.length) : null),
-    startup.settings.public_vacancy_posting,
-    startup.settings.public_employer_registration,
-    startup.settings.public_employer_directory,
     typeof startup.counts.candidates === 'number' ? startup.counts.candidates : null,
     startup.counts.dedicated || null
   ] : await Promise.all([
     getAgencies(), getBranches(), getVacancies(), getEmployers(), getGeneralVacancyCount(),
-    getAppSetting('public_vacancy_posting', 'false'),
-    getAppSetting('public_employer_registration', 'false'),
-    getAppSetting('public_employer_directory', 'true'),
-    getPoolCandidateCount(),
-    getDedicatedVacancyCounts()
+    getPoolCandidateCount(), getDedicatedVacancyCounts()
   ]);
   // If a fetch failed, keep whatever was already on screen (last good cache)
   // instead of wiping it to an empty list — a failed refresh should never
@@ -1292,7 +1238,7 @@ export async function loadAll(options) {
   // Not treated as a load error: the dedicated folder count badges are
   // cosmetic (they just label the folder cards), so a miss here shouldn't
   // trigger the retry banner the way a core data fetch failing would.
-  if (results[9] && typeof results[9] === 'object') { set_dedicatedVacancyCounts( results[9]); set_dedicatedVacancyCountsLoaded( true); }
+  if (results[6] && typeof results[6] === 'object') { set_dedicatedVacancyCounts( results[6]); set_dedicatedVacancyCountsLoaded( true); }
   if (authoritativeStartupVacancyTotal === null && generalVacancyCountLoaded && dedicatedVacancyCountsLoaded) {
     cachedVacancyTotal = generalVacancyCount + vacanciesCache.length + dedicatedVacancyGrandTotal();
   }
@@ -1300,12 +1246,9 @@ export async function loadAll(options) {
   if (hadLoadError) { try { trackEvent('data_refresh_failed', 'data', null, { online: navigator.onLine !== false }); } catch(e) {} }
   if (!hadLoadError) lastDataRefreshAt = Date.now();
   setConnectionStatus(!navigator.onLine ? 'offline' : (hadLoadError ? 'error' : 'live'), lastDataRefreshAt);
-  set_publicVacancyPostingOpen( (results[5] === true || results[5] === 'true'));
-  set_publicEmployerRegistrationOpen( (results[6] === true || results[6] === 'true'));
-  set_employerDirectoryOpen( (results[7] === true || results[7] === 'true'));
   // Only overwrite the count if the query succeeded — a failed count fetch
   // should leave the last-known number on screen rather than dropping to 0.
-  if (typeof results[8] === 'number') set_poolCandidateCount( results[8]);
+  if (typeof results[5] === 'number') set_poolCandidateCount( results[5]);
   // Sort employers: verified first, then alphabetical
   employersCache.sort(function(a,b){
     if ((a.verified?1:0) !== (b.verified?1:0)) return (b.verified?1:0) - (a.verified?1:0);
@@ -1338,23 +1281,11 @@ export async function loadAll(options) {
   loadHouseAds();
   saveDataCache();
   scheduleDeferredVacancyNotes(startup);
-  updatePostingToggleUI();
-  // updateEmployerRegUI() lives in admin.html, not this public bundle. Calling
-  // it unguarded threw "ReferenceError: updateEmployerRegUI is not defined" on
-  // every public loadAll() and aborted the rest of this function (manager-mode
-  // re-render, restoreTalentPoolMembership(), autoClaimGateRegistration(),
-  // pending manager-token handling). Guard it like the other cross-file calls
-  // above so the public app continues past this point.
-  if (typeof updateEmployerRegUI === 'function') updateEmployerRegUI();
-  // If in manager mode, re-render the manager panel with fresh data
   if (managerMode) renderManagerMode();
   if (employerManagerMode) renderEmployerManagerMode();
-  restoreTalentPoolMembership();
-  if (typeof autoClaimGateRegistration === 'function') autoClaimGateRegistration();
-  // If a pending manager token was detected before agencies loaded, enter manager mode now
   if (managerPendingToken) {
     var tok = managerPendingToken;
-    set_managerPendingToken( null);
+    set_managerPendingToken(null);
     enterManagerMode(tok);
   }
   if (employerManagerPendingToken) {
@@ -1560,9 +1491,6 @@ Object.assign(window, {
   removeBranch,
   getAppSetting,
   setAppSetting,
-  loadPostingSetting,
-  updatePostingToggleUI,
-  loadEmployerRegSetting,
   youtubeEmbedUrl,
   renderHomeMediaSection,
   loadMediaSetting,
@@ -1575,7 +1503,6 @@ Object.assign(window, {
   onTrackLoaded,
   updateTrackProgress,
   onTrackEnded,
-  togglePublicPosting,
   openVacancyLockedSheet,
   openEmployerLockedSheet,
   updatePosterStat,

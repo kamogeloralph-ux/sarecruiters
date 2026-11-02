@@ -48,7 +48,6 @@
     o = o || {}; agency = agency || {};
     var key = v.id, saved = savedSet.has(key), isGeneral = v.agency_id === 'general';
     var employer = v.employer_id ? (employersCache.find(function (e) { return e.id === v.employer_id; }) || null) : null;
-    var locked = !!employer && !employerDirectoryOpen && !hasTalentPoolAccess();
     var org = employer ? (employer.name || 'Employer') : isGeneral ? (v.company || 'General vacancy') : (agency.name || v.company || '');
     var src = srcOf(v), verified = (employer && employer.verified) || (!employer && !isGeneral && agency.verified);
     var photo = employer && employer.photo || (isGeneral && v.company_photo) || (!employer && !isGeneral && agency.photo) || '';
@@ -127,9 +126,9 @@
     var jobType = v.employment_type || v.contract_type || 'Not specified';
     var daysLabel = left === null ? 'Open until filled' : (left < 0 ? 'Closed' : (left === 0 ? 'Closes today' : left + ' day' + (left === 1 ? '' : 's') + ' left'));
     var cardMeta = '<span class="vx-card-meta"><span class="vx-location-meta">' + (loc ? I.pin + '<b class="vx-location-text">' + esc(loc) + '</b>' : '<b class="vx-location-text">South Africa</b>') + '</span><span>Job Type: <b>' + esc(jobType) + '</b></span><span>Posted: <b>' + esc(postedLabel(v)) + '</b></span><span class="vx-days-left">' + esc(daysLabel) + '</span></span>';
-    return '<article class="vx-card vac-card' + (o.featured || v.is_featured ? ' vx-card--feat' : '') + (locked ? ' vx-card--locked' : '') + '" id="vc-' + esc(key) + '" data-vacancy-id="' + esc(v.id) + '" data-posted="' + ts(v.created_at) + '" data-closing="' + ts(v.closing_date) + '" data-salary="' + salaryNum(v) + '" data-title="' + esc(String(v.title || '').toLowerCase()) + '" data-loc="' + esc(String(v.location || v.province || '').toLowerCase()) + '">' +
+    return '<article class="vx-card vac-card' + (o.featured || v.is_featured ? ' vx-card--feat' : '') + '" id="vc-' + esc(key) + '" data-vacancy-id="' + esc(v.id) + '" data-posted="' + ts(v.created_at) + '" data-closing="' + ts(v.closing_date) + '" data-salary="' + salaryNum(v) + '" data-title="' + esc(String(v.title || '').toLowerCase()) + '" data-loc="' + esc(String(v.location || v.province || '').toLowerCase()) + '">' +
       '<div class="vx-top">' +
-        '<button type="button" class="vx-head" aria-expanded="false" aria-controls="vd-' + esc(key) + '" onclick="' + (locked ? 'openEmployerDirectoryAccessMessage()' : 'toggleVac(this)') + '">' + logo +
+        '<button type="button" class="vx-head" aria-expanded="false" aria-controls="vd-' + esc(key) + '" onclick="toggleVac(this)">' + logo +
         '<span class="vx-main"><span class="vx-title" style="display:-webkit-box">' + esc(v.title || 'Untitled role') + '</span>' +
           '<span class="vx-org"><span>' + esc(org) + '</span>' + (verified ? verifiedBadge(employer ? 'Verified employer' : 'Verified agency') : '') + '</span>' +
           (tags ? '<span class="vx-meta">' + tags + '</span>' : '') +

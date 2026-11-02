@@ -51,6 +51,6 @@ test('CV Box reads active profiles live and never shares startup cache', () => {
   assert.match(worker, /path === "\/api\/cv-box"/);
   assert.match(worker, /"Cache-Control": "no-store, max-age=0"/);
   assert.match(worker, /pool_candidates_public/);
-  assert.match(worker, /schema=featured-vacancies-v12-live-cv-box/);
+  assert.match(worker, /schema=featured-vacancies-v13-live-cv-box/);
   assert.match(worker, /return Number\.isSafeInteger\(value\) && value >= 0 \? value \+ 1 : 1/);
 });

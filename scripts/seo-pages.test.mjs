@@ -172,7 +172,7 @@ test('privacy policy matches the guest app and current data providers', () => {
   assert.match(privacy, /you can browse public listings as a guest/i);
   assert.match(privacy, /IndexedDB/);
   assert.match(privacy, /Google sign-in/);
-  assert.match(privacy, /Talent Pool/);
+  assert.match(privacy, /CV Box/);
   assert.match(privacy, /Cloudflare/);
   assert.match(privacy, /BigDataCloud/);
   assert.match(privacy, /Resend/);
@@ -208,11 +208,11 @@ test('Terms page shares the standard legal-page visual system', () => {
   assert.match(terms, /href="\/privacy\/">Privacy Policy/);
 });
 
-test('FAQ gives original safety, offline, Talent Pool and privacy guidance', () => {
+test('FAQ gives original safety, offline, CV Box and privacy guidance', () => {
   assert.match(content, /South African recruitment directory and jobs platform/);
   assert.match(content, /never pay someone just to apply/);
   assert.match(content, /Offline mode cannot fetch new vacancies/);
-  assert.match(content, /What is the Talent Pool\?/);
+  assert.match(content, /What is the CV Box\?/);
   assert.match(content, /Privacy Policy/);
   assert.match(contentManager, /official-faq-v2/);
   assert.match(contentManager, /store\.faq = JSON\.parse/);

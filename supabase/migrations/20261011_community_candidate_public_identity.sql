@@ -1,4 +1,4 @@
--- TipChat identity is inherited only from an active, publicly listed Talent Pool profile.
+-- TipChat identity is inherited only from an active, publicly listed CV Box profile.
 -- The private author_id remains unselectable; only the display name/photo are copied
 -- into explicitly granted community display columns.
 alter table public.community_posts

@@ -4,7 +4,7 @@
 --  "Looking for work?" quick-intake. People who message the admin directly
 --  ("I hold a degree, I'm available immediately, may I send my CV?") can now
 --  submit one short, structured form instead. Admin triages them in
---  Submissions -> Job seekers and can convert one into a Talent Pool profile.
+--  Submissions -> Job seekers and can convert one into a CV Box profile.
 --
 --  Same lockdown pattern as job_post_enquiries: no direct anon INSERT/SELECT;
 --  the only write path is public_submit_job_seeker(), called by the Worker
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.job_seeker_requests (
   cv_link         text,
   consent         boolean NOT NULL DEFAULT false,
   status          text NOT NULL DEFAULT 'new',   -- new | contacted | added | closed
-  talent_pool_id  text,          -- set when converted to a Talent Pool profile
+  talent_pool_id  text,          -- set when converted to a CV Box profile
   user_id         uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at      timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT job_seeker_requests_contact_chk CHECK (

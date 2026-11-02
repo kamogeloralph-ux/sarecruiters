@@ -36,7 +36,7 @@ test('admin reads job seekers through the Worker and manages them via an admin-o
 
 test('app form never falls back to a direct Supabase insert and requires consent', () => {
   const start = sheets.indexOf('async function submitJobSeekerRequest()');
-  const end = sheets.indexOf('// ===== TALENT POOL (public browse', start);
+  const end = sheets.indexOf('// ===== CV BOX (public browse', start);
   const fn = sheets.slice(start, end);
   assert.match(fn, /submitViaWorker\('\/api\/submit\/job-seeker'/);
   assert.doesNotMatch(fn, /supabaseClient/);
@@ -45,7 +45,7 @@ test('app form never falls back to a direct Supabase insert and requires consent
   assert.match(index, /id="job-seeker-consent"/);
 });
 
-test('converting to the Talent Pool keeps private details out of the public bio', () => {
+test('converting to the CV Box keeps private details out of the public bio', () => {
   const start = admin.indexOf('function seekerToTalentPool(id)');
   const end = admin.indexOf('async function linkSeekerToPool', start);
   const fn = admin.slice(start, end);
