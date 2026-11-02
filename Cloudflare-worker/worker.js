@@ -1018,6 +1018,273 @@ async function cvBoxResponse(request, env, origin) {
   });
 }
 __name(cvBoxResponse, "cvBoxResponse");
+const CV_DOWNLOAD_MAX_CENTS = 1000000;
+function yocoSecretKey(env) {
+  return env.YOCO_LIVE_SECRET_KEY || env.YOCO_SECRET_KEY || "";
+}
+__name(yocoSecretKey, "yocoSecretKey");
+function validCustomerEmail(value) {
+  const email = String(value || "").trim();
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+__name(validCustomerEmail, "validCustomerEmail");
+function cvCheckoutSite(env) {
+  try {
+    const parsed = new URL(env.SITE_URL || "https://sa-recruiters.co.za");
+    if (parsed.protocol !== "https:") return "https://sa-recruiters.co.za";
+    return parsed.origin;
+  } catch (e) {
+    return "https://sa-recruiters.co.za";
+  }
+}
+__name(cvCheckoutSite, "cvCheckoutSite");
+function cvWorkerBase(env) {
+  try {
+    const parsed = new URL(env.WORKER_URL || "https://sarecruiters-uploader.kamogeloralph.workers.dev");
+    if (parsed.protocol !== "https:") return "https://sarecruiters-uploader.kamogeloralph.workers.dev";
+    return parsed.origin;
+  } catch (e) {
+    return "https://sarecruiters-uploader.kamogeloralph.workers.dev";
+  }
+}
+__name(cvWorkerBase, "cvWorkerBase");
+async function cvCheckoutAllowed(request) {
+  try {
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const hour = Math.floor(Date.now() / 36e5);
+    const key = new Request(`https://rate-limit.internal/cv-checkout/${encodeURIComponent(ip)}/${hour}`);
+    const cache = caches.default;
+    const existing = await cache.match(key);
+    const count = existing ? Number.parseInt(await existing.text(), 10) || 0 : 0;
+    if (count >= 8) return false;
+    await cache.put(key, new Response(String(count + 1), { headers: { "Cache-Control": "max-age=3600" } }));
+    return true;
+  } catch (e) {
+    return true;
+  }
+}
+__name(cvCheckoutAllowed, "cvCheckoutAllowed");
+function randomOpaqueToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+__name(randomOpaqueToken, "randomOpaqueToken");
+async function cvCheckoutResponse(request, env, origin) {
+  const amount = Number.parseInt(env.CV_DOWNLOAD_PRICE_CENTS || "4900", 10);
+  if (!yocoSecretKey(env) || !env.YOCO_WEBHOOK_SECRET || !env.DB || !env.SUPABASE_SERVICE_ROLE_KEY || !env.RESEND_API_KEY) {
+    return json({ error: "Online CV payments are not configured yet. Please contact SA Recruiters for help." }, 503, origin);
+  }
+  if (!Number.isSafeInteger(amount) || amount < 100 || amount > CV_DOWNLOAD_MAX_CENTS) {
+    return json({ error: "CV download pricing is temporarily unavailable." }, 503, origin);
+  }
+  if (!await cvCheckoutAllowed(request)) return json({ error: "Too many checkout attempts. Please try again later." }, 429, origin);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "Invalid checkout request." }, 400, origin); }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "Invalid checkout request." }, 400, origin);
+  const candidateId = String(body.candidateId || "").trim();
+  const email = validCustomerEmail(body.email);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidateId)) return json({ error: "Choose a valid CV Box profile." }, 400, origin);
+  if (!email) return json({ error: "Enter a valid email address for your download link." }, 400, origin);
+  let candidate;
+  try {
+    const q = new URLSearchParams({ select: "id,full_name,position,status,cv_link", id: `eq.${candidateId}`, status: "eq.active", limit: "1" });
+    const response = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${q}`, {
+      headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
+    });
+    if (!response.ok) throw new Error(`Supabase returned ${response.status}`);
+    const rows = await response.json();
+    candidate = Array.isArray(rows) ? rows[0] : null;
+  } catch (error) {
+    console.error("Could not validate CV checkout candidate", error);
+    return json({ error: "Could not verify this CV right now. Please try again." }, 502, origin);
+  }
+  if (!candidate || candidate.status !== "active") return json({ error: "This CV is no longer available." }, 404, origin);
+  if (!candidate.cv_link) return json({ error: "This profile does not have a downloadable CV yet." }, 409, origin);
+  const orderId = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  try {
+    await env.DB.prepare(`INSERT INTO cv_download_orders (id,candidate_id,candidate_name,customer_email,cv_url,amount_cents,currency,status,created_at) VALUES (?,?,?,?,?,?,?,'creating',?)`)
+      .bind(orderId, candidate.id, String(candidate.full_name || "Candidate").slice(0, 160), email, candidate.cv_link, amount, "ZAR", createdAt).run();
+  } catch (error) {
+    console.error("Could not create CV checkout order", error);
+    return json({ error: "Checkout is temporarily unavailable. Please try again." }, 503, origin);
+  }
+  const site = cvCheckoutSite(env);
+  const checkoutPayload = {
+    amount,
+    currency: "ZAR",
+    successUrl: `${site}/?section=candidates&cvPayment=returned`,
+    cancelUrl: `${site}/?section=candidates&cvPayment=cancelled`,
+    failureUrl: `${site}/?section=candidates&cvPayment=failed`,
+    metadata: { orderId, product: "cv-box-download" },
+    externalId: orderId,
+    clientReferenceId: orderId,
+    lineItems: [{ displayName: "CV Box candidate CV", quantity: 1, pricingDetails: { price: amount } }]
+  };
+  try {
+    const response = await fetch("https://payments.yoco.com/api/checkouts", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${yocoSecretKey(env)}`, "Content-Type": "application/json", "Idempotency-Key": orderId },
+      body: JSON.stringify(checkoutPayload)
+    });
+    const checkout = await response.json().catch(() => null);
+    if (!response.ok || !checkout?.id || !checkout?.redirectUrl || checkout.amount !== amount || checkout.currency !== "ZAR") {
+      console.error("Yoco checkout creation failed", response.status, checkout?.message || checkout?.error || "invalid response");
+      await env.DB.prepare("UPDATE cv_download_orders SET status='failed' WHERE id=? AND status='creating'").bind(orderId).run();
+      return json({ error: "Yoco could not start checkout. Please try again." }, 502, origin);
+    }
+    const redirect = new URL(checkout.redirectUrl);
+    if (redirect.protocol !== "https:" || !(redirect.hostname === "yoco.com" || redirect.hostname.endsWith(".yoco.com"))) {
+      await env.DB.prepare("UPDATE cv_download_orders SET status='failed' WHERE id=? AND status='creating'").bind(orderId).run();
+      return json({ error: "Yoco returned an invalid checkout link." }, 502, origin);
+    }
+    await env.DB.prepare("UPDATE cv_download_orders SET status='pending',checkout_id=? WHERE id=? AND status='creating'").bind(checkout.id, orderId).run();
+    return new Response(JSON.stringify({ redirectUrl: redirect.href }), { headers: { ...corsHeaders(origin), "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Yoco checkout request failed", error);
+    await env.DB.prepare("UPDATE cv_download_orders SET status='failed' WHERE id=? AND status='creating'").bind(orderId).run().catch(() => {});
+    return json({ error: "Could not connect to Yoco. Please try again." }, 502, origin);
+  }
+}
+__name(cvCheckoutResponse, "cvCheckoutResponse");
+async function verifyYocoWebhook(request, rawBody, secret) {
+  const id = request.headers.get("webhook-id");
+  const timestamp = request.headers.get("webhook-timestamp");
+  const signatures = request.headers.get("webhook-signature") || "";
+  if (!id || !timestamp || !signatures || !secret?.startsWith("whsec_")) return false;
+  const seconds = Number(timestamp);
+  if (!Number.isFinite(seconds) || Math.abs(Date.now() / 1000 - seconds) > 180) return false;
+  try {
+    const binaryKey = Uint8Array.from(atob(secret.slice(6)), (char) => char.charCodeAt(0));
+    const key = await crypto.subtle.importKey("raw", binaryKey, { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const message = new TextEncoder().encode(`${id}.${timestamp}.${rawBody}`);
+    for (const entry of signatures.trim().split(/\s+/)) {
+      const [version, signature] = entry.split(",", 2);
+      if (version !== "v1" || !signature) continue;
+      try {
+        const provided = Uint8Array.from(atob(signature), (char) => char.charCodeAt(0));
+        if (await crypto.subtle.verify("HMAC", key, provided, message)) return true;
+      } catch (e) {}
+    }
+  } catch (e) {
+    return false;
+  }
+  return false;
+}
+__name(verifyYocoWebhook, "verifyYocoWebhook");
+async function sendCvDownloadEmail(env, order, token) {
+  if (!env.RESEND_API_KEY) return false;
+  const expires = new Date(order.download_expires_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Johannesburg" });
+  const link = `${cvWorkerBase(env)}/api/cv-box/download?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(token)}`;
+  const name = escapeEmailHtml(order.candidate_name || "your selected candidate");
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: env.EMAIL_FROM || DEFAULT_EMAIL_FROM,
+      to: [order.customer_email],
+      subject: `Your SA Recruiters CV download: ${name}`,
+      html: `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#181818;line-height:1.6"><h2>Payment confirmed</h2><p>Your R${(Number(order.amount_cents) / 100).toFixed(2)} payment for <strong>${name}</strong> has been confirmed.</p><p><a href="${link}" style="display:inline-block;background:#0b7a35;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Download CV</a></p><p>This private download link expires ${escapeEmailHtml(expires)}. Keep it private. Candidate contact details are not included.</p><p>SA Recruiters</p></body></html>`
+    })
+  });
+  return response.ok;
+}
+__name(sendCvDownloadEmail, "sendCvDownloadEmail");
+async function yocoWebhookResponse(request, env) {
+  if (!env.YOCO_WEBHOOK_SECRET || !yocoSecretKey(env) || !env.DB) return new Response("Webhook is not configured", { status: 503 });
+  const rawBody = await request.text();
+  if (rawBody.length > 65536) return new Response("Payload too large", { status: 413 });
+  if (!await verifyYocoWebhook(request, rawBody, env.YOCO_WEBHOOK_SECRET)) return new Response("Invalid webhook signature", { status: 401 });
+  let event;
+  try { event = JSON.parse(rawBody); } catch (e) { return new Response("Invalid JSON", { status: 400 }); }
+  const checkoutId = String(event?.metadata?.checkoutId || event?.payload?.metadata?.checkoutId || event?.data?.metadata?.checkoutId || "").slice(0, 200);
+  if (!checkoutId) return new Response("Ignored", { status: 200 });
+  let result;
+  try { result = await env.DB.prepare("SELECT * FROM cv_download_orders WHERE checkout_id=? LIMIT 1").bind(checkoutId).first(); }
+  catch (error) { console.error("Could not read CV order for Yoco event", error); return new Response("Order lookup failed", { status: 503 }); }
+  if (!result) return new Response("Ignored", { status: 200 });
+  if (event.type === "refund.succeeded") {
+    await env.DB.prepare("UPDATE cv_download_orders SET status='refunded',download_token=NULL,download_expires_at=NULL WHERE id=?").bind(result.id).run();
+    return new Response("OK", { status: 200 });
+  }
+  if (event.type !== "payment.succeeded") return new Response("Ignored", { status: 200 });
+  let checkout;
+  try {
+    const response = await fetch(`https://payments.yoco.com/api/checkouts/${encodeURIComponent(checkoutId)}`, { headers: { Authorization: `Bearer ${yocoSecretKey(env)}` } });
+    checkout = await response.json().catch(() => null);
+    if (!response.ok) return new Response("Could not verify checkout", { status: 503 });
+  } catch (error) { return new Response("Could not verify checkout", { status: 503 }); }
+  if (checkout?.id !== checkoutId || checkout.status !== "completed" || checkout.amount !== result.amount_cents || checkout.currency !== result.currency || checkout?.metadata?.orderId !== result.id) {
+    console.warn("Yoco payment did not match CV order", checkoutId);
+    return new Response("Checkout mismatch", { status: 400 });
+  }
+  const now = new Date().toISOString();
+  const expiry = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+  let token = result.download_token;
+  if (!token) token = randomOpaqueToken();
+  try {
+    await env.DB.prepare(`UPDATE cv_download_orders SET status='paid',paid_at=COALESCE(paid_at,?),download_token=COALESCE(download_token,?),download_expires_at=COALESCE(download_expires_at,?) WHERE id=? AND status IN ('pending','paid')`)
+      .bind(now, token, expiry, result.id).run();
+    result = await env.DB.prepare("SELECT * FROM cv_download_orders WHERE id=? LIMIT 1").bind(result.id).first();
+  } catch (error) { console.error("Could not mark CV order paid", error); return new Response("Order update failed", { status: 503 }); }
+  if (!result || result.status !== "paid") return new Response("Order is not eligible", { status: 409 });
+  if (!result.email_sent_at) {
+    let sent = false;
+    try { sent = await sendCvDownloadEmail(env, result, result.download_token); }
+    catch (error) { console.error("CV download email failed", error); }
+    if (!sent) return new Response("Download email not delivered", { status: 503 });
+    await env.DB.prepare("UPDATE cv_download_orders SET email_sent_at=? WHERE id=? AND email_sent_at IS NULL").bind(new Date().toISOString(), result.id).run();
+  }
+  return new Response("OK", { status: 200 });
+}
+__name(yocoWebhookResponse, "yocoWebhookResponse");
+async function cvDownloadResponse(request, env) {
+  const url = new URL(request.url);
+  const orderId = url.searchParams.get("order") || "";
+  const token = url.searchParams.get("token") || "";
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || token.length < 40 || token.length > 100) return new Response("Download not found", { status: 404 });
+  let order;
+  try { order = await env.DB.prepare("SELECT candidate_name,cv_url,status,download_token,download_expires_at FROM cv_download_orders WHERE id=? LIMIT 1").bind(orderId).first(); }
+  catch (error) { return new Response("Download unavailable", { status: 503 }); }
+  if (!order || order.status !== "paid" || order.download_token !== token || !order.download_expires_at || Date.parse(order.download_expires_at) < Date.now()) return new Response("This private download link is invalid or expired", { status: 403 });
+  let file;
+  try {
+    const source = new URL(order.cv_url);
+    const publicBase = new URL(env.R2_PUBLIC_BASE_URL);
+    let key = "";
+    if (source.origin === publicBase.origin && source.pathname.startsWith(`${publicBase.pathname.replace(/\/$/, "")}/candidate-cvs/`)) {
+      key = decodeURIComponent(source.pathname.slice(publicBase.pathname.replace(/\/$/, "").length + 1));
+      if (!/^candidate-cvs\/[A-Za-z0-9._-]+\.(pdf|png|jpe?g)$/i.test(key)) throw new Error("Invalid CV object key");
+      const object = await env.MEDIA_BUCKET.get(key);
+      if (!object) return new Response("CV file is no longer available", { status: 404 });
+      const bytes = await object.arrayBuffer();
+      if (bytes.byteLength > 4 * 1024 * 1024) return new Response("CV file is too large", { status: 413 });
+      file = new Response(bytes, { headers: { "Content-Type": object.httpMetadata?.contentType || "application/octet-stream" } });
+    } else if (source.origin === new URL(env.SUPABASE_URL).origin && source.pathname.startsWith("/storage/v1/object/public/")) {
+      const response = await fetch(source.href, { redirect: "error" });
+      if (!response.ok) return new Response("CV file is no longer available", { status: 404 });
+      const bytes = await response.arrayBuffer();
+      if (bytes.byteLength > 4 * 1024 * 1024) return new Response("CV file is too large", { status: 413 });
+      file = new Response(bytes, { headers: { "Content-Type": response.headers.get("Content-Type") || "application/octet-stream" } });
+    } else {
+      return new Response("CV storage location is not supported", { status: 404 });
+    }
+  } catch (error) {
+    console.error("Paid CV file retrieval failed", error);
+    return new Response("CV file is temporarily unavailable", { status: 502 });
+  }
+  const ext = (order.cv_url.match(/\.(pdf|png|jpe?g)(?:\?|$)/i) || ["", "pdf"])[1].toLowerCase();
+  const safeName = String(order.candidate_name || "candidate").replace(/[^a-z0-9_-]+/gi, "-").slice(0, 60) || "candidate";
+  const headers = new Headers(file.headers);
+  headers.set("Content-Disposition", `attachment; filename="SA-Recruiters-CV-${safeName}.${ext}"`);
+  headers.set("Cache-Control", "no-store, max-age=0");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Content-Security-Policy", "default-src 'none'; sandbox");
+  return new Response(file.body, { status: 200, headers });
+}
+__name(cvDownloadResponse, "cvDownloadResponse");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
   const dataVersion = await readPublicDataVersion(env);
@@ -1771,6 +2038,15 @@ var worker_default = {
       return new Response(null, { headers: corsHeaders(origin) });
     }
     try {
+      if (path === "/api/yoco/webhook" && request.method === "POST") {
+        return await yocoWebhookResponse(request, env);
+      }
+      if (path === "/api/cv-box/checkout" && request.method === "POST") {
+        return await cvCheckoutResponse(request, env, origin);
+      }
+      if (path === "/api/cv-box/download" && request.method === "GET") {
+        return await cvDownloadResponse(request, env);
+      }
       if (path === "/api/cv-box" && request.method === "GET") {
         return await cvBoxResponse(request, env, origin);
       }

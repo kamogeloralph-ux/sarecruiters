@@ -175,13 +175,13 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=sa-recruiters-mono1">
-<link rel="stylesheet" href="styles.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=cvbox-yoco1">
+<link rel="stylesheet" href="styles.css?v=cvbox-yoco1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="mono.css?v=mono-7" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=cvbox-yoco1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
 </head>
 <body>
 
@@ -1159,9 +1159,11 @@
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('cv-download-overlay')" aria-label="Close" title="Close">×</button>
     <div class="cv-box-kicker">PAID CV DOWNLOAD</div>
     <h3 id="cv-download-title">Request this CV</h3>
-    <p class="manager-banner" style="padding:0 0 14px">CV downloads are paid so recruiters can access the candidate document while candidate contact details stay private. Continue on WhatsApp for the payment instructions and secure download link.</p>
-    <button class="sheet-submit" data-ripple id="cv-download-whatsapp">Request payment details on WhatsApp</button>
-    <p class="helper-note">The CV will be released after payment is confirmed by SA Recruiters.</p>
+    <p class="manager-banner" style="padding:0 0 12px">Pay securely by card. After Yoco confirms payment, we’ll email a private CV download link. Candidate contact details are not included.</p>
+    <div class="field"><label for="cv-download-email">Email for your download link</label><input type="email" id="cv-download-email" autocomplete="email" maxlength="254" placeholder="you@example.com" required></div>
+    <button class="sheet-submit" data-ripple id="cv-download-checkout">Pay R49 and download CV</button>
+    <button class="cv-download-whatsapp-fallback" type="button" id="cv-download-whatsapp">Need help? Contact SA Recruiters</button>
+    <p class="helper-note">Private download links expire after 72 hours.</p>
   </div>
 </div>
 <!-- ============ EMPLOYER GATE (public, no Google sign-in / no profile) ============ -->
@@ -1506,7 +1508,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=e960a3d677"></script>
+<script type="module" src="app.bundle.min.js?v=de2f0a8ec7"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

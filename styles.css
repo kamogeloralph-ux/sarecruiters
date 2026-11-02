@@ -2696,3 +2696,5 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .cv-box-empty{margin:6px 16px 18px;padding:18px 16px;border:1px solid var(--border);border-radius:14px;background:var(--card);display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:var(--text-2);font-size:13px}
 .cv-box-empty strong{color:var(--text);font-size:15px}
 .cv-box-empty-error button{margin-top:4px;padding:8px 12px;border:0;border-radius:9px;background:var(--accent);color:#fff;font-weight:700}
+
+.cv-download-whatsapp-fallback{display:block;width:100%;margin-top:8px;padding:10px;border:1px solid var(--border-strong);border-radius:10px;background:transparent;color:var(--text);font-size:13px;font-weight:700}

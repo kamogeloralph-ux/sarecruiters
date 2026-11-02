@@ -943,17 +943,41 @@ export function openCvDownloadRequest(c) {
   c = c || {};
   var overlay = document.getElementById('cv-download-overlay');
   var title = document.getElementById('cv-download-title');
-  var button = document.getElementById('cv-download-whatsapp');
+  var button = document.getElementById('cv-download-checkout');
+  var fallback = document.getElementById('cv-download-whatsapp');
+  var email = document.getElementById('cv-download-email');
   if (!overlay || !button) return;
-  if (title) title.textContent = 'Request CV: ' + (c.full_name || 'Candidate');
-  var msg = 'Hi SA Recruiters, I want to pay to download this CV.\n' +
-    'Candidate: ' + (c.full_name || 'Candidate') + '\n' +
-    'Position: ' + (c.position || 'Not specified') + '\n' +
-    'Candidate ID: ' + (c.id || '') + '\nPlease send the payment instructions and secure CV download link.';
-  button.onclick = function(){ window.open('https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg), '_blank', 'noopener'); };
+  if (title) title.textContent = 'Download CV: ' + (c.full_name || 'Candidate');
+  if (email) email.value = (saAuthUser && saAuthUser.email) || '';
+  if (fallback) {
+    var msg = 'Hi SA Recruiters, I want to pay to download this CV.\n' +
+      'Candidate: ' + (c.full_name || 'Candidate') + '\n' +
+      'Position: ' + (c.position || 'Not specified') + '\n' +
+      'Candidate ID: ' + (c.id || '') + '\nPlease send payment instructions and the secure CV download link.';
+    fallback.onclick = function(){ window.open('https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(msg), '_blank', 'noopener'); };
+  }
+  button.onclick = async function(){
+    var address = email ? email.value.trim() : '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) { showToast('Enter a valid email address for the download link.'); if (email) email.focus(); return; }
+    var original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Connecting to Yoco…';
+    try {
+      var response = await fetch(R2_WORKER_URL + '/api/cv-box/checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ candidateId: c.id, email: address })
+      });
+      var result = await response.json().catch(function(){ return {}; });
+      if (!response.ok || !result.redirectUrl) throw new Error(result.error || 'Could not start payment. Please try again.');
+      window.location.assign(result.redirectUrl);
+    } catch (error) {
+      showToast((error && error.message) || 'Could not start payment. Use the contact option for help.');
+      button.disabled = false;
+      button.textContent = original;
+    }
+  };
   overlay.classList.add('open');
 }
-
 // CV Box "profile" state for the currently signed-in user. null = the
 // register sheet is being used to create a brand-new candidate; a candidate
 // id = the sheet is editing (and will UPDATE, not INSERT) that owned row.

@@ -525,7 +525,9 @@ export function shareSectionLink(section) {
   }
 }
 export function openDeepLinkedSection() {
-  var section = new URLSearchParams(window.location.search).get('section');
+  var params = new URLSearchParams(window.location.search);
+  var section = params.get('section');
+  var paymentReturn = params.get('cvPayment');
   if (section === 'talent-pool') section = 'candidates';
   if (!SA_SECTION_LINKS[section]) return;
   // Treat a promoted URL like a restored screen. loadAll() calls
@@ -541,6 +543,16 @@ export function openDeepLinkedSection() {
   else if (section === 'candidates') goPool('home');
   else if (section === 'posters') showVacancyPosters('home');
   else if (section === 'employers') showAllEmployers('home');
+  if (paymentReturn) {
+    params.delete('cvPayment');
+    var cleanQuery = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (cleanQuery ? '?' + cleanQuery : '') + window.location.hash);
+    window.setTimeout(function(){
+      if (paymentReturn === 'returned') showToast('If your payment succeeded, we’ll email your private CV download link after Yoco confirms it.');
+      else if (paymentReturn === 'cancelled') showToast('Checkout was cancelled. No CV download was sent.');
+      else if (paymentReturn === 'failed') showToast('Yoco did not complete the checkout. You can try again or contact us for help.');
+    }, 500);
+  }
 }
 // Wait until the normal boot has painted the shell; the destination functions
 // then render from IndexedDB immediately and refresh from the network normally.
