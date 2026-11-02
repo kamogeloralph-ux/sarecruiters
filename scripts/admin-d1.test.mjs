@@ -72,3 +72,13 @@ test('public app-data has no Supabase table reads or public pool fallback', () =
   assert.doesNotMatch(appData, /Resilience fallback for a temporary Worker\/D1 outage/);
   assert.match(appData, /startup = await getStartupData\(\)/);
 });
+
+test('CV Box approval reports success only after the active status is saved', () => {
+  const start = admin.indexOf('async function approvePoolCandidate(id)');
+  const end = admin.indexOf('async function rejectPoolCandidate(id)', start);
+  assert.ok(start >= 0 && end > start, 'admin CV Box approval handler should exist');
+  const handler = admin.slice(start, end);
+  assert.match(handler, /var saved = await upsertPoolCandidate\(\{ id:id, status:'active'/);
+  assert.match(handler, /if\(!saved\)\{ showToast\('Could not approve candidate — save failed\. Please retry\.'\); return; \}/);
+  assert.ok(handler.indexOf('if(!saved)') < handler.indexOf("showToast('Approved — now live in the public Talent Pool')"), 'success must only be shown after the save succeeds');
+});

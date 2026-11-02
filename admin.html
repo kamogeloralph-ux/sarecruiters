@@ -2881,7 +2881,8 @@ async function approvePoolCandidate(id){
   var p = poolCandidateById(id);
   if(!p) return;
   var oneYear = new Date(); oneYear.setFullYear(oneYear.getFullYear()+1);
-  await upsertPoolCandidate({ id:id, status:'active', paid_until: oneYear.toISOString() });
+  var saved = await upsertPoolCandidate({ id:id, status:'active', paid_until: oneYear.toISOString() });
+  if(!saved){ showToast('Could not approve candidate — save failed. Please retry.'); return; }
   showToast('Approved — now live in the public Talent Pool');
   await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
 }
