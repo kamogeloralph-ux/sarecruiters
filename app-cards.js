@@ -12,7 +12,7 @@
 import { agenciesCache, analyticsSessionId, branchesCache, employersCache, escapeHtml, guestViewsRemaining, initials, isAdmin, publicAgencySlug, publicVacancySlug, registerVacancyOpen, saAuthUser, savedSet, staticVacanciesCache, supabaseClient, syncSavedVacancy, trackEvent, vacanciesCache } from './app-core.js';
 import { branchesFor, getEmployerPosters, isVacancyExpired, renderHouseAdSlots, vacanciesFor, vacanciesForEmployer, vacancyScreenStateMarkup } from './app-data.js';
 import { closeSheet } from './app-sheets.js';
-import { renderHomeFeaturedPoster, renderHomeFeed, showAllVacancies, showToast, syncPreciseLocationChip } from './app-ui.js';
+import { homeSourceVacancies, renderHomeFeaturedVacancy, renderHomeFeed, showAllVacancies, showToast, syncPreciseLocationChip } from './app-ui.js';
 
 
 // ===== Shared verified badge (one look for every section) =====
@@ -944,7 +944,7 @@ export function renderPosterFeed(posters) {
 export async function loadPosterFeed() {
   var posters = await getEmployerPosters();
   renderPosterFeed(posters);
-  if (typeof renderHomeFeaturedPoster === 'function') renderHomeFeaturedPoster(posters);
+  if (typeof renderHomeFeaturedVacancy === 'function') renderHomeFeaturedVacancy(homeSourceVacancies());
   // Employer cards show a poster count; refresh them once posters arrive
   // (skipped while a card is expanded so it doesn't collapse under the user).
   var empScreen = document.getElementById('screen-allemployers');

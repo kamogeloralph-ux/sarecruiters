@@ -308,28 +308,58 @@ export function homeVacancySourceMarkup() {
     }).join('') + '</div></section>';
 }
 
-export function getDailyFeaturedPoster(posters) {
-  var list = (Array.isArray(posters) ? posters : []).filter(function (poster) { return poster && poster.image_url; }).slice().sort(function (a, b) {
-    return String(a.id || a.image_url).localeCompare(String(b.id || b.image_url));
+function featuredVacancyApplyUrl(vacancy) {
+  var raw = String(vacancy && vacancy.link || '').trim();
+  if (!raw) return '';
+  try {
+    var url = new URL(raw, window.location.origin);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+  } catch (e) { return ''; }
+}
+export function getDailyFeaturedVacancy(vacancies) {
+  var list = filterExpiredVacancies(Array.isArray(vacancies) ? vacancies : []).filter(function (vacancy) {
+    return vacancy && String(vacancy.title || '').trim() && featuredVacancyApplyUrl(vacancy);
+  }).slice().sort(function (a, b) {
+    var postedA = Date.parse(a.created_at || '') || 0;
+    var postedB = Date.parse(b.created_at || '') || 0;
+    return postedB - postedA || String(a.id || a.title).localeCompare(String(b.id || b.title));
   });
   if (!list.length) return null;
+  // Rotate among the 20 newest eligible roles so the feature stays fresh
+  // without changing several times during the same day.
+  list = list.slice(0, Math.min(20, list.length));
   var now = new Date();
   var day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
   return list[((day % list.length) + list.length) % list.length];
 }
-export function renderHomeFeaturedPoster(posters) {
+export function renderHomeFeaturedVacancy(vacancies) {
   var slot = document.getElementById('home-featured-poster-slot');
   if (!slot) return;
-  var featured = getDailyFeaturedPoster(posters);
+  var featured = getDailyFeaturedVacancy(vacancies);
   if (!featured) {
-    slot.innerHTML = '<div class="poster-empty">No vacancy posters are available today. Check back soon.</div>';
+    slot.innerHTML = '<div class="poster-empty">No current vacancy with a direct application link is featured right now. Browse all vacancies and check back soon.</div>';
     return;
   }
-  var caption = String(featured.caption || 'Featured vacancy opportunity');
-  slot.innerHTML = '<button type="button" class="home-featured-poster-image" data-featured-poster-url="' + escapeHtml(featured.image_url) + '" aria-label="Open featured vacancy poster: ' + escapeHtml(caption) + '"><img src="' + escapeHtml(featured.image_url) + '" loading="lazy" decoding="async" alt="' + escapeHtml(caption) + '"></button>';
-  slot.querySelectorAll('[data-featured-poster-url]').forEach(function (button) {
-    button.addEventListener('click', function () { openPosterLightbox(button.getAttribute('data-featured-poster-url')); });
-  });
+  var applyUrl = featuredVacancyApplyUrl(featured);
+  var applyHost = '';
+  try { applyHost = new URL(applyUrl).hostname.replace(/^www\./i, ''); } catch (e) { applyHost = 'the employer website'; }
+  var company = String(featured.company || 'South African employer');
+  var location = String(featured.location || 'South Africa');
+  var closing = '';
+  if (featured.closing_date) {
+    var closeDate = new Date(String(featured.closing_date).slice(0, 10) + 'T00:00:00Z');
+    closing = isNaN(closeDate.getTime()) ? String(featured.closing_date) : new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(closeDate);
+  }
+  var salary = String(featured.salary || '');
+  slot.innerHTML = '<a class="home-featured-vacancy" href="' + escapeHtml(applyUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Apply for ' + escapeHtml(featured.title) + ' at ' + escapeHtml(company) + ' on ' + escapeHtml(applyHost) + '">' +
+    '<div class="hf-vacancy-brand"><span class="hf-vacancy-monogram" aria-hidden="true">SR</span><span><strong>SA RECRUITERS</strong><small>Connecting South Africa’s recruitment community</small></span><span class="hf-vacancy-badge">FEATURED ROLE</span></div>' +
+    '<div class="hf-vacancy-rule"></div><div class="hf-vacancy-kicker"><span class="hf-vacancy-live-dot"></span> NOW HIRING</div>' +
+    '<h3 class="hf-vacancy-title">' + escapeHtml(featured.title) + '</h3><p class="hf-vacancy-company">' + escapeHtml(company) + '</p>' +
+    '<div class="hf-vacancy-facts"><div><small>LOCATION</small><strong>' + escapeHtml(location) + '</strong></div>' +
+    (closing ? '<div><small>APPLICATION DEADLINE</small><strong>' + escapeHtml(closing) + '</strong></div>' : '') +
+    (salary ? '<div><small>REMUNERATION</small><strong>' + escapeHtml(salary) + '</strong></div>' : '') + '</div>' +
+    '<div class="hf-vacancy-footer"><span class="hf-vacancy-destination">Apply directly at <strong>' + escapeHtml(applyHost) + '</strong></span><span class="hf-vacancy-apply">Apply for this role <b aria-hidden="true">↗</b></span></div>' +
+    '</a>';
 }
 export var HOME_WEEKLY_PROVINCES = [
   { key: 'gauteng', label: 'Gauteng', pattern: /gauteng|johannesburg|joburg|pretoria|centurion|sandton|randburg|midrand|benoni|kempton park|eastrand|roodepoort|krugersdorp/i },
@@ -451,7 +481,7 @@ export function renderHomeFeed() {
       '<div class="home-media-track"><div class="home-media-track-art" aria-hidden="true">♫</div><div class="home-media-track-copy"><span>Track of the Day</span><strong id="home-media-track-title">Loading…</strong><small id="home-media-track-artist"></small></div><a class="home-media-track-spotify" id="home-media-track-spotify" hidden target="_blank" rel="noopener" aria-label="Open Track of the Day on Spotify" href="">Spotify</a><button type="button" class="home-media-track-play" id="home-media-track-play" disabled onclick="toggleTrackPlay()" aria-label="Play Track of the Day"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button></div>' +
       '<audio id="track-audio" preload="none" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>' +
     '</section>' +
-    '<section class="home-featured-poster" aria-labelledby="home-featured-poster-title"><div class="poster-cta-heading"><span class="poster-cta-kicker">Featured today</span><h2 id="home-featured-poster-title">Vacancy poster of the day</h2><p>A fresh recruitment poster selected automatically for today.</p></div><div class="poster-deck" id="home-featured-poster-slot"><div class="poster-empty">Loading today’s poster…</div></div></section>' +
+    '<section class="home-featured-poster" aria-labelledby="home-featured-poster-title"><div class="poster-cta-heading"><span class="poster-cta-kicker">Featured today</span><h2 id="home-featured-poster-title">Vacancy poster of the day</h2><p>Tap the premium vacancy card to apply directly on the employer’s website.</p></div><div class="poster-deck" id="home-featured-poster-slot"><div class="poster-empty">Loading a live vacancy…</div></div></section>' +
     homeWeeklyTopJobsMarkup() +
     homeVacancySourceMarkup() +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
@@ -471,7 +501,7 @@ export function renderHomeFeed() {
       '</div></section>';
 
   target.setAttribute('aria-busy', 'false');
-  if (typeof renderHomeFeaturedPoster === 'function') renderHomeFeaturedPoster(typeof postersCache !== 'undefined' ? postersCache : []);
+  if (typeof renderHomeFeaturedVacancy === 'function') renderHomeFeaturedVacancy(homeSourceVacancies());
   if (typeof renderHomeMediaSection === 'function') renderHomeMediaSection();
   if (typeof renderHouseAdSlots === 'function') renderHouseAdSlots();
   if (typeof todayTrack !== 'undefined' && todayTrack) renderTrackReady();
@@ -2278,8 +2308,8 @@ Object.assign(window, {
   openCompanyFeatureInquiry,
   openFeaturedCompanyWebsite,
   homeVacancySourceMarkup,
-  getDailyFeaturedPoster,
-  renderHomeFeaturedPoster,
+  getDailyFeaturedVacancy,
+  renderHomeFeaturedVacancy,
   homeWeeklyProvince,
   homeWeeklyRows,
   homeWeeklyTopJobsMarkup,

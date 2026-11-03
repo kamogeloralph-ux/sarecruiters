@@ -298,7 +298,7 @@ test('responsive styles cover the vacancy cards, categories, sponsored slot, and
     assert.ok(css.includes(selector), `Missing homepage style: ${selector}`);
   }
   assert.match(css, /\.home-sponsored-art\{[^}]*height:auto/);
-  assert.doesNotMatch(css, /home-featured-vacancy|featured-vacancies-rail/);
+  assert.doesNotMatch(css, /featured-vacancies-rail/);
   assert.match(css, /\.home-source-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /#screen-home \.screen-scroll\{container-type:inline-size/);
   assert.match(css, /@container \(min-width:760px\)\{\s*#screen-home \.home-source-grid\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);

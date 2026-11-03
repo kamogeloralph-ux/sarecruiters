@@ -2734,3 +2734,136 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .account-help-action small{color:var(--text-2);font-size:11.5px;line-height:1.4}
 .account-help-arrow{color:var(--accent);font-size:22px;font-weight:700}
 #account-settings-label[hidden],#account-signout-label[hidden]{display:none!important}
+
+
+/* CV Box — premium candidate profile card and clear paid-download hierarchy. */
+.pool-mini-card.manager-item{
+  padding:16px!important;
+  border:1px solid color-mix(in srgb,#b79252 24%,var(--border))!important;
+  border-radius:22px!important;
+  background:var(--card)!important;
+  box-shadow:0 10px 28px rgba(25,22,16,.075)!important;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.pool-mini-card.manager-item:hover{
+  border-color:color-mix(in srgb,#b79252 42%,var(--border))!important;
+  box-shadow:0 14px 32px rgba(25,22,16,.11)!important;
+}
+.pool-mini-card .pool-mini-head{gap:13px;padding-right:28px}
+.pool-mini-card .pool-mini-avatar{
+  width:56px;height:56px;flex-basis:56px;border-radius:18px;
+  background:linear-gradient(145deg,#111,#34312c);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 4px 12px rgba(0,0,0,.12);
+}
+.pool-mini-card .pool-mini-copy .manager-item-title{
+  margin-bottom:4px;font-size:16px;font-weight:800;letter-spacing:-.025em;line-height:1.2;
+}
+.pool-mini-card .pool-mini-role{font-size:13px;font-weight:700;line-height:1.35}
+.pool-mini-card .pool-mini-location{margin-top:3px;font-size:12px}
+.pool-mini-card .row-chevron{right:14px;top:20px;color:var(--text-3)}
+.pool-mini-meta{
+  gap:8px;margin-top:14px;padding-top:12px;
+  border-top:1px solid color-mix(in srgb,#b79252 18%,var(--separator));
+  font-size:11px;line-height:1.3;
+}
+.pool-mini-meta .pool-status{
+  display:inline-flex;align-items:center;min-height:25px;padding:4px 9px;
+  border:1px solid color-mix(in srgb,#b79252 32%,var(--border));border-radius:999px;
+  background:color-mix(in srgb,#c6a66b 10%,var(--card));font-size:10px;font-weight:800;letter-spacing:.015em;
+}
+.pool-mini-meta>span+span{padding-left:0;border-left:0}
+.pool-mini-actions{
+  display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.25fr);
+  align-items:stretch;gap:9px;margin-top:14px;
+}
+.pool-mini-actions button{
+  box-sizing:border-box;width:100%;min-width:0;min-height:48px;margin:0;padding:10px 12px;
+  border-radius:13px;font-family:inherit;font-size:12px;font-weight:750;line-height:1.2;
+  letter-spacing:0;text-align:center;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,background .16s ease;
+}
+.pool-mini-actions .pool-view-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid var(--border-strong);background:var(--card);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55);
+}
+.pool-mini-actions .pool-view-btn span{font-size:15px;line-height:1;color:var(--text-2)}
+.pool-mini-actions .pool-cv-download-btn{
+  display:flex!important;align-items:center;justify-content:space-between;gap:8px;
+  border:1px solid #a78340!important;border-radius:13px!important;
+  background:linear-gradient(135deg,#eddbb5 0%,#d5b574 52%,#c29a50 100%)!important;
+  color:#211b10!important;-webkit-text-fill-color:#211b10!important;
+  box-shadow:0 5px 13px rgba(153,116,46,.2),inset 0 1px 0 rgba(255,255,255,.55)!important;
+  font-size:12px!important;font-weight:850!important;line-height:1.2!important;
+  text-indent:0!important;white-space:nowrap;visibility:visible!important;opacity:1!important;
+}
+.pool-cv-download-btn .pool-cv-label{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pool-cv-download-btn .pool-cv-price{
+  flex:0 0 auto;padding:5px 7px;border:1px solid rgba(53,41,20,.2);border-radius:8px;
+  background:rgba(255,255,255,.48);color:#211b10;font-size:11px;font-weight:900;line-height:1;
+}
+.pool-mini-actions button:active{transform:translateY(1px) scale(.99)}
+.pool-mini-actions .pool-cv-download-btn:hover{box-shadow:0 8px 18px rgba(153,116,46,.28),inset 0 1px 0 rgba(255,255,255,.6)!important}
+.pool-mini-card .pool-mini-details{margin-top:14px;padding-top:13px;border-top:1px solid var(--separator);font-size:13px;line-height:1.55}
+.pool-mini-card .pool-mini-details .det-row{padding:3px 0}
+.pool-mini-card .pool-mini-details .mini-cv-pitch{margin:8px 0;padding:10px 11px;border:1px solid var(--border);border-radius:12px;background:var(--card-2)}
+[data-theme="dark"] .pool-mini-card.manager-item{border-color:color-mix(in srgb,#d5b574 24%,var(--border))!important;box-shadow:0 10px 28px rgba(0,0,0,.28)!important}
+[data-theme="dark"] .pool-mini-card .pool-mini-meta{border-top-color:color-mix(in srgb,#d5b574 22%,var(--separator))}
+@media(max-width:380px){
+  .pool-mini-card.manager-item{padding:14px!important;border-radius:19px!important}
+  .pool-mini-card .pool-mini-avatar{width:50px;height:50px;flex-basis:50px;border-radius:16px}
+  .pool-mini-actions{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:7px}
+  .pool-mini-actions button{padding:9px 8px;font-size:11.5px}
+  .pool-mini-actions .pool-cv-download-btn{font-size:11.5px!important}
+}
+@media(prefers-reduced-motion:reduce){.pool-mini-card.manager-item,.pool-mini-actions button{transition:none}}
+
+
+/* Homepage featured vacancy: a premium editorial poster with a direct apply link. */
+#screen-home .home-featured-poster{margin:18px 0 25px}
+#screen-home .home-featured-poster .poster-cta-heading{padding:0 2px 11px}
+#screen-home .home-featured-poster .poster-cta-kicker{color:#15734a;letter-spacing:.14em;font-size:10px}
+#screen-home .home-featured-poster .poster-cta-heading h2{font-size:21px;letter-spacing:-.035em}
+#screen-home .home-featured-poster .poster-cta-heading p{font-size:12.5px}
+#screen-home .home-featured-poster .poster-deck{padding:0}
+.home-featured-vacancy{
+  position:relative;isolation:isolate;display:flex;flex-direction:column;min-height:360px;
+  box-sizing:border-box;padding:21px 21px 18px;overflow:hidden;border:1px solid rgba(215,187,127,.5);
+  border-radius:21px;background:radial-gradient(ellipse at 92% 0%,rgba(68,105,145,.54),transparent 43%),
+  linear-gradient(148deg,#10233a 0%,#102b49 54%,#0a1d31 100%);color:#fff;text-decoration:none;
+  box-shadow:0 16px 36px rgba(10,27,46,.22),inset 0 1px 0 rgba(255,255,255,.1);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.home-featured-vacancy::before,.home-featured-vacancy::after{position:absolute;z-index:-1;content:"";pointer-events:none}
+.home-featured-vacancy::before{width:270px;height:270px;right:-135px;top:82px;border:1px solid rgba(226,196,137,.12);border-radius:50%;box-shadow:0 0 0 27px rgba(226,196,137,.035),0 0 0 58px rgba(226,196,137,.025)}
+.home-featured-vacancy::after{left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#b79456,#f1dfb7,#b79456)}
+.home-featured-vacancy:hover{transform:translateY(-2px);border-color:rgba(232,207,159,.8);box-shadow:0 21px 42px rgba(10,27,46,.28),inset 0 1px 0 rgba(255,255,255,.12)}
+.home-featured-vacancy:active{transform:scale(.99)}
+.home-featured-vacancy:focus-visible{outline:3px solid #d9bd82;outline-offset:4px}
+.hf-vacancy-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.hf-vacancy-monogram{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border:1px solid rgba(226,196,137,.52);border-radius:12px;background:linear-gradient(145deg,#e2c489,#a88343);color:#10233a;font-size:13px;font-weight:950;letter-spacing:-.08em}
+.hf-vacancy-brand>span:nth-child(2){display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.hf-vacancy-brand strong{font-size:11px;font-weight:850;letter-spacing:.16em;color:#f5f1e7}
+.hf-vacancy-brand small{color:rgba(255,255,255,.68);font-size:9.5px;line-height:1.35}
+.hf-vacancy-badge{flex:0 0 auto;padding:6px 8px;border:1px solid rgba(235,215,176,.28);border-radius:999px;background:rgba(255,255,255,.07);color:#e9d7ad;font-size:8px;font-weight:850;letter-spacing:.1em}
+.hf-vacancy-rule{height:1px;margin:17px 0 17px;background:linear-gradient(90deg,rgba(228,201,151,.72),rgba(255,255,255,.08) 72%,transparent)}
+.hf-vacancy-kicker{display:flex;align-items:center;gap:7px;color:#e5c985;font-size:10px;font-weight:900;letter-spacing:.14em}
+.hf-vacancy-live-dot{width:7px;height:7px;border-radius:50%;background:#a9d7b6;box-shadow:0 0 0 4px rgba(169,215,182,.13)}
+.hf-vacancy-title{max-width:600px;margin:12px 0 9px;color:#fff;font-size:clamp(22px,6.2vw,31px);font-weight:850;line-height:1.11;letter-spacing:-.04em;text-wrap:balance}
+.hf-vacancy-company{margin:0;color:#d8c8a6;font-size:14px;font-weight:750;line-height:1.4}
+.hf-vacancy-facts{display:flex;flex-wrap:wrap;gap:14px 23px;margin:20px 0 19px;padding:14px 0;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}
+.hf-vacancy-facts>div{display:flex;min-width:0;flex:1 1 120px;flex-direction:column;gap:5px}
+.hf-vacancy-facts small{color:rgba(255,255,255,.58);font-size:8.5px;font-weight:850;letter-spacing:.14em}
+.hf-vacancy-facts strong{overflow-wrap:anywhere;color:#fff;font-size:12px;font-weight:700;line-height:1.35}
+.hf-vacancy-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto}
+.hf-vacancy-destination{min-width:0;color:rgba(255,255,255,.68);font-size:9.5px;line-height:1.35}
+.hf-vacancy-destination strong{display:block;overflow:hidden;color:#fff;font-size:11px;font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+.hf-vacancy-apply{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;min-height:42px;padding:0 16px;border:1px solid #f5e8cc;border-radius:999px;background:linear-gradient(180deg,#fffdf8,#eee4d0);color:#10233a;font-size:11px;font-weight:900;box-shadow:0 5px 14px rgba(0,0,0,.18)}
+.hf-vacancy-apply b{font-size:16px;line-height:1}
+@media(max-width:390px){
+  .home-featured-vacancy{min-height:350px;padding:18px 16px 17px;border-radius:19px}
+  .hf-vacancy-badge{padding:5px 6px;font-size:7px}
+  .hf-vacancy-title{font-size:23px}
+  .hf-vacancy-facts{gap:12px 16px;margin:17px 0;padding:12px 0}
+  .hf-vacancy-apply{min-height:40px;padding:0 12px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.home-featured-vacancy{transition:none}}

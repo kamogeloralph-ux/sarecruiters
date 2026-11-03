@@ -33,14 +33,14 @@ function functionBody(src, name) {
 test('dedicated featured-vacancy sections and their extra startup query are removed', () => {
   const home = functionBody(uiSrc, 'renderHomeFeed');
   assert.ok(home, 'the home vacancy renderer must remain present');
-  assert.doesNotMatch(home, /Featured vacancies|home-featured-vacancy|featuredMarkup|homeVacancyIsFeatured/);
+  assert.doesNotMatch(home, /Featured vacancies|featuredMarkup|homeVacancyIsFeatured/);
   assert.match(home, /target\.innerHTML = '[\s\S]*homeVacancySourceMarkup\(\) \+\s*'<section class="home-jobs-section"/);
   assert.match(home, /var rows = matchingRows;/, 'featured listings remain eligible for normal retail-first role ordering');
   assert.match(home, /homeAvailableRolesMarkup\(rows\)/);
   assert.match(home, /onclick="openCommunity\(\)"/, 'the Interview Tips shortcut must remain on the home screen');
 
   assert.doesNotMatch(uiSrc, /career-featured-section|featured-vacancies-(?:heading|controls|rail|empty)|wireFeaturedRailGestures/);
-  assert.doesNotMatch(sharedCss, /featured-vacancies-(?:heading|controls|rail|empty)|home-featured-vacancy/);
+  assert.doesNotMatch(sharedCss, /featured-vacancies-(?:heading|controls|rail|empty)/);
   assert.doesNotMatch(appDataSrc, /loadFeaturedVacancies|featuredVacanciesCache|featured_vacancies/);
   assert.doesNotMatch(appCoreSrc, /featuredVacanciesCache/);
 });
@@ -83,12 +83,20 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
 });
 
 test('Home renders one deterministic daily featured vacancy poster', () => {
-  assert.match(uiSrc, /function getDailyFeaturedPoster\(posters\)/);
-  assert.match(uiSrc, /function renderHomeFeaturedPoster\(posters\)/);
+  assert.match(uiSrc, /function getDailyFeaturedVacancy\(vacancies\)/);
+  assert.match(uiSrc, /function renderHomeFeaturedVacancy\(vacancies\)/);
   assert.match(uiSrc, /home-featured-poster-slot/);
   assert.match(uiSrc, /Date\.UTC\(now\.getFullYear\(\), now\.getMonth\(\), now\.getDate\(\)/);
-  assert.match(cardsSrc, /renderHomeFeaturedPoster\(posters\)/);
-  assert.match(uiSrc, /id=\"home-featured-poster-slot\"/);
+  assert.match(uiSrc, /filterExpiredVacancies\(Array\.isArray\(vacancies\) \? vacancies : \[\]\)/);
+  assert.match(uiSrc, /featuredVacancyApplyUrl\(vacancy\)/);
+  assert.match(uiSrc, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
+  assert.match(uiSrc, /class="home-featured-vacancy" href="' \+ escapeHtml\(applyUrl\)/);
+  assert.match(uiSrc, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(uiSrc, /renderHomeFeaturedVacancy\(homeSourceVacancies\(\)\)/);
+  assert.match(cardsSrc, /renderHomeFeaturedVacancy\(homeSourceVacancies\(\)\)/);
+  assert.match(sharedCss, /\.home-featured-vacancy\{/);
+  assert.match(sharedCss, /\.hf-vacancy-apply\{/);
+  assert.match(uiSrc, /id="home-featured-poster-slot"/);
 });
 
 test('all vacancy filters are wired to the overview and folder render paths', () => {

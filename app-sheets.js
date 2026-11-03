@@ -919,10 +919,8 @@ export function renderPoolList() {
     detail('Sector', c.sector); detail('Location', c.location);
     if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') detail('Years of experience', (c.experience_years >= 10 ? '10+' : c.experience_years) + ' years');
     if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
-    // Full contact details (phone, email, CV) are admin-only — see
-    // CREATE_POOL_PUBLIC_ACCESS.sql. Interested employers go through
-    // SA Recruiters on WhatsApp rather than contacting candidates directly.
-    detailBits.push('<div class="det-row pool-contact-row"><a class="pool-whatsapp-btn" href="'+poolCandidateWhatsAppLink(c)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 0 1 12 4z"/></svg> Interested? Contact SA Recruiters</a></div>');
+    // Full contact details (phone, email, CV) remain private. The clear CV
+    // download action above is the single next step for interested employers.
     var role = c.position || 'Open to opportunities';
     var location = c.location || 'South Africa';
     var status = c.verified ? 'Screened profile' : 'Open to opportunities';
@@ -930,7 +928,7 @@ export function renderPoolList() {
     return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
       '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div><div class="pool-mini-location">'+escapeHtml(location)+'</div></div><div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
       '<div class="pool-mini-meta"><span class="pool-status">'+escapeHtml(status)+'</span>'+(frontBits.length ? '<span>'+frontBits.join(' · ')+'</span>' : '')+'</div>' +
-      '<div class="pool-mini-actions"><button type="button" class="pool-view-btn" onclick="event.stopPropagation();togglePoolCard(this.parentElement.parentElement)">View profile <span aria-hidden="true">↓</span></button><button type="button" class="pool-cv-download-btn" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)">Pay to download CV</button></div>' +
+      '<div class="pool-mini-actions"><button type="button" class="pool-view-btn" onclick="event.stopPropagation();togglePoolCard(this.parentElement.parentElement)">View profile <span aria-hidden="true">↓</span></button><button type="button" class="pool-cv-download-btn" aria-label="Unlock full CV for R49" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><span class="pool-cv-label">Unlock full CV</span><span class="pool-cv-price">R49</span></button></div>' +
       '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
       '</div>'
   }).join('');

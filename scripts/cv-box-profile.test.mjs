@@ -83,7 +83,9 @@ test('saved CV is viewable by its signed-in owner but private in public listings
   const publicBox = worker.slice(start, end);
   assert.match(publicBox, /select:\s*"id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at"/);
   assert.doesNotMatch(publicBox, /cv_link/);
-  assert.match(appSheets, /Pay to download CV/);
+  assert.match(appSheets, /Unlock full CV/);
+  assert.match(appSheets, /pool-cv-price[^>]*>R49/);
+  assert.doesNotMatch(appSheets, /pool-contact-row|pool-whatsapp-btn/);
 });
 
 test('guest CV Box registrations can link to a Google account later without creating a directory gate', () => {
