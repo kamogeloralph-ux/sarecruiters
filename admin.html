@@ -1371,10 +1371,10 @@ async function safeAdminObjectRead(label, loader){
     return {};
   }
 }
-async function upsertEmployer(e){ var result=await supabaseClient.from('employers').upsert(e).select('*').single(); if(result.error){ console.error('employer save',result.error); alert('Could not save employer: '+result.error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); } else await writeThroughD1Mirror('employers',Object.assign({},e,result.data||{})); }
-async function removeEmployer(id){ var { error } = await supabaseClient.from('employers').delete().eq('id',id); if(error){ console.error('employer del',error); alert('Could not delete: '+error.message); } else await writeThroughD1Mirror('employers',id,'delete'); }
-async function upsertBranch(b){ var result=await supabaseClient.from('branches').upsert(b).select('*').single(); if(result.error){ console.error('branch save',result.error); alert('Could not save branch: '+result.error.message); } else await writeThroughD1Mirror('branches',Object.assign({},b,result.data||{})); }
-async function removeBranch(id){ var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error) console.error('branch del',error); else await writeThroughD1Mirror('branches',id,'delete'); }
+async function upsertEmployer(e){ try { var result=await supabaseClient.from('employers').upsert(e).select('*').single(); if(result.error){ console.error('employer save',result.error); alert('Could not save employer: '+result.error.message+'\n\nMake sure you have run CREATE_EMPLOYERS_TABLE.sql in Supabase.'); return false; } await writeThroughD1Mirror('employers',Object.assign({},e,result.data||{})); return true; } catch(error){ console.error('employer save failed',error); alert('Could not save employer: '+(error.message||error)); return false; } }
+async function removeEmployer(id){ try { var { error } = await supabaseClient.from('employers').delete().eq('id',id); if(error){ console.error('employer del',error); alert('Could not delete: '+error.message); return false; } await writeThroughD1Mirror('employers',id,'delete'); return true; } catch(error){ console.error('employer delete failed',error); alert('Could not delete employer: '+(error.message||error)); return false; } }
+async function upsertBranch(b){ try { var result=await supabaseClient.from('branches').upsert(b).select('*').single(); if(result.error){ console.error('branch save',result.error); alert('Could not save branch: '+result.error.message); return false; } await writeThroughD1Mirror('branches',Object.assign({},b,result.data||{})); return true; } catch(error){ console.error('branch save failed',error); alert('Could not save branch: '+(error.message||error)); return false; } }
+async function removeBranch(id){ try { var { error } = await supabaseClient.from('branches').delete().eq('id',id); if(error){ console.error('branch del',error); alert('Could not delete branch: '+error.message); return false; } await writeThroughD1Mirror('branches',id,'delete'); return true; } catch(error){ console.error('branch delete failed',error); alert('Could not delete branch: '+(error.message||error)); return false; } }
 async function upsertVacancy(v){
   var result = await supabaseClient.from('vacancies').upsert(v).select('*').single();
   if(!result.error){ await writeThroughD1Mirror('vacancies',Object.assign({},v,result.data||{})); return true; }
@@ -1386,7 +1386,7 @@ async function upsertVacancy(v){
   } else { console.error('vacancy save',result.error); alert('Could not save vacancy: '+result.error.message); return false; }
 }
 
-async function removeVacancy(id){ var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error) console.error('vacancy del',error); else await writeThroughD1Mirror('vacancies',id,'delete'); }
+async function removeVacancy(id){ try { var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error){ console.error('vacancy del',error); alert('Could not delete vacancy: '+error.message); return false; } await writeThroughD1Mirror('vacancies',id,'delete'); return true; } catch(error){ console.error('vacancy delete failed',error); alert('Could not delete vacancy: '+(error.message||error)); return false; } }
 // One place for every admin write that goes through the Worker (service role).
 // Throws an Error carrying the server's message so callers can show it.
 async function adminApi(method, path, body){
@@ -2103,7 +2103,8 @@ async function saveEmployer(){
   };
   var isNewEmployer = !editing.employer;
   if (isNewEmployer) payload.manage_token = genToken(); // write once, atomically
-  await upsertEmployer(payload);
+  var employerSaved = await upsertEmployer(payload);
+  if (employerSaved === false) return; // Keep the form open; the save error was already shown.
   if (isNewEmployer) { var everified = await saveEmployerManagerToken(id, payload.manage_token); if (!everified) payload.manage_token = ''; }
   closeSheet('employer-overlay');
   showToast(editing.employer ? 'Employer updated' : 'Employer registered');
@@ -2382,7 +2383,8 @@ async function deleteEmployer(id){
   var e = employerById(id);
   var linkedVacancies = cache.vacancies.filter(function(v){ return v.employer_id===id; });
   if(!confirm('Delete "'+(e?e.name:'this employer')+'"? '+(linkedVacancies.length ? linkedVacancies.length+' linked vacancy/ies will remain in the Vacancies section and can be deleted separately. ' : '')+'This cannot be undone.')) return;
-  await removeEmployer(id);
+  var employerRemoved = await removeEmployer(id);
+  if (employerRemoved === false) return; // Preserve the row after a failed delete.
   showToast('Employer deleted');
   await loadAll(['employers']); renderNav(); renderEmployers(); renderDashboard();
 }
@@ -2446,7 +2448,8 @@ async function saveBranch(){
   if(!name){ alert('Add a branch name.'); return; }
   if(!agencyId){ alert('Choose a parent agency first.'); return; }
   var id = editing.branch || newId();
-  await upsertBranch({ id:id, agency_id:agencyId, name:name, location:document.getElementById('b-location').value.trim(), phone:document.getElementById('b-phone').value.trim(), email:document.getElementById('b-email').value.trim() });
+  var branchSaved = await upsertBranch({ id:id, agency_id:agencyId, name:name, location:document.getElementById('b-location').value.trim(), phone:document.getElementById('b-phone').value.trim(), email:document.getElementById('b-email').value.trim() });
+  if (branchSaved === false) return; // Keep the form open; the save error was already shown.
   closeSheet('branch-overlay');
   showToast(editing.branch ? 'Branch updated' : 'Branch added');
   editing.branch = null;
@@ -2455,7 +2458,8 @@ async function saveBranch(){
 async function deleteBranch(id){
   var b = cache.branches.find(function(x){return x.id===id;});
   if(!confirm('Delete "'+(b?b.name:'this branch')+'"?')) return;
-  await removeBranch(id);
+  var branchRemoved = await removeBranch(id);
+  if (branchRemoved === false) return; // Keep the row visible after a failed delete.
   showToast('Branch deleted');
   await loadAll(['branches']); renderNav(); renderBranches(); renderDashboard();
 }
@@ -2684,7 +2688,8 @@ async function saveVacancy(){
 async function deleteVacancy(id){
   var v = cache.vacancies.find(function(x){return x.id===id;});
   if(!confirm('Delete "'+(v?v.title:'this vacancy')+'"?')) return;
-  await removeVacancy(id);
+  var vacancyRemoved = await removeVacancy(id);
+  if (vacancyRemoved === false) return; // Keep the row visible after a failed delete.
   showToast('Vacancy deleted');
   cache.vacancies = cache.vacancies.filter(function(x){ return x.id !== id; });
   renderNav(); renderVacancies(); renderDashboard();
