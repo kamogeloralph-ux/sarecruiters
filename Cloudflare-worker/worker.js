@@ -1005,6 +1005,22 @@ async function cvBoxResponse(request, env, origin) {
   }
   if (!Array.isArray(result.body)) return json({ error: "CV Box returned an invalid response" }, 502, origin);
   const candidates = result.body.filter((row) => (row.status || "pending") === "active");
+  // Availability is not part of the redacted public view, so read just that
+  // one harmless column for the active profiles. Best-effort: if it fails the
+  // card simply shows "Not stated" and nothing else is exposed.
+  if (env.SUPABASE_SERVICE_ROLE_KEY && candidates.length) {
+    try {
+      const q = new URLSearchParams({ select: "id,availability", status: "eq.active", limit: "1000" });
+      const r = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${q}`, {
+        headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
+      });
+      if (r.ok) {
+        const rows = await r.json();
+        const byId = new Map((Array.isArray(rows) ? rows : []).map((row) => [String(row.id), String(row.availability || "").trim().slice(0, 40)]));
+        for (const c of candidates) c.availability = byId.get(String(c.id)) || "";
+      }
+    } catch (error) { console.warn("CV Box availability lookup failed", error); }
+  }
   return new Response(JSON.stringify({ candidates, count: candidates.length, generated_at: new Date().toISOString() }), {
     status: 200,
     headers: { ...corsHeaders(origin), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "CDN-Cache-Control": "no-store", "X-CV-Box-Source": "supabase-live" }
