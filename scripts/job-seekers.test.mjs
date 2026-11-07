@@ -50,7 +50,8 @@ test('converting to the CV Box keeps private details out of the public bio', () 
   const end = admin.indexOf('async function linkSeekerToPool', start);
   const fn = admin.slice(start, end);
   assert.doesNotMatch(fn, /pc-about/, 'public bio must not be prefilled');
-  assert.match(fn, /pc-notes/);
+  assert.doesNotMatch(fn, /pc-notes|pc-phone|pc-location/, 'admin form no longer carries mini-CV or notes fields');
+  assert.match(fn, /pc-position/);
   assert.match(admin, /if\(poolSaved === false\) return;/);
   assert.match(admin, /if\(fromSeeker\) await linkSeekerToPool\(fromSeeker, id\)/);
 });

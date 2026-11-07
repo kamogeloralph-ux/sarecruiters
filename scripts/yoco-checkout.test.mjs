@@ -54,3 +54,19 @@ test('checkout return text waits for webhook confirmation and removes its one-ti
   assert.match(ui, /If your payment succeeded, we’ll email your private CV download link after Yoco confirms it/);
   assert.match(ui, /params\.delete\('cvPayment'\)/);
 });
+test('CV Box checkout accepts the app-generated (non-UUID) candidate ids', () => {
+  // Regression: candidate ids are base36 strings made by the app, so a
+  // UUID-only check made every "Pay R49 and download CV" fail with
+  // "Choose a valid CV Box profile."
+  const handler = worker.slice(worker.indexOf('async function cvCheckoutResponse'), worker.indexOf('__name(cvCheckoutResponse'));
+  const m = handler.match(/if \(!(\/\^[^\n]*?\$\/)\.test\(candidateId\)\)/);
+  assert.ok(m, 'candidate id validation regex found');
+  const idPattern = eval(m[1]);
+  const sampleId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  assert.ok(idPattern.test(sampleId), 'base36 app id is accepted');
+  assert.ok(idPattern.test('0b8f2a0c-3f3e-4c55-9d5a-7a1c2b3d4e5f'), 'uuid still accepted');
+  assert.ok(idPattern.test('12345'), 'numeric id accepted');
+  for (const bad of ['', ' ', 'a b', "x'y", 'a&id=eq.1', '../x', 'a'.repeat(65)]) assert.ok(!idPattern.test(bad), `rejects ${JSON.stringify(bad)}`);
+  assert.match(handler, /body\.candidateId \?\? ""/);
+  assert.match(sheets, /candidateId: String\(c\.id\)/);
+});

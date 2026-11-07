@@ -111,3 +111,43 @@ test('guest Profile cards, contact details, help action, and account headings re
   assert.match(appCore, /tap “Try Google sign-in again” to retry/);
   assert.match(appCore, /error: 'Try Google sign-in again'/);
 });
+
+test('CV Box upload form requires a profile photo for every new upload', () => {
+  assert.match(html, /<label>Profile photo \*<\/label><input id="pool-photo" type="file"[^>]*onchange="handlePoolPhoto\(event\)"/);
+  const submit = appSheets.slice(appSheets.indexOf('export async function submitPoolRegistration'), appSheets.indexOf('export function copyText'));
+  // The photo check runs before the CV and terms checks and before any upload/insert.
+  const photoCheck = submit.indexOf('window.pendingPoolPhotoBlob && !window.currentPoolPhotoUrl');
+  assert.ok(photoCheck > 0, 'photo requirement present');
+  assert.ok(photoCheck < submit.indexOf('Please upload your CV before submitting.'));
+  assert.ok(photoCheck < submit.indexOf("from('pool_candidates').insert"));
+  // A failed photo upload must stop a new registration instead of inserting a photo-less row.
+  assert.match(submit, /if \(!photoUrl\) \{[\s\S]*?profile photo could not be uploaded[\s\S]*?return; \}/);
+  assert.match(submit, /payload\.photo_url = photoUrl;/);
+  // Editing keeps the existing photo when no new one is chosen.
+  assert.match(submit, /window\.currentPoolPhotoUrl \|\| null/);
+});
+
+test('CV Box no longer collects or shows Mini-CV details publicly', () => {
+  assert.doesNotMatch(html, /Mini-CV/);
+  assert.doesNotMatch(appUi, /Mini-CV/);
+  assert.doesNotMatch(appSheets, /pool-minicv-details|pool-finish-later-note|mini-cv-pitch/);
+  const list = appSheets.slice(appSheets.indexOf('export function renderPoolList'), appSheets.indexOf('export function poolCandidateWhatsAppLink'));
+  assert.doesNotMatch(list, /about_you|experience_years|detailBits|frontBits|pool-mini-details|View profile/);
+  assert.match(list, /openCvDownloadRequestById/);
+});
+
+test('admin CV Box keeps only approve, edit and a slim uploader form', () => {
+  const sheet = admin.slice(admin.indexOf('id="pool-overlay"'), admin.indexOf('CONTENT ARTICLE SHEET'));
+  for (const id of ['pc-name', 'pc-photo', 'pc-position', 'pc-email', 'pc-cv', 'pc-status']) assert.match(sheet, new RegExp(`id="${id}"`));
+  for (const id of ['pc-phone', 'pc-sector', 'pc-location', 'pc-gender', 'pc-grade12', 'pc-criminal', 'pc-experience', 'pc-qualification', 'pc-drivers-license', 'pc-transport', 'pc-relocate', 'pc-availability', 'pc-employment', 'pc-salary', 'pc-work-authorized', 'pc-about', 'pc-payref', 'pc-paiduntil', 'pc-notes']) {
+    assert.doesNotMatch(sheet, new RegExp(`id="${id}"`), `${id} removed`);
+  }
+  assert.doesNotMatch(sheet, /Mini CV questions/);
+  const list = admin.slice(admin.indexOf('function renderPoolCandidates'), admin.indexOf('function openPoolSheet'));
+  assert.doesNotMatch(list, /row-details|det-row|about_you|contact_phone|screenBits|toggleRow/);
+  assert.match(list, /approvePoolCandidate/);
+  assert.match(list, /openPoolSheet/);
+  // New admin uploads need a photo too.
+  const save = admin.slice(admin.indexOf('async function savePoolCandidate'), admin.indexOf('async function approvePoolCandidate'));
+  assert.match(save, /profile photo is required/);
+});
