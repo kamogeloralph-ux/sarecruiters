@@ -2788,11 +2788,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 }
 .pool-mini-actions .pool-view-btn span{font-size:15px;line-height:1;color:var(--text-2)}
 .pool-mini-actions .pool-cv-download-btn{
-  display:flex!important;align-items:center;justify-content:space-between;gap:8px;
-  border:1px solid #a78340!important;border-radius:13px!important;
-  background:linear-gradient(135deg,#eddbb5 0%,#d5b574 52%,#c29a50 100%)!important;
-  color:#211b10!important;-webkit-text-fill-color:#211b10!important;
-  box-shadow:0 5px 13px rgba(153,116,46,.2),inset 0 1px 0 rgba(255,255,255,.55)!important;
+  display:flex!important;align-items:center;justify-content:center;gap:9px;
+  border:2px solid #0b7a35!important;border-radius:13px!important;
+  background:linear-gradient(135deg,#12a04a 0%,#0b7a35 100%)!important;
+  color:#fff!important;-webkit-text-fill-color:#fff!important;
+  box-shadow:0 6px 16px rgba(11,122,53,.28)!important;
   font-size:12px!important;font-weight:850!important;line-height:1.2!important;
   text-indent:0!important;white-space:nowrap;visibility:visible!important;opacity:1!important;
 }
@@ -2802,7 +2802,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
   background:rgba(255,255,255,.48);color:#211b10;font-size:11px;font-weight:900;line-height:1;
 }
 .pool-mini-actions button:active{transform:translateY(1px) scale(.99)}
-.pool-mini-actions .pool-cv-download-btn:hover{box-shadow:0 8px 18px rgba(153,116,46,.28),inset 0 1px 0 rgba(255,255,255,.6)!important}
+.pool-mini-actions .pool-cv-download-btn:hover{box-shadow:0 8px 20px rgba(11,122,53,.36)!important}
+/* Pay button inside the unlock sheet: always a solid, branded green (never plain white). */
+.cv-download-sheet #cv-download-checkout{background:linear-gradient(135deg,#12a04a 0%,#0b7a35 100%)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:2px solid #0b7a35!important;box-shadow:0 6px 16px rgba(11,122,53,.28)!important}
+.cv-download-sheet #cv-download-checkout:disabled{opacity:.7!important}
+[data-theme="dark"] .cv-download-sheet #cv-download-checkout{background:#3ddc84!important;color:#000!important;-webkit-text-fill-color:#000!important;border-color:#3ddc84!important}
 .pool-mini-card .pool-mini-details{margin-top:14px;padding-top:13px;border-top:1px solid var(--separator);font-size:13px;line-height:1.55}
 .pool-mini-card .pool-mini-details .det-row{padding:3px 0}
 .pool-mini-card .pool-mini-details .mini-cv-pitch{margin:8px 0;padding:10px 11px;border:1px solid var(--border);border-radius:12px;background:var(--card-2)}

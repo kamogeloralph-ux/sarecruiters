@@ -912,12 +912,12 @@ export function renderPoolList() {
     var middleAd = index === middleAt ? '<div id="house-ad-candidates-middle" class="house-ad-slot" hidden></div>' : '';
     // Public cards intentionally show only the photo, name, position and the
     // paid CV action. Mini-CV answers (sector, experience, about me, etc.)
-    // and contact details stay private; the full CV is an R49 secure download.
+    // and contact details stay private; the full CV is a paid secure download (price shown only after Unlock).
     var role = c.position || 'Open to opportunities';
     var avatar = c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar pool-mini-avatar">'+initials(c.full_name)+'</div>';
     return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'">' +
       '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div></div></div>' +
-      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" aria-label="Unlock full CV for R49" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><span class="pool-cv-label">Unlock full CV</span><span class="pool-cv-price">R49</span></button></div>' +
+      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" aria-label="Unlock full CV" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><svg class="pool-cv-lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span class="pool-cv-label">Unlock full CV</span></button></div>' +
       '</div>'
   }).join('');
 }

@@ -1,66 +1,104 @@
-# Scheduled rebuilds for Cloudflare Pages
+# Moving file storage from Supabase to Cloudflare R2
 
-**What this replaces:** the `schedule: "0 */3 * * *"` cron in the old
-`.github/workflows/deploy.yml`, which ran on GitHub Actions to catch
-agencies/vacancies added directly in Supabase (via the admin panel)
-that don't otherwise get a static page until `generate-pages.js` runs
-again.
+**What this changes:** candidate photos and daily-track MP3s now live in
+Cloudflare R2 instead of Supabase Storage. This is what was eating your
+Supabase egress — the database itself (agencies, employers, vacancies,
+candidates, etc.) stays in Supabase and is untouched.
 
-Cloudflare Pages only rebuilds automatically on a `git push`. This
-folder is a tiny Worker that calls your Pages project's **Deploy
-Hook** every 3 hours to force a rebuild without a push.
+The R2 bucket **`sarecruiters-media`** already exists in your Cloudflare
+account. You need to do 3 things to finish the switch:
 
-## 1. Create the Pages project (if you haven't yet)
+## 1. Make the bucket's files publicly readable
 
-Cloudflare Dashboard → Workers & Pages → Create → Pages → connect
-this GitHub repo.
+Cloudflare Dashboard → R2 → `sarecruiters-media` → **Settings** →
+**Public Access** → enable **"Allow Access"** (r2.dev subdomain).
 
-- Build command: `npm install && node generate-pages.js`
-- Build output directory: `/` (repo root — `generate-pages.js`
-  writes static pages alongside the existing `index.html`)
+Copy the `https://pub-xxxxxxxx.r2.dev` URL it gives you.
 
-Cloudflare will now deploy automatically on every push to `main`,
-same as the old GitHub Actions workflow did — that part needs no
-extra code.
+*(Optional, better for production: attach a custom domain, e.g.
+`media.sarecruiters.co.za`, instead of the r2.dev URL — same Settings tab.)*
 
-## 2. Create a Deploy Hook
+## 2. Deploy the upload Worker
 
-In the Pages project → **Settings → Builds & deployments → Deploy
-hooks → Add deploy hook**. Name it e.g. `rebuild-cron`, point it at
-the `main` branch, and copy the URL it gives you
-(`https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/...`).
-
-Treat this URL as a secret — anyone with it can trigger a rebuild.
-
-## 3. Deploy this Worker
+This folder (`cloudflare-worker/`) contains a small Worker that handles
+uploads/deletes securely (R2 credentials never touch the browser). Public
+reads bypass it entirely and go straight to the bucket's public URL from
+step 1.
 
 ```bash
-cd cloudflare-rebuild-cron
+cd cloudflare-worker
 npm install -g wrangler   # if you don't have it
 wrangler login
-wrangler secret put PAGES_DEPLOY_HOOK_URL
-# paste the Deploy Hook URL from step 2 when prompted
+```
+
+Open `wrangler.toml` and replace `R2_PUBLIC_BASE_URL` with the URL from
+step 1. Then:
+
+```bash
 wrangler deploy
 ```
 
-The cron schedule (`0 */3 * * *`, same as before) is already set in
-`wrangler.toml`.
+### Automatic deployment from GitHub Actions
 
-## 4. Test it manually
+The repository includes `.github/workflows/deploy-worker.yml`. It deploys the
+Worker automatically when changes are pushed to `main` under
+`Cloudflare-worker/**`, and it can also be started manually from the Actions
+tab with **Run workflow**.
 
-Trigger a rebuild on demand instead of waiting for the next cron
-tick:
+Add these repository secrets in GitHub before the first automated deployment:
 
-```bash
-curl -X POST https://sarecruiters-rebuild-cron.<your-subdomain>.workers.dev
+- `CLOUDFLARE_API_TOKEN` — an API token with permission to edit Workers Scripts
+- `CLOUDFLARE_ACCOUNT_ID` — the Cloudflare account ID that owns the Worker
+
+The workflow uses the `keep_vars = true` setting in `wrangler.toml`, so
+dashboard-configured Worker variables and secrets such as
+`TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, and `GEMINI_API_KEY` are retained
+when a deployment runs.
+
+This prints your Worker's URL, e.g.
+`https://sarecruiters-uploader.<your-subdomain>.workers.dev`.
+
+## 3. Point the site at the Worker
+
+In both `app.js` and `admin.html`, find:
+
+```js
+var R2_WORKER_URL = 'https://REPLACE-ME.workers.dev';
 ```
 
-Check the Pages project's **Deployments** tab — a new deployment
-should appear within a few seconds, triggered by "Deploy Hook"
-rather than "Push".
+and replace it with the URL from step 2. Then redeploy/push the site as
+usual (GitHub Pages will pick it up).
 
-## 5. Retire the old workflow
+---
 
-Once this is confirmed working, delete
-`.github/workflows/deploy.yml` and the repo-root `CNAME` file — both
-were GitHub Pages-specific and do nothing on Cloudflare Pages.
+### How admin auth works here
+The daily-track upload/delete endpoints require the logged-in admin's
+Supabase session token — the Worker checks it against Supabase's own
+`/auth/v1/user` endpoint. No separate password to manage; if you're
+signed into `admin.html`, uploads work.
+
+### Old data
+Anything already uploaded to Supabase Storage (`candidate-photos`,
+`daily-tracks` buckets there) stays where it is and will keep working —
+this only changes where *new* uploads go. If you want to migrate the old
+files too, say the word and I'll write a one-off script for that.
+
+
+## D1 public-data write-through
+
+Admin writes that affect public directories use `POST /api/admin/d1/write-through`. The admin UI sends the row representation returned by the same Supabase mutation, so the Worker does not issue a second Supabase row read. The Worker verifies the admin session, applies a table/column allowlist, writes the row (or deletion) and increments `sync_meta.public_data_version` atomically in D1.
+
+`/api/startup`, `/api/vacancies` and `/api/posters` use that version to bypass stale D1/R2/Worker cache entries. When a vacancy snapshot has an older version, the Worker filters/paginates directly from D1; it does not run a full mirror sync. The static Pages snapshot remains a fallback when the Worker is unavailable. The scheduled/manual mirror sync is still used for scraper imports, reconciliation and recovery.
+
+## Yoco paid CV Box downloads
+
+The CV download checkout charges **R49 per CV** (4,900 cents). The Worker creates each checkout server-side, verifies Yoco Checkout API webhook signatures, confirms the checkout directly with Yoco, and only then emails the buyer a private 72-hour download link plus the candidate’s contact details (phone/email from the private pool_candidates row, looked up at payment time), and emails `ADMIN_NOTIFY_EMAIL` an instant "CV payment received" alert. Candidate CV URLs are never sent to the browser before payment.
+
+Before enabling payment fulfillment, ensure these Worker secrets are configured in Cloudflare (never commit or paste the values into source):
+
+- `YOCO_LIVE_SECRET_KEY` — the existing Yoco live secret binding. The Worker uses this name first and also accepts `YOCO_SECRET_KEY` as a fallback.
+- `YOCO_WEBHOOK_SECRET` — the one-time `whsec_...` signing secret returned when registering the Yoco Checkout webhook. This is a separate secret and must be saved as a Worker secret before payment fulfillment can run.
+
+`RESEND_API_KEY` must also be configured so buyers receive their paid download. The public non-secret settings are `CV_DOWNLOAD_PRICE_CENTS=4900`, `SITE_URL=https://sa-recruiters.co.za`, and `WORKER_URL=https://sarecruiters-uploader.kamogeloralph.workers.dev` in `wrangler.toml`.
+
+Register one Checkout API webhook in Yoco pointing to `https://sarecruiters-uploader.kamogeloralph.workers.dev/api/yoco/webhook`. The D1 migration `0006_cv_download_orders.sql` creates the private order table; the normal deploy workflow applies remote D1 migrations. Until Yoco secrets and Resend are configured, checkout fails closed and the WhatsApp contact option remains available. Yoco's success redirect is not trusted for payment confirmation; signed webhooks and a server-side checkout lookup are required.
