@@ -693,6 +693,10 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Profile photo <span id="pc-photo-req">*</span></label><input type="file" id="pc-photo" accept="image/*" onchange="handlePoolPhoto(event)"></div>
     <div id="pc-photo-preview" style="display:none;margin-bottom:12px"><img id="pc-photo-img" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:1px solid var(--border)"></div>
     <div class="field"><label>Position *</label><input id="pc-position"></div>
+    <div class="field"><label>Location *</label><input id="pc-location" placeholder="e.g. Durban, KwaZulu-Natal" maxlength="80"></div>
+    <div class="field"><label>Years of experience *</label><select id="pc-experience"><option value="">Choose…</option><option value="0">No experience yet</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
+    <div class="field"><label>Availability *</label><select id="pc-availability"><option value="">Choose…</option><option value="Immediately">Immediately</option><option value="Within 1 week">Within 1 week</option><option value="Within 2 weeks">Within 2 weeks</option><option value="Within 1 month">Within 1 month</option><option value="More than 1 month">More than 1 month</option></select></div>
+    <div class="field"><label>Phone / WhatsApp <span class="field-optional">sent to buyers after payment, never shown publicly</span></label><input id="pc-phone" type="tel" inputmode="tel" maxlength="20"></div>
     <div class="field"><label>Email <span class="field-optional">optional</span></label><input id="pc-email" type="email"></div>
     <div class="field"><label>CV link</label><input id="pc-cv" type="url" oninput="updatePoolCvOpenLink()"><a id="pc-cv-open" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:6px;font-size:13px;font-weight:700">Open CV ↗</a></div>
     <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
@@ -2702,7 +2706,7 @@ function renderPoolCandidates(){
   var el = document.getElementById('pool-admin-list');
   if(!list.length){ el.innerHTML = emptyState('Nothing here','No candidates in this view.'); return; }
   el.innerHTML = list.map(function(p){
-    var sub = p.position || '';
+    var sub = [p.position, p.location, (p.experience_years===null||p.experience_years===undefined)?'':(p.experience_years>=10?'10+ yrs':p.experience_years+' yrs'), p.availability].filter(Boolean).join(' · ');
     var quickActions = '';
     if((p.status||'pending')==='pending'){
       quickActions = '<button class="minibtn ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Approve</button>' +
@@ -2754,12 +2758,26 @@ function openPoolSheet(id){
   var photoReq = document.getElementById('pc-photo-req');
   if (photoReq) photoReq.style.display = id ? 'none' : 'inline';
   document.getElementById('pc-email').value = p ? (p.contact_email||'') : '';
+  document.getElementById('pc-phone').value = p ? (p.contact_phone||'') : '';
+  document.getElementById('pc-location').value = p ? (p.location||'') : '';
+  document.getElementById('pc-experience').value = (p && p.experience_years !== null && p.experience_years !== undefined) ? String(Math.min(10, Math.max(0, p.experience_years))) : '';
+  setPoolAvailability(p ? p.availability : '');
   document.getElementById('pc-position').value = p ? (p.position||'') : '';
   document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
   updatePoolCvOpenLink();
   document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
   document.getElementById('pc-verified').checked = p ? !!p.verified : false;
   openSheet('pool-overlay');
+}
+// Sets the availability dropdown; an older free-text value is kept as an extra option so nothing is lost.
+function setPoolAvailability(value){
+  var sel = document.getElementById('pc-availability'); if(!sel) return;
+  Array.prototype.slice.call(sel.options).forEach(function(o){ if(o.getAttribute('data-legacy')) sel.removeChild(o); });
+  value = String(value||'').trim();
+  if(value && !Array.prototype.some.call(sel.options, function(o){ return o.value === value; })){
+    var o = document.createElement('option'); o.value = value; o.textContent = value; o.setAttribute('data-legacy','1'); sel.appendChild(o);
+  }
+  sel.value = value;
 }
 // Shows an "Open CV" link beside the CV field so a CV can be reviewed before approving.
 function updatePoolCvOpenLink(){
@@ -2775,6 +2793,12 @@ async function savePoolCandidate(){
   if(!name){ alert('Add the candidate\'s full name.'); return; }
   var position = document.getElementById('pc-position').value.trim();
   if(!position){ alert('Add the position the candidate wants to be considered for.'); return; }
+  var location = document.getElementById('pc-location').value.trim();
+  if(!location){ alert('Add the candidate\'s location.'); return; }
+  var experience = document.getElementById('pc-experience').value;
+  if(experience === ''){ alert('Choose the candidate\'s years of experience.'); return; }
+  var availability = document.getElementById('pc-availability').value.trim();
+  if(!availability){ alert('Choose when the candidate is available.'); return; }
   if(!editingPool && !pendingPoolAdminPhotoBlob && !window.pendingPoolAdminPhoto){ alert('A profile photo is required to add a candidate to the CV Box.'); return; }
   var id = editingPool || newId();
   var photoUrl = await uploadPoolAdminPhotoIfAny();
@@ -2787,6 +2811,10 @@ async function savePoolCandidate(){
     full_name:name,
     photo_url:photoUrl,
     contact_email:document.getElementById('pc-email').value.trim(),
+    contact_phone:document.getElementById('pc-phone').value.trim(),
+    location:location,
+    experience_years:parseInt(experience, 10),
+    availability:availability,
     position:position,
     cv_link:document.getElementById('pc-cv').value.trim(),
     status:document.getElementById('pc-status').value,
@@ -2985,6 +3013,9 @@ function seekerToTalentPool(id){
   document.getElementById('pool-sheet-title').textContent = 'Add to CV Box';
   document.getElementById('pc-name').value = j.full_name || '';
   document.getElementById('pc-email').value = j.email || '';
+  document.getElementById('pc-phone').value = j.phone || '';
+  document.getElementById('pc-location').value = String(j.location||'').slice(0,80);
+  setPoolAvailability(j.availability);
   document.getElementById('pc-position').value = String(j.looking_for||'').slice(0,100);
   document.getElementById('pc-cv').value = safeHttpUrl(j.cv_link);
   updatePoolCvOpenLink();
