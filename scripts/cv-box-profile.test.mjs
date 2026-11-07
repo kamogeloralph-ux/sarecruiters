@@ -153,3 +153,14 @@ test('admin CV Box keeps only approve, edit and a slim uploader form', () => {
   const save = admin.slice(admin.indexOf('async function savePoolCandidate'), admin.indexOf('async function approvePoolCandidate'));
   assert.match(save, /profile photo is required/);
 });
+
+test('CV Box cards show location, experience and availability before payment, and the form collects them', () => {
+  assert.match(appSheets, /pool-mini-facts/);
+  assert.match(appSheets, /poolFactExperience\(c\)/);
+  assert.match(appSheets, /poolFactAvailability\(c\)/);
+  assert.doesNotMatch(appSheets, /pool-mini-facts[^;]*contact_(phone|email)/);
+  for (const id of ['pool-location', 'pool-experience', 'pool-availability', 'pool-phone']) {
+    assert.equal((html.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1, `${id} appears exactly once`);
+  }
+  assert.match(worker, /select: "id,availability"/);
+});
