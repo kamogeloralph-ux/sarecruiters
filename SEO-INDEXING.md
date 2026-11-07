@@ -29,5 +29,5 @@ Every "Submit your CV" button — on agency pages, vacancy pages (when the vacan
 4. Check Pages → Indexing and Search results → Search type: Image after 1–2 weeks.
 Google decides what to index and when; the site now makes every page discoverable and crawlable, but "100% indexed" is not something anyone can force.
 
-## Photo hosting tip
-Photos are served from `pub-…r2.dev`. Cloudflare treats r2.dev as a development URL (rate-limited). For image search, attach a custom domain to the bucket (e.g. `media.sa-recruiters.co.za`, R2 → bucket → Settings → Custom Domains) and verify it in Search Console too.
+## Photo hosting
+Photos are served from the custom domain `https://media.sa-recruiters.co.za` (R2 bucket `sarecruiters-media`), not the rate-limited `pub-…r2.dev` development URL. Add `media.sa-recruiters.co.za` to Search Console as well. The legacy r2.dev address stays accepted by the worker (`R2_LEGACY_BASE_URL`) and by the database poster-URL check until every stored URL has been rewritten.

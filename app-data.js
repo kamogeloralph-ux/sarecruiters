@@ -403,7 +403,7 @@ export async function loadMediaSetting() {
    the `daily_tracks` table (Supabase). This keeps an uploaded track available
    to visitors for at least seven days instead of showing it only on its upload
    date. The audio file is served from Cloudflare R2; Supabase stores its metadata. */
-export var TRACKS_PUBLIC_BASE_URL = 'https://pub-911e4cd402674c6f85c747b12212772f.r2.dev';
+export var TRACKS_PUBLIC_BASE_URL = 'https://media.sa-recruiters.co.za';
 export var todayTrack = null;       // {id,title,artist,track_date,file_url,spotify_url}
 export var trackAudio = null;       // <audio> element
 export var trackIsPlaying = false;
