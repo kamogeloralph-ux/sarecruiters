@@ -1,4 +1,17 @@
+# SA Recruiters — everything public is crawlable, including images.
 User-agent: *
+Allow: /
+# Private / token / one-time URLs must never be crawled or indexed.
+Disallow: /admin.html
+Disallow: /offline.html
+Disallow: /*?manage=
+Disallow: /*?manage_employer=
+Disallow: /*?unsub_search=
+Disallow: /*?unsubscribe=
+Disallow: /*?cvPayment=
+
+# Let Google fetch agency, company and poster photos for image search.
+User-agent: Googlebot-Image
 Allow: /
 
 Sitemap: https://sa-recruiters.co.za/sitemap.xml

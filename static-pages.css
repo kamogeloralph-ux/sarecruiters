@@ -338,3 +338,27 @@ a.fact:hover b{color:var(--blue-deep)}
 .sp-hero :focus-visible,.sp-footer :focus-visible{outline-color:#fff}
 /* images are greyscale to match the brand; set --mono-photo-filter:none on :root to restore colour */
 .av img,.jc img,.card img,.sp-brand img{filter:var(--mono-photo-filter)}
+
+/* ---- directories, archives, poster gallery and CV submission ---- */
+.pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:34px 0 8px}
+.pg{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:42px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink)!important;font-size:14px;font-weight:700;text-decoration:none!important}
+a.pg:hover{background:var(--blue-soft);border-color:var(--blue-line)}
+.pg.is-active{background:var(--blue);border-color:var(--blue);color:var(--m-on-ink)!important}
+.pg-gap{border-color:transparent;background:none;min-width:auto;padding:0 4px;color:var(--muted)!important}
+.poster-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr))}
+.poster-tile{display:flex;flex-direction:column;gap:10px;min-width:0;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-sm);color:var(--ink)!important;font-size:13.5px;font-weight:650;line-height:1.35;text-decoration:none!important;transition:transform .18s,box-shadow .18s}
+.poster-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
+.poster-tile img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:var(--surface-2);filter:var(--mono-photo-filter)}
+.poster-tile span{overflow-wrap:anywhere}
+.cv-card .cv-lead{margin:0 0 10px;color:var(--ink-2)}
+.cv-card .cv-pref{margin:0 0 14px;font-size:13.5px;color:var(--muted)}
+.cv-methods{display:grid;gap:10px}
+.cv-safe{margin:14px 0 0;font-size:13px;color:var(--muted)}
+.cv-safe a{text-decoration:underline;text-underline-offset:3px}
+.cv-steps{margin:0 0 6px;padding-left:20px;display:grid;gap:8px;color:var(--ink-2)}
+.cv-list{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:10px}
+.cv-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);box-shadow:var(--sh-sm)}
+.cv-row-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 180px}
+.cv-row-name{font-weight:750;color:var(--ink);overflow-wrap:anywhere}
+.cv-row-tx small{color:var(--muted);font-size:12.5px}
+.cv-row .btn{min-height:40px;padding:0 16px;font-size:13.5px}

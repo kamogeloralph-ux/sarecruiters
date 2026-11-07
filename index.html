@@ -1527,6 +1527,11 @@
     <a href="register/">Register</a>
     <a href="candidates/">Candidates</a>
     <a href="about/">About SA Recruiters</a>
+    <a href="vacancies/">All vacancies</a>
+    <a href="agencies/">Recruitment agencies</a>
+    <a href="companies/">Companies hiring</a>
+    <a href="posters/">Vacancy posters</a>
+    <a href="submit-cv/">Submit your CV</a>
   </nav>
 </footer>
 
@@ -1624,6 +1629,30 @@ body.sendpulse-feedback-open sp-live-chat{display:block!important}
     if (window.__saStartChatPlacement) window.__saStartChatPlacement();
   }
   window.__saStartSendPulse = start;
+})();
+</script>
+<script>
+/* Agency / vacancy "Submit your CV" buttons link to /?section=candidates&cvbox=submit.
+   Once the app has opened the CV Box, open its upload form (openPoolRegisterSheet). */
+(function () {
+  var q;
+  try { q = new URLSearchParams(location.search); } catch (e) { return; }
+  if (q.get('cvbox') !== 'submit') return;
+  var tries = 0;
+  (function wait() {
+    if (typeof window.openPoolRegisterSheet === 'function' && document.readyState !== 'loading') {
+      setTimeout(function () {
+        try { window.openPoolRegisterSheet(); } catch (e) {}
+        try {
+          q.delete('cvbox');
+          var qs = q.toString();
+          history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+        } catch (e) {}
+      }, 400);
+      return;
+    }
+    if (++tries < 100) setTimeout(wait, 150);
+  })();
 })();
 </script>
 </body>

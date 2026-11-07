@@ -225,6 +225,10 @@ const CTX = {
   agencyById: new Map(),    // agency id -> { slug, name }
   vacancySlugs: new Map(),  // vacancy __staticSlugKey -> public slug
   latest: [],               // newest open vacancies: [{ vacancy, slug }]
+  companyByKey: new Map(),  // normalised company name -> { slug, name } (hiring-company pages)
+  hasCompanies: false,      // /companies/ directory exists
+  hasPosters: false,        // /posters/ gallery exists
+  lastCrumbs: [],           // breadcrumbs of the page being built (read by pageShell for JSON-LD)
 };
 
 const LOCATION_HUBS = [
@@ -333,7 +337,7 @@ function hueFrom(str) {
 function avatarHtml(name, photo, cls = '') {
   const initial = escapeHtml((String(name || '').trim().match(/[A-Za-z0-9]/) || ['?'])[0].toUpperCase());
   const img = safeHttpUrl(photo);
-  return `<span class="av ${cls}" style="--h:${hueFrom(name)}"><span>${initial}</span>${img ? `<img src="${escapeHtml(img)}" alt="" loading="lazy" decoding="async">` : ''}</span>`;
+  return `<span class="av ${cls}" style="--h:${hueFrom(name)}"><span>${initial}</span>${img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(name ? `${name} logo` : 'Logo')}" width="96" height="96" loading="lazy" decoding="async">` : ''}</span>`;
 }
 
 function emailOk(value) {
@@ -425,8 +429,10 @@ function categoryChips(current = '') {
 function vacancyCard(v, slug) {
   const agencyRef = v.agency_id !== undefined && v.agency_id !== null ? CTX.agencyById.get(String(v.agency_id)) : null;
   const company = v.company || (agencyRef && agencyRef.name) || '';
+  const companyRef = !agencyRef && company ? CTX.companyByKey.get(normCompanyKey(company)) : null;
   const companyHtml = company
-    ? (agencyRef ? `<a href="/agency/${agencyRef.slug}/">${escapeHtml(company)}</a>` : escapeHtml(company))
+    ? (agencyRef ? `<a href="/agency/${agencyRef.slug}/">${escapeHtml(company)}</a>`
+      : companyRef ? `<a href="/company/${companyRef.slug}/">${escapeHtml(company)}</a>` : escapeHtml(company))
     : '';
   const chips = [];
   if (v.location) chips.push(locationChip(v.location));
@@ -460,6 +466,7 @@ ${agency.verified ? verifiedPill('Verified') : ''}
 }
 
 function heroHtml({ kicker = '', title, lead = '', crumbs = [], actions = '', stats = [], media = '', chips = '' }) {
+  CTX.lastCrumbs = crumbs; // pageShell turns these into BreadcrumbList JSON-LD
   const crumbHtml = crumbs.length
     ? `<nav class="crumbs" aria-label="Breadcrumb"><ol>${crumbs.map(([label, href], i) => (href && i < crumbs.length - 1
       ? `<li><a href="${escapeHtml(href)}">${escapeHtml(label)}</a></li>`
@@ -484,6 +491,7 @@ function footerHtml() {
 <div class="sp-contact"><a href="tel:+27715531005">${icon('phone', 16)} 071 553 1005</a><a href="https://wa.me/27715531005" target="_blank" rel="noopener noreferrer">${icon('chat', 16)} WhatsApp us</a><a href="mailto:sarecruiters.directory@gmail.com">${icon('mail', 16)} Email us</a><a href="https://g.page/r/CbL3q0tBfGAsEBI" target="_blank" rel="noopener noreferrer">${icon('pin', 16)} Find us on Google</a></div>
 </div>
 <div><h3>Explore</h3><div class="sp-footer-links"><a href="/careers/">Careers</a><a href="/apply/">Apply</a><a href="/contact/">Contact</a><a href="/register/">Register</a><a href="/candidates/">Candidates</a><a href="/about/">About</a><a href="/post-a-job/">Post a job</a></div></div>
+<div><h3>Directory</h3><div class="sp-foot-col"><a href="/vacancies/">All vacancies</a><a href="/agencies/">Recruitment agencies</a>${CTX.hasCompanies ? '<a href="/companies/">Hiring companies</a>' : ''}${CTX.hasPosters ? '<a href="/posters/">Vacancy posters</a>' : ''}<a href="/submit-cv/">Submit your CV</a></div></div>
 <div><h3>In the app</h3><div class="sp-foot-col"><a href="/?section=vacancies">Vacancies</a><a href="/?section=agencies">Agencies</a><a href="/?section=candidates">CV Box</a><a href="/?section=posters">Vacancy posters</a><a href="/?section=employers">Employers</a></div></div>
 ${provs ? `<div><h3>Jobs by province</h3><div class="sp-foot-col">${provs}</div></div>` : ''}
 ${cats ? `<div><h3>Browse by type</h3><div class="sp-foot-col">${cats}</div></div>` : ''}
@@ -495,8 +503,12 @@ ${cats ? `<div><h3>Browse by type</h3><div class="sp-foot-col">${cats}</div></di
 function publicAdSlot(slot) {
   return `<div class="public-house-ad-wrap sp-wrap"><div class="public-house-ad-slot" data-public-ad-slot="${slot}" hidden></div></div>`;
 }
-function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, hero = '', active = '', narrow = false, applyBar = '' }) {
+function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, imageIsLogo = false, imageAlt = '', hero = '', active = '', narrow = false, applyBar = '' }) {
   const ogImage = image || `${SITE_URL}/icons/v2-icon-512.png`;
+  const breadcrumbLd = breadcrumbJsonLd(CTX.lastCrumbs, canonical);
+  CTX.lastCrumbs = [];
+  const ldScripts = [].concat(jsonLd || [], breadcrumbLd || [])
+    .map((ld) => `<script type="application/ld+json">${serializeJsonLd(ld)}</script>`).join('\n');
   const cur = (key) => (active === key ? ' aria-current="page"' : '');
   return `<!DOCTYPE html>
 <html lang="en-ZA">
@@ -515,21 +527,21 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, her
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
 <meta property="og:image" content="${escapeHtml(ogImage)}">
-${image ? '' : '<meta property="og:image:width" content="512">\n<meta property="og:image:height" content="512">\n'}<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}">
+${image ? '' : '<meta property="og:image:width" content="512">\n<meta property="og:image:height" content="512">\n'}${imageAlt ? `<meta property="og:image:alt" content="${escapeHtml(imageAlt)}">\n` : ''}<meta name="twitter:card" content="${image && !imageIsLogo ? 'summary_large_image' : 'summary'}">
 <meta name="twitter:image" content="${escapeHtml(ogImage)}">
 <link rel="icon" href="/favicon-v2.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/v2-favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/v2-icon-192.png">
 <link rel="apple-touch-icon" href="/icons/v2-icon-192.png">
 <link rel="stylesheet" href="/static-pages.css?v=${DEPLOY_VERSION}">
-${jsonLd ? `<script type="application/ld+json">${serializeJsonLd(jsonLd)}</script>` : ''}
+${ldScripts}
 </head>
 <body${applyBar ? ' class="has-applybar"' : ''}>
 <a class="sp-skip" href="#main">Skip to content</a>
 <header class="sp-header"><div class="sp-bar sp-wrap">
 <a class="sp-brand" href="/" aria-label="Back to SA Recruiters"><img src="/icons/v2-icon-192.png" alt="SA Recruiters logo" width="40" height="40"><span><b>SA Recruiters</b><small>South African recruitment directory</small></span></a>
 <nav class="sp-nav" aria-label="SA Recruiters pages">
-<a href="/careers/"${cur('careers')}>Careers</a><a href="/apply/"${cur('apply')}>Apply for a vacancy</a><a href="/contact/"${cur('contact')}>Contact Us</a><a href="/register/"${cur('register')}>Register</a><a href="/candidates/"${cur('candidates')}>Candidates</a><a href="/about/"${cur('about')}>About SA Recruiters</a>
+<a href="/careers/"${cur('careers')}>Careers</a><a href="/apply/"${cur('apply')}>Apply for a vacancy</a><a href="/contact/"${cur('contact')}>Contact Us</a><a href="/register/"${cur('register')}>Register</a><a href="/candidates/"${cur('candidates')}>Candidates</a><a href="/submit-cv/"${cur('submit-cv')}>Submit CV</a><a href="/agencies/"${cur('agencies')}>Agencies</a><a href="/companies/"${cur('companies')}>Companies</a><a href="/about/"${cur('about')}>About SA Recruiters</a>
 </nav>
 <a class="sp-cta" href="/post-a-job/">${icon('tag', 16)} Post a job</a>
 </div></header>
@@ -568,7 +580,7 @@ function fetchAll() {
     ...vacancy,
     notes: vacancy.notes || notes[String(vacancy.id)] || '',
   }));
-  return { agencies: snapshot.agencies, branches: snapshot.branches, vacancies };
+  return { agencies: snapshot.agencies, branches: snapshot.branches, vacancies, employers: Array.isArray(snapshot.employers) ? snapshot.employers : [] };
 }
 
 // ---------- page builders ----------
@@ -625,10 +637,11 @@ function buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancyS
     }).join('')}</div>`
     : '';
 
+  const agencyCv = agencyCvMethods(agency);
   const body = `
 <div class="two" style="margin-top:26px">
 <section class="card" style="margin:0"><h2 class="card-h">Contact &amp; details</h2>${details ? `<ul class="dl">${details}</ul>` : '<p class="muted" style="margin:0">Contact details have not been added yet.</p>'}</section>
-<div>${tagCard('Trades &amp; industries', 'tag', trades)}${tagCard('Companies', 'building', companies)}</div>
+<div>${cvCardHtml(agency, agencyCv)}${tagCard('Trades &amp; industries', 'tag', trades)}${tagCard('Companies', 'building', companies)}</div>
 </div>
 ${branchesHtml}
 ${vacanciesHtml}
@@ -644,13 +657,28 @@ ${vacanciesHtml}
     chips: agency.verified ? verifiedPill() : '',
     title: escapeHtml(agency.name),
     lead: agency.trades ? `Specialising in ${escapeHtml(agency.trades)}.` : `Listed on SA Recruiters${agency.location ? ` in ${escapeHtml(agency.location)}` : ''}.`,
-    crumbs: [['Home', '/'], ['Agencies', '/?section=agencies'], [agency.name, '']],
+    crumbs: [['Home', '/'], ['Agencies', '/agencies/'], [agency.name, '']],
     media: avatarHtml(agency.name, agency.photo, 'av-lg'),
     actions,
     stats,
   });
 
-  return pageShell({ title, description, canonical, bodyHtml: body, hero });
+  const agencyPhoto = safeHttpUrl(agency.photo);
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'EmploymentAgency',
+    '@id': `${canonical}#agency`,
+    name: agency.name,
+    url: canonical,
+    areaServed: { '@type': 'Country', name: 'South Africa' },
+    ...(site ? { sameAs: [site] } : {}),
+    ...(agencyPhoto ? { logo: agencyPhoto, image: agencyPhoto } : {}),
+    ...(mapQuery ? { address: organizationAddress(mapQuery) } : {}),
+    ...(phone ? { telephone: phone } : {}),
+    ...(email ? { email } : {}),
+    ...(trades.length ? { knowsAbout: trades } : {}),
+  };
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, image: agencyPhoto || undefined, imageIsLogo: true, imageAlt: `${agency.name} logo`, active: 'agencies' });
 }
 
 // South African province names we can recognise inside a free-text
@@ -834,6 +862,12 @@ function buildVacancyPage(vacancy, agency, slug, extras = {}) {
   const email = emailOk(vacancy.email);
   const phone = vacancy.phone && telHref(vacancy.phone) ? vacancy.phone : '';
   const hasApply = Boolean(applyUrl || email || phone);
+  // No apply route on the vacancy itself: fall back to the agency's own CV route
+  // so a job seeker can still apply straight from this page, without the app.
+  const agencyCv = !hasApply && agency
+    ? agencyCvMethods(agency)
+    : null;
+  const companyRef = extras.companySlug ? `/company/${extras.companySlug}/` : '';
 
   // ---- fact tiles: each value links to the section it belongs to ----
   const fact = (label, ic, value, href) => {
@@ -865,6 +899,7 @@ function buildVacancyPage(vacancy, agency, slug, extras = {}) {
   const agencyLink = agency && agencySlug ? `/agency/${escapeHtml(agencySlug)}/` : '';
   const sideLinks = [
     agencyLink ? `<li><a href="${agencyLink}">${icon('building', 16)} View agency profile</a></li>` : '',
+    companyRef ? `<li><a href="${companyRef}">${icon('briefcase', 16)} More jobs at ${escapeHtml(companyName)}</a></li>` : '',
     provHref ? `<li><a href="${provHref}">${icon('pin', 16)} More jobs in ${escapeHtml(provinceFor(vacancy.location))}</a></li>` : '',
     `<li><a href="/?section=vacancies">${icon('search', 16)} Browse all vacancies</a></li>`,
     `<li><a href="https://wa.me/?text=${encodeURIComponent(`${vacancy.title} at ${companyName} — ${canonical}`)}" target="_blank" rel="noopener noreferrer">${icon('share', 16)} Share on WhatsApp</a></li>`,
@@ -872,8 +907,15 @@ function buildVacancyPage(vacancy, agency, slug, extras = {}) {
 
   const companyLine = agencyLink
     ? `<a href="${agencyLink}">${escapeHtml(companyName)}</a>`
-    : escapeHtml(companyName);
+    : (companyRef ? `<a href="${companyRef}">${escapeHtml(companyName)}</a>` : escapeHtml(companyName));
 
+  const block = (html) => html.replace('class="btn', 'class="btn btn-block');
+  const cvButtons = agencyCv && agencyCv.methods.length
+    ? agencyCv.methods.map((m, i) => block(btn(escapeHtml(m.label), m.href, i === 0 ? 'primary' : 'outline', m.ic))).join('')
+    : '';
+  const fallbackApplyHtml = cvButtons
+    ? `<p class="apply-note">Apply by submitting your CV through the CV Box:</p>${cvButtons}`
+    : `<p class="apply-note">No direct application link was supplied for this listing. ${agencyLink ? 'Use the agency’s contact details to apply.' : 'Contact SA Recruiters if you need help applying.'}</p>${agencyLink ? block(btn('View agency contact details', agencyLink, 'primary', 'building')) : block(btn('Contact SA Recruiters', '/contact/', 'primary', 'chat'))}`;
   const body = `
 <div class="vp">
 <div class="vp-main">
@@ -882,7 +924,7 @@ ${vacancy.notes ? `<section class="card"><h2 class="card-h">Details</h2><div cla
 </div>
 <aside class="vp-side"><div class="card apply-card">
 <div class="apply-co">${avatarHtml(companyName, vacancy.company_photo)}<div><b>${companyLine}</b><small>${escapeHtml(vacancy.location || 'South Africa')}</small></div></div>
-${hasApply ? applyButtons : '<p class="apply-note">To apply, visit the SA Recruiters app and use the contact details on the agency listing.</p>' + (agencyLink ? btn('View agency contact details', agencyLink, 'primary', 'building').replace('class="btn', 'class="btn btn-block') : btn('Open SA Recruiters', '/', 'primary', 'search').replace('class="btn', 'class="btn btn-block'))}
+${hasApply ? applyButtons : fallbackApplyHtml}
 <ul class="side-links">${sideLinks}</ul>
 </div></aside>
 </div>
@@ -897,7 +939,7 @@ ${extras.related && extras.related.length ? `${secHead('More vacancies you may l
     vacancy.salary ? chipHtml(vacancy.salary, 'cash') : '',
   ].join('');
 
-  const crumbs = [['Home', '/'], ['Vacancies', '/?section=vacancies']];
+  const crumbs = [['Home', '/'], ['Vacancies', '/vacancies/']];
   if (provHref) crumbs.push([provinceFor(vacancy.location), provHref]);
   crumbs.push([vacancy.title || 'Vacancy', '']);
 
@@ -914,9 +956,12 @@ ${extras.related && extras.related.length ? `${secHead('More vacancies you may l
     ? `<div class="applybar">${applyUrl
       ? `<a class="btn btn-primary" href="${escapeHtml(applyUrl)}" rel="nofollow noopener" target="_blank">Apply for this role →</a>`
       : (email ? btn('Email application', `mailto:${email}?subject=${encodeURIComponent(`Application: ${vacancy.title}`)}`, 'primary', 'mail') : btn('Call now', telHref(vacancy.phone), 'primary', 'phone'))}</div>`
-    : '';
+    : (agencyCv && agencyCv.methods[0]
+      ? `<div class="applybar">${btn(escapeHtml(agencyCv.methods[0].label), agencyCv.methods[0].href, 'primary', agencyCv.methods[0].ic)}</div>`
+      : '');
 
-  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, applyBar, active: 'careers' });
+  const vacancyPhoto = safeHttpUrl(vacancy.company_photo);
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, applyBar, image: vacancyPhoto || undefined, imageIsLogo: true, imageAlt: vacancyPhoto ? `${companyName} logo` : '', active: 'careers' });
 }
 
 // ---------- vacancy poster pages ----------
@@ -927,7 +972,7 @@ function posterSlug(p) {
   return `${base}-${String(p.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toLowerCase()}`;
 }
 
-function buildPosterPage(poster, slug) {
+function buildPosterPage(poster, slug, extras = {}) {
   const canonical = `${SITE_URL}/poster/${slug}/`;
   const heading = poster.caption || 'Vacancy poster';
   const title = `${heading} | SA Recruiters`;
@@ -938,14 +983,24 @@ ${imageUrl
     ? `<figure class="poster-frame" style="margin-bottom:0"><a href="${escapeHtml(imageUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Open the full-size poster"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(heading)}"></a></figure>`
     : '<div class="empty"><p>The poster image is unavailable.</p></div>'}
 <div class="poster-actions">${btn('Browse vacancies', '/?section=vacancies', 'primary', 'search')}${btn('More posters', '/?section=posters', 'outline', 'image')}${btn('Post a job', '/post-a-job/', 'outline', 'tag')}</div>
-<p class="hub-note"><a href="/">Browse all agencies and vacancies on SA Recruiters →</a></p>
+<p class="hub-note">${extras.company ? `<a href="/company/${extras.company.slug}/">More from ${escapeHtml(extras.company.name)}</a> &middot; ` : ''}${extras.agency ? `<a href="/agency/${extras.agency.slug}/">${escapeHtml(extras.agency.name)} agency profile</a> &middot; ` : ''}<a href="/posters/">More vacancy posters</a> &middot; <a href="/vacancies/">All vacancies</a></p>
 `;
   const hero = heroHtml({
     kicker: `${icon('image', 14)} Vacancy poster`,
     title: escapeHtml(heading),
-    crumbs: [['Home', '/'], ['Posters', '/?section=posters'], [heading, '']],
+    crumbs: [['Home', '/'], ['Posters', '/posters/'], [heading, '']],
   });
-  return pageShell({ title, description, canonical, bodyHtml: body, hero, image: imageUrl || undefined });
+  const jsonLd = imageUrl ? {
+    '@context': 'https://schema.org',
+    '@type': 'ImageObject',
+    contentUrl: imageUrl,
+    url: canonical,
+    name: heading,
+    caption: heading,
+    representativeOfPage: true,
+    ...(poster.created_at ? { uploadDate: poster.created_at } : {}),
+  } : undefined;
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, image: imageUrl || undefined, imageAlt: heading });
 }
 
 // ---------- location hub pages ----------
@@ -1233,11 +1288,11 @@ document.getElementById('pj-form').addEventListener('submit', async function(e){
 // These use normal anchor links instead of JavaScript-only actions so search
 // engines can discover a stable internal-link graph for sitelink candidates.
 const SEO_LANDING_PAGES = [
-  { slug: 'careers', title: 'Careers and Vacancies in South Africa | SA Recruiters', description: 'Browse current careers and job vacancies from recruitment agencies and employers across South Africa.', heading: 'Careers and Vacancies', intro: 'Find your next opportunity through SA Recruiters. Browse current vacancies by location, category and work style.', links: [['/jobs/gauteng/', 'Browse Gauteng vacancies'], ['/browse/category/remote/', 'Find remote and work-from-home jobs'], ['/browse/category/government/', 'Browse government vacancies'], ['/browse/category/learnership/', 'Find learnerships'], ['/candidates/', 'Candidate resources and CV Box']] },
-  { slug: 'apply', title: 'Apply for a Vacancy | SA Recruiters', description: 'Learn how to apply for jobs listed by South African recruitment agencies and employers on SA Recruiters.', heading: 'Apply for a Vacancy', intro: 'Open a vacancy, review the employer or agency instructions, and use the application link or contact details provided on the listing.', links: [['/careers/', 'Browse careers and vacancies'], ['/browse/category/remote/', 'Browse remote vacancies'], ['/contact/', 'Contact SA Recruiters']] },
+  { slug: 'careers', title: 'Careers and Vacancies in South Africa | SA Recruiters', description: 'Browse current careers and job vacancies from recruitment agencies and employers across South Africa.', heading: 'Careers and Vacancies', intro: 'Find your next opportunity through SA Recruiters. Browse current vacancies by location, category and work style.', links: [['/vacancies/', 'Browse all vacancies'], ['/agencies/', 'Recruitment agencies directory'], ['/companies/', 'Companies hiring now'], ['/jobs/gauteng/', 'Browse Gauteng vacancies'], ['/browse/category/remote/', 'Find remote and work-from-home jobs'], ['/browse/category/government/', 'Browse government vacancies'], ['/browse/category/learnership/', 'Find learnerships'], ['/candidates/', 'Candidate resources and CV Box']] },
+  { slug: 'apply', title: 'Apply for a Vacancy | SA Recruiters', description: 'Learn how to apply for jobs listed by South African recruitment agencies and employers on SA Recruiters.', heading: 'Apply for a Vacancy', intro: 'Open a vacancy, review the employer or agency instructions, and use the application link or contact details provided on the listing.', links: [['/submit-cv/', 'Submit your CV online'], ['/careers/', 'Browse careers and vacancies'], ['/browse/category/remote/', 'Browse remote vacancies'], ['/contact/', 'Contact SA Recruiters']] },
   { slug: 'contact', title: 'Contact Us | SA Recruiters', description: 'Contact SA Recruiters about recruitment agencies, vacancies, candidate support and employer listings.', heading: 'Contact Us', intro: 'Need help with a listing, agency information or the SA Recruiters platform? Contact our team using the details below.', contact: true, links: [['/careers/', 'Browse vacancies'], ['/post-a-job/', 'Post a job'], ['/register/', 'Register as a candidate or employer']] },
   { slug: 'register', title: 'Register as a Candidate or Employer | SA Recruiters', description: 'Register with SA Recruiters to join the CV Box or submit recruitment opportunities for your company.', heading: 'Register with SA Recruiters', intro: 'Candidates can join the CV Box and employers can submit vacancies for consideration. Registration is free.', links: [['/candidates/', 'Join the Candidate CV Box'], ['/post-a-job/', 'Post a job as an employer'], ['/contact/', 'Contact us for registration help']] },
-  { slug: 'candidates', title: 'Candidates and CV Box | SA Recruiters', description: 'Candidate resources, job-search guidance and CV Box registration for South African job seekers.', heading: 'Candidates', intro: 'Discover vacancies, prepare for your job search and make it easier for recruitment agencies and employers to find you.', links: [['/careers/', 'Search careers and vacancies'], ['/register/', 'Upload to the CV Box'], ['/browse/category/learnership/', 'Browse learnerships'], ['/browse/category/internship/', 'Browse internships']] },
+  { slug: 'candidates', title: 'Candidates and CV Box | SA Recruiters', description: 'Candidate resources, job-search guidance and CV Box registration for South African job seekers.', heading: 'Candidates', intro: 'Discover vacancies, prepare for your job search and make it easier for recruitment agencies and employers to find you.', links: [['/submit-cv/', 'Submit your CV to agencies'], ['/careers/', 'Search careers and vacancies'], ['/register/', 'Upload to the CV Box'], ['/browse/category/learnership/', 'Browse learnerships'], ['/browse/category/internship/', 'Browse internships']] },
   { slug: 'about', title: 'About SA Recruiters | South African Recruitment Directory', description: 'Learn how SA Recruiters helps candidates, recruitment agencies and employers connect through a practical South African jobs directory.', heading: 'About SA Recruiters', intro: 'SA Recruiters is a practical starting point for South African hiring. We bring vacancies, recruitment agencies, employers and candidate resources together in one easy-to-use directory.', about: true, links: [['/careers/', 'Browse vacancies'], ['/candidates/', 'Candidate resources'], ['/post-a-job/', 'Post a job'], ['/contact/', 'Contact Us']] },
 ];
 
@@ -1257,6 +1312,11 @@ const TILE_INFO = {
   '/register/': ['users', 'Free for candidates and employers'],
   '/candidates/': ['users', 'Resources and the CV Box'],
   '/post-a-job/': ['tag', 'Free to list, reviewed by an admin'],
+  '/vacancies/': ['search', 'Every vacancy, newest first'],
+  '/agencies/': ['building', 'Logos, contacts and branches'],
+  '/companies/': ['briefcase', 'Employers with open vacancies'],
+  '/submit-cv/': ['users', 'Submit your CV through the CV Box'],
+  '/posters/': ['image', 'Shareable hiring posters'],
 };
 
 function tileIconFor(href) {
@@ -1268,6 +1328,8 @@ function tileIconFor(href) {
 
 // Only link to hubs that were actually generated (thin hubs are skipped).
 function landingLinkIsLive(href) {
+  if (href === '/companies/') return CTX.hasCompanies;
+  if (href === '/posters/') return CTX.hasPosters;
   if (href.startsWith('/jobs/')) return CTX.provinces.has(href.split('/')[2]);
   if (href.startsWith('/browse/category/')) return CTX.categories.has(href.split('/')[3]);
   return true;
@@ -1327,11 +1389,455 @@ function buildSeoLandingPage(page) {
   return pageShell({ title: page.title, description: page.description, canonical, bodyHtml: body, jsonLd, hero, active: page.slug });
 }
 
+// ============================================================
+//  FULL-COVERAGE SEO
+//  Hiring-company pages, crawlable directories + archives, CV-submission
+//  blocks and the image sitemap. Everything here is built from the committed
+//  public snapshot (never from candidate/CV Box data — those are private).
+// ============================================================
+
+const GENERIC_COMPANY = /^(confidential|private( employer| company)?|not specified|n\/a|na|anonymous|undisclosed|company|various|unknown|none)$/i;
+
+function normCompanyKey(name) {
+  return String(name || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+// ALL-CAPS names (government departments) read better in title case. Display only.
+function displayCompanyName(name) {
+  const raw = String(name || '').trim().replace(/\s+/g, ' ');
+  if (raw.length > 4 && raw === raw.toUpperCase() && /[A-Z]/.test(raw)) {
+    return raw.toLowerCase()
+      .replace(/(^|[\s(/-])([a-z])/g, (m, pre, ch) => pre + ch.toUpperCase())
+      .replace(/\s(Of|And|The|For|In|On|To)(?=\s)/g, (m) => m.toLowerCase());
+  }
+  return raw;
+}
+
+function topValues(list, limit = 3) {
+  const counts = new Map();
+  list.filter(Boolean).forEach((value) => {
+    const v = String(value).trim();
+    if (v) counts.set(v, (counts.get(v) || 0) + 1);
+  });
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([v]) => v);
+}
+
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+// Group vacancies (+ registered employers) into hiring-company pages.
+// A company page is published when it is a registered employer, or has open
+// vacancies backed by either 2+ listings or a logo — so no page is thin.
+function buildCompanies({ vacancies, employers, agencies }) {
+  const agencyKeys = new Set(agencies.map((a) => normCompanyKey(a.name)));
+  const employerById = new Map(employers.map((e) => [String(e.id), e]));
+  const groups = new Map();
+  const touch = (name) => {
+    const key = normCompanyKey(name);
+    if (key.length < 2 || GENERIC_COMPANY.test(String(name).trim())) return null;
+    if (!groups.has(key)) groups.set(key, { key, spellings: new Map(), employer: null, photo: '', vacancies: [] });
+    return groups.get(key);
+  };
+  employers.forEach((employer) => {
+    const group = touch(employer.name);
+    if (!group) return;
+    group.employer = employer;
+    group.photo = safeHttpUrl(employer.photo) || group.photo;
+  });
+  vacancies.forEach((vacancy) => {
+    const employer = vacancy.employer_id !== undefined && vacancy.employer_id !== null
+      ? employerById.get(String(vacancy.employer_id)) : null;
+    const group = touch(employer ? employer.name : vacancy.company);
+    if (!group) return;
+    group.vacancies.push(vacancy);
+    const spelling = String(vacancy.company || '').trim();
+    if (spelling) group.spellings.set(spelling, (group.spellings.get(spelling) || 0) + 1);
+    if (!group.photo) group.photo = safeHttpUrl(vacancy.company_photo);
+  });
+
+  const used = new Set();
+  const companies = [];
+  [...groups.values()].sort((a, b) => a.key.localeCompare(b.key)).forEach((group) => {
+    const open = group.vacancies.filter(isOpenVacancy).sort(newestFirst);
+    const publishable = group.employer
+      || (open.length >= 1 && (open.length >= 2 || group.photo) && !agencyKeys.has(group.key));
+    if (!publishable) return;
+    const rawName = group.employer
+      ? group.employer.name
+      : ([...group.spellings.entries()].sort((a, b) => b[1] - a[1])[0] || [group.key])[0];
+    const name = displayCompanyName(rawName);
+    const base = slugify(name);
+    let slug = base;
+    for (let n = 2; used.has(slug); n += 1) slug = `${base}-${n}`;
+    used.add(slug);
+    companies.push({ key: group.key, name, slug, photo: group.photo, employer: group.employer, open, all: group.vacancies });
+  });
+  return companies;
+}
+
+function vacancySlugFor(v) {
+  return CTX.vacancySlugs.get(v.__staticSlugKey) || slugify(v.title);
+}
+
+function companyRefFor(vacancy, employerById) {
+  const employer = vacancy.employer_id !== undefined && vacancy.employer_id !== null
+    ? employerById.get(String(vacancy.employer_id)) : null;
+  return CTX.companyByKey.get(normCompanyKey(employer ? employer.name : vacancy.company)) || null;
+}
+
+function detailRow(label, ic, valueHtml) {
+  return valueHtml
+    ? `<li><span class="dl-ic">${icon(ic, 18)}</span><div><small>${label}</small>${valueHtml}</div></li>`
+    : '';
+}
+
+function organizationAddress(address) {
+  return address ? { '@type': 'PostalAddress', streetAddress: address, addressCountry: 'ZA' } : undefined;
+}
+
+// ---------- CV submission (works without opening the app) ----------
+
+// WhatsApp needs an international number without "+" — convert SA formats.
+function waNumber(text) {
+  const phone = phoneFrom(text);
+  if (!phone) return '';
+  let digits = phone.replace(/\D/g, '');
+  if (phone.trim().startsWith('+')) return digits.length >= 10 && digits.length <= 15 ? digits : '';
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  else if (digits.startsWith('0')) digits = `27${digits.slice(1)}`;
+  return /^27\d{9}$/.test(digits) ? digits : '';
+}
+
+// Every CV submission on an agency page goes through the app's CV Box — never
+// straight to the agency by email / WhatsApp / website. The link opens the CV Box
+// and its upload ("Submit your CV") form; see the ?cvbox=submit handler in index.html.
+const CVBOX_SUBMIT_HREF = '/?section=candidates&cvbox=submit';
+
+function agencyCvMethods(agency) {
+  return {
+    pref: '',
+    methods: [{ kind: 'cvbox', ic: 'users', label: 'Submit your CV', href: CVBOX_SUBMIT_HREF }],
+  };
+}
+
+function cvCardHtml(agency, cv) {
+  const buttons = cv.methods
+    .map((m) => btn(escapeHtml(m.label), m.href, 'primary', m.ic).replace('class="btn', 'class="btn btn-block'))
+    .join('');
+  return `<section class="card cv-card" id="submit-cv"><h2 class="card-h">Submit your CV</h2>
+<p class="cv-lead">Submit your CV to ${escapeHtml(agency.name)} and other recruiters through the SA Recruiters CV Box — one free upload, no need to email each agency.</p>
+<div class="cv-methods">${buttons}</div>
+<p class="cv-safe">Never pay a recruiter to apply for a job. <a href="/know-your-rights/">Know your rights</a>.</p></section>`;
+}
+
+// ---------- pagination ----------
+
+function pagerHtml(base, page, pages) {
+  if (pages <= 1) return '';
+  const href = (n) => (n === 1 ? `${base}/` : `${base}/page/${n}/`);
+  const wanted = [...new Set([1, pages, page - 2, page - 1, page, page + 1, page + 2])]
+    .filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  const parts = [];
+  let last = 0;
+  wanted.forEach((n) => {
+    if (last && n - last > 1) parts.push('<span class="pg pg-gap" aria-hidden="true">…</span>');
+    parts.push(n === page
+      ? `<span class="pg is-active" aria-current="page">${n}</span>`
+      : `<a class="pg" href="${href(n)}">${n}</a>`);
+    last = n;
+  });
+  return `<nav class="pager" aria-label="Pagination">${page > 1 ? `<a class="pg pg-nav" rel="prev" href="${href(page - 1)}">← Previous</a>` : ''}${parts.join('')}${page < pages ? `<a class="pg pg-nav" rel="next" href="${href(page + 1)}">Next →</a>` : ''}</nav>`;
+}
+
+function collectionJsonLd({ name, canonical, items, start = 0 }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name,
+    url: canonical,
+    isPartOf: { '@type': 'WebSite', name: 'SA Recruiters', url: `${SITE_URL}/` },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: items.length,
+      itemListElement: items.map((url, i) => ({ '@type': 'ListItem', position: start + i + 1, url })),
+    },
+  };
+}
+
+// Writes /<base>/ and /<base>/page/N/ and registers every page in the sitemap.
+function writePaginated({ base, items, perPage, build, imagesFor, sitemapUrls }) {
+  const pages = Math.max(1, Math.ceil(items.length / perPage));
+  for (let page = 1; page <= pages; page += 1) {
+    const slice = items.slice((page - 1) * perPage, page * perPage);
+    const urlPath = page === 1 ? `${base}/` : `${base}/page/${page}/`;
+    const dir = path.join(OUT_DIR, ...urlPath.split('/').filter(Boolean));
+    ensureDir(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), build({ slice, page, pages, canonical: `${SITE_URL}${urlPath}`, offset: (page - 1) * perPage }));
+    sitemapUrls.push({ loc: `${SITE_URL}${urlPath}`, images: imagesFor ? imagesFor(slice) : [] });
+  }
+  return pages;
+}
+
+const pageSuffix = (page, pages) => (pages > 1 && page > 1 ? ` — Page ${page} of ${pages}` : '');
+
+// ---------- hiring-company pages ----------
+
+function companyCard(company) {
+  const e = company.employer || {};
+  const loc = e.location || topValues(company.open.map((v) => v.location), 1)[0] || '';
+  const tags = splitList(e.industry).slice(0, 2);
+  const n = company.open.length;
+  return `<article class="jc">
+<div class="jc-top">${avatarHtml(company.name, company.photo)}<div class="jc-head"><h3 class="jc-title"><a href="/company/${company.slug}/">${escapeHtml(company.name)}</a></h3></div></div>
+<div class="chips">${loc ? locationChip(loc) : ''}${tags.map((t) => chipHtml(t, 'tag')).join('')}</div>
+<div class="jc-foot"><span class="jc-date">${icon('briefcase', 14)} ${n ? plural(n, 'open vacancy', 'open vacancies') : 'Employer profile'}</span><span class="jc-go">View company ${icon('arrow', 16)}</span></div>
+</article>`;
+}
+
+function buildCompanyPage(company, posters = []) {
+  const canonical = `${SITE_URL}/company/${company.slug}/`;
+  const e = company.employer || {};
+  const open = company.open;
+  const locs = topValues(open.map((v) => v.location), 3);
+  const types = topValues(open.flatMap((v) => [v.employment_type, v.contract_type]), 4);
+  const title = `${company.name} Jobs & Vacancies | SA Recruiters`;
+  const description = open.length
+    ? `${company.name} is hiring: ${plural(open.length, 'open vacancy', 'open vacancies')} on SA Recruiters${locs.length ? ` in ${locs.join(', ')}` : ''}. See the roles and how to apply.`
+    : `${company.name} — employer profile on SA Recruiters${e.location ? ` in ${e.location}` : ''}. Contact details and vacancies.`;
+
+  const phone = phoneFrom(e.contact);
+  const email = emailOk(e.email);
+  const site = safeHttpUrl(e.website);
+  const mapQuery = e.address || e.location || '';
+  const actions = [
+    open.length ? btn('See vacancies', '#vacancies', 'primary', 'briefcase') : '',
+    phone && telHref(phone) ? btn('Call', telHref(phone), 'ghost', 'phone') : '',
+    email ? btn('Email', `mailto:${email}`, 'ghost', 'mail') : '',
+    site ? btn('Website', site, 'ghost', 'globe') : '',
+    mapQuery ? btn('Directions', mapsHref(mapQuery), 'ghost', 'map') : '',
+    btn('All companies', '/companies/', 'ghost', 'building'),
+  ].join('');
+
+  const details = [
+    detailRow('Industry', 'tag', e.industry ? `<div class="chips">${splitList(e.industry).map((t) => chipHtml(t, 'tag')).join('')}</div>` : ''),
+    detailRow('Location', 'pin', e.location ? locationChip(e.location) : ''),
+    detailRow('Address', 'map', e.address ? `<a class="txt-link" href="${escapeHtml(mapsHref(e.address))}" target="_blank" rel="noopener noreferrer">${escapeHtml(e.address)}</a>` : ''),
+    detailRow('Contact', 'phone', e.contact ? (phone && telHref(phone) ? `<a class="txt-link" href="${escapeHtml(telHref(phone))}">${escapeHtml(e.contact)}</a>` : escapeHtml(e.contact)) : ''),
+    detailRow('Email', 'mail', email ? `<a class="txt-link" href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : ''),
+    detailRow('Website', 'globe', site ? `<a class="txt-link" href="${escapeHtml(site)}" rel="nofollow noopener noreferrer" target="_blank">${escapeHtml(e.website)}</a>` : ''),
+  ].join('');
+
+  const aboutHtml = `<section class="card"><h2 class="card-h">Hiring at ${escapeHtml(company.name)}</h2>
+<p>${open.length ? `${escapeHtml(company.name)} currently has ${plural(open.length, 'open vacancy', 'open vacancies')} listed on SA Recruiters${locs.length ? `, mainly in ${escapeHtml(locs.join(', '))}` : ''}.` : `${escapeHtml(company.name)} is listed as an employer on SA Recruiters. New vacancies appear here as soon as they are published.`} Open a vacancy to read the requirements and follow the employer’s application instructions.</p>
+${locs.length || types.length ? `<div class="chips">${locs.map((l) => locationChip(l)).join('')}${types.map((t) => chipHtml(t, 'briefcase', categoryHref(t))).join('')}</div>` : ''}</section>`;
+
+  const shown = open.slice(0, 100);
+  const vacanciesHtml = shown.length
+    ? `${secHead('Open vacancies', { count: open.length, id: 'vacancies' })}<div class="grid">${shown.map((v) => vacancyCard(v, vacancySlugFor(v))).join('')}</div>`
+    : '';
+  const postersHtml = posters.length
+    ? `${secHead('Vacancy posters', { count: posters.length })}<div class="poster-grid">${posters.map(({ poster, slug }) => posterTile(poster, slug)).join('')}</div>`
+    : '';
+
+  const body = `
+<div class="two" style="margin-top:26px">
+${details ? `<section class="card" style="margin:0"><h2 class="card-h">Contact &amp; details</h2><ul class="dl">${details}</ul></section>` : ''}
+<div>${aboutHtml}</div>
+</div>
+${vacanciesHtml}
+${postersHtml}
+<p class="hub-note"><a href="/companies/">Browse all hiring companies →</a> &middot; <a href="/vacancies/">All vacancies</a> &middot; <a href="/submit-cv/">Submit your CV</a></p>
+`;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${canonical}#organization`,
+    name: company.name,
+    url: canonical,
+    ...(site ? { sameAs: [site] } : {}),
+    ...(company.photo ? { logo: company.photo, image: company.photo } : {}),
+    ...(e.address ? { address: organizationAddress(e.address) } : {}),
+    ...(phone ? { telephone: phone } : {}),
+    ...(email ? { email } : {}),
+  };
+
+  const stats = open.length ? [{ n: open.length, label: 'Open vacancies', href: '#vacancies' }] : [];
+  const hero = heroHtml({
+    kicker: `${icon('briefcase', 14)} Hiring company`,
+    chips: e.verified ? verifiedPill('Verified employer') : '',
+    title: escapeHtml(company.name),
+    lead: open.length ? `${plural(open.length, 'open vacancy', 'open vacancies')}${locs.length ? ` in ${escapeHtml(locs.join(', '))}` : ''}.` : 'Employer profile on SA Recruiters.',
+    crumbs: [['Home', '/'], ['Companies', '/companies/'], [company.name, '']],
+    media: avatarHtml(company.name, company.photo, 'av-lg'),
+    actions,
+    stats,
+  });
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, image: company.photo || undefined, imageIsLogo: true, imageAlt: `${company.name} logo`, active: 'companies' });
+}
+
+// ---------- directory + archive pages ----------
+
+function buildVacanciesArchivePage({ slice, page, pages, canonical, offset, total }) {
+  const title = `All Vacancies in South Africa${pageSuffix(page, pages)} | SA Recruiters`;
+  const description = `Browse all ${total} vacancies listed on SA Recruiters by recruitment agencies and employers across South Africa${pageSuffix(page, pages)}.`;
+  const body = `${page === 1 ? `${provinceChips() ? `${secHead('Browse by province')}${provinceChips()}` : ''}${categoryChips() ? `${secHead('Browse by type')}${categoryChips()}` : ''}` : ''}
+${secHead('Vacancies', { count: total })}
+<div class="grid">${slice.map((v) => vacancyCard(v, vacancySlugFor(v))).join('')}</div>
+${pagerHtml('/vacancies', page, pages)}
+<p class="hub-note"><a href="/agencies/">Recruitment agencies</a> &middot; <a href="/companies/">Hiring companies</a> &middot; <a href="/submit-cv/">Submit your CV</a></p>`;
+  const jsonLd = collectionJsonLd({ name: 'All vacancies on SA Recruiters', canonical, items: slice.map((v) => `${SITE_URL}/vacancy/${vacancySlugFor(v)}/`), start: offset });
+  const hero = heroHtml({
+    kicker: `${icon('briefcase', 14)} Vacancies`,
+    title: 'All vacancies',
+    lead: `${total} vacancies from recruitment agencies and employers across South Africa${pageSuffix(page, pages)}.`,
+    crumbs: [['Home', '/'], ['All vacancies', '']],
+    actions: `${btn('Search in the app', '/?section=vacancies', 'primary', 'search')}${btn('Submit your CV', '/submit-cv/', 'ghost', 'users')}`,
+  });
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, active: 'careers' });
+}
+
+function buildAgenciesDirectoryPage({ slice, page, pages, canonical, offset, total }) {
+  const title = `Recruitment Agencies in South Africa${pageSuffix(page, pages)} | SA Recruiters`;
+  const description = `Directory of ${total} South African recruitment agencies with logos, specialisations, contact details, branches and ways to submit your CV.${pageSuffix(page, pages)}`;
+  const body = `${provinceChips() ? `${secHead('Find vacancies by province')}${provinceChips()}` : ''}
+${secHead('Recruitment agencies', { count: total })}
+<div class="grid">${slice.map((a) => agencyCard(a)).join('')}</div>
+${pagerHtml('/agencies', page, pages)}
+<p class="hub-note"><a href="/submit-cv/">How to submit your CV to an agency →</a> &middot; <a href="/vacancies/">All vacancies</a></p>`;
+  const jsonLd = collectionJsonLd({ name: 'Recruitment agencies on SA Recruiters', canonical, items: slice.map((a) => `${SITE_URL}/agency/${(CTX.agencyById.get(String(a.id)) || {}).slug || slugify(a.name)}/`), start: offset });
+  const hero = heroHtml({
+    kicker: `${icon('building', 14)} Directory`,
+    title: 'Recruitment agencies',
+    lead: `${total} South African recruitment agencies, with contact details and ways to submit your CV.${pageSuffix(page, pages)}`,
+    crumbs: [['Home', '/'], ['Agencies', '']],
+    actions: `${btn('Submit your CV', '/submit-cv/', 'primary', 'users')}${btn('Open in the app', '/?section=agencies', 'ghost', 'search')}`,
+  });
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, active: 'agencies' });
+}
+
+function buildCompaniesDirectoryPage({ slice, page, pages, canonical, offset, total }) {
+  const title = `Companies Hiring in South Africa${pageSuffix(page, pages)} | SA Recruiters`;
+  const description = `Browse ${total} hiring companies and employers on SA Recruiters, with their logos, locations and open vacancies${pageSuffix(page, pages)}.`;
+  const body = `${secHead('Hiring companies', { count: total })}
+<div class="grid">${slice.map((c) => companyCard(c)).join('')}</div>
+${pagerHtml('/companies', page, pages)}
+<p class="hub-note"><a href="/vacancies/">All vacancies</a> &middot; <a href="/agencies/">Recruitment agencies</a> &middot; <a href="/post-a-job/">Post a job</a></p>`;
+  const jsonLd = collectionJsonLd({ name: 'Hiring companies on SA Recruiters', canonical, items: slice.map((c) => `${SITE_URL}/company/${c.slug}/`), start: offset });
+  const hero = heroHtml({
+    kicker: `${icon('briefcase', 14)} Employers`,
+    title: 'Companies hiring now',
+    lead: `${total} employers with open vacancies or registered profiles${pageSuffix(page, pages)}.`,
+    crumbs: [['Home', '/'], ['Companies', '']],
+    actions: `${btn('Post a job', '/post-a-job/', 'primary', 'tag')}${btn('Open in the app', '/?section=employers', 'ghost', 'search')}`,
+  });
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, active: 'companies' });
+}
+
+function posterTile(poster, slug) {
+  const caption = poster.caption || 'Vacancy poster';
+  const img = safeHttpUrl(poster.image_url);
+  return `<a class="poster-tile" href="/poster/${slug}/">${img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(caption)}" loading="lazy" decoding="async">` : ''}<span>${escapeHtml(caption)}</span></a>`;
+}
+
+function buildPostersGalleryPage({ slice, page, pages, canonical, offset, total }) {
+  const title = `Vacancy Posters${pageSuffix(page, pages)} | SA Recruiters`;
+  const description = `Shareable hiring posters from South African employers and recruitment agencies on SA Recruiters${pageSuffix(page, pages)}.`;
+  const body = `${secHead('Vacancy posters', { count: total })}
+<div class="poster-grid">${slice.map(({ poster, slug }) => posterTile(poster, slug)).join('')}</div>
+${pagerHtml('/posters', page, pages)}
+<p class="hub-note"><a href="/vacancies/">All vacancies</a> &middot; <a href="/companies/">Hiring companies</a> &middot; <a href="/post-a-job/">Post a job</a></p>`;
+  const jsonLd = collectionJsonLd({ name: 'Vacancy posters on SA Recruiters', canonical, items: slice.map(({ slug }) => `${SITE_URL}/poster/${slug}/`), start: offset });
+  const hero = heroHtml({
+    kicker: `${icon('image', 14)} Posters`,
+    title: 'Vacancy posters',
+    lead: `Hiring posters you can open, share and forward${pageSuffix(page, pages)}.`,
+    crumbs: [['Home', '/'], ['Posters', '']],
+    actions: btn('Open in the app', '/?section=posters', 'primary', 'search'),
+  });
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, active: 'posters' });
+}
+
+// "Submit your CV" — a crawlable page listing every agency; each button opens the CV Box.
+function buildSubmitCvPage(agencies) {
+  const canonical = `${SITE_URL}/submit-cv/`;
+  const title = 'Submit Your CV to South African Recruitment Agencies | SA Recruiters';
+  const description = 'Submit your CV to South African recruitment agencies through the SA Recruiters CV Box. One free upload puts your CV in front of agencies and employers.';
+  const rows = agencies.map((agency) => {
+    const slug = (CTX.agencyById.get(String(agency.id)) || {}).slug || slugify(agency.name);
+    return `<li class="cv-row">${avatarHtml(agency.name, agency.photo)}<div class="cv-row-tx"><a class="cv-row-name" href="/agency/${slug}/">${escapeHtml(agency.name)}</a>${agency.location ? `<small>${escapeHtml(agency.location)}</small>` : ''}</div>${btn('Submit your CV', CVBOX_SUBMIT_HREF, 'primary', 'users')}<a class="btn btn-outline" href="/agency/${slug}/">Profile</a></li>`;
+  }).join('');
+  const body = `
+<section class="card"><h2 class="card-h">How to submit your CV</h2>
+<ol class="cv-steps">
+<li><b>Prepare your CV.</b> Keep it to two pages, add a working phone number and email, and save it as a PDF or Word file.</li>
+<li><b>Open the CV Box.</b> Every “Submit your CV” button on SA Recruiters opens the CV Box upload form in the app.</li>
+<li><b>Fill in the form once.</b> Recruitment agencies and employers on SA Recruiters can then find your CV — free.</li>
+</ol>
+<div class="cv-methods">${btn('Submit your CV to the CV Box', CVBOX_SUBMIT_HREF, 'primary', 'users').replace('class="btn', 'class="btn btn-block')}</div>
+<p class="cv-safe">Never pay a recruiter to apply for a job or to be placed. <a href="/know-your-rights/">Know your rights</a>.</p></section>
+${secHead('Recruitment agencies', { count: agencies.length, id: 'cv-agencies' })}
+<p class="muted">Submitting your CV from any agency below opens the same CV Box form.</p>
+<ul class="cv-list">${rows}</ul>
+${secHead('More ways to apply')}
+<div class="tiles">${tileHtml('/vacancies/', 'Browse all vacancies', 'search', 'Apply to a specific role')}${tileHtml('/agencies/', 'Agency directory', 'building', 'See who recruits in your field')}</div>`;
+  const jsonLd = collectionJsonLd({
+    name: 'Where to submit your CV',
+    canonical,
+    items: agencies.map((a) => `${SITE_URL}/agency/${(CTX.agencyById.get(String(a.id)) || {}).slug || slugify(a.name)}/`),
+  });
+  const hero = heroHtml({
+    kicker: `${icon('users', 14)} Candidates`,
+    title: 'Submit your CV',
+    lead: 'Submit your CV through the CV Box and let South African recruitment agencies and employers find you.',
+    crumbs: [['Home', '/'], ['Submit your CV', '']],
+    actions: `${btn('Browse vacancies', '/vacancies/', 'primary', 'search')}${btn('Agency directory', '/agencies/', 'ghost', 'building')}`,
+  });
+  return pageShell({ title, description, canonical, bodyHtml: body, jsonLd, hero, active: 'submit-cv' });
+}
+
+// ---------- sitemap (with the Google image extension) ----------
+
+const imagesOf = (...urls) => [...new Set(urls.map(safeHttpUrl).filter(Boolean))].slice(0, 1000);
+
+function sitemapEntryXml(entry) {
+  const e = typeof entry === 'string' ? { loc: entry } : entry;
+  const lastmod = e.lastmod ? `<lastmod>${e.lastmod}</lastmod>` : '';
+  const images = (e.images || []).map((u) => `<image:image><image:loc>${escapeHtml(u)}</image:loc></image:image>`).join('');
+  return `  <url><loc>${escapeHtml(e.loc)}</loc>${lastmod}${images}</url>`;
+}
+
+
+function breadcrumbJsonLd(crumbs, canonical) {
+  const list = (crumbs || []).filter(([label]) => label);
+  if (list.length < 2) return null;
+  const items = list.map(([label, href], i) => {
+    const last = i === list.length - 1;
+    const url = last ? canonical : (href && href.startsWith('/') && !href.includes('?') ? `${SITE_URL}${href}` : '');
+    return url ? { '@type': 'ListItem', position: i + 1, name: label, item: url } : null;
+  });
+  if (items.some((item) => !item)) return null;
+  return { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items };
+}
+
+async function loadPosters() {
+  try {
+    const response = await fetch(`${R2_WORKER_URL}/api/posters`, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Worker returned HTTP ${response.status}`);
+    const payload = await response.json();
+    return (Array.isArray(payload.posters) ? payload.posters : []).filter((p) => p.image_url);
+  } catch (e) {
+    // Poster pages are supplemental. Keep the rest of the static site buildable
+    // if the public Worker feed is briefly unavailable.
+    console.warn('poster fetch failed (skipping poster pages):', e.message);
+    return [];
+  }
+}
+
 // ---------- main ----------
 
 async function main() {
   console.log('Loading committed public data snapshot...');
-  const { agencies, branches, vacancies } = await fetchAll();
+  const { agencies, branches, vacancies, employers } = await fetchAll();
   console.log(`Fetched ${agencies.length} agencies, ${branches.length} branches, ${vacancies.length} vacancies.`);
 
   // ---- Link targets, computed ONCE up front so every page can link to every
@@ -1342,6 +1848,15 @@ async function main() {
     CTX.agencyById.set(String(agency.id), { slug: agencySlugById.get(recordMapKey(agency, index)), name: agency.name });
   });
   CTX.vacancySlugs = vacancySlugById;
+
+  // Hiring companies + posters are resolved up front so every page (nav, footer,
+  // vacancy cards) links only to pages that will really exist.
+  const employerById = new Map(employers.map((e) => [String(e.id), e]));
+  const companies = buildCompanies({ vacancies, employers, agencies });
+  companies.forEach((c) => CTX.companyByKey.set(c.key, { slug: c.slug, name: c.name }));
+  CTX.hasCompanies = companies.length > 0;
+  const posters = await loadPosters();
+  CTX.hasPosters = posters.length > 0;
 
   // Dry-run the hubs to learn which ones are non-empty. Thin/empty hubs are
   // not published, so nothing may link to them.
@@ -1388,7 +1903,7 @@ async function main() {
   };
   const agencyRecordById = new Map(agencies.map((a) => [String(a.id), a]));
 
-  const sitemapUrls = [`${SITE_URL}/`, `${SITE_URL}/privacy/`, `${SITE_URL}/faq/`, `${SITE_URL}/know-your-rights/`];
+  const sitemapUrls = [`${SITE_URL}/`, `${SITE_URL}/privacy/`, `${SITE_URL}/faq/`, `${SITE_URL}/know-your-rights/`, `${SITE_URL}/terms/`];
 
   // Permanent navigation pages are written on every build, independent of
   // vacancy inventory, so their URLs stay indexable and stable.
@@ -1453,7 +1968,7 @@ async function main() {
     const dir = path.join(agencyDir, slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), html);
-    sitemapUrls.push(`${SITE_URL}/agency/${slug}/`);
+    sitemapUrls.push({ loc: `${SITE_URL}/agency/${slug}/`, images: imagesOf(agency.photo) });
   });
 
   const vacancyDir = path.join(OUT_DIR, 'vacancy');
@@ -1464,6 +1979,7 @@ async function main() {
     const extras = {
       agencySlug: agency ? (CTX.agencyById.get(String(agency.id)) || {}).slug : '',
       related: relatedFor(vacancy),
+      companySlug: (companyRefFor(vacancy, employerById) || {}).slug || '',
     };
     const html = buildVacancyPage(vacancy, agency, slug, extras);
     const dir = path.join(vacancyDir, slug);
@@ -1471,41 +1987,80 @@ async function main() {
     fs.writeFileSync(path.join(dir, 'index.html'), html);
     const lastmodSource = vacancy.updated_at || vacancy.created_at;
     const lastmod = lastmodSource ? new Date(lastmodSource).toISOString().slice(0, 10) : '';
-    sitemapUrls.push({ loc: `${SITE_URL}/vacancy/${slug}/`, lastmod });
+    sitemapUrls.push({ loc: `${SITE_URL}/vacancy/${slug}/`, lastmod, images: imagesOf(vacancy.company_photo) });
   });
 
-  // Poster pages: one shareable page per active poster. A failed/missing
-  // poster table must never fail the build.
-  let posters = [];
-  try {
-    const response = await fetch(`${R2_WORKER_URL}/api/posters`, { headers: { Accept: 'application/json' } });
-    if (!response.ok) throw new Error(`Worker returned HTTP ${response.status}`);
-    const payload = await response.json();
-    posters = Array.isArray(payload.posters) ? payload.posters : [];
-  } catch (e) {
-    // Poster pages are supplemental. Keep the rest of the static site buildable
-    // if the public Worker feed is briefly unavailable.
-    console.warn('poster fetch failed (skipping poster pages):', e.message);
-  }
+  // Poster pages: one shareable page per active poster (+ a /posters/ gallery).
+  // Each poster links back to its employer's company page / agency profile.
+  const postersWithSlugs = posters.map((poster) => ({ poster, slug: posterSlug(poster) }));
+  const postersByCompany = new Map();
   const posterDir = path.join(OUT_DIR, 'poster');
   ensureDir(posterDir);
-  posters.filter((p) => p.image_url).forEach((poster) => {
-    const slug = posterSlug(poster);
+  postersWithSlugs.forEach(({ poster, slug }) => {
+    const employer = poster.employer_id !== undefined && poster.employer_id !== null ? employerById.get(String(poster.employer_id)) : null;
+    const companyKey = employer ? normCompanyKey(employer.name) : '';
+    const company = companyKey ? CTX.companyByKey.get(companyKey) : null;
+    const agencyRef = poster.agency_id !== undefined && poster.agency_id !== null ? CTX.agencyById.get(String(poster.agency_id)) : null;
+    if (company) {
+      if (!postersByCompany.has(companyKey)) postersByCompany.set(companyKey, []);
+      postersByCompany.get(companyKey).push({ poster, slug });
+    }
     const dir = path.join(posterDir, slug);
     ensureDir(dir);
-    fs.writeFileSync(path.join(dir, 'index.html'), buildPosterPage(poster, slug));
-    sitemapUrls.push(`${SITE_URL}/poster/${slug}/`);
+    fs.writeFileSync(path.join(dir, 'index.html'), buildPosterPage(poster, slug, { company, agency: agencyRef }));
+    sitemapUrls.push({ loc: `${SITE_URL}/poster/${slug}/`, images: imagesOf(poster.image_url) });
   });
+  if (postersWithSlugs.length) {
+    writePaginated({
+      base: '/posters', items: postersWithSlugs, perPage: 60, sitemapUrls,
+      build: (ctx) => buildPostersGalleryPage({ ...ctx, total: postersWithSlugs.length }),
+      imagesFor: (slice) => imagesOf(...slice.map(({ poster }) => poster.image_url)),
+    });
+  }
 
-  // Sitemap
-  const sitemapEntries = sitemapUrls.map((entry) => {
-    if (typeof entry === 'string') return `  <url><loc>${entry}</loc></url>`;
-    const loc = entry.loc;
-    const lastmod = entry.lastmod ? `<lastmod>${entry.lastmod}</lastmod>` : '';
-    return `  <url><loc>${loc}</loc>${lastmod}</url>`;
-  }).join('\n');
+  // Hiring-company pages + /companies/ directory.
+  const companyDir = path.join(OUT_DIR, 'company');
+  ensureDir(companyDir);
+  companies.forEach((company) => {
+    const dir = path.join(companyDir, company.slug);
+    ensureDir(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), buildCompanyPage(company, postersByCompany.get(company.key) || []));
+    sitemapUrls.push({ loc: `${SITE_URL}/company/${company.slug}/`, images: imagesOf(company.photo) });
+  });
+  if (companies.length) {
+    const companiesByActivity = [...companies].sort((a, b) => b.open.length - a.open.length || a.name.localeCompare(b.name));
+    writePaginated({
+      base: '/companies', items: companiesByActivity, perPage: 120, sitemapUrls,
+      build: (ctx) => buildCompaniesDirectoryPage({ ...ctx, total: companies.length }),
+      imagesFor: (slice) => imagesOf(...slice.map((c) => c.photo)),
+    });
+  }
+
+  // Agency directory, full vacancy archive and the "Submit your CV" page.
+  const agenciesSorted = [...agencies].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  writePaginated({
+    base: '/agencies', items: agenciesSorted, perPage: 150, sitemapUrls,
+    build: (ctx) => buildAgenciesDirectoryPage({ ...ctx, total: agencies.length }),
+    imagesFor: (slice) => imagesOf(...slice.map((a) => a.photo)),
+  });
+  const vacancyArchive = [...vacancies].sort((a, b) => (Number(isOpenVacancy(b)) - Number(isOpenVacancy(a))) || newestFirst(a, b));
+  const archivePages = writePaginated({
+    base: '/vacancies', items: vacancyArchive, perPage: 100, sitemapUrls,
+    build: (ctx) => buildVacanciesArchivePage({ ...ctx, total: vacancyArchive.length }),
+    imagesFor: (slice) => imagesOf(...slice.map((v) => v.company_photo)),
+  });
+  const submitCvDir = path.join(OUT_DIR, 'submit-cv');
+  ensureDir(submitCvDir);
+  fs.writeFileSync(path.join(submitCvDir, 'index.html'), buildSubmitCvPage(agenciesSorted));
+  sitemapUrls.push({ loc: `${SITE_URL}/submit-cv/`, images: imagesOf(...agenciesSorted.slice(0, 200).map((a) => a.photo)) });
+
+  // Sitemap (+ Google image extension so agency, company and poster photos are discoverable)
+  const seenLocs = new Set();
+  const sitemapEntries = sitemapUrls
+    .filter((entry) => { const loc = typeof entry === 'string' ? entry : entry.loc; if (seenLocs.has(loc)) return false; seenLocs.add(loc); return true; })
+    .map(sitemapEntryXml).join('\n');
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${sitemapEntries}
 </urlset>`;
   fs.writeFileSync(path.join(OUT_DIR, 'sitemap.xml'), sitemap);
@@ -1514,7 +2069,7 @@ ${sitemapEntries}
   // for every generated page). It is intentionally NOT rewritten here any more,
   // and it is part of STATIC_ASSETS so editing it busts caches on next deploy.
 
-  console.log(`Done. Wrote ${agencies.length} agency page(s), ${vacancies.length} vacancy page(s), ${CTX.provinces.size} province hub(s), ${CTX.categories.size} category hub(s) (thin/empty ones skipped), the /post-a-job/ page, and sitemap.xml.`);
+  console.log(`Done. Wrote ${agencies.length} agency page(s), ${vacancies.length} vacancy page(s), ${CTX.provinces.size} province hub(s), ${CTX.categories.size} category hub(s) (thin/empty ones skipped), the /post-a-job/ page, ${companies.length} company page(s), ${posters.length} poster page(s), ${archivePages} vacancy archive page(s), /agencies/, /submit-cv/ and sitemap.xml (${seenLocs.size} URLs).`);
 }
 
 main().catch((err) => {
