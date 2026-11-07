@@ -172,3 +172,9 @@ test('admin CV Box sheet edits location, experience, availability and phone', ()
   assert.match(admin, /location:location,\s*experience_years:parseInt\(experience, 10\),\s*availability:availability/);
   assert.match(admin, /contact_phone:document\.getElementById\('pc-phone'\)\.value\.trim\(\)/);
 });
+
+test('in-app browsers (Facebook) ignore the safe-area inset so the bottom nav is not stretched', () => {
+  assert.match(html, /setAttribute\('data-inapp','1'\)/);
+  assert.match(html, /FBAN\|FBAV/);
+  assert.match(css, /html\[data-inapp\] \.bottom-nav[^{]*\{height:68px!important;padding:7px 8px!important/);
+});
