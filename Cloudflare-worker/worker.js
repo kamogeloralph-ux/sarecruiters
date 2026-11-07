@@ -1970,27 +1970,50 @@ async function inferEmployerPosterTitle(env, bytes) {
 }
 __name(inferEmployerPosterTitle, "inferEmployerPosterTitle");
 async function deleteExpiredEmployerPosters(env) {
-  const { body } = await supabaseGet(env, "employer_posters", {
-    select: "id,image_url,expires_at",
-    expires_at: `lte.${new Date().toISOString()}`,
-    order: "expires_at.asc",
-    limit: "100"
-  });
   let deleted = 0;
-  for (const poster of body || []) {
-    try {
-      const key = employerPosterKey(poster.image_url, env);
-      if (poster.image_url && !key) {
-        console.error("Skipping expired poster with an unrecognized image URL", poster.id);
-        continue;
+  // Up to 5 batches of 100 per run so a backlog clears in one go. A batch that
+  // removes nothing stops the loop (the same rows would just be retried).
+  for (let batch = 0; batch < 5; batch++) {
+    const { body } = await supabaseGet(env, "employer_posters", {
+      select: "id,image_url,expires_at",
+      expires_at: `lte.${new Date().toISOString()}`,
+      order: "expires_at.asc",
+      limit: "100"
+    });
+    if (!Array.isArray(body) || !body.length) break;
+    let removedInBatch = 0;
+    for (const poster of body) {
+      try {
+        const key = employerPosterKey(poster.image_url, env);
+        if (poster.image_url && !key) {
+          console.error("Skipping expired poster with an unrecognized image URL", poster.id, poster.image_url);
+          continue;
+        }
+        if (key) await env.MEDIA_BUCKET.delete(key);
+        const removed = await supabaseRpc(env, "delete_expired_employer_poster", { p_poster_id: poster.id });
+        if (removed === true) {
+          removedInBatch++;
+          deleted++;
+        } else {
+          console.error("Expired poster was not removed from the database", poster.id, removed);
+        }
+      } catch (error) {
+        // Keep the database row when storage cleanup fails so the next scheduled
+        // run can retry the same poster instead of losing track of its image.
+        console.error("Expired poster cleanup failed", poster.id, error);
       }
-      if (key) await env.MEDIA_BUCKET.delete(key);
-      const removed = await supabaseRpc(env, "delete_expired_employer_poster", { p_poster_id: poster.id });
-      if (removed === true) deleted++;
+    }
+    if (!removedInBatch) break;
+  }
+  // Keep the D1 copy (what the app reads) in step and refresh the public data version.
+  if (env.DB) {
+    try {
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM employer_posters WHERE expires_at IS NOT NULL AND expires_at <= ?").bind(new Date().toISOString()),
+        ...(deleted ? [publicDataVersionBumpStatement(env)] : [])
+      ]);
     } catch (error) {
-      // Keep the database row when storage cleanup fails so the next scheduled
-      // run can retry the same poster instead of losing track of its image.
-      console.error("Expired poster cleanup failed", poster.id, error);
+      console.error("Expired poster D1 cleanup failed", error);
     }
   }
   return deleted;
@@ -2046,6 +2069,11 @@ var worker_default = {
   // per-visitor Supabase egress. ctx.waitUntil lets the sync finish even
   // though cron invocations don't wait on a returned Promise otherwise.
   async scheduled(event, env, ctx) {
+    // Expired posters are removed on every scheduled tick, before anything slower
+    // (watchdog / sync) can use up the run, so the admin list never keeps them.
+    ctx.waitUntil(deleteExpiredEmployerPosters(env)
+      .then((removed) => { if (removed) console.log("Expired employer posters removed", removed); })
+      .catch((e) => console.error("scheduled expired-poster cleanup failed", e)));
     // "15,45 * * * *": lightweight self-healing watchdog (see watchdog.js). Offset from
     // the 6-hourly tick so the two never run at the same moment.
     if (event.cron === "15,45 * * * *") {
@@ -2060,12 +2088,6 @@ var worker_default = {
         if (result.problems.length) console.log("Watchdog open problems", result.problems.join(", "));
       } catch (e) {
         console.error("scheduled deep watchdog failed", e);
-      }
-      try {
-        const removed = await deleteExpiredEmployerPosters(env);
-        if (removed) console.log("Expired employer posters removed", removed);
-      } catch (e) {
-        console.error("scheduled expired-poster cleanup failed", e);
       }
       try {
         const titled = await backfillMissingEmployerPosterTitles(env);
