@@ -30,7 +30,7 @@ test('paid CV delivery is gated by paid status and a 72-hour expiry', () => {
   assert.match(worker, /order\.status !== "paid"/);
   assert.match(worker, /download_expires_at/);
   assert.match(worker, /candidate-cvs\//);
-  assert.match(worker, /sendCvDownloadEmail\(env, result, result\.download_token\)/);
+  assert.match(worker, /sendCvDownloadEmail\(env, result, result\.download_token, contact\)/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS cv_download_orders/);
   assert.match(migration, /customer_email TEXT NOT NULL/);
 });
@@ -69,4 +69,14 @@ test('CV Box checkout accepts the app-generated (non-UUID) candidate ids', () =>
   for (const bad of ['', ' ', 'a b', "x'y", 'a&id=eq.1', '../x', 'a'.repeat(65)]) assert.ok(!idPattern.test(bad), `rejects ${JSON.stringify(bad)}`);
   assert.match(handler, /body\.candidateId \?\? ""/);
   assert.match(sheets, /candidateId: String\(c\.id\)/);
+});
+
+test('paid CV email includes the candidate contact details and the owner is alerted on payment', () => {
+  assert.match(worker, /fetchCvCandidateContact\(env, result\.candidate_id\)/);
+  assert.match(worker, /contact_phone,contact_email/);
+  assert.match(worker, /Candidate contact details/);
+  assert.doesNotMatch(worker, /Candidate contact details are not included/);
+  assert.doesNotMatch(html, /Candidate contact details are not included/);
+  assert.match(worker, /CV payment received/);
+  assert.match(worker, /ADMIN_NOTIFY_EMAIL/);
 });
