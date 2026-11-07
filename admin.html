@@ -1327,8 +1327,18 @@ async function getEmployers(){
   if (res.error) throw new Error(res.error.message || 'Employers could not be read');
   return res.data || [];
 }
+// Expired posters are gone from the app, so they must not linger in the admin list
+// while the scheduled cleanup (Worker) is still catching up.
+function activePosters(rows){
+  var now = Date.now();
+  return (Array.isArray(rows) ? rows : []).filter(function(p){
+    if(!p || !p.expires_at) return true;
+    var t = new Date(p.expires_at).getTime();
+    return isNaN(t) || t > now;
+  });
+}
 async function getPosters(){
-  try { var { data, error } = await supabaseClient.from('employer_posters').select('id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at').order('created_at',{ascending:false}).limit(500); if(!error) return data||[]; console.error('posters load',error); } catch(e){ console.error('posters load',e); }
+  try { var { data, error } = await supabaseClient.from('employer_posters').select('id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at').order('created_at',{ascending:false}).limit(500); if(!error) return activePosters(data); console.error('posters load',error); } catch(e){ console.error('posters load',e); }
   return [];
 }
 async function getHouseAds(){
@@ -1539,7 +1549,7 @@ async function loadAll(scope){
     cache.suggestions = Array.isArray(auxiliary.suggestions) ? auxiliary.suggestions : [];
     cache.tracks = Array.isArray(auxiliary.tracks) ? auxiliary.tracks : [];
     cache.poolCandidates = Array.isArray(auxiliary.poolCandidates) ? auxiliary.poolCandidates : [];
-    cache.posters = Array.isArray(auxiliary.posters) ? auxiliary.posters : [];
+    cache.posters = activePosters(auxiliary.posters);
     cache.jobEnquiries = Array.isArray(auxiliary.jobEnquiries) ? auxiliary.jobEnquiries : [];
     cache.jobSeekers = Array.isArray(auxiliary.jobSeekers) ? auxiliary.jobSeekers : [];
     cache.houseAds = Array.isArray(auxiliary.houseAds) ? auxiliary.houseAds : [];
