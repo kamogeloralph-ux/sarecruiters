@@ -2867,3 +2867,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
   .hf-vacancy-apply{min-height:40px;padding:0 12px;font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.home-featured-vacancy{transition:none}}
+
+/* CV Box public cards: photo, name, position and a single paid-CV action.
+   Mini-CV details were removed, so the action row is one full-width button
+   and the card no longer behaves like an expandable accordion. */
+.pool-mini-card{cursor:default}
+.pool-mini-actions{grid-template-columns:minmax(0,1fr)!important}
+.pool-mini-actions .pool-cv-download-btn{width:100%}

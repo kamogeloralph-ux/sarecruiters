@@ -457,7 +457,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
           <button class="minibtn" id="pool-tab-active" onclick="switchPoolTab('active')">Active <span class="nav-badge" id="pool-badge-active"></span></button>
           <button class="minibtn" id="pool-tab-other" onclick="switchPoolTab('other')">Expired / Rejected <span class="nav-badge" id="pool-badge-other"></span></button>
         </div>
-        <input class="search" id="pool-admin-search" placeholder="Search name, sector, location..." oninput="renderPoolCandidates()">
+        <input class="search" id="pool-admin-search" placeholder="Search name or position..." oninput="renderPoolCandidates()">
         <div id="pool-admin-list"></div>
         <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(127,127,127,.25)">
           <button class="minibtn" id="migrate-photos-btn" onclick="migratePhotosToR2()">Migrate old photos to R2</button>
@@ -690,36 +690,16 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   <div class="sheet">
     <h3 id="pool-sheet-title">Candidate</h3>
     <div class="field"><label>Full name *</label><input id="pc-name"></div>
-    <div class="field"><label>Photo</label><input type="file" id="pc-photo" accept="image/*" onchange="handlePoolPhoto(event)"></div>
+    <div class="field"><label>Profile photo <span id="pc-photo-req">*</span></label><input type="file" id="pc-photo" accept="image/*" onchange="handlePoolPhoto(event)"></div>
     <div id="pc-photo-preview" style="display:none;margin-bottom:12px"><img id="pc-photo-img" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:1px solid var(--border)"></div>
-    <div class="field"><label>Phone</label><input id="pc-phone" type="tel"></div>
-    <div class="field"><label>Email</label><input id="pc-email" type="email"></div>
-    <div class="field"><label>Sector / industry</label><input id="pc-sector"></div>
-    <div class="field"><label>Position</label><input id="pc-position"></div>
-    <div class="field"><label>Location</label><input id="pc-location"></div>
-    <div class="field"><label>Gender</label><select id="pc-gender"><option value="">— Not set —</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
-    <div class="field"><label>Grade 12 / Matric?</label><select id="pc-grade12"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-    <div class="field"><label>Do you have a criminal record?</label><select id="pc-criminal"><option value="">— Not set —</option><option value="Clear">Clear</option><option value="Yes">Yes</option></select></div>
-    <div class="field"><label>Years of experience</label><select id="pc-experience"><option value="">— Not set —</option><option value="0">0 years</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
-    <div class="mini-cv-heading">Mini CV questions</div>
-    <div class="field"><label>Highest qualification</label><input id="pc-qualification"></div>
-    <div class="field"><label>Driver’s licence</label><select id="pc-drivers-license"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-    <div class="field"><label>Reliable transport</label><select id="pc-transport"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-    <div class="field"><label>Willing to relocate</label><select id="pc-relocate"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option><option value="Negotiable">Negotiable</option></select></div>
-    <div class="field"><label>Availability</label><input id="pc-availability"></div>
-    <div class="field"><label>Preferred employment</label><select id="pc-employment"><option value="">— Not set —</option><option value="Permanent">Permanent</option><option value="Contract">Contract</option><option value="Temporary">Temporary</option><option value="Part-time">Part-time</option><option value="Any">Any suitable opportunity</option></select></div>
-    <div class="field"><label>Salary expectation</label><input id="pc-salary"></div>
-    <div class="field"><label>Eligible to work in South Africa</label><select id="pc-work-authorized"><option value="">— Not set —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-    <div class="field"><label>Sell yourself / Tell us about yourself <span class="field-optional">150 characters</span></label><textarea id="pc-about" maxlength="150"></textarea><small class="char-counter" data-for="pc-about">0 / 150</small></div>
-    <div class="field"><label>CV link</label><input id="pc-cv" type="url"></div>
-    <div class="field"><label>EFT payment reference</label><input id="pc-payref"></div>
+    <div class="field"><label>Position *</label><input id="pc-position"></div>
+    <div class="field"><label>Email <span class="field-optional">optional</span></label><input id="pc-email" type="email"></div>
+    <div class="field"><label>CV link</label><input id="pc-cv" type="url" oninput="updatePoolCvOpenLink()"><a id="pc-cv-open" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:6px;font-size:13px;font-weight:700">Open CV ↗</a></div>
     <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
     <div class="toggle-row" style="margin-bottom:16px">
       <div><div class="t-label">Screened &amp; Verified</div><div class="t-sub">Confirms this candidate has passed screening and their information checks out — shows a badge publicly</div></div>
       <label class="switch"><input type="checkbox" id="pc-verified"><span class="track"><span class="knob"></span></span></label>
     </div>
-    <div class="field"><label>Paid until</label><input id="pc-paiduntil" type="date"></div>
-    <div class="field"><label>Admin notes (internal only)</label><textarea id="pc-notes" placeholder="e.g. EFT confirmed 12 Aug, matches ref"></textarea></div>
     <div class="sheet-actions">
       <button class="btn secondary" onclick="closeSheet('pool-overlay')">Cancel</button>
       <button class="btn" onclick="savePoolCandidate()">Save</button>
@@ -2718,34 +2698,11 @@ function renderPoolCandidates(){
   if(poolTab==='pending') list = list.filter(function(p){return (p.status||'pending')==='pending';});
   else if(poolTab==='active') list = list.filter(function(p){return p.status==='active';});
   else list = list.filter(function(p){return p.status==='expired'||p.status==='rejected';});
-  if(q){ list = list.filter(function(p){ var hay=((p.full_name||'')+' '+(p.sector||'')+' '+(p.position||'')+' '+(p.location||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  if(q){ list = list.filter(function(p){ var hay=((p.full_name||'')+' '+(p.position||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   var el = document.getElementById('pool-admin-list');
   if(!list.length){ el.innerHTML = emptyState('Nothing here','No candidates in this view.'); return; }
   el.innerHTML = list.map(function(p){
-    var sub = [p.position, p.sector, p.location].filter(Boolean).join(' · ');
-    var details = '';
-    if(p.contact_phone) details += '<div class="det-row"><span class="det-label">Phone:</span> '+escapeHtml(p.contact_phone)+'</div>';
-    if(p.contact_email) details += '<div class="det-row"><span class="det-label">Email:</span> '+escapeHtml(p.contact_email)+'</div>';
-    var screenBits = [];
-    if(p.gender) screenBits.push(escapeHtml(p.gender));
-    if(p.grade12) screenBits.push('Grade 12: '+escapeHtml(p.grade12));
-    if(p.criminal_record) screenBits.push('Criminal record: '+escapeHtml(p.criminal_record));
-    if(p.experience_years !== null && p.experience_years !== undefined) screenBits.push((p.experience_years>=10?'10+':p.experience_years)+' yrs experience');
-    if(screenBits.length) details += '<div class="det-row"><span class="det-label">Screening:</span> '+screenBits.join(', ')+'</div>';
-    if(p.qualification) details += '<div class="det-row"><span class="det-label">Highest qualification:</span> '+escapeHtml(p.qualification)+'</div>';
-    if(p.drivers_license) details += '<div class="det-row"><span class="det-label">Driver’s licence:</span> '+escapeHtml(p.drivers_license)+'</div>';
-    if(p.reliable_transport) details += '<div class="det-row"><span class="det-label">Reliable transport:</span> '+escapeHtml(p.reliable_transport)+'</div>';
-    if(p.willing_relocate) details += '<div class="det-row"><span class="det-label">Willing to relocate:</span> '+escapeHtml(p.willing_relocate)+'</div>';
-    if(p.availability) details += '<div class="det-row"><span class="det-label">Availability:</span> '+escapeHtml(p.availability)+'</div>';
-    if(p.preferred_employment) details += '<div class="det-row"><span class="det-label">Preferred employment:</span> '+escapeHtml(p.preferred_employment)+'</div>';
-    if(p.salary_expectation) details += '<div class="det-row"><span class="det-label">Salary expectation:</span> '+escapeHtml(p.salary_expectation)+'</div>';
-    if(p.work_authorized) details += '<div class="det-row"><span class="det-label">Eligible to work in South Africa:</span> '+escapeHtml(p.work_authorized)+'</div>';
-    if(p.about_you) details += '<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(p.about_you)+'</div>';
-    if(p.cv_link) details += '<div class="det-row"><span class="det-label">CV:</span> '+escapeHtml(p.cv_link)+'</div>';
-    if(p.payment_ref) details += '<div class="det-row"><span class="det-label">EFT ref:</span> '+escapeHtml(p.payment_ref)+'</div>';
-    if(p.paid_until) details += '<div class="det-row"><span class="det-label">Paid until:</span> '+fmtDate(p.paid_until)+'</div>';
-    if(p.admin_notes) details += '<div class="det-row"><span class="det-label">Notes:</span> '+escapeHtml(p.admin_notes)+'</div>';
-    if(!details) details = '<div class="det-row muted">No additional details</div>';
+    var sub = p.position || '';
     var quickActions = '';
     if((p.status||'pending')==='pending'){
       quickActions = '<button class="minibtn ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Approve</button>' +
@@ -2753,20 +2710,13 @@ function renderPoolCandidates(){
     } else if(p.status==='active'){
       quickActions = '<button class="minibtn" onclick="stopProp(event);expirePoolCandidate(\''+p.id+'\')">Mark expired</button>';
     }
-    return '<div class="row-item" onclick="toggleRow(this)">'+
+    return '<div class="row-item">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#5E5CE6,#3D3AB8)">'+(p.photo_url ? '<img src="'+escapeHtml(p.photo_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg>')+'</div>'+
       '<div class="row-main"><div class="row-title">'+escapeHtml(p.full_name||'Candidate')+(p.verified?' <span class="badge verified">Screened &amp; Verified</span>':'')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div></div>'+
       '<div class="row-actions-inline">'+quickActions+
         '<button class="minibtn" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
         '<button class="minibtn danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
       '</div>'+
-      '<div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>'+
-      '</div>'+
-      '<div class="row-details">'+details+
-        '<div class="row-expanded-actions">'+
-          '<button class="minibtn full" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')">Edit</button>'+
-          '<button class="minibtn full danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')">Delete</button>'+
-        '</div>'+
       '</div>';
   }).join('');
 }
@@ -2784,67 +2734,48 @@ function openPoolSheet(id){
   if (pcFile) pcFile.value = '';
   if (p && p.photo_url) { pcImg.src = p.photo_url; pcPreview.style.display = 'block'; }
   else { pcImg.src = ''; pcPreview.style.display = 'none'; }
-  document.getElementById('pc-phone').value = p ? (p.contact_phone||'') : '';
+  // A profile photo is mandatory for every new CV Box upload; existing
+  // profiles can still be edited/approved without one.
+  var photoReq = document.getElementById('pc-photo-req');
+  if (photoReq) photoReq.style.display = id ? 'none' : 'inline';
   document.getElementById('pc-email').value = p ? (p.contact_email||'') : '';
-  document.getElementById('pc-sector').value = p ? (p.sector||'') : '';
   document.getElementById('pc-position').value = p ? (p.position||'') : '';
-  document.getElementById('pc-location').value = p ? (p.location||'') : '';
-  document.getElementById('pc-gender').value = p ? (p.gender||'') : '';
-  document.getElementById('pc-grade12').value = p ? (p.grade12||'') : '';
-  document.getElementById('pc-criminal').value = p ? (p.criminal_record||'') : '';
-  document.getElementById('pc-experience').value = p && (p.experience_years !== null && p.experience_years !== undefined) ? String(p.experience_years) : '';
-  document.getElementById('pc-qualification').value = p ? (p.qualification||'') : '';
-  document.getElementById('pc-drivers-license').value = p ? (p.drivers_license||'') : '';
-  document.getElementById('pc-transport').value = p ? (p.reliable_transport||'') : '';
-  document.getElementById('pc-relocate').value = p ? (p.willing_relocate||'') : '';
-  document.getElementById('pc-availability').value = p ? (p.availability||'') : '';
-  document.getElementById('pc-employment').value = p ? (p.preferred_employment||'') : '';
-  document.getElementById('pc-salary').value = p ? (p.salary_expectation||'') : '';
-  document.getElementById('pc-work-authorized').value = p ? (p.work_authorized||'') : '';
-  document.getElementById('pc-about').value = p ? (p.about_you||'') : '';
   document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
-  document.getElementById('pc-payref').value = p ? (p.payment_ref||'') : '';
+  updatePoolCvOpenLink();
   document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
   document.getElementById('pc-verified').checked = p ? !!p.verified : false;
-  document.getElementById('pc-paiduntil').value = p && p.paid_until ? String(p.paid_until).slice(0,10) : '';
-  document.getElementById('pc-notes').value = p ? (p.admin_notes||'') : '';
   openSheet('pool-overlay');
+}
+// Shows an "Open CV" link beside the CV field so a CV can be reviewed before approving.
+function updatePoolCvOpenLink(){
+  var link = document.getElementById('pc-cv-open');
+  var input = document.getElementById('pc-cv');
+  if(!link || !input) return;
+  var url = safeHttpUrl(input.value.trim());
+  if(url){ link.href = url; link.style.display = 'inline-block'; }
+  else { link.removeAttribute('href'); link.style.display = 'none'; }
 }
 async function savePoolCandidate(){
   var name = document.getElementById('pc-name').value.trim();
   if(!name){ alert('Add the candidate\'s full name.'); return; }
+  var position = document.getElementById('pc-position').value.trim();
+  if(!position){ alert('Add the position the candidate wants to be considered for.'); return; }
+  if(!editingPool && !pendingPoolAdminPhotoBlob && !window.pendingPoolAdminPhoto){ alert('A profile photo is required to add a candidate to the CV Box.'); return; }
   var id = editingPool || newId();
-  var paidUntil = document.getElementById('pc-paiduntil').value;
   var photoUrl = await uploadPoolAdminPhotoIfAny();
+  if(!editingPool && !photoUrl){ return; }   // upload failed; the error was already shown
   var fromSeeker = editingSeeker;
+  // Only the fields that are on the form are written, so any older
+  // profile data already stored for this candidate is left untouched.
   var poolSaved = await upsertPoolCandidate({
     id:id,
     full_name:name,
     photo_url:photoUrl,
-    contact_phone:document.getElementById('pc-phone').value.trim(),
     contact_email:document.getElementById('pc-email').value.trim(),
-    sector:document.getElementById('pc-sector').value.trim(),
-    position:document.getElementById('pc-position').value.trim(),
-    location:document.getElementById('pc-location').value.trim(),
-    gender:document.getElementById('pc-gender').value,
-    grade12:document.getElementById('pc-grade12').value,
-    criminal_record:document.getElementById('pc-criminal').value,
-    experience_years: document.getElementById('pc-experience').value === '' ? null : parseInt(document.getElementById('pc-experience').value, 10),
-    qualification:document.getElementById('pc-qualification').value.trim(),
-    drivers_license:document.getElementById('pc-drivers-license').value,
-    reliable_transport:document.getElementById('pc-transport').value,
-    willing_relocate:document.getElementById('pc-relocate').value,
-    availability:document.getElementById('pc-availability').value.trim(),
-    preferred_employment:document.getElementById('pc-employment').value,
-    salary_expectation:document.getElementById('pc-salary').value.trim(),
-    work_authorized:document.getElementById('pc-work-authorized').value,
-    about_you:document.getElementById('pc-about').value.trim().slice(0,150),
+    position:position,
     cv_link:document.getElementById('pc-cv').value.trim(),
-    payment_ref:document.getElementById('pc-payref').value.trim(),
     status:document.getElementById('pc-status').value,
-    verified:document.getElementById('pc-verified').checked,
-    paid_until: paidUntil ? new Date(paidUntil).toISOString() : null,
-    admin_notes:document.getElementById('pc-notes').value.trim()
+    verified:document.getElementById('pc-verified').checked
   });
   if(poolSaved === false) return;   // keep the sheet open; the error was already shown
   closeSheet('pool-overlay');
@@ -3038,16 +2969,11 @@ function seekerToTalentPool(id){
   editingSeeker = String(j.id);
   document.getElementById('pool-sheet-title').textContent = 'Add to CV Box';
   document.getElementById('pc-name').value = j.full_name || '';
-  document.getElementById('pc-phone').value = j.phone || '';
   document.getElementById('pc-email').value = j.email || '';
-  document.getElementById('pc-location').value = j.location || '';
   document.getElementById('pc-position').value = String(j.looking_for||'').slice(0,100);
-  document.getElementById('pc-qualification').value = j.qualification || '';
-  document.getElementById('pc-availability').value = j.availability || '';
-  document.getElementById('pc-work-authorized').value = (j.work_status==='citizen_pr' || j.work_status==='work_visa') ? 'Yes' : '';
   document.getElementById('pc-cv').value = safeHttpUrl(j.cv_link);
+  updatePoolCvOpenLink();
   document.getElementById('pc-status').value = 'pending';
-  document.getElementById('pc-notes').value = 'From "Looking for work?" request on '+fmtDate(j.created_at)+'. Work status: '+(SEEKER_WORK_STATUS[j.work_status]||SEEKER_WORK_STATUS.unsure)+(j.message?('\n\nTheir message:\n'+j.message):'');
   showToast('Review the profile, then Save');
 }
 async function linkSeekerToPool(seekerId, poolId){

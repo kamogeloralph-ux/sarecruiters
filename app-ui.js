@@ -939,7 +939,7 @@ export async function renderAccountPoolStatus() {
   if (!saAuthUser || !supabaseClient) { el.textContent = 'Join free — available after you create an account'; return; }
   try {
     var res = await supabaseClient.from('pool_candidates').select('id').eq('user_id', saAuthUser.id).limit(1).maybeSingle();
-    if (el) el.textContent = (res && res.data) ? 'Listed — tap to edit your Mini-CV' : 'Not listed yet — join free';
+    if (el) el.textContent = (res && res.data) ? 'Listed — tap to update your CV' : 'Not listed yet — join free';
   } catch(e) { /* keep default copy on failure */ }
 }
 

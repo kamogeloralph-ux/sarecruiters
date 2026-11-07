@@ -69,11 +69,27 @@ export function handlePhoto(evt) {
 // Photos are centre-cropped to a fixed 512x512 square so every candidate's
 // photo is a consistent, predictable size wherever it's used — the pool
 // list avatar, their expanded card, and the home screen candidate spotlight.
+export var MAX_POOL_PHOTO_BYTES = 10 * 1024 * 1024;
 export function handlePoolPhoto(evt) {
-  var file = evt.target.files[0];
-  if (!file) return;
+  var file = evt.target.files && evt.target.files[0];
   var preview = document.getElementById('pool-photo-preview');
   var fallback = document.getElementById('pool-photo-fallback');
+  var wrap = document.getElementById('pool-photo-wrap');
+  var status = document.getElementById('pool-photo-status');
+  window.pendingPoolPhotoBlob = null;
+  if (!file) return;
+  if (!/^image\/(png|jpe?g|webp)$/i.test(file.type || '')) {
+    evt.target.value = '';
+    if (status) status.textContent = 'Please choose a JPG, PNG or WebP photo.';
+    showToast('Profile photo must be a JPG, PNG or WebP image.');
+    return;
+  }
+  if (file.size > MAX_POOL_PHOTO_BYTES) {
+    evt.target.value = '';
+    if (status) status.textContent = 'That photo is too large. Please choose one under 10 MB.';
+    showToast('Profile photo must be 10 MB or smaller.');
+    return;
+  }
   var img = new Image();
   var reader = new FileReader();
   reader.onload = function(e) {
@@ -87,11 +103,19 @@ export function handlePoolPhoto(evt) {
       canvas.height = SIZE;
       canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
       canvas.toBlob(function(blob) {
+        if (!blob) { if (status) status.textContent = 'Could not read that photo. Please try another.'; return; }
         window.pendingPoolPhotoBlob = blob;
         var url = URL.createObjectURL(blob);
         if (preview) { preview.src = url; preview.style.display = 'block'; }
+        if (wrap) wrap.style.display = 'block';
         if (fallback) fallback.style.display = 'none';
+        if (status) status.textContent = 'Photo selected ✓';
       }, 'image/jpeg', 0.85);
+    };
+    img.onerror = function() {
+      evt.target.value = '';
+      if (status) status.textContent = 'Could not read that photo. Please try another.';
+      showToast('Could not read that photo. Please try another.');
     };
     img.src = e.target.result;
   };
@@ -154,9 +178,9 @@ export async function uploadPoolPhotoIfAny() {
       body: window.pendingPoolPhotoBlob
     });
     var data = await res.json();
-    if (!res.ok) { console.error('pool photo upload', data && data.error); return null; }
+    if (!res.ok) { console.error('pool photo upload', data && data.error); showToast((data && data.error) || 'Could not upload your profile photo.'); return null; }
     return data.url || null;
-  } catch(e) { console.error('pool photo upload', e); return null; }
+  } catch(e) { console.error('pool photo upload', e); showToast('Could not upload your profile photo. Please try again.'); return null; }
 }
 export async function saveAgency() {
   var name = document.getElementById('f-name').value.trim();

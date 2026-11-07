@@ -910,26 +910,14 @@ export function renderPoolList() {
   var middleAt = Math.max(1, Math.ceil(list.length / 2));
   listEl.innerHTML = list.map(function(c, index){
     var middleAd = index === middleAt ? '<div id="house-ad-candidates-middle" class="house-ad-slot" hidden></div>' : '';
-    var frontBits = [];
-    if (c.sector) frontBits.push(escapeHtml(c.sector));
-    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') frontBits.push((c.experience_years >= 10 ? '10+' : c.experience_years) + ' yrs experience');
-    var detailBits = [];
-    function detail(label, value){ if(value !== null && value !== undefined && String(value).trim() !== '') detailBits.push('<div class="det-row"><span class="det-label">'+label+':</span> '+escapeHtml(value)+'</div>'); }
-    if (c.verified) detailBits.push('<div class="det-row mini-cv-pitch">' + verifiedBadge('Screened &amp; Verified') + ' Screened &amp; Verified — information confirmed by SA Recruiters</div>');
-    detail('Sector', c.sector); detail('Location', c.location);
-    if (c.experience_years !== null && c.experience_years !== undefined && c.experience_years !== '') detail('Years of experience', (c.experience_years >= 10 ? '10+' : c.experience_years) + ' years');
-    if (c.about_you) detailBits.push('<div class="det-row mini-cv-pitch"><span class="det-label">About me:</span> '+escapeHtml(c.about_you)+'</div>');
-    // Full contact details (phone, email, CV) remain private. The clear CV
-    // download action above is the single next step for interested employers.
+    // Public cards intentionally show only the photo, name, position and the
+    // paid CV action. Mini-CV answers (sector, experience, about me, etc.)
+    // and contact details stay private; the full CV is an R49 secure download.
     var role = c.position || 'Open to opportunities';
-    var location = c.location || 'South Africa';
-    var status = c.verified ? 'Screened profile' : 'Open to opportunities';
     var avatar = c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar pool-mini-avatar">'+initials(c.full_name)+'</div>';
-    return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'" onclick="togglePoolCard(this)" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){togglePoolCard(this)}">' +
-      '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div><div class="pool-mini-location">'+escapeHtml(location)+'</div></div><div class="row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
-      '<div class="pool-mini-meta"><span class="pool-status">'+escapeHtml(status)+'</span>'+(frontBits.length ? '<span>'+frontBits.join(' · ')+'</span>' : '')+'</div>' +
-      '<div class="pool-mini-actions"><button type="button" class="pool-view-btn" onclick="event.stopPropagation();togglePoolCard(this.parentElement.parentElement)">View profile <span aria-hidden="true">↓</span></button><button type="button" class="pool-cv-download-btn" aria-label="Unlock full CV for R49" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><span class="pool-cv-label">Unlock full CV</span><span class="pool-cv-price">R49</span></button></div>' +
-      '<div class="row-details pool-mini-details">'+(detailBits.length ? detailBits.join('') : '<div class="det-row muted">No additional profile details</div>')+'</div>' +
+    return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'">' +
+      '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div></div></div>' +
+      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" aria-label="Unlock full CV for R49" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><span class="pool-cv-label">Unlock full CV</span><span class="pool-cv-price">R49</span></button></div>' +
       '</div>'
   }).join('');
 }
@@ -970,6 +958,7 @@ export function openCvDownloadRequest(c) {
   }
   button.onclick = async function(){
     var address = email ? email.value.trim() : '';
+    if (c.id === null || c.id === undefined || String(c.id).trim() === '') { showToast('This profile cannot be purchased right now. Please contact SA Recruiters.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) { showToast('Enter a valid email address for the download link.'); if (email) email.focus(); return; }
     var original = button.textContent;
     button.disabled = true;
@@ -977,7 +966,7 @@ export function openCvDownloadRequest(c) {
     try {
       var response = await fetch(R2_WORKER_URL + '/api/cv-box/checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ candidateId: c.id, email: address })
+        body: JSON.stringify({ candidateId: String(c.id), email: address })
       });
       var result = await response.json().catch(function(){ return {}; });
       if (!response.ok || !result.redirectUrl) throw new Error(result.error || 'Could not start payment. Please try again.');
@@ -994,6 +983,30 @@ export function openCvDownloadRequest(c) {
 // register sheet is being used to create a brand-new candidate; a candidate
 // id = the sheet is editing (and will UPDATE, not INSERT) that owned row.
 export var editingPoolCandidateId = null;
+// Resets the profile-photo field of the CV Box sheet. When an existing photo
+// URL is supplied (editing an owned profile) it is shown as the current photo
+// and counts as satisfying the "photo required" rule.
+export function resetPoolPhoto(existingUrl) {
+  window.pendingPoolPhotoBlob = null;
+  window.currentPoolPhotoUrl = existingUrl || null;
+  var input = document.getElementById('pool-photo');
+  var preview = document.getElementById('pool-photo-preview');
+  var fallback = document.getElementById('pool-photo-fallback');
+  var wrap = document.getElementById('pool-photo-wrap');
+  var status = document.getElementById('pool-photo-status');
+  if (input) input.value = '';
+  if (existingUrl) {
+    if (preview) { preview.src = existingUrl; preview.style.display = 'block'; }
+    if (wrap) wrap.style.display = 'block';
+    if (fallback) fallback.style.display = 'none';
+    if (status) status.textContent = 'Your photo is saved. Choose a new one to replace it.';
+  } else {
+    if (preview) { preview.style.display = 'none'; preview.removeAttribute('src'); }
+    if (wrap) wrap.style.display = 'none';
+    if (fallback) fallback.style.display = 'flex';
+    if (status) status.textContent = 'Required · a clear photo of your face (JPG, PNG or WebP)';
+  }
+}
 export function resetPoolCvUpload() {
   window.currentPoolCvUrl = null;
   window.pendingPoolCvFile = null;
@@ -1015,14 +1028,6 @@ export function setPoolSheetEditMode(isEdit) {
   if (submitBtn) submitBtn.textContent = isEdit ? 'Save changes' : 'Submit registration';
   var deleteBtn = document.getElementById('pool-delete-btn');
   if (deleteBtn) deleteBtn.style.display = isEdit ? 'block' : 'none';
-  // New joiners land on a quick, minimal form — the optional Mini-CV
-  // section starts collapsed so signing up feels fast. Editing an existing
-  // profile opens it straight away since that's the whole point of coming
-  // back here.
-  var miniCv = document.getElementById('pool-minicv-details');
-  if (miniCv) miniCv.open = !!isEdit;
-  var laterNote = document.getElementById('pool-finish-later-note');
-  if (laterNote) laterNote.style.display = isEdit ? 'none' : 'block';
 }
 
 export function openPoolRegisterSheet() {
@@ -1036,11 +1041,7 @@ export function openPoolRegisterSheet() {
   editingPoolCandidateId = null;
   setPoolSheetEditMode(false);
   document.getElementById('pool-name').value = '';
-  window.pendingPoolPhotoBlob = null;
-  var poolPreview = document.getElementById('pool-photo-preview');
-  var poolFallback = document.getElementById('pool-photo-fallback');
-  if (poolPreview) { poolPreview.style.display = 'none'; poolPreview.src = ''; }
-  if (poolFallback) poolFallback.style.display = 'flex';
+  resetPoolPhoto(null);
   document.getElementById('pool-phone').value = '';
   document.getElementById('pool-email').value = '';
   document.getElementById('pool-sector').value = '';
@@ -1070,16 +1071,12 @@ export function openPoolRegisterSheet() {
 // (used when a signed-in user opens "My CV Box Profile").
 export function fillPoolFormFromCandidate(c) {
   document.getElementById('pool-name').value = c.full_name || '';
-  window.pendingPoolPhotoBlob = null;
-  var poolPreview = document.getElementById('pool-photo-preview');
-  var poolFallback = document.getElementById('pool-photo-fallback');
-  if (c.photo_url) {
-    if (poolPreview) { poolPreview.src = c.photo_url; poolPreview.style.display = 'block'; }
-    if (poolFallback) poolFallback.style.display = 'none';
-  } else {
-    if (poolPreview) { poolPreview.style.display = 'none'; poolPreview.src = ''; }
-    if (poolFallback) poolFallback.style.display = 'flex';
-  }
+  var safePhotoUrl = '';
+  try {
+    var parsedPhotoUrl = new URL(String(c.photo_url || ''), window.location.href);
+    if (parsedPhotoUrl.protocol === 'https:') safePhotoUrl = parsedPhotoUrl.href;
+  } catch (e) {}
+  resetPoolPhoto(safePhotoUrl || null);
   document.getElementById('pool-phone').value = c.contact_phone || '';
   document.getElementById('pool-email').value = c.contact_email || '';
   document.getElementById('pool-sector').value = c.sector || '';
@@ -1244,6 +1241,16 @@ export async function submitPoolRegistration() {
   var email = (document.getElementById('pool-email') || {}).value.trim();
   var alertOptIn = !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked);
   if (!name || !document.getElementById('pool-position').value.trim()) { showToast('Please add your name and the position you want to be considered for.'); return; }
+  if (!window.pendingPoolPhotoBlob && !window.currentPoolPhotoUrl) {
+    var photoInput = document.getElementById('pool-photo');
+    var photoStatus = document.getElementById('pool-photo-status');
+    // A file may be chosen but still compressing; only complain when nothing is chosen at all.
+    if (photoInput && photoInput.files && photoInput.files.length) { showToast('Your photo is still loading — please try again in a moment.'); return; }
+    if (photoStatus) photoStatus.textContent = 'A profile photo is required to join the CV Box.';
+    showToast('A profile photo is required. Please add one to continue.');
+    if (photoInput && photoInput.scrollIntoView) photoInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
   if (!window.currentPoolCvUrl && !window.pendingPoolCvFile) { showToast('Please upload your CV before submitting.'); return; }
   var termsAccepted = document.getElementById('pool-terms-accept');
   if (!termsAccepted || !termsAccepted.checked) { showToast('Please accept the SA Recruiters Terms and Conditions to continue.'); return; }
@@ -1256,11 +1263,13 @@ export async function submitPoolRegistration() {
   if (editingPoolCandidateId) {
     if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
     var editPhotoUrl = await uploadPoolPhotoIfAny();
+    if (window.pendingPoolPhotoBlob && !editPhotoUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
+    editPhotoUrl = editPhotoUrl || window.currentPoolPhotoUrl || null;
     var editCvUrl = await uploadPoolCvIfAny();
     if (window.pendingPoolCvFile && !editCvUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
     var editFields = poolFormToProfileFields();
     editFields.p_id = editingPoolCandidateId;
-    editFields.p_photo_url = editPhotoUrl || null;
+    editFields.p_photo_url = editPhotoUrl;
     if (editCvUrl) editFields.p_cv_link = editCvUrl;
     var editResult;
     try { editResult = await supabaseClient.rpc('candidate_update_own_profile', editFields); }
@@ -1304,11 +1313,13 @@ export async function submitPoolRegistration() {
       var claim = await supabaseClient.rpc('candidate_claim_profile', { p_email: email, p_phone: phone });
       if (!claim.error && claim.data) {
         var claimPhotoUrl = await uploadPoolPhotoIfAny();
+        if (window.pendingPoolPhotoBlob && !claimPhotoUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
+        claimPhotoUrl = claimPhotoUrl || window.currentPoolPhotoUrl || null;
         var claimCvUrl = await uploadPoolCvIfAny();
         if (window.pendingPoolCvFile && !claimCvUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
         var claimFields = poolFormToProfileFields();
         claimFields.p_id = claim.data;
-        claimFields.p_photo_url = claimPhotoUrl || null;
+        claimFields.p_photo_url = claimPhotoUrl;
         if (claimCvUrl) claimFields.p_cv_link = claimCvUrl;
         var claimUpdate = await supabaseClient.rpc('candidate_update_own_profile', claimFields);
         if (claimUpdate.error) console.error('pool claim update', claimUpdate.error);
@@ -1354,9 +1365,10 @@ export async function submitPoolRegistration() {
   };
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
   var photoUrl = await uploadPoolPhotoIfAny();
+  if (!photoUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } showToast('Your profile photo could not be uploaded. Please try again.'); return; }
   var cvUrl = await uploadPoolCvIfAny();
   if (window.pendingPoolCvFile && !cvUrl) { if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
-  if (photoUrl) payload.photo_url = photoUrl;
+  payload.photo_url = photoUrl;
   if (cvUrl) payload.cv_link = cvUrl;
   try {
     var result = await supabaseClient.from('pool_candidates').insert([payload]);

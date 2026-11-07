@@ -383,7 +383,7 @@
 
       <div class="pgroup-label">Your listing</div>
       <div class="pgrouped-list">
-        <button class="profile-menu-item" data-ripple onclick="openMyCvBoxProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>CV Box upload<span class="mi-sub" id="account-pool-status">Your Mini-CV shown to recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="openMyCvBoxProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>CV Box upload<span class="mi-sub" id="account-pool-status">Your CV in the CV Box</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
       <button class="account-help-action" type="button" data-ripple onclick="openJobSeekerSheet()"><span class="account-help-icon" aria-hidden="true">?</span><span><strong>Need help finding work?</strong><small>Send a private request and our team will point you toward suitable opportunities.</small></span><span class="account-help-arrow" aria-hidden="true">›</span></button>
 
@@ -1135,12 +1135,13 @@
       <span class="pool-time-chip">⏱ ~1 min</span>
     </div>
     <div class="manager-banner pool-intro" style="padding:0 0 12px">
-      <p>Upload your CV in under a minute. We only need your name and the position you want to be considered for. Your profile is reviewed before it appears in the CV Box; the full CV stays off public profiles and is shared through a secure download.</p>
+      <p>Upload your CV in under a minute. We only need your name, the position you want to be considered for, your profile photo and your CV. Your profile is reviewed before it appears in the CV Box; the full CV stays off public profiles and is shared through a secure download.</p>
     </div>
     <div class="cv-box-form">
       <div class="cv-box-form-icon" aria-hidden="true">CV</div>
       <div class="field"><label>Full name *</label><input id="pool-name" placeholder="e.g. Thabo Nkosi" autocomplete="name"></div>
       <div class="field"><label>Position / role *</label><input id="pool-position" placeholder="e.g. Forklift Driver, Accountant or Sales Manager"></div>
+      <div class="field" id="pool-photo-field"><label>Profile photo *</label><input id="pool-photo" type="file" accept="image/png,image/jpeg,image/webp" onchange="handlePoolPhoto(event)"><small class="helper-note" id="pool-photo-status">Required · a clear photo of your face (JPG, PNG or WebP)</small><div id="pool-photo-wrap" style="display:none;margin-top:10px"><img id="pool-photo-preview" alt="Your profile photo preview" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--border)"></div></div>
       <div class="field"><label>Upload your CV *</label><input id="pool-cv" type="file" accept="application/pdf,image/png,image/jpeg" onchange="handlePoolCv(event)"><small class="helper-note" id="pool-cv-status">PDF, PNG or JPG · maximum 3 MB</small><a id="pool-cv-current-link" class="pool-cv-link pool-cv-owner-link" target="_blank" rel="noopener noreferrer" aria-label="Open your uploaded CV in a new tab" hidden>Open your uploaded CV <span aria-hidden="true">↗</span></a></div>
       <div class="field cv-box-contact-field"><label>Email for CV enquiries <span class="field-optional">optional</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Kept private. We use it only to contact you about your CV.</small></div>
       <div class="cv-box-legacy-fields" aria-hidden="true">
@@ -1150,7 +1151,6 @@
     <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the CV Box, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
     <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Upload CV</button>
     <button class="sheet-submit danger" data-ripple onclick="deleteMyPoolProfile()" id="pool-delete-btn" style="display:none">Remove my profile</button>
-    <p class="pool-finish-later-note" id="pool-finish-later-note">You're almost in — add the Mini-CV now, or skip it and complete it anytime from “My CV Box upload”.</p>
   </div>
 </div>
 
@@ -1503,7 +1503,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=2c344c79ba"></script>
+<script type="module" src="app.bundle.min.js?v=c6a415f69a"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
