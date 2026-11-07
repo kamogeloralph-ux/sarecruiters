@@ -285,16 +285,6 @@ function publicUrlFor(env, key) {
   return `${base}/${key}`;
 }
 __name(publicUrlFor, "publicUrlFor");
-// Public bases that identify our own R2 objects: the current custom domain plus the
-// legacy r2.dev address (R2_LEGACY_BASE_URL), so rows saved before the move still match.
-function r2PublicBases(env) {
-  const bases = [];
-  for (const value of [env.R2_PUBLIC_BASE_URL, env.R2_LEGACY_BASE_URL]) {
-    try { if (value) bases.push(new URL(value)); } catch (_) { /* ignore a malformed value */ }
-  }
-  return bases;
-}
-__name(r2PublicBases, "r2PublicBases");
 // Raised from 600/1800 (10 min / 30 min) — the 10-minute fresh window meant
 // any steady trickle of traffic (real visitors, crawlers, uptime monitors)
 // kept this endpoint refreshing from Supabase up to ~144x/day, a fixed
@@ -1313,7 +1303,7 @@ async function cvDownloadResponse(request, env) {
   let file;
   try {
     const source = new URL(order.cv_url);
-    const publicBase = r2PublicBases(env).find((b) => b.origin === source.origin) || new URL(env.R2_PUBLIC_BASE_URL);
+    const publicBase = new URL(env.R2_PUBLIC_BASE_URL);
     let key = "";
     if (source.origin === publicBase.origin && source.pathname.startsWith(`${publicBase.pathname.replace(/\/$/, "")}/candidate-cvs/`)) {
       key = decodeURIComponent(source.pathname.slice(publicBase.pathname.replace(/\/$/, "").length + 1));
@@ -1936,7 +1926,7 @@ __name(generateCvWithGemini, "generateCvWithGemini");
 function employerPosterKey(imageUrl, env) {
   try {
     const image = new URL(imageUrl);
-    const base = r2PublicBases(env).find((b) => b.origin === image.origin) || new URL(env.R2_PUBLIC_BASE_URL);
+    const base = new URL(env.R2_PUBLIC_BASE_URL);
     const basePath = base.pathname.replace(/\/$/, "");
     if (image.origin !== base.origin || !image.pathname.startsWith(`${basePath}/employer-posters/`)) return null;
     const key = decodeURIComponent(image.pathname.slice(basePath.length + 1));

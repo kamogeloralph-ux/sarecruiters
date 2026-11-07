@@ -51,9 +51,6 @@ EMAIL_FROM = "SA Recruiters <notifications@sa-recruiters.co.za>"
 # (R2 -> sarecruiters-media -> Settings -> Public Access), then use that
 # URL here. Already confirmed working:
 R2_PUBLIC_BASE_URL = "https://media.sa-recruiters.co.za"
-# Legacy r2.dev address — still accepted so URLs saved before the move keep working.
-# Remove once every stored URL has been rewritten to the custom domain.
-R2_LEGACY_BASE_URL = "https://pub-911e4cd402674c6f85c747b12212772f.r2.dev"
 SITE_URL = "https://sa-recruiters.co.za"
 WORKER_URL = "https://sarecruiters-uploader.kamogeloralph.workers.dev"
 CV_DOWNLOAD_PRICE_CENTS = "4900"
