@@ -144,7 +144,9 @@ test('admin CV Box keeps only approve, edit and a slim uploader form', () => {
   }
   assert.doesNotMatch(sheet, /Mini CV questions/);
   const list = admin.slice(admin.indexOf('function renderPoolCandidates'), admin.indexOf('function openPoolSheet'));
-  assert.doesNotMatch(list, /row-details|det-row|about_you|contact_phone|screenBits|toggleRow/);
+  assert.doesNotMatch(list, /det-row|det-label|about_you|contact_phone|screenBits|contact_email/);
+  assert.match(list, /toggleRow\(this\)/);
+  assert.match(list, /row-expanded-actions/);
   assert.match(list, /approvePoolCandidate/);
   assert.match(list, /openPoolSheet/);
   // New admin uploads need a photo too.
