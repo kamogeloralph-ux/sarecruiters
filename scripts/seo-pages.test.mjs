@@ -305,3 +305,79 @@ test('CV Builder offers selectable templates without regenerating the CV', () =>
   assert.match(appForms, /template: normaliseCvTemplate/);
   assert.match(appForms, /provider: 'gemini'/);
 });
+
+// ---- full-coverage indexing: companies, directories, CV submission, images ----
+const robots = readFileSync(new URL('../robots.txt', import.meta.url), 'utf8');
+const deployWorkflow = readFileSync(new URL('../.github/workflows/deploy-pages.yml', import.meta.url), 'utf8');
+
+test('hiring companies get their own crawlable pages and directory', () => {
+  assert.match(generator, /function buildCompanies\(/);
+  assert.match(generator, /function buildCompanyPage\(/);
+  assert.match(generator, /\$\{SITE_URL\}\/company\/\$\{company\.slug\}\//);
+  assert.match(generator, /base: '\/companies'/);
+  assert.match(generator, /'@type': 'Organization'/);
+  // vacancy cards and vacancy pages link into the company page
+  assert.match(generator, /\/company\/\$\{companyRef\.slug\}\//);
+  assert.match(generator, /More jobs at/);
+});
+
+test('every vacancy, agency and poster is reachable from a crawlable directory page', () => {
+  assert.match(generator, /base: '\/vacancies'/);
+  assert.match(generator, /base: '\/agencies'/);
+  assert.match(generator, /base: '\/posters'/);
+  assert.match(generator, /function pagerHtml\(/);
+  assert.match(generator, /function writePaginated\(/);
+  for (const slug of ['vacancies', 'agencies', 'companies', 'submit-cv']) {
+    assert.match(generator, new RegExp(`href="/${slug}/"`));
+    assert.ok(homepage.includes(`href="${slug}/"`), `homepage should link to ${slug}/`);
+  }
+  assert.ok(homepage.includes('href="posters/"'));
+});
+
+test('every agency CV submission redirects to the CV Box upload form', () => {
+  assert.match(generator, /function agencyCvMethods\(/);
+  assert.match(generator, /function cvCardHtml\(/);
+  assert.match(generator, /function buildSubmitCvPage\(/);
+  assert.match(generator, /const CVBOX_SUBMIT_HREF = '\/\?section=candidates&cvbox=submit'/);
+  // no direct-to-agency CV routes any more
+  assert.doesNotMatch(generator, /Email your CV|WhatsApp your CV|Upload your CV online/);
+  assert.doesNotMatch(generator, /Good day \$\{agency\.name\}/);
+  assert.doesNotMatch(generator, /Apply by sending your CV to/);
+  assert.match(generator, /Apply by submitting your CV through the CV Box/);
+  // the app opens the upload form for ?cvbox=submit
+  assert.match(homepage, /get\('cvbox'\) !== 'submit'/);
+  assert.match(homepage, /openPoolRegisterSheet\(\)/);
+});
+
+test('candidate CVs and photos are never put on public static pages', () => {
+  assert.doesNotMatch(generator, /cv-box|cv_box|\/api\/cv-box|candidates\b.*snapshot\./i);
+  assert.match(generator, /never from candidate\/CV Box data/);
+});
+
+test('photos are crawlable: alt text, image sitemap and structured data', () => {
+  assert.match(generator, /alt="\$\{escapeHtml\(name \? `\$\{name\} logo` : 'Logo'\)\}"/);
+  assert.match(generator, /xmlns:image="http:\/\/www\.google\.com\/schemas\/sitemap-image\/1\.1"/);
+  assert.match(generator, /<image:image><image:loc>/);
+  assert.match(generator, /images: imagesOf\(agency\.photo\)/);
+  assert.match(generator, /images: imagesOf\(vacancy\.company_photo\)/);
+  assert.match(generator, /images: imagesOf\(poster\.image_url\)/);
+  assert.match(generator, /images: imagesOf\(company\.photo\)/);
+  assert.match(generator, /'@type': 'EmploymentAgency'/);
+  assert.match(generator, /'@type': 'ImageObject'/);
+  assert.match(generator, /'@type': 'BreadcrumbList'/);
+  assert.match(generator, /og:image:alt/);
+});
+
+test('robots.txt keeps private token URLs out of search and allows image crawling', () => {
+  assert.match(robots, /^Allow: \/$/m);
+  for (const rule of ['/admin.html', '/*?manage=', '/*?manage_employer=', '/*?unsub_search=', '/*?unsubscribe=', '/*?cvPayment=']) {
+    assert.ok(robots.includes(`Disallow: ${rule}`), `robots.txt should disallow ${rule}`);
+  }
+  assert.match(robots, /User-agent: Googlebot-Image\s+Allow: \//);
+  assert.match(robots, /Sitemap: https:\/\/sa-recruiters\.co\.za\/sitemap\.xml/);
+});
+
+test('deploy workflow rebuilds when SEO-only files change', () => {
+  assert.match(deployWorkflow, /"robots\.txt"/);
+  assert.match(deployWorkflow, /"static-pages\.css"/);
+});
