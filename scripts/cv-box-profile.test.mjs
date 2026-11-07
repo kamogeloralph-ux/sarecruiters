@@ -138,8 +138,8 @@ test('CV Box no longer collects or shows Mini-CV details publicly', () => {
 
 test('admin CV Box keeps only approve, edit and a slim uploader form', () => {
   const sheet = admin.slice(admin.indexOf('id="pool-overlay"'), admin.indexOf('CONTENT ARTICLE SHEET'));
-  for (const id of ['pc-name', 'pc-photo', 'pc-position', 'pc-email', 'pc-cv', 'pc-status']) assert.match(sheet, new RegExp(`id="${id}"`));
-  for (const id of ['pc-phone', 'pc-sector', 'pc-location', 'pc-gender', 'pc-grade12', 'pc-criminal', 'pc-experience', 'pc-qualification', 'pc-drivers-license', 'pc-transport', 'pc-relocate', 'pc-availability', 'pc-employment', 'pc-salary', 'pc-work-authorized', 'pc-about', 'pc-payref', 'pc-paiduntil', 'pc-notes']) {
+  for (const id of ['pc-name', 'pc-photo', 'pc-position', 'pc-email', 'pc-cv', 'pc-status', 'pc-location', 'pc-experience', 'pc-availability', 'pc-phone']) assert.match(sheet, new RegExp(`id="${id}"`));
+  for (const id of ['pc-sector', 'pc-gender', 'pc-grade12', 'pc-criminal', 'pc-qualification', 'pc-drivers-license', 'pc-transport', 'pc-relocate', 'pc-employment', 'pc-salary', 'pc-work-authorized', 'pc-about', 'pc-payref', 'pc-paiduntil', 'pc-notes']) {
     assert.doesNotMatch(sheet, new RegExp(`id="${id}"`), `${id} removed`);
   }
   assert.doesNotMatch(sheet, /Mini CV questions/);
@@ -163,4 +163,12 @@ test('CV Box cards show location, experience and availability before payment, an
     assert.equal((html.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1, `${id} appears exactly once`);
   }
   assert.match(worker, /select: "id,availability"/);
+});
+
+test('admin CV Box sheet edits location, experience, availability and phone', () => {
+  for (const id of ['pc-location', 'pc-experience', 'pc-availability', 'pc-phone']) {
+    assert.equal((admin.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1, `${id} appears once`);
+  }
+  assert.match(admin, /location:location,\s*experience_years:parseInt\(experience, 10\),\s*availability:availability/);
+  assert.match(admin, /contact_phone:document\.getElementById\('pc-phone'\)\.value\.trim\(\)/);
 });
