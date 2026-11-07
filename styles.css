@@ -2878,3 +2878,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .pool-mini-card{cursor:default}
 .pool-mini-actions{grid-template-columns:minmax(0,1fr)!important}
 .pool-mini-actions .pool-cv-download-btn{width:100%}
+
+/* CV Box card: facts visible before payment (location, experience, availability). */
+.pool-mini-card .pool-mini-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0;padding:10px 0 0;border-top:1px solid var(--separator)}
+.pool-mini-card .pool-mini-facts>div{min-width:0}
+.pool-mini-card .pool-mini-facts small{display:block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2)}
+.pool-mini-card .pool-mini-facts b{display:block;margin-top:2px;font-size:12.5px;font-weight:800;line-height:1.25;color:var(--text);overflow-wrap:anywhere}
+@media(max-width:380px){.pool-mini-card .pool-mini-facts{grid-template-columns:1fr 1fr}}

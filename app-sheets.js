@@ -844,6 +844,24 @@ export function openPoolCandidateCard(id) {
   setTimeout(function(){ card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 150);
 }
 
+// Facts shown on the public card BEFORE payment (never contact details).
+function poolFactLocation(c) {
+  var v = String((c && c.location) || '').trim();
+  return v || 'Not stated';
+}
+function poolFactExperience(c) {
+  var n = c ? c.experience_years : null;
+  if (n === null || n === undefined || n === '' || isNaN(Number(n))) return 'Not stated';
+  n = Number(n);
+  if (n <= 0) return 'No experience yet';
+  if (n >= 10) return '10+ years';
+  return n + (n === 1 ? ' year' : ' years');
+}
+function poolFactAvailability(c) {
+  var v = String((c && c.availability) || '').trim();
+  return v || 'Not stated';
+}
+
 export async function loadPoolCandidates() {
   var listEl = document.getElementById('pool-list');
   if (listEl && !poolLoaded) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>Loading…</h3></div></div>';
@@ -917,7 +935,8 @@ export function renderPoolList() {
     var avatar = c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar pool-mini-avatar">'+initials(c.full_name)+'</div>';
     return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'">' +
       '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title">'+escapeHtml(c.full_name||'Candidate')+(c.verified?' ' + verifiedBadge('Screened &amp; Verified') + '':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div></div></div>' +
-      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" aria-label="Unlock full CV" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><svg class="pool-cv-lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span class="pool-cv-label">Unlock full CV</span></button></div>' +
+      '<div class="pool-mini-facts" aria-label="Candidate summary"><div><small>Location</small><b>'+escapeHtml(poolFactLocation(c))+'</b></div><div><small>Experience</small><b>'+escapeHtml(poolFactExperience(c))+'</b></div><div><small>Available</small><b>'+escapeHtml(poolFactAvailability(c))+'</b></div></div>' +
+      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" style="background:#0b7a35 !important;background-image:none !important;color:#fff !important;-webkit-text-fill-color:#fff !important;border:2px solid #0b7a35 !important" aria-label="Unlock full CV" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><svg class="pool-cv-lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span class="pool-cv-label">Unlock full CV</span></button></div>' +
       '</div>'
   }).join('');
 }
@@ -1255,6 +1274,10 @@ export async function submitPoolRegistration() {
   var termsAccepted = document.getElementById('pool-terms-accept');
   if (!termsAccepted || !termsAccepted.checked) { showToast('Please accept the SA Recruiters Terms and Conditions to continue.'); return; }
   if (alertOptIn && !email) { showToast('Add your email address to receive vacancy alerts.'); return; }
+  if (!location.trim() || location.trim() === 'South Africa') { showToast('Please add the town or city where you are based.'); var locEl = document.getElementById('pool-location'); if (locEl) locEl.focus(); return; }
+  if (experience === '') { showToast('Please choose your years of experience.'); var expEl = document.getElementById('pool-experience'); if (expEl) expEl.focus(); return; }
+  if (!((document.getElementById('pool-availability') || {}).value || '').trim()) { showToast('Please tell employers when you can start.'); var avEl = document.getElementById('pool-availability'); if (avEl) avEl.focus(); return; }
+  if (phone.replace(/[^0-9]/g, '').length < 9) { showToast('Please add a phone or WhatsApp number employers can reach you on.'); var phEl = document.getElementById('pool-phone'); if (phEl) phEl.focus(); return; }
 
   var btn = document.getElementById('pool-submit-btn');
   var defaultBtnLabel = editingPoolCandidateId ? 'Save changes' : 'Submit registration';

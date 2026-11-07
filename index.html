@@ -175,13 +175,13 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=cvbox-unlock2">
-<link rel="stylesheet" href="styles.css?v=cvbox-unlock2" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=cvbox-unlock3">
+<link rel="stylesheet" href="styles.css?v=cvbox-unlock3" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="mono.css?v=mono-7" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=cvbox-unlock2"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=cvbox-unlock3"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
 </head>
 <body>
 
@@ -1135,7 +1135,7 @@
       <span class="pool-time-chip">⏱ ~1 min</span>
     </div>
     <div class="manager-banner pool-intro" style="padding:0 0 12px">
-      <p>Upload your CV in under a minute. We only need your name, the position you want to be considered for, your profile photo and your CV. Your profile is reviewed before it appears in the CV Box; the full CV stays off public profiles and is shared through a secure download.</p>
+      <p>Upload your CV in under a minute. We need your name, position, location, experience, availability, phone number, profile photo and CV. Your profile is reviewed before it appears in the CV Box; your phone number, email and full CV stay off public profiles and are shared only with employers who pay to unlock your CV.</p>
     </div>
     <div class="cv-box-form">
       <div class="cv-box-form-icon" aria-hidden="true">CV</div>
@@ -1143,9 +1143,13 @@
       <div class="field"><label>Position / role *</label><input id="pool-position" placeholder="e.g. Forklift Driver, Accountant or Sales Manager"></div>
       <div class="field" id="pool-photo-field"><label>Profile photo *</label><input id="pool-photo" type="file" accept="image/png,image/jpeg,image/webp" onchange="handlePoolPhoto(event)"><small class="helper-note" id="pool-photo-status">Required · a clear photo of your face (JPG, PNG or WebP)</small><div id="pool-photo-wrap" style="display:none;margin-top:10px"><img id="pool-photo-preview" alt="Your profile photo preview" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--border)"></div></div>
       <div class="field"><label>Upload your CV *</label><input id="pool-cv" type="file" accept="application/pdf,image/png,image/jpeg" onchange="handlePoolCv(event)"><small class="helper-note" id="pool-cv-status">PDF, PNG or JPG · maximum 3 MB</small><a id="pool-cv-current-link" class="pool-cv-link pool-cv-owner-link" target="_blank" rel="noopener noreferrer" aria-label="Open your uploaded CV in a new tab" hidden>Open your uploaded CV <span aria-hidden="true">↗</span></a></div>
-      <div class="field cv-box-contact-field"><label>Email for CV enquiries <span class="field-optional">optional</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Kept private. We use it only to contact you about your CV.</small></div>
+      <div class="field"><label for="pool-location">Where are you based? *</label><input id="pool-location" placeholder="e.g. Durban, KwaZulu-Natal" autocomplete="address-level2" maxlength="80"><small class="helper-note">Shown on your public profile.</small></div>
+      <div class="field"><label for="pool-experience">Years of experience *</label><select id="pool-experience"><option value="">Choose…</option><option value="0">No experience yet</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select><small class="helper-note">Shown on your public profile.</small></div>
+      <div class="field"><label for="pool-availability">When can you start? *</label><select id="pool-availability"><option value="">Choose…</option><option value="Immediately">Immediately</option><option value="Within 1 week">Within 1 week</option><option value="Within 2 weeks">Within 2 weeks</option><option value="Within 1 month">Within 1 month</option><option value="More than 1 month">More than 1 month</option></select><small class="helper-note">Shown on your public profile.</small></div>
+      <div class="field cv-box-contact-field"><label for="pool-phone">Phone / WhatsApp number *</label><input id="pool-phone" type="tel" inputmode="tel" placeholder="e.g. 071 234 5678" autocomplete="tel" maxlength="20"><small class="helper-note">Not shown publicly. Shared only with an employer who pays to unlock your full CV.</small></div>
+      <div class="field cv-box-contact-field"><label>Email for CV enquiries <span class="field-optional">optional</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Not shown publicly. Shared only with an employer who pays to unlock your full CV.</small></div>
       <div class="cv-box-legacy-fields" aria-hidden="true">
-        <input id="pool-phone"><input id="pool-sector"><input id="pool-location"><select id="pool-gender"><option value="">—</option></select><select id="pool-grade12"><option value="">—</option></select><select id="pool-criminal"><option value="">—</option></select><select id="pool-experience"><option value="">—</option></select><input id="pool-qualification"><select id="pool-drivers-license"><option value="">—</option></select><select id="pool-transport"><option value="">—</option></select><select id="pool-relocate"><option value="">—</option></select><input id="pool-availability"><select id="pool-employment"><option value="">—</option></select><input id="pool-salary"><select id="pool-work-authorized"><option value="">—</option></select><textarea id="pool-about"></textarea><input id="pool-email-alerts" type="checkbox">
+        <input id="pool-sector"><select id="pool-gender"><option value="">—</option></select><select id="pool-grade12"><option value="">—</option></select><select id="pool-criminal"><option value="">—</option></select><input id="pool-qualification"><select id="pool-drivers-license"><option value="">—</option></select><select id="pool-transport"><option value="">—</option></select><select id="pool-relocate"><option value="">—</option></select><select id="pool-employment"><option value="">—</option></select><input id="pool-salary"><select id="pool-work-authorized"><option value="">—</option></select><textarea id="pool-about"></textarea><input id="pool-email-alerts" type="checkbox">
       </div>
     </div>
     <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the CV Box, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
@@ -1503,7 +1507,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=c6a415f69a"></script>
+<script type="module" src="app.bundle.min.js?v=95071dd2ea"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
