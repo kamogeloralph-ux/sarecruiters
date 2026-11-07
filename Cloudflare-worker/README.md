@@ -11,12 +11,9 @@ account. You need to do 3 things to finish the switch:
 ## 1. Make the bucket's files publicly readable
 
 Cloudflare Dashboard → R2 → `sarecruiters-media` → **Settings** →
-**Public Access** → enable **"Allow Access"** (r2.dev subdomain).
-
-Copy the `https://pub-xxxxxxxx.r2.dev` URL it gives you.
-
-*(Optional, better for production: attach a custom domain, e.g.
-`media.sarecruiters.co.za`, instead of the r2.dev URL — same Settings tab.)*
+**Custom Domains** → connect `media.sa-recruiters.co.za` (production). Set
+`R2_PUBLIC_BASE_URL = "https://media.sa-recruiters.co.za"` in `wrangler.toml`.
+The r2.dev address is only a rate-limited development URL.
 
 ## 2. Deploy the upload Worker
 
