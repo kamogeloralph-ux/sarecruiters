@@ -1170,7 +1170,31 @@ async function verifyYocoWebhook(request, rawBody, secret) {
   return false;
 }
 __name(verifyYocoWebhook, "verifyYocoWebhook");
-async function sendCvDownloadEmail(env, order, token) {
+async function fetchCvCandidateContact(env, candidateId) {
+  // Throws on lookup failure so the Yoco webhook is retried instead of
+  // sending a paid customer an incomplete email. Returns null fields when the
+  // candidate simply has no contact details on file.
+  const q = new URLSearchParams({ select: "contact_phone,contact_email", id: `eq.${candidateId}`, limit: "1" });
+  const response = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${q}`, {
+    headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
+  });
+  if (!response.ok) throw new Error(`Supabase returned ${response.status}`);
+  const rows = await response.json();
+  const row = Array.isArray(rows) ? rows[0] : null;
+  return { phone: String(row?.contact_phone || "").trim(), email: String(row?.contact_email || "").trim() };
+}
+__name(fetchCvCandidateContact, "fetchCvCandidateContact");
+function cvContactHtml(contact) {
+  const phone = contact?.phone ? escapeEmailHtml(contact.phone) : "";
+  const email = contact?.email ? escapeEmailHtml(contact.email) : "";
+  if (!phone && !email) {
+    return `<p style="background:#f6f6f6;border-radius:8px;padding:12px 14px;margin:16px 0">This candidate has not added separate contact details. Any contact details are on the CV itself, or reply to this email or WhatsApp SA Recruiters and we will help you reach them.</p>`;
+  }
+  const rows = [phone ? `<div><strong>Phone / WhatsApp:</strong> ${phone}</div>` : "", email ? `<div><strong>Email:</strong> ${email}</div>` : ""].join("");
+  return `<div style="background:#f1f8f3;border:1px solid #cfe6d6;border-radius:8px;padding:12px 14px;margin:16px 0"><div style="font-weight:bold;margin-bottom:6px">Candidate contact details</div>${rows}</div>`;
+}
+__name(cvContactHtml, "cvContactHtml");
+async function sendCvDownloadEmail(env, order, token, contact) {
   if (!env.RESEND_API_KEY) return false;
   const expires = new Date(order.download_expires_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Johannesburg" });
   const link = `${cvWorkerBase(env)}/api/cv-box/download?order=${encodeURIComponent(order.id)}&token=${encodeURIComponent(token)}`;
@@ -1182,7 +1206,7 @@ async function sendCvDownloadEmail(env, order, token) {
       from: env.EMAIL_FROM || DEFAULT_EMAIL_FROM,
       to: [order.customer_email],
       subject: `Your SA Recruiters CV download: ${name}`,
-      html: `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#181818;line-height:1.6"><h2>Payment confirmed</h2><p>Your R${(Number(order.amount_cents) / 100).toFixed(2)} payment for <strong>${name}</strong> has been confirmed.</p><p><a href="${link}" style="display:inline-block;background:#0b7a35;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Download CV</a></p><p>This private download link expires ${escapeEmailHtml(expires)}. Keep it private. Candidate contact details are not included.</p><p>SA Recruiters</p></body></html>`
+      html: `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#181818;line-height:1.6"><h2>Payment confirmed</h2><p>Your R${(Number(order.amount_cents) / 100).toFixed(2)} payment for <strong>${name}</strong> has been confirmed.</p><p><a href="${link}" style="display:inline-block;background:#0b7a35;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Download CV</a></p><p>This private download link expires ${escapeEmailHtml(expires)}. Keep it private.</p>${cvContactHtml(contact)}<p>SA Recruiters</p></body></html>`
     })
   });
   return response.ok;
@@ -1227,11 +1251,26 @@ async function yocoWebhookResponse(request, env) {
   } catch (error) { console.error("Could not mark CV order paid", error); return new Response("Order update failed", { status: 503 }); }
   if (!result || result.status !== "paid") return new Response("Order is not eligible", { status: 409 });
   if (!result.email_sent_at) {
+    let contact;
+    try { contact = await fetchCvCandidateContact(env, result.candidate_id); }
+    catch (error) { console.error("Could not load candidate contact for paid CV", error); return new Response("Candidate lookup failed", { status: 503 }); }
     let sent = false;
-    try { sent = await sendCvDownloadEmail(env, result, result.download_token); }
+    try { sent = await sendCvDownloadEmail(env, result, result.download_token, contact); }
     catch (error) { console.error("CV download email failed", error); }
     if (!sent) return new Response("Download email not delivered", { status: 503 });
     await env.DB.prepare("UPDATE cv_download_orders SET email_sent_at=? WHERE id=? AND email_sent_at IS NULL").bind(new Date().toISOString(), result.id).run();
+    // Instant owner alert. Best-effort: never fails the webhook, and only runs
+    // once per order because email_sent_at is now set.
+    try {
+      await sendNotificationEmail(env, {
+        to_email: env.ADMIN_NOTIFY_EMAIL || "sarecruiters.directory@gmail.com",
+        email_subject: `SA Recruiters | CV sold: R${(Number(result.amount_cents) / 100).toFixed(2)}`,
+        notification_type: "PAYMENT",
+        notification_title: "CV payment received",
+        notification_intro: "Someone just paid for a CV and their download link has been emailed.",
+        notification_body: "Candidate: " + (result.candidate_name || "-") + "\nCandidate ID: " + result.candidate_id + "\nAmount: R" + (Number(result.amount_cents) / 100).toFixed(2) + "\nBuyer email: " + result.customer_email + "\nOrder: " + result.id
+      });
+    } catch (error) { console.error("CV payment owner alert failed", error); }
   }
   return new Response("OK", { status: 200 });
 }
