@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- In-app browsers (Facebook, Instagram, TikTok, Android WebViews) often report a large, bogus
+     safe-area-inset-bottom, which stretched the bottom nav. Flag them so CSS can ignore the inset. -->
+<script>
+(function(){try{if(/FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram|Messenger|MicroMessenger|Snapchat|TikTok|musical_ly|LinkedInApp|Twitter|; wv\)|\bLine\//i.test(navigator.userAgent||'')){document.documentElement.setAttribute('data-inapp','1');}}catch(e){}})();
+</script>
 
 <!-- Set the theme attribute BEFORE anything paints, so a saved dark-mode
      preference never flashes light first. Must stay first/synchronous. -->
@@ -175,13 +180,13 @@
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
-<link rel="preload" as="style" href="styles.css?v=cvbox-unlock3">
-<link rel="stylesheet" href="styles.css?v=cvbox-unlock3" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=cvbox-unlock4">
+<link rel="stylesheet" href="styles.css?v=cvbox-unlock4" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="mono.css?v=mono-7" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=cvbox-unlock3"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=cvbox-unlock4"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
 </head>
 <body>
 

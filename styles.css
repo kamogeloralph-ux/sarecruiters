@@ -2885,3 +2885,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .pool-mini-card .pool-mini-facts small{display:block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2)}
 .pool-mini-card .pool-mini-facts b{display:block;margin-top:2px;font-size:12.5px;font-weight:800;line-height:1.25;color:var(--text);overflow-wrap:anywhere}
 @media(max-width:380px){.pool-mini-card .pool-mini-facts{grid-template-columns:1fr 1fr}}
+
+/* In-app browsers (Facebook etc.): ignore the unreliable safe-area inset so the bottom nav keeps its normal height. */
+html[data-inapp] .bottom-nav,html[data-inapp] #screen-home .bottom-nav{height:68px!important;padding:7px 8px!important;box-sizing:border-box}
+html[data-inapp] .bottom-nav .navbtn{padding-top:4px;padding-bottom:4px;justify-content:center}
+html[data-inapp] .floating-whatsapp{bottom:92px!important}
+html[data-inapp] #screen-home .screen-scroll{padding-bottom:76px!important}
+html[data-inapp] .home-site-footer{padding-bottom:118px!important}
+html[data-inapp] .install-banner{bottom:88px!important}
