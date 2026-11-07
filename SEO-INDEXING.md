@@ -30,4 +30,4 @@ Every "Submit your CV" button — on agency pages, vacancy pages (when the vacan
 Google decides what to index and when; the site now makes every page discoverable and crawlable, but "100% indexed" is not something anyone can force.
 
 ## Photo hosting
-Photos are served from the custom domain `https://media.sa-recruiters.co.za` (R2 bucket `sarecruiters-media`), not the rate-limited `pub-…r2.dev` development URL. Add `media.sa-recruiters.co.za` to Search Console as well. The legacy r2.dev address stays accepted by the worker (`R2_LEGACY_BASE_URL`) and by the database poster-URL check until every stored URL has been rewritten.
+Photos are served from the custom domain `https://media.sa-recruiters.co.za` (R2 bucket `sarecruiters-media`). The rate-limited `pub-…r2.dev` development URL is switched off. Add `media.sa-recruiters.co.za` to Search Console as well.
