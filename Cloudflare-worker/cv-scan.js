@@ -211,37 +211,52 @@ function toBase64(bytes) {
   return btoa(binary);
 }
 
+// Same stable alias the CV Builder uses, then other Flash models. A model that is
+// missing (404) or busy (429/503) on this key just moves on to the next one.
+export function cvScanModels(env) {
+  return [...new Set([env.GEMINI_MODEL, "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"].filter(Boolean))];
+}
+
 export async function scanCvWithGemini(env, bytes, mimeType) {
   if (!env.GEMINI_API_KEY) return { ok: false, status: 503, error: "CV scanning is not configured (GEMINI_API_KEY is missing)." };
   if (!bytes || !bytes.byteLength) return { ok: false, status: 422, error: "The CV file is empty." };
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
-  let response;
-  try {
-    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: CV_SCAN_PROMPT }, { inlineData: { mimeType, data: toBase64(bytes) } }] }],
-        generationConfig: { temperature: 0, maxOutputTokens: 1200, responseMimeType: "application/json", responseSchema: CV_SCAN_RESPONSE_SCHEMA }
-      })
-    });
-  } catch (error) {
-    console.error("Gemini CV scan request failed", error);
-    return { ok: false, status: 502, error: "The CV scanner could not be reached." };
+  const body = JSON.stringify({
+    contents: [{ parts: [{ text: CV_SCAN_PROMPT }, { inlineData: { mimeType, data: toBase64(bytes) } }] }],
+    generationConfig: { temperature: 0, maxOutputTokens: 1200, responseMimeType: "application/json", responseSchema: CV_SCAN_RESPONSE_SCHEMA }
+  });
+  let failure = "The CV scanner could not be reached.";
+  for (const model of cvScanModels(env)) {
+    let response;
+    try {
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body
+      });
+    } catch (error) {
+      console.error("Gemini CV scan request failed", model, error);
+      continue;
+    }
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error("Gemini CV scan failed", model, response.status, detail.slice(0, 300));
+      let reason = "";
+      try { reason = String(JSON.parse(detail)?.error?.message || ""); } catch (_) {}
+      failure = `AI service error (${response.status}): ${reason.slice(0, 200) || "request rejected"}`;
+      if ([404, 429, 500, 503].includes(response.status)) continue;   // try the next model
+      return { ok: false, status: 502, error: failure };
+    }
+    try {
+      const result = await response.json();
+      const text = result?.candidates?.[0]?.content?.parts?.find((part) => typeof part.text === "string")?.text || "";
+      const parsed = JSON.parse(text.replace(/^```(?:json)?|```$/g, "").trim());
+      return { ok: true, scan: normalizeScan(parsed), model };
+    } catch (error) {
+      console.error("Gemini CV scan returned unreadable output", model, error);
+      failure = "The CV scanner returned an unreadable answer.";
+    }
   }
-  if (!response.ok) {
-    console.error("Gemini CV scan failed", response.status);
-    return { ok: false, status: 502, error: "The CV scanner rejected the request (" + response.status + ")." };
-  }
-  try {
-    const result = await response.json();
-    const text = result?.candidates?.[0]?.content?.parts?.find((part) => typeof part.text === "string")?.text || "";
-    const parsed = JSON.parse(text.replace(/^```(?:json)?|```$/g, "").trim());
-    return { ok: true, scan: normalizeScan(parsed) };
-  } catch (error) {
-    console.error("Gemini CV scan returned unreadable output", error);
-    return { ok: false, status: 502, error: "The CV scanner returned an unreadable answer." };
-  }
+  return { ok: false, status: 502, error: failure };
 }
 
 // Only CVs stored in our own R2 bucket (candidate-cvs/...) can be scanned.
