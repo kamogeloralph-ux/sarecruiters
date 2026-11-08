@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { evaluateCvScan, mergePositions, namesMatch, normalizeScan, candidateCvKey } from '../Cloudflare-worker/cv-scan.js';
+import { evaluateCvScan, mergePositions, namesMatch, normalizeScan, candidateCvKey, cvScanModels, scanCvWithGemini } from '../Cloudflare-worker/cv-scan.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (name) => readFileSync(path.join(root, name), 'utf8');
@@ -90,4 +90,26 @@ test('CV Box cards shorten long names so the verified seal stays on the same lin
   assert.match(css, /\.pool-mini-seal\{flex:none/);
   // mono.css styles every class containing "-badge" with a box; the seal must never use one
   assert.doesNotMatch(css.slice(css.indexOf('.pool-mini-card .pool-mini-copy .manager-item-title.pool-mini-name{')), /-badge/);
+});
+
+test('CV scan uses the same stable Gemini alias as the CV Builder and falls back when a model is missing', async () => {
+  assert.equal(cvScanModels({})[0], 'gemini-flash-latest');
+  assert.equal(cvScanModels({ GEMINI_MODEL: 'pinned-model' })[0], 'pinned-model');
+  const realFetch = globalThis.fetch;
+  const tried = [];
+  globalThis.fetch = async (url) => {
+    tried.push(String(url).match(/models\/([^:]+):/)[1]);
+    if (tried.length < 3) return new Response(JSON.stringify({ error: { message: 'model not found' } }), { status: 404 });
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ is_cv: true, readable: true, confidence: 0.9, full_name: 'A B', positions: ['Cashier'], has_experience_section: true, has_education_section: false, has_contact_details: true }) }] } }] }), { status: 200 });
+  };
+  try {
+    const ok = await scanCvWithGemini({ GEMINI_API_KEY: 'k' }, new Uint8Array([1, 2, 3]).buffer, 'application/pdf');
+    assert.equal(ok.ok, true);
+    assert.equal(ok.scan.positions[0], 'Cashier');
+    assert.deepEqual(tried, ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.5-flash-lite']);
+    globalThis.fetch = async () => new Response(JSON.stringify({ error: { message: 'API key not valid' } }), { status: 400 });
+    const bad = await scanCvWithGemini({ GEMINI_API_KEY: 'k' }, new Uint8Array([1]).buffer, 'application/pdf');
+    assert.equal(bad.ok, false);
+    assert.match(bad.error, /\(400\): API key not valid/);
+  } finally { globalThis.fetch = realFetch; }
 });
