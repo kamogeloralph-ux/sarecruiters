@@ -79,11 +79,15 @@ test('admin CV Box scans pending CVs automatically through the admin-only worker
   assert.match(admin, /scanPoolCvFromSheet/);
 });
 
-test('CV Box cards wrap long names and always keep the verified seal visible', () => {
+test('CV Box cards shorten long names so the verified seal stays on the same line, with no badge background', () => {
   const sheets = read('app-sheets.js');
   const css = read('styles.css');
-  assert.match(sheets, /class="manager-item-title pool-mini-name"><span class="pool-mini-name-text">/);
-  assert.match(sheets, /<span class="pool-mini-badge">' \+ verifiedBadge\(/);
-  assert.match(css, /\.pool-mini-name\{display:block;white-space:normal;overflow:visible/);
-  assert.match(css, /\.pool-mini-badge\{display:inline-block;white-space:nowrap/);
+  assert.match(sheets, /class="manager-item-title pool-mini-name"><span class="pool-mini-name-text"/);
+  assert.match(sheets, /<span class="pool-mini-seal">' \+ verifiedBadge\(/);
+  assert.doesNotMatch(sheets, /pool-mini-badge/);
+  assert.match(css, /\.pool-mini-name\{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap/);
+  assert.match(css, /\.pool-mini-name-text\{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\}/);
+  assert.match(css, /\.pool-mini-seal\{flex:none/);
+  // mono.css styles every class containing "-badge" with a box; the seal must never use one
+  assert.doesNotMatch(css.slice(css.indexOf('.pool-mini-card .pool-mini-copy .manager-item-title.pool-mini-name{')), /-badge/);
 });
