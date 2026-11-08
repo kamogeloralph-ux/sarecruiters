@@ -223,6 +223,13 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .minibtn.full{flex:1;justify-content:center;padding:10px;font-size:13px}
 .minibtn.full.danger{background:var(--m-wash);border-color:var(--border)}
 .badge{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px}
+.cv-scan-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);font-size:13px}
+.cv-scan-bar label{display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer}
+.cv-scan-note{font-size:12px;line-height:1.4;margin-top:4px;white-space:normal;overflow-wrap:anywhere;color:var(--text-2)}
+.cv-scan-note.ok{color:var(--ok)}
+.cv-scan-note.warn{color:#b45309}
+.cv-scan-result{display:none;margin-top:8px;font-size:12.5px;line-height:1.45;padding:9px 11px;border-radius:10px;background:var(--card-2);border:1px solid var(--border);white-space:normal;overflow-wrap:anywhere}
+.row-item .row-title.pool-name{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
 .badge.verified{background:var(--m-wash);color:var(--ok)}
 .badge.unverified{background:var(--card-2);color:var(--text-2)}
 .badge.open{background:var(--m-wash);color:var(--warn)}
@@ -456,6 +463,11 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
           <button class="minibtn" id="pool-tab-pending" onclick="switchPoolTab('pending')">Pending <span class="nav-badge" id="pool-badge-pending"></span></button>
           <button class="minibtn" id="pool-tab-active" onclick="switchPoolTab('active')">Active <span class="nav-badge" id="pool-badge-active"></span></button>
           <button class="minibtn" id="pool-tab-other" onclick="switchPoolTab('other')">Expired / Rejected <span class="nav-badge" id="pool-badge-other"></span></button>
+        </div>
+        <div class="cv-scan-bar">
+          <label><input type="checkbox" id="cv-auto-approve" onchange="setCvAutoApprove(this.checked)"> Auto-approve &amp; verify when the CV passes the scan</label>
+          <button class="minibtn" id="cv-scan-all-btn" onclick="scanAllPendingCvs()">Scan pending CVs now</button>
+          <span class="muted" id="cv-scan-status" style="font-size:12.5px"></span>
         </div>
         <input class="search" id="pool-admin-search" placeholder="Search name or position..." oninput="renderPoolCandidates()">
         <div id="pool-admin-list"></div>
@@ -698,7 +710,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Availability *</label><select id="pc-availability"><option value="">Choose…</option><option value="Immediately">Immediately</option><option value="Within 1 week">Within 1 week</option><option value="Within 2 weeks">Within 2 weeks</option><option value="Within 1 month">Within 1 month</option><option value="More than 1 month">More than 1 month</option></select></div>
     <div class="field"><label>Phone / WhatsApp <span class="field-optional">sent to buyers after payment, never shown publicly</span></label><input id="pc-phone" type="tel" inputmode="tel" maxlength="20"></div>
     <div class="field"><label>Email <span class="field-optional">optional</span></label><input id="pc-email" type="email"></div>
-    <div class="field"><label>CV link</label><input id="pc-cv" type="url" oninput="updatePoolCvOpenLink()"><a id="pc-cv-open" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:6px;font-size:13px;font-weight:700">Open CV ↗</a></div>
+    <div class="field"><label>CV link</label><input id="pc-cv" type="url" oninput="updatePoolCvOpenLink()"><a id="pc-cv-open" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:6px;font-size:13px;font-weight:700">Open CV ↗</a><button type="button" class="minibtn" id="pc-scan-btn" style="margin-top:8px" onclick="scanPoolCvFromSheet()">Scan CV &amp; add positions</button><div class="cv-scan-result" id="pc-scan-result"></div></div>
     <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
     <div class="toggle-row" style="margin-bottom:16px">
       <div><div class="t-label">Screened &amp; Verified</div><div class="t-sub">Confirms this candidate has passed screening and their information checks out — shows a badge publicly</div></div>
@@ -1647,7 +1659,7 @@ function goSection(id){
   if(id==='content') renderContent();
   if(id==='media'){ renderDailyTracks(); loadMediaYoutubeUrl(); }
   if(id==='settings'){ loadSocialLinksSettings(); }
-  if(id==='poolcandidates') renderPoolCandidates();
+  if(id==='poolcandidates'){ var cvAuto = document.getElementById('cv-auto-approve'); if(cvAuto) cvAuto.checked = cvAutoApproveOn(); renderPoolCandidates(); }
   window.scrollTo(0,0);
 }
 function goHome(){
@@ -2733,7 +2745,7 @@ function renderPoolCandidates(){
     }
     return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#5E5CE6,#3D3AB8)">'+(p.photo_url ? '<img src="'+escapeHtml(p.photo_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg>')+'</div>'+
-      '<div class="row-main"><div class="row-title">'+escapeHtml(p.full_name||'Candidate')+(p.verified?' <span class="badge verified">Screened &amp; Verified</span>':'')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div></div>'+
+      '<div class="row-main"><div class="row-title pool-name">'+escapeHtml(p.full_name||'Candidate')+(p.verified?' <span class="badge verified" style="white-space:nowrap">Screened &amp; Verified</span>':'')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div>'+poolScanNoteHtml(p)+'</div>'+
       '<div class="row-actions-inline">'+quickActions+
         '<button class="minibtn" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
         '<button class="minibtn danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
@@ -2743,11 +2755,13 @@ function renderPoolCandidates(){
       '<div class="row-details">'+
         '<div class="row-expanded-actions">'+
           approveBtn +
+          (p.cv_link ? '<button class="minibtn full" onclick="stopProp(event);scanPoolCandidate(\''+p.id+'\',{force:true})">Scan CV</button>' : '')+
           '<button class="minibtn full" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')">Edit</button>'+
           '<button class="minibtn full danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')">Delete</button>'+
         '</div>'+
       '</div>';
   }).join('');
+  runAutoCvScan();
 }
 function openPoolSheet(id){
   editingPool = id || null;
@@ -2777,6 +2791,7 @@ function openPoolSheet(id){
   updatePoolCvOpenLink();
   document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
   document.getElementById('pc-verified').checked = p ? !!p.verified : false;
+  var scanOut = document.getElementById('pc-scan-result'); if(scanOut){ scanOut.style.display = 'none'; scanOut.textContent = ''; }
   openSheet('pool-overlay');
 }
 // Sets the availability dropdown; an older free-text value is kept as an extra option so nothing is lost.
@@ -2864,6 +2879,143 @@ async function deletePoolCandidate(id){
   await removePoolCandidate(id);
   showToast('Candidate deleted');
   await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+
+// ===== CV Box: automatic CV scan, positions and auto-approve =====
+// The worker (/api/admin/cv-scan) reads the uploaded CV, returns the positions
+// found on it and a verdict. A profile is approved + given the Screened &
+// Verified badge only when every check passes (all fields filled, readable CV
+// in an allowed format, name on the CV matches the profile).
+var poolScan = {};          // id -> { state, reasons, added, message } for this session
+var poolScanBusy = false;
+function cvAutoApproveOn(){ try { return localStorage.getItem('sar_cvbox_autoapprove') !== '0'; } catch(e){ return true; } }
+function setCvAutoApprove(on){ try { localStorage.setItem('sar_cvbox_autoapprove', on ? '1' : '0'); } catch(e){} }
+function cvScanStatus(text){ var el = document.getElementById('cv-scan-status'); if(el) el.textContent = text || ''; }
+// The result of the last scan is kept on the row (admin_notes) so a CV is only
+// scanned once; it is scanned again when the CV file changes.
+function parseScanNote(p){
+  var m = String(p.admin_notes||'').match(/^\[cv-scan\] (.*)$/m);
+  if(!m) return null;
+  var parts = m[1].split(' | ');
+  return { cv: parts[0], state: parts[1], reasons: (parts[3]||'').split('; ').filter(Boolean) };
+}
+function withScanNote(p, state, reasons){
+  var kept = String(p.admin_notes||'').split('\n').filter(function(l){ return l.indexOf('[cv-scan] ') !== 0; }).join('\n').trim();
+  var line = '[cv-scan] ' + (p.cv_link||'') + ' | ' + state + ' | ' + new Date().toISOString().slice(0,10) + ' | ' + (reasons||[]).join('; ').replace(/\n/g,' ');
+  return kept ? kept + '\n' + line : line;
+}
+function poolScanNoteHtml(p){
+  var s = poolScan[p.id], st = null, reasons = [], msg = '';
+  if(s){ st = s.state; reasons = s.reasons||[]; msg = s.message||''; }
+  else { var n = parseScanNote(p); if(n && n.cv === (p.cv_link||'')){ st = n.state; reasons = n.reasons; } }
+  if(!st) return '';
+  var added = s && s.added && s.added.length ? ' Added from CV: ' + s.added.join(', ') + '.' : '';
+  if(st === 'scanning') return '<div class="cv-scan-note">Scanning CV…</div>';
+  if(st === 'approved') return '<div class="cv-scan-note ok">✓ CV scan passed — approved &amp; verified automatically.'+escapeHtml(added)+'</div>';
+  if(st === 'passed') return '<div class="cv-scan-note ok">✓ CV scan passed — ready to approve.'+escapeHtml(added)+'</div>';
+  if(st === 'review') return '<div class="cv-scan-note warn">Needs review: '+escapeHtml(reasons.join('; ') || 'checks failed')+'.'+escapeHtml(added)+'</div>';
+  return '<div class="cv-scan-note warn">CV scan unavailable: '+escapeHtml(msg || reasons.join('; ') || 'try again')+'</div>';
+}
+function cvScanPayload(p){
+  return { full_name:p.full_name||'', position:p.position||'', location:p.location||'', experience_years:(p.experience_years===undefined?null:p.experience_years),
+    availability:p.availability||'', photo_url:p.photo_url||'', contact_phone:p.contact_phone||'', contact_email:p.contact_email||'', cv_link:p.cv_link||'' };
+}
+async function callCvScan(candidate){
+  var auth = await r2AuthHeader();
+  if(!auth.Authorization) return { error:'Your admin session expired. Please log in again.' };
+  try {
+    var res = await fetch(R2_WORKER_URL+'/api/admin/cv-scan', { method:'POST', headers:Object.assign({'Content-Type':'application/json'}, auth), body:JSON.stringify({ candidate:candidate }) });
+    var data = await res.json().catch(function(){ return {}; });
+    if(!res.ok) return { error:(data && data.error) || 'The CV could not be scanned.' };
+    return data;
+  } catch(e){ console.error('cv scan', e); return { error:'Could not reach the CV scanner.' }; }
+}
+// Scans one saved profile and applies the result straight to the database.
+async function scanPoolCandidate(id, opts){
+  var p = poolCandidateById(id); if(!p) return null;
+  var quiet = !!(opts && opts.quiet);
+  poolScan[id] = { state:'scanning' };
+  if(!quiet) renderPoolCandidates();
+  var data = await callCvScan(cvScanPayload(p));
+  if(data.error){
+    poolScan[id] = { state:'error', message:data.error };
+    if(!quiet) renderPoolCandidates();
+    return poolScan[id];
+  }
+  var scan = data.scan || {}, verdict = data.verdict || { autoApprove:false, reasons:[] };
+  var status = p.status || 'pending';
+  var patch = { id:id };
+  // The positions on the CV are added even when the profile already has some.
+  if(scan.is_cv && scan.readable && data.added && data.added.length) patch.position = data.position;
+  var result = { state: verdict.autoApprove ? 'passed' : 'review', reasons: verdict.reasons || [], added: (patch.position ? data.added : []) };
+  if(verdict.autoApprove && cvAutoApproveOn() && (status === 'pending' || status === 'active')){
+    patch.verified = true;
+    if(status === 'pending'){ var oneYear = new Date(); oneYear.setFullYear(oneYear.getFullYear()+1); patch.status = 'active'; patch.paid_until = oneYear.toISOString(); }
+    result.state = 'approved';
+  }
+  patch.admin_notes = withScanNote(p, result.state, result.reasons);
+  var saved = await upsertPoolCandidate(patch);
+  if(!saved) result = { state:'error', message:'The scan finished but saving the result failed.' };
+  poolScan[id] = result;
+  if(!quiet){ await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard(); }
+  return result;
+}
+// Runs by itself whenever the CV Box is open: every pending CV that has not been scanned yet.
+async function runAutoCvScan(){
+  var sec = document.getElementById('sec-poolcandidates');
+  if(poolScanBusy || !sec || !sec.classList.contains('active')) return;
+  var todo = cache.poolCandidates.filter(function(p){
+    if((p.status||'pending') !== 'pending' || !p.cv_link || poolScan[p.id]) return false;
+    var n = parseScanNote(p); return !(n && n.cv === p.cv_link);
+  }).slice(0, 8);
+  if(!todo.length) return;
+  poolScanBusy = true;
+  try {
+    for(var i=0;i<todo.length;i++){ cvScanStatus('Scanning CV '+(i+1)+' of '+todo.length+'…'); await scanPoolCandidate(todo[i].id, { quiet:true }); }
+  } finally { poolScanBusy = false; cvScanStatus(''); }
+  await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
+}
+async function scanAllPendingCvs(){
+  if(poolScanBusy){ showToast('A scan is already running.'); return; }
+  var list = cache.poolCandidates.filter(function(p){ return (p.status||'pending') === 'pending' && p.cv_link; });
+  if(!list.length){ showToast('No pending CVs to scan.'); return; }
+  poolScanBusy = true;
+  try {
+    for(var i=0;i<list.length;i++){ cvScanStatus('Scanning CV '+(i+1)+' of '+list.length+'…'); await scanPoolCandidate(list[i].id, { quiet:true }); }
+  } finally { poolScanBusy = false; cvScanStatus(''); }
+  await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
+  showToast('CV scan finished');
+}
+// Edit sheet: scans what is currently in the form and fills the position (and,
+// when everything passes, the verified/approved settings) for the admin to save.
+async function scanPoolCvFromSheet(){
+  var out = document.getElementById('pc-scan-result'), btn = document.getElementById('pc-scan-btn');
+  var cv = document.getElementById('pc-cv').value.trim();
+  out.style.display = 'block';
+  if(!cv){ out.textContent = 'Add a CV link first.'; return; }
+  btn.disabled = true; out.textContent = 'Scanning CV…';
+  var existing = editingPool ? poolCandidateById(editingPool) : null;
+  var exp = document.getElementById('pc-experience').value;
+  var data = await callCvScan({
+    full_name:document.getElementById('pc-name').value.trim(), position:document.getElementById('pc-position').value.trim(),
+    location:document.getElementById('pc-location').value.trim(), experience_years:(exp === '' ? null : parseInt(exp,10)),
+    availability:document.getElementById('pc-availability').value.trim(),
+    photo_url:(window.pendingPoolAdminPhoto || (existing && existing.photo_url) || (pendingPoolAdminPhotoBlob ? 'pending-upload' : '')),
+    contact_phone:document.getElementById('pc-phone').value.trim(), contact_email:document.getElementById('pc-email').value.trim(), cv_link:cv
+  });
+  btn.disabled = false;
+  if(data.error){ out.textContent = data.error; return; }
+  var scan = data.scan || {}, verdict = data.verdict || {}, lines = [];
+  if(scan.is_cv && scan.readable && data.added && data.added.length){ document.getElementById('pc-position').value = data.position; lines.push('Added from the CV: ' + data.added.join(', ') + '.'); }
+  else if(scan.is_cv && scan.readable) lines.push('Positions on the CV are already listed.');
+  if(verdict.autoApprove){
+    if(cvAutoApproveOn()){
+      document.getElementById('pc-verified').checked = true;
+      var st = document.getElementById('pc-status'); if(st.value === 'pending') st.value = 'active';
+      lines.push('✓ All checks passed — marked Screened & Verified and Active. Press Save to confirm.');
+    } else lines.push('✓ All checks passed — ready to approve.');
+  } else lines.push('Needs review: ' + (verdict.reasons||[]).join('; ') + '.');
+  out.textContent = lines.join(' ');
 }
 
 // ===== Submissions =====

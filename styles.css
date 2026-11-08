@@ -2893,3 +2893,10 @@ html[data-inapp] .floating-whatsapp{bottom:92px!important}
 html[data-inapp] #screen-home .screen-scroll{padding-bottom:76px!important}
 html[data-inapp] .home-site-footer{padding-bottom:118px!important}
 html[data-inapp] .install-banner{bottom:88px!important}
+
+/* CV Box cards: long names wrap onto extra lines instead of being cut off, so the
+   Screened & Verified seal after the name is always visible. Longer role lists wrap to 2 lines. */
+.pool-mini-card .pool-mini-copy .manager-item-title.pool-mini-name{display:block;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;line-height:1.25}
+.pool-mini-card .pool-mini-name .pool-mini-badge{display:inline-block;white-space:nowrap;margin-left:5px;vertical-align:baseline}
+.pool-mini-card .pool-mini-name .pool-mini-badge .verified-check{margin-left:0;vertical-align:-3px}
+.pool-mini-card .pool-mini-role{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;overflow:hidden;overflow-wrap:anywhere}
