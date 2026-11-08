@@ -1,4 +1,5 @@
 import { runWatchdog } from "./watchdog.js";
+import { candidateCvKey, evaluateCvScan, mergePositions, scanCvWithGemini } from "./cv-scan.js";
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
@@ -2817,6 +2818,28 @@ var worker_default = {
           results.push({ candidate_id: candidateId, sent: !!sent.sent, error: sent.sent ? null : sent.reason || "Resend failed." });
         }
         return json({ ok: true, sent: results.filter((row) => row.sent).length, matched: results.length, results }, 200, origin);
+      }
+      if (path === "/api/admin/cv-scan" && request.method === "POST") {
+        // Admin CV Box: read the uploaded CV, merge the positions found on it
+        // into the profile, and say whether it can be auto-approved + verified.
+        if (!await isAdminRequest(request, env)) {
+          return json({ error: "Not authorized." }, 401, origin);
+        }
+        const body = await request.json().catch(() => ({}));
+        const candidate = body.candidate && typeof body.candidate === "object" ? body.candidate : {};
+        const key = candidateCvKey(candidate.cv_link, env);
+        if (!key || !env.MEDIA_BUCKET) {
+          return json({ error: "This CV is not stored with SA Recruiters, so it cannot be scanned automatically." }, 422, origin);
+        }
+        const object = await env.MEDIA_BUCKET.get(key);
+        if (!object) return json({ error: "The CV file could not be found." }, 404, origin);
+        const contentType = String(object.httpMetadata?.contentType || "").split(";")[0].toLowerCase()
+          || (key.endsWith(".pdf") ? "application/pdf" : key.endsWith(".png") ? "image/png" : "image/jpeg");
+        const scanned = await scanCvWithGemini(env, await object.arrayBuffer(), contentType);
+        if (!scanned.ok) return json({ error: scanned.error }, scanned.status, origin);
+        const merged = mergePositions(candidate.position, scanned.scan.positions);
+        const verdict = evaluateCvScan(scanned.scan, { ...candidate, position: merged.text }, { contentType });
+        return json({ ok: true, scan: scanned.scan, position: merged.text, positions: merged.list, added: merged.added, verdict }, 200, origin);
       }
       if (path === "/api/generate-cv" && request.method === "POST") {
         // Require a signed-in SA Recruiters user (the app is auth-gated
