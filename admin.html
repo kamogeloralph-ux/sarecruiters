@@ -455,6 +455,13 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div id="sub-list"></div>
       </div>
 
+      <!-- AI ASSISTANT -->
+      <div class="section section-review" id="sec-ai">
+        <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>AI Assistant</h2></div>
+        <div class="muted" style="margin-bottom:14px">Gemini helps read posters, spot scams, tidy scraped vacancies and draft posts. It only suggests — you decide what is published or removed.</div>
+        <div id="ai-assistant-body"></div>
+      </div>
+
       <!-- CV BOX -->
       <div class="section section-review" id="sec-poolcandidates">
         <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>CV Box</h2></div>
@@ -761,6 +768,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 <script src="vendor/supabase.min.js"></script>
 <script src="content.js?v=sa-recruiters-913625059b"></script>
 <script src="content-manager.js?v=sa-recruiters-913625059b"></script>
+<script src="admin-ai.js?v=sa-recruiters-ai1"></script>
 <script>
 /* ============================================================
    SA RECRUITERS — STANDALONE ADMIN CONSOLE
@@ -1603,6 +1611,7 @@ var NAV = [
   { id:'houseads', label:'House Ads', tile:'hc-tile-teal', sub:'Create & schedule your own banners', icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5V3M16 5V3"/>' },
   { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
   { id:'poolcandidates', label:'CV Box', tile:'hc-tile-blue', sub:'CV uploads & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
+  { id:'ai', label:'AI Assistant', tile:'hc-tile-purple', sub:'Scam checks, poster reading & drafts', icon:'<path d="M12 3l1.8 4.7L18.5 9l-4.7 1.8L12 15.5l-1.8-4.7L5.5 9l4.7-1.3z"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/>' },
   { id:'settings', label:'Settings', tile:'hc-tile-gray', sub:'App settings & toggles', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
   { id:'media', label:'Media', tile:'hc-tile-pink', sub:'YouTube video & Track of the Day', icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/>' },
   { id:'content', label:'Content', tile:'hc-tile-teal', sub:'FAQ, guides & articles', icon:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>' }
@@ -1620,7 +1629,7 @@ function renderNav(){
     if(dsShown('aux') && n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length + cache.jobSeekers.filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
     if(dsShown('aux') && n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(dsShown('aux') && n.id==='media') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
-    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters','houseads'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates'].indexOf(n.id)>=0 ? 'nav-review' : (['content','media'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
+    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','posters','houseads'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates','ai'].indexOf(n.id)>=0 ? 'nav-review' : (['content','media'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
     return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
@@ -1659,6 +1668,7 @@ function goSection(id){
   if(id==='content') renderContent();
   if(id==='media'){ renderDailyTracks(); loadMediaYoutubeUrl(); }
   if(id==='settings'){ loadSocialLinksSettings(); }
+  if(id==='ai' && window.renderAiAssistant) window.renderAiAssistant();
   if(id==='poolcandidates'){ var cvAuto = document.getElementById('cv-auto-approve'); if(cvAuto) cvAuto.checked = cvAutoApproveOn(); renderPoolCandidates(); }
   window.scrollTo(0,0);
 }
@@ -1707,7 +1717,7 @@ function renderDashboard(){
   if(homeEl){
     // Group: Manage
     var manageItems = ['agencies','branches','vacancies','employers','posters','houseads'];
-    var reviewItems = ['submissions','poolcandidates'];
+    var reviewItems = ['submissions','poolcandidates','ai'];
     var mediaItems = ['media','content'];
     var configItems = ['settings'];
     var html = '';
