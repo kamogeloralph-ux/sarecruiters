@@ -39,7 +39,7 @@ crons = ["0 0 * * *"]
 # shows which paths and IPs generate traffic. Raise/lower head_sampling_rate as needed.
 [observability]
 enabled = true
-head_sampling_rate = 0.1
+head_sampling_rate = 1
 
 [vars]
 SUPABASE_URL = "https://ythznnktswgymerdcxky.supabase.co"

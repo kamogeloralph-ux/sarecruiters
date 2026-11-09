@@ -2830,7 +2830,11 @@ var worker_default = {
         if (!object) return json({ error: "The CV file could not be found." }, 404, origin);
         const contentType = String(object.httpMetadata?.contentType || "").split(";")[0].toLowerCase()
           || (key.endsWith(".pdf") ? "application/pdf" : key.endsWith(".png") ? "image/png" : "image/jpeg");
-        const scanned = await scanCvWithGemini(env, await object.arrayBuffer(), contentType);
+        const scanStart = Date.now();
+        const cvBytes = await object.arrayBuffer();
+        console.log("cv-scan start", key, contentType, cvBytes.byteLength, "bytes");
+        const scanned = await scanCvWithGemini(env, cvBytes, contentType);
+        console.log("cv-scan done", scanned.ok ? "ok" : "failed: " + scanned.error, Date.now() - scanStart, "ms");
         if (!scanned.ok) return json({ error: scanned.error }, scanned.status, origin);
         // Skills feed candidate-to-vacancy matching. Kept in D1 only (skills, never contact details).
         if (candidate.id && scanned.scan.is_cv && scanned.scan.skills && scanned.scan.skills.length) {
