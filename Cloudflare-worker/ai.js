@@ -124,6 +124,12 @@ export function aiModels(env) {
   return [...new Set([env.GEMINI_MODEL, "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"].filter(Boolean))];
 }
 
+// 408/429, any 5xx and Cloudflare-style 52x timeouts mean "this model is slow or busy right now": try the next one.
+function isRetryableStatus(status) {
+  return status === 404 || status === 408 || status === 429 || (status >= 500 && status <= 599);
+}
+const AI_ATTEMPT_TIMEOUT_MS = 40000;
+
 export async function geminiJson(env, { parts, schema, maxOutputTokens = 1200, temperature = 0, fetchImpl = fetch }) {
   if (!env.GEMINI_API_KEY) return { ok: false, status: 503, error: "AI is not configured (GEMINI_API_KEY is missing)." };
   const body = JSON.stringify({
@@ -137,7 +143,8 @@ export async function geminiJson(env, { parts, schema, maxOutputTokens = 1200, t
       response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-        body
+        body,
+        signal: AbortSignal.timeout(AI_ATTEMPT_TIMEOUT_MS)
       });
     } catch (error) {
       console.error("Gemini request failed", model, error);
@@ -148,8 +155,8 @@ export async function geminiJson(env, { parts, schema, maxOutputTokens = 1200, t
       console.error("Gemini call failed", model, response.status, detail.slice(0, 300));
       let reason = "";
       try { reason = String(JSON.parse(detail)?.error?.message || ""); } catch (_) {}
-      failure = `AI service error (${response.status}): ${reason.slice(0, 160) || "request rejected"}`;
-      if ([404, 429, 500, 503].includes(response.status)) continue;
+      failure = `AI service error (${response.status}): ${reason.slice(0, 160) || (response.status >= 500 ? "the AI service timed out or was busy" : "request rejected")}`;
+      if (isRetryableStatus(response.status)) continue;
       return { ok: false, status: 502, error: failure };
     }
     try {
