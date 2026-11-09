@@ -2938,7 +2938,7 @@ async function callCvScan(candidate){
     var data = await res.json().catch(function(){ return {}; });
     if(!res.ok) return { error:(data && data.error) || 'The CV could not be scanned.' };
     return data;
-  } catch(e){ console.error('cv scan', e); return { error:'Could not reach the CV scanner.' }; }
+  } catch(e){ console.error('cv scan', e); return { error:'Could not reach the CV scanner (' + ((e && e.message) || e) + '). If this repeats, check the worker logs for /api/admin/cv-scan.' }; }
 }
 // Scans one saved profile and applies the result straight to the database.
 async function scanPoolCandidate(id, opts){
