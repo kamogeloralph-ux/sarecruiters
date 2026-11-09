@@ -86,6 +86,18 @@ CV_DOWNLOAD_PRICE_CENTS = "4900"
 #                         Optional: GEMINI_MODEL to override the default
 #                         model (gemini-2.5-flash) as a plain Variable.
 #
+#   More Gemini features (see ../AI-FEATURES.md). All optional plain Variables:
+#   GEMINI_PAID_TIER=1    Say "1" ONLY once the Gemini key is on a paid plan that does not
+#                         train on your data. Until then CV feedback and photo checks stay
+#                         OFF (POPIA). Poster reading, scam checks, search and summaries
+#                         do not read personal CVs and are not blocked.
+#   AI_DAILY_CAP          Max Gemini calls per day, all features together (default 1000).
+#   AI_CLEAN_LIMIT        Scraped vacancies tidied per daily run (default 100, 10 per call).
+#   AI_SCREEN_LIMIT       New vacancies scam-screened per daily run (default 60; most are
+#                         decided by rules with no Gemini call).
+#   AI_COMMUNITY_LIMIT    Recent TipChat posts re-checked per daily run (default 40; needs
+#                         the SUPABASE_SERVICE_ROLE_KEY secret already used for account deletion).
+#
 # If TURNSTILE_SECRET_KEY is unset, /api/submit/* fail closed with 503 —
 # set it (or deploy without using the new submit endpoints; the app's
 # legacy fallbacks still work). See ../SECURITY_SETUP.md.

@@ -127,6 +127,7 @@ export function normalizeScan(raw) {
     email: clean(r.email, 160),
     phone: clean(r.phone, 40),
     experience_years: Number.isFinite(years) && years >= 0 && years <= 60 ? years : null,
+    skills: [...new Set((Array.isArray(r.skills) ? r.skills : []).map((x) => clean(x, 60)).filter(Boolean))].slice(0, 10),
     has_experience_section: r.has_experience_section === true,
     has_education_section: r.has_education_section === true,
     has_contact_details: r.has_contact_details === true,
@@ -179,6 +180,7 @@ const CV_SCAN_RESPONSE_SCHEMA = {
     email: { type: "STRING" },
     phone: { type: "STRING" },
     experience_years: { type: "INTEGER" },
+    skills: { type: "ARRAY", items: { type: "STRING" } },
     has_experience_section: { type: "BOOLEAN" },
     has_education_section: { type: "BOOLEAN" },
     has_contact_details: { type: "BOOLEAN" },
@@ -198,6 +200,7 @@ const CV_SCAN_PROMPT = [
   "positions: the job titles the candidate is seeking or clearly qualified for, taken from the CV (objective/profile line first, then most recent roles). Short titles only (for example \"Cashier\", \"General Worker\", \"Admin Clerk\"), no company names, at most 4.",
   "location: town/city and province if stated. email and phone: as written on the CV.",
   "experience_years: total years of work experience as a whole number (0 if none).",
+  "skills: up to 10 short skills or tools stated on the CV (for example \"Cash handling\", \"Code 10 licence\", \"MS Excel\"). Skills only; never include ID numbers, addresses or contact details.",
   "has_experience_section / has_education_section / has_contact_details: whether those parts exist on the CV.",
   "problems: short notes about anything unclear, missing or unreadable."
 ].join("\n");
