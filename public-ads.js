@@ -26,13 +26,25 @@
       body: JSON.stringify({ id: id, event: eventName }), keepalive: true
     }).catch(function () {});
   }
+  function creativeMarkup(image, ad) {
+    var alt = imageEscape(ad.title || ad.advertiser_name || 'Sponsored promotion');
+    var isHtml = false, w = 1200, h = 400;
+    try { isHtml = /\.html?$/i.test(new URL(image).pathname); } catch (e) {}
+    if (isHtml) {
+      var m = image.match(/(\d{2,4})x(\d{2,4})\.html?(?:[?#]|$)/i);
+      if (m) { w = +m[1]; h = +m[2]; }
+      return '<span style="display:block;position:relative;width:100%;aspect-ratio:' + w + ' / ' + h + ';background:#000;overflow:hidden">'
+        + '<iframe src="' + imageEscape(image) + '" title="' + alt + '" loading="lazy" tabindex="-1" scrolling="no" sandbox="allow-scripts" referrerpolicy="no-referrer" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none"></iframe></span>';
+    }
+    return '<img loading="lazy" decoding="async" width="1200" height="400" src="' + imageEscape(image) + '" alt="' + alt + '">';
+  }
   function render(slot, ad) {
     var image = safeUrl(ad && ad.image_url), target = safeUrl(ad && ad.target_url);
     if (!ad || !image || !target) { slot.hidden = true; return; }
     slot.hidden = false;
     slot.innerHTML = '<a class="public-house-ad" href="' + imageEscape(target) + '" target="_blank" rel="sponsored noopener noreferrer">'
       + '<span class="public-house-ad-label">Sponsored</span>'
-      + '<img loading="lazy" decoding="async" width="1200" height="400" src="' + imageEscape(image) + '" alt="' + imageEscape(ad.title || ad.advertiser_name || 'Sponsored promotion') + '">'
+      + creativeMarkup(image, ad)
       + (ad.message ? '<span class="public-house-ad-message">' + imageEscape(ad.message) + '</span>' : '')
       + '</a>';
     slot.querySelector('a').addEventListener('click', function () { track(ad.id, 'click', slot.getAttribute('data-public-ad-slot')); });

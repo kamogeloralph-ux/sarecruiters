@@ -149,6 +149,13 @@ export function safeHouseAdUrl(value) {
     return /^https?:$/.test(url.protocol) ? url.href : '';
   } catch(e) { return ''; }
 }
+export function isHouseAdHtml5(url) {
+  try { return /\.html?$/i.test(new URL(String(url || ''), window.location.href).pathname); } catch(e) { return false; }
+}
+export function houseAdHtml5Size(url) {
+  var m = String(url || '').match(/(\d{2,4})x(\d{2,4})\.html?(?:[?#]|$)/i);
+  return m ? { w: +m[1], h: +m[2] } : { w: 1200, h: 400 };
+}
 export function houseAdPlacementMatches(ad, placement, slot) {
   var targets = Array.isArray(ad && ad.target_screens) ? ad.target_screens : null;
   var screenMatch = targets && targets.length ? targets.indexOf(placement) !== -1 : (ad && (ad.placement === placement || ad.placement === 'directories'));
@@ -167,15 +174,25 @@ export function renderHouseAdSlot(targetId, placement, slot) {
   var isRolazAd = /rolaz/i.test(adIdentity);
   var isIkhayaAd = /ikhaya/i.test(adIdentity);
   var motionOverlay = isRolazAd ? '<span class="house-ad-bulb-glow" aria-hidden="true"></span><span class="house-ad-bulb-core" aria-hidden="true"></span><span class="house-ad-spark" aria-hidden="true"></span><span class="house-ad-tester-flicker" aria-hidden="true"></span>' : '';
-  var creativeClass = isIkhayaAd ? ' house-ad-creative--ikhaya' : '';
+  var html5 = isHouseAdHtml5(imageUrl);
+  var creativeClass = isIkhayaAd && !html5 ? ' house-ad-creative--ikhaya' : '';
   var imageWidth = isIkhayaAd ? 1640 : 1200;
   var imageHeight = isIkhayaAd ? 624 : 400;
+  // HTML5 (animated) creatives: an .html file whose name ends in -WIDTHxHEIGHT.html is played
+  // in a sandboxed, non-interactive iframe; the surrounding <a> owns the click-through + tracking.
+  if (html5) { var htmlSize = houseAdHtml5Size(imageUrl); imageWidth = htmlSize.w; imageHeight = htmlSize.h; }
+  var altText = escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion');
+  var creative = html5
+    ? '<div class="house-ad-creative house-ad-creative--html5" style="aspect-ratio:' + imageWidth + ' / ' + imageHeight + '">' +
+        '<iframe src="' + escapeHtml(imageUrl) + '" title="' + altText + '" width="' + imageWidth + '" height="' + imageHeight + '" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>' +
+      '</div>'
+    : '<div class="house-ad-creative' + creativeClass + '">' +
+        '<img loading="lazy" decoding="async" width="' + imageWidth + '" height="' + imageHeight + '" src="' + escapeHtml(imageUrl) + '" alt="' + altText + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
+        motionOverlay +
+      '</div>';
   target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
     '<div class="house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong></div>' +
-    '<div class="house-ad-creative' + creativeClass + '">' +
-      '<img loading="lazy" decoding="async" width="' + imageWidth + '" height="' + imageHeight + '" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion') + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
-      motionOverlay +
-    '</div>' +
+    creative +
     '<div class="house-ad-message"><small><span class="house-ad-message-copy">' + escapeHtml(ad.message || ((ad.title || ad.advertiser_name || '').toLowerCase().includes('rolaz') ? 'Keeping your home brighter' : '')) + '</span><span class="house-ad-sponsored">Sponsored</span></small></div>' +
   '</a>';
   trackHouseAdEvent(ad.id, 'impression');
