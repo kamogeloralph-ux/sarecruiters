@@ -9,6 +9,7 @@
  * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
+import { buildHouseAdCardDocument, buildHouseAdImageDocument, houseAdKind, watchHouseAdFrame } from './house-ad-html5.js';
 import { R2_WORKER_URL, STARTUP_DATA_URL, STATIC_DATA_URL, agenciesCache, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyNextCursor, dedicatedVacancyPageSize, employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyNextCursor, generalVacancyPageSize, initials, isAdmin, managerMode, managerPendingToken, rebuildPublicListingSlugs, set_agenciesCache, set_branchesCache, set_dedicatedVacancyCounts, set_dedicatedVacancyCountsLoaded, set_dedicatedVacancyNextCursor, set_employerManagerPendingToken, set_employersCache, set_generalVacancyCount, set_generalVacancyCountLoaded, set_generalVacancyNextCursor, set_managerPendingToken, set_staticVacanciesCache, set_vacanciesCache, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
 import { filterAndRenderCached, loadPosterFeed, verifiedBadge } from './app-cards.js';
 import { getPoolCandidateCount, openPostJobSheet, poolCache, poolCandidateCount, poolLoaded, set_poolCandidateCount } from './app-sheets.js';
@@ -175,42 +176,63 @@ export function houseAdPlacementMatches(ad, placement, slot) {
   var screenMatch = targets && targets.length ? targets.indexOf(placement) !== -1 : (ad && (ad.placement === placement || ad.placement === 'directories'));
   return !!ad && screenMatch && (ad.ad_slot || 'top') === slot;
 }
-export function renderHouseAdSlot(targetId, placement, slot) {
+// Which ad each slot is showing (sticky across re-renders) and its rotation timer.
+var houseAdSlotState = {};
+var HOUSE_AD_ROTATE_MS = 15000;
+function houseAdSlotClear(target) { target.hidden = true; target.innerHTML = ''; target.removeAttribute('data-ad-id'); }
+export function renderHouseAdSlot(targetId, placement, slot, avoidId) {
   var target = document.getElementById(targetId);
   if (!target) return;
-  if (placement === 'candidates' && (!poolLoaded || !poolCache.length)) { target.hidden = true; target.innerHTML = ''; return; }
-  var ad = (houseAdsCache || []).filter(function(item){ return houseAdPlacementMatches(item, placement, slot || 'top'); })[0];
-  var imageUrl = ad && safeHouseAdUrl(ad.image_url);
-  var targetUrl = ad && safeHouseAdUrl(ad.target_url);
-  if (!ad || !imageUrl || !targetUrl) { target.hidden = true; target.innerHTML = ''; return; }
+  var state = houseAdSlotState[targetId] || (houseAdSlotState[targetId] = {});
+  if (state.timer) { clearTimeout(state.timer); state.timer = 0; }
+  if (placement === 'candidates' && (!poolLoaded || !poolCache.length)) { houseAdSlotClear(target); return; }
+  var matches = (houseAdsCache || []).filter(function(item){
+    return houseAdPlacementMatches(item, placement, slot || 'top') && safeHouseAdUrl(item.image_url) && safeHouseAdUrl(item.target_url);
+  });
+  if (!matches.length) { state.id = ''; houseAdSlotClear(target); return; }
+  // Several ads for one slot take turns. Re-renders keep the current ad; only a rotation tick
+  // (avoidId) or a first view picks a different one.
+  var ad = null;
+  if (!avoidId && state.id) ad = matches.filter(function(item){ return item.id === state.id; })[0] || null;
+  if (!ad) {
+    var pool = matches.length > 1 && avoidId ? matches.filter(function(item){ return item.id !== avoidId; }) : matches;
+    ad = pool[Math.floor(Math.random() * pool.length)];
+  }
+  state.id = ad.id;
+  if (target.getAttribute('data-ad-id') === String(ad.id) && target.firstChild && !target.hidden) {
+    scheduleHouseAdRotation(targetId, placement, slot, target, matches.length);
+    return; // already showing this ad: do not restart its animation
+  }
+  var imageUrl = safeHouseAdUrl(ad.image_url);
+  var targetUrl = safeHouseAdUrl(ad.target_url);
+  var kind = houseAdKind(ad, imageUrl);
+  var width = 1200, height = 400;
+  if (kind === 'html5') { var size = houseAdHtml5Size(imageUrl); width = size.w; height = size.h; }
+  var altText = escapeHtml(ad.title || ad.advertiser_name || 'Promotion');
+  // The whole creative is one link; the iframe ignores clicks so the card link gets them.
   target.hidden = false;
-  var adIdentity = String(ad.advertiser_name || '') + ' ' + String(ad.title || '');
-  var isRolazAd = /rolaz/i.test(adIdentity);
-  var isIkhayaAd = /ikhaya/i.test(adIdentity);
-  var motionOverlay = isRolazAd ? '<span class="house-ad-bulb-glow" aria-hidden="true"></span><span class="house-ad-bulb-core" aria-hidden="true"></span><span class="house-ad-spark" aria-hidden="true"></span><span class="house-ad-tester-flicker" aria-hidden="true"></span>' : '';
-  var html5 = isHouseAdHtml5(imageUrl);
-  var creativeClass = isIkhayaAd && !html5 ? ' house-ad-creative--ikhaya' : '';
-  var imageWidth = isIkhayaAd ? 1640 : 1200;
-  var imageHeight = isIkhayaAd ? 624 : 400;
-  // HTML5 (animated) creatives: an .html file whose name ends in -WIDTHxHEIGHT.html is played
-  // in a sandboxed, non-interactive iframe; the surrounding <a> owns the click-through + tracking.
-  if (html5) { var htmlSize = houseAdHtml5Size(imageUrl); imageWidth = htmlSize.w; imageHeight = htmlSize.h; }
-  var altText = escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion');
-  var creative = html5
-    ? '<div class="house-ad-creative house-ad-creative--html5" style="aspect-ratio:' + imageWidth + ' / ' + imageHeight + '">' +
-        '<iframe title="' + altText + '" width="' + imageWidth + '" height="' + imageHeight + '" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>' +
-      '</div>'
-    : '<div class="house-ad-creative' + creativeClass + '">' +
-        '<img loading="lazy" decoding="async" width="' + imageWidth + '" height="' + imageHeight + '" src="' + escapeHtml(imageUrl) + '" alt="' + altText + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
-        motionOverlay +
-      '</div>';
-  target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')">' +
-    '<div class="house-ad-heading"><strong>' + escapeHtml(ad.title || ad.advertiser_name || '') + '</strong></div>' +
-    creative +
-    '<div class="house-ad-message"><small><span class="house-ad-message-copy">' + escapeHtml(ad.message || ((ad.title || ad.advertiser_name || '').toLowerCase().includes('rolaz') ? 'Keeping your home brighter' : '')) + '</span><span class="house-ad-sponsored">Sponsored</span></small></div>' +
-  '</a>';
-  if (html5) loadHouseAdHtml5(target.querySelector('.house-ad-creative--html5 iframe'), imageUrl, target);
+  target.setAttribute('data-ad-id', String(ad.id));
+  target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')" aria-label="' + altText + '">' +
+    '<div class="house-ad-creative house-ad-creative--html5" style="aspect-ratio:' + width + ' / ' + height + '">' +
+      '<iframe title="' + altText + '" width="' + width + '" height="' + height + '" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>' +
+    '</div></a>';
+  var frame = target.querySelector('iframe');
+  if (kind === 'html5') loadHouseAdHtml5(frame, imageUrl, target);
+  else {
+    frame.srcdoc = kind === 'card' ? buildHouseAdCardDocument(ad, imageUrl) : buildHouseAdImageDocument(imageUrl);
+    watchHouseAdFrame(frame, target);
+  }
   trackHouseAdEvent(ad.id, 'impression');
+  scheduleHouseAdRotation(targetId, placement, slot, target, matches.length);
+}
+function scheduleHouseAdRotation(targetId, placement, slot, target, count) {
+  var state = houseAdSlotState[targetId];
+  if (!state || count < 2) return;
+  state.timer = setTimeout(function() {
+    var visible = !document.hidden && target.isConnected && target.offsetParent !== null;
+    if (visible) renderHouseAdSlot(targetId, placement, slot, state.id);
+    else scheduleHouseAdRotation(targetId, placement, slot, target, count);
+  }, HOUSE_AD_ROTATE_MS);
 }
 export function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-home-middle', 'home', 'middle');
