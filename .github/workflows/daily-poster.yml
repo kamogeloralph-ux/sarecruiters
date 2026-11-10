@@ -1,4 +1,4 @@
-name: Daily vacancy posters
+name: Vacancy poster of the day
 on:
   schedule:
     - cron: "0 5 * * *"   # 05:00 UTC = 07:00 South Africa
@@ -15,9 +15,6 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      WORKER_URL: ${{ secrets.WORKER_URL }}
-      POSTER_AUTOMATION_TOKEN: ${{ secrets.POSTER_AUTOMATION_TOKEN }}
-      POSTERS_PER_RUN: "3"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,3 +24,11 @@ jobs:
       - run: pip install pillow
       - run: npm ci
       - run: node scripts/generate-daily-poster.mjs
+      # The poster is NOT added to the Vacancy Posters feed; download it from
+      # the run's "Artifacts" section.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poster-of-the-day
+          path: tmp-posters/*.jpg
+          if-no-files-found: ignore
+          retention-days: 14
