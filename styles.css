@@ -2906,3 +2906,10 @@ html[data-inapp] .install-banner{bottom:88px!important}
 /* Animated HTML5 house ads (sandboxed iframe). The anchor wrapping the card receives every click. */
 .house-ad-creative--html5{background:#000}
 .house-ad-creative--html5>iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;pointer-events:none;background:#000}
+
+/* House ads: picture only. No card, title or "Sponsored" strip around the creative. */
+.house-ad-slot{background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important;margin:0 0 14px!important}
+.house-ad-slot .house-ad-card{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;margin:0!important;display:block!important}
+.house-ad-slot .house-ad-heading,.house-ad-slot .house-ad-message{display:none!important}
+.house-ad-slot .house-ad-creative{border-radius:var(--radius);overflow:hidden}
+@media(max-width:520px){.house-ad-slot .house-ad-creative{border-radius:18px}}

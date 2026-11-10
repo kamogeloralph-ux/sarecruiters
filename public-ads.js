@@ -43,9 +43,7 @@
     if (!ad || !image || !target) { slot.hidden = true; return; }
     slot.hidden = false;
     slot.innerHTML = '<a class="public-house-ad" href="' + imageEscape(target) + '" target="_blank" rel="sponsored noopener noreferrer">'
-      + '<span class="public-house-ad-label">Sponsored</span>'
       + creativeMarkup(image, ad)
-      + (ad.message ? '<span class="public-house-ad-message">' + imageEscape(ad.message) + '</span>' : '')
       + '</a>';
     var htmlFrame = slot.querySelector('iframe');
     if (htmlFrame) {

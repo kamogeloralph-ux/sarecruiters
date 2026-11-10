@@ -362,3 +362,8 @@ a.pg:hover{background:var(--blue-soft);border-color:var(--blue-line)}
 .cv-row-name{font-weight:750;color:var(--ink);overflow-wrap:anywhere}
 .cv-row-tx small{color:var(--muted);font-size:12.5px}
 .cv-row .btn{min-height:40px;padding:0 16px;font-size:13.5px}
+
+/* Public house ads: picture only. */
+.public-house-ad{border:0;background:transparent;box-shadow:none}
+.public-house-ad:hover{transform:none;box-shadow:none}
+.public-house-ad-label,.public-house-ad-message{display:none}
