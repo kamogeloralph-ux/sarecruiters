@@ -152,6 +152,20 @@ export function safeHouseAdUrl(value) {
 export function isHouseAdHtml5(url) {
   try { return /\.html?$/i.test(new URL(String(url || ''), window.location.href).pathname); } catch(e) { return false; }
 }
+// Load an HTML5 creative as text and hand it to the iframe via srcdoc. This avoids the host's
+// "unknown path -> app shell" fallback and the service worker: if the response is not a real
+// ad (no ad.size marker) the slot is hidden instead of showing the app inside the ad box.
+export function loadHouseAdHtml5(frame, url, slot) {
+  function hide() { if (slot) { slot.hidden = true; slot.innerHTML = ''; } }
+  if (!frame) return;
+  fetch(url, { credentials: 'omit', cache: 'no-cache' }).then(function(res) {
+    if (!res.ok) throw new Error('ad ' + res.status);
+    return res.text();
+  }).then(function(html) {
+    if (html.indexOf('name="ad.size"') === -1) throw new Error('not an ad');
+    frame.srcdoc = html;
+  }).catch(hide);
+}
 export function houseAdHtml5Size(url) {
   var m = String(url || '').match(/(\d{2,4})x(\d{2,4})\.html?(?:[?#]|$)/i);
   return m ? { w: +m[1], h: +m[2] } : { w: 1200, h: 400 };
@@ -184,7 +198,7 @@ export function renderHouseAdSlot(targetId, placement, slot) {
   var altText = escapeHtml(ad.title || ad.advertiser_name || 'Sponsored promotion');
   var creative = html5
     ? '<div class="house-ad-creative house-ad-creative--html5" style="aspect-ratio:' + imageWidth + ' / ' + imageHeight + '">' +
-        '<iframe src="' + escapeHtml(imageUrl) + '" title="' + altText + '" width="' + imageWidth + '" height="' + imageHeight + '" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>' +
+        '<iframe title="' + altText + '" width="' + imageWidth + '" height="' + imageHeight + '" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>' +
       '</div>'
     : '<div class="house-ad-creative' + creativeClass + '">' +
         '<img loading="lazy" decoding="async" width="' + imageWidth + '" height="' + imageHeight + '" src="' + escapeHtml(imageUrl) + '" alt="' + altText + '" onerror="this.closest(\'.house-ad-slot\').hidden=true">' +
@@ -195,6 +209,7 @@ export function renderHouseAdSlot(targetId, placement, slot) {
     creative +
     '<div class="house-ad-message"><small><span class="house-ad-message-copy">' + escapeHtml(ad.message || ((ad.title || ad.advertiser_name || '').toLowerCase().includes('rolaz') ? 'Keeping your home brighter' : '')) + '</span><span class="house-ad-sponsored">Sponsored</span></small></div>' +
   '</a>';
+  if (html5) loadHouseAdHtml5(target.querySelector('.house-ad-creative--html5 iframe'), imageUrl, target);
   trackHouseAdEvent(ad.id, 'impression');
 }
 export function renderHouseAdSlots() {

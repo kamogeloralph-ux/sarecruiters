@@ -34,7 +34,7 @@
       var m = image.match(/(\d{2,4})x(\d{2,4})\.html?(?:[?#]|$)/i);
       if (m) { w = +m[1]; h = +m[2]; }
       return '<span style="display:block;position:relative;width:100%;aspect-ratio:' + w + ' / ' + h + ';background:#000;overflow:hidden">'
-        + '<iframe src="' + imageEscape(image) + '" title="' + alt + '" loading="lazy" tabindex="-1" scrolling="no" sandbox="allow-scripts" referrerpolicy="no-referrer" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none"></iframe></span>';
+        + '<iframe title="' + alt + '" loading="lazy" tabindex="-1" scrolling="no" sandbox="allow-scripts" referrerpolicy="no-referrer" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none"></iframe></span>';
     }
     return '<img loading="lazy" decoding="async" width="1200" height="400" src="' + imageEscape(image) + '" alt="' + alt + '">';
   }
@@ -47,6 +47,16 @@
       + creativeMarkup(image, ad)
       + (ad.message ? '<span class="public-house-ad-message">' + imageEscape(ad.message) + '</span>' : '')
       + '</a>';
+    var htmlFrame = slot.querySelector('iframe');
+    if (htmlFrame) {
+      fetch(image, { credentials: 'omit', cache: 'no-cache' }).then(function (res) {
+        if (!res.ok) throw new Error('ad ' + res.status);
+        return res.text();
+      }).then(function (html) {
+        if (html.indexOf('name="ad.size"') === -1) throw new Error('not an ad');
+        htmlFrame.srcdoc = html;
+      }).catch(function () { slot.hidden = true; slot.innerHTML = ''; });
+    }
     slot.querySelector('a').addEventListener('click', function () { track(ad.id, 'click', slot.getAttribute('data-public-ad-slot')); });
     var slotName = slot.getAttribute('data-public-ad-slot');
     if ('IntersectionObserver' in window) {
