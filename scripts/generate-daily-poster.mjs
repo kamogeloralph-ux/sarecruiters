@@ -1,83 +1,66 @@
 // ============================================================
 //  SA RECRUITERS — scripts/generate-daily-poster.mjs
 // ============================================================
-//  Picks fresh vacancies that have not been posterised yet, renders a
-//  branded poster image (scripts/render-poster.py, Pillow) and publishes it
-//  to the Vacancy Posters feed via the Worker (/api/automation/poster).
+//  Renders ONE branded "Vacancy Poster of the Day" (scripts/render-poster.py,
+//  Pillow) from a fresh vacancy. It does NOT publish to the Vacancy Posters
+//  feed any more — the JPEG is written to OUT_DIR and the workflow keeps it as
+//  a downloadable build artifact.
 //
-//  Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, WORKER_URL,
-//       POSTER_AUTOMATION_TOKEN
-//  Optional: POSTERS_PER_RUN (default 3), DRY_RUN=1 (render only, no upload),
-//            OUT_DIR (default ./tmp-posters)
+//  Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+//  Optional: OUT_DIR (default ./tmp-posters)
 // ============================================================
-import { createClient } from '@supabase/supabase-js';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { isStaleVacancy } from './vacancy-freshness.mjs';
 
-const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, WORKER_URL, POSTER_AUTOMATION_TOKEN } = process.env;
-const PER_RUN = Math.max(1, parseInt(process.env.POSTERS_PER_RUN || '3', 10));
-const DRY_RUN = /^(1|true|yes)$/i.test(process.env.DRY_RUN || '');
 const OUT_DIR = process.env.OUT_DIR || 'tmp-posters';
 const SITE = 'sa-recruiters.co.za';
+const FRESH_MS = 36 * 3600 * 1000; // prefer vacancies added in the last 36h
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
-if (!DRY_RUN && (!WORKER_URL || !POSTER_AUTOMATION_TOKEN)) throw new Error('WORKER_URL and POSTER_AUTOMATION_TOKEN are required');
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
 const clean = (v) => String(v || '').replace(/\s+/g, ' ').trim();
-const captionFor = (v) => clean(v.company ? `${v.title} – ${v.company}` : v.title).slice(0, 120);
+
+// Pure helper (exported for tests): choose today's vacancy from newest-first rows.
+export function pickPosterOfTheDay(vacancies, now = new Date()) {
+  const eligible = (vacancies || []).filter((v) =>
+    clean(v.title) && clean(v.link) && !isStaleVacancy(v, now).stale);
+  if (!eligible.length) return null;
+  const fresh = eligible.find((v) => now - new Date(v.created_at) <= FRESH_MS);
+  if (fresh) return fresh;
+  // Nothing new today: rotate through the 10 newest so it doesn't repeat daily.
+  const day = Math.floor(now.getTime() / 86400000);
+  const pool = eligible.slice(0, 10);
+  return pool[day % pool.length];
+}
 
 async function main() {
-  const { data: recent, error: pErr } = await supabase
-    .from('employer_posters').select('caption').gt('expires_at', new Date().toISOString());
-  if (pErr) throw pErr;
-  const posted = new Set((recent || []).map((r) => clean(r.caption).toLowerCase()));
-
-  const { data: vacancies, error: vErr } = await supabase
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { data: vacancies, error } = await supabase
     .from('vacancies')
     .select('id,title,company,location,notes,link,source_type,closing_date,created_at')
     .order('created_at', { ascending: false })
     .limit(300);
-  if (vErr) throw vErr;
+  if (error) throw error;
 
   const now = new Date();
-  const picks = [];
-  const companies = new Set();
-  for (const v of vacancies || []) {
-    if (picks.length >= PER_RUN) break;
-    if (!clean(v.title) || !clean(v.link)) continue;
-    if (isStaleVacancy(v, now).stale) continue;
-    if (posted.has(captionFor(v).toLowerCase())) continue;
-    const co = clean(v.company).toLowerCase();
-    if (co && companies.has(co)) continue; // variety: one poster per company per run
-    companies.add(co);
-    picks.push(v);
-  }
-  console.log(`[daily-poster] ${picks.length} vacancy(ies) selected`);
-  if (!picks.length) return;
+  const v = pickPosterOfTheDay(vacancies, now);
+  if (!v) { console.log('[daily-poster] no eligible vacancy today — nothing rendered'); return; }
 
   mkdirSync(OUT_DIR, { recursive: true });
-  for (const v of picks) {
-    const jsonPath = path.join(OUT_DIR, `${v.id}.json`);
-    const jpgPath = path.join(OUT_DIR, `${v.id}.jpg`);
-    writeFileSync(jsonPath, JSON.stringify({
-      title: clean(v.title), company: clean(v.company), location: clean(v.location),
-      closing: clean(v.closing_date), apply: `Apply: ${SITE}`, tag: 'Now hiring',
-    }));
-    execFileSync('python3', ['scripts/render-poster.py', jsonPath, jpgPath], { stdio: 'inherit' });
-    if (DRY_RUN) { console.log(`[daily-poster] DRY_RUN rendered ${jpgPath}`); continue; }
-
-    const res = await fetch(`${WORKER_URL.replace(/\/$/, '')}/api/automation/poster?caption=${encodeURIComponent(captionFor(v))}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'image/jpeg', 'X-Automation-Token': POSTER_AUTOMATION_TOKEN },
-      body: readFileSync(jpgPath),
-    });
-    const body = await res.text();
-    if (!res.ok) throw new Error(`Worker rejected poster for ${v.id}: ${res.status} ${body}`);
-    console.log(`[daily-poster] published ${v.id}: ${body}`);
-  }
+  const stamp = now.toISOString().slice(0, 10);
+  const jsonPath = path.join(OUT_DIR, `poster-of-the-day-${stamp}.json`);
+  const jpgPath = path.join(OUT_DIR, `poster-of-the-day-${stamp}.jpg`);
+  writeFileSync(jsonPath, JSON.stringify({
+    title: clean(v.title), company: clean(v.company), location: clean(v.location),
+    closing: clean(v.closing_date), apply: `Apply: ${SITE}`, tag: 'Vacancy of the day',
+  }));
+  execFileSync('python3', ['scripts/render-poster.py', jsonPath, jpgPath], { stdio: 'inherit' });
+  console.log(`[daily-poster] rendered poster of the day for ${v.id} → ${jpgPath}`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}
