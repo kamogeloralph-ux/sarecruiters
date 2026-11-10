@@ -349,8 +349,8 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
       <span>SA Recruiters</span>
     </div>
     <div class="login-sub">Admin Console — restricted access</div>
-    <div class="field"><label>Email</label><input id="login-email" type="email" autocomplete="username" placeholder="admin@example.com"></div>
-    <div class="field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <div class="field"><label for="login-email">Email</label><input id="login-email" name="email" type="email" autocomplete="username" placeholder="admin@example.com"></div>
+    <div class="field"><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="••••••••"></div>
     <div class="login-error" id="login-error"></div>
     <button class="btn" id="password-login-button" onclick="doLogin()">Log in</button>
     <div class="login-divider" aria-hidden="true"><span>or</span></div>
@@ -375,7 +375,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
 <!-- ============ APP CONSOLE ============ -->
 <div id="app">
-  <div class="topbar">
+  <header class="topbar">
     <div class="brand"><img src="icons/v2-icon-512.png" alt=""> SA Recruiters</div>
     <div class="spacer"></div>
     <div class="who" id="who-am-i"></div>
@@ -385,66 +385,66 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <button class="iconbtn" onclick="doLogout()" aria-label="Log out" title="Log out">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
     </button>
-  </div>
+  </header>
 
   <div class="layout">
-    <nav class="sidebar" id="sidebar"></nav>
-    <main class="main">
+    <nav class="sidebar" id="sidebar" aria-label="Admin sections"></nav>
+    <main class="main" id="main-content">
       <!-- DASHBOARD -->
-      <div class="section section-dashboard active" id="sec-dashboard">
+      <section class="section section-dashboard active" id="sec-dashboard">
         <div class="section-head"><h2>Dashboard</h2></div>
         <div id="load-banner"></div>
         <div class="stats-grid" id="stats-grid"></div>
         <div class="card analytics-card section-analytics-card" style="margin-top:14px"><div class="card-pad"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><h3 style="margin:0;font-size:16px">Usage analytics</h3><p style="margin:3px 0 0;color:var(--text-2);font-size:12px">Last 30 days · anonymous events</p></div><button class="minibtn" onclick="loadAnalyticsSummary(true)">Load analytics</button></div><div id="analytics-summary" style="margin-top:14px"><div style="color:var(--text-2);font-size:13px">Analytics is loaded only when requested.</div></div></div></div>
         <div id="home-cards" style="margin-top:8px"></div>
-      </div>
+      </section>
 
       <!-- AGENCIES -->
-      <div class="section section-manage" id="sec-agencies">
+      <section class="section section-manage" id="sec-agencies">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Agencies</h2><div class="spacer"></div><button class="minibtn" onclick="regenerateAllAgencyTokens()" title="Use once after running SMART_MANAGER_SETUP.sql">Regenerate ALL tokens</button><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
         <input class="search" id="ag-search" placeholder="Search name, location, trades, companies..." oninput="renderAgencies()">
         <div id="ag-list"></div>
-      </div>
+      </section>
 
       <!-- BRANCHES -->
-      <div class="section section-manage" id="sec-branches">
+      <section class="section section-manage" id="sec-branches">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Branches</h2><div class="spacer"></div><button class="minibtn ok" onclick="openBranchSheet()">+ Add branch</button></div>
         <input class="search" id="br-search" placeholder="Search branch, location, agency..." oninput="renderBranches()">
         <div id="br-list"></div>
-      </div>
+      </section>
 
       <!-- VACANCIES -->
-      <div class="section section-manage" id="sec-vacancies">
+      <section class="section section-manage" id="sec-vacancies">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancies</h2><div class="spacer"></div><button class="minibtn ok" onclick="openVacancySheet()">+ Add vacancy</button></div>
         <div class="muted" id="vacancy-count-summary" style="margin:-6px 0 14px">Loading vacancy totals…</div>
         <input class="search" id="va-search" placeholder="Search title, company, location..." oninput="debouncedRenderVacancies()">
         <div id="va-list"></div>
-      </div>
+      </section>
 
       <!-- EMPLOYERS -->
-      <div class="section section-manage" id="sec-employers">
+      <section class="section section-manage" id="sec-employers">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Employers</h2><div class="spacer"></div><button class="minibtn" onclick="regenerateAllEmployerTokens()" title="Use once after running SMART_MANAGER_SETUP.sql">Regenerate ALL tokens</button><button class="minibtn ok" onclick="openEmployerSheet()">+ Register employer</button></div>
         <div class="muted" style="margin-bottom:14px">Companies that post their own vacancies directly (separate from the agency directory). Their jobs also show up in the Vacancies list once posted.</div>
         <input class="search" id="emp-search" placeholder="Search name, industry, location..." oninput="renderEmployers()">
         <div id="emp-list"></div>
-      </div>
+      </section>
 
       <!-- VACANCY POSTERS -->
-      <div class="section section-manage" id="sec-posters">
+      <section class="section section-manage" id="sec-posters">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Vacancy Posters</h2><div class="spacer"></div><button class="minibtn ok" onclick="openPosterUploadSheet()">+ Upload posters</button></div>
         <div class="muted" style="margin-bottom:14px">Recruitment-ad images shown on the app's All Vacancies page. Upload several at once, then edit each poster's caption, employer, agency and expiry.</div>
         <input class="search" id="po-search" placeholder="Search caption, employer, agency..." oninput="renderPosters()">
         <div id="po-list"></div>
-      </div>
+      </section>
 
       <!-- HOUSE ADS -->
-      <div class="section section-content" id="sec-houseads">
+      <section class="section section-content" id="sec-houseads">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>House Ads</h2><div class="spacer"></div><button class="minibtn ok" onclick="openHouseAdSheet()">+ Create ad</button></div>
         <div class="muted" style="margin-bottom:14px">Create your own sponsored banners, choose where they appear, and schedule them without third-party ad networks.</div>
         <div id="house-ad-list"></div>
-      </div>
+      </section>
       <!-- SUBMISSIONS -->
-      <div class="section section-review" id="sec-submissions">
+      <section class="section section-review" id="sec-submissions">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Submissions</h2></div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
           <button class="minibtn" id="sub-tab-reports" onclick="switchSubTab('reports')">Reports <span class="nav-badge" id="sub-badge-reports"></span></button>
@@ -453,17 +453,17 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
           <button class="minibtn" id="sub-tab-jobseekers" onclick="switchSubTab('jobseekers')">Job seekers <span class="nav-badge" id="sub-badge-jobseekers"></span></button>
         </div>
         <div id="sub-list"></div>
-      </div>
+      </section>
 
       <!-- AI ASSISTANT -->
-      <div class="section section-review" id="sec-ai">
+      <section class="section section-review" id="sec-ai">
         <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>AI Assistant</h2></div>
         <div class="muted" style="margin-bottom:14px">Gemini helps read posters, spot scams, tidy scraped vacancies and draft posts. It only suggests — you decide what is published or removed.</div>
         <div id="ai-assistant-body"></div>
-      </div>
+      </section>
 
       <!-- CV BOX -->
-      <div class="section section-review" id="sec-poolcandidates">
+      <section class="section section-review" id="sec-poolcandidates">
         <div class="section-head"><button class="section-close-btn" onclick="goHome()" aria-label="Back to dashboard" title="Back to dashboard">×</button><h2>CV Box</h2></div>
         <div class="muted" style="margin-bottom:14px">CV uploads land here as <strong>Pending</strong>. Review the CV and position, then Approve to publish the candidate in the public CV Box. Recruiters request paid downloads through SA Recruiters.</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -489,10 +489,10 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
           <span class="muted" style="display:block;margin-top:6px;font-size:12.5px">Same as above, for employer/company logos. Safe to run more than once.</span>
           <div id="migrate-employer-logos-result" class="muted" style="margin-top:8px;font-size:12.5px;white-space:pre-wrap"></div>
         </div>
-      </div>
+      </section>
 
       <!-- SETTINGS -->
-      <div class="section section-settings" id="sec-settings">
+      <section class="section section-settings" id="sec-settings">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Settings</h2></div>
         <details class="banking-accordion">
           <summary>
@@ -508,10 +508,10 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
             <button class="btn" onclick="saveSocialLinksSettings()">Save social links</button>
           </div>
         </details>
-      </div>
+      </section>
 
       <!-- MEDIA -->
-      <div class="section section-content" id="sec-media">
+      <section class="section section-content" id="sec-media">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Media</h2><div class="spacer"></div><button class="minibtn" onclick="openTrackSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Upload track</button></div>
         <div class="card card-pad" style="margin-bottom:16px">
           <div class="t-label">Home YouTube video</div>
@@ -522,14 +522,14 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div class="muted" style="margin-bottom:14px">Upload an MP3 or add a Spotify link to feature as "Track of the Day" in the public app. MP3 audio is stored in Cloudflare R2; track details are saved in Supabase <code>daily_tracks</code>. The Supabase Storage bucket is not used by this upload flow. Set the date to control which day each track plays. The newest track for a given date is shown. <strong>Tracks are kept for 7 days</strong> and automatically deleted after one week.</div>
         <div id="track-setup-warn" class="card card-pad" style="margin-bottom:14px;display:none;border-color:var(--danger);color:var(--danger);font-size:13px;line-height:1.5"></div>
         <div id="track-list"></div>
-      </div>
+      </section>
 
       <!-- CONTENT -->
-      <div class="section section-content" id="sec-content">
+      <section class="section section-content" id="sec-content">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Content</h2><div class="spacer"></div><button class="minibtn" onclick="restoreDefaults()">Restore defaults</button></div>
         <div class="muted" style="margin-bottom:14px">Edit the FAQ, CV guides, interview tips, rights, learning hub and support articles that appear in the public app.</div>
         <div id="content-list"></div>
-            </div>
+            </section>
     </main>
   </div>
 </div>

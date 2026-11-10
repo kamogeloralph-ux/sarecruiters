@@ -1209,11 +1209,11 @@ function buildPostAJobPage() {
   const body = `
 <div class="trust">${trustTile('tag', 'Free to list', 'SA Recruiters never charges employers')}${trustTile('shield', 'Admin reviewed', 'Nothing goes live until approved')}${trustTile('users', 'Reach candidates', 'Across every South African province')}</div>
 <div class="card pj-card">
-<form id="pj-form" class="pj-form" novalidate>
-  <label>Company name<input id="pj-company" name="company_name" required></label>
-  <label>Contact person<input id="pj-contact" name="contact_person"></label>
-  <label>Work email<input id="pj-email" name="work_email" type="email" required></label>
-  <label>Phone number <span class="pj-optional">optional</span><input id="pj-phone" name="phone" type="tel"></label>
+<form id="pj-form" class="pj-form">
+  <label>Company name<input id="pj-company" name="company_name" required maxlength="120" autocomplete="organization"></label>
+  <label>Contact person<input id="pj-contact" name="contact_person" maxlength="120" autocomplete="name"></label>
+  <label>Work email<input id="pj-email" name="work_email" type="email" required maxlength="254" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false"></label>
+  <label>Phone number <span class="pj-optional">optional</span><input id="pj-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" pattern="\+?[0-9 \(\)\-]{10,20}" title="Enter a phone number, e.g. 082 123 4567 or +27 82 123 4567"></label>
   <label>Industry <span class="pj-optional">optional</span><input id="pj-industry" name="industry"></label>
   <label>Positions to fill <span class="pj-optional">optional</span>
     <select id="pj-positions" name="positions_to_fill">
@@ -1226,7 +1226,7 @@ function buildPostAJobPage() {
     ${roleTypes.map((r) => `<label class="pj-role-check"><input type="checkbox" name="role_types" value="${escapeHtml(r)}"> ${escapeHtml(r)}</label>`).join('')}
   </fieldset>
   <label>Additional details <span class="pj-optional">optional</span><textarea id="pj-details" name="additional_details" rows="4"></textarea></label>
-  <label>Website <span class="pj-optional">optional</span><input id="pj-website" name="website"></label>
+  <label>Website <span class="pj-optional">optional</span><input id="pj-website" name="website" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="www.yourcompany.co.za"></label>
   <div id="pj-turnstile" class="cf-turnstile" data-sitekey="${TURNSTILE_SITE_KEY}"></div>
   <button type="submit" id="pj-submit">Submit for admin review</button>
   <p id="pj-status" role="status" aria-live="polite"></p>
