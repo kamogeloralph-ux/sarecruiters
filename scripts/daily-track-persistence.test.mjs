@@ -52,9 +52,9 @@ test('daily-track uploads remain admin-authenticated and bounded by the Worker',
 });
 
 test('Ikhaya house ad keeps the supplied banner ratio and seed targeting is limited to directory top slots', () => {
-  assert.match(appData, /var isIkhayaAd = \/ikhaya\/i\.test\(adIdentity\)/);
-  assert.match(appData, /var imageWidth = isIkhayaAd \? 1640 : 1200/);
-  assert.match(appData, /var imageHeight = isIkhayaAd \? 624 : 400/);
+  // Ikhaya now plays as an animated HTML5 creative whose size is carried in its file name.
+  assert.match(appData, /export function houseAdHtml5Size/);
+  assert.ok(existsSync(new URL('../assets/house-ads/ikhaya-events-legacy-1640x624.html', import.meta.url)), 'the animated 1640x624 Ikhaya creative should be committed');
   assert.match(css, /\.house-ad-creative--ikhaya\{aspect-ratio:1640 \/ 624/);
   assert.match(adSeed, /ARRAY\['agencies',\s*'employers',\s*'candidates',\s*'posters'\]::text\[\]/);
   assert.match(adSeed, /'Ikhaya Events & Legacy'/);
