@@ -93,6 +93,29 @@ function randomKey() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 __name(randomKey, "randomKey");
+// ---- Free business advertising applications (/advertise/) ----
+const AD_REQUEST_MAX_FILE_BYTES = 5 * 1024 * 1024;
+const AD_REQUEST_MAX_EMAIL_ATTACH_BYTES = 12 * 1024 * 1024;
+function detectAdFileType(buffer) {
+  const b = new Uint8Array(buffer, 0, Math.min(12, buffer.byteLength));
+  if (b.length >= 4 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return { ext: "png", type: "image/png" };
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return { ext: "jpg", type: "image/jpeg" };
+  if (b.length >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return { ext: "webp", type: "image/webp" };
+  if (b.length >= 4 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return { ext: "pdf", type: "application/pdf" };
+  return null;
+}
+__name(detectAdFileType, "detectAdFileType");
+function bufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+__name(bufferToBase64, "bufferToBase64");
+function safeFileStem(value) {
+  return String(value || "file").normalize("NFKD").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "file";
+}
+__name(safeFileStem, "safeFileStem");
 // Best-effort per-user hourly upload cap (Cache API; per Cloudflare location). Fails open.
 async function posterUploadAllowed(userId, limit = 10) {
   try {
@@ -268,7 +291,9 @@ async function sendNotificationEmail(env, payload) {
         from,
         to: [payload.to_email],
         subject: payload.email_subject || "SA Recruiters notification",
-        html: notificationEmailHtml(payload)
+        html: notificationEmailHtml(payload),
+        ...(payload.reply_to ? { reply_to: payload.reply_to } : {}),
+        ...(Array.isArray(payload.attachments) && payload.attachments.length ? { attachments: payload.attachments } : {})
       })
     });
     if (!res.ok) {
@@ -1639,7 +1664,7 @@ async function postersResponse(request, env, origin) {
 __name(postersResponse, "postersResponse");
 async function houseAdsResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/house-ads?schema=v1", request.url).toString(), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/house-ads?schema=v2", request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) {
     const headers = new Headers(cached.headers);
@@ -1650,7 +1675,7 @@ async function houseAdsResponse(request, env, ctx, origin) {
   let ads = [];
   try {
     const result = await supabaseGet(env, "house_ads", {
-      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order",
+      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format",
       is_active: "eq.true",
       starts_at: `lte.${now}`,
       or: `(ends_at.is.null,ends_at.gt.${now})`,
@@ -2161,6 +2186,7 @@ var worker_default = {
           poolCandidates: "pool_candidates",
           posters: "employer_posters",
           houseAds: "house_ads",
+          adRequests: "ad_requests",
           tracks: "daily_tracks"
         };
         const readTable = async (table) => {
@@ -2261,6 +2287,54 @@ var worker_default = {
         return json({ ok: true }, 200, origin);
       }
 
+      // Ad requests (free advertising applications): status / notes / delete / file download.
+      const adReqMatch = path.match(/^\/api\/admin\/ad-requests\/([0-9a-fA-F-]{36})$/);
+      const adReqFileMatch = path.match(/^\/api\/admin\/ad-requests\/([0-9a-fA-F-]{36})\/file\/(\d{1,2})$/);
+      if ((adReqMatch && (request.method === "POST" || request.method === "DELETE")) || (adReqFileMatch && request.method === "GET")) {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
+        const reqId = (adReqMatch || adReqFileMatch)[1];
+        const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json", Prefer: "return=representation" };
+        const rowUrl = `${env.SUPABASE_URL}/rest/v1/ad_requests?id=eq.${encodeURIComponent(reqId)}`;
+        if (adReqFileMatch) {
+          const rowRes = await fetch(`${rowUrl}&select=files`, { headers });
+          const rows = rowRes.ok ? await rowRes.json().catch(() => []) : [];
+          const file = rows[0] && Array.isArray(rows[0].files) ? rows[0].files[Number(adReqFileMatch[2])] : null;
+          if (!file || !file.key || !env.MEDIA_BUCKET) return json({ error: "File not found." }, 404, origin);
+          const object = await env.MEDIA_BUCKET.get(file.key);
+          if (!object) return json({ error: "File not found." }, 404, origin);
+          return new Response(object.body, { status: 200, headers: {
+            "Content-Type": file.type || "application/octet-stream",
+            "Content-Disposition": `attachment; filename="${String(file.name || "file").replace(/[^A-Za-z0-9._-]/g, "_")}"`,
+            "Cache-Control": "private, no-store",
+            ...corsHeaders(origin)
+          } });
+        }
+        if (request.method === "DELETE") {
+          const rowRes = await fetch(`${rowUrl}&select=files`, { headers });
+          const rows = rowRes.ok ? await rowRes.json().catch(() => []) : [];
+          const delRes = await fetch(`${rowUrl}&select=id`, { method: "DELETE", headers });
+          if (!delRes.ok) return json({ error: "Could not delete the request." }, 502, origin);
+          if (env.MEDIA_BUCKET && rows[0] && Array.isArray(rows[0].files)) {
+            for (const f of rows[0].files) { if (f && f.key) { try { await env.MEDIA_BUCKET.delete(f.key); } catch (_) {} } }
+          }
+          return json({ ok: true }, 200, origin);
+        }
+        const body = await request.json().catch(() => ({}));
+        const patch = { updated_at: new Date().toISOString() };
+        if (body.status !== void 0) {
+          if (!["new", "in_progress", "published", "rejected"].includes(body.status)) return json({ error: "Invalid status." }, 400, origin);
+          patch.status = body.status;
+        }
+        if (body.admin_notes !== void 0) patch.admin_notes = String(body.admin_notes ?? "").slice(0, 2000);
+        if (Object.keys(patch).length < 2) return json({ error: "Nothing to update." }, 400, origin);
+        const res = await fetch(`${rowUrl}&select=id`, { method: "PATCH", headers, body: JSON.stringify(patch) });
+        if (!res.ok) return json({ error: "Could not update the request." }, 502, origin);
+        const affected = await res.json().catch(() => []);
+        if (Array.isArray(affected) && !affected.length) return json({ error: "That request no longer exists." }, 404, origin);
+        return json({ ok: true }, 200, origin);
+      }
       // Job enquiries: edit / change status / delete through the service role so
       // the admin console never depends on browser-side RLS policies.
       const adminEnquiryMatch = path.match(/^\/api\/admin\/job-enquiries\/([A-Za-z0-9_-]{1,64})$/);
@@ -2565,6 +2639,101 @@ var worker_default = {
           notification_body: "Type: " + (body.type || "-") + "\nAgency: " + (body.agency_name || "-") + "\nDetails: " + (body.details || "-")
         });
         return json({ ok: true, email }, 200, origin);
+      }
+      // ---------- "Advertise with us" application (free business advertising) ----------
+      // Multipart form from the static /advertise/ page: business details plus a
+      // logo and/or business card. Files go to R2 under unguessable keys, the row
+      // goes to ad_requests (service role; table has no browser access) and a
+      // Resend email with the files attached goes to the admin.
+      if (path === "/api/submit/ad-request" && request.method === "POST") {
+        const ts = await verifyTurnstile(request, env, origin, true);
+        if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
+        const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!env.MEDIA_BUCKET || !serviceKey || !env.SUPABASE_URL) {
+          return json({ error: "Applications are temporarily unavailable. Please WhatsApp 071 553 1005." }, 503, origin);
+        }
+        let form;
+        try { form = await request.formData(); } catch (e) { return json({ error: "Could not read the form. Please try again." }, 400, origin); }
+        const clean = (value, max) => String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+        if (clean(form.get("company_site"), 50)) return json({ ok: true }, 200, origin); // honeypot: bots fill this in
+        const businessName = clean(form.get("business_name"), 200);
+        const contactPerson = clean(form.get("contact_person"), 200);
+        const phone = clean(form.get("phone"), 60);
+        const emailAddr = clean(form.get("email"), 200);
+        let website = clean(form.get("website"), 300);
+        const category = clean(form.get("category"), 120);
+        const province = clean(form.get("province"), 80);
+        const adMessage = String(form.get("ad_message") ?? "").replace(/\r/g, "").trim().slice(0, 1500);
+        if (!businessName) return json({ error: "Please add your business name." }, 400, origin);
+        if (!contactPerson) return json({ error: "Please add a contact person." }, 400, origin);
+        if (!phone) return json({ error: "Please add a phone or WhatsApp number." }, 400, origin);
+        if (emailAddr && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddr)) return json({ error: "That email address does not look right." }, 400, origin);
+        if (form.get("consent") !== "yes") return json({ error: "Please tick the box to confirm we may contact you and use your logo." }, 400, origin);
+        if (website && !/^https?:\/\//i.test(website)) website = "https://" + website;
+        const picked = [];
+        for (const [kind, limit] of [["logo", 1], ["card", 2], ["other", 2]]) {
+          const list = form.getAll(kind).filter((f) => f && typeof f === "object" && typeof f.arrayBuffer === "function" && f.size > 0).slice(0, limit);
+          for (const file of list) picked.push({ kind, file });
+        }
+        if (!picked.some((x) => x.kind === "logo" || x.kind === "card")) {
+          return json({ error: "Please upload your logo or your business card." }, 400, origin);
+        }
+        const stored = [];
+        const uploadedKeys = [];
+        const attachments = [];
+        let attachBytes = 0;
+        try {
+          for (const { kind, file } of picked) {
+            if (file.size > AD_REQUEST_MAX_FILE_BYTES) return json({ error: "Each file must be under 5MB." }, 413, origin);
+            const bytes = await file.arrayBuffer();
+            const detected = detectAdFileType(bytes);
+            if (!detected) return json({ error: "Files must be PNG, JPG, WebP or PDF." }, 400, origin);
+            const key = `ad-requests/${crypto.randomUUID()}.${detected.ext}`;
+            await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: detected.type } });
+            uploadedKeys.push(key);
+            const niceName = `${safeFileStem(businessName)}-${kind}-${stored.length + 1}.${detected.ext}`;
+            stored.push({ key, name: niceName, type: detected.type, size: bytes.byteLength, kind });
+            if (attachBytes + bytes.byteLength <= AD_REQUEST_MAX_EMAIL_ATTACH_BYTES) {
+              attachBytes += bytes.byteLength;
+              attachments.push({ filename: niceName, content: bufferToBase64(bytes) });
+            }
+          }
+          const insertRes = await fetch(`${env.SUPABASE_URL}/rest/v1/ad_requests`, {
+            method: "POST",
+            headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json", Prefer: "return=representation" },
+            body: JSON.stringify({ business_name: businessName, contact_person: contactPerson, phone, email: emailAddr, website, category, province, ad_message: adMessage, files: stored, status: "new" })
+          });
+          if (!insertRes.ok) {
+            const detail = await insertRes.text().catch(() => "");
+            console.error("ad request insert failed", insertRes.status, detail.slice(0, 300));
+            throw new Error("insert failed");
+          }
+          const rows = await insertRes.json().catch(() => []);
+          const requestId = Array.isArray(rows) && rows[0] ? rows[0].id : null;
+          const fileLines = stored.length ? stored.map((f) => "- " + f.kind + ": " + publicUrlFor(env, f.key)).join("\n") : "-";
+          const email = await sendNotificationEmail(env, {
+            to_email: env.ADMIN_NOTIFY_EMAIL || "sarecruiters.directory@gmail.com",
+            email_subject: "SA Recruiters | New FREE advertising application — " + businessName,
+            notification_type: "ADVERTISING APPLICATION",
+            notification_title: "New free advertising application",
+            notification_intro: "A business applied for free advertising. Their logo and business card are attached to this email and saved in the admin page (Submissions → Ad requests).",
+            notification_body: "Business: " + businessName +
+              "\nContact person: " + contactPerson +
+              "\nPhone / WhatsApp: " + phone +
+              "\nEmail: " + (emailAddr || "-") +
+              "\nWebsite: " + (website || "-") +
+              "\nCategory: " + (category || "-") +
+              "\nProvince: " + (province || "-") +
+              "\nWhat the ad should say: " + (adMessage || "-") +
+              "\n\nFiles:\n" + fileLines,
+            reply_to: emailAddr || void 0,
+            attachments
+          });
+          return json({ ok: true, id: requestId, email: { sent: !!email.sent } }, 200, origin);
+        } catch (e) {
+          for (const key of uploadedKeys) { try { await env.MEDIA_BUCKET.delete(key); } catch (_) {} }
+          return json({ error: "Could not send your application. Please try again or WhatsApp 071 553 1005." }, 502, origin);
+        }
       }
       // ---------- "Post a job" enquiry (public, ALWAYS open — see 20260923_add_job_post_enquiries.sql) ----------
       // Deliberately separate from /api/submit/employer-register: this is a
