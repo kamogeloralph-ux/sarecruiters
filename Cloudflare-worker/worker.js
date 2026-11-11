@@ -1,5 +1,5 @@
-import * as Sentry from "@sentry/cloudflare";
 import { runWatchdog } from "./watchdog.js";
+import * as Sentry from "@sentry/cloudflare";
 import { candidateCvKey, evaluateCvScan, mergePositions, scanCvWithGemini } from "./cv-scan.js";
 import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
 import { putCached } from "./ai.js";
