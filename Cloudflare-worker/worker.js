@@ -1664,7 +1664,7 @@ async function postersResponse(request, env, origin) {
 __name(postersResponse, "postersResponse");
 async function houseAdsResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/house-ads?schema=v2", request.url).toString(), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/house-ads?schema=v3", request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) {
     const headers = new Headers(cached.headers);
@@ -1675,7 +1675,7 @@ async function houseAdsResponse(request, env, ctx, origin) {
   let ads = [];
   try {
     const result = await supabaseGet(env, "house_ads", {
-      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format",
+      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text",
       is_active: "eq.true",
       starts_at: `lte.${now}`,
       or: `(ends_at.is.null,ends_at.gt.${now})`,
