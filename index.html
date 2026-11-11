@@ -3,6 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Sentry browser monitoring (project: sa-recruiters-web). Loader script: lazy-loads the SDK
+     and buffers errors that happen before it arrives. -->
+<script>
+window.sentryOnLoad = function () {
+  Sentry.init({
+    environment: location.hostname === "sa-recruiters.co.za" ? "production" : "development",
+    tracesSampleRate: 0.1,
+    sendDefaultPii: false,
+    ignoreErrors: ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications."]
+  });
+};
+</script>
+<script src="https://js-de.sentry-cdn.com/45eee7b4d8d317b5eb0f99e25ba9c188.min.js" crossorigin="anonymous"></script>
+
 <!-- In-app browsers (Facebook, Instagram, TikTok, Android WebViews) often report a large, bogus
      safe-area-inset-bottom, which stretched the bottom nav. Flag them so CSS can ignore the inset. -->
 <script>
