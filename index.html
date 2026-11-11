@@ -389,6 +389,7 @@
 
       <div class="pgroup-label">Your listing</div>
       <div class="pgrouped-list">
+        <button class="profile-menu-item" data-ripple onclick="openCandidateProfileHub()"><span class="mi-icon tile-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4 21c.8-4.2 3.4-6.5 8-6.5s7.2 2.3 8 6.5M18 3v4M16 5h4"/></svg></span><span>My career profile<span class="mi-sub">CV Builder, CV Box, screening and requests</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
         <button class="profile-menu-item" data-ripple onclick="openMyCvBoxProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>CV Box upload<span class="mi-sub" id="account-pool-status">Your CV in the CV Box</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
       <button class="account-help-action" type="button" data-ripple onclick="openJobSeekerSheet()"><span class="account-help-icon" aria-hidden="true">?</span><span><strong>Need help finding work?</strong><small>Send a private request and our team will point you toward suitable opportunities.</small></span><span class="account-help-arrow" aria-hidden="true">›</span></button>
@@ -1442,6 +1443,20 @@
   </div>
 </div>
 
+<div class="sheet-scrim" id="candidate-profile-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('candidate-profile-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>My Career Profile</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px">Your private CV, public CV Box listing, screening status and job-seeker requests in one place.</p>
+    <div id="candidate-profile-content" aria-live="polite"><p>Loading your profile…</p></div>
+    <div class="cvb-action-row" style="margin-top:14px">
+      <button class="cvb-action-btn cvb-action-primary" type="button" onclick="closeSheet('candidate-profile-overlay');openCvBuilderSheet()">Build / view CV</button>
+      <button class="cvb-action-btn" type="button" onclick="closeSheet('candidate-profile-overlay');openMyCvBoxProfile()">Manage CV Box</button>
+      <button class="cvb-action-btn" type="button" onclick="closeSheet('candidate-profile-overlay');openJobSeekerSheet()">Send work request</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ CV BUILDER SHEET (AI CV Revamp) ============ -->
 <div class="sheet-scrim" id="cv-builder-overlay">
   <div class="sheet cvb-sheet">
@@ -1537,7 +1552,7 @@
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=bf4dc8ac60"></script>
+<script type="module" src="app.bundle.min.js?v=97cfa4dd78"></script>
 <script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
 <script src="app-alerts.js?v=al-4" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

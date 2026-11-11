@@ -739,7 +739,60 @@ export async function submitJobPostEnquiry() {
 // Turnstile and consent server-side and stores a PRIVATE request for the admin
 // (public_submit_job_seeker(), 20261014_job_seeker_requests.sql). It never
 // creates a public CV Box upload.
-export function openJobSeekerSheet() {
+async function loadMyCareerData() {
+  if (!saAuthUser || !supabaseClient) return { pool: null, request: null, cv: null, poolError: null, requestError: null, cvError: null };
+  var results = await Promise.all([
+    supabaseClient.from('pool_candidates').select('id,full_name,contact_phone,contact_email,position,location,status,experience_years,availability,qualification,created_at').eq('user_id', saAuthUser.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    supabaseClient.from('job_seeker_requests').select('id,full_name,phone,email,location,looking_for,qualification,availability,status,created_at').eq('user_id', saAuthUser.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    supabaseClient.from('candidate_cv_profiles').select('generated_cv,target_role,updated_at').eq('user_id', saAuthUser.id).maybeSingle()
+  ]);
+  return {
+    pool: results[0].error ? null : results[0].data,
+    request: results[1].error ? null : results[1].data,
+    cv: results[2].error ? null : results[2].data,
+    poolError: results[0].error || null,
+    requestError: results[1].error || null,
+    cvError: results[2].error || null
+  };
+}
+export async function openCandidateProfileHub() {
+  if (!saAuthUser) { showToast('Sign in to view your career profile.'); return; }
+  var overlay = document.getElementById('candidate-profile-overlay');
+  var content = document.getElementById('candidate-profile-content');
+  if (overlay) overlay.classList.add('open');
+  if (!content) return;
+  content.innerHTML = '<p>Loading your profile…</p>';
+  try {
+    var data = await loadMyCareerData();
+    var pool = data.pool, request = data.request, cv = data.cv;
+    var cvBoxStatus = pool ? String(pool.status || 'pending').replace(/_/g, ' ') : '';
+    var reviewCopy = data.poolError
+      ? 'Could not load your CV Box status. Please try again.'
+      : pool
+        ? ('CV Box review: ' + escapeHtml(cvBoxStatus) + (pool.position ? ' · Roles: ' + escapeHtml(pool.position) : ''))
+        : 'No linked CV Box profile. Add one to let employers discover you.';
+    var requestCopy = data.requestError
+      ? 'Could not load your request status. Please try again.'
+      : request
+        ? ('Latest request: ' + escapeHtml(request.status || 'new') + (request.looking_for ? ' · ' + escapeHtml(request.looking_for) : ''))
+        : 'No job-seeker request submitted yet.';
+    var generatedCopy = data.cvError
+      ? 'Saved CV status unavailable. Apply the candidate-profile migration or try again.'
+      : cv && cv.generated_cv
+        ? ('Saved CV' + (cv.target_role ? ' · ' + escapeHtml(cv.target_role) : '') + (cv.updated_at ? ' · updated ' + escapeHtml(new Date(cv.updated_at).toLocaleDateString()) : ''))
+        : 'No generated CV saved yet.';
+    content.innerHTML = '<div class="pgrouped-list" aria-label="Career profile status">' +
+      '<div class="profile-menu-item"><span class="mi-icon tile-blue">CV</span><span>CV Box profile<span class="mi-sub">' + reviewCopy + '</span></span></div>' +
+      '<div class="profile-menu-item"><span class="mi-icon tile-mint">AI</span><span>CV Builder<span class="mi-sub">' + generatedCopy + '</span></span></div>' +
+      '<div class="profile-menu-item"><span class="mi-icon tile-teal">✓</span><span>CV scan &amp; screening<span class="mi-sub">' + (data.poolError ? 'Could not load screening status. Please try again.' : pool ? 'Screening status is ' + escapeHtml(cvBoxStatus) + '. The uploaded CV is checked during CV Box review.' : 'Upload a CV to start the CV Box review process.') + '</span></span></div>' +
+      '<div class="profile-menu-item"><span class="mi-icon tile-gray">↗</span><span>Job-seeker request<span class="mi-sub">' + requestCopy + '</span></span></div>' +
+      '</div>';
+  } catch (e) {
+    console.error('candidate profile load', e);
+    content.innerHTML = '<p>We could not load your profile right now. Your existing CV Box and request records have not been changed.</p>';
+  }
+}
+export async function openJobSeekerSheet() {
   ['js-name','js-phone','js-email','js-location','js-looking','js-qualification','js-message','js-cv'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
@@ -754,6 +807,20 @@ export function openJobSeekerSheet() {
   if (waLink) waLink.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent("Hi, I'm looking for work and would like help finding opportunities.");
   var btn = document.getElementById('job-seeker-submit');
   if (btn) { btn.disabled = false; btn.textContent = 'Send my request'; }
+  if (saAuthUser) {
+    try {
+      var own = await loadMyCareerData();
+      var p = own.pool || {}, r = own.request || {};
+      function setIfBlank(id, value) { var el = document.getElementById(id); if (el && !el.value && value) el.value = value; }
+      setIfBlank('js-name', p.full_name || r.full_name || (saAuthUser.user_metadata && (saAuthUser.user_metadata.full_name || saAuthUser.user_metadata.name)));
+      setIfBlank('js-phone', p.contact_phone || r.phone);
+      setIfBlank('js-email', p.contact_email || r.email || saAuthUser.email);
+      setIfBlank('js-location', p.location || r.location);
+      setIfBlank('js-looking', p.position || r.looking_for || (own.cv && own.cv.target_role));
+      setIfBlank('js-qualification', p.qualification || r.qualification);
+      setIfBlank('js-availability', p.availability || r.availability);
+    } catch (e) { console.warn('candidate request prefill', e); }
+  }
   document.getElementById('job-seeker-overlay').classList.add('open');
   renderTurnstile('job-seeker-turnstile', 'job-seeker-overlay');
 }
@@ -1163,6 +1230,20 @@ export async function openMyCvBoxProfile() {
     var meta = saAuthUser.user_metadata || {};
     if (nameEl && !nameEl.value) nameEl.value = meta.full_name || meta.name || '';
     if (emailEl && !emailEl.value) emailEl.value = saAuthUser.email || '';
+    try {
+      var own = await loadMyCareerData();
+      var request = own.request || {};
+      var generatedCv = own.cv && own.cv.generated_cv || {};
+      var education = Array.isArray(generatedCv.education) ? generatedCv.education : [];
+      var poolField = function (id, value) { var field = document.getElementById(id); if (field && !field.value && value) field.value = value; };
+      poolField('pool-name', request.full_name || generatedCv.fullName);
+      poolField('pool-phone', request.phone);
+      poolField('pool-email', request.email);
+      poolField('pool-location', request.location);
+      poolField('pool-position', request.looking_for || (own.cv && own.cv.target_role) || generatedCv.jobTitle);
+      poolField('pool-qualification', request.qualification || (education[0] && education[0].qualification));
+      poolField('pool-availability', request.availability);
+    } catch (e) { console.warn('candidate profile prefill', e); }
     showToast('No linked profile yet — already registered before signing in? Enter the same email and phone you used, and it\u2019ll link automatically.');
   }
 }
@@ -1492,6 +1573,7 @@ Object.assign(window, {
   submitJobPostEnquiry,
   openJobSeekerSheet,
   submitJobSeekerRequest,
+  openCandidateProfileHub,
   getPoolCandidateCount,
   goPool,
   openPoolCandidateCard,

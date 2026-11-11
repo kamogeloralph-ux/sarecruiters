@@ -982,7 +982,7 @@ export function showCvBuilderResultView() {
   document.getElementById('cvbuilder-form-view').style.display = 'none';
   document.getElementById('cvbuilder-result-view').style.display = '';
 }
-export function openCvBuilderSheet() {
+export async function openCvBuilderSheet() {
   if (!saAuthUser) {
     showToast('Please sign in to use the CV Builder.');
     return;
@@ -996,6 +996,18 @@ export function openCvBuilderSheet() {
   }
   document.getElementById('cv-builder-overlay').classList.add('open');
   renderTurnstile('cvbuilder-turnstile', 'cv-builder-overlay');
+  try {
+    var saved = await supabaseClient.from('candidate_cv_profiles').select('generated_cv,target_role').eq('user_id', saAuthUser.id).maybeSingle();
+    if (!saved.error && saved.data && saved.data.generated_cv && typeof saved.data.generated_cv === 'object') {
+      window.__cvBuilderLast = saved.data.generated_cv;
+      var savedName = document.getElementById('cvb-name');
+      var savedRole = document.getElementById('cvb-role');
+      if (savedName && saved.data.generated_cv.fullName) savedName.value = saved.data.generated_cv.fullName;
+      if (savedRole && saved.data.target_role) savedRole.value = saved.data.target_role;
+      renderCvBuilderResult(saved.data.generated_cv);
+      showCvBuilderResultView();
+    }
+  } catch (e) { console.warn('candidate CV restore', e); }
 }
 export function cvBuilderEditAgain() {
   showCvBuilderFormView();
@@ -1042,6 +1054,21 @@ export async function generateCv() {
   window.__cvBuilderLast = result.data.cv;
   renderCvBuilderResult(result.data.cv);
   showCvBuilderResultView();
+  try {
+    var savedProfile = await supabaseClient.from('candidate_cv_profiles').upsert({
+      user_id: saAuthUser.id,
+      generated_cv: result.data.cv,
+      target_role: targetRole.slice(0, 160),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+    if (savedProfile.error) {
+      console.warn('candidate CV save (apply migration 20261110_candidate_cv_profiles.sql)', savedProfile.error);
+      showToast('CV created. Apply the candidate-profile database migration to save it across devices.');
+    }
+  } catch (e) {
+    console.warn('candidate CV save', e);
+    showToast('CV created, but could not be saved to your profile yet.');
+  }
 }
 export function renderCvBuilderResult(cv) {
   var html = '<div class="cvb-header"><div class="cvb-name">' + escapeHtml(cv.fullName || '') + '</div>' +

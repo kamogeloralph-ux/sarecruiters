@@ -351,7 +351,7 @@ export function renderHomeFeaturedVacancy(vacancies) {
     closing = isNaN(closeDate.getTime()) ? String(featured.closing_date) : new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(closeDate);
   }
   var salary = String(featured.salary || '');
-  slot.innerHTML = '<a class="home-featured-vacancy" href="' + escapeHtml(applyUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Apply for ' + escapeHtml(featured.title) + ' at ' + escapeHtml(company) + ' on ' + escapeHtml(applyHost) + '">' +
+  slot.innerHTML = '<a class="home-featured-vacancy" href="' + escapeHtml(applyUrl) + '" data-vacancy-id="' + escapeHtml(featured.id) + '" onclick="trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.dataset.vacancyId)" target="_blank" rel="noopener noreferrer" aria-label="Apply for ' + escapeHtml(featured.title) + ' at ' + escapeHtml(company) + ' on ' + escapeHtml(applyHost) + '">' +
     '<div class="hf-vacancy-brand"><img class="hf-vacancy-logo" src="icons/v2-icon-512.png" alt="SA Recruiters app logo" width="38" height="38" decoding="async"><span><strong>SA RECRUITERS</strong><small>Connecting South Africa’s recruitment community</small></span><span class="hf-vacancy-badge">FEATURED ROLE</span></div>' +
     '<div class="hf-vacancy-rule"></div><div class="hf-vacancy-kicker"><span class="hf-vacancy-live-dot"></span> NOW HIRING</div>' +
     '<h3 class="hf-vacancy-title">' + escapeHtml(featured.title) + '</h3><p class="hf-vacancy-company">' + escapeHtml(company) + '</p>' +
