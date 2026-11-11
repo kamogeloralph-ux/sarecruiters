@@ -172,7 +172,7 @@ export var managerTokenKind = null;          // 'agency' | 'employer' (for the s
 export var managerStatusWatchdog = null;     // safety timeout that flips loading -> error
 // Resolved manager-link identities are cached for the session so repeated
 // renders don't re-hit the verify endpoint.
-export var managerSession = { agencyId: null, employerId: null };
+export var managerSession = { agencyId: null, employerId: null, agencyAnalytics: null, employerAnalytics: null };
 
 // SECURITY: verify a manager token SERVER-SIDE via the Cloudflare Worker,
 // which calls the verify_manager_token Postgres RPC. Tokens are no longer
@@ -193,7 +193,11 @@ export async function verifyManagerTokenServer(kind, token) {
     if (!res.ok) return null;
     var data = await res.json();
     if (!data || !data.valid) return null;
-    return kind === 'employer' ? data.employer : data.agency;
+    var record = kind === 'employer' ? data.employer : data.agency;
+    if (!record) return null;
+    return Object.assign({}, record, {
+      vacancy_analytics: Array.isArray(data.vacancy_analytics) ? data.vacancy_analytics : null
+    });
   } catch (e) {
     return null;
   }
@@ -289,6 +293,7 @@ export async function enterManagerMode(token) {
   managerSession.agencyToken = token;
   managerSession.agencyName = record.name;
   managerSession.agencyLocation = record.location;
+  managerSession.agencyAnalytics = Array.isArray(record.vacancy_analytics) ? record.vacancy_analytics : null;
   managerTokenRetries = 0;
   set_managerPendingToken( null);
   managerTokenKind = null;
@@ -320,6 +325,7 @@ export function exitManagerMode() {
   set_managerPendingToken( null);
   managerSession.agencyId = null;
   managerSession.agencyToken = null;
+  managerSession.agencyAnalytics = null;
   // Clean URL
   if (window.history && window.history.replaceState) {
     var clean = window.location.origin + window.location.pathname;
@@ -362,6 +368,7 @@ export function renderManagerMode() {
     vacancies.forEach(function(v) {
       vHtml += '<div class="manager-item manager-item-compact">' +
         '<div class="manager-item-title">' + escapeHtml(v.title || '') + '</div>' +
+        managerVacancyMetricsMarkup(v.id, managerSession.agencyAnalytics) +
       '</div>';
     });
   } else {
@@ -369,6 +376,22 @@ export function renderManagerMode() {
   }
   document.getElementById('manager-vacancy-list').innerHTML = vHtml;
 }
+
+export function managerVacancyMetricsMarkup(vacancyId, analytics) {
+  if (!Array.isArray(analytics)) {
+    return '<div class="manager-metrics-unavailable">Activity totals are temporarily unavailable.</div>';
+  }
+  var row = analytics.find(function(item) { return String(item.vacancy_id) === String(vacancyId); }) || {};
+  var clicks = Math.max(0, Math.floor(Number(row.apply_clicks) || 0));
+  var applications = Math.max(0, Math.floor(Number(row.self_reported_applications) || 0));
+  return '<div class="manager-metrics" role="group" aria-label="Tracked activity in the last 30 days">' +
+    '<div class="manager-metrics-period">Last 30 days</div>' +
+    '<div class="manager-metrics-counts"><span><strong>' + clicks.toLocaleString('en-ZA') + '</strong> apply-link clicks</span>' +
+    '<span><strong>' + applications.toLocaleString('en-ZA') + '</strong> self-reported applications</span></div>' +
+    '<div class="manager-metrics-note">Application reports are voluntary and not independently verified.</div>' +
+  '</div>';
+}
+
 // Small profile card shown at the top of the agency self-service screen so
 // the agency can confirm who they're managing — mirrors the admin card's
 // photo + contact details (read-only here; edits go through the admin).

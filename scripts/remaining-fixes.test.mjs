@@ -10,6 +10,9 @@ const worker = read('../Cloudflare-worker/worker.js');
 const refreshWorkflow = read('../.github/workflows/deploy-pages.yml');
 const ciWorkflow = read('../.github/workflows/test.yml');
 const wrangler = read('../Cloudflare-worker/wrangler.toml');
+const managerAgency = read('../app-manager.js');
+const managerEmployer = read('../app-manager-employer.js');
+const managerAnalyticsMigration = read('../supabase/migrations/20261111100000_manager_vacancy_analytics.sql');
 
 test('admin employer/branch/vacancy mutations report delete errors rather than success', () => {
   for (const entity of ['employer', 'branch', 'vacancy']) {
@@ -42,6 +45,24 @@ test('public CV/photo uploads are throttled and validate file signatures', () =>
   assert.match(worker, /publicUploadAllowed\(request\)/);
   assert.match(worker, /file contents do not match a supported CV type/);
   assert.match(worker, /photo contents are not a valid JPEG or PNG image/);
+});
+
+test('manager activity totals are token-scoped, aggregate-only, and server-role protected', () => {
+  assert.match(managerAnalyticsMigration, /a\.manage_token = p_token/);
+  assert.match(managerAnalyticsMigration, /e\.manage_token = p_token/);
+  assert.match(managerAnalyticsMigration, /vacancy_apply_click/);
+  assert.match(managerAnalyticsMigration, /vacancy_application_reported/);
+  assert.match(managerAnalyticsMigration, /now\(\) - interval '30 days'/);
+  assert.match(managerAnalyticsMigration, /REVOKE ALL[\s\S]*FROM PUBLIC, anon, authenticated/);
+  assert.match(managerAnalyticsMigration, /GRANT EXECUTE[\s\S]*TO service_role/);
+  assert.doesNotMatch(managerAnalyticsMigration, /visitor_id|session_id|applicant.*email|phone/i);
+  assert.match(worker, /async function supabaseServiceRpc[\s\S]*?env\.SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(worker, /managerVacancyAnalytics\(env, String\(body\.token\), "agency"\)/);
+  assert.match(worker, /managerVacancyAnalytics\(env, String\(body\.token\), "employer"\)/);
+  assert.match(managerAgency, /Apply-link clicks|apply-link clicks/);
+  assert.match(managerAgency, /self-reported applications/);
+  assert.match(managerAgency, /Activity totals are temporarily unavailable/);
+  assert.match(managerEmployer, /managerVacancyMetricsMarkup\(v\.id, managerSession\.employerAnalytics\)/);
 });
 
 test('deploy workflow refreshes and validates the SEO snapshot before generation', () => {

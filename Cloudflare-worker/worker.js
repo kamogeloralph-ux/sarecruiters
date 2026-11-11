@@ -246,9 +246,10 @@ __name(readTurnstileFromBody, "readTurnstileFromBody");
 
 // ============================================================
 //  Supabase RPC proxy — calls a Postgres function with the anon key.
-//  The authorization logic (token checks, inserts) lives IN the database as
-//  SECURITY DEFINER functions (see supabase/migrations/20260918_lock_down_manager_tokens.sql),
-//  so the Worker never needs the service role and nothing sensitive is decided here.
+//  The authorization logic for these public flows lives IN the database as
+//  SECURITY DEFINER functions (see supabase/migrations/20260918_lock_down_manager_tokens.sql).
+//  This helper intentionally uses only the anon key; aggregate manager metrics
+//  use the separate service-role-only helper below.
 // ============================================================
 async function supabaseRpc(env, fnName, args) {
   const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
@@ -275,6 +276,58 @@ async function supabaseRpc(env, fnName, args) {
   return body;
 }
 __name(supabaseRpc, "supabaseRpc");
+
+// This separate path is reserved for aggregate manager analytics. Its SQL RPC
+// independently revalidates the manager token and is executable only by the
+// service_role; raw analytics rows and visitor identifiers never leave SQL.
+async function supabaseServiceRpc(env, fnName, args) {
+  const key = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("Supabase service-role key is unavailable");
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+    method: "POST",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(args)
+  });
+  const text = await res.text();
+  let body = text;
+  try { body = JSON.parse(text); } catch (e) {}
+  if (!res.ok) {
+    const err = new Error(`Service RPC ${fnName} failed (${res.status})`);
+    err.status = res.status;
+    err.detail = typeof body === "string" ? body : JSON.stringify(body);
+    throw err;
+  }
+  return body;
+}
+__name(supabaseServiceRpc, "supabaseServiceRpc");
+
+async function managerVacancyAnalytics(env, token, kind) {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  try {
+    const rows = await supabaseServiceRpc(env, "manager_vacancy_analytics", {
+      p_token: token,
+      p_kind: kind
+    });
+    if (!Array.isArray(rows)) return null;
+    return rows.map((row) => {
+      const clicks = Number(row && row.apply_clicks);
+      const applications = Number(row && row.self_reported_applications);
+      return {
+        vacancy_id: String(row && row.vacancy_id || ""),
+        apply_clicks: Number.isFinite(clicks) ? Math.max(0, Math.floor(clicks)) : 0,
+        self_reported_applications: Number.isFinite(applications) ? Math.max(0, Math.floor(applications)) : 0
+      };
+    }).filter((row) => row.vacancy_id);
+  } catch (e) {
+    console.error("manager vacancy analytics unavailable", kind, e.status || "error");
+    return null;
+  }
+}
+__name(managerVacancyAnalytics, "managerVacancyAnalytics");
 
 // ============================================================
 //  Transactional email via Resend. RESEND_API_KEY is a wrangler secret; the
@@ -2563,7 +2616,8 @@ var worker_default = {
           const rows = await supabaseRpc(env, "verify_manager_token", { p_token: String(body.token) });
           const agency = Array.isArray(rows) ? rows[0] : null;
           if (!agency) return json({ valid: false }, 200, origin);
-          return json({ valid: true, agency }, 200, origin);
+          const vacancyAnalytics = await managerVacancyAnalytics(env, String(body.token), "agency");
+          return json({ valid: true, agency, vacancy_analytics: vacancyAnalytics }, 200, origin);
         } catch (e) {
           return json({ error: "Token check failed.", detail: e.detail }, 502, origin);
         }
@@ -2575,7 +2629,8 @@ var worker_default = {
           const rows = await supabaseRpc(env, "verify_employer_manager_token", { p_token: String(body.token) });
           const employer = Array.isArray(rows) ? rows[0] : null;
           if (!employer) return json({ valid: false }, 200, origin);
-          return json({ valid: true, employer }, 200, origin);
+          const vacancyAnalytics = await managerVacancyAnalytics(env, String(body.token), "employer");
+          return json({ valid: true, employer, vacancy_analytics: vacancyAnalytics }, 200, origin);
         } catch (e) {
           return json({ error: "Token check failed.", detail: e.detail }, 502, origin);
         }

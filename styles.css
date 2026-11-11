@@ -849,6 +849,11 @@ body:not(.app-ready) .sheet-scrim{z-index:100010}
 .manager-item{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .manager-item-compact{padding:10px 14px;margin-bottom:6px}
 .manager-item-compact .manager-item-title{margin-bottom:0}
+.manager-metrics{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--card-2);border:1px solid var(--border)}
+.manager-metrics-period{font-size:10px;font-weight:750;color:var(--text-2);margin-bottom:5px}
+.manager-metrics-counts{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:11px;color:var(--text-2)}
+.manager-metrics-counts strong{font-size:12px;color:var(--accent)}
+.manager-metrics-note,.manager-metrics-unavailable{font-size:10px;line-height:1.4;color:var(--text-2);margin-top:5px}
 .manager-item-title{font-size:13.5px;font-weight:600;margin-bottom:2px}
 .manager-item-sub{font-size:11.5px;color:var(--text-2);line-height:1.4}
 .manager-item-meta{font-size:11px;color:var(--accent);margin-top:4px;font-weight:600}

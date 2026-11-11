@@ -15,7 +15,7 @@ import { ICON_LINK, IS, filterAndRenderCached, verifiedBadge } from './app-cards
 import { openEmployerVacancySheet, openGeneralVacancySheet } from './app-forms.js';
 import { loadSocialLinks, openSuggestionSheet } from './app-sheets.js';
 import { openDeepLinkedSection, renderRestoredScreenContent, showToast } from './app-ui.js';
-import { enterManagerMode, isManagerStatusError, managerSession, managerStatusWatchdog, set_managerStatusWatchdog, set_managerTokenKind, showManagerStatus, verifyManagerTokenServer } from './app-manager.js';
+import { enterManagerMode, isManagerStatusError, managerSession, managerStatusWatchdog, managerVacancyMetricsMarkup, set_managerStatusWatchdog, set_managerTokenKind, showManagerStatus, verifyManagerTokenServer } from './app-manager.js';
 
 
 // ===== EMPLOYER MANAGER MODE (employer self-service, vacancies only) =====
@@ -62,6 +62,7 @@ export async function enterEmployerManagerMode(token) {
   managerSession.employerToken = token;
   managerSession.employerName = record.name;
   managerSession.employerLocation = record.location;
+  managerSession.employerAnalytics = Array.isArray(record.vacancy_analytics) ? record.vacancy_analytics : null;
   employerManagerTokenRetries = 0;
   set_employerManagerPendingToken( null);
   set_managerTokenKind( null);
@@ -91,6 +92,7 @@ export function exitEmployerManagerMode() {
   set_employerManagerPendingToken( null);
   managerSession.employerId = null;
   managerSession.employerToken = null;
+  managerSession.employerAnalytics = null;
   if (window.history && window.history.replaceState) {
     var clean = window.location.origin + window.location.pathname;
     window.history.replaceState({}, document.title, clean);
@@ -112,6 +114,7 @@ export function renderEmployerManagerMode() {
     vacancies.forEach(function(v) {
       vHtml += '<div class="manager-item manager-item-compact">' +
         '<div class="manager-item-title">' + escapeHtml(v.title || '') + '</div>' +
+        managerVacancyMetricsMarkup(v.id, managerSession.employerAnalytics) +
       '</div>';
     });
   } else {
