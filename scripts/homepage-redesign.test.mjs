@@ -45,10 +45,9 @@ test('location filters and category shortcuts feed real vacancy results', () => 
   assert.match(ui, /querySelectorAll\('\.home-filter-chip\[data-home-location\]'\)/);
   assert.match(ui, /function setHomeLocationFilter\(/);
   assert.match(ui, /function homeVacancyMatchesLocation\(/);
-  assert.match(ui, /function setHomeCategoryFilter\(/);
   assert.match(ui, /window\.__saNormalizeStartupScreen = normalizeStartupScreen/);
   assert.match(ui, /document\.querySelectorAll\('\.screen'\)\.forEach\(function \(screen\)/, 'startup must normalize the visible screen to Home');
-  assert.match(ui, /function homeVacancyMatchesCategory\(/);
+  assert.doesNotMatch(ui, /HOME_JOB_CATEGORIES|home-categories-section|homeVacancyMatchesCategory/, 'the job-category tiles were removed from Home');
   assert.match(ui, /function homeSourceVacancies\(/);
   assert.match(ui, /function renderHomeFeed\(/);
   assert.match(ui, /var HOME_WEEKLY_PROVINCES = \[/);
@@ -296,7 +295,7 @@ test('production PWA worker provides a cached shell, offline fallback, and safe 
 });
 
 test('responsive styles cover the vacancy cards, categories, sponsored slot, and seeker/employer actions', () => {
-  for (const selector of ['.home-vacancy-grid', '.home-category-grid', '.home-sponsored', '.home-sponsored-art', '.home-tools-grid']) {
+  for (const selector of ['.home-vacancy-grid', '.home-sponsored', '.home-sponsored-art', '.home-tools-grid']) {
     assert.ok(css.includes(selector), `Missing homepage style: ${selector}`);
   }
   assert.match(css, /\.home-sponsored-art\{[^}]*height:auto/);
