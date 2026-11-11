@@ -195,7 +195,7 @@ export function mountHouseAd(target, ad) {
   var frame = target.querySelector('iframe');
   if (kind === 'html5') loadHouseAdHtml5(frame, imageUrl, target);
   else {
-    frame.srcdoc = kind === 'card' ? buildHouseAdCardDocument(ad, imageUrl) : buildHouseAdImageDocument(imageUrl);
+    frame.srcdoc = kind === 'card' ? buildHouseAdCardDocument(ad, imageUrl) : buildHouseAdImageDocument(imageUrl, ad);
     watchHouseAdFrame(frame, target);
   }
   trackHouseAdEvent(ad.id, 'impression');
@@ -259,7 +259,9 @@ export function renderAllAdsList() {
       return ((ad.advertiser_name || '') + ' ' + (ad.title || '') + ' ' + (ad.message || '')).toLowerCase().indexOf(q) !== -1;
     });
   }
-  list.sort(function(a, b){ return (a.sort_order || 0) - (b.sort_order || 0); });
+  // The FREE advertising ad (it links to the application form) always leads the list.
+  function leads(ad) { return /\/advertise\/?(\?|#|$)/.test(String(ad.target_url || '')) ? 0 : 1; }
+  list.sort(function(a, b){ return (leads(a) - leads(b)) || ((a.sort_order || 0) - (b.sort_order || 0)); });
   if (!list.length) {
     el.innerHTML = '<div class="empty-state"><h3>' + (q ? 'No ads found' : 'No ads yet') + '</h3><p>' + (q ? 'Try a different search term.' : 'Be the first to advertise your business for free.') + '</p></div>';
     return;
