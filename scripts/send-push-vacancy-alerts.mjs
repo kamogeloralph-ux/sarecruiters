@@ -13,7 +13,7 @@ const matches = (job, search) => {
 if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) { console.log('VAPID keys are not configured; skipping push delivery (email alerts remain active).'); process.exit(0); }
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 const now = new Date().toISOString();
-const searches = await get('saved_searches?active=eq.true&select=id,user_id,query,location,remote,experience,last_push_checked_at,last_checked_at&limit=2000');
+const searches = await get('saved_searches?active=eq.true&select=id,user_id,query,location,remote,experience,last_push_checked_at,last_checked_at,created_at&limit=2000');
 const subs = await get('push_subscriptions?select=id,user_id,endpoint,p256dh,auth&limit=5000');
 let sent = 0, removed = 0;
 for (const search of searches) {
