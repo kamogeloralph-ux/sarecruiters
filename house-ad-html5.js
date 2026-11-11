@@ -6,7 +6,10 @@
 //             the name types on, the headline flies in word by word, then the tagline, every
 //             contact detail and the button arrive one after another.
 //   'image' - any picture URL: wrapped in an animated HTML5 document (curtain reveal, zoom settle,
-//             light sweep and a button that pops in)
+//             light sweep, then the curtains close again; a button only if the ad has its own
+//             cta_text - there is no automatic "Visit <site>" button)
+// Every kind plays the same curtain cycle in every section: curtains open on entry, the ad plays,
+// the curtains close, and the ad replays (see houseAdCurtain / houseAdWithCurtain / houseAdLoop).
 // NOTE: public-ads.js (static pages) carries a copy of the builders between the @house-ad-docs
 // markers. Keep them in sync; scripts/house-ad-html5-parity.test.mjs fails if they drift apart.
 
@@ -24,6 +27,46 @@ export function houseAdKind(ad, imageUrl) {
 export function houseAdHost(url) {
   var m = String(url || '').match(/^https?:\/\/(?:www\.)?([^\/?#:]+)/i);
   return m ? m[1] : '';
+}
+
+// ---- Curtain cycle (shared by every ad kind and every section) ----
+// Black curtains slide open at the start of a cycle and slide shut again at the end. They are pure
+// CSS (position:fixed, so they work over any creative) and loop with the cycle length `cycle` (s).
+export function houseAdCurtain(cycle) {
+  var c = Math.max(4, Number(cycle) || 11).toFixed(2) + 's';
+  var ease = 'cubic-bezier(.7,0,.2,1)';
+  var css = '.hc{position:fixed;top:0;bottom:0;width:51%;background:#000;z-index:2147483647;pointer-events:none}' +
+    '.hcl{left:0;animation:hcL ' + c + ' ' + ease + ' infinite}.hcr{right:0;animation:hcR ' + c + ' ' + ease + ' infinite}' +
+    '@keyframes hcL{0%,2%{transform:none}9%,86%{transform:translateX(-101%)}94%,100%{transform:none}}' +
+    '@keyframes hcR{0%,2%{transform:none}9%,86%{transform:translateX(101%)}94%,100%{transform:none}}' +
+    '@media (prefers-reduced-motion:reduce){.hc{display:none}}';
+  return { css: css, html: '<span class="hc hcl"></span><span class="hc hcr"></span>' };
+}
+
+// Add the curtain cycle to a finished ad document (a generated card or a hand-built HTML5 file).
+// The ad.cycle meta tells houseAdLoop how often to replay the document.
+export function houseAdWithCurtain(html, cycle) {
+  var cur = houseAdCurtain(cycle);
+  var head = '<meta name="ad.cycle" content="' + Math.max(4, Number(cycle) || 11).toFixed(2) + '"><style>' + cur.css + '</style>';
+  var s = String(html || '');
+  s = /<\/head>/i.test(s) ? s.replace(/<\/head>/i, function () { return head + '</head>'; }) : head + s;
+  return /<\/body>/i.test(s) ? s.replace(/<\/body>/i, function () { return cur.html + '</body>'; }) : s + cur.html;
+}
+
+// Replay a one-shot ad document every cycle (the curtains are shut at that moment, so the swap is
+// invisible). Documents without the ad.cycle meta (picture ads) loop themselves in CSS.
+export function houseAdLoop(frame, html) {
+  var m = String(html || '').match(/name="ad\.cycle" content="([\d.]+)"/);
+  var ms = m ? Math.round(parseFloat(m[1]) * 1000) : 0;
+  if (!frame || ms < 4000) return;
+  var n = 0;
+  (function tick() {
+    setTimeout(function () {
+      if (!frame.isConnected) return;
+      if (!document.hidden) frame.srcdoc = html + '<!--' + (++n) + '-->';
+      tick();
+    }, ms);
+  })();
 }
 
 // Contact details: one per line in ad.ad_details (max 4). With none, the link's own host is shown.
@@ -164,37 +207,39 @@ export function buildHouseAdCardDocument(ad, logoUrl, opts) {
   // Standalone files (not played through the app) carry their own click-through link.
   var body = opts.href ? '<a href="' + houseAdEsc(opts.href) + '" target="_blank" rel="sponsored noopener" aria-label="' + houseAdEsc(headlineText) + '" style="display:block;position:absolute;left:0;top:0;width:100%;height:100%;color:inherit;text-decoration:none">' + inner + '</a>' : inner;
   var script = '(function(){var ad=document.getElementById("ad");function fit(){var s=Math.min(innerWidth/' + z.w + ',innerHeight/' + z.h + ');ad.style.transform=Math.abs(s-1)<.001?"none":"scale("+s+")"}fit();addEventListener("resize",fit)})();';
-  return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="ad.size" content="width=' + z.w + ',height=' + z.h + '"><style>' + css + '</style></head><body>' + body + '<script>' + script + '<\/script></body></html>';
+  var doc = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="ad.size" content="width=' + z.w + ',height=' + z.h + '"><style>' + css + '</style></head><body>' + body + '<script>' + script + '<\/script></body></html>';
+  if (opts.curtain === false) return doc;
+  // Content is on screen from `t` (last item in) for about 3s before the curtains close (86% of the cycle).
+  return houseAdWithCurtain(doc, Math.max(9, (t + 3) / 0.86));
 }
 
 // A picture, animated: black curtains open, the picture settles in and drifts, a light sweeps
-// across and a button pops in. The picture is never cropped: a blurred copy fills the box behind it.
+// across, then the curtains close and the cycle repeats. The picture is never cropped: a blurred
+// copy fills the box behind it. A button appears only when the ad has its own cta_text; there is
+// no automatic "Visit <site>" button.
 export function buildHouseAdImageDocument(imageUrl, ad) {
   var src = houseAdEsc(imageUrl);
-  var host = houseAdHost(ad && ad.target_url);
-  var cta = houseAdEsc(String((ad && ad.cta_text) || '') || (host ? 'Visit ' + host : 'Learn more'));
+  var label = String((ad && ad.cta_text) || '').trim();
+  var cta = label ? '<span class="cta"><b>' + houseAdEsc(label) + '</b><i aria-hidden="true">&rarr;</i></span>' : '';
+  var C = 11, c = C + 's';
+  var cur = houseAdCurtain(C);
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="ad.size" content="width=1200,height=400"><style>' +
     'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}' +
     'img{position:absolute;left:0;top:0;width:100%;height:100%;display:block}' +
     '.bg{object-fit:cover;filter:blur(22px) brightness(.55);transform:scale(1.15)}' +
-    '.fg{object-fit:contain;opacity:0;animation:settle 1.1s .45s cubic-bezier(.2,.8,.2,1) forwards,drift 9s 1.6s ease-in-out forwards}' +
-    '.cur{position:absolute;top:0;bottom:0;width:51%;background:#000;z-index:3}' +
-    '.cl{left:0;animation:openL .8s .25s cubic-bezier(.7,0,.2,1) forwards}.cr{right:0;animation:openR .8s .25s cubic-bezier(.7,0,.2,1) forwards}' +
-    '.shine{position:absolute;top:0;bottom:0;width:34%;left:-50%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.34),transparent);transform:skewX(-18deg);z-index:2;animation:sweep 1.1s 1.7s ease-in-out forwards}' +
-    '.cta{position:absolute;right:3.2%;bottom:7%;z-index:4;display:inline-flex;align-items:center;gap:.5em;background:#fff;color:#000;font:800 max(11px,2.6vw)/1 "Trebuchet MS","Segoe UI",Arial,sans-serif;padding:.62em 1.1em;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.45);opacity:0;animation:pop .7s 2.5s cubic-bezier(.2,1.4,.3,1) forwards,pulse 1.8s 3.4s ease-in-out infinite}' +
+    '.fg{object-fit:contain;opacity:0;animation:settle ' + c + ' cubic-bezier(.2,.8,.2,1) infinite}' +
+    cur.css +
+    '.shine{position:absolute;top:0;bottom:0;width:34%;left:-50%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.34),transparent);transform:skewX(-18deg);z-index:2;animation:shine ' + c + ' ease-in-out infinite}' +
+    '.cta{position:absolute;right:3.2%;bottom:7%;z-index:4;display:inline-flex;align-items:center;gap:.5em;background:#fff;color:#000;font:800 max(11px,2.6vw)/1 "Trebuchet MS","Segoe UI",Arial,sans-serif;padding:.62em 1.1em;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.45);opacity:0;animation:pop ' + c + ' cubic-bezier(.2,1.4,.3,1) infinite}' +
     '.cta i{font-style:normal}' +
-    '@keyframes openL{to{transform:translateX(-101%)}}@keyframes openR{to{transform:translateX(101%)}}' +
-    '@keyframes settle{from{opacity:0;transform:scale(1.14)}to{opacity:1;transform:none}}' +
-    '@keyframes drift{to{transform:scale(1.025)}}' +
-    '@keyframes sweep{to{left:130%}}' +
-    '@keyframes pop{0%{opacity:0;transform:scale(0) rotate(-8deg)}70%{opacity:1;transform:scale(1.14) rotate(2deg)}100%{opacity:1;transform:none}}' +
-    '@keyframes pulse{50%{transform:scale(1.06)}}' +
-    '@media (prefers-reduced-motion:reduce){*{animation:none!important}.fg{opacity:1}.cur,.shine{display:none}.cta{opacity:1}}' +
+    '@keyframes settle{0%,3%{opacity:0;transform:scale(1.14)}12%{opacity:1;transform:none}86%,100%{opacity:1;transform:scale(1.025)}}' +
+    '@keyframes shine{0%,14%{left:-50%}26%,100%{left:130%}}' +
+    '@keyframes pop{0%,24%{opacity:0;transform:scale(0) rotate(-8deg)}30%{opacity:1;transform:scale(1.14) rotate(2deg)}34%,88%{opacity:1;transform:none}100%{opacity:1;transform:none}}' +
+    '@media (prefers-reduced-motion:reduce){*{animation:none!important}.fg{opacity:1}.hc,.shine{display:none}.cta{opacity:1}}' +
     '</style></head><body>' +
     '<img class="bg" src="' + src + '" alt="" aria-hidden="true">' +
     '<img class="fg" src="' + src + '" alt="" onerror="parent.postMessage({houseAdError:1},\'*\')">' +
-    '<span class="shine"></span><span class="cur cl"></span><span class="cur cr"></span>' +
-    '<span class="cta"><b>' + cta + '</b><i aria-hidden="true">&rarr;</i></span></body></html>';
+    '<span class="shine"></span>' + cur.html + cta + '</body></html>';
 }
 /* @house-ad-docs:end */
 

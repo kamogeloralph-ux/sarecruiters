@@ -9,7 +9,7 @@
  * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
-import { buildHouseAdCardDocument, buildHouseAdImageDocument, houseAdKind, watchHouseAdFrame } from './house-ad-html5.js';
+import { buildHouseAdCardDocument, buildHouseAdImageDocument, houseAdKind, houseAdLoop, houseAdWithCurtain, watchHouseAdFrame } from './house-ad-html5.js';
 import { R2_WORKER_URL, STARTUP_DATA_URL, STATIC_DATA_URL, agenciesCache, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyNextCursor, dedicatedVacancyPageSize, employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyNextCursor, generalVacancyPageSize, initials, isAdmin, managerMode, managerPendingToken, rebuildPublicListingSlugs, set_agenciesCache, set_branchesCache, set_dedicatedVacancyCounts, set_dedicatedVacancyCountsLoaded, set_dedicatedVacancyNextCursor, set_employerManagerPendingToken, set_employersCache, set_generalVacancyCount, set_generalVacancyCountLoaded, set_generalVacancyNextCursor, set_managerPendingToken, set_staticVacanciesCache, set_vacanciesCache, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
 import { filterAndRenderCached, loadPosterFeed, verifiedBadge } from './app-cards.js';
 import { getPoolCandidateCount, openPostJobSheet, poolCache, poolCandidateCount, poolLoaded, set_poolCandidateCount } from './app-sheets.js';
@@ -164,7 +164,9 @@ export function loadHouseAdHtml5(frame, url, slot) {
     return res.text();
   }).then(function(html) {
     if (html.indexOf('name="ad.size"') === -1) throw new Error('not an ad');
-    frame.srcdoc = html;
+    var doc = houseAdWithCurtain(html, 12); // same open/close curtain cycle as every other ad
+    frame.srcdoc = doc;
+    houseAdLoop(frame, doc);
   }).catch(hide);
 }
 export function houseAdHtml5Size(url) {
@@ -195,7 +197,9 @@ export function mountHouseAd(target, ad) {
   var frame = target.querySelector('iframe');
   if (kind === 'html5') loadHouseAdHtml5(frame, imageUrl, target);
   else {
-    frame.srcdoc = kind === 'card' ? buildHouseAdCardDocument(ad, imageUrl) : buildHouseAdImageDocument(imageUrl, ad);
+    var adDoc = kind === 'card' ? buildHouseAdCardDocument(ad, imageUrl) : buildHouseAdImageDocument(imageUrl, ad);
+    frame.srcdoc = adDoc;
+    houseAdLoop(frame, adDoc); // card ads replay each cycle; picture ads loop themselves in CSS
     watchHouseAdFrame(frame, target);
   }
   trackHouseAdEvent(ad.id, 'impression');
