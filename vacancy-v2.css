@@ -215,3 +215,59 @@
   .vx-title{font-size:15.5px}
   .vx-summary-action{padding-left:59px}
 }
+
+
+/* Google-style vacancy feed refresh — compact, scannable, source-first. */
+#screen-allvacancies .screen-scroll{background:var(--bg)}
+#screen-allvacancies .vx-bar{padding-top:calc(env(safe-area-inset-top,0px) + 14px);padding-bottom:12px}
+#screen-allvacancies .vx-bar-title{text-align:left}
+#screen-allvacancies .vx-bar-title h1{font-size:22px;letter-spacing:-.035em}
+#screen-allvacancies .vx-bar-title p{font-size:12px}
+#screen-allvacancies .vx-search{padding-top:10px;padding-bottom:12px;background:color-mix(in srgb,var(--bg) 94%,transparent);border-bottom:1px solid var(--separator)}
+#screen-allvacancies .vx-fields{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:8px}
+#screen-allvacancies .vx-field input{height:44px;border-radius:10px;background:var(--card);font-size:14px;padding-left:39px}
+#screen-allvacancies .vx-field svg{left:12px;width:16px;height:16px}
+#screen-allvacancies .vx-quick{margin-top:9px;gap:7px}
+#screen-allvacancies .vx-chip{height:32px;padding:0 12px;border-radius:8px;font-size:12px;background:transparent}
+#screen-allvacancies .vx-chip:first-child{background:var(--card);border-color:var(--border-strong)}
+#screen-allvacancies .vx-chip.on{background:var(--accent);border-color:var(--accent)}
+#screen-allvacancies .vx-active{margin-top:9px}
+#screen-allvacancies .vx-status{margin:14px 0 8px;padding:0 2px}
+#screen-allvacancies .vx-status p{font-size:12px}
+#screen-allvacancies .vx-sort select{height:32px;border-radius:8px;background:var(--card);font-size:12px}
+#screen-allvacancies .vx-results{gap:0;border-top:1px solid var(--separator)}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-card.vac-card{min-height:0}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-card.vac-card:hover{background:color-mix(in srgb,var(--card) 48%,transparent)}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-top{align-items:flex-start}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-head{height:auto;min-height:0;grid-template-columns:44px minmax(0,1fr);gap:12px;padding:15px 4px 11px 14px}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-logo{width:44px;height:44px;border-radius:8px;background:var(--card-3);color:var(--text);font-size:14px}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-logo img{object-fit:contain;background:var(--card)}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-main{display:flex;flex-direction:column;gap:0}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-title{order:0;margin:0;font-size:15px;line-height:1.25;font-weight:760;letter-spacing:-.012em}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-org{order:1;margin-top:4px;font-size:12.5px;line-height:1.25;color:var(--text-2)}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-card-meta{order:2;display:flex;flex-direction:row;flex-wrap:wrap;gap:5px 12px;margin-top:8px;font-size:11.5px;line-height:1.3;color:var(--text-2)}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-card-meta>span{display:inline-flex;align-items:center;gap:4px;max-width:100%}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-card-meta>span:not(:first-child)::before{content:'·';color:var(--text-3);margin-right:3px}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-card-meta b{font-weight:600;color:var(--text-2)}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-card-meta .vx-days-left{color:var(--accent);font-weight:700}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-meta{order:3;height:auto;margin-top:7px;gap:5px}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-tag{height:21px;padding:0 7px;border-radius:5px;font-size:10.5px;font-weight:700}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-tools-col{padding:7px 7px 0 0;gap:0}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-tool{width:32px;height:32px;border-radius:8px}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-tool svg{width:18px;height:18px}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-summary-action{padding:0 14px 12px 70px}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-inline-apply{min-height:30px;padding:0 11px;border-radius:7px;font-size:12px}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-detail-in{padding-top:0}
+#screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-preview{display:none!important}
+#screen-allvacancies #allvacancies-list.vx-grid{gap:12px;border-top:0}
+#screen-allvacancies #allvacancies-list.vx-grid .vx-card.vac-card{border-radius:12px}
+#screen-allvacancies .vx-more{height:44px;margin:12px 0 20px;border-radius:9px;background:var(--card);font-size:13px}
+@media (max-width:560px){
+  #screen-allvacancies .vx-fields{grid-template-columns:1fr 1fr}
+  #screen-allvacancies .vx-field input{font-size:13px}
+}
+@media (min-width:720px){
+  #screen-allvacancies .screen-scroll{max-width:920px;margin:0 auto}
+  #screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-head{padding-left:18px}
+  #screen-allvacancies #allvacancies-list:not(.vx-grid) .vx-summary-action{padding-left:74px}
+}

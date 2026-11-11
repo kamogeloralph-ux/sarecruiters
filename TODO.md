@@ -1,5 +1,10 @@
 # TODO
 
+## Google-style vacancy feed redesign
+
+- [x] Replace the tall, cluttered vacancy rows with compact, title-first job cards using quiet separators, employer branding, inline metadata, bookmark/share actions, and a direct apply affordance.
+- [x] Refresh the vacancy search surface with calmer chips, tighter controls, clearer result status, and a cache-busted stylesheet version while preserving existing filters, sorting, saving, sharing, and detail expansion.
+
 ## Manager-scoped vacancy activity metrics
 
 - [x] Agency and employer manager links show per-vacancy tracked apply-link clicks and self-reported application counts for the last 30 days.

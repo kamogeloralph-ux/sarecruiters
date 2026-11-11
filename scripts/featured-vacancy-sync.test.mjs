@@ -77,9 +77,12 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
   assert.match(vacancyCss, /\.vx-inline-apply\{display:inline-flex/);
   assert.match(sharedCss, /#screen-allagencies #allagencies-list \.hub-summary/, 'agency typography and spacing should be scoped to the agency directory');
   assert.match(indexSrc, /styles\.css\?v=[^"]+/, 'the shared stylesheet cache key must be refreshed');
-  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-scan-2/, 'the vacancy stylesheet cache key must be refreshed');
+  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-google-1/, 'the vacancy stylesheet cache key must be refreshed');
   assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-retail-3/, 'the vacancy renderer cache key must be refreshed');
   assert.match(indexSrc, /app-alerts\.js\?v=al-5/, 'the saved-search and application-confirmation script cache key must be refreshed');
+  assert.match(vacancyCss, /\.vx-head\{height:auto;min-height:0/, 'vacancy rows should size to their content rather than reserve a tall blank area');
+  assert.match(vacancyCss, /\.vx-card-meta\{order:2;display:flex;flex-direction:row;flex-wrap:wrap/, 'vacancy metadata should scan as a compact inline row');
+  assert.match(vacancyCss, /\.vx-title\{order:0;margin:0;font-size:15px/, 'vacancy titles should lead the card hierarchy');
 });
 
 test('Home renders one deterministic daily featured vacancy poster', () => {
