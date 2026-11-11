@@ -55,7 +55,8 @@ const VITE_OUT_DIR = 'build-tmp';
 // Matches the old classic tag and the new module tag:
 //   <script src="app.bundle.min.js?v=ANYTHING" defer></script>
 //   <script type="module" src="app.bundle.min.js?v=ANYTHING"></script>
-const SCRIPT_TAG_RE = /<script (?:type="module" )?src="app\.bundle\.min\.js\?v=[^"]*"(?: defer)?><\/script>/;
+// Tolerant match: any attribute order/extra attributes (defer, async, crossorigin), optional ?v=, single or double quotes.
+const SCRIPT_TAG_RE = /<script\b[^>]*\bsrc=["'](?:\.?\/)?app\.bundle\.min\.js(?:\?[^"']*)?["'][^>]*>\s*<\/script>/i;
 
 function checkEntryImportsEveryModule(rootDir) {
   const entry = fs.readFileSync(path.join(rootDir, ENTRY), 'utf8');
