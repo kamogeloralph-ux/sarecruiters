@@ -91,16 +91,17 @@ test('public retail preview uses the bounded Worker feed and never falls back to
     'public retail preview must not read vacancies through PostgREST');
 });
 
-test('the homepage shows all eight source cards before retail-first roles', () => {
+test('the homepage shows a slim source chip row, then top jobs, then the latest roles', () => {
   assert.match(ui, /HOME_VACANCY_CARD_LIMIT = 8/);
   const homeRender = ui.slice(ui.indexOf('function renderHomeFeed()'), ui.indexOf('// Public section links'));
   const sourceMarkupPosition = homeRender.indexOf('homeVacancySourceMarkup()');
   const homeRolesPosition = homeRender.indexOf('home-jobs-section');
-  assert.ok(sourceMarkupPosition >= 0 && homeRolesPosition > sourceMarkupPosition, 'source cards must render before available roles');
+  assert.ok(sourceMarkupPosition >= 0 && homeRolesPosition > sourceMarkupPosition, 'source chips must render before the latest roles');
   assert.match(ui, /function homeVacancySourceMarkup\(\)/);
   assert.match(ui, /window\.vacancySourceSummary\(\)/);
   assert.match(ui, /order\.map\(function \(source\)/);
-  assert.match(ui, /class="home-source-grid"/);
+  assert.match(ui, /class="vx-src-row"/);
+  assert.doesNotMatch(ui, /home-source-grid|home-source-card/, 'the tall source tile grid is replaced by the chip row');
   assert.match(ui, /onclick="openVacancyFolder/);
   assert.ok(homeRolesPosition >= 0, 'the grouped available roles must remain on the home screen');
   assert.doesNotMatch(homeRender, /Featured vacancies|home-featured-vacancy|featuredMarkup|wireHomeFeaturedRailGestures/);
@@ -112,7 +113,7 @@ test('the homepage shows all eight source cards before retail-first roles', () =
 
   assert.match(ui, /isRetailPriorityVacancy\(b\)/);
   assert.match(homeRender, /onclick="openCommunity\(\)"/);
-  assert.match(ui, /group\.rows\.slice\(0, 8\)/);
+  assert.match(ui, /\(rows \|\| \[\]\)\.slice\(0, 5\)/, 'the home feed shows only the five latest roles');
   const overview = vacancyV2.slice(vacancyV2.indexOf('function renderOverview()'), vacancyV2.indexOf('/* ---------- folder post-processing'));
   const sourcesPosition = overview.indexOf('vx-source-section');
   const rolesPosition = overview.indexOf('vx-available-roles');
@@ -136,11 +137,12 @@ test('vacancy cards cap long locations so they cannot create a second line', () 
   assert.match(vacancyCss, /\.vx-card-meta \.vx-location-text\{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\}/);
 });
 
-test('home available roles use compact province groups and the existing exact-vacancy opener', () => {
-  assert.match(ui, /function homeAvailableRoleGroups\(/);
+test('home latest roles reuse the shared vacancy card and the existing exact-vacancy opener', () => {
   assert.match(ui, /function homeAvailableRolesMarkup\(/);
-  assert.match(ui, /class="home-available-groups"/);
-  assert.match(ui, /class="home-available-role"/);
+  assert.match(ui, /rows \|\| \[\]\)\.slice\(0, 5\)/);
+  assert.match(ui, /window\.vacancyCard\(v, agency\)/);
+  assert.match(ui, /class="vx-feed"/);
+  assert.match(ui, /class="home-more-btn"/);
   assert.match(ui, /homeAvailableRolesMarkup\(rows\)/);
   assert.match(ui, /openHomeWeeklyVacancy\(/);
   assert.match(vacancyV2, /if \(o\.homePreview\)/);
@@ -187,7 +189,7 @@ test('bottom navigation keeps inactive icons visible and source cards open their
   assert.match(css, /\.bottom-nav \.navbtn:not\(\.active\) svg\{[^}]*stroke:rgba\(255,255,255,\.9\)!important/);
   assert.match(css, /\[data-theme="light"\] \.bottom-nav \.navbtn:not\(\.active\) svg\{stroke:#626262!important/);
   assert.match(ui, /window\.openVacancyFolder = openVacancyFolder/);
-  assert.match(ui, /class="home-source-card" onclick="openVacancyFolder/);
+  assert.match(ui, /class="vx-src" onclick="openVacancyFolder/);
   assert.match(ui, /function openVacancyFolder\(type\) \{[\s\S]*?showAllVacancies\('home'\)/);
 });
 
@@ -294,14 +296,12 @@ test('production PWA worker provides a cached shell, offline fallback, and safe 
 });
 
 test('responsive styles cover the vacancy cards, categories, sponsored slot, and seeker/employer actions', () => {
-  for (const selector of ['.home-source-grid', '.home-source-card', '.home-vacancy-grid', '.home-category-grid', '.home-sponsored', '.home-sponsored-art', '.home-tools-grid']) {
+  for (const selector of ['.home-vacancy-grid', '.home-category-grid', '.home-sponsored', '.home-sponsored-art', '.home-tools-grid']) {
     assert.ok(css.includes(selector), `Missing homepage style: ${selector}`);
   }
   assert.match(css, /\.home-sponsored-art\{[^}]*height:auto/);
   assert.doesNotMatch(css, /featured-vacancies-rail/);
-  assert.match(css, /\.home-source-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /#screen-home \.screen-scroll\{container-type:inline-size/);
-  assert.match(css, /@container \(min-width:760px\)\{\s*#screen-home \.home-source-grid\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(min-width:760px\)\{[\s\S]*\.home-vacancy-grid\{grid-template-columns:repeat\(2/);
   assert.match(vacancyCss, /\.vx-src\{flex:0 0 auto;display:inline-flex;align-items:center/);
 });

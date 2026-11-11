@@ -34,7 +34,7 @@ test('dedicated featured-vacancy sections and their extra startup query are remo
   const home = functionBody(uiSrc, 'renderHomeFeed');
   assert.ok(home, 'the home vacancy renderer must remain present');
   assert.doesNotMatch(home, /Featured vacancies|featuredMarkup|homeVacancyIsFeatured/);
-  assert.match(home, /target\.innerHTML = '[\s\S]*homeVacancySourceMarkup\(\) \+\s*'<section class="home-jobs-section"/);
+  assert.match(home, /target\.innerHTML = '[\s\S]*homeVacancySourceMarkup\(\) \+\s*homeWeeklyTopJobsMarkup\(\) \+\s*'<section class="home-jobs-section"/);
   assert.match(home, /var rows = matchingRows;/, 'featured listings remain eligible for normal retail-first role ordering');
   assert.match(home, /homeAvailableRolesMarkup\(rows\)/);
   assert.match(home, /onclick="openCommunity\(\)"/, 'the Interview Tips shortcut must remain on the home screen');
@@ -73,7 +73,7 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
   assert.doesNotMatch(vacancyRendererSrc, /class="vx-preview"|class="vx-inline-apply"|Popular categories/, 'cards stay minimal and the overview has no categories block');
   assert.match(sharedCss, /#screen-allagencies #allagencies-list \.hub-summary/, 'agency typography and spacing should be scoped to the agency directory');
   assert.match(indexSrc, /styles\.css\?v=[^"]+/, 'the shared stylesheet cache key must be refreshed');
-  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-clean-1/, 'the vacancy stylesheet cache key must be refreshed');
+  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-clean-2/, 'the vacancy stylesheet cache key must be refreshed');
   assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-clean-1/, 'the vacancy renderer cache key must be refreshed');
   assert.match(indexSrc, /app-alerts\.js\?v=al-6/, 'the saved-search and application-confirmation script cache key must be refreshed');
   assert.match(vacancyCss, /\.vx-head\{flex:1 1 auto;min-width:0;min-height:0;height:auto/, 'vacancy rows should size to their content rather than reserve a tall blank area');
