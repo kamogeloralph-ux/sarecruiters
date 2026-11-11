@@ -91,6 +91,7 @@ test('Home renders one deterministic daily featured vacancy poster', () => {
   assert.match(uiSrc, /featuredVacancyApplyUrl\(vacancy\)/);
   assert.match(uiSrc, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
   assert.match(uiSrc, /class="home-featured-vacancy" href="' \+ escapeHtml\(applyUrl\)/);
+  assert.match(uiSrc, /data-vacancy-id="' \+ escapeHtml\(featured\.id\) \+ '" onclick="trackEvent\(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this\.dataset\.vacancyId\)/);
   assert.match(uiSrc, /target="_blank" rel="noopener noreferrer"/);
   assert.match(uiSrc, /renderHomeFeaturedVacancy\(homeSourceVacancies\(\)\)/);
   assert.match(cardsSrc, /renderHomeFeaturedVacancy\(homeSourceVacancies\(\)\)/);
