@@ -68,21 +68,17 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
   assert.match(overview, /list\.slice\(0, 24\)\.map\(function \(v\) \{ return card\(v, agencyOf\(v\)\); \}\)/, 'available vacancy cards must remain visible in the first overview section');
   assert.doesNotMatch(overview, /Featured vacancies|vx-rail/, 'the vacancy overview must not render a featured rail');
 
-  assert.match(vacancyCss, /\.vx-sources\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'mobile source cards must use a compact two-column grid');
-  assert.match(vacancyCss, /\.vx-source\{display:flex;align-items:center/, 'source cards must use a clean compact row layout');
-  assert.match(vacancyCss, /@media \(min-width:720px\)[\s\S]*?\.vx-sources\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/, 'desktop source cards must use four columns');
-  assert.match(vacancyRendererSrc, /class="vx-preview"/, 'vacancy summaries should expose a short job-description preview');
-  assert.match(vacancyRendererSrc, /class="vx-inline-apply"/, 'vacancies with a direct route should expose an apply action in the summary');
-  assert.match(vacancyCss, /\.vx-org\{order:0/);
-  assert.match(vacancyCss, /\.vx-inline-apply\{display:inline-flex/);
+  assert.match(vacancyCss, /\.vx-src-row\{display:flex/, 'source shortcuts must be a single compact row');
+  assert.match(vacancyCss, /\.vx-src\{flex:0 0 auto;display:inline-flex;align-items:center/, 'source shortcuts must be compact chips');
+  assert.doesNotMatch(vacancyRendererSrc, /class="vx-preview"|class="vx-inline-apply"|Popular categories/, 'cards stay minimal and the overview has no categories block');
   assert.match(sharedCss, /#screen-allagencies #allagencies-list \.hub-summary/, 'agency typography and spacing should be scoped to the agency directory');
   assert.match(indexSrc, /styles\.css\?v=[^"]+/, 'the shared stylesheet cache key must be refreshed');
-  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-google-1/, 'the vacancy stylesheet cache key must be refreshed');
-  assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-retail-3/, 'the vacancy renderer cache key must be refreshed');
+  assert.match(indexSrc, /vacancy-v2\.css\?v=vx-clean-1/, 'the vacancy stylesheet cache key must be refreshed');
+  assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-clean-1/, 'the vacancy renderer cache key must be refreshed');
   assert.match(indexSrc, /app-alerts\.js\?v=al-5/, 'the saved-search and application-confirmation script cache key must be refreshed');
-  assert.match(vacancyCss, /\.vx-head\{height:auto;min-height:0/, 'vacancy rows should size to their content rather than reserve a tall blank area');
-  assert.match(vacancyCss, /\.vx-card-meta\{order:2;display:flex;flex-direction:row;flex-wrap:wrap/, 'vacancy metadata should scan as a compact inline row');
-  assert.match(vacancyCss, /\.vx-title\{order:0;margin:0;font-size:15px/, 'vacancy titles should lead the card hierarchy');
+  assert.match(vacancyCss, /\.vx-head\{flex:1 1 auto;min-width:0;min-height:0;height:auto/, 'vacancy rows should size to their content rather than reserve a tall blank area');
+  assert.match(vacancyCss, /\.vx-card-meta\{display:flex;flex-wrap:wrap/, 'vacancy metadata should scan as a compact inline row');
+  assert.doesNotMatch(vacancyCss, /all:unset/, 'cards must not reset all properties');
 });
 
 test('Home renders one deterministic daily featured vacancy poster', () => {
@@ -107,16 +103,14 @@ test('all vacancy filters are wired to the overview and folder render paths', ()
   for (const id of ['allvacancies-search', 'allvacancies-location', 'allvacancies-industry', 'allvacancies-remote', 'allvacancies-exp', 'vx-posted', 'allvacancies-sort', 'vx-filter-toggle', 'vacancy-clear-filters']) {
     assert.match(indexSrc, new RegExp('id="' + id + '"'), id + ' control must exist');
   }
-  for (const chip of ['fresh', 'remote', 'salary', 'saved', 'near']) {
+  for (const chip of ['fresh', 'remote', 'salary', 'near']) {
     assert.match(indexSrc, new RegExp('data-vx="' + chip + '"'), chip + ' quick filter must exist');
   }
   assert.match(vacancyRendererSrc, /function matchesWorkMode\(/);
   assert.match(vacancyRendererSrc, /function matchesExperience\(/);
   assert.match(vacancyRendererSrc, /function postedWithin\(/);
   assert.match(vacancyRendererSrc, /if \(S\.salary && !hasSalary\(v\)\)/);
-  assert.match(vacancyRendererSrc, /if \(S\.saved && !savedSet\.has\(v\.id\)\)/);
   assert.match(vacancyRendererSrc, /S\.sort === 'closing'/);
-  assert.match(vacancyRendererSrc, /data-vxview/);
   assert.match(uiSrc, /remote\|telecommute\|work\[ -\]\?from\[ -\]\?home/);
   assert.match(uiSrc, /expFilter === 'entry'/);
 });

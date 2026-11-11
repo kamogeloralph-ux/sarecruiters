@@ -125,9 +125,9 @@ test('the homepage shows all eight source cards before retail-first roles', () =
   assert.doesNotMatch(overview, /Featured vacancies|vx-rail/);
 });
 
-test('vacancy cards prioritise closing warnings over the NEW badge', () => {
-  assert.match(vacancyV2, /age < 3 && \(left === null \|\| left > 7\)/);
+test('vacancy cards show a closing warning in the meta row', () => {
   assert.match(vacancyV2, /left === 0 \? 'Closes today'/);
+  assert.match(vacancyV2, /vx-m vx-m--warn/);
 });
 
 test('vacancy cards cap long locations so they cannot create a second line', () => {
@@ -145,7 +145,7 @@ test('home available roles use compact province groups and the existing exact-va
   assert.match(ui, /openHomeWeeklyVacancy\(/);
   assert.match(vacancyV2, /if \(o\.homePreview\)/);
   assert.match(vacancyV2, /class="home-vacancy-apply"/);
-  assert.match(html, /app-vacancy-v2\.js\?v=vx-retail-3/);
+  assert.match(html, /app-vacancy-v2\.js\?v=vx-clean-1/);
   assert.match(cards, /if \(typeof renderHomeFeed === 'function'\) \{\s*renderHomeFeed\(\);\s*return;/);
   assert.match(ui, /onclick="openHomeCvBoxProfile\(\)"/);
   assert.match(ui, /onclick="openGeneralVacancySheet\(\)"/);
@@ -303,7 +303,7 @@ test('responsive styles cover the vacancy cards, categories, sponsored slot, and
   assert.match(css, /#screen-home \.screen-scroll\{container-type:inline-size/);
   assert.match(css, /@container \(min-width:760px\)\{\s*#screen-home \.home-source-grid\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(min-width:760px\)\{[\s\S]*\.home-vacancy-grid\{grid-template-columns:repeat\(2/);
-  assert.match(vacancyCss, /\.vx-source\{display:flex;align-items:center/);
+  assert.match(vacancyCss, /\.vx-src\{flex:0 0 auto;display:inline-flex;align-items:center/);
 });
 
 test('the homepage hero is square and compact, with a smaller search field and tighter spacing', () => {
