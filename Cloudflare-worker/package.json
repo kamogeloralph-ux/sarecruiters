@@ -1,0 +1,9 @@
+{
+  "name": "sarecruiters-uploader",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@sentry/cloudflare": "^10.0.0"
+  }
+}

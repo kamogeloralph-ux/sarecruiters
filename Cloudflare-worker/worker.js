@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/cloudflare";
 import { runWatchdog } from "./watchdog.js";
 import { candidateCvKey, evaluateCvScan, mergePositions, scanCvWithGemini } from "./cv-scan.js";
 import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
@@ -2202,11 +2203,11 @@ var worker_default = {
     // (watchdog / sync) can use up the run, so the admin list never keeps them.
     ctx.waitUntil(deleteExpiredEmployerPosters(env)
       .then((removed) => { if (removed) console.log("Expired employer posters removed", removed); })
-      .catch((e) => console.error("scheduled expired-poster cleanup failed", e)));
+      .catch((e) => { Sentry.captureException(e); console.error("scheduled expired-poster cleanup failed", e); }));
     // "15,45 * * * *": lightweight self-healing watchdog (see watchdog.js). Offset from
     // the 6-hourly tick so the two never run at the same moment.
     if (event.cron === "15,45 * * * *") {
-      ctx.waitUntil(runWatchdog(env, {}).catch((e) => console.error("scheduled watchdog failed", e)));
+      ctx.waitUntil(runWatchdog(env, {}).catch((e) => { Sentry.captureException(e); console.error("scheduled watchdog failed", e); }));
       return;
     }
     ctx.waitUntil((async () => {
@@ -2216,18 +2217,18 @@ var worker_default = {
         const result = await runWatchdog(env, { deep: true, digest: new Date(event.scheduledTime).getUTCHours() === 6 });
         if (result.problems.length) console.log("Watchdog open problems", result.problems.join(", "));
       } catch (e) {
-        console.error("scheduled deep watchdog failed", e);
+        { Sentry.captureException(e); console.error("scheduled deep watchdog failed", e); };
       }
       try {
         const titled = await backfillMissingEmployerPosterTitles(env);
         if (titled) console.log("Missing employer poster titles filled", titled);
       } catch (e) {
-        console.error("scheduled poster-title backfill failed", e);
+        { Sentry.captureException(e); console.error("scheduled poster-title backfill failed", e); };
       }
       try {
         await syncD1AndPublishSnapshot(env);
       } catch (e) {
-        console.error("scheduled D1 sync failed", e);
+        { Sentry.captureException(e); console.error("scheduled D1 sync failed", e); };
         await recordSyncFailure(env, e);
       }
       // After the D1 sync so newly scraped vacancies are already there to tidy and screen.
@@ -2235,7 +2236,7 @@ var worker_default = {
         const ai = await runAiMaintenance(env);
         console.log("AI maintenance", JSON.stringify(ai));
       } catch (e) {
-        console.error("scheduled AI maintenance failed", e);
+        { Sentry.captureException(e); console.error("scheduled AI maintenance failed", e); };
       }
     })());
   },
@@ -3431,10 +3432,20 @@ var worker_default = {
       }
       return json({ error: "Not found." }, 404, origin);
     } catch (e) {
+      Sentry.captureException(e);
       return json({ error: e.message || "Server error." }, 500, origin);
     }
   }
 };
+var worker_sentry = Sentry.withSentry(
+  (env) => ({
+    dsn: env.SENTRY_DSN,
+    environment: "production",
+    tracesSampleRate: 0.1,
+    sendDefaultPii: false
+  }),
+  worker_default
+);
 export {
-  worker_default as default
+  worker_sentry as default
 };

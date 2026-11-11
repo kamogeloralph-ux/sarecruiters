@@ -1,6 +1,8 @@
 name = "sarecruiters-uploader"
 main = "worker.js"
 compatibility_date = "2026-09-08"
+# Required by @sentry/cloudflare (AsyncLocalStorage).
+compatibility_flags = ["nodejs_compat"]
 
 # Secrets RESEND_API_KEY / TURNSTILE_SECRET_KEY are synced from GitHub
 # Actions secrets AFTER every deploy (see deploy-worker.yml). This flag also
@@ -42,6 +44,8 @@ enabled = true
 head_sampling_rate = 1
 
 [vars]
+# Sentry DSN is public by design (ingest-only), safe to commit.
+SENTRY_DSN = "https://974882cc5071d5e89fef69bbfa138365@o4512413276831744.ingest.de.sentry.io/4512413289807952"
 SUPABASE_URL = "https://ythznnktswgymerdcxky.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH"
 # Must use the verified sa-recruiters.co.za Resend domain so notification
