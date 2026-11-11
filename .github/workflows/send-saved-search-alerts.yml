@@ -24,5 +24,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      # Push is a bonus channel: if it fails, email alerts must still go out.
       - run: node scripts/send-push-vacancy-alerts.mjs
+        continue-on-error: true
       - run: node scripts/send-saved-search-alerts.mjs
