@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { filterLiveVacancies } from './static-vacancy-filter.mjs';
 
 const DEFAULT_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
 const workerUrl = (process.env.SA_RECRUITERS_WORKER_URL || DEFAULT_WORKER_URL).replace(/\/$/, '');
@@ -38,7 +39,9 @@ export async function fetchFreshSeoSnapshot(fetchImpl = fetch, baseUrl = workerU
   if (!vacancies.length) throw new Error('Refusing to replace SEO data with an empty vacancy inventory');
   const ids = vacancies.map((row) => row && row.id).filter(Boolean);
   if (ids.length !== vacancies.length || new Set(ids).size !== ids.length) throw new Error('Public vacancy inventory contains missing or duplicate IDs');
-  return { ...startup, vacancies, generated_at: startup.generated_at, seo_refreshed_at: new Date().toISOString() };
+  const liveVacancies = filterLiveVacancies(vacancies, { now: new Date() });
+  if (!liveVacancies.length) throw new Error('Refusing to replace SEO data with an empty live vacancy inventory');
+  return { ...startup, vacancies: liveVacancies, generated_at: startup.generated_at, seo_refreshed_at: new Date().toISOString() };
 }
 
 async function main() {

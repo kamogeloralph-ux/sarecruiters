@@ -81,11 +81,11 @@ test('fresh SEO exporter paginates every row and refuses stale or malformed data
   const fakeFetch = async (url) => {
     calls.push(String(url));
     if (String(url).endsWith('/api/startup')) return Response.json({ agencies: [{ id: 'a' }], branches: [], counts: { candidates: 0 }, generated_at: now });
-    if (calls.length === 2) return Response.json({ vacancies: [{ id: '1' }, { id: '2' }], next_cursor: 'cursor-2' });
+    if (calls.length === 2) return Response.json({ vacancies: [{ id: '1' }, { id: '2', closing_date: '2000-01-01' }], next_cursor: 'cursor-2' });
     return Response.json({ vacancies: [{ id: '3' }], next_cursor: null });
   };
   const snapshot = await fetchFreshSeoSnapshot(fakeFetch, 'https://worker.example');
-  assert.equal(snapshot.vacancies.length, 3);
+  assert.equal(snapshot.vacancies.length, 2);
   assert.equal(calls.length, 3);
   assert.match(calls[2], /cursor=cursor-2/);
 
