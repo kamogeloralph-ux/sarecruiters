@@ -1,201 +1,1683 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-ZA" data-theme="light">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Free Business Advertising | SA Recruiters</title>
-<meta name="description" content="Advertise your business for free on SA Recruiters. Send your business card, logo and contact details and we will build your animated ad.">
-<link rel="canonical" href="https://sa-recruiters.co.za/advertise/">
-<link rel="icon" href="/favicon-v2.ico">
-<meta name="theme-color" content="#000000">
-<style>
-  :root{
-    --bg:#f3f3f3;--card:#fff;--text:#000;--muted:#6b6b6b;--line:rgba(0,0,0,.14);
-    --ink:#000;--on-ink:#fff;--field:#fff;--danger:#b00020;--ok:#0a7a35;
-  }
-  @media (prefers-color-scheme:dark){
-    :root{--bg:#000;--card:#1c1c1e;--text:#fff;--muted:#a0a0a0;--line:rgba(255,255,255,.16);
-      --ink:#fff;--on-ink:#000;--field:#2c2c2e;--danger:#ff6b81;--ok:#4cd27a}
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%}
-  body{font-family:"Inter","Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
-  .wrap{max-width:640px;margin:0 auto;padding:16px 16px 56px}
-  .top{display:flex;align-items:center;justify-content:space-between;padding:6px 0 18px}
-  .top a{color:var(--text);text-decoration:none;font-weight:700;font-size:15px}
-  .brand{display:flex;align-items:center;gap:10px}
-  .brand img{width:34px;height:auto;display:block}
-  @media (prefers-color-scheme:dark){.brand img{filter:invert(1)}}
-  .hero{background:#000;color:#fff;border-radius:22px;padding:26px 22px;margin-bottom:16px}
-  .hero h1{font-size:30px;line-height:1.1;letter-spacing:-.5px}
-  .hero h1 span{background:#fff;color:#000;border-radius:6px;padding:0 .14em}
-  .hero p{margin-top:12px;color:#cfcfcf;font-size:16px}
-  .steps{display:grid;gap:8px;margin-top:16px;font-size:14px;color:#e6e6e6}
-  .steps div{display:flex;gap:10px;align-items:flex-start}
-  .steps b{flex:0 0 22px;height:22px;border-radius:50%;background:#fff;color:#000;font-size:12px;display:flex;align-items:center;justify-content:center}
-  form,.done{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px 18px}
-  h2{font-size:18px;margin:4px 0 14px}
-  .field{margin-bottom:14px}
-  label,.lbl{display:block;font-size:13.5px;font-weight:700;margin-bottom:6px}
-  .opt{font-weight:400;color:var(--muted)}
-  input[type=text],input[type=tel],input[type=email],input[type=url],select,textarea{
-    width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:var(--field);color:var(--text);font:inherit;font-size:16px}
-  textarea{min-height:96px;resize:vertical}
-  input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);outline-offset:1px}
-  .row{display:grid;gap:14px;grid-template-columns:1fr}
-  @media(min-width:520px){.row{grid-template-columns:1fr 1fr}}
-  .file{border:1.5px dashed var(--line);border-radius:14px;padding:14px;background:var(--field)}
-  .file input{width:100%;font-size:14px}
-  .file small{display:block;margin-top:6px;color:var(--muted);font-size:12.5px}
-  .file .names{margin-top:6px;font-size:13px;color:var(--text);word-break:break-all}
-  .consent{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin:6px 0 16px}
-  .consent input{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--ink)}
-  .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-  button.go{width:100%;padding:16px;border:0;border-radius:999px;background:var(--ink);color:var(--on-ink);font:inherit;font-size:17px;font-weight:800;cursor:pointer}
-  button.go[disabled]{opacity:.55;cursor:default}
-  .err{color:var(--danger);font-size:14px;margin:0 0 12px;min-height:0}
-  .alt{margin-top:16px;text-align:center;font-size:14px;color:var(--muted)}
-  .alt a{color:var(--text);font-weight:700}
-  .done{text-align:center;display:none}
-  .done h2{font-size:24px;margin-bottom:8px}
-  .done p{color:var(--muted);margin-bottom:16px}
-  .done a.btn{display:inline-block;padding:13px 24px;border-radius:999px;background:var(--ink);color:var(--on-ink);text-decoration:none;font-weight:800}
-  .cf-turnstile{margin:6px 0 14px}
-  noscript p{padding:12px;background:var(--card);border-radius:12px}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- In-app browsers (Facebook, Instagram, TikTok, Android WebViews) often report a large, bogus
+     safe-area-inset-bottom, which stretched the bottom nav. Flag them so CSS can ignore the inset. -->
+<script>
+(function(){try{if(/FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram|Messenger|MicroMessenger|Snapchat|TikTok|musical_ly|LinkedInApp|Twitter|; wv\)|\bLine\//i.test(navigator.userAgent||'')){document.documentElement.setAttribute('data-inapp','1');}}catch(e){}})();
+</script>
+
+<!-- Set the theme attribute BEFORE anything paints, so a saved dark-mode
+     preference never flashes light first. Must stay first/synchronous. -->
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('saTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch(e) {}
+})();
+</script>
+
+<!-- Start downloading the D1-backed public directory immediately instead of
+     after the JS bundle has downloaded + executed. -->
+<script>
+(function(){try{window.__saStartupEarly=fetch('https://sarecruiters-uploader.kamogeloralph.workers.dev/api/startup',{method:'GET',cache:'no-store',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}catch(e){}})();
+</script>
+
+<!-- Critical shell CSS + first-paint splash, inline so it applies before
+     styles.css (loaded async below) has a chance to arrive. This is what
+     stops the raw unstyled shell (zeroed stat cards, plain-text banners)
+     from ever being visible on load / refresh / relaunch from idle. -->
+<style id="critical-shell-css">:root,[data-theme="light"]{--m-ink:#000;--m-on-ink:#fff;--m-wash:rgba(0,0,0,.05);--m-wash-2:rgba(0,0,0,.09);--mono-photo-filter:none}[data-theme="dark"]{--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}@media (prefers-color-scheme:dark){:root:not([data-theme]){--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}}
+
+  @font-face{font-family:'Inter Fallback';src:local('Arial'),local('Helvetica');size-adjust:107.4%;ascent-override:90.2%;descent-override:22.5%;line-gap-override:0%;font-display:swap}
+  html,body{margin:0;min-height:100%}
+  [data-theme="light"] body{background:#f3f3f3}
+  [data-theme="dark"] body{background:#000000}
+  #app-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
+  [data-theme="light"] #app-splash{background:#f3f3f3}
+  [data-theme="dark"] #app-splash{background:#000000}
+  #app-splash .sa-splash-inner{display:flex;flex-direction:column;align-items:center}
+  #app-splash img{width:76px;height:76px;border-radius:20px;box-shadow:0 10px 40px -12px rgba(0,0,0,0.5);animation:sa-splash-pulse 1.4s ease-in-out infinite}
+  @keyframes sa-splash-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.94);opacity:.85}}
+  #app-splash.hide{opacity:0;pointer-events:none}
+  /* Slow-load status: hidden by default, only faded in by app-core.js once
+     the splash has been up longer than expected — so a normal fast load
+     never shows this at all. */
+  #app-splash .sa-splash-status{opacity:0;margin-top:26px;text-align:center;transition:opacity .4s ease;max-width:260px}
+  #app-splash .sa-splash-status.show{opacity:1}
+  #app-splash .sa-splash-dots{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+  #app-splash .sa-splash-dots span{width:9px;height:9px;border-radius:50%;display:inline-block;animation:sa-dot-bounce 1.2s ease-in-out infinite}
+  #app-splash .sa-splash-dots span:nth-child(1){background:var(--m-ink);animation-delay:0s}
+  #app-splash .sa-splash-dots span:nth-child(2){background:var(--m-ink);animation-delay:.15s}
+  #app-splash .sa-splash-dots span:nth-child(3){background:var(--m-ink);animation-delay:.3s}
+  @keyframes sa-dot-bounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-6px);opacity:1}}
+  #app-splash .sa-splash-title{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:18px;font-weight:800;margin:0 0 6px;color:#0d0d0d}
+  [data-theme="dark"] #app-splash .sa-splash-title{color:#f3f3f3}
+  #app-splash .sa-splash-sub{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:13.5px;line-height:1.4;color:#8a8a8a;margin:0}
+  body:not(.app-ready) .app{visibility:hidden}
+  /* Keep every body-level portal outside .app hidden until real content is ready. */
+  body:not(.app-ready) > :not(#app-splash):not(.app):not(script):not(style):not(link):not(svg){display:none!important}
+  body:not(.app-ready) > #pool-register-overlay.gate-mandatory{display:block!important}
+  /* Keep intentionally opened body-level UI usable during startup. The
+     blanket rule above protects the first paint, but must not hide a sheet
+     opened by a deep link or an early interaction (including the CV Builder).
+     Inactive portals remain hidden behind the splash. */
+  body:not(.app-ready) > .sheet-scrim.open{display:block!important}
+  body:not(.app-ready) > .site-menu-backdrop.is-visible{display:block!important}
+  body:not(.app-ready) > .site-menu-drawer.is-open{display:flex!important}
+  body:not(.app-ready) > .community-report-overlay:not([hidden]){display:grid!important}
+  body:not(.app-ready) > .toast.show,
+  body:not(.app-ready) > .update-banner.show,
+  body:not(.app-ready) > .retry-banner.show{display:block!important}
+  /* Google Identity Services branded button (styles once in styles.css;
+     kept here so the account screen's sign-in button never paints raw). */
+  .gsi-material-button{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #747775;border-radius:14px;box-sizing:border-box;color:#1f1f1f;cursor:pointer;font-family:'Roboto',arial,sans-serif;font-size:14px;height:44px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 18px;position:relative;text-align:center;transition:background-color .218s,border-color .218s,box-shadow .218s;vertical-align:middle;white-space:nowrap;width:100%;max-width:none}
+  .gsi-material-button .gsi-material-button-icon{height:20px;margin-right:12px;min-width:20px;width:20px}
+  .gsi-material-button .gsi-material-button-content-wrapper{align-items:center;display:flex;flex-direction:row;flex-wrap:nowrap;height:100%;justify-content:center;position:relative;width:100%}
+  .gsi-material-button .gsi-material-button-contents{flex-grow:0;font-family:'Roboto',arial,sans-serif;font-weight:500;overflow:hidden;text-overflow:ellipsis;vertical-align:top}
+  .gsi-material-button .gsi-material-button-state{transition:opacity .218s;bottom:0;left:0;opacity:0;position:absolute;right:0;top:0}
+  .gsi-material-button:disabled{cursor:wait;background-color:#ffffff61;border-color:#1f1f1f1f}
+  .gsi-material-button:disabled .gsi-material-button-contents,.gsi-material-button:disabled .gsi-material-button-icon{opacity:.38}
+  .gsi-material-button:not(:disabled):active .gsi-material-button-state,.gsi-material-button:not(:disabled):focus .gsi-material-button-state{background-color:#303030;opacity:.12}
+  .gsi-material-button:not(:disabled):hover{box-shadow:0 1px 2px 0 rgba(0,0,0,0.3),0 1px 3px 1px rgba(0,0,0,0.15);transform:translateY(-1px)}
+  .gsi-material-button:not(:disabled):hover .gsi-material-button-state{background-color:#303030;opacity:.08}
 </style>
+
+<title>SA Recruiters — South African Recruitment Agencies Directory</title>
+<meta name="description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies, branches and vacancies.">
+<link rel="canonical" href="https://sa-recruiters.co.za/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+
+<!-- Primary Meta Tags -->
+<meta name="application-name" content="SA Recruiters">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SA Recruiters">
+<meta name="format-detection" content="telephone=no">
+<meta name="msapplication-TileColor" content="#F2F2F7">
+<meta name="msapplication-tap-highlight" content="no">
+
+<!-- PWA / Manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000" id="meta-theme">
+
+<!-- Favicons (single logo source: icons/icon-*.png) -->
+<link rel="icon" href="/favicon-v2.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/v2-favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/v2-favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/v2-icon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="icons/v2-icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/v2-icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/v2-icon-512.png">
+
+<!-- Apple touch icons -->
+<link rel="apple-touch-icon" sizes="180x180" href="icons/v2-icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/v2-icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/v2-icon-144.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/v2-icon-128.png">
+<link rel="apple-touch-icon" sizes="114x114" href="icons/v2-icon-128.png">
+<link rel="apple-touch-icon" sizes="76x76" href="icons/v2-icon-72.png">
+<link rel="apple-touch-icon" href="icons/v2-icon-192.png">
+
+<!-- Open Graph / social (helps App Capabilities + installability signals) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SA Recruiters">
+<meta property="og:title" content="SA Recruiters">
+<meta property="og:description" content="Connecting South Africa's Recruitment Community — a free directory of South African recruitment agencies.">
+<meta property="og:url" content="https://sa-recruiters.co.za/">
+<meta property="og:image" content="https://sa-recruiters.co.za/icons/v2-icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SA Recruiters">
+<meta name="twitter:description" content="Connecting South Africa's Recruitment Community.">
+<meta name="twitter:image" content="https://sa-recruiters.co.za/icons/v2-icon-512.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://sa-recruiters.co.za/#organization",
+      "name": "SA Recruiters",
+      "url": "https://sa-recruiters.co.za/",
+      "logo": "https://sa-recruiters.co.za/icons/v2-icon-512.png",
+      "description": "A free directory connecting South African candidates, recruitment agencies and employers.",
+      "areaServed": { "@type": "Country", "name": "South Africa" },
+      "sameAs": ["https://g.page/r/CbL3q0tBfGAsEBI"],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+27-71-553-1005",
+        "contactType": "customer service",
+        "areaServed": "ZA"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://sa-recruiters.co.za/#website",
+      "url": "https://sa-recruiters.co.za/",
+      "name": "SA Recruiters",
+      "publisher": { "@id": "https://sa-recruiters.co.za/#organization" },
+      "inLanguage": "en-ZA"
+    }
+  ]
+}
+</script>
+
+<!-- Warm up connections to the origins the app actually fetches from, so DNS
+     lookup + TLS handshake happen in parallel with page load instead of
+     adding latency to the first real request. -->
+<link rel="preconnect" href="https://sarecruiters-uploader.kamogeloralph.workers.dev">
+<link rel="preconnect" href="https://ythznnktswgymerdcxky.supabase.co">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
+<script src="vendor/supabase.min.js?v=3e6956a5dc" defer></script>
+<link rel="preload" as="style" href="styles.css?v=picture-ads1">
+<link rel="stylesheet" href="styles.css?v=picture-ads1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="mono.css?v=mono-7" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=picture-ads1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-scan-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
 </head>
 <body>
-<div class="wrap">
-  <div class="top">
-    <a class="brand" href="/"><img src="/icons/v2-icon-96.png" alt="" width="34" height="34"><span>SA Recruiters</span></a>
-    <a href="/">Back to the app</a>
-  </div>
 
-  <div class="hero">
-    <h1><span>FREE</span> business advertising</h1>
-    <p>Put your business in front of job seekers and employers across South Africa. No cost to you.</p>
-    <div class="steps">
-      <div><b>1</b><span>Fill in the form and upload your logo and business card.</span></div>
-      <div><b>2</b><span>We build your animated ad.</span></div>
-      <div><b>3</b><span>Your ad goes live in the SA Recruiters app.</span></div>
+<div id="app-splash" aria-hidden="true">
+  <div class="sa-splash-inner">
+    <img src="icons/v2-icon-152.png" srcset="icons/v2-icon-96.png 96w, icons/v2-icon-152.png 152w" sizes="76px" alt="SA Recruiters" width="76" height="76" fetchpriority="high" decoding="async">
+    <div class="sa-splash-status" id="app-splash-status">
+      <div class="sa-splash-dots"><span></span><span></span><span></span></div>
+      <p class="sa-splash-title" id="app-splash-title">Getting things ready…</p>
+      <p class="sa-splash-sub" id="app-splash-sub">Loading the latest listings</p>
     </div>
-  </div>
-
-  <form id="adForm" novalidate>
-    <h2>Your business</h2>
-    <div class="field"><label for="business_name">Business name</label><input id="business_name" name="business_name" type="text" maxlength="200" autocomplete="organization" required></div>
-    <div class="row">
-      <div class="field"><label for="contact_person">Contact person</label><input id="contact_person" name="contact_person" type="text" maxlength="200" autocomplete="name" required></div>
-      <div class="field"><label for="phone">Phone / WhatsApp</label><input id="phone" name="phone" type="tel" maxlength="60" autocomplete="tel" inputmode="tel" required></div>
-    </div>
-    <div class="row">
-      <div class="field"><label for="email">Email <span class="opt">(optional)</span></label><input id="email" name="email" type="email" maxlength="200" autocomplete="email"></div>
-      <div class="field"><label for="website">Website <span class="opt">(optional)</span></label><input id="website" name="website" type="text" maxlength="300" inputmode="url" placeholder="www.yourbusiness.co.za" autocomplete="url"></div>
-    </div>
-    <div class="row">
-      <div class="field"><label for="category">What does your business do? <span class="opt">(optional)</span></label>
-        <select id="category" name="category"><option value="">Choose…</option>
-          <option>Construction &amp; trades</option><option>Electrical &amp; plumbing</option><option>Retail &amp; shops</option><option>Restaurants &amp; food</option>
-          <option>Hospitality &amp; tourism</option><option>Health &amp; wellness</option><option>Beauty &amp; hair</option><option>Education &amp; training</option>
-          <option>Transport &amp; logistics</option><option>Security</option><option>Cleaning &amp; domestic</option><option>Automotive</option>
-          <option>IT &amp; technology</option><option>Finance &amp; legal</option><option>Events &amp; entertainment</option><option>Recruitment &amp; HR</option><option>Other</option>
-        </select></div>
-      <div class="field"><label for="province">Province <span class="opt">(optional)</span></label>
-        <select id="province" name="province"><option value="">Choose…</option>
-          <option>Eastern Cape</option><option>Free State</option><option>Gauteng</option><option>KwaZulu-Natal</option><option>Limpopo</option>
-          <option>Mpumalanga</option><option>North West</option><option>Northern Cape</option><option>Western Cape</option><option>All of South Africa</option>
-        </select></div>
-    </div>
-    <div class="field"><label for="ad_message">What should your ad say? <span class="opt">(optional)</span></label>
-      <textarea id="ad_message" name="ad_message" maxlength="1500" placeholder="E.g. your slogan, your services, special offers, opening hours…"></textarea></div>
-
-    <h2 style="margin-top:22px">Your logo and business card</h2>
-    <div class="field"><span class="lbl">Logo</span>
-      <div class="file"><input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,application/pdf"><div class="names" id="logoNames"></div><small>PNG, JPG, WebP or PDF, up to 5MB.</small></div></div>
-    <div class="field"><span class="lbl">Business card <span class="opt">(front and back if you have both)</span></span>
-      <div class="file"><input id="card" name="card" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" multiple><div class="names" id="cardNames"></div><small>Upload at least your logo or your business card. Up to 2 files.</small></div></div>
-    <div class="field"><span class="lbl">Other pictures <span class="opt">(optional, e.g. your work or products)</span></span>
-      <div class="file"><input id="other" name="other" type="file" accept="image/png,image/jpeg,image/webp" multiple><div class="names" id="otherNames"></div><small>Up to 2 pictures.</small></div></div>
-
-    <label class="consent"><input id="consent" type="checkbox"><span>I am happy for SA Recruiters to contact me and to use my logo and details in my advert.</span></label>
-    <div class="hp" aria-hidden="true"><label>Company site<input id="company_site" name="company_site" type="text" tabindex="-1" autocomplete="off"></label></div>
-    <div class="cf-turnstile" data-sitekey="0x4AAAAAAE781UzzffMh7u8L"></div>
-    <p class="err" id="err" role="alert"></p>
-    <button class="go" id="go" type="submit">Send my application</button>
-    <p class="alt">Prefer WhatsApp? Send your business card, logo and contact details to <a href="https://wa.me/27715531005">071 553 1005</a>.</p>
-  </form>
-  <noscript><p>This form needs JavaScript. You can also send your business card, logo and contact details to 071 553 1005.</p></noscript>
-
-  <div class="done" id="done">
-    <h2>Thank you!</h2>
-    <p>We have your application. We will build your animated ad and contact you on the number you gave us.</p>
-    <a class="btn" href="/">Back to SA Recruiters</a>
   </div>
 </div>
 
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+
+<div class="site-menu-backdrop" id="site-menu-backdrop" onclick="closeSiteMenu()" aria-hidden="true"></div>
+<aside class="site-menu-drawer" id="site-menu-drawer" aria-label="Site menu" aria-hidden="true">
+  <div class="site-menu-drawer-head">
+    <div class="site-menu-brand"><img src="icons/logo-96.webp" alt="SA Recruiters" width="42" height="42" loading="lazy" decoding="async"><div><strong>SA Recruiters</strong><span>Recruitment community</span></div></div>
+    <button class="site-menu-close" type="button" data-ripple onclick="closeSiteMenu()" aria-label="Close site menu">×</button>
+  </div>
+  <div class="site-menu-account" role="button" tabindex="0" onclick="closeSiteMenu();openAccountScreen()" onkeydown="activateAccountFromMenu(event)" aria-label="Open My Account">
+    <div class="site-menu-avatar" id="welcome-user-avatar" aria-hidden="true"><span>A</span></div>
+    <div class="site-menu-account-copy"><span id="site-menu-account-mode">Browsing as a guest</span><strong id="welcome-user-name">Guest</strong></div>
+    <svg class="site-menu-account-chev" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+  </div>
+  <nav class="site-menu-nav" aria-label="Site navigation">
+    <button type="button" data-ripple onclick="closeSiteMenu();openJobSeekerSheet()"><span class="site-menu-nav-icon">✋</span><span>Looking for work?<small>Tell us what you're after — it takes a minute</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();openPostJobSheet()"><span class="site-menu-nav-icon">⊕</span><span>Post a job<small>Tell us about the roles you're hiring for</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();showAllVacancies('home')"><span class="site-menu-nav-icon">⌕</span><span>Browse vacancies<small>Find your next opportunity</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();showAllAgencies()"><span class="site-menu-nav-icon">⌂</span><span>Recruitment agencies<small>Explore agencies and branches</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();goPool('profile')"><span class="site-menu-nav-icon">♙</span><span>CV Box<small>Browse CVs and upload yours</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();openMyCvBoxProfile()"><span class="site-menu-nav-icon">☺</span><span>My CV Box upload<small>Edit or remove your listing</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();openMySubmissions()"><span class="site-menu-nav-icon">✉</span><span>My submissions<small>Track reports and suggestions you've sent</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();window.open('/privacy/','_blank','noopener')"><span class="site-menu-nav-icon">◌</span><span>Privacy policy<small>How your data is protected</small></span><b>›</b></button>
+  </nav>
+  <div class="site-menu-section-label">Appearance</div>
+  <button class="site-menu-action" type="button" data-ripple onclick="toggleTheme()"><span class="site-menu-nav-icon">◐</span><span id="site-menu-theme-label">Switch theme</span><b>›</b></button>
+  <div class="site-menu-section-label">Follow SA Recruiters</div>
+  <div id="social-links-row" class="social-links-row site-menu-social"></div>
+  <div class="site-menu-footer"><button class="site-menu-signout" type="button" data-ripple onclick="signOutSaRecruiters()">Sign out of Google</button></div>
+</aside>
+
+<div class="update-banner" id="update-banner" role="status" aria-live="polite" hidden>
+  <div class="update-banner-copy"><strong>A new SA Recruiters version is ready</strong><span>Refresh when you’re ready — your saved searches stay safe.</span></div>
+  <div class="update-banner-actions"><button type="button" class="update-later" onclick="dismissUpdateBanner()">Later</button><button type="button" class="update-now" onclick="forceUpdateReload()">Update now</button></div>
+</div>
+<div class="retry-banner" id="retry-banner" role="status" aria-live="polite">Couldn't refresh the latest listings. <button onclick="retryLoadAll()">Retry</button></div>
+<svg width="0" height="0" style="position:absolute">
+  <defs><linearGradient id="navgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0A84FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs>
+</svg>
+
+<div class="app">
+
+  <!-- ============ HOME ============ -->
+  <div class="screen active" id="screen-home">
+    <h1 class="sr-only">South African recruitment agencies and job vacancies</h1>
+    <div class="screen-fixed">
+    <header>
+      <div class="logo-wrap">
+        <img class="logo-svg" src="icons/logo-96.webp" srcset="icons/logo-96.webp 96w, icons/logo-152.webp 152w" sizes="42px" alt="SA Recruiters logo" width="42" height="42" fetchpriority="high" decoding="async">
+        <div class="logo-text-wrap">
+          <div class="logo-text">SA Recruiters</div>
+          <div class="logo-slogan">Connecting South Africa's Recruitment Community.</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="header-install-btn" id="header-install-btn" data-ripple onclick="installSaRecruiters()" aria-label="Install SA Recruiters app" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg><span>Install</span></button>
+        <button class="site-menu-trigger" data-ripple id="site-menu-trigger" onclick="openSiteMenu()" aria-label="Open site menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </header>
+
+    <div class="connection-status show" id="connection-status" data-state="loading" role="status" aria-live="polite" aria-atomic="true">Updating listings…</div>
+    <div class="search search-mini">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="home-search" class="sr-only">Search vacancies by job title, skill, company, or location</label>
+        <input id="home-search" type="search" placeholder="Job title, skill, company, or location…" oninput="scheduleCachedSearch()">
+      </div>
+    </div>
+    <div class="home-filter-row" role="group" aria-label="Quick filters: nine South African provinces">
+      <a class="home-filter-chip" href="/jobs/gauteng/" aria-label="View Gauteng public job listings">Gauteng <small data-province-count="gauteng">—</small></a>
+      <a class="home-filter-chip" href="/jobs/western-cape/" aria-label="View Western Cape public job listings">Western Cape <small data-province-count="western-cape">—</small></a>
+      <a class="home-filter-chip" href="/jobs/kwazulu-natal/" aria-label="View KwaZulu-Natal public job listings">KwaZulu-Natal <small data-province-count="kwazulu-natal">—</small></a>
+      <a class="home-filter-chip" href="/jobs/eastern-cape/" aria-label="View Eastern Cape public job listings">Eastern Cape <small data-province-count="eastern-cape">—</small></a>
+      <a class="home-filter-chip" href="/jobs/free-state/" aria-label="View Free State public job listings">Free State <small data-province-count="free-state">—</small></a>
+      <a class="home-filter-chip" href="/jobs/limpopo/" aria-label="View Limpopo public job listings">Limpopo <small data-province-count="limpopo">—</small></a>
+      <a class="home-filter-chip" href="/jobs/mpumalanga/" aria-label="View Mpumalanga public job listings">Mpumalanga <small data-province-count="mpumalanga">—</small></a>
+      <a class="home-filter-chip" href="/jobs/north-west/" aria-label="View North West public job listings">North West <small data-province-count="north-west">—</small></a>
+      <a class="home-filter-chip" href="/jobs/northern-cape/" aria-label="View Northern Cape public job listings">Northern Cape <small data-province-count="northern-cape">—</small></a>
+    </div>
+    <div class="stats-wrap">
+      <button class="stats-scroll-btn stats-scroll-prev" type="button" data-ripple onclick="scrollStats(-1)" aria-label="Show previous statistics">‹</button>
+      <div class="stats" id="home-stats">
+      <div class="stat-card stat-card-agencies" data-ripple onclick="showAllAgencies()" role="button" tabindex="0" aria-label="View recruitment agencies"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span><div class="stat-value" id="stat-agencies">…</div><div class="stat-label"><span>Recruitment<br>Agencies</span></div></div>
+      <div class="stat-card stat-card-ads" data-ripple onclick="showAllAds()" role="button" tabindex="0" aria-label="View business ads"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span><div class="stat-value" id="stat-ads" data-count="0">…</div><div class="stat-label"><span>Business<br>Ads</span></div></div>
+      <div class="stat-card stat-card-posters" data-ripple onclick="showVacancyPosters()" role="button" tabindex="0" aria-label="View vacancy posters"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><div class="stat-value" id="stat-posters">…</div><div class="stat-label"><span>Vacancy<br>Posters</span></div></div>
+      <div class="stat-card stat-card-vacancies" data-ripple onclick="showAllVacancies()" role="button" tabindex="0" aria-label="View available vacancies"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div class="stat-value" id="stat-vacancies">…</div><div class="stat-label"><span>Available<br>Vacancies</span></div></div>
+      <div class="stat-card stat-card-employers" data-ripple onclick="showAllEmployers()" role="button" tabindex="0" aria-label="View hiring companies"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/></svg></span><div class="stat-value" id="stat-employers">…</div><div class="stat-label"><span>Hiring<br>Companies</span></div></div>
+      <div class="stat-card stat-card-pool" data-ripple onclick="goPool('home')" role="button" tabindex="0" aria-label="View CV Box candidates"><span class="stat-arrow">→</span><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M16 11a3 3 0 1 0 0-6M17 15c2.4.4 3.7 2 4 5"/></svg></span><div class="stat-value" id="stat-pool">…</div><div class="stat-label"><span>CV Box<br>Profiles</span></div></div>
+      </div>
+      <button class="stats-scroll-btn stats-scroll-next" type="button" data-ripple onclick="scrollStats(1)" aria-label="Show next statistics">›</button>
+    </div>
+    </div>
+
+    <div class="screen-scroll">
+    <div id="home-feed" aria-live="polite" aria-busy="true"></div>
+    <div id="house-ad-home-bottom" class="house-ad-slot" hidden></div>
+    <section class="home-bottom-hero" aria-label="Support the SA Recruiters directory">
+      <div class="home-bottom-brand">
+        <img src="icons/menu-logo-100.webp" alt="SA Recruiters logo" width="50" height="50" loading="lazy" decoding="async">
+        <div><strong>SA Recruiters</strong><span>Connecting South Africa's Recruitment Community.</span></div>
+      </div>
+      <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory — view donation details">
+        <span class="support-ticker-item">💙 Support the Directory to keep it running — Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
+      </div>
+    </section>
+    <footer class="home-site-footer">
+      <p>SA Recruiters was founded by Ralph Kamogelo Chiloane as a community-guided, open initiative to help South African youth find jobs.</p>
+      <nav aria-label="Legal links"><a href="/privacy/">Privacy Policy</a><span aria-hidden="true">&amp;</span><a href="/terms/">Terms of Use</a></nav>
+    </footer>
+    </div>
+  </div>
+
+  <!-- ============ SAVED ============ -->
+  <div class="screen" id="screen-saved">
+    <div class="screen-fixed">
+    <header>
+      <div class="logo-text">Saved vacancies</div>
+      <div class="header-actions">
+        <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+        </button>
+      </div>
+    </header>
+    </div>
+    <div class="screen-scroll">
+    <div id="saved-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ PROFILE / MY ACCOUNT (guest or Google) ============ -->
+  <div class="screen" id="screen-account">
+    <div class="screen-fixed">
+    <header>
+      <div class="screen-title-group"><div class="logo-text">Profile</div><div class="screen-context">Your SA Recruiters account</div></div>
+      <div class="header-actions"><button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button></div>
+    </header>
+    </div>
+    <div class="screen-scroll menu-scroll">
+      <div class="account-hero">
+        <button class="account-avatar account-avatar-btn" id="account-avatar" data-ripple onclick="openProfilePhotoSheet()" aria-label="Profile photo editing is available after sign-in" title="Sign in to change your profile photo" disabled><span>A</span></button>
+        <div class="account-hero-copy">
+          <div class="account-name" id="account-name">Guest</div>
+          <div class="account-email" id="account-email">Browsing as a guest</div>
+          <div class="account-provider" id="account-provider" style="display:none"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 2.56 34.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Signed in with Google</div>
+        </div>
+      </div>
+
+      <div class="account-signin-card" id="account-signin-card" aria-hidden="false">
+        <div class="account-signin-copy">
+          <strong>Create your free account</strong>
+          <span>Save jobs, track applications, and unlock unlimited vacancy views.</span>
+        </div>
+        <button id="google-sign-in" class="gsi-material-button" type="button">
+          <div class="gsi-material-button-state"></div>
+          <div class="gsi-material-button-content-wrapper">
+            <div class="gsi-material-button-icon">
+              <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:block;">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                <path fill="none" d="M0 0h48v48H0z"></path>
+              </svg>
+            </div>
+            <span class="gsi-material-button-contents">Sign in with Google</span>
+          </div>
+        </button>
+        <p class="account-signin-status" id="account-signin-status" role="status" aria-live="polite"></p>
+        <p class="account-signin-terms">By signing in, you agree to our <button type="button" class="gate-terms-link" onclick="window.open('terms/','_blank','noopener')" aria-label="Read the Terms and Conditions">Terms &amp; Conditions</button> and <button type="button" class="gate-terms-link" onclick="window.open('privacy/','_blank','noopener')" aria-label="Read the Privacy Policy">Privacy Policy</button>.</p>
+      </div>
+
+      <div class="account-quota-card" id="account-quota-card">
+        <div class="account-quota-top"><strong>Free views today</strong><span id="account-quota-count">5 of 5 left</span></div>
+        <div class="account-quota-bar"><div class="account-quota-fill" id="account-quota-fill"></div></div>
+        <div class="account-quota-note" id="account-quota-note">Sign in for unlimited views and to save jobs across devices.</div>
+      </div>
+
+      <!-- ===== Profile settings (signed-in): edit name + photo, delete account ===== -->
+      <div class="pgroup-label" id="account-settings-label" hidden>Profile settings</div>
+      <div class="pgrouped-list" id="account-settings-group" hidden>
+        <button class="profile-menu-item" data-ripple onclick="openEditProfileSheet()"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span><span>Edit profile<span class="mi-sub">Name and profile photo</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="openProfilePhotoSheet()"><span class="mi-icon tile-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 15l-4.5-4.5L9 18"/></svg></span><span>Change profile photo<span class="mi-sub">Shown next to your name and activity</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="openDeleteAccountSheet()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span><span>Delete my account<span class="mi-sub">Permanently removes your sign-in data</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
+
+      <div class="pgroup-label">Your listing</div>
+      <div class="pgrouped-list">
+        <button class="profile-menu-item" data-ripple onclick="openMyCvBoxProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>CV Box upload<span class="mi-sub" id="account-pool-status">Your CV in the CV Box</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
+      <button class="account-help-action" type="button" data-ripple onclick="openJobSeekerSheet()"><span class="account-help-icon" aria-hidden="true">?</span><span><strong>Need help finding work?</strong><small>Send a private request and our team will point you toward suitable opportunities.</small></span><span class="account-help-arrow" aria-hidden="true">›</span></button>
+
+      <section class="saved-alerts-panel" id="saved-alerts-panel" aria-labelledby="saved-alerts-title"></section>
+      <section class="install-app-card" id="install-app-card" hidden>
+        <div><strong>Install SA Recruiters</strong><span>Keep job searches one tap away, with a faster launch and offline shell.</span></div>
+        <button type="button" class="account-primary-btn" onclick="installSaRecruiters()">Install app</button>
+      </section>
+      <div class="pgroup-label">Activity</div>
+      <div class="pgrouped-list">
+        <button class="profile-menu-item" data-ripple onclick="openMySubmissions()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>My submissions<span class="mi-sub">Track reports and suggestions you've sent</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
+
+      <div class="pgroup-label">Preferences</div>
+      <div class="pgrouped-list">
+        <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray"><svg><use href="icons.svg#i52b638"/></svg></span><span>Switch theme<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="window.open('/privacy/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+        <button class="profile-menu-item" data-ripple onclick="window.open('terms/','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the current platform terms</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
+
+      <div class="pgroup-label" id="account-signout-label" hidden>Account</div>
+      <div class="pgrouped-list" id="account-signout-group" hidden>
+        <button class="profile-menu-item" data-ripple onclick="signOutSaRecruiters()"><span class="mi-icon tile-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5M15 12H3M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg></span><span>Sign out<span class="mi-sub">Sign out of your Google account</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      </div>
+    <div class="contact-section">
+      <div class="contact-section-title">Contact Details</div>
+      <div class="contact-warning">
+        <div class="contact-warning-title">DO NOT BE TRICKED BY RECRUITERS. HUMAN TRAFFICKING IS A SERIOUS CRIME.</div>
+        <div class="contact-warning-emergency">EMERGENCY 0800 428 428</div>
+      </div>
+      <div class="contact-card">
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0zM8 21h8"/></svg></span>Department of Employment &amp; Labour<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
+        <div class="contact-card-body">
+          <a href="tel:0123094000" class="contact-row"><span class="contact-label">Head Office</span><span class="contact-value">012 309 4000</span></a>
+          <a href="tel:0860666883" class="contact-row"><span class="contact-label">Fraud Hotline</span><span class="contact-value">0860 666 883</span></a>
+          <a href="mailto:dol.customercare@labour.gov.za" class="contact-row"><span class="contact-label">Customer Care Email</span><span class="contact-value">dol.customercare@labour.gov.za</span></a>
+          <a href="mailto:Fraud@labour.gov.za" class="contact-row"><span class="contact-label">Fraud Email</span><span class="contact-value">Fraud@labour.gov.za</span></a>
+          <a href="https://www.labour.gov.za" target="_blank" rel="noopener" class="contact-row"><span class="contact-label">Website</span><span class="contact-value">www.labour.gov.za</span></a>
+        </div>
+      </div>
+      <div class="contact-card">
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M8 11h8M8 14h5"/></svg></span>CCMA<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
+        <div class="contact-card-body">
+          <a href="tel:0861161616" class="contact-row"><span class="contact-label">Call Centre</span><span class="contact-value">0861 161 616</span></a>
+          <a href="tel:0113776650" class="contact-row"><span class="contact-label">National Office</span><span class="contact-value">011 377 6650</span></a>
+          <a href="mailto:info@ccma.org.za" class="contact-row"><span class="contact-label">Email</span><span class="contact-value">info@ccma.org.za</span></a>
+          <a href="https://wa.me/27762366698" target="_blank" rel="noopener" class="contact-row"><span class="contact-label">WhatsApp</span><span class="contact-value">+27 76 236 6698</span></a>
+          <a href="https://www.ccma.org.za" target="_blank" rel="noopener" class="contact-row"><span class="contact-label">Website</span><span class="contact-value">www.ccma.org.za</span></a>
+        </div>
+      </div>
+      <div class="contact-card">
+        <div class="contact-card-head" data-ripple onclick="toggleContactCard(this)" role="button" tabindex="0" aria-expanded="false"><span class="contact-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5.2-3.4 8.8-8 10-4.6-1.2-8-4.8-8-10V6l8-3z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></span>UIF (Unemployment Insurance Fund)<svg class="contact-card-chev"><use href="icons.svg#i36fdbb"/></svg></div>
+        <div class="contact-card-body">
+          <a href="tel:0800030007" class="contact-row"><span class="contact-label">Call Centre (Toll Free)</span><span class="contact-value">0800 030 007</span></a>
+          <a href="tel:0123371600" class="contact-row"><span class="contact-label">Switchboard</span><span class="contact-value">012 337 1600</span></a>
+          <a href="mailto:uifcallcentre@labour.gov.za" class="contact-row"><span class="contact-label">Email</span><span class="contact-value">uifcallcentre@labour.gov.za</span></a>
+          <a href="mailto:uifcomplaints@labour.gov.za" class="contact-row"><span class="contact-label">Complaints Email</span><span class="contact-value">uifcomplaints@labour.gov.za</span></a>
+          <div class="contact-row contact-row-static"><span class="contact-label">USSD (Mobile)</span><span class="contact-value">*134*843#</span></div>
+          <a href="https://ufiling.labour.gov.za" target="_blank" rel="noopener" class="contact-row"><span class="contact-label">Website</span><span class="contact-value">ufiling.labour.gov.za</span></a>
+        </div>
+      </div>
+    </div>
+
+
+      <div class="account-meta" id="account-meta"></div>
+    </div>
+  </div>
+
+
+  <!-- ============ MENU (site menu: brand, track, community, resources) ============ -->
+  <div class="screen" id="screen-menu">
+    <div class="screen-scroll menu-scroll">
+    <div class="menu-hero">
+    <header class="menu-header">
+      <div class="menu-brand">
+        <div class="menu-brand-logo" style="width:50px;height:50px;min-width:50px;max-width:50px;min-height:50px;max-height:50px;overflow:hidden;"><img src="icons/menu-logo-100.webp" alt="SA Recruiters" loading="lazy" decoding="async" width="50" height="50" style="display:block;width:50px;height:50px;max-width:50px;max-height:50px;object-fit:cover;"></div>
+        <div class="menu-brand-copy">
+          <div class="profile-name" id="profile-status-name">SA Recruiters</div>
+          <div class="profile-slogan">Connecting South Africa's Recruitment Community.</div>
+        </div>
+      </div>
+      <div class="menu-header-actions">
+        <button class="menu-more-btn" data-ripple onclick="openNotesSheet()" aria-label="Open Notes" title="Notes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/></svg></button>
+        <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+          <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===== Support ticker ===== -->
+    <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory &#8212; view donation details">
+      <span class="support-ticker-item">&#128153; Support the Directory to keep it running &#8212; Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
+    </div>
+    </div>
+
+    <section class="quick-access" aria-label="Quick access">
+      <div class="quick-access-label">Quick access</div>
+      <div class="quick-access-grid">
+        <div class="quick-card quick-card-candidates">
+          <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or upload a CV</small></div></div>
+          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openPoolRegisterSheet()">Upload a CV</button></div>
+        </div>
+        <div class="quick-card quick-card-employers">
+          <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div><strong>Employers</strong><small>Find candidates or post a vacancy</small></div></div>
+          <div class="quick-card-actions"><button data-ripple onclick="goPool('profile')">Browse CV Box</button><button data-ripple onclick="openGeneralVacancySheet()">Post vacancy</button></div>
+        </div>
+      </div>
+    </section>
+    <div class="pgroup-label">Community</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><img class="tipchat-menu-logo" src="icons/tipchat-mark.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span><span>TipChat<span class="mi-sub">Share advice and vacancies by text or poster</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="showAllAds('menu')"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span><span>Business Ads<span class="mi-sub">See businesses advertising on SA Recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('/advertise/','_blank','noopener')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span><span>Advertise for FREE<span class="mi-sub">Put your business in front of South Africa</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+    </div>
+
+    <div class="pgroup-label">Resources</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="window.open('about/','_blank','noopener')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg></span><span>About SA Recruiters<span class="mi-sub">Our mission and recruitment community</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('learning-hub')"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>Learning Hub<span class="mi-sub">Guides &amp; resources for job seekers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-prep')"><span class="mi-icon tile-purple"><svg><use href="icons.svg#ia65142"/></svg></span><span>How to Prepare Your CV<span class="mi-sub">Step-by-step CV writing guide</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('cv-revamp')"><span class="mi-icon tile-mint"><svg><use href="icons.svg#ib745ad"/></svg></span><span>CV Revamp Service<span class="mi-sub">Professional CV makeover &amp; review</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openContentSheet('interview-tips')"><span class="mi-icon tile-orange"><svg><use href="icons.svg#i4ccc00"/></svg></span><span>Interview Tips<span class="mi-sub">Ace your next interview with confidence</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('/know-your-rights/','_blank','noopener')"><span class="mi-icon tile-brown"><svg><use href="icons.svg#i053685"/></svg></span><span>Know Your Rights<span class="mi-sub">Labour law &amp; worker protections explained</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('/faq/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ie9938a"/></svg></span><span>FAQ<span class="mi-sub">Frequently asked questions &amp; answers</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+    </div>
+
+    <div class="pgroup-label">&nbsp;</div>
+    <div class="pgrouped-list">
+      <button class="profile-menu-item" data-ripple onclick="window.open('/privacy/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="window.open('terms/','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (HTML) or download the PDF</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+    </div>
+    </div>
+  </div>
+  <!-- ============ TIPCHAT COMMUNITY ============ -->
+  <div class="screen" id="screen-community">
+    <div class="screen-fixed">
+      <header class="community-header">
+        <button class="vac-folder-back-btn vac-simple-back screen-back-btn community-back" data-ripple onclick="goBackFromCommunity()" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <img class="tipchat-section-logo" src="icons/tipchat-logo.svg" alt="TipChat" width="174" height="60" loading="lazy" decoding="async"><div class="community-heading-copy"><h1 class="sr-only">TipChat</h1><p>Jobs, advice &amp; opportunities · South Africa</p></div>
+        <button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share TipChat">Share</button>
+      </header>
+    </div>
+    <div class="screen-scroll">
+
+      <section class="community-admin-panel" id="community-moderator-panel" hidden>
+        <button class="community-admin-toggle" type="button" onclick="communityToggleModeration()"><span>Moderation queue</span><span id="community-moderation-count">0</span></button>
+        <div class="community-moderation-queue" id="community-moderation-queue" hidden></div>
+      </section>
+      <section class="community-admin-panel community-mine-panel" id="community-mine" hidden>
+        <button class="community-admin-toggle" type="button" onclick="communityToggleMine()"><span>My submissions</span><span id="community-mine-count" title="Awaiting review">0</span></button>
+        <div class="community-moderation-queue" id="community-mine-list" hidden></div>
+      </section>
+      <div class="community-feed-toolbar">
+        <div><h2>TipChat feed</h2></div>
+        <div class="community-feed-toolbar-actions">
+          <button class="community-join-btn community-join-compact" id="community-join-btn" type="button" data-ripple onclick="communityJoinGroup()" aria-label="Join TipChat" aria-pressed="false" title="Join TipChat">Join</button>
+          <div class="community-sort" role="group" aria-label="Sort community posts">
+            <button type="button" data-community-sort="new" class="is-active" aria-pressed="true" onclick="communitySetSort('new')">Newest</button>
+            <button type="button" data-community-sort="top" aria-pressed="false" onclick="communitySetSort('top')">Top this month</button>
+          </div>
+        </div>
+      </div>
+      <div class="community-feed" id="community-feed" aria-live="polite"><div class="community-empty">Loading TipChat…</div></div>
+      <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
+        <div class="community-compose-head"><strong id="community-compose-heading">Start a conversation</strong><span>Anonymous by default</span></div>
+        <div class="community-identity-box" id="community-identity-box" hidden><label for="community-identity-toggle"><input type="checkbox" id="community-identity-toggle" onchange="communitySetIdentityVisibility(this.checked)"><span>Show my CV Box name and photo on my TipChat posts and comments</span></label><small>Off by default. You can switch this off any time and your past posts return to “Anonymous member”.</small></div>
+        <div class="community-compose-type" role="group" aria-label="Choose what to post"><button type="button" data-community-compose-type="discussion" class="is-active" aria-pressed="true" onclick="communitySetComposerType('discussion')">Ask / share a tip</button><button type="button" data-community-compose-type="vacancy" aria-pressed="false" onclick="communitySetComposerType('vacancy')">Post a vacancy</button></div>
+        <p class="community-vacancy-help" id="community-vacancy-help" hidden>Share a vacancy in text, attach its poster, or do both. Include a job title and location when you can.</p>
+        <div class="community-vacancy-fields" id="community-vacancy-fields" hidden>
+          <div class="community-vacancy-field-grid"><div><label for="community-vacancy-title">Job title (optional)</label><input id="community-vacancy-title" maxlength="140" placeholder="e.g. Safety Officers Required"></div><div><label for="community-vacancy-location">Location (optional)</label><input id="community-vacancy-location" maxlength="120" placeholder="e.g. Polokwane, Limpopo"></div></div>
+          <label for="community-vacancy-application">How to apply (optional)</label><input id="community-vacancy-application" maxlength="300" placeholder="e.g. Send CVs to name@example.com or apply link">
+          <div class="community-poster-upload" id="community-poster-upload" hidden>
+            <label for="community-poster-file">Add a vacancy poster <span>JPG, PNG or WebP · max 5 MB after compression</span></label>
+            <input id="community-poster-file" type="file" accept="image/jpeg,image/png,image/webp" onchange="communityHandlePosterPhoto(event)">
+            <div class="community-poster-preview-wrap"><div id="community-poster-fallback">Poster preview will appear here</div><img id="community-poster-preview" alt="Selected vacancy poster preview" style="display:none"><button type="button" onclick="communityRemovePoster()">Remove poster</button></div>
+          </div>
+        </div>
+        <label class="sr-only" for="community-post-body">Write a TipChat post</label>
+        <textarea id="community-post-body" maxlength="3000" placeholder="What would you like advice on? Share a question or helpful tip…"></textarea>
+        <div class="community-emoji-tools"><button type="button" class="community-emoji-trigger" onclick="communityToggleEmojiPicker('community-post-emoji-picker','community-post-body')" aria-expanded="false">Add a reaction</button><div class="community-emoji-picker" id="community-post-emoji-picker" hidden role="listbox" aria-label="Choose a custom SA Recruiters emoji"></div></div>
+        <div class="community-emoji-preview" id="community-post-emoji-preview" aria-live="polite"></div>
+        <div class="community-compose-actions"><span class="community-composer-hint" id="community-composer-hint">Sign in and join to share.</span><button class="community-submit-btn" id="community-post-submit" type="submit" disabled>Post</button></div>
+        <p class="community-status" id="community-status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+  <!-- ============ SMART MANAGER (admin only) ============ -->
+  <div class="screen" id="screen-smartmanager">
+    <div class="screen-fixed">
+    <header>
+      <div class="screen-title-group"><div class="logo-text">Smart Manager</div><div class="screen-context">Admin tools</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile" title="Back to profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button></div>
+    </header>
+    <div class="sm-intro">
+      <p>Each agency has a unique link. Send the link to the agency office so they can add their own branches and vacancies. They cannot edit or delete — only add.</p>
+    </div>
+    <div class="search search-mini" style="margin:0 16px 12px">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="sm-search" class="sr-only">Search agencies</label>
+        <input id="sm-search" type="search" placeholder="Search agencies by name or location..." oninput="filterSmartManager()">
+      </div>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div id="smartmanager-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ SUBMISSIONS (admin only) ============ -->
+  <div class="screen" id="screen-submissions">
+    <div class="screen-fixed">
+    <header>
+      <div class="screen-title-group"><div class="logo-text">Submissions</div><div class="screen-context">Admin tools</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToProfile()" aria-label="Back to profile" title="Back to profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button></div>
+    </header>
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="sub-tab-reports" data-ripple onclick="switchSubTab('reports')">Reports <span class="sub-tab-badge" id="reports-badge" style="display:none;">0</span></button>
+      <button class="sub-tab" id="sub-tab-suggestions" data-ripple onclick="switchSubTab('suggestions')">Suggestions <span class="sub-tab-badge" id="suggestions-badge" style="display:none;">0</span></button>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div id="submissions-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ MANAGER LINK STATUS (loading / invalid) ============ -->
+  <div class="screen" id="screen-manager-status">
+    <div class="screen-fixed">
+    <header>
+      <div class="screen-title-group"><div class="logo-text" id="manager-status-title">Manager link</div><div class="screen-context">Please wait</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button></div>
+    </header>
+    </div>
+    <div class="screen-scroll" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:60vh;padding:24px">
+      <div id="manager-status-spinner" class="manager-status-spinner" aria-label="Loading"></div>
+      <h2 id="manager-status-heading" style="font-size:20px;font-weight:800;margin:18px 0 8px">Loading your manager link…</h2>
+      <p id="manager-status-body" style="color:var(--text-2);font-size:15px;line-height:1.55;max-width:420px;margin:0 auto 20px">We're connecting to SA Recruiters. This usually takes a moment.</p>
+      <button id="manager-status-retry" class="manager-add-btn" data-ripple onclick="retryManagerTokenFromStatus()" style="display:none"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span> Try again</button>
+      <button id="manager-status-home" class="sm-share-btn" data-ripple onclick="goBackToHome()" style="display:none;margin-top:12px">Back to directory</button>
+    </div>
+  </div>
+
+  <!-- ============ MANAGER MODE (agency self-service) ============ -->
+  <div class="screen" id="screen-manager">
+    <div class="screen-fixed">
+    <header>
+      <div class="screen-title-group"><div class="logo-text" id="manager-agency-name">Agency</div><div class="screen-context">Agency manager</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button></div>
+    </header>
+    <div class="manager-banner">
+      <p>Add branches and vacancies for your agency. Once saved, changes can only be made by contacting the admin. SA Recruiters does not charge agencies to list vacancies. <a href="terms/vacancy-posting-terms.pdf" target="_blank" rel="noopener">View vacancy terms</a>.</p>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="sm-card" id="manager-agency-profile" style="margin-top:14px"></div>
+    <div class="section-head"><div class="section-title">Branches</div></div>
+    <div id="manager-branch-list"></div>
+    <button class="manager-add-btn" data-ripple onclick="managerAddBranch()"><span class="mi-icon"><svg><use href="icons.svg#i0248b0"/></svg></span> Add branch</button>
+
+    <div class="section-head" style="margin-top:24px;"><div class="section-title">Vacancies</div></div>
+    <div id="manager-vacancy-list"></div>
+    <button class="manager-add-btn" data-ripple onclick="managerAddVacancy()"><span class="mi-icon"><svg><use href="icons.svg#i0f1c52"/></svg></span> Add vacancy</button>
+    </div>
+  </div>
+
+  <!-- ============ MANAGER MODE (employer self-service, vacancies only) ============ -->
+  <div class="screen" id="screen-manager-employer">
+    <div class="screen-fixed">
+    <header>
+      <div class="screen-title-group"><div class="logo-text" id="manager-employer-name">Company</div><div class="screen-context">Employer manager</div></div>
+      <div class="header-actions"><button class="screen-close-btn" data-ripple onclick="goBackToHome()" aria-label="Back to home" title="Back to home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="theme-toggle" data-ripple onclick="toggleTheme()" aria-label="Toggle theme">
+        <span class="sun"><svg><use href="icons.svg#i1b1edb"/></svg></span><span class="moon"><svg><use href="icons.svg#i52b638"/></svg></span>
+      </button></div>
+    </header>
+    <div class="manager-banner">
+      <p>Post vacancies for your company. Once saved, changes can only be made by contacting the admin. SA Recruiters does not charge employers to list vacancies. <a href="terms/vacancy-posting-terms.pdf" target="_blank" rel="noopener">View vacancy terms</a>.</p>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="sm-card" id="manager-employer-profile" style="margin-top:14px"></div>
+    <div class="section-head"><div class="section-title">Vacancies</div></div>
+    <div id="manager-employer-vacancy-list"></div>
+    <button class="manager-add-btn" data-ripple onclick="managerEmployerAddVacancy()"><span class="mi-icon"><svg><use href="icons.svg#i0f1c52"/></svg></span> Add vacancy</button>
+    </div>
+  </div>
+
+  <!-- ============ ALL AGENCIES LIST ============ -->
+  <div class="screen" id="screen-allagencies">
+    <div class="screen-fixed">
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="section-title-with-link"><div class="logo-text">All Agencies</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('agencies')" aria-label="Share All Agencies link" title="Share All Agencies link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 12px">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="allagencies-search" class="sr-only">Search agencies</label>
+        <input id="allagencies-search" type="search" placeholder="Search agencies, trades, industries..." oninput="renderAllAgenciesList()">
+      </div>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="precise-location-chip" id="allagencies-geo-chip" data-ripple onclick="usePreciseLocation('allagencies')" role="button" tabindex="0" aria-label="Filter agencies near your precise location">
+      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <span class="pl-text" id="allagencies-geo-text">Use precise location</span>
+    </div>
+    <div id="house-ad-agencies-top" class="house-ad-slot" hidden></div>
+    <div id="allagencies-list"></div>
+    <div id="house-ad-agencies-bottom" class="house-ad-slot" hidden></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-allads">
+    <div class="screen-fixed">
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="section-title-with-link"><div class="logo-text">Ads</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('ads')" aria-label="Share Ads link" title="Share Ads link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 12px">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="allads-search" class="sr-only">Search ads</label>
+        <input id="allads-search" type="search" placeholder="Search businesses and ads..." oninput="renderAllAdsList()">
+      </div>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div id="allads-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ ALL ADS LIST ============ -->
+  <!-- ============ ALL BRANCHES LIST ============ -->
+  <div class="screen" id="screen-allbranches">
+    <div class="screen-fixed">
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="logo-text">All Branches</div>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 12px">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="allbranches-search" class="sr-only">Search branches</label>
+        <input id="allbranches-search" type="search" placeholder="Search branch name, location, agency..." oninput="renderAllBranchesList()">
+      </div>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="precise-location-chip" id="allbranches-geo-chip" data-ripple onclick="usePreciseLocation('allbranches')" role="button" tabindex="0" aria-label="Filter branches near your precise location">
+      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <span class="pl-text" id="allbranches-geo-text">Use precise location</span>
+    </div>
+    <div id="allbranches-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ ALL VACANCIES (v2 layout) ============ -->
+  <div class="screen" id="screen-allvacancies">
+    <div class="screen-scroll vx">
+      <header class="vx-bar">
+        <button class="vx-icon-btn screen-back-btn" id="allvacancies-back" data-ripple onclick="handleVacanciesBack()" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+        <div class="vx-bar-title"><h1 id="vacancy-market-title">Vacancies</h1><p id="vx-crumb">Loading live roles…</p></div>
+        <button class="vx-icon-btn" type="button" data-ripple onclick="shareSectionLink('vacancies')" aria-label="Share vacancies link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 10.51 6.83-3.98M8.59 13.49l6.83 3.98"/></svg></button>
+      </header>
+
+      <section class="vx-search" aria-label="Search and filter vacancies">
+        <div class="vx-fields">
+          <label class="vx-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span class="sr-only">Search by job title, skill or company</span><input id="allvacancies-search" type="search" list="vx-recent" placeholder="Job title, skill or company" autocomplete="off" enterkeyhint="search"></label>
+          <label class="vx-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span class="sr-only">Location or province</span><input id="allvacancies-location" type="search" placeholder="City or province" autocomplete="off" enterkeyhint="search"></label>
+          <datalist id="vx-recent"></datalist>
+        </div>
+        <div class="vx-quick" role="group" aria-label="Quick filters">
+          <button type="button" class="vx-chip vx-chip-filters" id="vx-filter-toggle" aria-expanded="false" aria-controls="vx-filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filters<b id="vx-filter-count" hidden>0</b></button>
+          <button type="button" class="vx-chip" data-vx="fresh">New this week</button>
+          <button type="button" class="vx-chip" data-vx="remote">Remote</button>
+          <button type="button" class="vx-chip" data-vx="salary">Salary shown</button>
+          <button type="button" class="vx-chip" data-vx="saved">Saved</button>
+          <button type="button" class="vx-chip" data-vx="near">Near me</button>
+        </div>
+        <div class="vx-filters" id="vx-filters" hidden>
+          <label><span>Industry</span><select id="allvacancies-industry"><option value="">Any industry</option></select></label>
+          <label><span>Work mode</span><select id="allvacancies-remote"><option value="">Any</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">On-site</option></select></label>
+          <label><span>Experience</span><select id="allvacancies-exp"><option value="">Any</option><option value="entry">Entry level</option><option value="mid">Mid level</option><option value="senior">Senior level</option></select></label>
+          <label><span>Posted</span><select id="vx-posted"><option value="">Any time</option><option value="1">Last 24 hours</option><option value="3">Last 3 days</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></label>
+          <button type="button" class="vx-clear" id="vacancy-clear-filters">Reset all</button>
+        </div>
+      </section>
+
+      <div class="vx-active" id="vx-active" aria-live="polite"></div>
+      <div class="vx-status">
+        <p><span id="allvacancies-result-count">Browse the latest opportunities</span><span id="vx-hidden-note"></span></p>
+        <div class="vx-tools">
+          <label class="vx-sort"><span class="sr-only">Sort vacancies</span><select id="allvacancies-sort" aria-label="Sort vacancies"><option value="newest">Newest</option><option value="closing">Closing soon</option><option value="salary">Highest salary</option><option value="title">Title A–Z</option></select></label>
+          <div class="vx-view" role="group" aria-label="Layout"><button type="button" data-vxview="list" aria-label="List layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button type="button" data-vxview="grid" aria-label="Grid layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></button></div>
+        </div>
+      </div>
+
+      <div class="precise-location-chip" id="allvacancies-geo-chip" data-ripple onclick="usePreciseLocation('allvacancies')" role="button" tabindex="0" aria-label="Filter vacancies near your precise location" hidden><span class="pl-icon" aria-hidden="true"></span><span class="pl-text" id="allvacancies-geo-text">Use precise location</span></div>
+      <div id="allvacancies-list" class="vx-results"></div>
+      <button class="vx-more" id="allvacancies-loadmore" type="button" onclick="loadMoreGeneralVacancies()" style="display:none">Load more vacancies</button>
+    </div>
+  </div>
+
+  <!-- ============ VACANCY POSTERS (separate from vacancies) ============ -->
+  <div class="screen" id="screen-allposters">
+    <div class="screen-fixed">
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="section-title-with-link"><div class="logo-text">Vacancy Posters</div><div class="section-title-actions"><button class="poster-post-btn" type="button" data-ripple onclick="openPublicPosterSheet()">+ Post a poster</button><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('posters')" aria-label="Share Vacancy Posters link" title="Share Vacancy Posters link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div></div>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 12px">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="allposters-search" class="sr-only">Search posters</label>
+        <input id="allposters-search" type="search" placeholder="Search posters..." oninput="renderPosterFeed(postersCache)">
+      </div>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div id="house-ad-posters-top" class="house-ad-slot" hidden></div>
+    <div class="poster-list" id="poster-feed" aria-label="Vacancy posters"></div>
+    <div id="house-ad-posters-bottom" class="house-ad-slot" hidden></div>
+    </div>
+  </div>
+
+  <!-- ============ ALL EMPLOYERS LIST ============ -->
+  <div class="screen" id="screen-allemployers">
+    <div class="screen-fixed">
+    <header class="vac-simple-header">
+      <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="goBackFromDirectory()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="section-title-with-link"><div class="logo-text">Employers</div><button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('employers')" aria-label="Share Employers link" title="Share Employers link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button></div>
+    </header>
+    <div class="search search-mini" style="margin:0 16px 12px">
+      <div class="search-inner">
+        <svg aria-hidden="true"><use href="icons.svg#i85d6ec"/></svg>
+        <label for="allemployers-search" class="sr-only">Search employers</label>
+        <input id="allemployers-search" type="search" placeholder="Search companies, industries, locations..." oninput="renderAllEmployersList()">
+      </div>
+    </div>
+    </div>
+    <div class="screen-scroll">
+    <div class="precise-location-chip" id="allemployers-geo-chip" data-ripple onclick="usePreciseLocation('allemployers')" role="button" tabindex="0" aria-label="Filter employers near your precise location">
+      <span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <span class="pl-text" id="allemployers-geo-text">Use precise location</span>
+    </div>
+    <div class="hub-admin-row" style="margin:0 16px 14px;">
+      <button class="hub-add-btn" data-ripple onclick="openEmployerForm()">+ Register your company</button>
+    </div>
+    <div id="house-ad-employers-top" class="house-ad-slot" hidden></div>
+    <div id="allemployers-list"></div>
+    <div id="house-ad-employers-bottom" class="house-ad-slot" hidden></div>
+    </div>
+  </div>
+
+  <!-- ============ CV BOX ============ -->
+  <div class="screen" id="screen-pool">
+    <div class="screen-fixed">
+      <header class="vac-simple-header">
+        <button class="vac-folder-back-btn vac-simple-back screen-back-btn" data-ripple onclick="closeCvBox()" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="logo-text">CV Box</div>
+        <button class="section-share-btn" type="button" data-ripple onclick="shareSectionLink('candidates')" aria-label="Share CV Box link" title="Share CV Box link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 10.51l6.83-3.98M8.59 13.49l6.83 3.98"/></svg><span>Share link</span></button>
+      </header>
+    </div>
+    <div class="screen-scroll">
+      <div class="cv-box-actions">
+        <button class="manager-add-btn cv-box-upload-btn" data-ripple onclick="openPoolRegisterSheet()"><span class="mi-icon"><svg><use href="icons.svg#iea7f73"/></svg></span>Upload your CV <span class="cv-box-free-label">— Free</span></button>
+        <button class="cv-box-manage-btn" data-ripple onclick="openMyCvBoxProfile()">Already uploaded? <strong>Manage my CV</strong></button>
+      </div>
+      <div class="cv-box-filters" id="pool-filters" hidden>
+        <input type="search" id="pool-search" oninput="renderPoolList()" placeholder="Search names, roles, location" aria-label="Search CV Box profiles">
+        <select id="pool-sector-filter" onchange="renderPoolList()" aria-label="Filter by sector"><option value="">All sectors</option></select>
+      </div>
+      <div id="house-ad-candidates-top" class="house-ad-slot" hidden></div>
+      <div id="pool-list"></div>
+      <div id="house-ad-candidates-bottom" class="house-ad-slot" hidden></div>
+    </div>
+  </div>
+
+</div>
+<nav class="bottom-nav">
+  <button class="navbtn active" data-tab="home" data-ripple onclick="refreshHome()" aria-label="Home">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+    <span class="navbtn-label">Home</span>
+  </button>
+  <button class="navbtn" data-tab="account" data-ripple aria-label="Profile">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.7-3.8 3.3-5.8 7-5.8s6.3 2 7 5.8"/></svg>
+    <span class="navbtn-label">Profile</span>
+  </button>
+  <button class="navbtn" data-tab="saved" data-ripple aria-label="Saved">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18l-6-3-6 3z"/></svg>
+    <span class="navbtn-label">Saved</span>
+  </button>
+  <button class="navbtn" id="nav-suggest" data-ripple onclick="openSuggestionSheet()" aria-label="Suggest or comment">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.7-5.1A7.5 7.5 0 1 1 20 11.5z"/></svg>
+    <span class="navbtn-label">Feedback</span>
+  </button>
+  <button class="navbtn navbtn-community" id="nav-community" data-ripple onclick="openCommunity()" aria-label="Open TipChat" title="TipChat community">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg>
+    <span class="navbtn-label">TipChat</span>
+  </button>
+  <button class="navbtn" data-tab="menu" data-ripple aria-label="Menu">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    <span class="navbtn-label">Menu</span>
+  </button>
+</nav>
+
+
+<!-- ============ FREE VIEW LIMIT (guests) ============ -->
+<div class="sheet-scrim" id="guest-limit-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">&times;</button>
+    <h3>You've used your 5 free views</h3>
+    <div class="manager-banner" style="padding:0 0 12px">
+      <p>Create your free SA Recruiters account to keep browsing every vacancy — plus save jobs across devices, get alerts, and upload a CV whenever you're ready.</p>
+    </div>
+    <button id="guest-limit-signin" class="gsi-material-button" type="button" onclick="signInWithGoogle()">
+      <div class="gsi-material-button-state"></div>
+      <div class="gsi-material-button-content-wrapper">
+        <div class="gsi-material-button-icon">
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:block;">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+            <path fill="none" d="M0 0h48v48H0z"></path>
+          </svg>
+        </div>
+        <span class="gsi-material-button-contents">Sign in with Google — it's free</span>
+      </div>
+    </button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('guest-limit-overlay')">Keep browsing</button>
+  </div>
+</div>
+
+<!-- ============ PROFILE SETTINGS: EDIT PROFILE ============ -->
+<div class="sheet-scrim" id="edit-profile-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('edit-profile-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Edit profile</h3>
+    <div class="field"><label>Display name</label><input id="ep-name" placeholder="How your name appears in the app" maxlength="80"></div>
+    <div class="field"><label>Email (sign-in identity)</label><input id="ep-email" readonly style="opacity:.65"></div>
+    <p class="account-signin-status" id="edit-profile-status" role="status" aria-live="polite" style="min-height:16px;margin:4px 0 8px;font-size:12px;color:var(--text-2)"></p>
+    <button class="sheet-submit" data-ripple onclick="saveProfileEdits()" id="edit-profile-save-btn">Save changes</button>
+  </div>
+</div>
+
+<!-- ============ PROFILE SETTINGS: PROFILE PHOTO ============ -->
+<div class="sheet-scrim" id="profile-photo-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('profile-photo-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Profile photo</h3>
+    <div class="photo-row">
+      <div class="avatar" style="width:64px;height:64px;">
+        <img id="pp-preview" style="display:none;">
+        <span id="pp-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
+      </div>
+      <label>Add photo<input type="file" accept="image/*" onchange="handleProfilePhoto(event)"></label>
+    </div>
+    <p class="account-signin-status" id="profile-photo-status" role="status" aria-live="polite" style="min-height:16px;margin:4px 0 8px;font-size:12px;color:var(--text-2)"></p>
+    <button class="sheet-submit" data-ripple onclick="saveProfilePhoto()" id="profile-photo-save-btn">Save photo</button>
+    <button class="sheet-cancel" data-ripple onclick="removeProfilePhoto()" id="profile-photo-remove-btn" style="display:none">Remove photo</button>
+  </div>
+</div>
+
+<!-- ============ PROFILE SETTINGS: DELETE ACCOUNT ============ -->
+<div class="sheet-scrim" id="delete-account-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('delete-account-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Delete my account</h3>
+    <div class="manager-banner" style="padding:0 0 12px"><p>This permanently removes your SA Recruiters sign-in, your saved vacancies, and your CV Box listing if you have one. This cannot be undone.</p></div>
+    <div class="field"><label>Type DELETE to confirm</label><input id="da-confirm" placeholder="DELETE" autocomplete="off"></div>
+    <p class="account-signin-status" id="delete-account-status" role="status" aria-live="polite" style="min-height:16px;margin:4px 0 8px;font-size:12px;color:var(--text-2)"></p>
+    <button class="sheet-submit danger" data-ripple onclick="confirmDeleteAccount()" id="delete-account-btn">Delete my account permanently</button>
+    <button class="sheet-cancel" data-ripple onclick="closeSheet('delete-account-overlay')">Keep my account</button>
+  </div>
+</div>
+
+<!-- ============ ADD/EDIT AGENCY SHEET ============ -->
+<div class="sheet-scrim" id="form-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3 id="form-title">Add agency</h3>
+    <div class="photo-row">
+      <div class="avatar" style="width:56px;height:56px;">
+        <img id="photo-preview" style="display:none;">
+        <span id="photo-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
+      </div>
+      <label>Add photo<input type="file" accept="image/*" onchange="handlePhoto(event)"></label>
+    </div>
+    <div class="field"><label>Agency name</label><input id="f-name" placeholder="e.g. Prime Placements"></div>
+    <div class="field"><label>Website</label><input id="f-website" placeholder="e.g. www.example.co.za"></div>
+    <div class="field"><label>Contact person / number</label><input id="f-contact" placeholder="e.g. Jane Dlamini, 082 000 0000"></div>
+    <div class="field"><label>Email address</label><input id="f-email" placeholder="e.g. info@agency.co.za"></div>
+    <div class="field"><label>Head office location</label><input id="f-location" placeholder="e.g. Sandton, Johannesburg (main office area)"></div>
+    <div class="field"><label>Head office address</label><input id="f-address" placeholder="e.g. 4 Dunton Road, Rivonia, Sandton, 2128"></div>
+    <div class="field"><label>Companies (comma separated)</label><input id="f-companies" placeholder="e.g. Standard Bank, Shoprite"></div>
+    <div class="field"><label>Trades / Industries (comma separated)</label><input id="f-trades" placeholder="e.g. Forklift drivers, Mining, Logistics, Construction"></div>
+    <div class="field">
+      <label>CV preference</label>
+      <select id="f-cvpref"><option>Email</option><option>Website</option><option>WhatsApp</option><option>Walk-in</option></select>
+    </div>
+    <div class="toggle-row" id="verified-toggle-row" style="display:none;">
+      <span>Mark as Verified</span>
+      <label class="switch"><input type="checkbox" id="f-verified"><span class="track"><span class="knob"></span></span></label>
+    </div>
+    <button class="sheet-submit" data-ripple onclick="saveAgency()">Save</button>
+  </div>
+</div>
+
+<!-- ============ ADD/EDIT EMPLOYER SHEET ============ -->
+<div class="sheet-scrim" id="employer-form-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3 id="employer-form-title">Register your company</h3>
+    <div class="photo-row">
+      <div class="avatar" style="width:56px;height:56px;">
+        <img id="emp-photo-preview" style="display:none;">
+        <span id="emp-photo-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
+      </div>
+      <label>Add logo<input type="file" accept="image/*" onchange="handleEmployerPhoto(event)"></label>
+    </div>
+    <div class="field"><label>Company name</label><input id="e-name" placeholder="e.g. Shoprite Checkers"></div>
+    <div class="field"><label>Industry</label><input id="e-industry" placeholder="e.g. Retail, Manufacturing, Logistics"></div>
+    <div class="field"><label>Website</label><input id="e-website" placeholder="e.g. www.example.co.za"></div>
+    <div class="field"><label>Contact person / number</label><input id="e-contact" placeholder="e.g. HR Dept, 082 000 0000"></div>
+    <div class="field"><label>Email address</label><input id="e-email" placeholder="e.g. careers@company.co.za"></div>
+    <div class="field"><label>Location</label><input id="e-location" placeholder="e.g. Sandton, Johannesburg"></div>
+    <div class="field"><label>Address</label><input id="e-address" placeholder="e.g. 4 Dunton Road, Rivonia, Sandton, 2128"></div>
+    <div class="toggle-row" id="employer-verified-toggle-row" style="display:none;">
+      <span>Mark as Verified</span>
+      <label class="switch"><input type="checkbox" id="e-verified"><span class="track"><span class="knob"></span></span></label>
+    </div>
+    <button class="sheet-submit" data-ripple onclick="saveEmployer()">Save</button>
+  </div>
+</div>
+
+<!-- ============ POSTER UPLOAD SHEET (employer) ============ -->
+<div class="sheet-scrim" id="poster-upload-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Upload a vacancy poster</h3>
+    <div class="photo-row">
+      <div class="avatar" style="width:56px;height:80px;border-radius:10px;">
+        <img id="poster-preview" style="display:none;width:100%;height:100%;object-fit:cover;">
+        <span id="poster-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span>
+      </div>
+      <label>Choose poster image<input type="file" accept="image/*" onchange="handlePosterPhoto(event)"></label>
+    </div>
+    <div class="field"><label>Caption (optional)</label><input id="poster-caption" placeholder="e.g. We're hiring — Kroonstad Pharmacy"></div>
+    <button class="sheet-submit" data-ripple onclick="savePoster()">Publish poster</button>
+  </div>
+</div>
+
+<!-- ============ PUBLIC POSTER SUBMISSION (Turnstile protected) ============ -->
+<div class="sheet-scrim" id="public-poster-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('public-poster-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Post a vacancy poster</h3>
+    <p class="sheet-help-text">Share a clear recruitment poster with the SA job-seeking community. Please only post genuine vacancies.</p>
+    <div class="photo-row">
+      <div class="avatar" style="width:56px;height:80px;border-radius:10px;"><img id="public-poster-preview" style="display:none;width:100%;height:100%;object-fit:cover;"><span id="public-poster-fallback"><svg><use href="icons.svg#ie1215e"/></svg></span></div>
+      <label>Choose poster image<input type="file" accept="image/*" onchange="handlePublicPosterPhoto(event)"></label>
+    </div>
+    <div class="field"><label for="public-poster-caption">Caption (optional)</label><input id="public-poster-caption" maxlength="500" placeholder="e.g. Retail assistants wanted in Gauteng"></div>
+    <div id="public-poster-turnstile" class="turnstile-slot"></div>
+    <button class="sheet-submit" id="public-poster-submit" data-ripple onclick="submitPublicPoster()">Post poster</button>
+  </div>
+</div>
+<!-- ============ POSTER LIGHTBOX (full-screen view) ============ -->
+<div class="sheet-scrim" id="poster-lightbox-overlay" style="align-items:center;justify-content:center;">
+  <button class="sheet-close-btn" style="position:fixed;top:20px;right:20px;" data-ripple onclick="closePosterLightbox()" aria-label="Close" title="Close">×</button>
+  <img id="poster-lightbox-img" loading="lazy" decoding="async" style="max-width:92vw;max-height:88vh;border-radius:var(--radius-sm);" alt="Vacancy poster">
+</div>
+
+<!-- ============ BRANCH SHEET ============ -->
+<div class="sheet-scrim" id="branch-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Add branch</h3>
+    <div class="field"><label>Branch name</label><input id="b-name" placeholder="e.g. Durban Branch"></div>
+    <div class="field"><label>Address / location</label><input id="b-location" placeholder="e.g. 45 Kings Rd, Umhlanga, Durban"></div>
+    <div class="field"><label>Phone</label><input id="b-phone" type="tel" placeholder="e.g. 031 555 0123"></div>
+    <div class="field"><label>Email</label><input id="b-email" type="email" placeholder="e.g. durban@agency.co.za"></div>
+    <button class="sheet-submit" data-ripple onclick="saveBranch()">Save branch</button>
+  </div>
+</div>
+
+<!-- ============ VACANCY SHEET ============ -->
+<div class="sheet-scrim" id="vacancy-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Add vacancy</h3>
+    <div class="field"><label>Role / title</label><input id="v-title" placeholder="e.g. Junior Bookkeeper"></div>
+    <div class="field"><label>Location</label><input id="v-location" placeholder="e.g. Randburg, Gauteng"></div>
+    <div class="field"><label>Employment type</label><input id="v-etype" placeholder="e.g. Full-time, Part-time, Contract"></div>
+    <div class="field"><label>Contract type</label><input id="v-contract" placeholder="e.g. Permanent, Fixed-term, Casual"></div>
+    <div class="field"><label>Salary</label><input id="v-salary" placeholder="e.g. R18,000 pm or TBC"></div>
+    <div class="field"><label>Hours</label><input id="v-hours" placeholder="e.g. 45 hours per week"></div>
+    <div class="field"><label>Work schedule</label><input id="v-schedule" placeholder="e.g. Mon&ndash;Fri, shifts"></div>
+    <div class="field"><label>Start date</label><input id="v-start" placeholder="e.g. ASAP or 1 Oct 2026"></div>
+    <div class="field"><label>Closing date</label><input id="v-closing" placeholder="e.g. 15 Aug 2026"></div>
+    <div class="field"><label>Notes (requirements, job description, etc.)</label><textarea id="v-notes" placeholder="Optional details about the role, requirements, duties"></textarea></div>
+    <div class="field"><label>Application link (optional)</label><input id="v-link" type="url" placeholder="e.g. https://agency.co.za/apply"></div>
+    <label class="terms-accept-row" for="vacancy-terms-accept"><input id="vacancy-terms-accept" type="checkbox"><span><strong>I agree to the vacancy posting terms</strong><small>SA Recruiters does not charge for listing vacancies or using the platform. <a href="terms/vacancy-posting-terms.pdf" target="_blank" rel="noopener">Read the one-page terms and conditions</a>.</small></span></label>
+    <button class="sheet-submit" data-ripple onclick="saveVacancy()">Publish vacancy</button>
+  </div>
+</div>
+
+<!-- ============ GENERAL VACANCY SHEET (post / edit) ============ -->
+<div class="sheet-scrim" id="general-vacancy-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3 id="gv-title">Post a vacancy</h3>
+    <div class="field"><label>Role / title</label><input id="gv-role" placeholder="e.g. Senior Forklift Operator"></div>
+    <div class="field"><label>Company / organisation</label><input id="gv-company" placeholder="e.g. ABC Logistics (optional)"></div>
+    <div class="field"><label>Location</label><input id="gv-location" placeholder="e.g. Randburg, Gauteng"></div>
+    <div class="field"><label>Work arrangement</label><select id="gv-remote"><option value="">— Not specified —</option><option value="On-site">On-site</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option></select></div>
+    <div class="field"><label>Employment type</label><input id="gv-etype" placeholder="e.g. Full-time, Part-time, Contract"></div>
+    <div class="field"><label>Experience level</label><select id="gv-exp"><option value="">— Not specified —</option><option value="Entry-level">Entry-level</option><option value="Mid-level">Mid-level</option><option value="Senior">Senior</option><option value="Executive">Executive</option></select></div>
+    <div class="field"><label>Contract type</label><input id="gv-contract" placeholder="e.g. Permanent, Fixed-term, Casual"></div>
+    <div class="field"><label>Salary</label><input id="gv-salary" placeholder="e.g. R18,000 pm or TBC"></div>
+    <div class="field"><label>Hours</label><input id="gv-hours" placeholder="e.g. 45 hours per week"></div>
+    <div class="field"><label>Work schedule</label><input id="gv-schedule" placeholder="e.g. Mon&ndash;Fri, shifts"></div>
+    <div class="field"><label>Start date</label><input id="gv-start" placeholder="e.g. ASAP or 1 Oct 2026"></div>
+    <div class="field"><label>Closing date</label><input id="gv-closing" placeholder="e.g. 15 Aug 2026"></div>
+    <div class="field"><label>Notes (requirements, job description, etc.)</label><textarea id="gv-notes" placeholder="Optional details about the role, requirements, duties"></textarea></div>
+    <div class="field"><label>Application link</label><input id="gv-link" type="url" placeholder="e.g. https://company.co.za/apply"></div>
+    <div class="field"><label>Contact email (if no link)</label><input id="gv-email" type="email" placeholder="e.g. hr@company.co.za"></div>
+    <div class="field"><label>Contact phone (if no link)</label><input id="gv-phone" type="tel" placeholder="e.g. 011 123 4567"></div>
+    <label class="terms-accept-row" for="general-vacancy-terms-accept"><input id="general-vacancy-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>SA Recruiters does not charge for listing vacancies or using the platform. <a href="terms/" target="_blank" rel="noopener">Read the SA Recruiters Terms and Conditions</a>.</small></span></label>
+    <button class="sheet-submit" data-ripple onclick="saveGeneralVacancy()" id="gv-submit-btn">Publish vacancy</button>
+  </div>
+</div>
+
+<!-- ============ CV BOX REGISTRATION SHEET (public) ============ -->
+<div class="sheet-scrim" id="pool-register-overlay">
+  <div class="sheet pool-sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <div class="pool-sheet-head">
+      <h3 id="pool-register-title">Upload your CV</h3>
+      <span class="pool-time-chip">⏱ ~1 min</span>
+    </div>
+    <div class="manager-banner pool-intro" style="padding:0 0 12px">
+      <p>Upload your CV in under a minute. We need your name, position, location, experience, availability, phone number, profile photo and CV. Your profile is reviewed before it appears in the CV Box; your phone number, email and full CV stay off public profiles and are shared only with employers who pay to unlock your CV.</p>
+    </div>
+    <div class="cv-box-form">
+      <div class="cv-box-form-icon" aria-hidden="true">CV</div>
+      <div class="field"><label>Full name *</label><input id="pool-name" placeholder="e.g. Thabo Nkosi" autocomplete="name"></div>
+      <div class="field"><label>Position / role *</label><input id="pool-position" placeholder="e.g. Forklift Driver, Accountant or Sales Manager"></div>
+      <div class="field" id="pool-photo-field"><label>Profile photo *</label><input id="pool-photo" type="file" accept="image/png,image/jpeg,image/webp" onchange="handlePoolPhoto(event)"><small class="helper-note" id="pool-photo-status">Required · a clear photo of your face (JPG, PNG or WebP)</small><div id="pool-photo-wrap" style="display:none;margin-top:10px"><img id="pool-photo-preview" alt="Your profile photo preview" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--border)"></div></div>
+      <div class="field"><label>Upload your CV *</label><input id="pool-cv" type="file" accept="application/pdf,image/png,image/jpeg" onchange="handlePoolCv(event)"><small class="helper-note" id="pool-cv-status">PDF, PNG or JPG · maximum 3 MB</small><a id="pool-cv-current-link" class="pool-cv-link pool-cv-owner-link" target="_blank" rel="noopener noreferrer" aria-label="Open your uploaded CV in a new tab" hidden>Open your uploaded CV <span aria-hidden="true">↗</span></a></div>
+      <div class="field"><label for="pool-location">Where are you based? *</label><input id="pool-location" placeholder="e.g. Durban, KwaZulu-Natal" autocomplete="address-level2" maxlength="80"><small class="helper-note">Shown on your public profile.</small></div>
+      <div class="field"><label for="pool-experience">Years of experience *</label><select id="pool-experience"><option value="">Choose…</option><option value="0">No experience yet</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select><small class="helper-note">Shown on your public profile.</small></div>
+      <div class="field"><label for="pool-availability">When can you start? *</label><select id="pool-availability"><option value="">Choose…</option><option value="Immediately">Immediately</option><option value="Within 1 week">Within 1 week</option><option value="Within 2 weeks">Within 2 weeks</option><option value="Within 1 month">Within 1 month</option><option value="More than 1 month">More than 1 month</option></select><small class="helper-note">Shown on your public profile.</small></div>
+      <div class="field cv-box-contact-field"><label for="pool-phone">Phone / WhatsApp number *</label><input id="pool-phone" type="tel" inputmode="tel" placeholder="e.g. 071 234 5678" autocomplete="tel" maxlength="20"><small class="helper-note">Not shown publicly. Shared only with an employer who pays to unlock your full CV.</small></div>
+      <div class="field cv-box-contact-field"><label>Email for CV enquiries <span class="field-optional">optional</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Not shown publicly. Shared only with an employer who pays to unlock your full CV.</small></div>
+      <div class="cv-box-legacy-fields" aria-hidden="true">
+        <input id="pool-sector"><select id="pool-gender"><option value="">—</option></select><select id="pool-grade12"><option value="">—</option></select><select id="pool-criminal"><option value="">—</option></select><input id="pool-qualification"><select id="pool-drivers-license"><option value="">—</option></select><select id="pool-transport"><option value="">—</option></select><select id="pool-relocate"><option value="">—</option></select><select id="pool-employment"><option value="">—</option></select><input id="pool-salary"><select id="pool-work-authorized"><option value="">—</option></select><textarea id="pool-about"></textarea><input id="pool-email-alerts" type="checkbox">
+      </div>
+    </div>
+    <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the CV Box, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
+    <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Upload CV</button>
+    <button class="sheet-submit danger" data-ripple onclick="deleteMyPoolProfile()" id="pool-delete-btn" style="display:none">Remove my profile</button>
+  </div>
+</div>
+
+<!-- ============ PAID CV DOWNLOAD REQUEST ============ -->
+<div class="sheet-scrim" id="cv-download-overlay">
+  <div class="sheet cv-download-sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('cv-download-overlay')" aria-label="Close" title="Close">×</button>
+    <div class="cv-box-kicker">PAID CV DOWNLOAD</div>
+    <h3 id="cv-download-title">Request this CV</h3>
+    <p class="manager-banner" style="padding:0 0 12px">Pay securely by card. After Yoco confirms payment, we’ll email you a private CV download link together with the candidate’s contact details.</p>
+    <div class="field"><label for="cv-download-email">Email for your download link</label><input type="email" id="cv-download-email" autocomplete="email" maxlength="254" placeholder="you@example.com" required></div>
+    <button class="sheet-submit" data-ripple id="cv-download-checkout">Pay R49 and download CV</button>
+    <div class="cv-payment-methods" role="group" aria-label="Payment methods">
+      <span class="cv-payment-methods-label">Pay securely with</span>
+      <div class="cv-payment-logo-row">
+        <img class="cv-payment-logo cv-payment-logo--yoco" src="/yoco.svg" alt="Yoco" loading="lazy" decoding="async">
+        <img class="cv-payment-logo" src="/applepay.svg" alt="Apple Pay" loading="lazy" decoding="async">
+        <img class="cv-payment-logo" src="/googlepay.svg" alt="Google Pay" loading="lazy" decoding="async">
+        <img class="cv-payment-logo" src="/visa.svg" alt="Visa" loading="lazy" decoding="async">
+        <img class="cv-payment-logo" src="/amex.svg" alt="American Express" loading="lazy" decoding="async">
+        <img class="cv-payment-logo" src="/mastercard.svg" alt="Mastercard" loading="lazy" decoding="async">
+      </div>
+    </div>
+    <button class="cv-download-whatsapp-fallback" type="button" id="cv-download-whatsapp">Need help? Contact SA Recruiters</button>
+    <p class="helper-note">Private download links expire after 72 hours.</p>
+  </div>
+</div>
+<!-- ============ EMPLOYER GATE (public, no Google sign-in / no profile) ============ -->
+<div class="sheet-scrim" id="employer-gate-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('employer-gate-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Employer access</h3>
+    <div class="manager-banner" style="padding:0 0 12px"><p>Employers manage their listing through a private Manager Link — no Google account and no CV Box upload needed.</p></div>
+    <button class="sheet-submit" data-ripple onclick="closeSheet('employer-gate-overlay');openEmployerForm();">Register your company — get a Manager Link</button>
+    <div class="field" style="margin-top:18px"><label>Already registered? Email me my Manager Link</label><input id="employer-resend-email" type="email" placeholder="you@company.co.za" autocomplete="email"></div>
+    <button class="sheet-submit" data-ripple onclick="resendEmployerManagerLink()" id="employer-resend-btn">Email my Manager Link</button>
+  </div>
+</div>
+
+<!-- ============ EMPLOYER MANAGER LINK CONFIRMATION (shown once, post self-registration) ============ -->
+<div class="sheet-scrim" id="employer-manager-link-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('employer-manager-link-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>Your Manager Link</h3>
+    <div class="manager-banner" style="padding:0 0 12px"><p id="employer-manager-link-note">Save this link — it's how you manage your listing.</p></div>
+    <div class="field"><label>Manager Link</label><input id="employer-manager-link-body" readonly onclick="this.select()" style="font-size:12.5px"></div>
+    <button class="sheet-submit" data-ripple onclick="copyEmployerManagerLink()">Copy link</button>
+  </div>
+</div>
+
+<!-- ============ POST A JOB — public enquiry form (FirstJobly-style, ALWAYS open) ============ -->
+<!-- This form creates a pending enquiry only. It never publishes a vacancy;
+     an admin must review and approve it first. -->
+<div class="sheet-scrim" id="post-job-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Post a job</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Tell us about the roles you're hiring for. An admin will review your request before anything is published — SA Recruiters never charges employers to list vacancies.</p>
+    <div class="field"><label>Company name</label><input id="pj-company" placeholder="e.g. Shoprite Checkers"></div>
+    <div class="field"><label>Contact person</label><input id="pj-contact" placeholder="e.g. Jane Dlamini, HR"></div>
+    <div class="field"><label>Work email</label><input id="pj-email" type="email" autocomplete="email" placeholder="you@company.co.za"></div>
+    <div class="field"><label>Phone number <span class="field-optional">optional</span></label><input id="pj-phone" type="tel" autocomplete="tel" placeholder="082 000 0000"></div>
+    <div class="field"><label>Industry <span class="field-optional">optional</span></label><input id="pj-industry" placeholder="e.g. Retail, Manufacturing, Logistics"></div>
+    <div class="field">
+      <label>Positions to fill <span class="field-optional">optional</span></label>
+      <select id="pj-positions">
+        <option value="">Select</option>
+        <option>1</option>
+        <option>2-5</option>
+        <option>6-10</option>
+        <option>10+</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>What kind of roles? <span class="field-optional">optional</span></label>
+      <div class="role-pill-group" id="pj-role-types">
+        <button type="button" class="role-pill" data-ripple onclick="this.classList.toggle('active')">Internships</button>
+        <button type="button" class="role-pill" data-ripple onclick="this.classList.toggle('active')">Learnerships</button>
+        <button type="button" class="role-pill" data-ripple onclick="this.classList.toggle('active')">Entry-Level</button>
+        <button type="button" class="role-pill" data-ripple onclick="this.classList.toggle('active')">Graduate Programmes</button>
+        <button type="button" class="role-pill" data-ripple onclick="this.classList.toggle('active')">Bursaries</button>
+        <button type="button" class="role-pill" data-ripple onclick="this.classList.toggle('active')">Apprenticeships</button>
+        <button type="button" class="role-pill" data-ripple onclick="this.classList.toggle('active')">Permanent</button>
+        <button type="button" class="role-pill" data-ripple onclick="this.classList.toggle('active')">Contract</button>
+      </div>
+    </div>
+    <div class="field"><label>Additional details <span class="field-optional">optional</span></label><textarea id="pj-details" placeholder="Anything else that helps us understand the roles..."></textarea></div>
+    <div class="field"><label>Website <span class="field-optional">optional</span></label><input id="pj-website" placeholder="e.g. www.example.co.za"></div>
+    <label class="terms-accept-row" for="post-job-terms-accept"><input id="post-job-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By submitting this job request, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>.</small></span></label>
+    <div id="post-job-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+    <button class="sheet-submit" data-ripple onclick="submitJobPostEnquiry()">Submit for admin review</button>
+    <p style="font-size:11.5px;color:var(--text-3);text-align:center;margin-top:12px;">Prefer WhatsApp? <a href="#" id="post-job-wa-link" target="_blank" rel="noopener">Message the admin instead</a>.</p>
+  </div>
+</div>
+
+<!-- ============ LOOKING FOR WORK? — quick job-seeker intake (always open) ============ -->
+<!-- Creates a private request for the admin only. It never creates a public CV Box
+     profile; an admin reviews it and can convert it. -->
+<div class="sheet-scrim" id="job-seeker-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Looking for work?</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Tell us a little about yourself and the work you want. Our team will review your request and point you to suitable opportunities. This is free — SA Recruiters never charges job seekers to apply.</p>
+    <div class="field"><label>Full name</label><input id="js-name" autocomplete="name" placeholder="e.g. Thandi Nkosi"></div>
+    <div class="field"><label>Phone / WhatsApp</label><input id="js-phone" type="tel" autocomplete="tel" placeholder="082 000 0000"></div>
+    <div class="field"><label>Email <span class="field-optional">optional — we'll send helpful links</span></label><input id="js-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+    <div class="field"><label>Where are you based? <span class="field-optional">optional</span></label><input id="js-location" placeholder="e.g. Pretoria, Gauteng"></div>
+    <div class="field"><label>What work are you looking for?</label><input id="js-looking" maxlength="500" placeholder="e.g. Admin, IT support, entry-level — open to other fields"></div>
+    <div class="field"><label>Highest qualification <span class="field-optional">optional</span></label><input id="js-qualification" placeholder="e.g. Matric, Diploma, BSc Information Technology"></div>
+    <div class="field">
+      <label>Work status in South Africa</label>
+      <select id="js-work-status">
+        <option value="">Select</option>
+        <option value="citizen_pr">SA citizen / permanent resident</option>
+        <option value="work_visa">I hold a valid SA work visa / permit</option>
+        <option value="unsure">Not sure / prefer to discuss</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>When can you start? <span class="field-optional">optional</span></label>
+      <select id="js-availability">
+        <option value="">Select</option>
+        <option>Immediately</option>
+        <option>Within 1 month</option>
+        <option>Serving a notice period</option>
+        <option>Flexible</option>
+      </select>
+    </div>
+    <div class="field"><label>Tell us more <span class="field-optional">optional — experience, skills, anything useful</span></label><textarea id="js-message" maxlength="4000" placeholder="e.g. Experience in auditing, administration and customer service…"></textarea></div>
+    <div class="field"><label>CV link <span class="field-optional">optional — Google Drive, Dropbox, etc.</span></label><input id="js-cv" type="url" inputmode="url" placeholder="Paste a share link to your CV"></div>
+    <label class="terms-accept-row" for="job-seeker-consent"><input id="job-seeker-consent" type="checkbox"><span><strong>I CONSENT TO BEING CONTACTED</strong><small>I agree that SA Recruiters may store these details and contact me about opportunities, as set out in the <a href="terms/" target="_blank" rel="noopener">Terms and Conditions</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. I understand listing is not a guarantee of placement.</small></span></label>
+    <div id="job-seeker-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+    <button class="sheet-submit" id="job-seeker-submit" data-ripple onclick="submitJobSeekerRequest()">Send my request</button>
+    <p style="font-size:11.5px;color:var(--text-3);text-align:center;margin-top:12px;">Prefer WhatsApp? <a href="#" id="job-seeker-wa-link" target="_blank" rel="noopener">Message the admin instead</a>.</p>
+  </div>
+</div>
+
+<!-- ============ ADMIN SHEET (REMOVED — admin now lives in admin.html) ============ -->
+
+<!-- ============ SUPPORT SHEET ============ -->
+<div class="sheet-scrim" id="support-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Support this directory</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">This app is free to use. If it's helped you, a small donation keeps it running.</p>
+    <div class="hub-contact-grid">
+      <!-- ⚠️ SA RECRUITERS OFFICIAL CONTACT DETAILS — DO NOT CHANGE ⚠️
+           Email: sarecruiters.directory@gmail.com
+           WhatsApp: +27 71 553 1005
+           Bank: Capitec 2573389037 (SA Recruiters)
+           Keep these three blocks exactly as-is in any future edit. -->
+      <div class="hub-contact-item wide" data-ripple onclick="copyText('sarecruiters.directory@gmail.com', this)"><div class="hub-contact-icon"><svg><use href="icons.svg#i651ffa"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Email</div><div class="hub-contact-value">sarecruiters.directory@gmail.com</div></div></div>
+      <div class="hub-contact-item is-link"><div class="hub-contact-icon wa-tile"><svg class="wa-glyph"><use href="icons.svg#i7ebf0f"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">WhatsApp</div><div class="hub-contact-value"><a href="https://wa.me/27715531005" style="color:inherit;">+27 71 553 1005</a></div></div></div>
+      <div class="hub-contact-item is-link"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.25 7 12 7 12s7-6.75 7-12a7 7 0 0 0-7-7Z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="9.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Phone</div><div class="hub-contact-value"><a href="tel:+27715531005" style="color:inherit;">071 553 1005</a></div></div></div>
+      <div class="hub-contact-item wide is-link"><div class="hub-contact-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20.5 5v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 12.2h9M7.5 8.8h9M7.5 15.6h5.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Google Business Profile</div><div class="hub-contact-value"><a href="https://g.page/r/CbL3q0tBfGAsEBI" target="_blank" rel="noopener noreferrer" style="color:inherit;">Find us on Google</a></div></div></div>
+      <div class="hub-contact-item wide" data-ripple onclick="copyText('2573389037', this)"><div class="hub-contact-icon"><svg><use href="icons.svg#i536d55"/></svg></div><div class="hub-contact-body"><div class="hub-contact-label">Capitec Bank — Account</div><div class="hub-contact-value">2573389037 (SA Recruiters)</div></div></div>
+      <!-- ⚠️ END PROTECTED CONTACT DETAILS ⚠️ -->
+    </div>
+  </div>
+</div>
+
+<!-- ============ REPORT SHEET ============ -->
+<div class="sheet-scrim" id="report-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Report a problem</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Spotted wrong info, a broken link, or misuse of a listing? Let us know and we'll review it.</p>
+    <div class="field">
+      <label>Agency this is about</label>
+      <input id="r-agency" list="r-agency-list" placeholder="Type or pick the agency name">
+      <datalist id="r-agency-list"></datalist>
+    </div>
+    <div class="field">
+      <label>Reason</label>
+      <select id="r-reason">
+        <option>Incorrect contact details</option>
+        <option>Broken website link</option>
+        <option>Fake or misleading listing</option>
+        <option>Closed / no longer operating</option>
+        <option>Duplicate entry</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Details (optional)</label><textarea id="r-details" placeholder="Add anything that helps us fix it..."></textarea></div>
+    <div class="field"><label>Your contact (optional)</label><input id="r-contact" placeholder="Email or phone — so we can follow up"></div>
+    <div id="report-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+    <button class="sheet-submit" data-ripple onclick="submitReport()">Submit report</button>
+  </div>
+</div>
+
+<!-- ============ SUGGESTION / COMMENT SHEET ============ -->
+<div class="sheet-scrim" id="suggestion-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>Suggest or comment</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Know an agency we should list? Have feedback or an idea? Share it here and we'll review it.</p>
+    <div class="field">
+      <label>Type</label>
+      <select id="s-type">
+        <option>Suggest an agency</option>
+        <option>Feedback / comment</option>
+        <option>Feature request</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Agency name (if suggesting)</label><input id="s-agency" placeholder="e.g. Prime Placements"></div>
+    <div class="field"><label>Details</label><textarea id="s-details" placeholder="Tell us anything — location, contact, trades, or just your thoughts..." style="min-height:90px;"></textarea></div>
+    <div class="field"><label>Your contact (optional)</label><input id="s-contact" placeholder="Email or phone — so we can follow up"></div>
+    <div id="suggestion-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+    <button class="sheet-submit" data-ripple onclick="submitSuggestion()">Submit</button>
+  </div>
+</div>
+
+<!-- ============ MY SUBMISSIONS (read-only: signed-in user's own reports + suggestions) ============ -->
+<div class="sheet-scrim" id="my-submissions-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3>My submissions</h3>
+    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Reports and suggestions you've sent, and their current status.</p>
+    <div id="my-submissions-list"></div>
+  </div>
+</div>
+
+<!-- ============ WHATSAPP CONFIRMATION SHEET (reports + suggestions) ============ -->
+<div class="sheet-scrim" id="whatsapp-confirm-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <div id="wa-confirm-icon" style="text-align:center;margin-bottom:12px;font-size:40px;">✅</div>
+    <h3 id="wa-confirm-title" style="text-align:center;">Submitted — thank you!</h3>
+    <p id="wa-confirm-msg" style="font-size:13.5px;color:var(--text-2);text-align:center;margin:-4px 0 18px;line-height:1.6;">Your submission has been saved. Tap the button below to send it straight to the admin via WhatsApp so it's seen right away.</p>
+    <a id="wa-confirm-link" href="#" target="_blank" rel="noopener" class="sheet-submit wa-btn" data-ripple style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;">
+      <svg class="wa-glyph"><use href="icons.svg#ic4f1c0"/></svg>
+      Send via WhatsApp
+    </a>
+  </div>
+</div>
+
+<!-- ============ CONTENT SHEET (menu items) ============ -->
+<div class="sheet-scrim" id="content-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3 id="content-title">Section</h3>
+    <div id="content-body" style="font-size:14px;color:var(--text-2);line-height:1.6;max-height:55vh;overflow-y:auto;margin-bottom:10px;"></div>
+  </div>
+</div>
+
+<!-- ============ CONTENT EDIT SHEET (admin add/edit article) ============ -->
+<div class="sheet-scrim" id="content-edit-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
+    <h3 id="content-edit-title">Add article</h3>
+    <div class="field"><label>Article title</label><input id="ce-title" placeholder="e.g. What is SA Recruiters?"></div>
+    <div class="field"><label>Content</label><textarea id="ce-body" placeholder="Write the article here. You can use simple HTML tags like &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt; and &lt;a href&gt;." style="min-height:180px;font-family:inherit;font-size:13.5px"></textarea></div>
+    <button class="sheet-submit" data-ripple onclick="saveContentArticle()">Save article</button>
+  </div>
+</div>
+
+<!-- ============ CV BUILDER SHEET (AI CV Revamp) ============ -->
+<div class="sheet-scrim" id="cv-builder-overlay">
+  <div class="sheet cvb-sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('cv-builder-overlay')" aria-label="Close" title="Close">×</button>
+    <h3>CV Builder</h3>
+    <div id="cvbuilder-form-view">
+      <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Paste your work history, skills and education below in your own words — no need to format it. Our AI will turn it into a clean, ATS-friendly CV you can copy or print.</p>
+      <div class="field"><label>Full name</label><input id="cvb-name" placeholder="e.g. Thandiwe Nkosi"></div>
+      <div class="field"><label>Target role (optional)</label><input id="cvb-role" placeholder="e.g. Warehouse Supervisor"></div>
+      <div class="field"><label>Your experience, skills &amp; education</label><textarea id="cvb-raw" placeholder="e.g. Worked as a cashier at Shoprite for 2 years, good with customers and cash handling. Matric certificate 2019. Can drive, have own transport. Looking for retail or admin work..." style="min-height:160px;font-family:inherit;font-size:13.5px"></textarea></div>
+      <div class="field"><label for="cvb-template">Choose a CV template</label><select id="cvb-template" onchange="cvBuilderTemplateChanged(this.value)"><option value="ats">Professional ATS — simple and application-friendly</option><option value="modern">Modern Professional — clean corporate style</option><option value="graduate">Graduate / First CV — skills and education focused</option><option value="trade">Trade &amp; General Worker — practical experience focused</option><option value="executive">Executive — achievement-led leadership style</option></select></div>
+      <p class="cvb-template-note">You can change the design after your CV is generated without using AI again.</p>
+      <div id="cvbuilder-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
+      <button class="sheet-submit" id="cvbuilder-generate-btn" data-ripple onclick="generateCv()">Generate my CV</button>
+    </div>
+    <div id="cvbuilder-result-view" style="display:none;">
+      <div class="cvb-result-toolbar"><label for="cvb-template-result">Template</label><select id="cvb-template-result" onchange="cvBuilderTemplateChanged(this.value)"><option value="ats">Professional ATS</option><option value="modern">Modern Professional</option><option value="graduate">Graduate / First CV</option><option value="trade">Trade &amp; General Worker</option><option value="executive">Executive</option></select></div>
+      <div id="cvbuilder-preview" class="cvb-preview"></div>
+      <div class="cvb-action-row">
+        <button class="cvb-action-btn" data-ripple onclick="cvBuilderEditAgain()">← Edit &amp; regenerate</button>
+        <button class="cvb-action-btn" data-ripple onclick="copyCvText()">Copy as text</button>
+        <button class="cvb-action-btn cvb-action-primary" data-ripple onclick="printCvBuilder()">Print / Save as PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ NOTES SHEET ============ -->
+<div class="sheet-scrim" id="notes-overlay">
+  <div class="sheet notes-sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('notes-overlay')" aria-label="Close Notes" title="Close Notes">×</button>
+    <h3>Notes</h3>
+
+    <details class="hub-accordion notes-hub-wrap" id="my-notes-accordion">
+      <summary>
+        <span class="hub-accordion-summary-copy"><span class="t-label">My Notes</span><span class="hub-accordion-sub">Private reminders, stored on this device</span></span>
+        <span class="hub-accordion-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M6 9l6 6 6-6"/></svg></span>
+      </summary>
+      <div class="hub-accordion-body">
+        <input type="hidden" id="note-edit-id" value="">
+        <div class="field"><label for="note-title">Title</label><input id="note-title" maxlength="80" placeholder="e.g. Follow up with employer"></div>
+        <div class="field"><label for="note-body">Note</label><textarea id="note-body" maxlength="2000" placeholder="Write your note here…" style="min-height:120px"></textarea></div>
+        <div class="notes-form-actions"><button class="sheet-cancel" data-ripple onclick="resetNoteForm()">Clear</button><button class="sheet-submit" data-ripple onclick="saveNote()">Save note</button></div>
+        <div id="notes-list" class="notes-list"></div>
+      </div>
+    </details>
+
+    <!-- More features coming soon here -->
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="community-report-overlay" id="community-report-overlay" hidden>
+  <form class="community-report-dialog" role="dialog" aria-modal="true" aria-labelledby="community-report-title" onsubmit="return communitySubmitReport(event)">
+    <h2 id="community-report-title">Report content</h2>
+    <p>Tell the moderation team what’s wrong. Your report is private.</p>
+    <label for="community-report-reason">Reason</label>
+    <select id="community-report-reason" required><option value="spam">Spam or promotion</option><option value="harassment">Harassment or hate</option><option value="personal_info">Personal information</option><option value="scam">Scam or unsafe advice</option><option value="other">Something else</option></select>
+    <label for="community-report-details">Additional details (optional)</label>
+    <textarea id="community-report-details" maxlength="600" placeholder="Add context for the moderators…"></textarea>
+    <div class="community-report-actions"><button type="button" onclick="communityCloseReport()">Cancel</button><button type="submit" id="community-report-submit">Send report</button></div>
+  </form>
+</div>
+
+<!-- FAQ / guide articles (content.js + content-manager.js, ~50 KB) are only needed once a
+     content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
+     the browser fetch them at idle priority (and keep generate-pages.js cache-busting them);
+     openContentSheet() below loads them on demand and then hands over to the real implementation. -->
+<link rel="prefetch" as="script" href="content.js?v=sa-recruiters-mono1" data-sa-lazy="content">
+<link rel="prefetch" as="script" href="content-manager.js?v=sa-recruiters-mono1" data-sa-lazy="content-manager">
 <script>
 (function(){
-  var WORKER = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
-  var MAX = 5 * 1024 * 1024;
-  var form = document.getElementById('adForm'), err = document.getElementById('err'), go = document.getElementById('go');
-  var OK_TYPES = ['image/png','image/jpeg','image/webp','application/pdf'];
-
-  function show(msg){ err.textContent = msg || ''; if (msg) err.scrollIntoView({behavior:'smooth', block:'center'}); }
-  function listNames(inputId, outId){
-    document.getElementById(inputId).addEventListener('change', function(){
-      document.getElementById(outId).textContent = Array.prototype.map.call(this.files, function(f){ return f.name; }).join(', ');
-    });
+  var pending=null;
+  function urlOf(k){var l=document.querySelector('link[data-sa-lazy="'+k+'"]');return l&&l.href;}
+  function loadOne(u){return new Promise(function(res,rej){var el=document.createElement('script');el.src=u;el.onload=res;el.onerror=rej;document.head.appendChild(el);});}
+  function ensure(){
+    if(window.ContentMgr) return Promise.resolve();
+    if(!pending) pending=loadOne(urlOf('content')).then(function(){return loadOne(urlOf('content-manager'));}).then(function(){try{if(window.ContentMgr&&ContentMgr.ensureSeeded)ContentMgr.ensureSeeded();}catch(e){}}).catch(function(e){pending=null;throw e;});
+    return pending;
   }
-  listNames('logo','logoNames'); listNames('card','cardNames'); listNames('other','otherNames');
+  window.__saLoadContent=ensure;
+  var stub=function(key){
+    return ensure().then(function(){if(window.openContentSheet&&window.openContentSheet!==stub)return window.openContentSheet(key);})
+      .catch(function(){if(typeof showToast==='function')showToast('Could not load this page. Check your connection and try again.');});
+  };
+  window.openContentSheet=stub;
+})();
+</script>
+<!-- The app is a set of ES modules (app-core, app-data, app-cards, app-forms, app-sheets,
+     app-ui, app-manager, app-manager-employer, app-pending-submissions, app-community,
+     app-install) imported from app-entry.js and bundled by Vite (scripts/bundle-app.js, run
+     from generate-pages.js on every build). The ?v= hash is rewritten automatically each build
+     for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
+     exposed on window by the bridge block at the bottom of each app-*.js file. The classic
+     scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
+<script type="module" src="app.bundle.min.js?v=bf4dc8ac60"></script>
+<script src="app-vacancy-v2.js?v=vx-retail-3" defer></script>
+<script src="app-alerts.js?v=al-4" defer></script>
+<!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
+     still loads/retries it on demand if it is not ready when a form opens. -->
+<script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+<footer class="seo-site-footer" aria-label="SA Recruiters quick links">
+  <strong>SA Recruiters</strong>
+  <nav aria-label="Quick links">
+    <a href="careers/">Careers</a>
+    <a href="apply/">Apply for a vacancy</a>
+    <a href="contact/">Contact Us</a>
+    <a href="register/">Register</a>
+    <a href="candidates/">Candidates</a>
+    <a href="about/">About SA Recruiters</a>
+    <a href="vacancies/">All vacancies</a>
+    <a href="agencies/">Recruitment agencies</a>
+    <a href="companies/">Companies hiring</a>
+    <a href="posters/">Vacancy posters</a>
+    <a href="submit-cv/">Submit your CV</a>
+  </nav>
+</footer>
 
-  // Phone photos are often over 5MB: shrink big images in the browser before uploading.
-  function shrink(file){
-    if (file.type === 'application/pdf' || file.size <= 4 * 1024 * 1024 || !window.createImageBitmap) return Promise.resolve(file);
-    return createImageBitmap(file).then(function(bmp){
-      var scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
-      var c = document.createElement('canvas'); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
-      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-      var type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-      return new Promise(function(res){ c.toBlob(function(b){ res(b ? new File([b], file.name.replace(/\.\w+$/, '') + (type === 'image/png' ? '.png' : '.jpg'), {type: type}) : file); }, type, 0.88); });
-    }).catch(function(){ return file; });
+<!-- SendPulse live chat: only available while the feedback sheet is open -->
+<style id="sendpulse-feedback-only">
+sp-live-chat{display:none!important}
+body.sendpulse-feedback-open sp-live-chat{display:block!important}
+</style>
+<script>
+(function () {
+  var GAP = 16;            // px between the chat button and the top of the nav bar
+  var timer = null;
+  var feedbackObserver = null;
+
+  function navHeight() {
+    var nav = document.querySelector('.bottom-nav');
+    var h = nav ? nav.getBoundingClientRect().height : 0;
+    return h >= 40 ? h : 76;   // fall back to the nav's normal height if it is not laid out yet
   }
-  function pick(id, limit){ return Array.prototype.slice.call(document.getElementById(id).files, 0, limit); }
 
-  form.addEventListener('submit', function(ev){
-    ev.preventDefault(); show('');
-    var v = function(id){ return document.getElementById(id).value.trim(); };
-    if (!v('business_name')) return show('Please add your business name.');
-    if (!v('contact_person')) return show('Please add a contact person.');
-    if (!v('phone')) return show('Please add a phone or WhatsApp number.');
-    var em = v('email'); if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return show('That email address does not look right.');
-    var groups = { logo: pick('logo', 1), card: pick('card', 2), other: pick('other', 2) };
-    if (!groups.logo.length && !groups.card.length) return show('Please upload your logo or your business card.');
-    var all = groups.logo.concat(groups.card, groups.other);
-    for (var i = 0; i < all.length; i++) if (OK_TYPES.indexOf(all[i].type) === -1) return show('"' + all[i].name + '" is not a PNG, JPG, WebP or PDF file.');
-    if (!document.getElementById('consent').checked) return show('Please tick the box to confirm we may contact you and use your logo.');
-    var token = ''; try { if (window.turnstile) token = window.turnstile.getResponse() || ''; } catch (e) {}
-    if (!token) return show('Please wait for the security check to finish, then try again.');
+  function place() {
+    var feedback = document.getElementById('suggestion-overlay');
+    if (!feedback || !feedback.classList.contains('open') || !document.body.classList.contains('sendpulse-feedback-open')) return false;
+    var lc = window.sp && window.sp.liveChat;
+    if (!lc || typeof lc.config !== 'function') return false;   // widget bundle not ready yet
+    var right = Math.max(18, (window.innerWidth - 520) / 2 + 18);
+    try {
+      lc.config({ chatPosition: { bottom: Math.round(navHeight() + GAP) + 'px', right: right + 'px' } });
+    } catch (e) { return false; }
+    return true;
+  }
 
-    go.disabled = true; go.textContent = 'Sending…';
-    var fd = new FormData();
-    ['business_name','contact_person','phone','email','website','category','province','ad_message','company_site'].forEach(function(k){ fd.append(k, document.getElementById(k).value); });
-    fd.append('consent', 'yes');
-    var jobs = [];
-    Object.keys(groups).forEach(function(kind){ groups[kind].forEach(function(f){ jobs.push(shrink(f).then(function(out){ if (out.size > MAX) throw new Error('"' + f.name + '" is too big (max 5MB).'); fd.append(kind, out, out.name); })); }); });
-    Promise.all(jobs).then(function(){
-      return fetch(WORKER + '/api/submit/ad-request', { method: 'POST', headers: { 'cf-turnstile-response': token }, body: fd });
-    }).then(function(res){
-      return res.json().catch(function(){ return {}; }).then(function(data){
-        if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
-        form.style.display = 'none'; document.getElementById('done').style.display = 'block'; window.scrollTo({top: 0, behavior: 'smooth'});
-      });
-    }).catch(function(e){
-      show(e && e.message ? e.message : 'Could not send. Check your connection and try again.');
-      go.disabled = false; go.textContent = 'Send my application';
-      try { if (window.turnstile) window.turnstile.reset(); } catch (x) {}
-    });
-  });
+  // Apply now, and again shortly after in case the widget re-renders while mounting.
+  function lock() {
+    if (place()) { setTimeout(place, 600); setTimeout(place, 2000); }
+  }
+
+  // The widget bundle can finish after the loaded event, so keep retrying until config() exists.
+  // Polling only starts once the chat script has actually been requested (see the loader below).
+  var poll = null;
+  window.__saStartChatPlacement = function () {
+    if (poll) return;
+    var tries = 0;
+    poll = setInterval(function () {
+      if (place()) { clearInterval(poll); setTimeout(place, 600); setTimeout(place, 2000); }
+      else if (++tries > 80) clearInterval(poll);
+    }, 250);
+  };
+
+  document.addEventListener('spLiveChatLoaded', lock);
+
+  function later() { clearTimeout(timer); timer = setTimeout(place, 150); }
+  window.addEventListener('resize', later);
+  window.addEventListener('orientationchange', later);
+  window.addEventListener('pageshow', later);
+
+  // Show/load chat only while the feedback sheet is the active sheet.
+  function syncFeedback() {
+    var feedback = document.getElementById('suggestion-overlay');
+    if (!feedback || !document.body) return;
+    var otherSheetOpen = Array.prototype.some.call(document.querySelectorAll('.sheet-scrim.open'), function (sheet) { return sheet !== feedback; });
+    var active = feedback.classList.contains('open') && !otherSheetOpen;
+    document.body.classList.toggle('sendpulse-feedback-open', active);
+    if (active) {
+      if (window.__saStartSendPulse) window.__saStartSendPulse();
+      later();
+    }
+  }
+  function watchFeedback() {
+    var overlays = document.querySelectorAll('.sheet-scrim');
+    if (window.MutationObserver) {
+      feedbackObserver = new MutationObserver(syncFeedback);
+      overlays.forEach(function (overlay) { feedbackObserver.observe(overlay, { attributes: true, attributeFilter: ['class'] }); });
+    }
+    syncFeedback();
+  }
+  window.__saSyncFeedbackChat = syncFeedback;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchFeedback);
+  else watchFeedback();
+})();
+</script>
+<script>
+/* Load SendPulse only after the user opens the feedback sheet. */
+(function () {
+  var started = false;
+  function start() {
+    var feedback = document.getElementById('suggestion-overlay');
+    if (started || !feedback || !feedback.classList.contains('open')) return;
+    started = true;
+    var s = document.createElement('script');
+    s.src = 'https://cdn.pulse.is/livechat/loader.js';
+    s.async = true;
+    s.setAttribute('data-live-chat-id', '6abae6321b15f81d2b07a64b');
+    document.body.appendChild(s);
+    if (window.__saStartChatPlacement) window.__saStartChatPlacement();
+  }
+  window.__saStartSendPulse = start;
+})();
+</script>
+<script>
+/* Agency / vacancy "Submit your CV" buttons link to /?section=candidates&cvbox=submit.
+   Once the app has opened the CV Box, open its upload form (openPoolRegisterSheet). */
+(function () {
+  var q;
+  try { q = new URLSearchParams(location.search); } catch (e) { return; }
+  if (q.get('cvbox') !== 'submit') return;
+  var tries = 0;
+  (function wait() {
+    if (typeof window.openPoolRegisterSheet === 'function' && document.readyState !== 'loading') {
+      setTimeout(function () {
+        try { window.openPoolRegisterSheet(); } catch (e) {}
+        try {
+          q.delete('cvbox');
+          var qs = q.toString();
+          history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+        } catch (e) {}
+      }, 400);
+      return;
+    }
+    if (++tries < 100) setTimeout(wait, 150);
+  })();
 })();
 </script>
 </body>
