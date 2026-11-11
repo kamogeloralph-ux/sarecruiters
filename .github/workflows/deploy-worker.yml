@@ -43,6 +43,10 @@ jobs:
             fi
           done
 
+      - name: Install Worker dependencies
+        working-directory: Cloudflare-worker
+        run: npm install --no-audit --no-fund
+
       - name: Deploy Worker
         working-directory: Cloudflare-worker
         run: npx --yes wrangler@4.147.0 deploy --config wrangler.toml
