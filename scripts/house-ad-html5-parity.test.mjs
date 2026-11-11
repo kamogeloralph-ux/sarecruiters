@@ -51,3 +51,45 @@ test('kind detection', () => {
   assert.equal(mod.houseAdKind({ ad_format: 'card' }, 'https://x.test/logo.png'), 'card');
   assert.equal(mod.houseAdKind({}, 'https://x.test/a.png'), 'image');
 });
+
+test('picture ads have no automatic "Visit <site>" button, only an explicit cta_text', () => {
+  const plain = mod.buildHouseAdImageDocument('https://x.test/jw.png', { target_url: 'https://www.jw.org/en/' });
+  assert.ok(!/Visit/i.test(plain), 'no Visit text');
+  assert.ok(!plain.includes('class="cta"'), 'no button element');
+  const withCta = mod.buildHouseAdImageDocument('https://x.test/a.png', { cta_text: 'Join <now>' });
+  assert.ok(withCta.includes('class="cta"') && withCta.includes('Join &lt;now&gt;'));
+});
+
+test('picture ads open AND close the curtains every cycle', () => {
+  const doc = mod.buildHouseAdImageDocument('https://x.test/a.png', {});
+  assert.match(doc, /class="hc hcl"/);
+  assert.match(doc, /class="hc hcr"/);
+  assert.match(doc, /@keyframes hcL\{0%,2%\{transform:none\}9%,86%\{transform:translateX\(-101%\)\}94%,100%\{transform:none\}\}/);
+  assert.match(doc, /animation:hcL 11\.00s [^}]*infinite/);
+  assert.match(doc, /prefers-reduced-motion/);
+});
+
+test('card ads get the same curtain cycle and report their replay length', () => {
+  const doc = mod.buildHouseAdCardDocument({ title: 'Hello world', advertiser_name: 'Co', message: 'tag', ad_details: 'a@b.co.za' }, 'https://x.test/l.png');
+  assert.match(doc, /class="hc hcl"/);
+  assert.match(doc, /name="ad\.cycle" content="\d+\.\d\d"/);
+  assert.equal((doc.match(/<script>/g) || []).length, 1, 'curtains add no script');
+  assert.ok(!/class="hc/.test(mod.buildHouseAdCardDocument({ title: 'x' }, '', { curtain: false })));
+});
+
+test('hand-built HTML5 ads are wrapped with the curtain cycle in every section', () => {
+  const src = '<!DOCTYPE html><html><head><meta name="ad.size" content="width=1200,height=400"></head><body><p>ad</p></body></html>';
+  const doc = mod.houseAdWithCurtain(src, 12);
+  assert.ok(doc.includes('<p>ad</p>') && doc.includes('class="hc hcl"') && doc.includes('name="ad.size"'));
+  assert.match(doc, /name="ad\.cycle" content="12\.00"/);
+  // Documents with no <head>/<body> tags are still wrapped.
+  assert.ok(mod.houseAdWithCurtain('<p>bare</p>', 12).includes('class="hc hcr"'));
+});
+
+test('every ad surface plays the curtain cycle (app slots, Ads list, static pages)', () => {
+  const app = fs.readFileSync(path.join(root, 'app-data.js'), 'utf8');
+  assert.match(app, /houseAdWithCurtain\(html, 12\)/);
+  assert.match(app, /houseAdLoop\(frame, adDoc\)/);
+  assert.match(pub, /houseAdWithCurtain\(html, 12\)/);
+  assert.match(pub, /houseAdLoop\(htmlFrame, adDoc\)/);
+});
