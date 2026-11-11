@@ -2915,22 +2915,7 @@ html[data-inapp] .install-banner{bottom:88px!important}
 @media(max-width:520px){.house-ad-slot .house-ad-creative{border-radius:18px}}
 
 /* ===== Ads section ===== */
-.ads-free-cta,.ads-free-cta:hover,.ads-free-cta:visited{text-decoration:none!important;border:0!important;box-shadow:none!important;color:#fff}
-.ads-free-cta *{text-decoration:none!important;border:0!important;box-shadow:none!important}
-.ads-free-cta{display:flex;align-items:center;gap:14px;margin:4px 16px 14px;padding:14px 16px;border-radius:20px;background:#000;color:#fff;text-decoration:none}
-.ads-free-cta-tag{flex:0 0 auto;background:#fff;color:#000!important;font-weight:800;font-size:14px;letter-spacing:.5px;padding:6px 10px;border-radius:10px}
-.ads-free-cta-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ads-free-cta-copy strong{font-size:16px;line-height:1.2;color:inherit!important}
-.ads-free-cta-copy small{font-size:12.5px;line-height:1.3;color:rgba(255,255,255,.72)}
-.ads-free-cta-go{font-size:22px;font-weight:700}
-[data-theme="dark"] .ads-free-cta,[data-theme="dark"] .ads-free-cta:hover,[data-theme="dark"] .ads-free-cta:visited{background:#fff;color:#000}
-[data-theme="dark"] .ads-free-cta-tag{background:#000;color:#fff!important}
-[data-theme="dark"] .ads-free-cta-copy small{color:rgba(0,0,0,.65)}
 #allads-list{padding:0 0 24px}
 #allads-list .allads-item{display:block;width:calc(100% - 32px)!important;margin:0 16px 14px!important;box-sizing:border-box}
 .stat-card-ads .stat-icon{color:var(--text)}
 #screen-home .stat-card-ads{order:6}
-.ads-free-cta .ads-free-cta-copy strong,.ads-free-cta .ads-free-cta-go{color:#fff!important}
-.ads-free-cta .ads-free-cta-copy small{color:rgba(255,255,255,.72)!important}
-[data-theme="dark"] .ads-free-cta .ads-free-cta-copy strong,[data-theme="dark"] .ads-free-cta .ads-free-cta-go{color:#000!important}
-[data-theme="dark"] .ads-free-cta .ads-free-cta-copy small{color:rgba(0,0,0,.65)!important}
