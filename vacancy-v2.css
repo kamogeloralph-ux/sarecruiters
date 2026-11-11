@@ -89,8 +89,8 @@
 .vx-card.vac-card{display:block;position:relative;min-width:0;margin:0;padding:0;overflow:hidden;color:var(--text);transform:none}
 .vx-card.vac-card:hover,.vx-card.vac-card:active{transform:none}
 /* Rows are flat and separated by hairlines; older .vac-card rules in styles.css/mono.css use !important to box them. */
-#screen-allvacancies .vx-card.vac-card{margin:0!important;border:0!important;border-bottom:1px solid var(--separator)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
-#screen-allvacancies .vx-card.vac-card:last-child{border-bottom:0!important}
+#screen-allvacancies .vx-card.vac-card,#screen-home .vx-feed .vx-card.vac-card{margin:0!important;border:0!important;border-bottom:1px solid var(--separator)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#screen-allvacancies .vx-card.vac-card:last-child,#screen-home .vx-feed .vx-card.vac-card:last-child{border-bottom:0!important}
 .vx-card--feat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--success);z-index:1}
 .vx-top{display:flex;align-items:flex-start;min-width:0}
 .vx-head{flex:1 1 auto;min-width:0;min-height:0;height:auto;display:flex;align-items:flex-start;gap:14px;margin:0;padding:16px 0 14px 16px;border:0;border-radius:0;background:none;box-shadow:none;color:inherit;font:inherit;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}
@@ -165,6 +165,6 @@
 @media (max-width:560px){#screen-allvacancies .vx-field input{font-size:13px}}
 
 /* mono.css colours and underlines every <a> inside .screen-scroll; keep link-style buttons looking like buttons. */
-#screen-allvacancies .vx-btn,#screen-allvacancies .vx-attr a{text-decoration:none}
-#screen-allvacancies a.vx-btn{color:var(--text)}
-#screen-allvacancies a.vx-btn--primary{color:var(--m-on-ink)}
+#screen-allvacancies .vx-btn,#screen-allvacancies .vx-attr a,#screen-home .vx-feed .vx-btn,#screen-home .vx-feed .vx-attr a{text-decoration:none}
+#screen-allvacancies a.vx-btn,#screen-home .vx-feed a.vx-btn{color:var(--text)}
+#screen-allvacancies a.vx-btn--primary,#screen-home .vx-feed a.vx-btn--primary{color:var(--m-on-ink)}

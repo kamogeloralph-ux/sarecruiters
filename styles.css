@@ -2066,18 +2066,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .home-section-kicker{color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
 .home-section-heading--compact{align-items:center}
 .home-section-heading--compact h2{margin-bottom:0}
-.home-sources-section{margin:0 0 22px}
-.home-sources-section .home-section-heading{margin-bottom:10px}
-.home-source-total{flex:0 0 auto;padding:5px 8px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text-2);font-size:9px;font-weight:750}
-.home-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.home-source-card{display:grid;grid-template-columns:30px minmax(0,1fr) 12px;align-items:center;gap:8px;min-width:0;min-height:63px;padding:9px;border:1px solid var(--border);border-radius:13px;background:var(--card);color:var(--text);text-align:left;box-shadow:var(--shadow-sm);cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
-.home-source-card:hover,.home-source-card:focus-visible{border-color:color-mix(in srgb,var(--accent) 48%,var(--border));background:var(--accent-soft)}
-.home-source-card:active{transform:scale(.98)}
-.home-source-icon{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:850}
-.home-source-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
-.home-source-copy strong{overflow:hidden;color:var(--text);font-size:10px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-.home-source-copy small{color:var(--text-2);font-size:9px;line-height:1.2}
-.home-source-arrow{color:var(--text-2);font-size:18px;line-height:1}
+.home-sources-section{margin:0 0 14px}
 .home-view-all{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;border:0;background:transparent;color:var(--accent);padding:5px 0;font-size:11px;font-weight:800;cursor:pointer}
 .home-vacancy-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
 .home-vacancy-grid>.vac-card{min-width:0;margin:0!important;border:1px solid var(--border)!important;border-radius:16px!important;background:var(--card)!important;box-shadow:var(--shadow-sm)!important;overflow:hidden}
@@ -2100,7 +2089,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .home-weekly-section>.home-section-heading{margin-bottom:12px}
 .home-weekly-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .home-weekly-province{min-width:0;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--shadow-sm);overflow:hidden}
-.home-weekly-province-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--card)),var(--card))}
+.home-weekly-province-head{margin:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--card)),var(--card))}
 .home-weekly-province-title{display:flex;align-items:center;gap:8px;min-width:0}
 .home-weekly-pin{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:10px;background:var(--accent);color: var(--m-on-ink);font-size:12px;box-shadow:0 4px 10px color-mix(in srgb,var(--accent) 28%,transparent)}
 .home-weekly-province-title div{min-width:0}
@@ -2119,24 +2108,6 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .home-weekly-arrow{color:var(--text-2);font-size:18px;line-height:1}
 .home-weekly-empty{padding:20px 16px;border:1px dashed var(--border);border-radius:16px;background:var(--card);color:var(--text-2);font-size:12px;text-align:center}
 @media(max-width:760px){.home-weekly-grid{display:flex;overflow-x:auto;gap:10px;padding:2px 1px 8px;scroll-snap-type:x mandatory;scrollbar-width:none}.home-weekly-grid::-webkit-scrollbar{display:none}.home-weekly-province{flex:0 0 min(86vw,320px);scroll-snap-align:start}.home-weekly-province-head{padding:11px}.home-weekly-row{padding:10px 11px}}
-.home-available-roles-wrap{min-width:0}
-.home-available-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.home-available-group{min-width:0;border:1px solid var(--border);border-radius:15px;background:var(--card);box-shadow:var(--shadow-sm);overflow:hidden}
-.home-available-group>header{display:flex;align-items:center;gap:8px;padding:10px 11px;margin:0;border-bottom:1px solid var(--border);background:var(--card-2)}
-.home-available-group-pin{display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;border-radius:8px;background:var(--accent);color: var(--m-on-ink);font-size:10px}
-.home-available-group header strong{display:block;font-size:12px;line-height:1.1}
-.home-available-group header small{display:block;margin-top:3px;color:var(--text-2);font-size:9.5px}
-.home-available-role-list{display:flex;flex-direction:column}
-.home-available-role{display:grid;grid-template-columns:22px minmax(0,1fr) 10px;align-items:center;gap:7px;width:100%;padding:8px 10px;border:0;border-bottom:1px solid color-mix(in srgb,var(--border) 70%,transparent);background:transparent;color:var(--text);text-align:left;cursor:pointer}
-.home-available-role:last-of-type{border-bottom:0}
-.home-available-role:hover,.home-available-role:focus-visible{background:var(--accent-soft)}
-.home-available-role>span:nth-child(2){min-width:0}
-.home-available-role strong{display:block;overflow:hidden;font-size:10.5px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-.home-available-role small{display:block;margin-top:2px;overflow:hidden;color:var(--text-2);font-size:9px;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}
-.home-available-role-index{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-size:9px;font-weight:850}
-.home-available-role>span:last-child{color:var(--text-2);font-size:16px}
-.home-available-more{padding:8px 10px;border:0;background:transparent;color:var(--accent);font-size:10px;font-weight:800;text-align:left;cursor:pointer}
-@media(max-width:760px){.home-available-groups{display:flex;overflow-x:auto;gap:10px;padding:2px 1px 8px;scroll-snap-type:x mandatory;scrollbar-width:none}.home-available-groups::-webkit-scrollbar{display:none}.home-available-group{flex:0 0 min(86vw,320px);scroll-snap-align:start}}
 .home-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .home-category-chip{display:flex;align-items:center;gap:9px;min-width:0;padding:11px 10px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);text-align:left;cursor:pointer;box-shadow:var(--shadow-sm);transition:border-color .15s,background .15s,transform .15s}
 .home-category-chip:active{transform:scale(.98)}
@@ -2164,9 +2135,6 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .home-tools-grid .quick-card-actions button{min-height:29px;padding:6px 5px;border-radius:9px;font-size:9.5px;line-height:1.2}
 @media(max-width:390px){.home-tools-grid{grid-template-columns:1fr}}
 
-@container (min-width:760px){
-  #screen-home .home-source-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-}
 @media(min-width:760px){
   .home-vacancy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .home-tools-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -2396,9 +2364,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #screen-home .screen-scroll{background:var(--bg);padding-top:16px}
 #screen-home .home-section-heading h2{font-size:18px;letter-spacing:-.025em}
 #screen-home .home-section-heading p{font-size:11px}
-.home-source-card,.home-vacancy-grid>.vac-card,.home-community-card,#screen-home .hf-actions button,#screen-home .hf-categories .hf-chips button,#screen-home .hf-source-card,#screen-home .hf-sponsor{border-color:var(--it-line)!important;background:var(--card)!important;box-shadow:var(--it-shadow)!important;border-radius:15px!important}
-.home-source-card:hover,.home-source-card:focus-visible{background:var(--accent-soft)!important}
-.home-source-icon,.hf-category-icon,.home-community-icon{background:var(--accent-soft);color:var(--accent)}
 .home-community-icon svg{width:21px;height:21px;display:block}
 .home-community-card>button{background:var(--accent);border-radius:10px}
 #screen-allagencies .screen-fixed,#screen-allbranches .screen-fixed,#screen-allvacancies .screen-fixed,#screen-allposters .screen-fixed,#screen-allemployers .screen-fixed,#screen-pool .screen-fixed,#screen-saved .screen-fixed,#screen-account .screen-fixed{background:var(--bg)}
@@ -2425,7 +2390,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
   .logo-text{font-size:19px}
   .bottom-nav{height:66px}
 }
-@media(prefers-reduced-motion:reduce){.navbtn,.home-source-card,.vac-card,.vacancy-card{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.navbtn,.vac-card,.vacancy-card{transition:none!important}}
 
 /* Keep every bottom-nav icon legible, not only the selected destination. */
 .bottom-nav .navbtn:not(.active),
@@ -2914,3 +2879,14 @@ html[data-inapp] .install-banner{bottom:88px!important}
 #allads-list .allads-item{display:block;width:calc(100% - 32px)!important;margin:0 16px 14px!important;box-sizing:border-box}
 .stat-card-ads .stat-icon{color:var(--text)}
 #screen-home .stat-card-ads{order:6}
+
+/* Home: slim section headers, source chips, latest-roles feed */
+.home-weekly-section>.home-section-heading,.home-jobs-section>.home-section-heading{align-items:center;margin-bottom:10px}
+.home-weekly-section>.home-section-heading h2,.home-jobs-section>.home-section-heading h2{margin:0}
+.home-jobs-section{margin:0 0 24px}
+#screen-home .home-view-all{min-height:0;height:auto;background:transparent!important;border:0!important;box-shadow:none!important;text-decoration:none!important;color:var(--accent)}
+#screen-home .home-weekly-province-head>a{text-decoration:none!important}
+.home-more-btn{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-height:46px;margin-top:12px;padding:0 16px;border:1px solid var(--border-strong);border-radius:12px;background:var(--card);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer}
+.home-more-btn:active{transform:scale(.98)}
+#screen-home .home-weekly-province-head{margin:0}
+.home-available-roles-wrap{min-width:0}

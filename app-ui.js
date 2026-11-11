@@ -304,11 +304,11 @@ export function homeVacancySourceMarkup() {
   var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', government: '⌂', retail: '▤', learnerships: '✦', himalayas: '↗', adzuna: 'A', careers_page: '⚓' };
   var counts = summary && summary.counts ? summary.counts : {};
   var ready = !!(summary && summary.ready);
-  return '<section class="home-sources-section" aria-labelledby="home-sources-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Browse all opportunities</span><h2 id="home-sources-title">Jobs by source</h2></div><span class="home-source-total">8 sources</span></div><div class="home-source-grid">' +
+  var fmt = function (n) { return typeof window.formatCompactCount === 'function' ? window.formatCompactCount(n) : Number(n).toLocaleString(); };
+  return '<section class="home-sources-section" aria-label="Browse jobs by source"><div class="vx-src-row" role="group" aria-label="Browse jobs by source">' +
     order.map(function (source) {
       var count = Number(counts[source]) || 0;
-      var countText = ready ? count.toLocaleString() + ' ' + (count === 1 ? 'role' : 'roles') : 'Loading…';
-      return '<button type="button" class="home-source-card" onclick="openVacancyFolder(\'' + source + '\')" aria-label="Open ' + escapeHtml(labels[source]) + ' vacancies"><span class="home-source-icon" aria-hidden="true">' + escapeHtml(icons[source]) + '</span><span class="home-source-copy"><strong>' + escapeHtml(labels[source]) + '</strong><small>' + escapeHtml(countText) + '</small></span><span class="home-source-arrow" aria-hidden="true">›</span></button>';
+      return '<button type="button" class="vx-src" onclick="openVacancyFolder(\'' + source + '\')" aria-label="Open ' + escapeHtml(labels[source]) + ' vacancies"><span class="vx-src-ic" aria-hidden="true">' + escapeHtml(icons[source]) + '</span>' + escapeHtml(labels[source]) + '<small>' + (ready ? escapeHtml(fmt(count)) : '…') + '</small></button>';
     }).join('') + '</div></section>';
 }
 
@@ -400,8 +400,8 @@ export function homeWeeklyRows() {
 }
 export function homeWeeklyTopJobsMarkup() {
   var groups = homeWeeklyRows();
-  if (!groups.length) return '<section class="home-weekly-section" aria-labelledby="home-weekly-title"><div class="home-section-heading"><div><span class="home-section-kicker">This week</span><h2 id="home-weekly-title">Top Jobs This Week</h2><p>Provincial highlights will appear as this week’s listings arrive.</p></div></div><div class="home-weekly-empty">No new provincial highlights are available yet.</div></section>';
-  return '<section class="home-weekly-section" aria-labelledby="home-weekly-title"><div class="home-section-heading"><div><span class="home-section-kicker">This week</span><h2 id="home-weekly-title">Top Jobs This Week</h2><p>The three provinces with the strongest new vacancy activity this week.</p></div><button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all<span aria-hidden="true"> →</span></button></div><div class="home-weekly-grid">' + groups.map(function (group) {
+  if (!groups.length) return '<section class="home-weekly-section" aria-labelledby="home-weekly-title"><div class="home-section-heading"><h2 id="home-weekly-title">Top Jobs This Week</h2></div><div class="home-weekly-empty">No new provincial highlights are available yet.</div></section>';
+  return '<section class="home-weekly-section" aria-labelledby="home-weekly-title"><div class="home-section-heading"><h2 id="home-weekly-title">Top Jobs This Week</h2><button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all<span aria-hidden="true"> →</span></button></div><div class="home-weekly-grid">' + groups.map(function (group) {
     return '<article class="home-weekly-province"><header class="home-weekly-province-head"><div class="home-weekly-province-title"><span class="home-weekly-pin" aria-hidden="true">●</span><div><strong>' + escapeHtml(group.province.label) + '</strong><small>' + group.total + ' new role' + (group.total === 1 ? '' : 's') + '</small></div></div><a href="/jobs/' + group.province.key + '/" aria-label="View all ' + escapeHtml(group.province.label) + ' jobs">See province</a></header><div class="home-weekly-table" role="list" aria-label="Top jobs in ' + escapeHtml(group.province.label) + '">' + group.items.map(function (item, index) {
       var v = item.vacancy;
       var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined' ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
@@ -420,30 +420,12 @@ window.openHomeWeeklyVacancy = function (id) {
     if (search && source) { search.value = source.title || ''; if (typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList(); }
   }, 120);
 };
-export function homeAvailableRoleGroups(rows) {
-  var grouped = {};
-  (rows || []).forEach(function (v) {
-    var province = homeWeeklyProvince(v);
-    if (!province) return;
-    var group = grouped[province.key] || (grouped[province.key] = { province: province, rows: [], seen: {} });
-    var title = String(v.title || 'Untitled role').trim();
-    var dedupe = title.toLowerCase();
-    if (group.seen[dedupe]) return;
-    group.seen[dedupe] = true;
-    group.rows.push(v);
-  });
-  return HOME_WEEKLY_PROVINCES.map(function (province) { return grouped[province.key]; })
-    .filter(function (group) { return group && group.rows.length; })
-    .sort(function (a, b) { return b.rows.length - a.rows.length || a.province.label.localeCompare(b.province.label); })
-    .slice(0, 3);
-}
 export function homeAvailableRolesMarkup(rows) {
-  var groups = homeAvailableRoleGroups(rows);
-  if (!groups.length) return '<div class="home-feed-empty" role="status"><strong>No provincial roles match yet.</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
-  return '<div class="home-available-groups">' + groups.map(function (group) {
-    return '<article class="home-available-group"><header><span class="home-available-group-pin" aria-hidden="true">●</span><div><strong>' + escapeHtml(group.province.label) + '</strong><small>' + group.rows.length + ' available role' + (group.rows.length === 1 ? '' : 's') + '</small></div></header><div class="home-available-role-list" role="list">' + group.rows.slice(0, 8).map(function (v, index) {
-      return '<button type="button" class="home-available-role" role="listitem" onclick="openHomeWeeklyVacancy(\'' + String(v.id).replace(/[\\']/g, '\\$&') + '\')"><span class="home-available-role-index">' + String(index + 1).padStart(2, '0') + '</span><span><strong>' + escapeHtml(v.title || 'Untitled role') + '</strong><small>' + escapeHtml(v.company || v.location || 'View vacancy details') + '</small></span><span aria-hidden="true">›</span></button>';
-    }).join('') + (group.rows.length > 8 ? '<button type="button" class="home-available-more" onclick="openHomeWeeklyVacancy(\'' + String(group.rows[0].id).replace(/[\\']/g, '\\$&') + '\')">+' + (group.rows.length - 8) + ' more roles</button>' : '') + '</div></article>';
+  var list = (rows || []).slice(0, 5);
+  if (!list.length || typeof window.vacancyCard !== 'function') return '<div class="home-feed-empty" role="status"><strong>No roles match yet.</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
+  return '<div class="vx-feed">' + list.map(function (v) {
+    var agency = v.agency_id && v.agency_id !== 'general' && typeof agenciesCache !== 'undefined' ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {};
+    return window.vacancyCard(v, agency);
   }).join('') + '</div>';
 }
 export function renderHomeFeed() {
@@ -486,12 +468,12 @@ export function renderHomeFeed() {
       '<audio id="track-audio" preload="none" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>' +
     '</section>' +
     '<section class="home-featured-poster" aria-labelledby="home-featured-poster-title"><div class="poster-cta-heading"><span class="poster-cta-kicker">Featured today</span><h2 id="home-featured-poster-title">Vacancy poster of the day</h2><p>Tap the premium vacancy card to apply directly on the employer’s website.</p></div><div class="poster-deck" id="home-featured-poster-slot"><div class="poster-empty">Loading a live vacancy…</div></div></section>' +
-    homeWeeklyTopJobsMarkup() +
     homeVacancySourceMarkup() +
+    homeWeeklyTopJobsMarkup() +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
-      '<div class="home-section-heading"><div><span class="home-section-kicker">Opportunities across South Africa</span><h2 id="home-jobs-title">Available roles</h2><p>Retail vacancies first, followed by the newest live listings.</p></div>' +
-      '<button type="button" class="home-view-all" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + '<span aria-hidden="true"> →</span></button></div>' +
+      '<div class="home-section-heading"><h2 id="home-jobs-title">Latest roles</h2></div>' +
       '<div class="home-available-roles-wrap" aria-live="polite">' + (rows.length ? homeAvailableRolesMarkup(rows) : empty) + '</div>' +
+      '<button type="button" class="home-more-btn" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + ' roles<span aria-hidden="true"> →</span></button>' +
     '</section>' +
     '<button type="button" class="tipchat-home-logo" onclick="openCommunity()" aria-label="Open TipChat community"><img src="icons/tipchat-logo.svg" alt="TipChat" width=260 height=90 loading="lazy" decoding="async"><span>Join the conversation <b aria-hidden="true">→</b></span></button>' +
 
@@ -2331,7 +2313,6 @@ Object.assign(window, {
   homeWeeklyProvince,
   homeWeeklyRows,
   homeWeeklyTopJobsMarkup,
-  homeAvailableRoleGroups,
   homeAvailableRolesMarkup,
   renderHomeFeed,
   getSectionLink,
