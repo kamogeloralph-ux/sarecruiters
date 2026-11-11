@@ -31,10 +31,12 @@ test('card document escapes every field and has the ad.size marker', () => {
   assert.ok(doc.includes('&lt;/h1&gt;&lt;script&gt;'));
 });
 
-test('card without a tagline has no second frame', () => {
-  const doc = mod.buildHouseAdCardDocument({ title: 'Hi', advertiser_name: 'Co', message: '' }, 'https://x.test/l.png');
-  assert.ok(!doc.includes('id="f2"'));
-  assert.ok(doc.includes('id="f3"'));
+test('card without a tagline has no tagline element; details become chips; single script', () => {
+  const doc = mod.buildHouseAdCardDocument({ title: 'Hi', advertiser_name: 'Co', message: '', ad_details: '071 553 1005\nexample.co.za' }, 'https://x.test/l.png');
+  assert.ok(!doc.includes('class="tag"'));
+  assert.ok(doc.includes('class="chip'));
+  assert.ok(doc.includes('071 553 1005'));
+  assert.equal((doc.match(/<script>/g) || []).length, 1);
 });
 
 test('image document never crops and escapes the URL', () => {
