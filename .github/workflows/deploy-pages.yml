@@ -13,6 +13,8 @@ on:
       - "styles.css"
       - "static-pages.css"
       - "robots.txt"
+      - "advertise/**"
+      - "advertise-page-index.html"
       - "content.js"
       - "vendor/**"
       - "icons/**"
