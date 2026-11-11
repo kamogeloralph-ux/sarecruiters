@@ -176,6 +176,30 @@ export function houseAdPlacementMatches(ad, placement, slot) {
   var screenMatch = targets && targets.length ? targets.indexOf(placement) !== -1 : (ad && (ad.placement === placement || ad.placement === 'directories'));
   return !!ad && screenMatch && (ad.ad_slot || 'top') === slot;
 }
+// Build one ad (link + sandboxed HTML5 iframe) inside `target` and count its impression.
+// Shared by the rotating slots and by the Ads section list.
+export function mountHouseAd(target, ad) {
+  var imageUrl = safeHouseAdUrl(ad.image_url);
+  var targetUrl = safeHouseAdUrl(ad.target_url);
+  var kind = houseAdKind(ad, imageUrl);
+  var width = 1200, height = 400;
+  if (kind === 'html5') { var size = houseAdHtml5Size(imageUrl); width = size.w; height = size.h; }
+  var altText = escapeHtml(ad.title || ad.advertiser_name || 'Promotion');
+  // The whole creative is one link; the iframe ignores clicks so the card link gets them.
+  target.hidden = false;
+  target.setAttribute('data-ad-id', String(ad.id));
+  target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')" aria-label="' + altText + '">' +
+    '<div class="house-ad-creative house-ad-creative--html5" style="aspect-ratio:' + width + ' / ' + height + '">' +
+      '<iframe title="' + altText + '" width="' + width + '" height="' + height + '" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>' +
+    '</div></a>';
+  var frame = target.querySelector('iframe');
+  if (kind === 'html5') loadHouseAdHtml5(frame, imageUrl, target);
+  else {
+    frame.srcdoc = kind === 'card' ? buildHouseAdCardDocument(ad, imageUrl) : buildHouseAdImageDocument(imageUrl);
+    watchHouseAdFrame(frame, target);
+  }
+  trackHouseAdEvent(ad.id, 'impression');
+}
 // Which ad each slot is showing (sticky across re-renders) and its rotation timer.
 var houseAdSlotState = {};
 var HOUSE_AD_ROTATE_MS = 15000;
@@ -203,26 +227,7 @@ export function renderHouseAdSlot(targetId, placement, slot, avoidId) {
     scheduleHouseAdRotation(targetId, placement, slot, target, matches.length);
     return; // already showing this ad: do not restart its animation
   }
-  var imageUrl = safeHouseAdUrl(ad.image_url);
-  var targetUrl = safeHouseAdUrl(ad.target_url);
-  var kind = houseAdKind(ad, imageUrl);
-  var width = 1200, height = 400;
-  if (kind === 'html5') { var size = houseAdHtml5Size(imageUrl); width = size.w; height = size.h; }
-  var altText = escapeHtml(ad.title || ad.advertiser_name || 'Promotion');
-  // The whole creative is one link; the iframe ignores clicks so the card link gets them.
-  target.hidden = false;
-  target.setAttribute('data-ad-id', String(ad.id));
-  target.innerHTML = '<a class="house-ad-card" href="' + escapeHtml(targetUrl) + '" target="_blank" rel="noopener sponsored" onclick="trackHouseAdEvent(\'' + escapeHtml(ad.id) + '\',\'click\')" aria-label="' + altText + '">' +
-    '<div class="house-ad-creative house-ad-creative--html5" style="aspect-ratio:' + width + ' / ' + height + '">' +
-      '<iframe title="' + altText + '" width="' + width + '" height="' + height + '" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>' +
-    '</div></a>';
-  var frame = target.querySelector('iframe');
-  if (kind === 'html5') loadHouseAdHtml5(frame, imageUrl, target);
-  else {
-    frame.srcdoc = kind === 'card' ? buildHouseAdCardDocument(ad, imageUrl) : buildHouseAdImageDocument(imageUrl);
-    watchHouseAdFrame(frame, target);
-  }
-  trackHouseAdEvent(ad.id, 'impression');
+  mountHouseAd(target, ad);
   scheduleHouseAdRotation(targetId, placement, slot, target, matches.length);
 }
 function scheduleHouseAdRotation(targetId, placement, slot, target, count) {
@@ -234,6 +239,40 @@ function scheduleHouseAdRotation(targetId, placement, slot, target, count) {
     else scheduleHouseAdRotation(targetId, placement, slot, target, count);
   }, HOUSE_AD_ROTATE_MS);
 }
+// ===== Ads section (its own screen, like Agencies) =====
+function eligibleHouseAds() {
+  return (houseAdsCache || []).filter(function(item){ return item && safeHouseAdUrl(item.image_url) && safeHouseAdUrl(item.target_url); });
+}
+export function updateAdsStat() {
+  var el = document.getElementById('stat-ads');
+  if (el) { var n = eligibleHouseAds().length; el.textContent = n; el.setAttribute('data-count', n); }
+  var screen = document.getElementById('screen-allads');
+  if (screen && screen.classList.contains('active')) renderAllAdsList();
+}
+export function renderAllAdsList() {
+  var el = document.getElementById('allads-list');
+  if (!el) return;
+  var q = ((document.getElementById('allads-search') || {}).value || '').trim().toLowerCase();
+  var list = eligibleHouseAds();
+  if (q) {
+    list = list.filter(function(ad){
+      return ((ad.advertiser_name || '') + ' ' + (ad.title || '') + ' ' + (ad.message || '')).toLowerCase().indexOf(q) !== -1;
+    });
+  }
+  list.sort(function(a, b){ return (a.sort_order || 0) - (b.sort_order || 0); });
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><h3>' + (q ? 'No ads found' : 'No ads yet') + '</h3><p>' + (q ? 'Try a different search term.' : 'Be the first to advertise your business for free.') + '</p></div>';
+    return;
+  }
+  el.innerHTML = '';
+  list.forEach(function(ad){
+    var holder = document.createElement('div');
+    holder.className = 'house-ad-slot allads-item';
+    el.appendChild(holder);
+    mountHouseAd(holder, ad);
+  });
+}
+
 export function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-home-middle', 'home', 'middle');
   renderHouseAdSlot('house-ad-home-bottom', 'home', 'bottom');
@@ -256,7 +295,7 @@ export async function loadHouseAds() {
   // read of Supabase. Failures leave the slots hidden. loadAll() runs on boot,
   // on every return to the app and after saves, so reuse a recent successful
   // load instead of spending a Worker request each time.
-  if (houseAdsLoadedAt && Date.now() - houseAdsLoadedAt < 10 * 60 * 1000) { renderHouseAdSlots(); return; }
+  if (houseAdsLoadedAt && Date.now() - houseAdsLoadedAt < 10 * 60 * 1000) { renderHouseAdSlots(); updateAdsStat(); return; }
   try {
     var response = await fetch(R2_WORKER_URL + '/api/house-ads', { headers: { Accept: 'application/json' } });
     var data = response.ok ? await response.json() : null;
@@ -266,6 +305,7 @@ export async function loadHouseAds() {
     houseAdsCache = [];
   }
   renderHouseAdSlots();
+  updateAdsStat();
 }
 export function trackHouseAdEvent(id, eventName) {
   if (!id || ['impression','click'].indexOf(eventName) === -1) return;
@@ -1376,6 +1416,7 @@ export function setVacancyStat(el, total) {
 }
 
 export function updateStats() {
+  updateAdsStat();
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
   updatePosterStat();
   var vacancyStat = document.getElementById('stat-vacancies');
@@ -1531,6 +1572,9 @@ Object.assign(window, {
   houseAdPlacementMatches,
   renderHouseAdSlot,
   renderHouseAdSlots,
+  renderAllAdsList,
+  updateAdsStat,
+  mountHouseAd,
   loadHouseAds,
   trackHouseAdEvent,
   getManagedPosters,

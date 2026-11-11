@@ -50,7 +50,7 @@ export var SA_ACTIVE_SCREEN_KEY = 'sa_active_screen_v1';
 export var SA_RESTORABLE_SCREENS = {
   home: true, account: true, saved: true, menu: true,
   allagencies: true, allbranches: true, allvacancies: true,
-  allemployers: true, allposters: true, pool: true
+  allemployers: true, allposters: true, allads: true, pool: true
 };
 export function isRestorableScreen(name) {
   return !!SA_RESTORABLE_SCREENS[name];
@@ -534,7 +534,8 @@ export var SA_SECTION_LINKS = {
   agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
   candidates: { label: 'Upload to the CV Box', title: 'SA Recruiters — Upload to the CV Box', shareKey: 'candidates' },
   posters: { label: 'Vacancy posters', title: 'SA Recruiters — Vacancy Posters' },
-  employers: { label: 'Employers', title: 'SA Recruiters — Employers' }
+  employers: { label: 'Employers', title: 'SA Recruiters — Employers' },
+  ads: { label: 'Ads', title: 'SA Recruiters — Ads' }
 };
 export function getSectionLink(section) {
   if (!SA_SECTION_LINKS[section]) return '';
@@ -565,7 +566,7 @@ export function openDeepLinkedSection() {
   // prevents the destination from staying on an early loading/count state.
   var screenBySection = {
     vacancies: 'allvacancies', agencies: 'allagencies', candidates: 'pool',
-    posters: 'allposters', employers: 'allemployers'
+    posters: 'allposters', employers: 'allemployers', ads: 'allads'
   };
   window.__saRestoredScreen = screenBySection[section];
   if (section === 'vacancies') showAllVacancies('home');
@@ -573,6 +574,7 @@ export function openDeepLinkedSection() {
   else if (section === 'candidates') goPool('home');
   else if (section === 'posters') showVacancyPosters('home');
   else if (section === 'employers') showAllEmployers('home');
+  else if (section === 'ads') showAllAds('home');
   if (paymentReturn) {
     params.delete('cvPayment');
     var cleanQuery = params.toString();
@@ -649,6 +651,7 @@ export function renderRestoredScreenContent() {
   else if (name === 'saved' && typeof renderSaved === 'function') renderSaved();
   else if (name === 'allagencies' && typeof renderAllAgenciesList === 'function') renderAllAgenciesList();
   else if (name === 'allbranches' && typeof renderAllBranchesList === 'function') renderAllBranchesList();
+  else if (name === 'allads' && typeof renderAllAdsList === 'function') renderAllAdsList();
   else if (name === 'allemployers' && typeof renderAllEmployersList === 'function') renderAllEmployersList();
   else if (name === 'allvacancies' && typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList();
   else if (name === 'allposters') {
@@ -1236,6 +1239,16 @@ export function showAllAgencies() {
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
   window.scrollTo({ top: 0 });
   renderAllAgenciesList();
+}
+
+export function showAllAds() {
+  set_directoryReturnScreen( arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : (document.getElementById('screen-menu').classList.contains('active') ? 'menu' : 'home')));
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-allads').classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
+  window.scrollTo({ top: 0 });
+  persistActiveScreen('allads');
+  if (typeof renderAllAdsList === 'function') renderAllAdsList();
 }
 
 export function showAllBranches() {
@@ -2360,6 +2373,7 @@ Object.assign(window, {
   resetActiveScreenScroll,
   goBackFromDirectory,
   showAllAgencies,
+  showAllAds,
   showAllBranches,
   showAllVacancies,
   showVacancyPosters,
