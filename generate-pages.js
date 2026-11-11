@@ -2,7 +2,8 @@
 //  SA RECRUITERS — generate-pages.js
 // ============================================================
 //  Runs via GitHub Actions on pushes to main.
-//  Reads the committed public startup snapshot and vacancy-notes map, and
+//  Reads the public startup snapshot and vacancy-notes map (refreshed from
+//  the Worker before production deploy; committed data is a local fallback), and
 //  writes a static HTML page per agency and per vacancy so
 //  Google (and anyone sharing a link) sees real content instead
 //  of the empty app shell.
@@ -10,7 +11,7 @@
 //  Your existing index.html / app is untouched — this just adds
 //  extra static pages alongside it in the GitHub Pages output.
 //
-//  Public data is refreshed by refresh-static-data.yml; deployment builds
+//  Public data is read from the D1-backed Worker at deploy time; this build
 //  must not scan Supabase/PostgREST for the same records again.
 // ============================================================
 

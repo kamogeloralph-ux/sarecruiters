@@ -58,7 +58,36 @@
     } catch (e) { console.warn('[SA Recruiters] push opt-in failed', e); toast('Could not enable push alerts — email alerts are still active'); }
   };
   async function handleUnsubscribe() { var p = new URLSearchParams(location.search), t = p.get('unsub_search'); if (!t || !supabaseClient) return; var r = await supabaseClient.rpc('unsubscribe_saved_search', { p_token: t }); toast(r && r.data ? 'Job alert stopped' : 'Could not stop that alert'); p.delete('unsub_search'); history.replaceState({}, document.title, location.pathname + (p.toString() ? '?' + p : '')); }
-  document.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href]'); if (!a || !/^\s*apply/i.test(a.textContent)) return; var card = a.closest('[data-vacancy-id]'); if (!card) return; var id = card.getAttribute('data-vacancy-id'); try { if (typeof trackEvent === 'function') trackEvent('vacancy_apply_click', 'vacancy', id, {}); } catch (err) {} if (saAuthUser && supabaseClient) supabaseClient.from('vacancy_applications').upsert({ user_id: saAuthUser.id, vacancy_id: id, status: 'applied' }, { onConflict: 'user_id,vacancy_id', ignoreDuplicates: true }).then(function (r) { if (!r.error) toast('Marked as applied'); }); }, true);
+  var PENDING_APPLY_KEY = 'sa_pending_apply_confirmation';
+  function savePendingApply(item) { try { sessionStorage.setItem(PENDING_APPLY_KEY, JSON.stringify(item)); } catch (e) {} }
+  function confirmReturnedApply() {
+    var item;
+    try { item = JSON.parse(sessionStorage.getItem(PENDING_APPLY_KEY) || 'null'); } catch (e) { item = null; }
+    if (!item || !item.id) return;
+    if (!item.at || Date.now() - item.at > 24 * 60 * 60 * 1000) { try { sessionStorage.removeItem(PENDING_APPLY_KEY); } catch (e) {} return; }
+    if (Date.now() - item.at < 2500) { setTimeout(confirmReturnedApply, 2500 - (Date.now() - item.at) + 50); return; }
+    if (document.hidden) return;
+    try { sessionStorage.removeItem(PENDING_APPLY_KEY); } catch (e) {}
+    if (!window.confirm('Did you apply for ' + (item.title || 'this vacancy') + '?')) return;
+    try { if (typeof trackEvent === 'function') trackEvent('vacancy_application_reported', 'vacancy', item.id, { self_reported: true }); } catch (e) {}
+    if (!saAuthUser || !supabaseClient) { toast('Sign in to save your applications'); return; }
+    supabaseClient.from('vacancy_applications').upsert({ user_id: saAuthUser.id, vacancy_id: item.id, status: 'applied', applied_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,vacancy_id' }).then(function (r) {
+      if (r.error) toast('Could not save your application — please try again'); else toast('Application saved to your profile');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a || !/^\s*apply/i.test(a.textContent)) return;
+    var card = a.closest('[data-vacancy-id]');
+    if (!card) return;
+    var id = card.getAttribute('data-vacancy-id');
+    var titleNode = card.querySelector('.vx-title, .vac-title, [data-vacancy-title]');
+    var title = titleNode ? titleNode.textContent.trim() : (a.getAttribute('aria-label') || 'this vacancy').replace(/^apply(?: now)?\s*(?:for)?\s*/i, '');
+    try { if (typeof trackEvent === 'function') trackEvent('vacancy_apply_click', 'vacancy', id, {}); } catch (err) {}
+    savePendingApply({ id: id, title: title, at: Date.now() });
+  }, true);
+  document.addEventListener('visibilitychange', confirmReturnedApply);
+  window.addEventListener('focus', confirmReturnedApply);
   document.addEventListener('sa-auth-change', renderAlertManager);
   function init() { addAlertButton(); handleUnsubscribe(); renderAlertManager(); new MutationObserver(addAlertButton).observe(document.body, { childList: true, subtree: true }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

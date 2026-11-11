@@ -378,7 +378,8 @@ export async function upsertEmployer(e) {
       if (isAdmin) await writeThroughD1Mirror('employers', Object.assign({}, e, result.data || {}));
       return true;
     }
-  } catch(err){}
+    console.error('employer upsert', result.error);
+  } catch(err){ console.error('employer upsert', err); }
   var arr = readLocal('employers');
   var i = arr.findIndex(function(x){ return x.id === e.id; });
   if (i >= 0) arr[i] = Object.assign({}, arr[i], e); else arr.push(e);
@@ -388,10 +389,10 @@ export async function upsertEmployer(e) {
 export async function removeEmployer(id) {
   try {
     var result = await supabaseClient.from('employers').delete().eq('id', id);
-    if (!result.error && isAdmin) await writeThroughD1Mirror('employers', id, 'delete');
-  } catch(err){}
-  var arr = readLocal('employers').filter(function(x){ return x.id !== id; });
-  writeLocal('employers', arr);
+    if (result.error) { console.error('employer delete', result.error); return false; }
+    if (isAdmin) await writeThroughD1Mirror('employers', id, 'delete');
+    return true;
+  } catch(err){ console.error('employer delete', err); return false; }
 }
 /* ── Data: BRANCHES & VACANCIES ─────────────────────────
    The `branches` table now EXISTS in Supabase (verified).
@@ -425,7 +426,8 @@ export async function upsertBranch(b) {
       if (isAdmin) await writeThroughD1Mirror('branches', Object.assign({}, b, result.data || {}));
       return true;
     }
-  } catch(e){}
+    console.error('branch upsert', result.error);
+  } catch(e){ console.error('branch upsert', e); }
   var arr = readLocal('branches');
   var i = arr.findIndex(function(x){ return x.id === b.id; });
   if (i >= 0) arr[i] = Object.assign({}, arr[i], b); else arr.push(b);
@@ -435,10 +437,10 @@ export async function upsertBranch(b) {
 export async function removeBranch(id) {
   try {
     var result = await supabaseClient.from('branches').delete().eq('id', id);
-    if (!result.error && isAdmin) await writeThroughD1Mirror('branches', id, 'delete');
-  } catch(e){}
-  var arr = readLocal('branches').filter(function(x){ return x.id !== id; });
-  writeLocal('branches', arr);
+    if (result.error) { console.error('branch delete', result.error); return false; }
+    if (isAdmin) await writeThroughD1Mirror('branches', id, 'delete');
+    return true;
+  } catch(e){ console.error('branch delete', e); return false; }
 }
 // ----- App settings used for public media and social links. -----
 export async function getAppSetting(key, fallback) {
@@ -942,10 +944,10 @@ export async function upsertVacancy(v) {
 export async function removeVacancy(id) {
   try {
     var result = await supabaseClient.from('vacancies').delete().eq('id', id);
-    if (!result.error && isAdmin) await writeThroughD1Mirror('vacancies', id, 'delete');
-  } catch(e){}
-  var arr = readLocal('vacancies').filter(function(x){ return x.id !== id; });
-  writeLocal('vacancies', arr);
+    if (result.error) { console.error('vacancy delete', result.error); return false; }
+    if (isAdmin) await writeThroughD1Mirror('vacancies', id, 'delete');
+    return true;
+  } catch(e){ console.error('vacancy delete', e); return false; }
 }
 // Elapsed-time TTL expiry was removed: a vacancy is only ever considered
 // gone once something has actually verified it's gone (currently

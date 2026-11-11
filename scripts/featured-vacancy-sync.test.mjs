@@ -79,7 +79,7 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
   assert.match(indexSrc, /styles\.css\?v=[^"]+/, 'the shared stylesheet cache key must be refreshed');
   assert.match(indexSrc, /vacancy-v2\.css\?v=vx-scan-2/, 'the vacancy stylesheet cache key must be refreshed');
   assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-retail-3/, 'the vacancy renderer cache key must be refreshed');
-  assert.match(indexSrc, /app-alerts\.js\?v=al-4/, 'the saved-search CTA script cache key must be refreshed');
+  assert.match(indexSrc, /app-alerts\.js\?v=al-5/, 'the saved-search and application-confirmation script cache key must be refreshed');
 });
 
 test('Home renders one deterministic daily featured vacancy poster', () => {

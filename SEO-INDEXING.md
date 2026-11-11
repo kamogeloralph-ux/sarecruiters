@@ -1,6 +1,6 @@
 # SA Recruiters — indexing & SEO
 
-Everything below is produced by `generate-pages.js` on every deploy (no manual steps).
+Everything below is produced by `generate-pages.js` on every deploy (no manual steps). The Pages workflow first refreshes its build-only SEO snapshot from the public D1-backed Worker (`/api/startup` plus every page of `/api/vacancies`). It refuses incomplete or older-than-72-hour data before generating pages and sitemap. The committed `data/startup.json` remains a local/offline fallback, not the production SEO source of truth.
 
 ## What gets its own crawlable URL
 | Corner of the app | Static URL | In sitemap | Photos in image sitemap |

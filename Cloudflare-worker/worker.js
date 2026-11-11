@@ -132,6 +132,52 @@ async function posterUploadAllowed(userId, limit = 10) {
   }
 }
 __name(posterUploadAllowed, "posterUploadAllowed");
+// Best-effort public-upload quota keyed by a one-way hash of Cloudflare's
+// edge-provided client IP. Cache API limits are per-colo, but stop repeated
+// abuse without retaining the raw address or blocking normal submissions.
+async function publicUploadAllowed(request, limit = 12) {
+  try {
+    const ip = request.headers.get("CF-Connecting-IP") || "";
+    if (!ip) return false;
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+    const fingerprint = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    const hour = Math.floor(Date.now() / 36e5);
+    const cache = caches.default;
+    const key = new Request(`https://rate-limit.internal/public-upload/${fingerprint}/${hour}`);
+    const hit = await cache.match(key);
+    const count = hit ? parseInt(await hit.text(), 10) || 0 : 0;
+    if (count >= limit) return false;
+    await cache.put(key, new Response(String(count + 1), { headers: { "Cache-Control": "max-age=3600" } }));
+    return true;
+  } catch (e) {
+    console.warn("public upload limiter unavailable", e);
+    return false;
+  }
+}
+__name(publicUploadAllowed, "publicUploadAllowed");
+async function readUploadBytes(request, maxBytes) {
+  const declaredLength = Number(request.headers.get("Content-Length"));
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) return null;
+  if (!request.body) return new ArrayBuffer(0);
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      try { await reader.cancel(); } catch (e) {}
+      return null;
+    }
+    chunks.push(value);
+  }
+  const result = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.byteLength; }
+  return result.buffer;
+}
+__name(readUploadBytes, "readUploadBytes");
 function looksLikeJpeg(buffer) {
   const b = new Uint8Array(buffer, 0, Math.min(3, buffer.byteLength));
   return b.length === 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
@@ -308,6 +354,27 @@ async function sendNotificationEmail(env, payload) {
   }
 }
 __name(sendNotificationEmail, "sendNotificationEmail");
+async function sendSubmissionStatusEmail(env, { to, name, kind, status }) {
+  const recipient = String(to || "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) return;
+  const labels = {
+    job: { new: "received", approved: "approved for review", contacted: "marked as contacted", rejected: "closed", resolved: "completed" },
+    seeker: { new: "received", contacted: "marked as contacted", added: "added to the CV Box", closed: "closed" }
+  };
+  const description = labels[kind] && labels[kind][status];
+  if (!description) return;
+  const submission = kind === "job" ? "job-post request" : "job-seeker request";
+  const result = await sendNotificationEmail(env, {
+    to_email: recipient,
+    email_subject: `SA Recruiters | Update on your ${submission}`,
+    notification_title: "Your request has an update",
+    notification_type: "SA Recruiters submission update",
+    notification_intro: `Hi${name ? ` ${String(name).slice(0, 120)}` : ""}, your ${submission} has been ${description}.`,
+    notification_body: "Thank you for contacting SA Recruiters. If you need help, reply to this email."
+  });
+  if (!result.sent) console.warn("submission status email not sent", kind, result.reason || "unknown reason");
+}
+__name(sendSubmissionStatusEmail, "sendSubmissionStatusEmail");
 function publicUrlFor(env, key) {
   const base = (env.R2_PUBLIC_BASE_URL || "").replace(/\/$/, "");
   return `${base}/${key}`;
@@ -2343,8 +2410,9 @@ var worker_default = {
         const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
         if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
         const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json", Prefer: "return=representation" };
-        const target = `${env.SUPABASE_URL}/rest/v1/job_post_enquiries?id=eq.${encodeURIComponent(adminEnquiryMatch[1])}&select=id`;
+        const target = `${env.SUPABASE_URL}/rest/v1/job_post_enquiries?id=eq.${encodeURIComponent(adminEnquiryMatch[1])}&select=id,company_name,contact_person,work_email,status`;
         let response;
+        let previous = null;
         if (request.method === "DELETE") {
           response = await fetch(target, { method: "DELETE", headers });
         } else {
@@ -2352,6 +2420,11 @@ var worker_default = {
           const patch = {};
           if (body.status !== void 0) {
             if (!["new", "approved", "contacted", "rejected", "resolved"].includes(body.status)) return json({ error: "Invalid status." }, 400, origin);
+            const current = await fetch(target, { headers });
+            if (!current.ok) return json({ error: "Could not read the current enquiry." }, 502, origin);
+            const rows = await current.json().catch(() => []);
+            previous = Array.isArray(rows) ? rows[0] || null : null;
+            if (!previous) return json({ error: "That enquiry no longer exists." }, 404, origin);
             patch.status = body.status;
           }
           for (const field of ["company_name", "contact_person", "work_email", "phone", "industry", "positions_to_fill", "additional_details", "website"]) {
@@ -2369,6 +2442,9 @@ var worker_default = {
         }
         const affected = await response.json().catch(() => []);
         if (Array.isArray(affected) && !affected.length) return json({ error: "That enquiry no longer exists." }, 404, origin);
+        if (request.method === "POST" && previous && previous.status !== affected[0].status) {
+          await sendSubmissionStatusEmail(env, { to: affected[0].work_email || previous.work_email, name: affected[0].contact_person || previous.contact_person || previous.company_name, kind: "job", status: affected[0].status });
+        }
         return json({ ok: true }, 200, origin);
       }
 
@@ -2380,8 +2456,9 @@ var worker_default = {
         const adminKey = env.SUPABASE_SERVICE_ROLE_KEY;
         if (!adminKey) return json({ error: "Admin data access is not configured." }, 503, origin);
         const headers = { apikey: adminKey, Authorization: `Bearer ${adminKey}`, "Content-Type": "application/json", Prefer: "return=representation" };
-        const target = `${env.SUPABASE_URL}/rest/v1/job_seeker_requests?id=eq.${encodeURIComponent(adminSeekerMatch[1])}&select=id`;
+        const target = `${env.SUPABASE_URL}/rest/v1/job_seeker_requests?id=eq.${encodeURIComponent(adminSeekerMatch[1])}&select=id,full_name,email,status`;
         let response;
+        let previous = null;
         if (request.method === "DELETE") {
           response = await fetch(target, { method: "DELETE", headers });
         } else {
@@ -2389,6 +2466,11 @@ var worker_default = {
           const patch = {};
           if (body.status !== void 0) {
             if (!["new", "contacted", "added", "closed"].includes(body.status)) return json({ error: "Invalid status." }, 400, origin);
+            const current = await fetch(target, { headers });
+            if (!current.ok) return json({ error: "Could not read the current request." }, 502, origin);
+            const rows = await current.json().catch(() => []);
+            previous = Array.isArray(rows) ? rows[0] || null : null;
+            if (!previous) return json({ error: "That request no longer exists." }, 404, origin);
             patch.status = body.status;
           }
           if (body.talent_pool_id !== void 0) patch.talent_pool_id = body.talent_pool_id ? String(body.talent_pool_id).slice(0, 120) : null;
@@ -2402,6 +2484,9 @@ var worker_default = {
         }
         const affected = await response.json().catch(() => []);
         if (Array.isArray(affected) && !affected.length) return json({ error: "That request no longer exists." }, 404, origin);
+        if (request.method === "POST" && previous && previous.status !== affected[0].status) {
+          await sendSubmissionStatusEmail(env, { to: affected[0].email || previous.email, name: affected[0].full_name || previous.full_name, kind: "seeker", status: affected[0].status });
+        }
         return json({ ok: true }, 200, origin);
       }
 
@@ -3091,35 +3176,47 @@ var worker_default = {
         return json({ ok: true }, 200, origin);
       }
       if (path === "/api/upload/candidate-cv" && request.method === "POST") {
+        if (!await publicUploadAllowed(request)) return json({ error: "Upload limit reached or spam protection is unavailable. Please try again later." }, 429, origin);
         const contentType = request.headers.get("Content-Type") || "";
         const allowedTypes = ["application/pdf", "image/png", "image/jpeg"];
         if (!allowedTypes.includes(contentType.split(";")[0].toLowerCase())) {
           return json({ error: "Only PDF, PNG, or JPG CV files are allowed." }, 400, origin);
         }
-        const bytes = await request.arrayBuffer();
+        const bytes = await readUploadBytes(request, MAX_PHOTO_BYTES);
+        if (bytes === null) return json({ error: "CV too large (max 3MB)." }, 413, origin);
         if (bytes.byteLength === 0) return json({ error: "Empty file." }, 400, origin);
-        if (bytes.byteLength > MAX_PHOTO_BYTES) return json({ error: "CV too large (max 3MB)." }, 413, origin);
-        const ext = contentType.toLowerCase().includes("pdf") ? "pdf" : contentType.toLowerCase().includes("png") ? "png" : "jpg";
+        const signature = new Uint8Array(bytes, 0, Math.min(8, bytes.byteLength));
+        const isPdf = signature.length >= 4 && signature[0] === 0x25 && signature[1] === 0x50 && signature[2] === 0x44 && signature[3] === 0x46;
+        const isPng = signature.length >= 8 && signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4e && signature[3] === 0x47 && signature[4] === 0x0d && signature[5] === 0x0a && signature[6] === 0x1a && signature[7] === 0x0a;
+        const isJpeg = signature.length >= 3 && signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff;
+        if (!(isPdf || isPng || isJpeg)) return json({ error: "The file contents do not match a supported CV type." }, 400, origin);
+        const ext = isPdf ? "pdf" : isPng ? "png" : "jpg";
+        const actualType = isPdf ? "application/pdf" : isPng ? "image/png" : "image/jpeg";
         const key = `candidate-cvs/${randomKey()}.${ext}`;
-        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType } });
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: actualType } });
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
       }
       if (path === "/api/upload/candidate-photo" && request.method === "POST") {
+        if (!await publicUploadAllowed(request)) return json({ error: "Upload limit reached or spam protection is unavailable. Please try again later." }, 429, origin);
         const contentType = request.headers.get("Content-Type") || "";
-        if (!contentType.startsWith("image/")) {
-          return json({ error: "Only image uploads are allowed." }, 400, origin);
+        if (!/^image\/(jpeg|png)(?:;|$)/i.test(contentType)) {
+          return json({ error: "Only JPEG or PNG photo uploads are allowed." }, 400, origin);
         }
-        const bytes = await request.arrayBuffer();
+        const bytes = await readUploadBytes(request, MAX_PHOTO_BYTES);
+        if (bytes === null) return json({ error: "Photo too large (max 3MB)." }, 413, origin);
         if (bytes.byteLength === 0)
           return json({ error: "Empty file." }, 400, origin);
-        if (bytes.byteLength > MAX_PHOTO_BYTES) {
-          return json({ error: "Photo too large (max 3MB)." }, 413, origin);
-        }
+        const signature = new Uint8Array(bytes, 0, Math.min(8, bytes.byteLength));
+        const isPng = signature.length >= 8 && signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4e && signature[3] === 0x47 && signature[4] === 0x0d && signature[5] === 0x0a && signature[6] === 0x1a && signature[7] === 0x0a;
+        const isJpeg = signature.length >= 3 && signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff;
+        if (!(isJpeg || isPng)) return json({ error: "The photo contents are not a valid JPEG or PNG image." }, 400, origin);
         const allowedPrefixes = ["candidate-photos", "agency-logos", "employer-logos", "vacancy-photos"];
         const reqPrefix = url.searchParams.get("prefix");
         const prefix = allowedPrefixes.includes(reqPrefix) ? reqPrefix : "candidate-photos";
-        const key = `${prefix}/${randomKey()}.jpg`;
-        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
+        const photoType = isPng ? "image/png" : "image/jpeg";
+        const photoExt = isPng ? "png" : "jpg";
+        const key = `${prefix}/${randomKey()}.${photoExt}`;
+        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: photoType } });
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
       }
       if (path === "/api/submit/poster" && request.method === "POST") {
