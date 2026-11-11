@@ -1,2 +1,0 @@
-Delete from the repo (one-off script, already run, no longer needed):
-  REWRITE-R2-URLS.sql

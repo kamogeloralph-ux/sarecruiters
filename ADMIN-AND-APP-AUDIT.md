@@ -169,13 +169,13 @@ These are not confirmed runtime failures. A missing caller or migration in this 
 
 **Recommended action:** Document the authoritative base-schema source and migration order, or check in a baseline suitable for a clean project. Test against a disposable empty project, not production.
 
-### Vacancy redesign module appears unreferenced
+### Vacancy redesign module — resolved
 
-**Finding:** `vacancy-redesign-module-unreferenced`.
+**Status:** Resolved during repository cleanup.
 
-**Evidence:** `app-vacancy-redesign.js:104-120` installs enhanced render/handlers but is not imported by `app-entry.js:9-19` or loaded in `index.html:1499-1508`. Those load `app.bundle.min.js` plus `app-vacancy-v2.js`; v2 installs its render/filter handlers at `app-vacancy-v2.js:319-330`. No source call site was found in scoped files.
+**Evidence:** `app-vacancy-redesign.js` had no runtime or build reference. The active app loads `app.bundle.min.js` and `app-vacancy-v2.js`, which provides the current render and filter handlers.
 
-**Recommended action:** Confirm it is an intentionally retained alternative; remove it or document dormant status.
+**Action taken:** Removed the unreferenced alternative script; the active vacancy UI remains in `app-vacancy-v2.js`.
 
 ### Duplicate nested Worker deployment workflow may be orphaned
 

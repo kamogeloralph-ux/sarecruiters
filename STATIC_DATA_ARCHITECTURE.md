@@ -1,36 +1,27 @@
-# SA Recruiters: zero-cost static architecture
+# SA Recruiters public data and static-page architecture
 
-## Runtime
+## Browser runtime
 
-- **GitHub Pages** serves the existing static app and `data/startup.json`.
-- The browser loads the public directory from `data/startup.json`, filters and sorts in memory, and uses the existing IndexedDB cache for offline recovery.
-- Saved jobs remain device-local in `localStorage` under `savedVacancies`. They work for guests and do not require a database. Signed-in users may still sync them to Supabase as an optional enhancement.
-- Supabase and the existing Worker remain available for authentication, admin forms, employer/agency submissions, analytics, and non-directory features. A database or Worker outage no longer prevents public listings from loading.
+Cloudflare Pages serves the main app from the root `index.html`. The app prefers live, versioned public data from the Cloudflare Worker and falls back to checked-in public startup data when the Worker is temporarily unavailable. Public browser code does not read Supabase tables directly.
 
-## Data refresh
+The advertising form is a separate hand-maintained route at `advertise/index.html` (`/advertise/`). It is not part of the app homepage or a generator output.
 
-`.github/workflows/refresh-static-data.yml` runs every Monday and Friday at 03:30 UTC. It runs the existing Adzuna, Himalayas, Oracle, Government, retail, Simplify, Graduates24, and Careers Page scrapers, then `npm run export:static-data` reads the public rows and writes one compact, token-free JSON snapshot. GitHub Actions commits the changed snapshot back to `main`, which triggers the Pages deployment workflow.
+## SEO pages and deployment
 
-Run it immediately with **Actions → Refresh static job data → Run workflow**. The first run requires these repository Actions secrets:
+`generate-pages.js` reads the committed public data files under `data/` and generates crawlable agency, vacancy, company, poster, category and location pages, along with `sitemap.xml`. The generator does not query Supabase.
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `ADZUNA_APP_ID`
-- `ADZUNA_APP_KEY`
+The Cloudflare Pages workflow first attempts to refresh the SEO inventory from the live public Worker and validates it when fresh data is available. If that refresh fails, the workflow uses the checked-in snapshot instead. It then runs the generator and deploys the repository root to the Cloudflare Pages project `sarecruiters`.
 
-The source scrapers use Supabase as a short-lived staging/upsert layer for compatibility with the existing parser and admin schema; the public runtime source of truth is the committed JSON snapshot. No paid server, database hosting, or scheduler is required.
+The frontend bundler creates `app.bundle.min.js` and updates the bundle reference in the root app page. It does not replace the root page with the advertising form. Generated route folders may be recreated by the build; edit their source templates or input data rather than treating generated HTML as hand-maintained source.
 
-## GitHub setup
+## Source refresh
 
-1. In **Settings → Pages**, choose **GitHub Actions** as the build and deployment source.
-2. Add the four secrets above under **Settings → Secrets and variables → Actions**.
-3. Run the refresh workflow once manually, then verify `data/startup.json` changes.
-4. The Pages deployment runs on every data commit and code push.
+`.github/workflows/refresh-static-data.yml` runs at 03:30 and 15:30 UTC. It runs the configured vacancy scrapers, reports persistent source failures, and saves scraper failure history. It does not run the former full static-data export or commit a full snapshot as part of that workflow.
 
-## Counts match what the app keeps live
+The checked-in public data remains a build input and outage fallback. Keep it limited to public listing data; candidate records and other private account information must not be included.
 
-`scripts/export-static-data.mjs` runs every row through `scripts/static-vacancy-filter.mjs` before writing the snapshot: closed listings (past `closing_date`) are dropped and each real agency, employer and normalized unlinked company keeps only its newest 50, exactly like the daily `enforce-vacancy-caps` job. `counts` (which drives the home "Available Vacancies" tile) is computed from those filtered rows, so it can't include rows the caps job would delete.
+## Operational boundaries
 
-## Snapshot contract
-
-`data/startup.json` contains `schema`, `updated_at`, public `agencies`, `branches`, `employers`, `vacancies`, `featured_vacancies`, `counts`, and safe public settings. Manager tokens and other private fields are explicitly omitted by the exporter.
+- Cloudflare Pages deployment is defined by `.github/workflows/deploy-pages.yml`.
+- Worker deployment and D1 migrations are handled separately by `.github/workflows/deploy-worker.yml`.
+- Scraper credentials and the Cloudflare deployment credentials are configured as the repository secrets and variables referenced by their workflows; do not place secret values in checked-in data or configuration.
