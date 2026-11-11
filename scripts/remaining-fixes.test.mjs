@@ -68,6 +68,9 @@ test('manager activity totals are token-scoped, aggregate-only, and server-role 
 test('deploy workflow refreshes and validates the SEO snapshot before generation', () => {
   assert.ok(refreshWorkflow.indexOf('scripts/refresh-seo-snapshot.mjs') < refreshWorkflow.indexOf('node generate-pages.js'));
   assert.ok(refreshWorkflow.indexOf('scripts/validate-static-snapshot.mjs') < refreshWorkflow.indexOf('node generate-pages.js'));
+  assert.match(refreshWorkflow, /id: refresh-seo[\s\S]*continue-on-error: true/);
+  assert.match(refreshWorkflow, /if: steps\.refresh-seo\.outcome == 'success'/);
+  assert.match(refreshWorkflow, /Continue with the checked-in SEO snapshot/);
   assert.match(ciWorkflow, /npm test/);
   assert.match(wrangler, /crons = \["0 \*\/6 \* \* \*", "15,45 \* \* \* \*"\]/);
 });

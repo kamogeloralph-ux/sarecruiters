@@ -58,10 +58,17 @@ jobs:
         run: npm ci
 
       - name: Refresh SEO inventory from the live public Worker
+        id: refresh-seo
+        continue-on-error: true
         run: node scripts/refresh-seo-snapshot.mjs
 
       - name: Validate fresh SEO inventory
+        if: steps.refresh-seo.outcome == 'success'
         run: node scripts/validate-static-snapshot.mjs
+
+      - name: Continue with the checked-in SEO snapshot when the Worker is unavailable
+        if: steps.refresh-seo.outcome != 'success'
+        run: echo "Live SEO refresh was unavailable; continuing with the checked-in snapshot so the Pages deployment is not blocked."
 
       - name: Build frontend bundle and static pages
         run: node generate-pages.js
