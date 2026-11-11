@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const generator = readFileSync(new URL('../generate-pages.js', import.meta.url), 'utf8');
 const publicAds = readFileSync(new URL('../public-ads.js', import.meta.url), 'utf8');
 const homepage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const advertisePage = readFileSync(new URL('../advertise/index.html', import.meta.url), 'utf8');
 const cards = readFileSync(new URL('../app-cards.js', import.meta.url), 'utf8');
 const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
 const privacy = readFileSync(new URL('../privacy/index.html', import.meta.url), 'utf8');
@@ -21,6 +22,15 @@ const appManagerEmployer = readFileSync(new URL('../app-manager-employer.js', im
 const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
+
+test('main app and advertising form have separate directory entry points', () => {
+  assert.match(homepage, /<title>SA Recruiters/);
+  assert.match(homepage, /app\.bundle\.min\.js/);
+  assert.doesNotMatch(homepage, /id="adForm"/);
+  assert.match(advertisePage, /rel="canonical" href="https:\/\/sa-recruiters\.co\.za\/advertise\/"/);
+  assert.match(advertisePage, /id="adForm"/);
+  assert.doesNotMatch(advertisePage, /app\.bundle\.min\.js/);
+});
 
 test('Pages generation uses committed public data and does not scan Supabase on deploy', () => {
   assert.match(generator, /function fetchAll\(\)/);
