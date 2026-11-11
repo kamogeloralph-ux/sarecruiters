@@ -101,7 +101,7 @@ test('guest Profile cards, contact details, help action, and account headings re
   assert.match(html, /id="account-signin-card"[^>]*aria-hidden="false"/);
   assert.match(html, /id="account-settings-label" hidden>Profile settings/);
   assert.match(html, /id="account-signout-label" hidden>Account/);
-  assert.match(html, /class="account-help-action"[^>]*onclick="openJobSeekerSheet\(\)"/);
+  assert.match(html, /class="account-help-action"[^>]*onclick="openCvBoxApplication\(\)"/);
   assert.match(appUi, /if \(settingsLabel\) settingsLabel\.hidden = isGuest/);
   assert.match(appUi, /if \(signoutLabel\) signoutLabel\.hidden = isGuest/);
   assert.match(css, /\.contact-value\{[^}]*color:var\(--text\)/);

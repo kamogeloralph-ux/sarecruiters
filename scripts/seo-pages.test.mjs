@@ -20,7 +20,7 @@ const appUi = readFileSync(new URL('../app-ui.js', import.meta.url), 'utf8');
 const appCore = readFileSync(new URL('../app-core.js', import.meta.url), 'utf8');
 const appManagerEmployer = readFileSync(new URL('../app-manager-employer.js', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-
+const staticPagesCss = readFileSync(new URL('../static-pages.css', import.meta.url), 'utf8');
 const pages = ['careers', 'apply', 'contact', 'register', 'candidates', 'about'];
 
 test('main app and advertising form have separate directory entry points', () => {
@@ -213,9 +213,30 @@ test('Know Your Rights is a crawlable HTML resource page', () => {
 
 test('Terms page shares the standard legal-page visual system', () => {
   assert.match(terms, /<h1>Terms and Conditions<\/h1>/);
-  assert.match(terms, /background:#111111/);
+  assert.match(terms, /background:#ffffff/);
   assert.match(terms, /canonical.*terms\//i);
   assert.match(terms, /href="\/privacy\/">Privacy Policy/);
+});
+
+test('public listings, contact pages, terms, and privacy stay white and preserve logo colors', () => {
+  assert.match(staticPagesCss, /color-scheme:light/);
+  assert.match(staticPagesCss, /--bg:#fff/);
+  assert.match(staticPagesCss, /--mono-photo-filter:none/);
+  assert.match(staticPagesCss, /\.sp-hero,\.hero\{background:#fff/);
+  assert.match(staticPagesCss, /\.sp-footer\{background:#fff/);
+  assert.doesNotMatch(staticPagesCss, /grayscale\(1\)/);
+  assert.match(generator, /icons\/sa-recruiters-icon-color\.png/);
+  assert.match(generator, /theme-color" content="#ffffff"/);
+  assert.match(generator, /color-scheme" content="light"/);
+  for (const doc of [terms, privacy, faq, rights]) {
+    assert.match(doc, /html body\{background:#fff!important/);
+    assert.match(doc, /legal-light-surface/);
+    assert.match(doc, /color-scheme:light/);
+    assert.match(doc, /icons\/sa-recruiters-icon-color\.png/);
+    assert.match(doc, /class="back legal-brand"/);
+    assert.doesNotMatch(doc, /grayscale\(1\)/);
+    assert.doesNotMatch(doc, /@media\s*\(prefers-color-scheme:dark\)\s*\{\s*:root\{\s*--pbg:#000/);
+  }
 });
 
 test('FAQ gives original safety, offline, CV Box and privacy guidance', () => {

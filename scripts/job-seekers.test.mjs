@@ -41,7 +41,8 @@ test('app form never falls back to a direct Supabase insert and requires consent
   assert.match(fn, /submitViaWorker\('\/api\/submit\/job-seeker'/);
   assert.doesNotMatch(fn, /supabaseClient/);
   assert.match(fn, /payload\.consent/);
-  assert.match(index, /onclick="openJobSeekerSheet\(\)"/);
+  assert.doesNotMatch(index, /onclick="openJobSeekerSheet\(\)"/);
+  assert.match(index, /onclick="openCvBoxApplication\(\)"/);
   assert.match(index, /id="job-seeker-consent"/);
 });
 

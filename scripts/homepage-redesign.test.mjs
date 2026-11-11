@@ -147,9 +147,9 @@ test('home available roles use compact province groups and the existing exact-va
   assert.match(vacancyV2, /class="home-vacancy-apply"/);
   assert.match(html, /app-vacancy-v2\.js\?v=vx-clean-1/);
   assert.match(cards, /if \(typeof renderHomeFeed === 'function'\) \{\s*renderHomeFeed\(\);\s*return;/);
-  assert.match(ui, /onclick="openHomeCvBoxProfile\(\)"/);
-  assert.match(ui, /onclick="openGeneralVacancySheet\(\)"/);
-  assert.match(ui, /onclick="openPublicPosterSheet\(\)">Post a poster/);
+  assert.match(ui, /onclick="openCvBoxApplication\(\)">Upload a CV/);
+  assert.ok(ui.includes('Browse CV Box'));
+  assert.match(ui, /onclick="openGeneralVacancySheet\(\)">Post vacancy/);
   assert.match(ui, /house-ad-home-middle/);
   assert.match(ui, /showAllVacancies\('home'\)/);
   assert.doesNotMatch(html, /house-ad-home-top/);

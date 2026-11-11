@@ -194,13 +194,13 @@ window.sentryOnLoad = function () {
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=1669864144" defer></script>
-<link rel="preload" as="style" href="styles.css?v=manager-stats-1">
-<link rel="stylesheet" href="styles.css?v=manager-stats-1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=ui-cards-1">
+<link rel="stylesheet" href="styles.css?v=ui-cards-1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-1" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="mono.css?v=mono-7" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=picture-ads1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-1"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=ui-cards-1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-1"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
 </head>
 <body>
 
@@ -229,7 +229,7 @@ window.sentryOnLoad = function () {
     <svg class="site-menu-account-chev" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
   </div>
   <nav class="site-menu-nav" aria-label="Site navigation">
-    <button type="button" data-ripple onclick="closeSiteMenu();openJobSeekerSheet()"><span class="site-menu-nav-icon">✋</span><span>Looking for work?<small>Tell us what you're after — it takes a minute</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();openCvBoxApplication()"><span class="site-menu-nav-icon">✋</span><span>Looking for work?<small>Create or update your CV Box profile</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openPostJobSheet()"><span class="site-menu-nav-icon">⊕</span><span>Post a job<small>Tell us about the roles you're hiring for</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();showAllVacancies('home')"><span class="site-menu-nav-icon">⌕</span><span>Browse vacancies<small>Find your next opportunity</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();showAllAgencies()"><span class="site-menu-nav-icon">⌂</span><span>Recruitment agencies<small>Explore agencies and branches</small></span><b>›</b></button>
@@ -406,7 +406,7 @@ window.sentryOnLoad = function () {
         <button class="profile-menu-item" data-ripple onclick="openCandidateProfileHub()"><span class="mi-icon tile-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4 21c.8-4.2 3.4-6.5 8-6.5s7.2 2.3 8 6.5M18 3v4M16 5h4"/></svg></span><span>My career profile<span class="mi-sub">CV Builder, CV Box, screening and requests</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
         <button class="profile-menu-item" data-ripple onclick="openMyCvBoxProfile()"><span class="mi-icon tile-blue"><svg><use href="icons.svg#ie4a601"/></svg></span><span>CV Box upload<span class="mi-sub" id="account-pool-status">Your CV in the CV Box</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       </div>
-      <button class="account-help-action" type="button" data-ripple onclick="openJobSeekerSheet()"><span class="account-help-icon" aria-hidden="true">?</span><span><strong>Need help finding work?</strong><small>Send a private request and our team will point you toward suitable opportunities.</small></span><span class="account-help-arrow" aria-hidden="true">›</span></button>
+      <button class="account-help-action" type="button" data-ripple onclick="openCvBoxApplication()"><span class="account-help-icon" aria-hidden="true">CV</span><span><strong>Need help finding work?</strong><small>Add or update your CV Box profile so recruiters can discover you.</small></span><span class="account-help-arrow" aria-hidden="true">›</span></button>
 
       <section class="saved-alerts-panel" id="saved-alerts-panel" aria-labelledby="saved-alerts-title"></section>
       <section class="install-app-card" id="install-app-card" hidden>
@@ -505,7 +505,7 @@ window.sentryOnLoad = function () {
       <div class="quick-access-grid">
         <div class="quick-card quick-card-candidates">
           <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or upload a CV</small></div></div>
-          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openPoolRegisterSheet()">Upload a CV</button></div>
+          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openCvBoxApplication()">Upload a CV</button></div>
         </div>
         <div class="quick-card quick-card-employers">
           <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div><strong>Employers</strong><small>Find candidates or post a vacancy</small></div></div>
@@ -1563,9 +1563,9 @@ window.sentryOnLoad = function () {
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=145b8ceb28"></script>
+<script type="module" src="app.bundle.min.js?v=fbf8789ade"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
-<script src="app-alerts.js?v=al-5" defer></script>
+<script src="app-alerts.js?v=al-6" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
      still loads/retries it on demand if it is not ready when a form opens. -->
 <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>

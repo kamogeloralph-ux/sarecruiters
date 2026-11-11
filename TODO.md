@@ -17,3 +17,16 @@
 - [ ] Confirm the Worker and Pages deployments succeeded after the source update.
 - [ ] Confirm the Worker has `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and a verified `EMAIL_FROM` domain configured.
 - [ ] Verify the production grants for `20261104042157_restrict_server_only_rpc_execute.sql`.
+
+## Shared candidate flows and compact home/account cards
+
+- [x] The Home “Take your next step” candidate and employer cards use the same content, structure, visual treatment, and actions as their Quick Access counterparts, reduced in padding, icon, typography, and button size.
+- [x] The account “Need help finding work?” and hamburger-menu “Looking for work?” actions open the existing CV Box application/profile flow, so a signed-in candidate can create or update the same CV Box profile and a signed-out visitor follows the existing account gate.
+- [x] Quick Access candidate upload and the Home candidate action use the same shared CV Box entry point; the legacy private job-seeker request flow is not launched by the converted entry points.
+- [x] The saved vacancy-alert card is compact and has the same centered content width as neighboring account cards.
+
+## White public pages and full-color branding
+
+- [x] All public listing, contact, Terms, Privacy, FAQ, and Know Your Rights pages keep a white background and light color scheme regardless of device dark mode.
+- [x] Agency/company/poster imagery on public listings stays in its source color, and public/legal headers plus favicons use a color SA Recruiters mark.
+- [x] Regression tests cover the shared page theme and legal-resource pages.

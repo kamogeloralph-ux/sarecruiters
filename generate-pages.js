@@ -56,6 +56,9 @@ const STATIC_ASSETS = [
   'community.css',
   'icons/tipchat-logo.svg',
   'icons/tipchat-mark.svg',
+  'icons/sa-recruiters-icon-color.png',
+  'icons/sa-recruiters-icon-color-512.png',
+  'terms/index.html',
   'static-pages.css',
   'content.js',
   'content-manager.js',
@@ -487,7 +490,7 @@ function footerHtml() {
   return `<footer class="sp-footer"><div class="sp-wrap">
 <div class="sp-foot-grid">
 <div class="sp-foot-brand">
-<a class="sp-brand sp-brand-light" href="/"><img src="/icons/v2-icon-192.png" alt="" width="40" height="40"><span><b>SA Recruiters</b><small>South African Recruitment Agencies Directory</small></span></a>
+<a class="sp-brand sp-brand-light" href="/"><img src="/icons/sa-recruiters-icon-color.png?v=${DEPLOY_VERSION}" alt="" width="40" height="40"><span><b>SA Recruiters</b><small>South African Recruitment Agencies Directory</small></span></a>
 <p>Vacancies, recruitment agencies and candidate resources across South Africa. Free for job seekers.</p>
 <div class="sp-contact"><a href="tel:+27715531005">${icon('phone', 16)} 071 553 1005</a><a href="https://wa.me/27715531005" target="_blank" rel="noopener noreferrer">${icon('chat', 16)} WhatsApp us</a><a href="mailto:sarecruiters.directory@gmail.com">${icon('mail', 16)} Email us</a><a href="https://g.page/r/CbL3q0tBfGAsEBI" target="_blank" rel="noopener noreferrer">${icon('pin', 16)} Find us on Google</a></div>
 </div>
@@ -505,7 +508,7 @@ function publicAdSlot(slot) {
   return `<div class="public-house-ad-wrap sp-wrap"><div class="public-house-ad-slot" data-public-ad-slot="${slot}" hidden></div></div>`;
 }
 function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, imageIsLogo = false, imageAlt = '', hero = '', active = '', narrow = false, applyBar = '' }) {
-  const ogImage = image || `${SITE_URL}/icons/v2-icon-512.png`;
+  const ogImage = image || `${SITE_URL}/icons/sa-recruiters-icon-color-512.png`;
   const breadcrumbLd = breadcrumbJsonLd(CTX.lastCrumbs, canonical);
   CTX.lastCrumbs = [];
   const ldScripts = [].concat(jsonLd || [], breadcrumbLd || [])
@@ -516,8 +519,8 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, ima
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#000000">
-<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
 <meta name="robots" content="index,follow,max-image-preview:large">
@@ -530,17 +533,16 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, ima
 <meta property="og:image" content="${escapeHtml(ogImage)}">
 ${image ? '' : '<meta property="og:image:width" content="512">\n<meta property="og:image:height" content="512">\n'}${imageAlt ? `<meta property="og:image:alt" content="${escapeHtml(imageAlt)}">\n` : ''}<meta name="twitter:card" content="${image && !imageIsLogo ? 'summary_large_image' : 'summary'}">
 <meta name="twitter:image" content="${escapeHtml(ogImage)}">
-<link rel="icon" href="/favicon-v2.ico" sizes="48x48">
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/v2-favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/v2-icon-192.png">
-<link rel="apple-touch-icon" href="/icons/v2-icon-192.png">
+
+<link rel="icon" type="image/png" sizes="256x256" href="/icons/sa-recruiters-icon-color.png?v=${DEPLOY_VERSION}">
+<link rel="apple-touch-icon" href="/icons/sa-recruiters-icon-color.png?v=${DEPLOY_VERSION}">
 <link rel="stylesheet" href="/static-pages.css?v=${DEPLOY_VERSION}">
 ${ldScripts}
 </head>
 <body${applyBar ? ' class="has-applybar"' : ''}>
 <a class="sp-skip" href="#main">Skip to content</a>
 <header class="sp-header"><div class="sp-bar sp-wrap">
-<a class="sp-brand" href="/" aria-label="Back to SA Recruiters"><img src="/icons/v2-icon-192.png" alt="SA Recruiters logo" width="40" height="40"><span><b>SA Recruiters</b><small>South African recruitment directory</small></span></a>
+<a class="sp-brand" href="/" aria-label="Back to SA Recruiters"><img src="/icons/sa-recruiters-icon-color.png?v=${DEPLOY_VERSION}" alt="SA Recruiters logo" width="40" height="40"><span><b>SA Recruiters</b><small>South African recruitment directory</small></span></a>
 <nav class="sp-nav" aria-label="SA Recruiters pages">
 <a href="/careers/"${cur('careers')}>Careers</a><a href="/apply/"${cur('apply')}>Apply for a vacancy</a><a href="/contact/"${cur('contact')}>Contact Us</a><a href="/register/"${cur('register')}>Register</a><a href="/candidates/"${cur('candidates')}>Candidates</a><a href="/submit-cv/"${cur('submit-cv')}>Submit CV</a><a href="/agencies/"${cur('agencies')}>Agencies</a><a href="/companies/"${cur('companies')}>Companies</a><a href="/about/"${cur('about')}>About SA Recruiters</a>
 </nav>
