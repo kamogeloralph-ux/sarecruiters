@@ -10,8 +10,7 @@
   var esc = function (s) { return typeof escapeHtml === 'function' ? escapeHtml(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var jsq = function (s) { return esc(String(s).replace(/[\\']/g, '\\$&')); };
   var DAY = 864e5;
-  var S = { sort: 'newest', saved: false, fresh: false, salary: false, view: 'list' };
-  try { S.view = localStorage.getItem('vx_view') === 'grid' ? 'grid' : 'list'; } catch (e) {}
+  var S = { sort: 'newest', fresh: false, salary: false };
 
   var LABELS = { general: 'General', agency: 'Agency', government: 'Government', retail: 'Retail', learnerships: 'Learnerships', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', careers_page: 'Cruise Careers' };
   var SRC_ICON = { general: '⌕', agency: '▦', government: '⌂', retail: '▤', learnerships: '✦', himalayas: '↗', adzuna: 'A', careers_page: '⚓' };
@@ -20,6 +19,8 @@
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
     star: '<svg viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8l-6.2 3.3L7 14.2 2 9.3l6.9-1z"/></svg>',
     share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 10.51 6.83-3.98M8.59 13.49l6.83 3.98"/></svg>',
+    briefcase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>',
+    bookmark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
     arrow: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     mail: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
     phone: '<svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>'
@@ -39,6 +40,15 @@
   function ts(d) { var t = d ? new Date(d).getTime() : 0; return isNaN(t) ? 0 : t; }
   function closingIn(v) { var t = ts(v.closing_date); return t ? Math.ceil((t - Date.now()) / DAY) : null; }
   function postedLabel(v) { var t = ts(v.created_at || v.posted_at || v.updated_at); return t ? new Date(t).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'; }
+  function relPosted(v) {
+    var t = ts(v.created_at || v.posted_at || v.updated_at); if (!t) return '';
+    var m = Math.floor((Date.now() - t) / 6e4); if (m < 60) return m <= 1 ? 'Just now' : m + ' minutes ago';
+    var h = Math.floor(m / 60); if (h < 24) return h + (h === 1 ? ' hour ago' : ' hours ago');
+    var d = Math.floor(h / 24); if (d < 7) return d + (d === 1 ? ' day ago' : ' days ago');
+    if (d < 30) { var w = Math.floor(d / 7); return w + (w === 1 ? ' week ago' : ' weeks ago'); }
+    if (d < 365) { var mo = Math.floor(d / 30); return mo + (mo === 1 ? ' month ago' : ' months ago'); }
+    return postedLabel(v);
+  }
   function salaryNum(v) { var m = String(v.salary || '').replace(/\s/g, '').match(/\d[\d,.]*/g); return m ? Math.max.apply(null, m.map(function (x) { return parseFloat(x.replace(/,/g, '')) || 0; })) : 0; }
   function agencyOf(v) { return v.agency_id && v.agency_id !== 'general' ? (agenciesCache.find(function (a) { return a.id === v.agency_id; }) || {}) : {}; }
   function fact(label, val) { return val ? '<div class="vx-fact"><small>' + esc(label) + '</small><b>' + val + '</b></div>' : ''; }
@@ -52,21 +62,9 @@
     var src = srcOf(v), verified = (employer && employer.verified) || (!employer && !isGeneral && agency.verified);
     var photo = employer && employer.photo || (isGeneral && v.company_photo) || (!employer && !isGeneral && agency.photo) || '';
     var logo = photo
-      ? '<div class="vx-logo"><img src="' + esc(photo) + '" alt="" loading="lazy" decoding="async" width="48" height="48" onerror="this.remove()"></div>'
+      ? '<div class="vx-logo"><img src="' + esc(photo) + '" alt="" loading="lazy" decoding="async" width="52" height="52" onerror="this.remove()"></div>'
       : '<div class="vx-logo ' + vacGradFor(org) + '">' + esc(initials(org)) + '</div>';
-    var age = (Date.now() - ts(v.created_at)) / DAY, left = closingIn(v);
-    var previewText = String(v.notes || '').replace(/\s+/g, ' ').trim();
-    var previewMarkup = !o.homePreview && previewText
-      ? '<span class="vx-preview">' + esc(previewText.length > 180 ? previewText.slice(0, 177).trim() + '…' : previewText) + '</span>'
-      : '';
-    var tags = '';
-    if (v.is_featured) tags += '<span class="vx-tag vx-tag--feat">★ Featured</span>';
-    // A closing warning is more actionable than freshness; never show both NEW and Closes today.
-    if (ts(v.created_at) && age < 3 && (left === null || left > 7)) tags += '<span class="vx-tag vx-tag--new">New</span>';
-    if (left !== null && left >= 0 && left <= 7) tags += '<span class="vx-tag vx-tag--warn">' + (left === 0 ? 'Closes today' : 'Closes in ' + left + 'd') + '</span>';
-    if (v.salary) tags += '<span class="vx-tag vx-tag--money">' + esc(String(v.salary).slice(0, 34)) + '</span>';
-    if (v.remote) tags += '<span class="vx-tag">' + esc(v.remote) + '</span>';
-    if (v.experience_level) tags += '<span class="vx-tag">' + esc(v.experience_level) + '</span>';
+    var left = closingIn(v);
     var isGov = src === 'government', isAdz = src === 'adzuna', isHim = src === 'himalayas';
 
     /* detail */
@@ -91,24 +89,9 @@
     else if (agency.id && (agency.website || agency.email || agency.contact)) cta = '<a class="vx-btn vx-btn--primary" href="' + esc(agency.website || '#') + '" target="_blank" rel="noopener" ' + track + '>Contact agency</a>';
     else cta = '<button type="button" class="vx-btn vx-btn--primary" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId);showToast(&#39;Contact the agency or company directly to apply.&#39;)">Contact to apply</button>';
     cta += '<a class="vx-btn" href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" ' + track + '>Public listing ↗</a>';
+    cta += '<button type="button" class="vx-btn" onclick="event.stopPropagation();shareVacancy(\'' + jsq(key) + '\')">' + I.share + ' Share</button>';
     cta += '<button type="button" class="vx-btn vx-btn--ghost" onclick="event.stopPropagation();closeVac(this)">Close</button>';
 
-    var inlineHref = '', inlineLabel = 'Apply', inlineTarget = '';
-    if (v.link) { inlineHref = esc(v.link); inlineTarget = ' target="_blank" rel="noopener"'; }
-    else if (v.email) { inlineHref = 'mailto:' + esc(v.email); inlineLabel = 'Email to apply'; }
-    else if (v.phone) { inlineHref = 'tel:' + esc(String(v.phone).replace(/\s/g, '')); inlineLabel = 'Call to apply'; }
-    else if (employer && (employer.website || employer.email || employer.contact)) {
-      if (employer.website) { inlineHref = esc(employer.website); inlineTarget = ' target="_blank" rel="noopener"'; inlineLabel = 'Contact employer'; }
-      else if (employer.email) { inlineHref = 'mailto:' + esc(employer.email); inlineLabel = 'Email employer'; }
-      else { inlineHref = 'tel:' + esc(String(employer.contact).replace(/\s/g, '')); inlineLabel = 'Call employer'; }
-    } else if (agency.id && (agency.website || agency.email || agency.contact)) {
-      if (agency.website) { inlineHref = esc(agency.website); inlineTarget = ' target="_blank" rel="noopener"'; inlineLabel = 'Contact agency'; }
-      else if (agency.email) { inlineHref = 'mailto:' + esc(agency.email); inlineLabel = 'Email agency'; }
-      else { inlineHref = 'tel:' + esc(String(agency.contact).replace(/\s/g, '')); inlineLabel = 'Call agency'; }
-    }
-    var inlineApplyMarkup = !o.homePreview && inlineHref
-      ? '<a class="vx-inline-apply" href="' + inlineHref + '"' + inlineTarget + ' ' + track + '>' + esc(inlineLabel) + '</a>'
-      : '';
     var admin = (isAdmin && (isGeneral || employer))
       ? '<div class="vx-admin"><button type="button" class="vx-btn" onclick="event.stopPropagation();openEditGeneralVacancySheet(\'' + jsq(v.id) + '\')">' + VAC_ICONS.edit + ' Edit</button><button type="button" class="vx-btn" onclick="event.stopPropagation();deleteGeneralVacancy(\'' + jsq(v.id) + '\')">' + VAC_ICONS.trash + ' Delete</button></div>' : '';
 
@@ -123,24 +106,35 @@
     }
 
     var loc = v.location ? shortLocation(v.location) : '';
-    var jobType = v.employment_type || v.contract_type || 'Not specified';
-    var daysLabel = left === null ? 'Open until filled' : (left < 0 ? 'Closed' : (left === 0 ? 'Closes today' : left + ' day' + (left === 1 ? '' : 's') + ' left'));
-    var cardMeta = '<span class="vx-card-meta"><span class="vx-location-meta">' + (loc ? I.pin + '<b class="vx-location-text">' + esc(loc) + '</b>' : '<b class="vx-location-text">South Africa</b>') + '</span><span>Job Type: <b>' + esc(jobType) + '</b></span><span>Posted: <b>' + esc(postedLabel(v)) + '</b></span><span class="vx-days-left">' + esc(daysLabel) + '</span></span>';
-    return '<article class="vx-card vac-card' + (o.featured || v.is_featured ? ' vx-card--feat' : '') + '" id="vc-' + esc(key) + '" data-vacancy-id="' + esc(v.id) + '" data-posted="' + ts(v.created_at) + '" data-closing="' + ts(v.closing_date) + '" data-salary="' + salaryNum(v) + '" data-title="' + esc(String(v.title || '').toLowerCase()) + '" data-loc="' + esc(String(v.location || v.province || '').toLowerCase()) + '">' +
+    var posted = relPosted(v), jobType = v.employment_type || v.contract_type || '';
+    var items = '';
+    if (posted) items += '<span class="vx-m">' + I.clock + esc(posted) + '</span>';
+    if (jobType) items += '<span class="vx-m">' + I.briefcase + esc(jobType) + '</span>';
+    items += '<span class="vx-m vx-location-meta">' + I.pin + '<b class="vx-location-text">' + esc(loc || 'South Africa') + '</b></span>';
+    if (v.salary) items += '<span class="vx-m vx-m--money">' + esc(String(v.salary).slice(0, 34)) + '</span>';
+    if (left !== null && left >= 0 && left <= 7) items += '<span class="vx-m vx-m--warn">' + (left === 0 ? 'Closes today' : 'Closes in ' + left + 'd') + '</span>';
+    var featured = o.featured || v.is_featured;
+    return '<article class="vx-card vac-card' + (featured ? ' vx-card--feat' : '') + '" id="vc-' + esc(key) + '" data-vacancy-id="' + esc(v.id) + '" data-posted="' + ts(v.created_at) + '" data-closing="' + ts(v.closing_date) + '" data-salary="' + salaryNum(v) + '" data-title="' + esc(String(v.title || '').toLowerCase()) + '" data-loc="' + esc(String(v.location || v.province || '').toLowerCase()) + '">' +
       '<div class="vx-top">' +
         '<button type="button" class="vx-head" aria-expanded="false" aria-controls="vd-' + esc(key) + '" onclick="toggleVac(this)">' + logo +
-        '<span class="vx-main"><span class="vx-title" style="display:-webkit-box">' + esc(v.title || 'Untitled role') + '</span>' +
-          '<span class="vx-org"><span>' + esc(org) + '</span>' + (verified ? verifiedBadge(employer ? 'Verified employer' : 'Verified agency') : '') + '</span>' +
-          (tags ? '<span class="vx-meta">' + tags + '</span>' : '') +
-          cardMeta + previewMarkup + '</span></button>' +
-        '<div class="vx-tools-col"><button type="button" class="vx-tool vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + jsq(key) + '\')" aria-label="Save vacancy">' + STAR_SVG + '</button>' +
-        '<button type="button" class="vx-tool vac-share" onclick="event.stopPropagation();shareVacancy(\'' + jsq(key) + '\')" aria-label="Share vacancy">' + SHARE_SVG + '</button></div>' +
+          '<span class="vx-main">' + (featured ? '<span class="vx-feat">★ Featured</span>' : '') +
+            '<span class="vx-title">' + esc(v.title || 'Untitled role') + '</span>' +
+            '<span class="vx-org"><span>' + esc(org) + '</span>' + (verified ? verifiedBadge(employer ? 'Verified employer' : 'Verified agency') : '') + '</span>' +
+            '<span class="vx-card-meta">' + items + '</span>' +
+          '</span></button>' +
+        '<button type="button" class="vx-tool vac-save' + (saved ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSave(this,\'' + jsq(key) + '\')" aria-label="Save vacancy">' + I.bookmark + '</button>' +
       '</div>' +
-      (inlineApplyMarkup ? '<div class="vx-summary-action">' + inlineApplyMarkup + '</div>' : '') +
       homePreviewMarkup +
       '<div class="vx-detail" id="vd-' + esc(key) + '"><div><div class="vx-detail-in"><div class="vx-facts">' + facts + '</div>' + desc + attr + '<div class="vx-cta">' + cta + '</div>' + admin + '</div></div></div>' +
     '</article>';
   }
+  // The bundle's toggleSave swaps the button's icon for a star; keep the bookmark on vx cards.
+  var baseToggleSave = window.toggleSave;
+  if (typeof baseToggleSave === 'function') window.toggleSave = function (btn) {
+    var r = baseToggleSave.apply(this, arguments);
+    if (btn && btn.classList && btn.classList.contains('vx-tool')) btn.innerHTML = I.bookmark;
+    return r;
+  };
   window.vacancyCard = card;
 
   /* ---------- filter state ---------- */
@@ -180,7 +174,6 @@
     if (val('vx-posted')) a.push(['posted', 'Last ' + val('vx-posted') + (val('vx-posted') === '1' ? ' day' : ' days')]);
     if (S.fresh) a.push(['fresh', 'New this week']);
     if (S.salary) a.push(['salary', 'Salary shown']);
-    if (S.saved) a.push(['saved', 'Saved only']);
     return a;
   }
   function clearOne(k) {
@@ -192,7 +185,7 @@
     var act = activeList(), filterKeys = ['industry', 'remote', 'exp', 'posted'];
     var n = act.filter(function (a) { return filterKeys.indexOf(a[0]) > -1; }).length;
     var cnt = $('vx-filter-count'); if (cnt) { cnt.textContent = n; cnt.hidden = !n; }
-    var chips = { fresh: S.fresh, salary: S.salary, saved: S.saved, remote: val('allvacancies-remote') === 'remote' };
+    var chips = { fresh: S.fresh, salary: S.salary, remote: val('allvacancies-remote') === 'remote' };
     document.querySelectorAll('.vx-quick [data-vx]').forEach(function (b) {
       var k = b.dataset.vx, on = k === 'near' ? !!(window.preciseLocationState && preciseLocationState.allvacancies && preciseLocationState.allvacancies.active) : !!chips[k];
       b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
@@ -201,8 +194,7 @@
     if (box) box.innerHTML = act.length > 1 || (act.length === 1 && act[0][0] !== 'search')
       ? act.map(function (a) { return '<button type="button" class="vx-pill" data-clear="' + a[0] + '" aria-label="Remove filter ' + esc(a[1]) + '">' + esc(a[1]) + ' <i>×</i></button>'; }).join('') : '';
     var vs = $('allvacancies-sort'); if (vs) vs.value = S.sort;
-    document.querySelectorAll('[data-vxview]').forEach(function (b) { b.classList.toggle('on', b.dataset.vxview === S.view); });
-    var list = $('allvacancies-list'); if (list) list.classList.toggle('vx-grid', S.view === 'grid');
+    var list = $('allvacancies-list'); if (list) list.classList.toggle('vx-folder', !!window.allVacanciesFolder);
     var t = $('vacancy-market-title'), c = $('vx-crumb'), f = window.allVacanciesFolder;
     if (t) t.textContent = f ? (LABELS[f] || 'Vacancies') : 'Vacancies';
     if (c) c.textContent = f ? 'All sources › ' + (LABELS[f] || f) : totalLabel();
@@ -230,7 +222,6 @@
       if (q && [v.title, v.notes, v.location, v.company, a.name, a.trades].join(' ').toLowerCase().indexOf(q) < 0) return false;
       if (posted && !postedWithin(v, posted)) return false;
       if (S.salary && !hasSalary(v)) return false;
-      if (S.saved && !savedSet.has(v.id)) return false;
       if (vacancyOverviewFilter !== 'all' && !vacancyMatchesOverviewFilter(v)) return false;
       return true;
     });
@@ -272,17 +263,14 @@
       return bDate - aDate;
     });
     var html = '';
-    if (searching) html += '<p class="vx-search-note" role="status">Showing loaded matches. Choose a source below to browse more.</p>';
-    var rolesMarkup = '<section class="vx-block vx-available-roles" aria-labelledby="vx-available-roles-title"><div class="vx-block-head"><h2 id="vx-available-roles-title">Available roles</h2></div>' +
-      '<div class="vx-seg" role="group" aria-label="Filter latest roles">' + [['all', 'All'], ['government', 'Government'], ['private', 'Private'], ['remote', 'Remote']].map(function (x) { return '<button type="button" data-ov="' + x[0] + '" class="' + (vacancyOverviewFilter === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' +
-      '<div class="vx-list-slot" aria-live="polite" style="display:contents">' + (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
-        list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or choose another source below.</p></div>') + '</div></section>';
-    var sourcesMarkup = '<section class="vx-block vx-source-section" aria-labelledby="vx-sources-title"><div class="vx-block-head"><div><h2 id="vx-sources-title">Browse jobs by source</h2><span class="vx-source-hint">Choose a source to browse its full listings.</span></div><span class="vx-source-count">8 sources</span></div><div class="vx-sources">' +
-      order.map(function (t) { return '<button type="button" class="vx-source" data-open="' + t + '"><span class="vx-source-ic">' + SRC_ICON[t] + '</span><span><strong>' + esc(LABELS[t]) + '</strong><small>' + (ready ? counts[t].toLocaleString() + ' role' + (counts[t] === 1 ? '' : 's') : 'Loading…') + '</small></span></button>'; }).join('') + '</div></section>';
+    if (searching) html += '<p class="vx-search-note" role="status">Showing loaded matches. Choose a source above to browse more.</p>';
+    var fmt = function (n) { return window.formatCompactCount ? window.formatCompactCount(n) : Number(n).toLocaleString(); };
+    var sourcesMarkup = '<section class="vx-block vx-source-section" aria-labelledby="vx-sources-title"><h2 class="sr-only" id="vx-sources-title">Browse jobs by source</h2><div class="vx-src-row" role="group" aria-label="Browse jobs by source">' +
+      order.map(function (t) { return '<button type="button" class="vx-src" data-open="' + t + '"><span class="vx-src-ic" aria-hidden="true">' + SRC_ICON[t] + '</span>' + esc(LABELS[t]) + '<small>' + (ready ? fmt(counts[t]) : '…') + '</small></button>'; }).join('') + '</div></section>';
+    var rolesMarkup = '<section class="vx-block vx-available-roles" aria-labelledby="vx-available-roles-title"><h2 class="sr-only" id="vx-available-roles-title">Available roles</h2>' +
+      '<div class="vx-feed"><div class="vx-list-slot" aria-live="polite" style="display:contents">' + (vacancyOverviewLoading ? '<div class="empty-state"><p>Loading matching vacancies…</p></div>' :
+        list.length ? list.slice(0, 24).map(function (v) { return card(v, agencyOf(v)); }).join('') : '<div class="empty-state"><h3>No roles match yet</h3><p>Try widening your filters or choose another source above.</p></div>') + '</div></div></section>';
     html += sourcesMarkup + rolesMarkup;
-    html += '<div class="vx-block"><div class="vx-block-head"><h2>Popular categories</h2></div><div class="vx-cats">' +
-      [['government', 'Government'], ['learnership', 'Learnerships'], ['internship', 'Internships'], ['graduate_programme', 'Graduate programmes'], ['bursary', 'Bursaries'], ['apprenticeship', 'Apprenticeships'], ['part_time', 'Part-time'], ['remote', 'Remote'], ['permanent', 'Permanent'], ['contract', 'Contract']]
-        .map(function (c) { return '<a href="/browse/category/' + c[0] + '/">' + c[1] + '</a>'; }).join('') + '</div></div>';
     el.innerHTML = '<div class="vx-block" style="display:contents">' + html + '</div>';
     var rc = $('allvacancies-result-count'); if (rc) rc.textContent = searching ? list.length + ' match' + (list.length === 1 ? '' : 'es') + ' in loaded roles' : Math.min(list.length, 24).toLocaleString() + ' roles shown';
   }
@@ -300,7 +288,6 @@
           var hide = false, id = c.dataset.vacancyId;
           if (days && Date.now() - Number(c.dataset.posted) > days * DAY) hide = true;
           if (S.salary && !Number(c.dataset.salary)) hide = true;
-          if (S.saved && !savedSet.has(id)) hide = true;
           if (loc && c.dataset.loc.indexOf(loc) < 0 && !(window.preciseLocationState && preciseLocationState.allvacancies && preciseLocationState.allvacancies.active)) hide = true;
           c.hidden = hide; if (hide) hidden++;
         });
@@ -311,7 +298,6 @@
         if (hidden === cards.length) { if (!list.querySelector('.vx-none')) { var e = document.createElement('div'); e.className = 'empty-state vx-none'; e.innerHTML = '<h3>Nothing on this page matches</h3><p>Reset a filter or move to another page.</p>'; list.insertBefore(e, cards[0]); } }
         else { var old = list.querySelector('.vx-none'); if (old) old.remove(); }
       } else { var nn = $('vx-hidden-note'); if (nn) nn.textContent = ''; }
-      list.classList.toggle('vx-grid', S.view === 'grid');
     } finally { busy = false; if (obs && list) obs.observe(list, { childList: true }); }
   }
   function schedulePost() { if (busy) return; cancelAnimationFrame(raf); raf = requestAnimationFrame(post); }
@@ -325,21 +311,9 @@
   window.renderAllVacanciesList = render;
   window.clearVacancyFilters = function () {
     ['allvacancies-search', 'allvacancies-location', 'allvacancies-industry', 'allvacancies-remote', 'allvacancies-exp', 'vx-posted'].forEach(function (id) { var el = $(id); if (el) el.value = ''; });
-    S.fresh = S.salary = S.saved = false; S.sort = 'newest'; vacancyOverviewFilter = 'all'; vacancyOverviewExtraRows = []; render();
+    S.fresh = S.salary = false; S.sort = 'newest'; vacancyOverviewFilter = 'all'; vacancyOverviewExtraRows = []; render();
   };
   window.setVacancySort = function (v) { S.sort = v || 'newest'; render(); };
-
-  function remember(q) {
-    if (!q || q.length < 2) return;
-    try {
-      var r = JSON.parse(localStorage.getItem('vx_recent') || '[]').filter(function (x) { return x.toLowerCase() !== q.toLowerCase(); });
-      r.unshift(q); localStorage.setItem('vx_recent', JSON.stringify(r.slice(0, 8))); fillRecent();
-    } catch (e) {}
-  }
-  function fillRecent() {
-    var dl = $('vx-recent'); if (!dl) return;
-    try { dl.innerHTML = JSON.parse(localStorage.getItem('vx_recent') || '[]').map(function (x) { return '<option value="' + esc(x) + '">'; }).join(''); } catch (e) {}
-  }
 
   document.addEventListener('DOMContentLoaded', function () {
     var screen = $('screen-allvacancies'); if (!screen) return;
@@ -347,7 +321,7 @@
     ['allvacancies-search', 'allvacancies-location'].forEach(function (id) {
       var el = $(id); if (!el) return;
       el.addEventListener('input', debounced);
-      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); el.blur(); clearTimeout(t); remember(val(id)); render(); } });
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); el.blur(); clearTimeout(t); render(); } });
     });
     ['allvacancies-industry', 'allvacancies-remote', 'allvacancies-exp', 'vx-posted', 'allvacancies-sort'].forEach(function (id) {
       var el = $(id); if (el) el.addEventListener('change', function () { if (id === 'allvacancies-sort') S.sort = el.value; render(); });
@@ -357,18 +331,15 @@
     screen.addEventListener('click', function (e) {
       var b = e.target.closest('button,a'); if (!b) return;
       if (b.classList.contains('vx-head')) { var c = b.closest('.vac-card'); b.setAttribute('aria-expanded', c && c.classList.contains('open') ? 'true' : 'false'); return; }
-      if (b.classList.contains('vac-save') && S.saved) { setTimeout(post, 0); return; }
       if (b.id === 'vx-filter-toggle') { var p = $('vx-filters'), o = p.hidden; p.hidden = !o; b.setAttribute('aria-expanded', o); return; }
       if (b.id === 'vacancy-clear-filters') return window.clearVacancyFilters();
       if (b.dataset.clear) { clearOne(b.dataset.clear); return render(); }
       if (b.dataset.open) { return openVacancyFolder(b.dataset.open); }
-      if (b.dataset.ov) { return setVacancyOverviewFilter(b.dataset.ov); }
-      if (b.dataset.vxview) { S.view = b.dataset.vxview; try { localStorage.setItem('vx_view', S.view); } catch (x) {} return render(); }
       var k = b.dataset.vx; if (!k) return;
       if (k === 'near') return usePreciseLocation('allvacancies');
       if (k === 'remote') { var r = $('allvacancies-remote'); r.value = r.value === 'remote' ? '' : 'remote'; return render(); }
       S[k] = !S[k]; render();
     });
-    fillRecent(); syncUI();
+    syncUI();
   });
 })();
