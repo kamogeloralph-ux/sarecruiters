@@ -111,17 +111,10 @@ restoreActiveScreenBeforeReveal();
 
 // ===== Vacancy-first home feed =====
 export var homeLocationFilter = '';
-export var homeCategoryFilter = '';
 export var HOME_VACANCY_CARD_LIMIT = 8;
 if (!Array.isArray(window.retailPriorityPreviewRows)) window.retailPriorityPreviewRows = [];
 export var retailPriorityPreviewPromise = null;
 export var retailPriorityPreviewLoaded = false;
-export var HOME_JOB_CATEGORIES = [
-  { key: 'finance', label: 'Finance & accounting', sub: 'Accounts, audit and finance', icon: 'R' },
-  { key: 'technology', label: 'IT & technology', sub: 'Software, data and digital', icon: 'IT' },
-  { key: 'trades', label: 'Trades & engineering', sub: 'Technical and skilled work', icon: '+' },
-  { key: 'sales', label: 'Sales & marketing', sub: 'Sales, brand and growth', icon: '↗' }
-];
 
 export function setHomeLocationFilter(filter) {
   filter = filter || '';
@@ -129,22 +122,8 @@ export function setHomeLocationFilter(filter) {
   filterAndRenderCached();
 }
 
-export function setHomeCategoryFilter(filter) {
-  var category = HOME_JOB_CATEGORIES.find(function (item) { return item.key === filter; });
-  if (!category) return;
-  // Category tiles are navigation cards: take the visitor to the full vacancy
-  // screen with the selected category already entered in the search field.
-  showAllVacancies('home');
-  var search = document.getElementById('allvacancies-search');
-  if (search) {
-    search.value = category.key;
-    if (typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList();
-  }
-}
-
 export function clearHomeFeedFilters() {
   homeLocationFilter = '';
-  homeCategoryFilter = '';
   var search = document.getElementById('home-search');
   if (search) search.value = '';
   filterAndRenderCached();
@@ -265,18 +244,6 @@ export function homeVacancyMatchesLocation(v, filter) {
     'north-west': /north[\s-]?west|rustenburg|mahikeng|mafikeng|klerksdorp|potchefstroom|brits|vryburg/i,
     'northern-cape': /northern[\s-]?cape|kimberley|upington|kuruman|de aar|springbok|kathu/i,
     remote: /remote|hybrid|work[ -]from[ -]home|anywhere|distributed/i
-  };
-  return !!(patterns[filter] && patterns[filter].test(text));
-}
-
-export function homeVacancyMatchesCategory(v, filter) {
-  if (!filter) return true;
-  var text = homeVacancyText(v);
-  var patterns = {
-    finance: /\b(finance|financial|accounting|accountant|bookkeeper|audit|payroll|tax|banking|banker|investment|actuarial|treasury)\b/i,
-    technology: /\b(it|software|developer|technology|data|cyber|network|devops|cloud|systems?|computer)\b/i,
-    trades: /\b(trade|trades|artisan|technician|electrician|plumber|weld(?:er|ing)?|fitter|mechanic|millwright|construction|maintenance|engineering|engineer)\b/i,
-    sales: /\b(sales|marketing|business development|account manager|brand|digital marketing|social media|communications|crm)\b/i
   };
   return !!(patterns[filter] && patterns[filter].test(text));
 }
@@ -438,8 +405,7 @@ export function renderHomeFeed() {
   var query = searchInput ? searchInput.value.trim().toLowerCase() : '';
   var matchingRows = homeSourceVacancies().filter(function (v) {
     return (!query || homeVacancyText(v).indexOf(query) !== -1) &&
-      homeVacancyMatchesLocation(v, homeLocationFilter) &&
-      homeVacancyMatchesCategory(v, homeCategoryFilter);
+      homeVacancyMatchesLocation(v, homeLocationFilter);
   });
   var rows = matchingRows;
   rows.sort(function (a, b) {
@@ -447,16 +413,10 @@ export function renderHomeFeed() {
     return retailOrder || new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
   });
 
-  var categoryMarkup = HOME_JOB_CATEGORIES.map(function (category) {
-    var active = homeCategoryFilter === category.key;
-    return '<button type="button" class="home-category-chip' + (active ? ' active' : '') + '" onclick="setHomeCategoryFilter(\'' + category.key + '\')" aria-pressed="' + active + '">' +
-      '<span class="home-category-icon" aria-hidden="true">' + category.icon + '</span>' +
-      '<span class="home-category-copy"><strong>' + category.label + '</strong><small>' + category.sub + '</small></span></button>';
-  }).join('');
   var totalNode = document.getElementById('stat-vacancies');
   var totalLabel = totalNode && totalNode.textContent.trim() && totalNode.textContent.trim() !== '…'
     ? totalNode.textContent.trim() : 'all';
-  var filtering = !!(query || homeLocationFilter || homeCategoryFilter);
+  var filtering = !!(query || homeLocationFilter);
   var empty = rows.length ? '' : '<div class="home-feed-empty" role="status"><strong>' +
     (filtering ? 'No vacancies match those filters yet.' : 'The latest vacancies are loading or none are available right now.') +
     '</strong><p>Try another search or browse all live roles.</p><button type="button" onclick="clearHomeFeedFilters()">Clear filters</button></div>';
@@ -477,8 +437,6 @@ export function renderHomeFeed() {
     '</section>' +
     '<button type="button" class="tipchat-home-logo" onclick="openCommunity()" aria-label="Open TipChat community"><img src="icons/tipchat-logo.svg" alt="TipChat" width=260 height=90 loading="lazy" decoding="async"><span>Join the conversation <b aria-hidden="true">→</b></span></button>' +
 
-    '<section class="home-categories-section" aria-labelledby="home-categories-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Find your next move</span><h2 id="home-categories-title">Explore top job categories</h2></div></div>' +
-      '<div class="home-category-grid">' + categoryMarkup + '</div></section>' +
     '<div id="house-ad-home-middle" class="house-ad-slot" hidden></div>' +
     '<section class="home-tools-section" aria-labelledby="home-tools-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Start here</span><h2 id="home-tools-title">Take your next step</h2><p>Whether you’re looking for work or hiring talent, start here.</p></div></div>' +
       '<div class="home-tools-grid">' +
@@ -2295,7 +2253,6 @@ Object.assign(window, {
   normalizeStartupScreen,
   restoreActiveScreenBeforeReveal,
   setHomeLocationFilter,
-  setHomeCategoryFilter,
   clearHomeFeedFilters,
   openCvBoxApplication,
   openHomeCvBoxProfile,
@@ -2304,7 +2261,6 @@ Object.assign(window, {
   ensureRetailPriorityVacancies,
   homeVacancyText,
   homeVacancyMatchesLocation,
-  homeVacancyMatchesCategory,
   openCompanyFeatureInquiry,
   openFeaturedCompanyWebsite,
   homeVacancySourceMarkup,
@@ -2404,11 +2360,9 @@ Object.defineProperties(window, {
   SA_ACTIVE_SCREEN_KEY: { get: () => SA_ACTIVE_SCREEN_KEY, set: (v) => { SA_ACTIVE_SCREEN_KEY = v; }, configurable: true, enumerable: true },
   SA_RESTORABLE_SCREENS: { get: () => SA_RESTORABLE_SCREENS, set: (v) => { SA_RESTORABLE_SCREENS = v; }, configurable: true, enumerable: true },
   homeLocationFilter: { get: () => homeLocationFilter, set: (v) => { homeLocationFilter = v; }, configurable: true, enumerable: true },
-  homeCategoryFilter: { get: () => homeCategoryFilter, set: (v) => { homeCategoryFilter = v; }, configurable: true, enumerable: true },
   HOME_VACANCY_CARD_LIMIT: { get: () => HOME_VACANCY_CARD_LIMIT, set: (v) => { HOME_VACANCY_CARD_LIMIT = v; }, configurable: true, enumerable: true },
   retailPriorityPreviewPromise: { get: () => retailPriorityPreviewPromise, set: (v) => { retailPriorityPreviewPromise = v; }, configurable: true, enumerable: true },
   retailPriorityPreviewLoaded: { get: () => retailPriorityPreviewLoaded, set: (v) => { retailPriorityPreviewLoaded = v; }, configurable: true, enumerable: true },
-  HOME_JOB_CATEGORIES: { get: () => HOME_JOB_CATEGORIES, set: (v) => { HOME_JOB_CATEGORIES = v; }, configurable: true, enumerable: true },
   HOME_WEEKLY_PROVINCES: { get: () => HOME_WEEKLY_PROVINCES, set: (v) => { HOME_WEEKLY_PROVINCES = v; }, configurable: true, enumerable: true },
   SA_SECTION_LINKS: { get: () => SA_SECTION_LINKS, set: (v) => { SA_SECTION_LINKS = v; }, configurable: true, enumerable: true },
   toastTimer: { get: () => toastTimer, set: (v) => { toastTimer = v; }, configurable: true, enumerable: true },
