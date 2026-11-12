@@ -993,7 +993,10 @@ export async function loadPoolCandidates() {
   try {
     var payload = await getPublicPoolCandidatesFromWorker();
     var data = payload.candidates;
-    poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active' && isCompletePublicPoolCandidate(c); }).sort(comparePoolCandidates);
+    // Admin approval is the publication decision. Do not hide an active
+    // candidate because the scanner still has a review warning or an older
+    // profile is missing a standardized field.
+    poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(comparePoolCandidates);
   } catch(e) { console.error('pool load', e); poolCache = []; var filters = document.getElementById('pool-filters'); if (filters) filters.hidden = true; if (listEl) listEl.innerHTML = '<div class="cv-box-empty cv-box-empty-error"><strong>CV Box unavailable</strong><span>Check your connection and try again.</span><button type="button" onclick="loadPoolCandidates()">Retry</button></div>'; return; }
   poolLoaded = true;
   poolCandidateCount = poolCache.length;
@@ -1028,8 +1031,8 @@ export function renderPoolList() {
   var q = ((document.getElementById('pool-search')||{}).value || '').trim().toLowerCase();
   syncPreciseLocationChip('pool', q);
   var sector = ((document.getElementById('pool-sector-filter')||{}).value || '');
-  // Defense-in-depth: only approved/active candidates may ever be rendered publicly.
-  var list = poolCache.filter(function(c){ return (c.status || 'pending') === 'active' && isCompletePublicPoolCandidate(c); }).slice();
+  // Defense-in-depth: only admin-approved/active candidates may be rendered publicly.
+  var list = poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice();
   if (sector) list = list.filter(function(c){ return (c.sector||'') === sector; });
   if (q) {
     list = list.filter(function(c){

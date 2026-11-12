@@ -217,17 +217,16 @@ test('CV Box renews Immediately availability for 14 or 30 days through an owner-
   assert.match(cvBoxMigration, /OLD\.cv_link, OLD\.availability/);
 });
 
-test('CV Box feed only shows complete standardized profiles and prioritizes verified, current, fresh, photo-complete profiles', () => {
+test('CV Box feed shows every active admin-approved profile and prioritizes verified, current, fresh profiles', () => {
   assert.match(html, /<select id="pool-sector"><option value="">Choose a sector/);
   assert.doesNotMatch(html, /<input id="pool-sector"/);
   assert.match(appSheets, /CV_BOX_SECTORS = \[/);
   assert.match(appSheets, /CV_BOX_SECTORS\.indexOf\(sector\) === -1/);
-  assert.match(appSheets, /isCompletePublicPoolCandidate\(c\)/);
+  assert.match(appSheets, /only admin-approved\/active candidates may be rendered publicly/);
   assert.match(appSheets, /comparePoolCandidates/);
   assert.match(appSheets, /availability_current/);
   assert.match(appSheets, /poolActivityLabel\(c\)/);
-  assert.match(worker, /cvBoxCandidateIsComplete/);
-  assert.match(worker, /candidate\.experience_years !== null/);
+  assert.match(worker, /Active status is the administrator's explicit publication decision/);
   assert.match(worker, /Needs reconfirmation/);
   assert.match(worker, /profile_updated_at,availability_confirmed_at,availability_expires_at/);
   assert.match(appSheets, /pool-mini-activity/);

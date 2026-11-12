@@ -1261,7 +1261,9 @@ async function cvBoxResponse(request, env, origin) {
   }
   const now = Date.now();
   candidates = candidates.filter((candidate) => {
-    if (!cvBoxCandidateIsComplete(candidate)) return false;
+    // Active status is the administrator's explicit publication decision.
+    // Do not apply the scanner's completeness rules a second time here: older
+    // approved profiles and profiles with reviewed warnings must remain visible.
     if (String(candidate.availability || "").toLowerCase() !== "immediately") return true;
     const confirmedAt = candidate.availability_confirmed_at || candidate.created_at;
     if (!confirmedAt) return true;
@@ -1362,7 +1364,6 @@ async function cvCheckoutResponse(request, env, origin) {
     return json({ error: "Could not verify this CV right now. Please try again." }, 502, origin);
   }
   if (!candidate || candidate.status !== "active") return json({ error: "This CV is no longer available." }, 404, origin);
-  if (!cvBoxCandidateIsComplete(candidate)) return json({ error: "This profile is incomplete and cannot be unlocked." }, 409, origin);
   if (!candidate.cv_link) return json({ error: "This profile does not have a downloadable CV yet." }, 409, origin);
   const orderId = crypto.randomUUID();
   const createdAt = new Date().toISOString();
