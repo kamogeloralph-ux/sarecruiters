@@ -88,7 +88,7 @@ test('only CVs stored in our own bucket can be scanned', () => {
   assert.equal(candidateCvKey('https://media.example/candidate-cvs/../secret', env), null);
 });
 
-test('admin CV Box scans pending CVs automatically through the admin-only worker route', () => {
+test('admin CV Box scans pending CVs through the admin-only worker route without auto-publishing', () => {
   const admin = read('admin.html');
   const worker = read('Cloudflare-worker/worker.js');
   assert.match(worker, /path === "\/api\/admin\/cv-scan"/);
@@ -96,9 +96,10 @@ test('admin CV Box scans pending CVs automatically through the admin-only worker
   assert.match(route, /isAdminRequest\(request, env\)/);
   assert.match(admin, /function runAutoCvScan\(/);
   assert.match(admin, /runAutoCvScan\(\);\n\}\nfunction openPoolSheet/);
-  assert.match(admin, /patch\.verified = true;/);
-  assert.match(admin, /patch\.status = 'active'/);
-  assert.match(admin, /id="cv-auto-approve"/);
+  assert.match(admin, /CV scanning only recommends a decision/);
+  assert.doesNotMatch(admin, /patch\.verified = true;/);
+  assert.doesNotMatch(admin, /patch\.status = 'active'/);
+  assert.doesNotMatch(admin, /id="cv-auto-approve"/);
   assert.match(admin, /scanPoolCvFromSheet/);
 });
 
