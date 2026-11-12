@@ -2988,12 +2988,13 @@ function poolScanNoteHtml(p){
   if(st === 'scanning') return '<div class="cv-scan-note">Scanning CV…</div>';
   if(st === 'approved') return '<div class="cv-scan-note ok">✓ CV scan passed — approved &amp; verified automatically.'+escapeHtml(added)+'</div>';
   if(st === 'passed') return '<div class="cv-scan-note ok">✓ CV scan passed — ready to approve.'+escapeHtml(added)+'</div>';
+  if(st === 'rejected') return '<div class="cv-scan-note warn">CV rejected: '+escapeHtml(reasons.join('; ') || 'a matching candidate already exists')+'. Candidate feedback email was attempted.</div>';
   if(st === 'review') return '<div class="cv-scan-note warn">Needs review: '+escapeHtml(reasons.join('; ') || 'checks failed')+'.'+escapeHtml(added)+'</div>';
   return '<div class="cv-scan-note warn">CV scan unavailable: '+escapeHtml(msg || reasons.join('; ') || 'try again')+'</div>';
 }
 function cvScanPayload(p){
-  return { full_name:p.full_name||'', position:p.position||'', location:p.location||'', experience_years:(p.experience_years===undefined?null:p.experience_years),
-    availability:p.availability||'', photo_url:p.photo_url||'', contact_phone:p.contact_phone||'', contact_email:p.contact_email||'', cv_link:p.cv_link||'' };
+  return { id:p.id||'', full_name:p.full_name||'', position:p.position||'', location:p.location||'', experience_years:(p.experience_years===undefined?null:p.experience_years),
+    availability:p.availability||'', photo_url:p.photo_url||'', contact_phone:p.contact_phone||'', contact_email:p.contact_email||'', cv_link:p.cv_link||'', admin_notes:p.admin_notes||'' };
 }
 async function callCvScan(candidate){
   var auth = await r2AuthHeader();
@@ -3020,15 +3021,22 @@ async function scanPoolCandidate(id, opts){
   var scan = data.scan || {}, verdict = data.verdict || { autoApprove:false, reasons:[] };
   var status = p.status || 'pending';
   var patch = { id:id };
+  var corrections = data.corrections || {};
+  Object.keys(corrections).forEach(function(key){ patch[key] = corrections[key]; });
   // The positions on the CV are added even when the profile already has some.
   if(scan.is_cv && scan.readable && data.added && data.added.length) patch.position = data.position;
-  var result = { state: verdict.autoApprove ? 'passed' : 'review', reasons: verdict.reasons || [], added: (patch.position ? data.added : []) };
-  if(verdict.autoApprove && cvAutoApproveOn() && (status === 'pending' || status === 'active')){
+  var duplicate = data.duplicate;
+  var result = { state: duplicate ? 'rejected' : (verdict.autoApprove ? 'passed' : 'review'), reasons: verdict.reasons || [], added: (patch.position ? data.added : []), feedback: data.feedback || null };
+  if(duplicate){
+    patch.status = 'rejected';
+    patch.verified = false;
+  } else if(verdict.autoApprove && cvAutoApproveOn() && (status === 'pending' || status === 'active')){
     patch.verified = true;
     if(status === 'pending'){ var oneYear = new Date(); oneYear.setFullYear(oneYear.getFullYear()+1); patch.status = 'active'; patch.paid_until = oneYear.toISOString(); }
     result.state = 'approved';
   }
-  patch.admin_notes = withScanNote(p, result.state, result.reasons);
+  if(data.feedback && data.feedback.sent) patch.admin_notes = String(patch.admin_notes || '') + '\n[cv-feedback] ' + (p.cv_link || '');
+  patch.admin_notes = withScanNote(Object.assign({}, p, patch), result.state, result.reasons);
   var saved = await upsertPoolCandidate(patch);
   if(!saved) result = { state:'error', message:'The scan finished but saving the result failed.' };
   poolScan[id] = result;
@@ -3076,14 +3084,26 @@ async function scanPoolCvFromSheet(){
     location:document.getElementById('pc-location').value.trim(), experience_years:(exp === '' ? null : parseInt(exp,10)),
     availability:document.getElementById('pc-availability').value.trim(),
     photo_url:(window.pendingPoolAdminPhoto || (existing && existing.photo_url) || (pendingPoolAdminPhotoBlob ? 'pending-upload' : '')),
-    contact_phone:document.getElementById('pc-phone').value.trim(), contact_email:document.getElementById('pc-email').value.trim(), cv_link:cv
+    contact_phone:document.getElementById('pc-phone').value.trim(), contact_email:document.getElementById('pc-email').value.trim(), cv_link:cv,
+    id:existing ? existing.id : '', admin_notes:existing ? (existing.admin_notes || '') : ''
   });
   btn.disabled = false;
   if(data.error){ out.textContent = data.error; return; }
   var scan = data.scan || {}, verdict = data.verdict || {}, lines = [];
+  var corrections = data.corrections || {};
+  if(corrections.full_name) document.getElementById('pc-name').value = corrections.full_name;
+  if(corrections.contact_email) document.getElementById('pc-email').value = corrections.contact_email;
+  if(corrections.contact_phone) document.getElementById('pc-phone').value = corrections.contact_phone;
+  if(corrections.location) document.getElementById('pc-location').value = corrections.location;
+  if(corrections.experience_years !== undefined) document.getElementById('pc-experience').value = String(corrections.experience_years);
+  if(Object.keys(corrections).length) lines.push('Profile details were safely filled or corrected from the CV.');
   if(scan.is_cv && scan.readable && data.added && data.added.length){ document.getElementById('pc-position').value = data.position; lines.push('Added from the CV: ' + data.added.join(', ') + '.'); }
   else if(scan.is_cv && scan.readable) lines.push('Positions on the CV are already listed.');
-  if(verdict.autoApprove){
+  if(data.duplicate){
+    document.getElementById('pc-status').value = 'rejected';
+    document.getElementById('pc-verified').checked = false;
+    lines.push('Rejected: ' + ((verdict.reasons||[]).join('; ') || 'this candidate already exists in the CV Box') + '.');
+  } else if(verdict.autoApprove){
     if(cvAutoApproveOn()){
       document.getElementById('pc-verified').checked = true;
       var st = document.getElementById('pc-status'); if(st.value === 'pending') st.value = 'active';

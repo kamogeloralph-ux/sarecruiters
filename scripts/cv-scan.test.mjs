@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { evaluateCvScan, mergePositions, namesMatch, normalizeScan, candidateCvKey, cvScanModels, scanCvWithGemini } from '../Cloudflare-worker/cv-scan.js';
+import { cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, namesMatch, normalizeScan, candidateCvKey, cvScanModels, scanCvWithGemini } from '../Cloudflare-worker/cv-scan.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (name) => readFileSync(path.join(root, name), 'utf8');
@@ -39,6 +39,29 @@ test('a complete, readable CV whose name matches is approved and verified automa
   const v = evaluateCvScan(goodScan, { ...goodProfile, position: 'Cashier, Sales Assistant' }, { contentType: 'application/pdf' });
   assert.deepEqual(v.reasons, []);
   assert.equal(v.autoApprove, true);
+});
+
+test('duplicate candidates are rejected by email, phone, or matching name', () => {
+  const existing = [{ id: 'old-1', full_name: 'Nonjabulo Maseko', contact_email: 'n@example.com', contact_phone: '071 000 0000', status: 'active' }];
+  assert.equal(findDuplicateCandidate(existing, { id: 'new-1', contact_email: 'N@EXAMPLE.COM' }, { full_name: 'Someone Else' }).matchedBy, 'email');
+  assert.equal(findDuplicateCandidate(existing, { id: 'new-1' }, { full_name: 'Another Person', phone: '+27 71 000 0000' }).matchedBy, 'phone');
+  assert.equal(findDuplicateCandidate(existing, { id: 'new-1' }, { full_name: 'Nonjabulo Maseko' }).matchedBy, 'name');
+  assert.equal(findDuplicateCandidate(existing, { id: 'old-1' }, { full_name: 'Nonjabulo Maseko' }), null);
+});
+
+test('CV corrections fill missing fields and only replace a compatible profile name', () => {
+  assert.deepEqual(cvProfileCorrections({ full_name: 'Nonjabulo Millicent Maseko', email: 'n@example.com', phone: '0710000000', location: 'Durban', experience_years: 4 }, { full_name: 'Nonjabulo Maseko', experience_years: null }), {
+    full_name: 'Nonjabulo Millicent Maseko', contact_email: 'n@example.com', contact_phone: '0710000000', location: 'Durban', experience_years: 4
+  });
+  assert.deepEqual(cvProfileCorrections({ full_name: 'Someone Else', email: 'x@example.com' }, { full_name: 'Nonjabulo Maseko' }), { contact_email: 'x@example.com' });
+});
+
+test('a missing profile experience value is checked against the CV scan result', () => {
+  const withoutExperience = { ...goodProfile, experience_years: null };
+  const found = evaluateCvScan({ ...goodScan, experience_years: 4 }, withoutExperience, { contentType: 'application/pdf' });
+  assert.doesNotMatch(found.reasons.join('; '), /experience/i);
+  const notFound = evaluateCvScan({ ...goodScan, experience_years: null }, withoutExperience, { contentType: 'application/pdf' });
+  assert.match(notFound.reasons.join('; '), /not found on the CV/i);
 });
 
 test('anything missing, unreadable, mismatched or in the wrong format blocks auto-approval and says why', () => {

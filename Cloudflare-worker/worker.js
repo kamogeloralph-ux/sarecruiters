@@ -1,6 +1,6 @@
 import { runWatchdog } from "./watchdog.js";
 import * as Sentry from "@sentry/cloudflare";
-import { candidateCvKey, evaluateCvScan, mergePositions, scanCvWithGemini } from "./cv-scan.js";
+import { candidateCvKey, cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, scanCvWithGemini } from "./cv-scan.js";
 import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
 import { putCached } from "./ai.js";
 var __defProp = Object.defineProperty;
@@ -90,6 +90,24 @@ async function verifiedUserId(request, env) {
   }
 }
 __name(verifiedUserId, "verifiedUserId");
+async function existingCvBoxCandidates(request, env) {
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  const bearer = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  const key = serviceKey || env.SUPABASE_ANON_KEY;
+  if (!env.SUPABASE_URL || !key || (!serviceKey && !bearer)) return null;
+  const rows = [];
+  for (let offset = 0; ; offset += 1000) {
+    const response = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?select=id,full_name,contact_email,contact_phone,location,status&order=id.asc&limit=1000&offset=${offset}`, {
+      headers: { apikey: key, Authorization: `Bearer ${serviceKey || bearer}` }
+    });
+    if (!response.ok) return null;
+    const page = await response.json().catch(() => null);
+    if (!Array.isArray(page)) return null;
+    rows.push(...page);
+    if (page.length < 1000) return rows;
+  }
+}
+__name(existingCvBoxCandidates, "existingCvBoxCandidates");
 function randomKey() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
@@ -3229,13 +3247,35 @@ var worker_default = {
         const scanned = await scanCvWithGemini(env, cvBytes, contentType);
         console.log("cv-scan done", scanned.ok ? "ok" : "failed: " + scanned.error, Date.now() - scanStart, "ms");
         if (!scanned.ok) return json({ error: scanned.error }, scanned.status, origin);
+        const existing = await existingCvBoxCandidates(request, env);
+        if (!existing) return json({ error: "Duplicate checking is temporarily unavailable. The CV was not approved." }, 503, origin);
+        const duplicate = findDuplicateCandidate(existing, candidate, scanned.scan);
         // Skills feed candidate-to-vacancy matching. Kept in D1 only (skills, never contact details).
         if (candidate.id && scanned.scan.is_cv && scanned.scan.skills && scanned.scan.skills.length) {
           await putCached(env, "cv-skills", String(candidate.id).slice(0, 80), { model: scanned.model, result: { skills: scanned.scan.skills } });
         }
         const merged = mergePositions(candidate.position, scanned.scan.positions);
-        const verdict = evaluateCvScan(scanned.scan, { ...candidate, position: merged.text }, { contentType });
-        return json({ ok: true, scan: scanned.scan, position: merged.text, positions: merged.list, added: merged.added, verdict }, 200, origin);
+        const corrections = cvProfileCorrections(scanned.scan, { ...candidate, position: merged.text });
+        const verdict = evaluateCvScan(scanned.scan, { ...candidate, ...corrections, position: merged.text }, { contentType });
+        if (duplicate) verdict.reasons.unshift(`This candidate already exists in the CV Box (${duplicate.name}; matched by ${duplicate.matchedBy})`);
+        verdict.autoApprove = verdict.reasons.length === 0;
+        const recipient = String(candidate.contact_email || scanned.scan.email || "").trim();
+        let feedback = { sent: false, reason: "No candidate email available" };
+        if (recipient && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient) && !candidate.admin_notes?.includes(`[cv-feedback] ${candidate.cv_link || ""}`)) {
+          const issueLines = verdict.reasons.length ? verdict.reasons.map((reason) => `- ${reason}`) : ["- No issues found. Your CV passed the checks."];
+          const correctionLines = Object.entries(corrections).map(([field, value]) => `- ${field.replaceAll("_", " ")}: ${value}`);
+          feedback = await sendNotificationEmail(env, {
+            to_email: recipient,
+            email_subject: `SA Recruiters | CV review for ${String(candidate.full_name || scanned.scan.full_name || "your profile").slice(0, 120)}`,
+            notification_title: duplicate ? "CV submission not accepted" : (verdict.autoApprove ? "CV review complete" : "CV needs attention"),
+            notification_type: "CV Box review",
+            notification_intro: duplicate ? "We could not add this CV because a matching candidate is already in the SA Recruiters CV Box." : (verdict.autoApprove ? "Your CV passed our initial checks." : "We reviewed your CV and found a few items to correct before it can be accepted."),
+            notification_body: [...(duplicate ? [] : correctionLines.length ? ["We corrected or filled these profile details:", ...correctionLines, ""] : []), "Review result:", ...issueLines, "", "If you believe this is incorrect, reply to this email with an updated CV or corrected details."]
+              .join("\n"),
+            reply_to: recipient
+          });
+        }
+        return json({ ok: true, scan: scanned.scan, position: merged.text, positions: merged.list, added: merged.added, corrections, duplicate, feedback, verdict }, 200, origin);
       }
       if (path === "/api/generate-cv" && request.method === "POST") {
         // Require a signed-in SA Recruiters user (the app is auth-gated

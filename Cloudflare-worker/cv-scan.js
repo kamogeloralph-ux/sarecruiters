@@ -108,6 +108,57 @@ export function namesMatch(profileName, cvName) {
   return short.every((t) => long.some((l) => tokenClose(t, l)));
 }
 
+export function normalizeCandidateEmail(value) {
+  return clean(value, 160).toLowerCase();
+}
+
+export function normalizeCandidatePhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.length > 9 ? digits.slice(-9) : digits;
+}
+
+// A duplicate is deliberately checked against more than the profile name:
+// email/phone catches spelling differences, while a matching full name stops
+// a second CV being submitted when the candidate supplied no contact detail.
+// Rejected records are ignored so a candidate can correct and resubmit.
+export function findDuplicateCandidate(candidates, candidate, scan) {
+  const c = candidate || {};
+  const s = scan || {};
+  const email = normalizeCandidateEmail(c.contact_email || s.email);
+  const phone = normalizeCandidatePhone(c.contact_phone || s.phone);
+  for (const existing of Array.isArray(candidates) ? candidates : []) {
+    if (!existing || String(existing.id || "") === String(c.id || "")) continue;
+    if (String(existing.status || "pending").toLowerCase() === "rejected") continue;
+    const existingEmail = normalizeCandidateEmail(existing.contact_email);
+    const existingPhone = normalizeCandidatePhone(existing.contact_phone);
+    if (email && existingEmail && email === existingEmail) {
+      return { id: existing.id, name: existing.full_name || "Candidate", matchedBy: "email" };
+    }
+    if (phone && existingPhone && phone.length >= 7 && phone === existingPhone) {
+      return { id: existing.id, name: existing.full_name || "Candidate", matchedBy: "phone" };
+    }
+    if (s.full_name && existing.full_name && namesMatch(s.full_name, existing.full_name)) {
+      return { id: existing.id, name: existing.full_name || "Candidate", matchedBy: "name" };
+    }
+  }
+  return null;
+}
+
+// Corrections are intentionally conservative. We can improve a profile when
+// the CV agrees with it or when a field is empty; an unrelated name is never
+// overwritten because that could hide an identity mismatch.
+export function cvProfileCorrections(scan, candidate) {
+  const s = scan || {};
+  const c = candidate || {};
+  const corrections = {};
+  if (s.full_name && (!c.full_name || namesMatch(c.full_name, s.full_name))) corrections.full_name = s.full_name;
+  if (!c.contact_email && s.email) corrections.contact_email = s.email;
+  if (!c.contact_phone && s.phone) corrections.contact_phone = s.phone;
+  if (!c.location && s.location) corrections.location = s.location;
+  if ((c.experience_years === null || c.experience_years === undefined || c.experience_years === "") && s.experience_years !== null && s.experience_years !== undefined) corrections.experience_years = s.experience_years;
+  return corrections;
+}
+
 export function normalizeScan(raw) {
   const r = raw && typeof raw === "object" ? raw : {};
   const years = Number.parseInt(r.experience_years, 10);
@@ -140,12 +191,15 @@ export function normalizeScan(raw) {
 export function evaluateCvScan(scan, candidate, meta) {
   const reasons = [];
   const c = candidate || {};
+  const s = scan || {};
   const type = String((meta && meta.contentType) || "").split(";")[0].trim().toLowerCase();
 
   if (!String(c.full_name || "").trim()) reasons.push("Full name is missing");
   if (!String(c.position || "").trim()) reasons.push("Position is missing");
   if (!String(c.location || "").trim()) reasons.push("Location is missing");
-  if (c.experience_years === null || c.experience_years === undefined || c.experience_years === "") reasons.push("Years of experience is missing");
+  if ((c.experience_years === null || c.experience_years === undefined || c.experience_years === "") && (s.experience_years === null || s.experience_years === undefined)) {
+    reasons.push("Years of experience was not found on the CV");
+  }
   if (!String(c.availability || "").trim()) reasons.push("Availability is missing");
   if (!String(c.photo_url || "").trim()) reasons.push("Profile photo is missing");
   if (!String(c.contact_phone || "").trim() && !String(c.contact_email || "").trim()) reasons.push("No phone number or email on the profile");
@@ -153,7 +207,6 @@ export function evaluateCvScan(scan, candidate, meta) {
 
   if (type && !CV_ALLOWED_TYPES.includes(type)) reasons.push("CV is not a PDF, PNG or JPG file");
 
-  const s = scan || {};
   if (!s.is_cv) reasons.push("The file does not look like a CV");
   if (!s.readable) reasons.push("The CV is not clearly readable");
   if (s.confidence < CV_MIN_CONFIDENCE) reasons.push("The scan was not confident enough");
@@ -199,7 +252,7 @@ const CV_SCAN_PROMPT = [
   "full_name: the candidate's full name exactly as written on the CV.",
   "positions: the job titles the candidate is seeking or clearly qualified for, taken from the CV (objective/profile line first, then most recent roles). Short titles only (for example \"Cashier\", \"General Worker\", \"Admin Clerk\"), no company names, at most 4.",
   "location: town/city and province if stated. email and phone: as written on the CV.",
-  "experience_years: total years of work experience as a whole number (0 if none).",
+  "experience_years: total years of work experience as a whole number, calculated from the employment dates and roles on the CV. If the CV clearly shows no work experience, return 0. If the dates or work history are not stated clearly, return null rather than guessing.",
   "skills: up to 10 short skills or tools stated on the CV (for example \"Cash handling\", \"Code 10 licence\", \"MS Excel\"). Skills only; never include ID numbers, addresses or contact details.",
   "has_experience_section / has_education_section / has_contact_details: whether those parts exist on the CV.",
   "problems: short notes about anything unclear, missing or unreadable."
