@@ -72,13 +72,14 @@ test('participation insert policies use a private current-user membership verifi
   assert.match(app, /catch \(error\) \{\s*result = \{ error: error \};/);
 });
 
-test('client uses only approved content for feeds and includes join, report, and moderation flows', () => {
+test('client uses only live content for feeds and includes join, report, and delete-only moderation flows', () => {
   assert.match(app, /\.eq\('status', 'approved'\)/);
   assert.match(app, /from\('community_memberships'\)/);
   assert.match(app, /from\('community_reports'\)/);
-  assert.match(app, /communityModerationQueue|communityLoadModerationQueue/);
+  assert.match(app, /communityLoadModerationQueue/);
   assert.match(app, /rpc\('is_admin'\)/);
-  assert.match(app, /if \(!moderated\) return;[\s\S]*?community_reports'\)\.update\(\{ status: 'reviewed' \}\)/);
+  assert.match(app, /community_admin_delete/);
+  assert.doesNotMatch(app, /communityModerate|Hide content|Approve/);
   assert.doesNotMatch(app, /select\([^)]*author_id|select\([^)]*reporter_id/i);
   assert.match(html, /id="screen-community"/);
   assert.match(html, /onclick="openCommunity\(\)"/);
@@ -157,7 +158,7 @@ test('TipChat unifies vacancy text and poster uploads in its moderated social fe
   assert.match(app, /poster_image_url: poster \? poster\.url : null/);
   assert.match(app, /communityPosterImageHtml/);
   assert.match(app, /communityMissingPosterSchema/);
-  assert.match(app, /communityModerationCard[\s\S]*communityPosterImageHtml/);
+  assert.match(app, /communityAdminDelete[\s\S]*communityPosterImageHtml|communityPosterImageHtml[\s\S]*communityAdminDelete/);
   assert.match(html, /id="community-poster-file" type="file" accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(html, /Share a vacancy in text, attach its poster, or do both/);
   assert.match(html, /<h1 class="sr-only">TipChat<\/h1>/);

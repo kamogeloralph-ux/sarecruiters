@@ -567,11 +567,11 @@ window.sentryOnLoad = function () {
     <div class="screen-scroll">
 
       <section class="community-admin-panel" id="community-moderator-panel" hidden>
-        <button class="community-admin-toggle" type="button" onclick="communityToggleModeration()"><span>Moderation queue</span><span id="community-moderation-count">0</span></button>
+        <button class="community-admin-toggle" type="button" onclick="communityToggleModeration()"><span>Reports · delete content</span><span id="community-moderation-count">0</span></button>
         <div class="community-moderation-queue" id="community-moderation-queue" hidden></div>
       </section>
       <section class="community-admin-panel community-mine-panel" id="community-mine" hidden>
-        <button class="community-admin-toggle" type="button" onclick="communityToggleMine()"><span>My submissions</span><span id="community-mine-count" title="Awaiting review">0</span></button>
+        <button class="community-admin-toggle" type="button" onclick="communityToggleMine()"><span>My submissions</span><span id="community-mine-count" title="Live submissions">0</span></button>
         <div class="community-moderation-queue" id="community-mine-list" hidden></div>
       </section>
       <div class="community-feed-toolbar">
@@ -1580,7 +1580,7 @@ window.sentryOnLoad = function () {
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=1cd767f133"></script>
+<script type="module" src="app.bundle.min.js?v=3bc5fd25a4"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
 <script src="app-alerts.js?v=al-6" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

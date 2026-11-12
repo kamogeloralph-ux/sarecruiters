@@ -332,7 +332,7 @@ export function communityRenderGroup() {
   if (composerHint) {
     composerHint.textContent = !communitySignedIn()
       ? 'Sign in and join TipChat to share a post.'
-      : (!communityMvp.joined ? 'Join TipChat before posting or commenting.' : 'Posts are checked before they appear. You show as Anonymous member unless you choose otherwise above.');
+      : (!communityMvp.joined ? 'Join TipChat before posting or commenting.' : 'Posts appear live. You show as Anonymous member unless you choose otherwise above.');
   }
   communityRenderIdentity();
   communitySetComposerType(communityComposerType);
@@ -615,9 +615,10 @@ export async function communitySubmitPost(event) {
   ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
   communityRemovePoster();
   communitySetComposerType('discussion');
-  communityStatus('Thanks — your post is being checked and will appear as soon as it passes. Track it under My submissions; ' + (communityMvp.identity.show && communityMvp.identity.has ? 'it will show your CV Box name and photo once it is live.' : 'it will appear as Anonymous member.'), 'success');
+  communityStatus('Posted live. ' + (communityMvp.identity.show && communityMvp.identity.has ? 'Your CV Box name and photo are shown.' : 'You appear as Anonymous member.'), 'success');
   communityRenderGroup();
-  communityLoadMySubmissions();
+  await communityLoadFeed();
+  await communityLoadMySubmissions();
   communityLoadModerationQueue(false);
   return false;
 }
@@ -693,7 +694,7 @@ export async function communityLoadComments(postId) {
       }).join('')
     : '<div class="community-comment-loading">No approved comments yet.</div>') + '</div>' +
     (canComment
-      ? '<form class="community-comment-form" onsubmit="return communitySubmitComment(event,\'' + communityEsc(postId) + '\')"><label class="sr-only" for="' + inputId + '">Add a comment</label><textarea id="' + inputId + '" maxlength="1500" placeholder="Add a helpful comment…" required></textarea><button type="submit">Send</button><small>Comments are checked before they appear.</small></form>'
+      ? '<form class="community-comment-form" onsubmit="return communitySubmitComment(event,\'' + communityEsc(postId) + '\')"><label class="sr-only" for="' + inputId + '">Add a comment</label><textarea id="' + inputId + '" maxlength="1500" placeholder="Add a helpful comment…" required></textarea><button type="submit">Send</button><small>Comments appear live. Report anything unrelated or inappropriate.</small></form>'
       : '<button type="button" class="community-secondary-btn" onclick="communityPromptParticipation()">' + (communitySignedIn() ? 'Join to comment' : 'Sign in to comment') + '</button>');
   var draftField = document.getElementById('community-comment-input-' + postId);
   if (draftField && communityMvp.drafts[draftField.id]) draftField.value = communityMvp.drafts[draftField.id];
@@ -713,7 +714,10 @@ export async function communitySubmitComment(event, postId) {
     return false;
   }
   if (field) { delete communityMvp.drafts[field.id]; field.value = ''; }
-  communityToast('Comment submitted — it will appear as soon as it passes the checks. Track it under My submissions.');
+  communityToast('Comment posted live.');
+  var post = communityMvp.posts.find(function(item) { return item.id === postId; });
+  if (post) { post.comments_count = Number(post.comments_count || 0) + 1; communityRefreshActions(postId); }
+  await communityLoadComments(postId);
   communityLoadMySubmissions();
   communityLoadModerationQueue(false);
   return false;
@@ -885,79 +889,53 @@ export async function communityLoadModerationQueue(showLoading) {
   var badge = document.getElementById('community-moderation-count');
   if (!queue) return;
   if (showLoading) queue.innerHTML = '<div class="community-comment-loading">Loading moderation queue…</div>';
-  var postCols = 'id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,created_at';
   var results = await Promise.all([
-    supabaseClient.from('community_posts').select(postCols, { count: 'exact' }).eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
-    supabaseClient.from('community_comments').select('id,post_id,author_label,body,status,created_at', { count: 'exact' }).eq('status', 'pending').order('created_at', { ascending: true }).limit(50),
+    { data: [], count: 0, error: null },
+    { data: [], count: 0, error: null },
     supabaseClient.from('community_reports').select('id,post_id,comment_id,reason,details,status,created_at', { count: 'exact' }).eq('status', 'open').order('created_at', { ascending: false }).limit(50),
     supabaseClient.rpc('community_admin_flags')
   ]);
-  if (results[0].error && communityMissingPosterSchema(results[0].error)) {
-    communityMvp.posterSchemaAvailable = false;
-    results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,post_type,vacancy_title,vacancy_location,vacancy_application,created_at', { count: 'exact' }).eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
-    communitySetComposerType(communityComposerType);
-  }
-  if (results[0].error && communityMissingVacancySchema(results[0].error)) {
-    communityMvp.vacancySchemaAvailable = false;
-    results[0] = await supabaseClient.from('community_posts').select('id,group_id,author_label,body,status,created_at', { count: 'exact' }).eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
-    communitySetComposerType(communityComposerType);
-  }
   var error = results.slice(0, 3).find(function(result) { return result.error; });
   if (error) { console.error('[Community] moderation queue', error.error); queue.innerHTML = '<div class="community-comment-loading">Moderation queue could not be loaded.</div>'; return; }
-  var pendingPosts = results[0].data || [];
-  var pendingComments = results[1].data || [];
   var reports = results[2].data || [];
-  var totalPosts = results[0].count != null ? results[0].count : pendingPosts.length;
-  var totalComments = results[1].count != null ? results[1].count : pendingComments.length;
   var totalReports = results[2].count != null ? results[2].count : reports.length;
   var flags = new Map();
   if (!results[3].error) (results[3].data || []).forEach(function(row) { flags.set(row.flag_content_type + ':' + row.flag_content_id, row.flag_reasons || []); });
-  if (badge) badge.textContent = String(totalPosts + totalComments + totalReports);
+  if (badge) badge.textContent = String(totalReports);
   var postIds = Array.from(new Set(reports.map(function(row) { return row.post_id; }).filter(Boolean)));
   var commentIds = Array.from(new Set(reports.map(function(row) { return row.comment_id; }).filter(Boolean)));
   var reportPosts = postIds.length ? await supabaseClient.from('community_posts').select('id,author_label,body,status').in('id', postIds) : { data: [] };
   var reportComments = commentIds.length ? await supabaseClient.from('community_comments').select('id,post_id,author_label,body,status').in('id', commentIds) : { data: [] };
   var postMap = new Map((reportPosts.data || []).map(function(row) { return [row.id, row]; }));
   var commentMap = new Map((reportComments.data || []).map(function(row) { return [row.id, row]; }));
-  var pendingHtml = pendingPosts.map(function(row) { return communityModerationCard('post', row, 'pending', flags); }).join('') +
-    pendingComments.map(function(row) { return communityModerationCard('comment', row, 'pending', flags); }).join('');
   var reportHtml = reports.map(function(report) {
     var type = report.post_id ? 'post' : 'comment';
     var target = report.post_id ? postMap.get(report.post_id) : commentMap.get(report.comment_id);
     return '<article class="community-review-card"><div class="community-review-meta">Reported ' + communityEsc(type) + ' · ' + communityEsc(report.reason) + '</div>' +
       '<p>' + communityEsc(report.details || 'No extra details supplied.') + '</p>' +
       (target ? '<blockquote>' + communityEsc(target.body) + '</blockquote>' : '<p>Content is no longer available.</p>') +
-      '<div class="community-review-actions"><button type="button" onclick="communityReviewReported(\'' + communityEsc(report.id) + '\',\'' + type + '\',\'' + communityEsc(report.post_id || report.comment_id) + '\',\'hide\')">Hide content</button><button type="button" class="community-secondary-btn" onclick="communityDismissReport(\'' + communityEsc(report.id) + '\')">Dismiss report</button></div></article>';
+      '<div class="community-review-actions"><button type="button" class="community-danger-btn" onclick="communityReviewReported(\'' + communityEsc(report.id) + '\',\'' + type + '\',\'' + communityEsc(report.post_id || report.comment_id) + '\')">Delete content</button><button type="button" class="community-secondary-btn" onclick="communityDismissReport(\'' + communityEsc(report.id) + '\')">Dismiss report</button></div></article>';
   }).join('');
   function overflowNote(shown, total) {
     return total > shown ? '<p class="community-review-empty">Showing the oldest ' + shown + ' of ' + total + '. Clear these to load more.</p>' : '';
   }
-  var waiting = totalPosts + totalComments;
-  queue.innerHTML = '<section><h3>Waiting for approval <span>' + waiting + '</span></h3>' + (pendingHtml || '<p class="community-review-empty">Nothing is waiting for approval.</p>') + overflowNote(pendingPosts.length, totalPosts) + overflowNote(pendingComments.length, totalComments) + '</section>' +
-    '<section><h3>Open reports <span>' + totalReports + '</span></h3>' + (reportHtml || '<p class="community-review-empty">No open reports.</p>') + overflowNote(reports.length, totalReports) + '</section>';
+  queue.innerHTML = '<section><h3>Open reports <span>' + totalReports + '</span></h3>' + (reportHtml || '<p class="community-review-empty">No open reports.</p>') + overflowNote(reports.length, totalReports) + '</section>';
 }
-export function communityModerationCard(type, row, status, flags) {
-  var id = communityEsc(row.id);
-  var reasons = flags && flags.get(type + ':' + row.id);
-  var flagNote = reasons && reasons.length
-    ? '<div class="community-flag-note">⚠ Automated flag: ' + communityEsc(reasons.map(function(reason) { return String(reason).replace(/_/g, ' '); }).join(', ')) + '</div>'
-    : '';
-  return '<article class="community-review-card"><div class="community-review-meta">' + (type === 'post' ? (row.post_type === 'vacancy' ? 'Vacancy' : 'Post') : 'Comment') + ' · ' + communityEsc(communityWhen(row.created_at)) + ' · ' + communityEsc(row.author_label) + '</div>' + flagNote + (type === 'post' ? communityVacancyMetaHtml(row) + communityPosterImageHtml(row) : '') + '<p>' + communityEsc(row.body) + '</p><div class="community-review-actions"><button type="button" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'approved\')">Approve</button><button type="button" class="community-danger-btn" onclick="communityModerate(\'' + type + '\',\'' + id + '\',\'hidden\')">Hide</button></div></article>';
-}
-export async function communityModerate(type, id, status) {
-  var table = type === 'comment' ? 'community_comments' : 'community_posts';
-  var result = await supabaseClient.from(table).update({ status: status }).eq('id', id).select('id').maybeSingle();
-  if (result.error || !result.data) { console.error(result.error); communityToast('Moderation action failed.'); return false; }
-  communityToast(status === 'approved' ? 'Content approved.' : 'Content hidden.');
+export async function communityAdminDelete(type, id) {
+  if (!communityMvp.moderator) return false;
+  var result = await supabaseClient.rpc('community_admin_delete', { p_kind: type === 'comment' ? 'comment' : 'post', p_id: id });
+  if (result.error || !result.data || !result.data.deleted) { console.error(result.error); communityToast('Delete action failed.'); return false; }
+  if (result.data.poster_image_url) communityDeletePosterFile(result.data.poster_image_url);
+  communityToast('Content deleted.');
   await communityLoadModerationQueue(true);
   await communityLoadFeed();
   return true;
 }
-export async function communityReviewReported(reportId, type, targetId, action) {
-  var moderated = await communityModerate(type, targetId, action === 'hide' ? 'hidden' : 'approved');
-  if (!moderated) return;
+export async function communityReviewReported(reportId, type, targetId) {
+  var deleted = await communityAdminDelete(type, targetId);
+  if (!deleted) return;
   var result = await supabaseClient.from('community_reports').update({ status: 'reviewed' }).eq('id', reportId);
-  if (result.error) { console.error(result.error); communityToast('Content was moderated, but the report could not be closed.'); }
+  if (result.error) { console.error(result.error); communityToast('Content was deleted, but the report could not be closed.'); }
   await communityLoadModerationQueue(true);
 }
 export async function communityDismissReport(reportId) {
@@ -988,7 +966,7 @@ window.communityCloseReport = communityCloseReport;
 window.communitySubmitReport = communitySubmitReport;
 window.communitySharePost = communitySharePost;
 window.communityToggleModeration = communityToggleModeration;
-window.communityModerate = communityModerate;
+window.communityAdminDelete = communityAdminDelete;
 window.communityReviewReported = communityReviewReported;
 window.communityDismissReport = communityDismissReport;
 window.communityLoad = communityLoad;
@@ -1094,8 +1072,7 @@ Object.assign(window, {
   communitySharePost,
   communityToggleModeration,
   communityLoadModerationQueue,
-  communityModerationCard,
-  communityModerate,
+  communityAdminDelete,
   communityReviewReported,
   communityDismissReport,
 });
