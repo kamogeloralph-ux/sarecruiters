@@ -65,7 +65,7 @@ jobs:
               *.jpg|*.jpeg) content_type="image/jpeg" ;;
               *) continue ;;
             esac
-            npx --yes wrangler@4.147.0 r2 object put "sarecruiters-media/$key" --file="$file" --content-type="$content_type" --config=Cloudflare-worker/wrangler.toml
+            npx --yes wrangler@4.147.0 r2 object put "sarecruiters-media/$key" --file="$file" --content-type="$content_type" --remote --config=Cloudflare-worker/wrangler.toml
           done
 
       - name: Apply remote D1 migrations when quota permits

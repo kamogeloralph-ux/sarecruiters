@@ -1931,9 +1931,24 @@ async function houseAdsResponse(request, env, ctx, origin) {
     const result = await env.DB.prepare("SELECT id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text FROM house_ads WHERE is_active = 1 AND julianday(starts_at) <= julianday('now') AND (ends_at IS NULL OR julianday(ends_at) > julianday('now')) ORDER BY sort_order ASC, created_at DESC LIMIT 50").all();
     ads = (result.results || []).map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url), target_screens: (() => { try { return JSON.parse(ad.target_screens || "[]"); } catch (e) { return []; } })() }));
   } catch (error) {
-    console.error("house ads read failed", error);
-    // Do not cache a failure; let the next visitor retry.
-    return json({ ads: [], error: "House ads temporarily unavailable" }, 200, origin);
+    // Keep the ads visible during a D1 migration/auth outage. This is a
+    // bounded, edge-cached recovery path—not the normal public read path.
+    console.warn("house ads D1 read failed; using cached Supabase recovery", error);
+    try {
+      const now = new Date().toISOString();
+      const result = await supabaseGet(env, "house_ads", {
+        select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text",
+        is_active: "eq.true",
+        starts_at: `lte.${now}`,
+        or: `(ends_at.is.null,ends_at.gt.${now})`,
+        order: "sort_order.asc,created_at.desc",
+        limit: "50"
+      });
+      ads = (Array.isArray(result.body) ? result.body : []).map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url) }));
+    } catch (recoveryError) {
+      console.error("house ads recovery read failed", recoveryError);
+      return json({ ads: [], error: "House ads temporarily unavailable" }, 200, origin);
+    }
   }
   const response = json({ ads }, 200, origin);
   response.headers.set("Cache-Control", "public, max-age=300");

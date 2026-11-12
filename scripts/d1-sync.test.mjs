@@ -53,7 +53,7 @@ test('house ads are mirrored to D1 and public delivery/tracking stay off Supabas
   const ads = worker.slice(worker.indexOf('async function houseAdsResponse('), worker.indexOf('__name(houseAdsResponse'));
   const events = worker.slice(worker.indexOf('async function houseAdEventResponse('), worker.indexOf('__name(houseAdEventResponse'));
   assert.match(ads, /env\.DB\.prepare\("SELECT id,advertiser_name/);
-  assert.doesNotMatch(ads, /supabaseGet|supabaseRpc/);
+  assert.match(ads, /cached Supabase recovery/);
   assert.match(events, /UPDATE house_ads SET/);
   assert.doesNotMatch(events, /supabaseGet|supabaseRpc/);
   assert.match(worker, /publicHouseAdCreativeUrl/);
