@@ -73,8 +73,11 @@ test('app icons, support wording, and the site-menu trigger remain visible and o
   assert.match(brand, /\[data-theme="dark"\] \.bottom-nav \.navbtn:not\(\.active\)[\s\S]*?color:#d5e2f1!important/);
   assert.equal((shell.match(/<button class="support-ticker" type="button"/g) || []).length, 2);
   assert.equal((shell.match(/Support the Directory/g) || []).length, 2);
+  assert.equal((shell.match(/<button class=\"support-ticker\" type=\"button\"[^>]*onclick=\"openSupportSheet\(\)\"/g) || []).length, 2);
+  assert.doesNotMatch(shell, /onclick=\"openContentSheet\('support'\)\"/);
   assert.doesNotMatch(shell, /onkeydown="if\(event\.key==='Enter'\|\|event\.key===' '\)/);
-  assert.match(shell, /mono\.css\?v=visibility-1/);
+  assert.match(shell, /mono\.css\?v=visibility-2/);
+  assert.match(brand, /#screen-home \.stat-icon\{[\s\S]*?border:1px solid rgba\(255,255,255,\.48\)!important;[\s\S]*?color:#fff!important;opacity:1!important/);
   assert.match(ui, /drawer\.classList\.add\('is-open'\)/);
   assert.match(ui, /backdrop\.classList\.add\('is-visible'\)/);
   assert.match(serviceWorker, /const VERSION = 'sa-recruiters-visibility1'/);

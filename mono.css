@@ -484,3 +484,15 @@ html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:hover{box-sha
 }
 #screen-home .home-bottom-hero .support-ticker:focus-visible,#screen-menu .menu-hero .support-ticker:focus-visible{outline:3px solid #fff!important;outline-offset:3px!important}
 @media(prefers-reduced-motion:reduce){.site-menu-trigger,.bottom-nav .navbtn{transition:none!important;transform:none!important}}
+
+/* Home count icons: restore strong contrast and a clear, consistent icon tile. */
+#screen-home .stat-icon{
+  display:grid!important;place-items:center!important;width:30px!important;height:30px!important;
+  margin:0 auto 5px!important;border:1px solid rgba(255,255,255,.48)!important;
+  border-radius:10px!important;background:rgba(23,105,207,.36)!important;
+  color:#fff!important;opacity:1!important;
+}
+#screen-home .stat-icon svg{width:21px!important;height:21px!important;stroke:currentColor!important;stroke-width:2.5!important}
+#screen-home .stat-card:hover .stat-icon,#screen-home .stat-card:focus-visible .stat-icon{
+  color:#1769cf!important;background:#fff!important;border-color:#1769cf!important;
+}

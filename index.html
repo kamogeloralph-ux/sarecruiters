@@ -194,13 +194,13 @@ window.sentryOnLoad = function () {
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=1669864144" defer></script>
-<link rel="preload" as="style" href="styles.css?v=blue-brand-1">
-<link rel="stylesheet" href="styles.css?v=blue-brand-1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=blue-brand-2">
+<link rel="stylesheet" href="styles.css?v=blue-brand-2" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="mono.css?v=visibility-1" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=visibility-1"></noscript>
+<link rel="stylesheet" href="mono.css?v=visibility-2" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-2"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=visibility-2"></noscript>
 </head>
 <body>
 
@@ -315,7 +315,7 @@ window.sentryOnLoad = function () {
         <img src="icons/menu-logo-100.webp" alt="SA Recruiters logo" width="50" height="50" loading="lazy" decoding="async">
         <div><strong>SA Recruiters</strong><span>Connecting South Africa's Recruitment Community.</span></div>
       </div>
-      <button class="support-ticker" type="button" data-ripple onclick="openContentSheet('support')" aria-label="Support the directory — view donation details">
+      <button class="support-ticker" type="button" data-ripple onclick="openSupportSheet()" aria-label="Support the directory — view donation details">
         <span class="support-ticker-item">💙 Support the Directory to keep it running — Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
       </button>
     </section>
@@ -495,7 +495,7 @@ window.sentryOnLoad = function () {
     </header>
 
     <!-- ===== Support ticker ===== -->
-    <button class="support-ticker" type="button" data-ripple onclick="openContentSheet('support')" aria-label="Support the directory &#8212; view donation details">
+    <button class="support-ticker" type="button" data-ripple onclick="openSupportSheet()" aria-label="Support the directory &#8212; view donation details">
       <span class="support-ticker-item">&#128153; Support the Directory to keep it running &#8212; Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
     </button>
     </div>
@@ -517,7 +517,7 @@ window.sentryOnLoad = function () {
     <div class="pgrouped-list">
       <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><img class="tipchat-menu-logo" src="icons/tipchat-mark.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span><span>TipChat<span class="mi-sub">Share advice and vacancies by text or poster</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openContentSheet('support')"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openSupportSheet()"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="showAllAds('menu')"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span><span>Business Ads<span class="mi-sub">See businesses advertising on SA Recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="window.open('/advertise/','_blank','noopener')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span><span>Advertise for FREE<span class="mi-sub">Put your business in front of South Africa</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
