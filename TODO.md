@@ -30,3 +30,9 @@
 - [x] All public listing, contact, Terms, Privacy, FAQ, and Know Your Rights pages keep a white background and light color scheme regardless of device dark mode.
 - [x] Agency/company/poster imagery on public listings stays in its source color, and public/legal headers plus favicons use a color SA Recruiters mark.
 - [x] Regression tests cover the shared page theme and legal-resource pages.
+
+## App-wide blue visual identity
+
+- [x] App screens, cards, navigation, menus, forms, dialogs, and selected/focus states use the same blue accent and the white/light surface style of the public pages in light mode; the existing optional dark mode remains usable with the same blue brand accent.
+- [x] Every in-app SA Recruiters mark, favicon, installed/PWA icon, share/preview logo, and notification icon uses the blue logo; maskable icons keep their safe-area composition and monochrome mask icons keep their required monochrome treatment.
+- [x] App browser-theme and install metadata use the new blue/white palette.

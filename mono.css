@@ -306,3 +306,124 @@ html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:active{transf
 html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn .pool-cv-lock{flex:none;stroke:currentColor}
 html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn .pool-cv-label{overflow:visible!important;text-overflow:clip!important}
 html[data-theme="dark"] body .pool-mini-card .pool-mini-actions .pool-cv-download-btn{box-shadow:0 6px 16px rgba(61,220,132,.22)!important}
+
+
+/* ==========================================================================
+   19. Unified SA Recruiters blue brand layer
+   Matches the public-page palette across the app. Dark mode remains optional;
+   both themes share the same blue brand and use theme-aware surfaces.
+   ========================================================================== */
+:root,[data-theme="light"]{
+  --m-ink:#1769cf;--m-on-ink:#fff;--m-wash:rgba(23,105,207,.08);--m-wash-2:rgba(23,105,207,.12);
+  --bg:#fff;--bg-edge:#f7faff;--card:#fff;--card-2:#f7f9fc;--card-3:#eef3f9;
+  --text:#182230;--text-2:#566579;--text-3:#8290a2;--border:#d9e2ec;--border-strong:#b8c8dc;--separator:#e6edf5;
+  --accent:#1769cf;--accent-soft:rgba(23,105,207,.1);--success:#087a45;--danger:#b42318;--warning:#8a5a00;
+  --badge-bg:rgba(23,105,207,.1);--badge-text:#1769cf;--sheet-bg:#fff;
+  --shadow-sm:0 6px 18px rgba(24,54,91,.07);--shadow-lg:0 22px 54px -24px rgba(24,54,91,.18);
+  color-scheme:light
+}
+html[data-theme="dark"]{
+  --m-ink:#1769cf;--m-on-ink:#fff;--m-wash:rgba(23,105,207,.14);--m-wash-2:rgba(23,105,207,.2);
+  --bg:#101827;--bg-edge:#0c1320;--card:#172334;--card-2:#1d2b3d;--card-3:#26384d;
+  --text:#f4f7fb;--text-2:#b4c1d0;--text-3:#8595a9;--border:#2c3d53;--border-strong:#48617d;--separator:#26364a;
+  --accent:#5a9bff;--accent-soft:rgba(23,105,207,.2);--success:#52c58b;--danger:#ff7777;--warning:#f1c56f;
+  --badge-bg:rgba(90,155,255,.18);--badge-text:#9cc4ff;--sheet-bg:#172334;
+  --shadow-sm:0 6px 20px rgba(0,0,0,.2);--shadow-lg:0 24px 58px -22px rgba(0,0,0,.48);
+  color-scheme:dark
+}
+html,body{background:var(--bg);color:var(--text)}
+.app,.screen,.screen-scroll,#screen-home .screen-scroll{background:var(--bg)}
+
+/* Replace the former always-black shell panels with theme-aware surfaces. */
+#screen-home .screen-fixed,.bottom-nav,#screen-home .home-bottom-hero,#screen-menu .menu-hero,
+.account-hero,.site-menu-drawer,.update-banner,.retry-banner,.home-chat-banner,.pool-feature-card,
+.candidate-cta,.home-tool-card--employer,.home-tool-card--seeker,.toast,.install-banner,#app-splash{
+  --text:inherit;--text-2:inherit;--text-3:inherit;--m-ink:inherit;--m-on-ink:inherit;--m-wash:inherit;--m-wash-2:inherit;
+  --accent:inherit;--accent-soft:inherit;--m-green:inherit;--m-on-green:inherit;--m-green-soft:inherit;
+  --card:inherit;--card-2:inherit;--card-3:inherit;--border:inherit;--border-strong:inherit;--separator:inherit;--sheet-bg:inherit;
+  background:var(--card)!important;color:var(--text)!important;background-image:none!important;border-color:var(--border)!important
+}
+#screen-home .screen-fixed{border-bottom:1px solid var(--border)!important}
+.bottom-nav{border-top:1px solid var(--border)!important}
+#screen-home .home-bottom-hero,#screen-menu .menu-hero,.account-hero{border:1px solid var(--border)!important}
+.candidate-cta{background:var(--accent)!important;color:var(--m-on-ink)!important;border-color:var(--accent)!important}
+
+/* Home header, filters, and quick stats. */
+#screen-home .logo-text{color:var(--text)!important}
+#screen-home .logo-slogan{color:var(--text-2)!important}
+#screen-home .search-inner{background:var(--card)!important;color:var(--text)!important;border:1.5px solid var(--border)!important;box-shadow:var(--shadow-sm)}
+#screen-home .search-inner input{color:var(--text)!important}
+#screen-home .search-inner input::placeholder{color:var(--text-3)!important}
+#screen-home .search-inner svg{stroke:var(--text-2)!important;color:var(--text-2)!important}
+#screen-home .home-filter-chip{background:var(--accent-soft)!important;color:var(--accent)!important;border:1px solid var(--border)!important}
+#screen-home .home-filter-chip small{color:var(--text-2)!important}
+#screen-home .home-filter-chip:hover,#screen-home .home-filter-chip:focus-visible,#screen-home .home-filter-chip.active{background:var(--accent)!important;color:var(--m-on-ink)!important;border-color:var(--accent)!important}
+#screen-home .home-filter-chip:hover small,#screen-home .home-filter-chip.active small{color:var(--m-on-ink)!important}
+#screen-home .stat-card{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;box-shadow:var(--shadow-sm)!important}
+#screen-home .stat-card *{color:inherit}
+#screen-home .stat-card:hover,#screen-home .stat-card:focus-visible{background:var(--accent)!important;color:var(--m-on-ink)!important;border-color:var(--accent)!important}
+#screen-home .stat-card:hover *{color:var(--m-on-ink)!important}
+#screen-home .stat-arrow{color:var(--accent)!important}
+.stats-scroll-btn,#screen-home .stats-scroll-btn{background:var(--card)!important;color:var(--accent)!important;border:1px solid var(--border)!important}
+.header-install-btn{background:var(--m-ink)!important;color:var(--m-on-ink)!important;border:1px solid var(--m-ink)!important}
+.site-menu-trigger{background:var(--m-ink)!important;border:2px solid var(--m-ink)!important;color:var(--m-on-ink)!important}
+.site-menu-trigger span{background:var(--m-on-ink)!important}
+#screen-home .theme-toggle,#screen-menu .theme-toggle,#screen-menu .menu-more-btn,.theme-toggle,.menu-more-btn,.screen-close-btn,.screen-back-btn{
+  background:var(--card-2)!important;color:var(--accent)!important;border:1px solid var(--border)!important
+}
+
+/* Primary actions use the public-page blue; secondary actions stay quiet. */
+.btn-primary,.sheet-submit,.vac-apply,.manager-add-btn,.pool-contact-btn,.candidate-cta,
+.quick-card-employers .quick-card-actions button:last-child,#screen-home .home-community-card>button,
+.header-install-btn,.update-banner button,.retry-banner button{
+  background:var(--m-ink)!important;color:var(--m-on-ink)!important;border-color:var(--m-ink)!important
+}
+.vac-apply-secondary,.btn-secondary,.quick-card-actions button,.vac-load-more,.spotlight-mini-head>button,#screen-home .stats-scroll-btn{
+  color:var(--m-ink)!important;border-color:var(--m-ink)!important
+}
+.vac-apply-secondary:hover,.btn-secondary:hover,.quick-card-actions button:hover,.vac-load-more:hover{background:var(--m-ink)!important;color:var(--m-on-ink)!important}
+.vacancy-overview-filter.active,.vac-filter-chip.active,.chip.active,.sub-tab.active,.seg-btn.active,.tab.active{
+  background:var(--m-ink)!important;color:var(--m-on-ink)!important;border-color:var(--m-ink)!important
+}
+.screen-scroll a:not(.btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn),
+.quick-access-label,.section-kicker,.eyebrow,.spotlight-more-copy,.vac-folder-count,.hub-row-cta,.pool-mini-link,
+.account-signin-copy a,.gate-terms-link{color:var(--m-ink)!important}
+.vac-folder-icon,.quick-card-icon,.vac-detail-icon,.wa-tile{background:var(--m-wash-2)!important;color:var(--m-ink)!important}
+input:focus,select:focus,textarea:focus,.search-inner:focus-within{border-color:var(--m-ink)!important;box-shadow:0 0 0 3px var(--m-wash-2)!important}
+:focus-visible{outline-color:var(--m-ink)!important}
+#screen-home .screen-fixed :focus-visible,.bottom-nav :focus-visible,.site-menu-drawer :focus-visible,#screen-menu .menu-hero :focus-visible{outline-color:var(--m-ink)!important}
+input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--m-ink)!important}
+
+/* Menus and navigation use white cards with blue active states. */
+.bottom-nav .navbtn,.bottom-nav .navbtn .navbtn-label{color:var(--text-2)!important}
+.bottom-nav .navbtn svg{stroke:var(--text-2)!important;color:var(--text-2)!important}
+.bottom-nav .navbtn.active,.bottom-nav .navbtn.active .navbtn-label{color:var(--m-ink)!important;font-weight:800}
+.bottom-nav .navbtn.active svg{stroke:var(--m-ink)!important;color:var(--m-ink)!important}
+.bottom-nav .navbtn.active{box-shadow:inset 0 3px 0 var(--m-ink)!important;background:var(--m-wash)!important}
+.site-menu-drawer a,.site-menu-drawer button,.site-menu-nav-item{color:var(--text)!important}
+.site-menu-nav-item{border:1px solid var(--border)!important;background:var(--card-2)!important}
+.site-menu-nav-item:hover,.site-menu-nav-item:focus-visible{background:var(--m-wash-2)!important;color:var(--m-ink)!important}
+.site-menu-nav-item:hover *{color:var(--m-ink)!important}
+.site-menu-nav-icon{background:var(--m-wash)!important;color:var(--m-ink)!important;border:1px solid var(--border)!important}
+.site-menu-nav-item:hover .site-menu-nav-icon{background:var(--m-ink)!important;color:var(--m-on-ink)!important}
+#screen-menu .menu-hero .track-card{background:var(--card-2)!important;border:1px solid var(--border)!important;color:var(--text)!important}
+.site-menu-drawer.open,.site-menu-drawer[aria-hidden="false"],.site-menu.open .site-menu-drawer{border-left:2px solid var(--border)!important}
+
+/* Splash and image treatments keep the blue mark in its original colours. */
+#app-splash .sa-splash-dots span{background:var(--m-ink)!important}
+#app-splash .sa-splash-title{color:var(--text)!important}
+#app-splash .sa-splash-sub{color:var(--text-2)!important}
+#app-splash img{box-shadow:0 10px 30px -14px color-mix(in srgb,var(--m-ink) 42%,transparent)!important}
+img,.vac-logo,.hub-row-avatar img,.profile-avatar-ios img{filter:none!important}
+
+/* Keep semantic success and safety states distinct from the blue brand. */
+.verified-check,.verified-tag,html body span.verified-check,html body .verified-tag,html body .verified-tag span{color:var(--success)!important}
+.verified-check svg path:nth-child(2){stroke:var(--m-on-green)}
+.contact-warning{background:linear-gradient(135deg,#d32f2f,#b71c1c)!important}
+
+/* CV Box primary download action follows the same blue brand. */
+html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn{
+  background:var(--m-ink)!important;color:var(--m-on-ink)!important;-webkit-text-fill-color:var(--m-on-ink)!important;border-color:var(--m-ink)!important;
+  box-shadow:0 6px 16px color-mix(in srgb,var(--m-ink) 28%,transparent)!important
+}
+html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:hover{box-shadow:0 8px 20px color-mix(in srgb,var(--m-ink) 34%,transparent)!important}

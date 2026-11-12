@@ -44,14 +44,14 @@ window.sentryOnLoad = function () {
      styles.css (loaded async below) has a chance to arrive. This is what
      stops the raw unstyled shell (zeroed stat cards, plain-text banners)
      from ever being visible on load / refresh / relaunch from idle. -->
-<style id="critical-shell-css">:root,[data-theme="light"]{--m-ink:#000;--m-on-ink:#fff;--m-wash:rgba(0,0,0,.05);--m-wash-2:rgba(0,0,0,.09);--mono-photo-filter:none}[data-theme="dark"]{--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}@media (prefers-color-scheme:dark){:root:not([data-theme]){--m-ink:#fff;--m-on-ink:#000;--m-wash:rgba(255,255,255,.07);--m-wash-2:rgba(255,255,255,.12)}}
+<style id="critical-shell-css">:root,[data-theme="light"]{--m-ink:#1769cf;--m-on-ink:#fff;--m-wash:rgba(23,105,207,.08);--m-wash-2:rgba(23,105,207,.12);--mono-photo-filter:none}[data-theme="dark"]{--m-ink:#1769cf;--m-on-ink:#fff;--m-wash:rgba(23,105,207,.14);--m-wash-2:rgba(23,105,207,.2)}@media (prefers-color-scheme:dark){:root:not([data-theme]){--m-ink:#1769cf;--m-on-ink:#fff;--m-wash:rgba(23,105,207,.14);--m-wash-2:rgba(23,105,207,.2)}}
 
   @font-face{font-family:'Inter Fallback';src:local('Arial'),local('Helvetica');size-adjust:107.4%;ascent-override:90.2%;descent-override:22.5%;line-gap-override:0%;font-display:swap}
   html,body{margin:0;min-height:100%}
-  [data-theme="light"] body{background:#f3f3f3}
+  [data-theme="light"] body{background:#fff}
   [data-theme="dark"] body{background:#000000}
   #app-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity .25s ease}
-  [data-theme="light"] #app-splash{background:#f3f3f3}
+  [data-theme="light"] #app-splash{background:#fff}
   [data-theme="dark"] #app-splash{background:#000000}
   #app-splash .sa-splash-inner{display:flex;flex-direction:column;align-items:center}
   #app-splash img{width:76px;height:76px;border-radius:20px;box-shadow:0 10px 40px -12px rgba(0,0,0,0.5);animation:sa-splash-pulse 1.4s ease-in-out infinite}
@@ -117,7 +117,7 @@ window.sentryOnLoad = function () {
 
 <!-- PWA / Manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000" id="meta-theme">
+<meta name="theme-color" content="#1769cf" id="meta-theme">
 
 <!-- Favicons (single logo source: icons/icon-*.png) -->
 <link rel="icon" href="/favicon-v2.ico" sizes="48x48">
@@ -193,14 +193,14 @@ window.sentryOnLoad = function () {
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
-<script src="vendor/supabase.min.js?v=f1052e87a7" defer></script>
-<link rel="preload" as="style" href="styles.css?v=home-clean-2">
-<link rel="stylesheet" href="styles.css?v=home-clean-2" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<script src="vendor/supabase.min.js?v=1669864144" defer></script>
+<link rel="preload" as="style" href="styles.css?v=blue-brand-1">
+<link rel="stylesheet" href="styles.css?v=blue-brand-1" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="mono.css?v=mono-7" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=home-clean-2"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=mono-7"></noscript>
+<link rel="stylesheet" href="mono.css?v=blue-app-2" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=blue-app-2"></noscript>
 </head>
 <body>
 
@@ -1563,7 +1563,7 @@ window.sentryOnLoad = function () {
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=58f1a2e92a"></script>
+<script type="module" src="app.bundle.min.js?v=3993a42e56"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
 <script src="app-alerts.js?v=al-6" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

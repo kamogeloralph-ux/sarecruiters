@@ -12,3 +12,8 @@
 - **Home card presentation:** Reuse the Quick Access candidate/employer card structure and actions in “Take your next step,” with reduced padding, icon, typography, and button dimensions so the two home sections read as one system.
 - **Vacancy alerts:** Keep the saved-search alerts card compact and align its width with the other centered account cards.
 - **Project structure:** `index.html` owns static screen/menu markup, `app-ui.js` owns the shared Home CV Box entry point and Home card rendering, and `styles.css` owns shared and compact card presentation. The existing `app-sheets.js` CV Box application remains the single source of registration/edit behavior.
+
+
+## App-wide blue brand refresh
+
+Carry the public pages’ blue-and-white brand through the app using the existing blue mark and shared app theme tokens. In light mode, use white and very light blue-gray surfaces, dark readable text, and the same brand blue for navigation, focus, links, buttons, selected states, and highlights. Keep the existing manual dark-mode option, but use the same blue brand accent and matching logo there. Recolor every shared SA Recruiters app/PWA logo variant without changing the mark silhouette or the PWA maskable safe area; keep the dedicated monochrome notification-mask icons monochrome. Update browser chrome and install metadata to match.

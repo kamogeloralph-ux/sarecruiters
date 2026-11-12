@@ -21,8 +21,8 @@
     "browser"
   ],
   "orientation": "portrait-primary",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "theme_color": "#1769cf",
   "prefer_related_applications": false,
   "related_applications": [],
   "edge_side_panel": {
