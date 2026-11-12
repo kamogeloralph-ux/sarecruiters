@@ -427,3 +427,59 @@ html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn{
   box-shadow:0 6px 16px color-mix(in srgb,var(--m-ink) 28%,transparent)!important
 }
 html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:hover{box-shadow:0 8px 20px color-mix(in srgb,var(--m-ink) 34%,transparent)!important}
+
+
+/* Visibility and contrast repair: preserve semantic colors while making small controls easy to scan. */
+.app :is(.navbtn,.quick-card-icon,.stat-icon,.mi-icon,.theme-toggle,.menu-more-btn,.screen-close-btn,.screen-back-btn,.icon-btn,.directory-title-icon,.contact-card-icon,.hub-contact-icon,.vac-detail-icon,.vx-icon-btn,.vx-field,.alert-optin-title) svg{
+  opacity:1!important;
+  stroke-width:2.1!important
+}
+.app .bottom-nav .navbtn svg{display:block!important;width:25px!important;height:25px!important;stroke-width:2.3!important}
+.app .quick-card-icon svg,.app .stat-icon svg{width:23px!important;height:23px!important}
+.app .mi-icon svg,.app .theme-toggle svg,.app .menu-more-btn svg,.app .screen-close-btn svg,.app .screen-back-btn svg{width:20px!important;height:20px!important}
+.site-menu-nav-icon{font-size:19px!important;font-weight:800!important;opacity:1!important}
+
+/* Give the light/dark bottom bars strong icon contrast without using a low-contrast blue-on-blue state. */
+[data-theme="light"] .bottom-nav{background:#fff!important;border-top:1px solid #dbe4f0!important}
+[data-theme="dark"] .bottom-nav{background:#111b2a!important;border-top:1px solid #33445a!important}
+[data-theme="light"] .bottom-nav .navbtn:not(.active),
+[data-theme="light"] .bottom-nav .navbtn:not(.active) .navbtn-label{color:#475569!important;opacity:1!important}
+[data-theme="light"] .bottom-nav .navbtn:not(.active) svg{color:#475569!important;stroke:#475569!important;opacity:1!important}
+[data-theme="light"] .bottom-nav .navbtn.active,
+[data-theme="light"] .bottom-nav .navbtn.active .navbtn-label{color:#1769cf!important;opacity:1!important}
+[data-theme="light"] .bottom-nav .navbtn.active{background:#eaf2ff!important;box-shadow:inset 0 2px 0 #1769cf!important}
+[data-theme="light"] .bottom-nav .navbtn.active svg{color:#1769cf!important;stroke:#1769cf!important;opacity:1!important}
+[data-theme="dark"] .bottom-nav .navbtn:not(.active),
+[data-theme="dark"] .bottom-nav .navbtn:not(.active) .navbtn-label{color:#d5e2f1!important;opacity:1!important}
+[data-theme="dark"] .bottom-nav .navbtn:not(.active) svg{color:#d5e2f1!important;stroke:#d5e2f1!important;opacity:1!important}
+[data-theme="dark"] .bottom-nav .navbtn.active,
+[data-theme="dark"] .bottom-nav .navbtn.active .navbtn-label{color:#8bbaff!important;opacity:1!important}
+[data-theme="dark"] .bottom-nav .navbtn.active{background:rgba(90,155,255,.16)!important;box-shadow:inset 0 2px 0 #8bbaff!important}
+[data-theme="dark"] .bottom-nav .navbtn.active svg{color:#8bbaff!important;stroke:#8bbaff!important;opacity:1!important}
+
+/* Render visible bars (empty inline spans otherwise collapse to zero size) in a clear, reachable control. */
+#screen-home .site-menu-trigger,.screen:not(#screen-home) .site-menu-trigger{
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+  width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;padding:7px!important;
+  border:2px solid #1769cf!important;border-radius:14px!important;background:#fff!important;color:#1769cf!important;
+  box-shadow:0 4px 14px rgba(10,44,90,.24)!important;opacity:1!important
+}
+#screen-home .site-menu-trigger span,.screen:not(#screen-home) .site-menu-trigger span{
+  display:block!important;flex:0 0 3px!important;width:22px!important;height:3px!important;min-height:3px!important;
+  border-radius:999px!important;background:#1769cf!important;opacity:1!important
+}
+#screen-home .site-menu-trigger:focus-visible,.screen:not(#screen-home) .site-menu-trigger:focus-visible{outline:3px solid #1769cf!important;outline-offset:3px!important}
+#screen-home .site-menu-trigger:hover,.screen:not(#screen-home) .site-menu-trigger:hover{box-shadow:0 6px 18px rgba(10,44,90,.32)!important;transform:translateY(-1px)}
+
+/* Make the donation CTA's key wording visible immediately instead of white-on-white marquee text. */
+#screen-home .home-bottom-hero .support-ticker,#screen-menu .menu-hero .support-ticker{
+  height:38px!important;border:1px solid rgba(23,105,207,.28)!important;border-radius:999px!important;
+  background:#fff!important;box-shadow:0 4px 12px rgba(10,44,90,.14)!important
+}
+#screen-home .home-bottom-hero .support-ticker-item,#screen-menu .menu-hero .support-ticker-item{
+  position:static!important;display:block!important;width:100%!important;height:100%!important;padding:0 12px!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;line-height:36px!important;
+  color:#1769cf!important;font-size:12px!important;font-weight:800!important;letter-spacing:0!important;animation:none!important
+}
+#screen-home .home-bottom-hero .support-ticker:focus-visible,#screen-menu .menu-hero .support-ticker:focus-visible{outline:3px solid #fff!important;outline-offset:3px!important}
+@media(prefers-reduced-motion:reduce){.site-menu-trigger,.bottom-nav .navbtn{transition:none!important;transform:none!important}}

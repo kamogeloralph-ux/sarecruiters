@@ -17,3 +17,8 @@
 ## App-wide blue brand refresh
 
 Carry the public pages’ blue-and-white brand through the app using the existing blue mark and shared app theme tokens. In light mode, use white and very light blue-gray surfaces, dark readable text, and the same brand blue for navigation, focus, links, buttons, selected states, and highlights. Keep the existing manual dark-mode option, but use the same blue brand accent and matching logo there. Recolor every shared SA Recruiters app/PWA logo variant without changing the mark silhouette or the PWA maskable safe area; keep the dedicated monochrome notification-mask icons monochrome. Update browser chrome and install metadata to match.
+
+
+### Visibility and contrast polish
+
+Keep app icons crisp across light and dark modes by restoring full opacity, slightly increasing small icon size/stroke weight, and using contrast-appropriate navigation colors without erasing semantic success, warning, or danger colors. Make the Home and Menu support ticker text legible on a solid white pill with blue type. Render the hamburger as three visible blue bars in a white, high-contrast 48px control; preserve its existing open/close behavior, add clear focus feedback, and keep the drawer/backdrop visible above app screens at mobile and desktop widths.

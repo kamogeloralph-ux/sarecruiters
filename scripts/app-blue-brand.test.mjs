@@ -56,3 +56,24 @@ test('all app install icons are colored, maskable assets retain their purpose, a
   assert.match(read('sw.js'), /v2-icon-192\.png/);
   assert.match(read('index.html'), /href="icons\/v2-icon-512\.png"/);
 });
+
+test('app icons, support wording, and the site-menu trigger remain visible and operable', () => {
+  const brand = read('mono.css');
+  const shell = read('index.html');
+  const ui = read('app-ui.js');
+  const serviceWorker = read('sw.js');
+
+  assert.match(brand, /\.app :is\([\s\S]*?svg\{\s*opacity:1!important;\s*stroke-width:2\.1!important/);
+  assert.match(brand, /\.app \.bottom-nav \.navbtn svg\{display:block!important;width:25px!important;height:25px!important;stroke-width:2\.3!important\}/);
+  assert.match(brand, /#screen-home \.site-menu-trigger span,.screen:not\(#screen-home\) \.site-menu-trigger span\{\s*display:block!important;[\s\S]*?width:22px!important;height:3px!important/);
+  assert.match(brand, /#screen-home \.home-bottom-hero \.support-ticker-item,#screen-menu \.menu-hero \.support-ticker-item\{[\s\S]*?color:#1769cf!important;[\s\S]*?animation:none!important/);
+  assert.match(brand, /background:#fff!important;box-shadow:0 4px 12px rgba\(10,44,90,\.14\)!important/);
+  assert.match(brand, /\[data-theme="light"\] \.bottom-nav \.navbtn\.active[\s\S]*?color:#1769cf!important/);
+  assert.match(brand, /\[data-theme="dark"\] \.bottom-nav \.navbtn:not\(\.active\)[\s\S]*?color:#d5e2f1!important/);
+  assert.equal((shell.match(/class="support-ticker"/g) || []).length, 2);
+  assert.equal((shell.match(/onkeydown="if\(event\.key==='Enter'\|\|event\.key===' '\)/g) || []).length, 2);
+  assert.match(shell, /mono\.css\?v=visibility-1/);
+  assert.match(ui, /drawer\.classList\.add\('is-open'\)/);
+  assert.match(ui, /backdrop\.classList\.add\('is-visible'\)/);
+  assert.match(serviceWorker, /const VERSION = 'sa-recruiters-visibility1'/);
+});

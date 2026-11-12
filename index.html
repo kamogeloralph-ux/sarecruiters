@@ -199,8 +199,8 @@ window.sentryOnLoad = function () {
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="mono.css?v=blue-app-2" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=blue-app-2"></noscript>
+<link rel="stylesheet" href="mono.css?v=visibility-1" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-1"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=visibility-1"></noscript>
 </head>
 <body>
 
@@ -315,7 +315,7 @@ window.sentryOnLoad = function () {
         <img src="icons/menu-logo-100.webp" alt="SA Recruiters logo" width="50" height="50" loading="lazy" decoding="async">
         <div><strong>SA Recruiters</strong><span>Connecting South Africa's Recruitment Community.</span></div>
       </div>
-      <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory — view donation details">
+      <div class="support-ticker" data-ripple onclick="openContentSheet('support')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openContentSheet('support')}" role="button" tabindex="0" aria-label="Support the directory — view donation details">
         <span class="support-ticker-item">💙 Support the Directory to keep it running — Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
       </div>
     </section>
@@ -495,7 +495,7 @@ window.sentryOnLoad = function () {
     </header>
 
     <!-- ===== Support ticker ===== -->
-    <div class="support-ticker" data-ripple onclick="openContentSheet('support')" role="button" tabindex="0" aria-label="Support the directory &#8212; view donation details">
+    <div class="support-ticker" data-ripple onclick="openContentSheet('support')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openContentSheet('support')}" role="button" tabindex="0" aria-label="Support the directory &#8212; view donation details">
       <span class="support-ticker-item">&#128153; Support the Directory to keep it running &#8212; Acc: 2573389037 - Capitec Bank (SA Recruiters)</span>
     </div>
     </div>

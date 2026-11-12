@@ -36,3 +36,9 @@
 - [x] App screens, cards, navigation, menus, forms, dialogs, and selected/focus states use the same blue accent and the white/light surface style of the public pages in light mode; the existing optional dark mode remains usable with the same blue brand accent.
 - [x] Every in-app SA Recruiters mark, favicon, installed/PWA icon, share/preview logo, and notification icon uses the blue logo; maskable icons keep their safe-area composition and monochrome mask icons keep their required monochrome treatment.
 - [x] App browser-theme and install metadata use the new blue/white palette.
+
+## App visibility and contrast follow-up
+
+- [x] Small app icons across navigation, cards, controls, and sheets are crisp and clearly visible in light and dark modes, with slightly stronger size/stroke/opacity while preserving semantic colors.
+- [x] The “Support the Directory” message is readable against its ticker background in both the Home footer section and hamburger Menu hero, including narrow screens and reduced-motion mode.
+- [x] The Home hamburger visibly renders three high-contrast bars inside a clear, accessible touch target; it opens the site drawer above the page, and close/backdrop/keyboard-focus states remain visible across responsive layouts and themes.
