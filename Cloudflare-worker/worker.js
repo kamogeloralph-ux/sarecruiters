@@ -1147,8 +1147,12 @@ const CV_BOX_GENERIC_ROLES = new Set([
   "open to opportunities", "open to work", "any job", "any position", "looking for work",
   "cv box", "n/a", "not specified", "other"
 ]);
+function cvBoxPublicSector(value) {
+  const sector = String(value || "").trim();
+  return sector.toLowerCase() === "cv box" ? "Other" : sector;
+}
 function cvBoxCandidateIsComplete(candidate) {
-  const sector = String(candidate.sector || "").trim().toLowerCase();
+  const sector = cvBoxPublicSector(candidate.sector).toLowerCase();
   const role = String(candidate.position || "").trim();
   const location = String(candidate.location || "").trim();
   const experience = Number(candidate.experience_years);
@@ -1176,7 +1180,9 @@ async function cvBoxResponse(request, env, origin) {
     return json({ error: "CV Box could not be loaded" }, 502, origin);
   }
   if (!Array.isArray(result.body)) return json({ error: "CV Box returned an invalid response" }, 502, origin);
-  let candidates = result.body.filter((row) => (row.status || "pending") === "active");
+  let candidates = result.body
+    .filter((row) => (row.status || "pending") === "active")
+    .map((row) => ({ ...row, sector: cvBoxPublicSector(row.sector) }));
   // Availability and timestamps are deliberately omitted from the redacted
   // view. Read only these public-safe fields with the Worker service key; no
   // contact information or CV links ever leave this handler.

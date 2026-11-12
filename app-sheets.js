@@ -1276,7 +1276,8 @@ export function fillPoolFormFromCandidate(c) {
   resetPoolPhoto(safePhotoUrl || null);
   document.getElementById('pool-phone').value = c.contact_phone || '';
   document.getElementById('pool-email').value = c.contact_email || '';
-  document.getElementById('pool-sector').value = c.sector || '';
+  var sector = String(c.sector || '').trim();
+  document.getElementById('pool-sector').value = sector.toLowerCase() === 'cv box' ? 'Other' : sector;
   document.getElementById('pool-position').value = c.position || '';
   document.getElementById('pool-location').value = c.location || '';
   document.getElementById('pool-gender').value = c.gender || '';

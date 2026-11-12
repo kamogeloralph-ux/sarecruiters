@@ -215,6 +215,13 @@ test('CV Box feed only shows complete standardized profiles and prioritizes veri
   assert.match(css, /\.pool-mini-activity/);
 });
 
+test('legacy CV Box sector records remain visible as Other and prefill the standardized edit option', () => {
+  assert.match(worker, /function cvBoxPublicSector\(value\)/);
+  assert.match(worker, /sector\.toLowerCase\(\) === "cv box" \? "Other" : sector/);
+  assert.match(worker, /map\(\(row\) => \(\{ \.\.\.row, sector: cvBoxPublicSector\(row\.sector\) \}\)\)/);
+  assert.match(appSheets, /sector\.toLowerCase\(\) === 'cv box' \? 'Other' : sector/);
+});
+
 test('CV Box upload entry is compact, follows search, and hides for recruiter or employer sessions', () => {
   assert.ok(html.indexOf('id="pool-filters"') < html.indexOf('id="cv-box-actions"'));
   assert.match(appSheets, /function syncCvBoxActionsVisibility\(/);
