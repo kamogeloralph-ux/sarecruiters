@@ -139,8 +139,8 @@ test('CV Box no longer collects or shows Mini-CV details publicly', () => {
 
 test('admin CV Box keeps only approve, edit and a slim uploader form', () => {
   const sheet = admin.slice(admin.indexOf('id="pool-overlay"'), admin.indexOf('CONTENT ARTICLE SHEET'));
-  for (const id of ['pc-name', 'pc-photo', 'pc-position', 'pc-email', 'pc-cv', 'pc-status', 'pc-location', 'pc-experience', 'pc-availability', 'pc-phone']) assert.match(sheet, new RegExp(`id="${id}"`));
-  for (const id of ['pc-sector', 'pc-gender', 'pc-grade12', 'pc-criminal', 'pc-qualification', 'pc-drivers-license', 'pc-transport', 'pc-relocate', 'pc-employment', 'pc-salary', 'pc-work-authorized', 'pc-about', 'pc-payref', 'pc-paiduntil', 'pc-notes']) {
+  for (const id of ['pc-name', 'pc-photo', 'pc-position', 'pc-sector', 'pc-email', 'pc-cv', 'pc-status', 'pc-location', 'pc-experience', 'pc-availability', 'pc-phone']) assert.match(sheet, new RegExp(`id="${id}"`));
+  for (const id of ['pc-gender', 'pc-grade12', 'pc-criminal', 'pc-qualification', 'pc-drivers-license', 'pc-transport', 'pc-relocate', 'pc-employment', 'pc-salary', 'pc-work-authorized', 'pc-about', 'pc-payref', 'pc-paiduntil', 'pc-notes']) {
     assert.doesNotMatch(sheet, new RegExp(`id="${id}"`), `${id} removed`);
   }
   assert.doesNotMatch(sheet, /Mini CV questions/);
@@ -167,11 +167,30 @@ test('CV Box cards show location, experience and availability before payment, an
 });
 
 test('admin CV Box sheet edits location, experience, availability and phone', () => {
-  for (const id of ['pc-location', 'pc-experience', 'pc-availability', 'pc-phone']) {
+  for (const id of ['pc-location', 'pc-experience', 'pc-availability', 'pc-phone', 'pc-sector']) {
     assert.equal((admin.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1, `${id} appears once`);
   }
   assert.match(admin, /location:location,\s*experience_years:parseInt\(experience, 10\),\s*availability:availability/);
   assert.match(admin, /contact_phone:document\.getElementById\('pc-phone'\)\.value\.trim\(\)/);
+  assert.match(admin, /sector:sector/);
+  assert.match(admin, /Choose a sector from the standardized list/);
+});
+
+test('admin CV Box shows profile activity and reconfirmation status using the public sector taxonomy', () => {
+  const adminSectors = admin.match(/var ADMIN_CV_BOX_SECTORS = \[([\s\S]*?)\];/);
+  const publicSectors = appSheets.match(/export var CV_BOX_SECTORS = \[([\s\S]*?)\];/);
+  assert.ok(adminSectors && publicSectors, 'both CV Box sector catalogs exist');
+  const values = (body) => Array.from(body.matchAll(/'([^']+)'/g), (match) => match[1]);
+  assert.deepEqual(values(adminSectors[1]), values(publicSectors[1]));
+  assert.match(admin, /availability_confirmed_at,availability_expires_at,profile_updated_at/);
+  assert.match(admin, /function poolAdminActivityLabel\(candidate\)/);
+  assert.match(admin, /function poolAdminAvailabilityStatus\(candidate\)/);
+  assert.match(admin, /Needs reconfirmation · expired/);
+  assert.match(admin, /select\.value = mapped \|\| \(raw \? 'Other' : ''\)/);
+  assert.match(admin, /id="pc-activity-summary" hidden/);
+  assert.match(admin, /id="pc-profile-updated"/);
+  assert.match(admin, /id="pc-availability-status"/);
+  assert.match(admin, /class="pool-admin-meta"/);
 });
 
 test('in-app browsers (Facebook) ignore the safe-area inset so the bottom nav is not stretched', () => {

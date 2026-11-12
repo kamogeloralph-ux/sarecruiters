@@ -333,6 +333,10 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .house-ad-admin-thumb{background:var(--card-2);border:1px solid var(--border)}
 .house-ad-admin-thumb img{width:100%;height:100%;object-fit:cover}
 .house-ad-admin-row .row-title .badge{margin-left:5px}
+.pool-admin-meta{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:3px;color:var(--text-2);font-size:11px;line-height:1.4}
+.pool-admin-meta .needs-reconfirmation{color:var(--danger);font-weight:700}
+.pool-admin-activity{display:grid;gap:5px;margin:-6px 0 14px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card-2);color:var(--text-2);font-size:12px;line-height:1.4}
+.pool-admin-activity strong{margin-right:4px;color:var(--text)}
 </style>
 <style>.house-ad-screen-options{display:flex;flex-wrap:wrap;gap:8px 14px;padding-top:6px}.house-ad-screen-options label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-2)}.house-ad-screen-options input{accent-color:var(--accent)}</style>
 </head>
@@ -716,9 +720,11 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Profile photo <span id="pc-photo-req">*</span></label><input type="file" id="pc-photo" accept="image/*" onchange="handlePoolPhoto(event)"></div>
     <div id="pc-photo-preview" style="display:none;margin-bottom:12px"><img id="pc-photo-img" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:1px solid var(--border)"></div>
     <div class="field"><label>Position *</label><input id="pc-position"></div>
+    <div class="field"><label for="pc-sector">Sector *</label><select id="pc-sector"><option value="">Choose a standardized sector…</option><option>Accounting &amp; Finance</option><option>Administration &amp; Office Support</option><option>Agriculture &amp; Farming</option><option>Arts &amp; Media</option><option>Construction &amp; Engineering</option><option>Customer Service &amp; Call Centre</option><option>Education &amp; Training</option><option>Government &amp; Public Sector</option><option>Healthcare &amp; Social Care</option><option>Hospitality &amp; Tourism</option><option>Human Resources</option><option>Information Technology</option><option>Legal</option><option>Logistics &amp; Supply Chain</option><option>Manufacturing &amp; Production</option><option>Marketing &amp; Communications</option><option>Retail &amp; Sales</option><option>Security &amp; Safety</option><option>Skilled Trades</option><option>Transport &amp; Driving</option><option>Other</option></select></div>
     <div class="field"><label>Location *</label><input id="pc-location" placeholder="e.g. Durban, KwaZulu-Natal" maxlength="80"></div>
     <div class="field"><label>Years of experience *</label><select id="pc-experience"><option value="">Choose…</option><option value="0">No experience yet</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
     <div class="field"><label>Availability *</label><select id="pc-availability"><option value="">Choose…</option><option value="Immediately">Immediately</option><option value="Within 1 week">Within 1 week</option><option value="Within 2 weeks">Within 2 weeks</option><option value="Within 1 month">Within 1 month</option><option value="More than 1 month">More than 1 month</option></select></div>
+    <div class="pool-admin-activity" id="pc-activity-summary" hidden><div><strong>Profile activity:</strong><span id="pc-profile-updated"></span></div><div><strong>Availability status:</strong><span id="pc-availability-status"></span></div></div>
     <div class="field"><label>Phone / WhatsApp <span class="field-optional">sent to buyers after payment, never shown publicly</span></label><input id="pc-phone" type="tel" inputmode="tel" maxlength="20"></div>
     <div class="field"><label>Email <span class="field-optional">optional</span></label><input id="pc-email" type="email"></div>
     <div class="field"><label>CV link</label><input id="pc-cv" type="url" oninput="updatePoolCvOpenLink()"><a id="pc-cv-open" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:6px;font-size:13px;font-weight:700">Open CV ↗</a><button type="button" class="minibtn" id="pc-scan-btn" style="margin-top:8px" onclick="scanPoolCvFromSheet()">Scan CV &amp; add positions</button><div class="cv-scan-result" id="pc-scan-result"></div></div>
@@ -1269,12 +1275,11 @@ async function getJobEnquiries(){
   return [];
 }
 async function getPoolCandidates(){
-  var cols = 'id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,photo_url,verified,created_at';
-  var optional = ['photo_url','verified'];
+  var cols = 'id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,availability_confirmed_at,availability_expires_at,profile_updated_at,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,photo_url,verified,created_at';
+  var optional = ['profile_updated_at','availability_confirmed_at','availability_expires_at','photo_url','verified'];
   var { data, error } = await supabaseClient.from('pool_candidates').select(cols).order('created_at', { ascending: false });
-  // If photo_url and/or verified haven't been added yet (CREATE_POOL_PHOTOS.sql /
-  // CREATE_POOL_VERIFIED.sql not run), drop them one at a time and retry so
-  // the list still loads.
+  // If optional activity, photo or verification columns are not available yet,
+  // drop them one at a time and retry so the admin list still loads.
   while(error && /column|schema cache/i.test(error.message||'') && optional.length){
     var col = optional.shift();
     cols = cols.split(',').filter(function(c){ return c !== col; }).join(',');
@@ -2725,6 +2730,46 @@ var poolTab = 'pending';
 var editingPool = null;
 var editingSeeker = null;   // set while a job-seeker request is being converted to a CV Box profile
 function poolCandidateById(id){ return cache.poolCandidates.find(function(p){return p.id===id;}); }
+var ADMIN_CV_BOX_SECTORS = [
+  'Accounting & Finance', 'Administration & Office Support', 'Agriculture & Farming',
+  'Arts & Media', 'Construction & Engineering', 'Customer Service & Call Centre',
+  'Education & Training', 'Government & Public Sector', 'Healthcare & Social Care',
+  'Hospitality & Tourism', 'Human Resources', 'Information Technology', 'Legal',
+  'Logistics & Supply Chain', 'Manufacturing & Production', 'Marketing & Communications',
+  'Retail & Sales', 'Security & Safety', 'Skilled Trades', 'Transport & Driving', 'Other'
+];
+function poolAdminStandardSector(value){
+  var raw = String(value||'').trim();
+  if(!raw) return 'Sector not set';
+  return ADMIN_CV_BOX_SECTORS.find(function(sector){return sector.toLowerCase()===raw.toLowerCase();}) || 'Other';
+}
+function setPoolSector(value){
+  var select = document.getElementById('pc-sector');
+  if(!select) return;
+  var raw = String(value||'').trim();
+  var mapped = ADMIN_CV_BOX_SECTORS.find(function(sector){return sector.toLowerCase()===raw.toLowerCase();});
+  select.value = mapped || (raw ? 'Other' : '');
+}
+function poolAdminFormatDate(value){
+  var time = Date.parse(value||'');
+  return Number.isFinite(time) ? new Date(time).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : '';
+}
+function poolAdminActivityLabel(candidate){
+  var date = poolAdminFormatDate(candidate.profile_updated_at || candidate.created_at);
+  return date ? 'Profile updated '+date : 'Profile activity not recorded';
+}
+function poolAdminAvailabilityStatus(candidate){
+  var availability = String(candidate.availability||'').trim();
+  if(availability.toLowerCase() !== 'immediately') return availability || 'Availability not set';
+  var confirmedAt = candidate.availability_confirmed_at || candidate.created_at || '';
+  var confirmedTime = Date.parse(confirmedAt);
+  var expiresAt = candidate.availability_expires_at || (Number.isFinite(confirmedTime) ? new Date(confirmedTime + 30*86400000).toISOString() : '');
+  var expiresTime = Date.parse(expiresAt);
+  if(!Number.isFinite(expiresTime)) return 'Immediately · confirmation needed';
+  var expiresLabel = poolAdminFormatDate(expiresAt);
+  if(expiresTime <= Date.now()) return 'Needs reconfirmation · expired '+expiresLabel;
+  return 'Immediately · confirmed '+(poolAdminFormatDate(confirmedAt)||'date unavailable')+' · expires '+expiresLabel;
+}
 function switchPoolTab(tab){
   poolTab = tab;
   ['pending','active','other'].forEach(function(t){ document.getElementById('pool-tab-'+t).classList.toggle('active', t===tab); });
@@ -2742,11 +2787,13 @@ function renderPoolCandidates(){
   if(poolTab==='pending') list = list.filter(function(p){return (p.status||'pending')==='pending';});
   else if(poolTab==='active') list = list.filter(function(p){return p.status==='active';});
   else list = list.filter(function(p){return p.status==='expired'||p.status==='rejected';});
-  if(q){ list = list.filter(function(p){ var hay=((p.full_name||'')+' '+(p.position||'')).toLowerCase(); return hay.indexOf(q)!==-1; }); }
+  if(q){ list = list.filter(function(p){ var hay=((p.full_name||'')+' '+(p.position||'')+' '+(p.location||'')+' '+poolAdminStandardSector(p.sector)).toLowerCase(); return hay.indexOf(q)!==-1; }); }
   var el = document.getElementById('pool-admin-list');
   if(!list.length){ el.innerHTML = emptyState('Nothing here','No candidates in this view.'); return; }
   el.innerHTML = list.map(function(p){
-    var sub = [p.position, p.location, (p.experience_years===null||p.experience_years===undefined)?'':(p.experience_years>=10?'10+ yrs':p.experience_years+' yrs'), p.availability].filter(Boolean).join(' · ');
+    var availabilityStatus = poolAdminAvailabilityStatus(p);
+    var needsReconfirmation = /^Needs reconfirmation|^Immediately · confirmation needed/i.test(availabilityStatus);
+    var sub = [p.position, p.location, (p.experience_years===null||p.experience_years===undefined)?'':(p.experience_years>=10?'10+ yrs':p.experience_years+' yrs'), 'Sector: '+poolAdminStandardSector(p.sector)].filter(Boolean).join(' · ');
     var quickActions = '';
     if((p.status||'pending')==='pending'){
       quickActions = '<button class="minibtn ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Approve</button>' +
@@ -2763,7 +2810,7 @@ function renderPoolCandidates(){
     }
     return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#5E5CE6,#3D3AB8)">'+(p.photo_url ? '<img src="'+escapeHtml(p.photo_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg>')+'</div>'+
-      '<div class="row-main"><div class="row-title pool-name">'+escapeHtml(p.full_name||'Candidate')+(p.verified?' <span class="badge verified" style="white-space:nowrap">Screened &amp; Verified</span>':'')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div>'+poolScanNoteHtml(p)+'</div>'+
+      '<div class="row-main"><div class="row-title pool-name">'+escapeHtml(p.full_name||'Candidate')+(p.verified?' <span class="badge verified" style="white-space:nowrap">Screened &amp; Verified</span>':'')+'</div><div class="row-sub">'+escapeHtml(sub||'no details')+' · <em>'+escapeHtml(p.status||'pending')+'</em></div><div class="pool-admin-meta"><span class="'+(needsReconfirmation?'needs-reconfirmation':'')+'">'+escapeHtml(availabilityStatus)+'</span><span>'+escapeHtml(poolAdminActivityLabel(p))+'</span></div>'+poolScanNoteHtml(p)+'</div>'+
       '<div class="row-actions-inline">'+quickActions+
         '<button class="minibtn" onclick="stopProp(event);openPoolSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'+
         '<button class="minibtn danger" onclick="stopProp(event);deletePoolCandidate(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
@@ -2801,9 +2848,16 @@ function openPoolSheet(id){
   if (photoReq) photoReq.style.display = id ? 'none' : 'inline';
   document.getElementById('pc-email').value = p ? (p.contact_email||'') : '';
   document.getElementById('pc-phone').value = p ? (p.contact_phone||'') : '';
+  setPoolSector(p ? p.sector : '');
   document.getElementById('pc-location').value = p ? (p.location||'') : '';
   document.getElementById('pc-experience').value = (p && p.experience_years !== null && p.experience_years !== undefined) ? String(Math.min(10, Math.max(0, p.experience_years))) : '';
   setPoolAvailability(p ? p.availability : '');
+  var activitySummary = document.getElementById('pc-activity-summary');
+  if(activitySummary){
+    activitySummary.hidden = !p;
+    document.getElementById('pc-profile-updated').textContent = p ? poolAdminActivityLabel(p) : '';
+    document.getElementById('pc-availability-status').textContent = p ? poolAdminAvailabilityStatus(p) : '';
+  }
   document.getElementById('pc-position').value = p ? (p.position||'') : '';
   document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
   updatePoolCvOpenLink();
@@ -2838,6 +2892,8 @@ async function savePoolCandidate(){
   if(!position){ alert('Add the position the candidate wants to be considered for.'); return; }
   var location = document.getElementById('pc-location').value.trim();
   if(!location){ alert('Add the candidate\'s location.'); return; }
+  var sector = document.getElementById('pc-sector').value;
+  if(ADMIN_CV_BOX_SECTORS.indexOf(sector)===-1){ alert('Choose a sector from the standardized list.'); return; }
   var experience = document.getElementById('pc-experience').value;
   if(experience === ''){ alert('Choose the candidate\'s years of experience.'); return; }
   var availability = document.getElementById('pc-availability').value.trim();
@@ -2855,6 +2911,7 @@ async function savePoolCandidate(){
     photo_url:photoUrl,
     contact_email:document.getElementById('pc-email').value.trim(),
     contact_phone:document.getElementById('pc-phone').value.trim(),
+    sector:sector,
     location:location,
     experience_years:parseInt(experience, 10),
     availability:availability,
