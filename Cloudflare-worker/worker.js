@@ -1589,13 +1589,17 @@ async function cvDownloadResponse(request, env) {
 __name(cvDownloadResponse, "cvDownloadResponse");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  const dataVersion = await readPublicDataVersion(env);
-  const cacheKey = new Request(new URL(`/api/startup?schema=featured-vacancies-v13-live-cv-box&version=${dataVersion}`, request.url), request);
+  // Public traffic must not use D1 as a cache validator. The scheduled sync
+  // publishes the authoritative R2 snapshot; D1 is only a recovery source
+  // when no snapshot exists at all.
+  const cacheKey = new Request(new URL("/api/startup?schema=edge-first-v14", request.url), { method: "GET" });
+  let dataVersion = 0;
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
+    const version = Number.isSafeInteger(Number(payload?.data_version)) ? Number(payload.data_version) : 0;
     return new Response(body, { headers: {
       "Content-Type": "application/json; charset=utf-8", "Cache-Control": cacheControl,
-      "X-Data-Version": String(dataVersion), "Access-Control-Allow-Origin": "*",
+      "X-Data-Version": String(version), "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET,OPTIONS", "Access-Control-Allow-Headers": "Content-Type"
     }});
   }
@@ -1608,17 +1612,19 @@ async function startupResponse(request, env, ctx, origin) {
   }
   async function refreshAndCache() {
     let snapshot = await readPublicStartupSnapshot(env);
-    const snapshotHasVersion = snapshot && Number.isSafeInteger(Number(snapshot.data_version));
-    const snapshotFresh = !!(snapshot && (snapshotHasVersion ? Number(snapshot.data_version) === dataVersion : !env.DB));
-    if (snapshotFresh) {
-      if (!snapshot.counts || !snapshot.counts.provinces) snapshot = { ...snapshot, counts: { ...(snapshot.counts || {}), provinces: await loadProvinceCountsFromD1(env) } };
+    // Prefer R2 even when the snapshot is stale; exhausting D1 is worse than
+    // briefly serving the last successful public snapshot.
+    if (snapshot) {
+      dataVersion = Number(snapshot.data_version) || 0;
+      if (!snapshot.counts || !snapshot.counts.provinces) snapshot = { ...snapshot, counts: { ...(snapshot.counts || {}), provinces: {} } };
       const response = await buildResponse(snapshot);
       await cache.put(cacheKey, response.clone());
       return snapshot;
     }
     const source = env.DB ? await loadStartupDataFromD1(env) : await loadStartupDataOrFallback(env);
     if (!source) throw new Error("Public startup mirror unavailable");
-    const payload = { ...source, data_version: dataVersion };
+    const payload = { ...source, data_version: Number(source.data_version) || 0 };
+    dataVersion = payload.data_version;
     ctx.waitUntil(writePublicStartupSnapshot(env, payload).catch((e) => console.warn("Could not refresh public R2 startup snapshot", e)));
     const response = await buildResponse(payload);
     await cache.put(cacheKey, response.clone());
@@ -1628,10 +1634,9 @@ async function startupResponse(request, env, ctx, origin) {
   if (cached) {
     try {
       const payload = await cached.clone().json();
-      const sameVersion = Number(payload.data_version) === dataVersion;
       const ageSeconds = (Date.now() - new Date(payload.generated_at).getTime()) / 1e3;
-      if (sameVersion && ageSeconds < STARTUP_CACHE_TTL) return clientResponse(cached);
-      if (sameVersion && ageSeconds < STARTUP_STALE_TTL) {
+      if (ageSeconds < STARTUP_CACHE_TTL) return clientResponse(cached);
+      if (ageSeconds < STARTUP_STALE_TTL) {
         ctx.waitUntil(refreshAndCache().catch(() => {}));
         return clientResponse(cached);
       }
@@ -1653,26 +1658,27 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const hasOffset = url.searchParams.has("offset");
   const offset = Math.min(Math.max(Number(url.searchParams.get("offset") || 0) || 0, 0), 5000);
   const cursor = String(url.searchParams.get("cursor") || "");
-  const dataVersion = await readPublicDataVersion(env);
   const cache = caches.default;
   const cacheUrl = new URL(request.url);
-  cacheUrl.searchParams.set("__schema", "d1-v2-versioned");
-  cacheUrl.searchParams.set("__version", String(dataVersion));
+  // The R2 vacancy snapshot is refreshed by the scheduled sync. Do not make
+  // every public vacancy request spend a D1 row read validating a version.
+  cacheUrl.searchParams.set("__schema", "edge-first-v3");
   cacheUrl.searchParams.sort();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   function clientResponse(cachedResponse) {
     const headers = new Headers(cachedResponse.headers);
     headers.set("Cache-Control", "public, max-age=60");
     headers.append("Vary", "Origin");
-    headers.set("X-Data-Version", String(dataVersion));
     headers.set("Access-Control-Allow-Origin", origin || "*");
     return new Response(cachedResponse.body, { status: cachedResponse.status, statusText: cachedResponse.statusText, headers });
   }
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) return clientResponse(cached);
   const snapshot = await readPublicVacancySnapshot(env);
-  const snapshotHasVersion = snapshot && Number.isSafeInteger(Number(snapshot.data_version));
-  const snapshotFresh = !!(snapshot && (snapshotHasVersion ? Number(snapshot.data_version) === dataVersion : !env.DB));
+  // A snapshot is always preferable to a fresh D1 query for public traffic.
+  // The scheduled sync is responsible for refreshing it; stale data is safer
+  // than exhausting the account-wide D1 rows-read allowance.
+  const snapshotFresh = !!snapshot;
   const filterRows = (allRows) => {
     const dedicated = new Set(["himalayas", "adzuna", "government", "dpsa", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "learnerships", "careers_page"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
@@ -1722,9 +1728,9 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const page = hasMore ? paged.slice(0, limit) : paged;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? `${last.created_at || ""}|${last.id || ""}` : null;
-  const response = json({ vacancies: page, next_cursor: nextCursor, limit, data_version: dataVersion }, 200, origin);
+  const response = json({ vacancies: page, next_cursor: nextCursor, limit, data_version: Number(snapshot?.data_version) || 0 }, 200, origin);
   response.headers.set("Cache-Control", "public, max-age=86400");
-  response.headers.set("X-Data-Version", String(dataVersion));
+  response.headers.set("X-Data-Version", String(Number(snapshot?.data_version) || 0));
   await cache.put(cacheKey, response.clone());
   return clientResponse(response);
 }

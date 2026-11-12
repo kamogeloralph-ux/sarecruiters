@@ -41,24 +41,24 @@ test('the client sends the Supabase mutation representation through the admin Wo
   assert.match(worker, /row\.updated_at = new Date\(\)\.toISOString\(\)/);
 });
 
-test('public startup, vacancy and poster reads are versioned and bypass stale snapshots', () => {
+test('public startup and vacancy reads are edge-first and do not validate every request against D1', () => {
   assert.match(worker, /const PUBLIC_DATA_VERSION_KEY = "public_data_version"/);
   assert.match(worker, /ON CONFLICT\(key\) DO UPDATE SET value = CAST\(CAST\(sync_meta\.value AS INTEGER\) \+ 1 AS TEXT\)/);
-  assert.match(worker, /featured-vacancies-v13-live-cv-box&version=\$\{dataVersion\}/);
+  assert.match(worker, /schema=edge-first-v14/);
   assert.match(worker, /employer_id IS NOT NULL OR source_type IS NULL OR source_type NOT IN/);
-  assert.match(worker, /snapshot\.data_version\) === dataVersion/);
-  assert.match(worker, /schema=d1-v6-versioned&version=\$\{dataVersion\}/);
-  assert.match(worker, /data_version: dataVersion/);
-  assert.match(worker, /snapshotFresh = !!\(snapshot && \(snapshotHasVersion \? Number\(snapshot\.data_version\) === dataVersion/);
-  assert.match(worker, /SELECT \$\{columns\.join\(","\)\} FROM vacancies WHERE/);
-  assert.match(worker, /Cache-Control[^\n]*no-store/);
+  assert.match(worker, /Prefer R2 even when the snapshot is stale/);
+  assert.match(worker, /schema\", \"edge-first-v3\"/);
+  assert.match(worker, /const snapshotFresh = !!snapshot/);
   const startup = sourceBetween(worker, 'async function startupResponse(', '__name(startupResponse');
   assert.match(startup, /loadStartupDataFromD1\(env\)/);
+  assert.doesNotMatch(startup, /readPublicDataVersion\(env\)/);
   assert.doesNotMatch(startup, /syncD1FromSupabase|syncD1AndPublishSnapshot/);
   const vacancyPage = sourceBetween(worker, 'async function vacanciesResponse(', '__name(vacanciesResponse');
   assert.doesNotMatch(vacancyPage, /syncD1FromSupabase|syncD1AndPublishSnapshot/);
-  assert.match(vacancyPage, /__schema", "d1-v2-versioned"/);
-  assert.match(vacancyPage, /await cache\.put\(cacheKey, response\.clone\(\)\)/);
+  assert.doesNotMatch(vacancyPage, /readPublicDataVersion\(env\)/);
+  assert.match(vacancyPage, /__schema", "edge-first-v3"/);
+  assert.match(vacancyPage, /readPublicVacancySnapshot\(env\)/);
+  assert.match(vacancyPage, /await cache\.put\(cacheKey, response\.clone\(\)/);
 });
 
 test('browser boot prefers versioned Worker data, keeps static fallback, and vacancy pages try Worker first', () => {
