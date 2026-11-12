@@ -16,6 +16,8 @@ test('CV Box checkout uses server price and validates an active candidate CV', (
   assert.match(handler, /Idempotency-Key/);
   assert.match(handler, /pool_candidates\?/);
   assert.match(handler, /status: "eq\.active"/);
+  assert.match(handler, /position,sector,location,experience_years/);
+  assert.match(handler, /cvBoxCandidateIsComplete\(candidate\)/);
 });
 test('CV Box fulfillment verifies webhook signature freshness and Yoco payment', () => {
   assert.match(worker, /webhook-signature/);

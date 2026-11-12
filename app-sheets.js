@@ -9,7 +9,7 @@
  * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
-import { R2_WORKER_URL, __saManagerLinkMode, agenciesCache, canTrackPublicTraffic, escapeHtml, initials, saAuthUser, supabaseClient, trackEvent } from './app-core.js';
+import { R2_WORKER_URL, __saManagerLinkMode, agenciesCache, canTrackPublicTraffic, employerManagerMode, escapeHtml, initials, managerMode, saAuthUser, supabaseClient, trackEvent } from './app-core.js';
 import { getAppSetting, getPublicPoolCandidatesFromWorker, readLocalReports, submitReportToSupabase, updateStats, writeLocalReports } from './app-data.js';
 import { rememberCvBoxIdentity, verifiedBadge, cvBoxMemberExists, autoClaimCvBoxRegistration } from './app-cards.js';
 import { uploadPoolCvIfAny, uploadPoolPhotoIfAny } from './app-forms.js';
@@ -868,6 +868,63 @@ export var poolReturnNavTab = 'home';
 // visitor on the generic, unfiltered CV Box list.
 export var poolPendingOpenId = null;
 
+export var CV_BOX_SECTORS = [
+  'Accounting & Finance', 'Administration & Office Support', 'Agriculture & Farming',
+  'Arts & Media', 'Construction & Engineering', 'Customer Service & Call Centre',
+  'Education & Training', 'Government & Public Sector', 'Healthcare & Social Care',
+  'Hospitality & Tourism', 'Human Resources', 'Information Technology', 'Legal',
+  'Logistics & Supply Chain', 'Manufacturing & Production', 'Marketing & Communications',
+  'Retail & Sales', 'Security & Safety', 'Skilled Trades', 'Transport & Driving', 'Other'
+];
+var cvBoxGenericRoles = ['open to opportunities', 'open to work', 'any job', 'any position', 'looking for work', 'cv box', 'n/a', 'not specified', 'other'];
+export function isValidPoolRoleTitle(value) {
+  var role = String(value || '').trim();
+  return role.length >= 2 && role.length <= 80 && /[a-z0-9]/i.test(role) && cvBoxGenericRoles.indexOf(role.toLowerCase()) === -1;
+}
+function isCompletePublicPoolCandidate(candidate) {
+  var sector = String(candidate && candidate.sector || '').trim().toLowerCase();
+  var location = String(candidate && candidate.location || '').trim();
+  var experience = candidate && candidate.experience_years;
+  return CV_BOX_SECTORS.some(function(item){ return item.toLowerCase() === sector; }) &&
+    isValidPoolRoleTitle(candidate && candidate.position) && !!location && location.toLowerCase() !== 'south africa' &&
+    experience !== null && experience !== undefined && String(experience).trim() !== '' &&
+    Number.isFinite(Number(experience)) && Number(experience) >= 0;
+}
+function poolActivityTime(candidate) {
+  var time = Date.parse(candidate && (candidate.profile_updated_at || candidate.created_at) || '');
+  return Number.isFinite(time) ? time : 0;
+}
+function comparePoolCandidates(a, b) {
+  var verifiedDiff = (b.verified ? 1 : 0) - (a.verified ? 1 : 0);
+  if (verifiedDiff) return verifiedDiff;
+  var currentDiff = (b.availability_current ? 1 : 0) - (a.availability_current ? 1 : 0);
+  if (currentDiff) return currentDiff;
+  var activityDiff = poolActivityTime(b) - poolActivityTime(a);
+  if (activityDiff) return activityDiff;
+  return (String(b.photo_url || '').trim() ? 1 : 0) - (String(a.photo_url || '').trim() ? 1 : 0);
+}
+function poolActivityLabel(candidate) {
+  var date = candidate && candidate.availability_current && candidate.availability_confirmed_at
+    ? candidate.availability_confirmed_at
+    : candidate && (candidate.profile_updated_at || candidate.created_at);
+  var time = Date.parse(date || '');
+  if (!Number.isFinite(time)) return 'Recently active';
+  var days = Math.max(0, Math.floor((Date.now() - time) / 86400000));
+  var prefix = candidate && candidate.availability_current ? 'Still looking · confirmed ' : 'Profile updated ';
+  if (days === 0) return prefix + 'today';
+  if (days < 30) return prefix + days + 'd ago';
+  var months = Math.floor(days / 30);
+  return prefix + months + (months === 1 ? 'mo ago' : 'mo ago');
+}
+function syncCvBoxActionsVisibility() {
+  var actions = document.getElementById('cv-box-actions');
+  if (!actions) return;
+  var userMeta = saAuthUser && saAuthUser.user_metadata || {};
+  var appMeta = saAuthUser && saAuthUser.app_metadata || {};
+  var role = String(userMeta.role || userMeta.account_type || userMeta.user_type || appMeta.role || '').toLowerCase();
+  actions.hidden = !!(__saManagerLinkMode || managerMode || employerManagerMode || /employer|recruiter|agency/.test(role));
+}
+
 // Lightweight count-only query so the home "Pool Candidates" stat is accurate
 // on first load, without waiting for the full candidate list (which only
 // loads once someone actually opens the CV Box screen).
@@ -931,16 +988,12 @@ function poolFactAvailability(c) {
 
 export async function loadPoolCandidates() {
   var listEl = document.getElementById('pool-list');
+  syncCvBoxActionsVisibility();
   if (listEl && !poolLoaded) listEl.innerHTML = '<div class="empty"><div class="empty-state"><h3>Loading…</h3></div></div>';
   try {
     var payload = await getPublicPoolCandidatesFromWorker();
     var data = payload.candidates;
-    poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active'; }).sort(function(a,b){
-      var aPhoto = String(a.photo_url || '').trim() ? 1 : 0;
-      var bPhoto = String(b.photo_url || '').trim() ? 1 : 0;
-      if (aPhoto !== bPhoto) return bPhoto - aPhoto;
-      return (b.verified?1:0) - (a.verified?1:0);
-    });
+    poolCache = data.filter(function(c){ return (c.status || 'pending') === 'active' && isCompletePublicPoolCandidate(c); }).sort(comparePoolCandidates);
   } catch(e) { console.error('pool load', e); poolCache = []; var filters = document.getElementById('pool-filters'); if (filters) filters.hidden = true; if (listEl) listEl.innerHTML = '<div class="cv-box-empty cv-box-empty-error"><strong>CV Box unavailable</strong><span>Check your connection and try again.</span><button type="button" onclick="loadPoolCandidates()">Retry</button></div>'; return; }
   poolLoaded = true;
   poolCandidateCount = poolCache.length;
@@ -950,9 +1003,9 @@ export async function loadPoolCandidates() {
   var sel = document.getElementById('pool-sector-filter');
   if (sel) {
     var current = sel.value;
-    var sectors = Array.from(new Set(poolCache.map(function(c){ return (c.sector||'').trim(); }).filter(Boolean))).sort();
-    sel.innerHTML = '<option value="">All sectors</option>' + sectors.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
-    sel.value = sectors.indexOf(current) !== -1 ? current : '';  }
+    sel.innerHTML = '<option value="">All sectors</option>' + CV_BOX_SECTORS.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
+    sel.value = CV_BOX_SECTORS.indexOf(current) !== -1 ? current : '';
+  }
   // A deep link may target a specific candidate; clear filters so the
   // requested profile remains visible and can be expanded.
   if (poolPendingOpenId) {
@@ -976,7 +1029,7 @@ export function renderPoolList() {
   syncPreciseLocationChip('pool', q);
   var sector = ((document.getElementById('pool-sector-filter')||{}).value || '');
   // Defense-in-depth: only approved/active candidates may ever be rendered publicly.
-  var list = poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).slice();
+  var list = poolCache.filter(function(c){ return (c.status || 'pending') === 'active' && isCompletePublicPoolCandidate(c); }).slice();
   if (sector) list = list.filter(function(c){ return (c.sector||'') === sector; });
   if (q) {
     list = list.filter(function(c){
@@ -984,10 +1037,7 @@ export function renderPoolList() {
       return hay.indexOf(q) !== -1;
     });
   }
-  // Keep photo profiles above initials-only cards in every filtered pool view.
-  list.sort(function(a,b){
-    return (String(b.photo_url || '').trim() ? 1 : 0) - (String(a.photo_url || '').trim() ? 1 : 0);
-  });
+  list.sort(comparePoolCandidates);
   if (!list.length) {
     listEl.innerHTML = poolCache.length ? '<div class="cv-box-empty">No profiles match those filters.</div>' : '<div class="cv-box-empty"><strong>No CVs in the box yet</strong><span>Be the first to upload a CV.</span></div>';
     return;
@@ -995,13 +1045,13 @@ export function renderPoolList() {
   var middleAt = Math.max(1, Math.ceil(list.length / 2));
   listEl.innerHTML = list.map(function(c, index){
     var middleAd = index === middleAt ? '<div id="house-ad-candidates-middle" class="house-ad-slot" hidden></div>' : '';
-    // Public cards intentionally show only the photo, name, position and the
-    // paid CV action. Mini-CV answers (sector, experience, about me, etc.)
+    // Public cards intentionally show only the photo, name, role and safe freshness.
+    // Mini-CV answers (about me, etc.)
     // and contact details stay private; the full CV is a paid secure download (price shown only after Unlock).
     var role = c.position || 'Open to opportunities';
     var avatar = c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar pool-mini-avatar">'+initials(c.full_name)+'</div>';
     return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'">' +
-      '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title pool-mini-name"><span class="pool-mini-name-text" title="'+escapeHtml(c.full_name||'Candidate')+'">'+escapeHtml(c.full_name||'Candidate')+'</span>'+(c.verified?'<span class="pool-mini-seal">' + verifiedBadge('Screened &amp; Verified') + '</span>':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div></div></div>' +
+      '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title pool-mini-name"><span class="pool-mini-name-text" title="'+escapeHtml(c.full_name||'Candidate')+'">'+escapeHtml(c.full_name||'Candidate')+'</span>'+(c.verified?'<span class="pool-mini-seal">' + verifiedBadge('Screened &amp; Verified') + '</span>':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div><small class="pool-mini-activity">'+escapeHtml(poolActivityLabel(c))+'</small></div></div>' +
       '<div class="pool-mini-facts" aria-label="Candidate summary"><div><small>Location</small><b>'+escapeHtml(poolFactLocation(c))+'</b></div><div><small>Experience</small><b>'+escapeHtml(poolFactExperience(c))+'</b></div><div><small>Available</small><b>'+escapeHtml(poolFactAvailability(c))+'</b></div></div>' +
       '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" style="background:#0b7a35 !important;background-image:none !important;color:#fff !important;-webkit-text-fill-color:#fff !important;border:2px solid #0b7a35 !important" aria-label="Unlock full CV" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><svg class="pool-cv-lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span class="pool-cv-label">Unlock full CV</span></button></div>' +
       '</div>'
@@ -1069,6 +1119,63 @@ export function openCvDownloadRequest(c) {
 // register sheet is being used to create a brand-new candidate; a candidate
 // id = the sheet is editing (and will UPDATE, not INSERT) that owned row.
 export var editingPoolCandidateId = null;
+var poolCurrentProfileStatus = null;
+var poolCurrentAvailabilityConfirmedAt = null;
+var poolCurrentAvailabilityExpiresAt = null;
+function poolDateLabel(value) {
+  var date = value ? new Date(value) : null;
+  if (!date || !Number.isFinite(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+export function updatePoolStillLookingPanel() {
+  var panel = document.getElementById('pool-still-looking-panel');
+  var status = document.getElementById('pool-still-looking-status');
+  var availability = document.getElementById('pool-availability');
+  if (!panel) return;
+  var immediate = !!editingPoolCandidateId && poolCurrentProfileStatus === 'active' && availability && availability.value.toLowerCase() === 'immediately';
+  panel.hidden = !immediate;
+  if (!immediate || !status) return;
+  var expiresAt = poolCurrentAvailabilityExpiresAt ? new Date(poolCurrentAvailabilityExpiresAt) : null;
+  if (expiresAt && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() <= Date.now()) {
+    status.textContent = 'Your Immediately status has expired. Confirm again to appear as currently available.';
+  } else if (poolCurrentAvailabilityConfirmedAt && expiresAt) {
+    status.textContent = 'Last confirmed ' + (poolDateLabel(poolCurrentAvailabilityConfirmedAt) || 'recently') + ' · active until ' + (poolDateLabel(poolCurrentAvailabilityExpiresAt) || 'your renewal date') + '.';
+  } else {
+    status.textContent = 'Tap Still Looking to confirm that you are available for the next 14 or 30 days.';
+  }
+}
+export async function confirmPoolStillLooking() {
+  if (!saAuthUser || !editingPoolCandidateId || poolCurrentProfileStatus !== 'active') { showToast('Only an active CV Box profile can confirm availability.'); return; }
+  var availability = document.getElementById('pool-availability');
+  if (!availability || availability.value.toLowerCase() !== 'immediately') { showToast('Choose Immediately as your availability before confirming.'); return; }
+  var daysInput = document.getElementById('pool-still-looking-days');
+  var days = parseInt(daysInput && daysInput.value, 10);
+  if (days !== 14 && days !== 30) { showToast('Choose a 14- or 30-day confirmation period.'); return; }
+  var button = document.getElementById('pool-still-looking-btn');
+  if (button) { button.disabled = true; button.textContent = 'Confirming…'; }
+  try {
+    var result = await supabaseClient.rpc('candidate_confirm_still_looking', {
+      p_candidate_id: String(editingPoolCandidateId),
+      p_days: days
+    });
+    if (result.error || !result.data) {
+      console.error('CV Box availability confirmation', result.error);
+      showToast('Could not confirm your availability. Please try again.');
+      return;
+    }
+    poolCurrentAvailabilityConfirmedAt = new Date().toISOString();
+    poolCurrentAvailabilityExpiresAt = result.data;
+    updatePoolStillLookingPanel();
+    poolLoaded = false;
+    await loadPoolCandidates();
+    showToast('Still Looking confirmed for ' + days + ' days.');
+  } catch (error) {
+    console.error('CV Box availability confirmation', error);
+    showToast('Could not confirm your availability. Please try again.');
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Still Looking'; }
+  }
+}
 // Resets the profile-photo field of the CV Box sheet. When an existing photo
 // URL is supplied (editing an owned profile) it is shown as the current photo
 // and counts as satisfying the "photo required" rule.
@@ -1114,6 +1221,7 @@ export function setPoolSheetEditMode(isEdit) {
   if (submitBtn) submitBtn.textContent = isEdit ? 'Save changes' : 'Submit registration';
   var deleteBtn = document.getElementById('pool-delete-btn');
   if (deleteBtn) deleteBtn.style.display = isEdit ? 'block' : 'none';
+  updatePoolStillLookingPanel();
 }
 
 export function openPoolRegisterSheet() {
@@ -1125,6 +1233,9 @@ export function openPoolRegisterSheet() {
     return;
   }
   editingPoolCandidateId = null;
+  poolCurrentProfileStatus = null;
+  poolCurrentAvailabilityConfirmedAt = null;
+  poolCurrentAvailabilityExpiresAt = null;
   setPoolSheetEditMode(false);
   document.getElementById('pool-name').value = '';
   resetPoolPhoto(null);
@@ -1177,6 +1288,9 @@ export function fillPoolFormFromCandidate(c) {
   document.getElementById('pool-transport').value = c.reliable_transport || '';
   document.getElementById('pool-relocate').value = c.willing_relocate || '';
   document.getElementById('pool-availability').value = c.availability || '';
+  poolCurrentProfileStatus = c.status || null;
+  poolCurrentAvailabilityConfirmedAt = c.availability_confirmed_at || null;
+  poolCurrentAvailabilityExpiresAt = c.availability_expires_at || null;
   document.getElementById('pool-employment').value = c.preferred_employment || '';
   document.getElementById('pool-salary').value = c.salary_expectation || '';
   document.getElementById('pool-work-authorized').value = c.work_authorized || '';
@@ -1332,15 +1446,17 @@ export function poolFormToProfileFields() {
 export async function submitPoolRegistration() {
   var name = document.getElementById('pool-name').value.trim();
   var phone = (document.getElementById('pool-phone') || {}).value || '';
-  var sector = (document.getElementById('pool-sector') || {}).value || 'CV Box';
-  var location = (document.getElementById('pool-location') || {}).value || 'South Africa';
+  var sector = ((document.getElementById('pool-sector') || {}).value || '').trim();
+  var location = ((document.getElementById('pool-location') || {}).value || '').trim();
   var gender = (document.getElementById('pool-gender') || {}).value || '';
   var grade12 = (document.getElementById('pool-grade12') || {}).value || '';
   var criminal = (document.getElementById('pool-criminal') || {}).value || '';
   var experience = (document.getElementById('pool-experience') || {}).value || '';
   var email = (document.getElementById('pool-email') || {}).value.trim();
   var alertOptIn = !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked);
-  if (!name || !document.getElementById('pool-position').value.trim()) { showToast('Please add your name and the position you want to be considered for.'); return; }
+  var roleTitle = document.getElementById('pool-position').value.trim();
+  if (!name || !isValidPoolRoleTitle(roleTitle)) { showToast('Please add your name and a valid role title you want to be considered for.'); var roleEl = document.getElementById('pool-position'); if (roleEl) roleEl.focus(); return; }
+  if (CV_BOX_SECTORS.indexOf(sector) === -1) { showToast('Please choose a sector from the standardized list.'); var sectorEl = document.getElementById('pool-sector'); if (sectorEl) sectorEl.focus(); return; }
   if (!window.pendingPoolPhotoBlob && !window.currentPoolPhotoUrl) {
     var photoInput = document.getElementById('pool-photo');
     var photoStatus = document.getElementById('pool-photo-status');
@@ -1355,7 +1471,7 @@ export async function submitPoolRegistration() {
   var termsAccepted = document.getElementById('pool-terms-accept');
   if (!termsAccepted || !termsAccepted.checked) { showToast('Please accept the SA Recruiters Terms and Conditions to continue.'); return; }
   if (alertOptIn && !email) { showToast('Add your email address to receive vacancy alerts.'); return; }
-  if (!location.trim() || location.trim() === 'South Africa') { showToast('Please add the town or city where you are based.'); var locEl = document.getElementById('pool-location'); if (locEl) locEl.focus(); return; }
+  if (!location || location.toLowerCase() === 'south africa') { showToast('Please add the town or city where you are based.'); var locEl = document.getElementById('pool-location'); if (locEl) locEl.focus(); return; }
   if (experience === '') { showToast('Please choose your years of experience.'); var expEl = document.getElementById('pool-experience'); if (expEl) expEl.focus(); return; }
   if (!((document.getElementById('pool-availability') || {}).value || '').trim()) { showToast('Please tell employers when you can start.'); var avEl = document.getElementById('pool-availability'); if (avEl) avEl.focus(); return; }
   if (phone.replace(/[^0-9]/g, '').length < 9) { showToast('Please add a phone or WhatsApp number employers can reach you on.'); var phEl = document.getElementById('pool-phone'); if (phEl) phEl.focus(); return; }
@@ -1585,6 +1701,8 @@ Object.assign(window, {
   resetPoolCvUpload,
   resetPoolTermsAcceptance,
   setPoolSheetEditMode,
+  updatePoolStillLookingPanel,
+  confirmPoolStillLooking,
   openPoolRegisterSheet,
   fillPoolFormFromCandidate,
   openMyCvBoxProfile,

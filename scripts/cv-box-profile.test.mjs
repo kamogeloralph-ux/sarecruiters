@@ -18,6 +18,7 @@ const admin = read('admin.html');
 const css = read('styles.css');
 const vacancyCss = read('vacancy-v2.css');
 const content = read('content.js');
+const cvBoxMigration = read('supabase/migrations/20261112_cv_box_refresh_and_eligibility.sql');
 
 test('employer directory and vacancies have no membership lock UI or card state', () => {
   for (const source of [appCards, appSheets, appUi, appData, html]) {
@@ -176,5 +177,48 @@ test('admin CV Box sheet edits location, experience, availability and phone', ()
 test('in-app browsers (Facebook) ignore the safe-area inset so the bottom nav is not stretched', () => {
   assert.match(html, /setAttribute\('data-inapp','1'\)/);
   assert.match(html, /FBAN\|FBAV/);
-  assert.match(css, /html\[data-inapp\] \.bottom-nav[^{]*\{height:68px!important;padding:7px 8px!important/);
+  assert.match(css, /html\[data-inapp\] \.bottom-nav[^\{]*\{height:68px!important;padding:7px 8px!important/);
+});
+
+test('CV Box renews Immediately availability for 14 or 30 days through an owner-scoped RPC', () => {
+  assert.match(html, /id="pool-still-looking-panel"/);
+  assert.match(html, /id="pool-still-looking-btn"[^>]*>Still Looking/);
+  assert.match(html, /<option value="30" selected>30 days<\/option><option value="14">14 days<\/option>/);
+  assert.match(appSheets, /rpc\('candidate_confirm_still_looking'/);
+  assert.match(appSheets, /poolCurrentProfileStatus === 'active'/);
+  assert.match(appSheets, /Only an active CV Box profile can confirm availability/);
+  assert.match(appSheets, /p_candidate_id: String\(editingPoolCandidateId\)/);
+  assert.match(appSheets, /p_days: days/);
+  assert.match(cvBoxMigration, /p_days NOT IN \(14, 30\)/);
+  assert.match(cvBoxMigration, /user_id = auth\.uid\(\)/);
+  assert.match(cvBoxMigration, /REVOKE ALL ON FUNCTION public\.candidate_confirm_still_looking\(text, integer\) FROM PUBLIC, anon/);
+  assert.match(cvBoxMigration, /GRANT EXECUTE ON FUNCTION public\.candidate_confirm_still_looking\(text, integer\) TO authenticated/);
+  assert.match(cvBoxMigration, /NEW\.availability_expires_at - NEW\.availability_confirmed_at = interval '14 days'/);
+  assert.match(cvBoxMigration, /NEW\.availability_expires_at - NEW\.availability_confirmed_at = interval '30 days'/);
+  assert.match(cvBoxMigration, /OLD\.cv_link, OLD\.availability/);
+});
+
+test('CV Box feed only shows complete standardized profiles and prioritizes verified, current, fresh, photo-complete profiles', () => {
+  assert.match(html, /<select id="pool-sector"><option value="">Choose a sector/);
+  assert.doesNotMatch(html, /<input id="pool-sector"/);
+  assert.match(appSheets, /CV_BOX_SECTORS = \[/);
+  assert.match(appSheets, /CV_BOX_SECTORS\.indexOf\(sector\) === -1/);
+  assert.match(appSheets, /isCompletePublicPoolCandidate\(c\)/);
+  assert.match(appSheets, /comparePoolCandidates/);
+  assert.match(appSheets, /availability_current/);
+  assert.match(appSheets, /poolActivityLabel\(c\)/);
+  assert.match(worker, /cvBoxCandidateIsComplete/);
+  assert.match(worker, /candidate\.experience_years !== null/);
+  assert.match(worker, /Needs reconfirmation/);
+  assert.match(worker, /profile_updated_at,availability_confirmed_at,availability_expires_at/);
+  assert.match(appSheets, /pool-mini-activity/);
+  assert.match(css, /\.pool-mini-activity/);
+});
+
+test('CV Box upload entry is compact, follows search, and hides for recruiter or employer sessions', () => {
+  assert.ok(html.indexOf('id="pool-filters"') < html.indexOf('id="cv-box-actions"'));
+  assert.match(appSheets, /function syncCvBoxActionsVisibility\(/);
+  assert.match(appSheets, /employerManagerMode/);
+  assert.match(appSheets, /employer\|recruiter\|agency/);
+  assert.match(css, /#cv-box-actions\[hidden\]\{display:none!important\}/);
 });

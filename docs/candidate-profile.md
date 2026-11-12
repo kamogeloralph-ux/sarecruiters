@@ -15,3 +15,10 @@ If the migration has not been applied, CV generation still works for that sessio
 ## CV scan / review
 
 The existing CV scan is part of the CV Box review process, not a separate candidate-side file analyzer. The hub displays the candidate's current CV Box status and explains that review is performed on the uploaded CV. It does not expose the private CV file or scanner internals to public directory users.
+
+
+## CV Box freshness, availability, and listing eligibility
+
+Apply `supabase/migrations/20261112_cv_box_refresh_and_eligibility.sql` before enabling the refreshed CV Box behavior. The migration adds a safe `profile_updated_at` timestamp and owner-scoped `candidate_confirm_still_looking` RPC. A candidate with an active profile and **Immediately** availability can renew it for **14 or 30 days** using **Still Looking** in Manage CV Box. The database expires the flag at the selected deadline; the public feed changes stale Immediately availability to **Needs reconfirmation** and removes its ranking boost until reconfirmed. Newly created Immediately profiles start with a 30-day window. Existing Immediately profiles receive a grace period from their original creation date.
+
+Public cards show a relative activity label based on the last profile/CV update, or the latest Still Looking confirmation for current Immediately availability. The CV Box API exposes only those timestamps and public-safe availability; contact details and the CV URL remain private. Public listings require an active status, standardized sector, meaningful role title, location, and a numeric experience value (zero is valid). The upload form enforces the same requirements and only offers fixed sector categories; the Worker and browser both filter incomplete legacy rows.

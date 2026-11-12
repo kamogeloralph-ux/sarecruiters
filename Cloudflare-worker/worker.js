@@ -1135,6 +1135,29 @@ async function loadStartupData(env) {
   };
 }
 __name(loadStartupData, "loadStartupData");
+const CV_BOX_SECTORS = new Set([
+  "Accounting & Finance", "Administration & Office Support", "Agriculture & Farming",
+  "Arts & Media", "Construction & Engineering", "Customer Service & Call Centre",
+  "Education & Training", "Government & Public Sector", "Healthcare & Social Care",
+  "Hospitality & Tourism", "Human Resources", "Information Technology", "Legal",
+  "Logistics & Supply Chain", "Manufacturing & Production", "Marketing & Communications",
+  "Retail & Sales", "Security & Safety", "Skilled Trades", "Transport & Driving", "Other"
+].map((sector) => sector.toLowerCase()));
+const CV_BOX_GENERIC_ROLES = new Set([
+  "open to opportunities", "open to work", "any job", "any position", "looking for work",
+  "cv box", "n/a", "not specified", "other"
+]);
+function cvBoxCandidateIsComplete(candidate) {
+  const sector = String(candidate.sector || "").trim().toLowerCase();
+  const role = String(candidate.position || "").trim();
+  const location = String(candidate.location || "").trim();
+  const experience = Number(candidate.experience_years);
+  return CV_BOX_SECTORS.has(sector) && role.length >= 2 && role.length <= 80 &&
+    /[a-z0-9]/i.test(role) && !CV_BOX_GENERIC_ROLES.has(role.toLowerCase()) &&
+    !!location && location.toLowerCase() !== "south africa" &&
+    candidate.experience_years !== null && candidate.experience_years !== undefined &&
+    String(candidate.experience_years).trim() !== "" && Number.isFinite(experience) && experience >= 0;
+}
 async function cvBoxResponse(request, env, origin) {
   // Candidate profiles must never come from the startup snapshot or D1 mirror:
   // those are intentionally optimized/cached for general directory startup.
@@ -1153,23 +1176,76 @@ async function cvBoxResponse(request, env, origin) {
     return json({ error: "CV Box could not be loaded" }, 502, origin);
   }
   if (!Array.isArray(result.body)) return json({ error: "CV Box returned an invalid response" }, 502, origin);
-  const candidates = result.body.filter((row) => (row.status || "pending") === "active");
-  // Availability is not part of the redacted public view, so read just that
-  // one harmless column for the active profiles. Best-effort: if it fails the
-  // card simply shows "Not stated" and nothing else is exposed.
+  let candidates = result.body.filter((row) => (row.status || "pending") === "active");
+  // Availability and timestamps are deliberately omitted from the redacted
+  // view. Read only these public-safe fields with the Worker service key; no
+  // contact information or CV links ever leave this handler.
   if (env.SUPABASE_SERVICE_ROLE_KEY && candidates.length) {
     try {
-      const q = new URLSearchParams({ select: "id,availability", status: "eq.active", limit: "1000" });
+      const q = new URLSearchParams({ select: "id,availability,profile_updated_at,availability_confirmed_at,availability_expires_at", status: "eq.active", limit: "1000" });
       const r = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${q}`, {
         headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
       });
       if (r.ok) {
         const rows = await r.json();
-        const byId = new Map((Array.isArray(rows) ? rows : []).map((row) => [String(row.id), String(row.availability || "").trim().slice(0, 40)]));
-        for (const c of candidates) c.availability = byId.get(String(c.id)) || "";
+        const byId = new Map((Array.isArray(rows) ? rows : []).map((row) => [String(row.id), row]));
+        const now = Date.now();
+        for (const c of candidates) {
+          const row = byId.get(String(c.id)) || {};
+          const fallbackConfirmedAt = row.availability_confirmed_at || c.created_at || null;
+          const derivedExpiresAt = fallbackConfirmedAt
+            ? new Date(new Date(fallbackConfirmedAt).getTime() + 30 * 86400000).toISOString()
+            : null;
+          const expiresAt = row.availability_expires_at || derivedExpiresAt;
+          c.availability = String(row.availability || "").trim().slice(0, 40);
+          c.profile_updated_at = row.profile_updated_at || c.created_at || null;
+          c.availability_confirmed_at = fallbackConfirmedAt;
+          c.availability_expires_at = row.availability_expires_at || derivedExpiresAt;
+          c.availability_current = String(c.availability).toLowerCase() === "immediately" &&
+            (!expiresAt || Date.parse(expiresAt) > now);
+          if (String(c.availability).toLowerCase() === "immediately" && !c.availability_current) {
+            c.availability = "Needs reconfirmation";
+          }
+        }
+      } else {
+        console.warn("CV Box activity lookup failed", r.status);
+        const legacyQ = new URLSearchParams({ select: "id,availability", status: "eq.active", limit: "1000" });
+        const legacyResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${legacyQ}`, {
+          headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
+        });
+        if (legacyResponse.ok) {
+          const legacyRows = await legacyResponse.json();
+          const legacyById = new Map((Array.isArray(legacyRows) ? legacyRows : []).map((row) => [String(row.id), row]));
+          const now = Date.now();
+          for (const c of candidates) {
+            const row = legacyById.get(String(c.id)) || {};
+            const confirmedAt = c.created_at || null;
+            const expiresAt = confirmedAt ? new Date(Date.parse(confirmedAt) + 30 * 86400000).toISOString() : null;
+            c.availability = String(row.availability || "").trim().slice(0, 40);
+            c.profile_updated_at = c.created_at || null;
+            c.availability_confirmed_at = confirmedAt;
+            c.availability_expires_at = expiresAt;
+            c.availability_current = String(c.availability).toLowerCase() === "immediately" &&
+              (!expiresAt || Date.parse(expiresAt) > now);
+            if (String(c.availability).toLowerCase() === "immediately" && !c.availability_current) {
+              c.availability = "Needs reconfirmation";
+            }
+          }
+        }
       }
     } catch (error) { console.warn("CV Box availability lookup failed", error); }
   }
+  const now = Date.now();
+  candidates = candidates.filter((candidate) => {
+    if (!cvBoxCandidateIsComplete(candidate)) return false;
+    if (String(candidate.availability || "").toLowerCase() !== "immediately") return true;
+    const confirmedAt = candidate.availability_confirmed_at || candidate.created_at;
+    if (!confirmedAt) return true;
+    const expiresAt = candidate.availability_expires_at || new Date(Date.parse(confirmedAt) + 30 * 86400000).toISOString();
+    candidate.availability_current = Date.parse(expiresAt) > now;
+    if (!candidate.availability_current) candidate.availability = "Needs reconfirmation";
+    return true;
+  });
   return new Response(JSON.stringify({ candidates, count: candidates.length, generated_at: new Date().toISOString() }), {
     status: 200,
     headers: { ...corsHeaders(origin), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store, max-age=0", "CDN-Cache-Control": "no-store", "X-CV-Box-Source": "supabase-live" }
@@ -1250,7 +1326,7 @@ async function cvCheckoutResponse(request, env, origin) {
   if (!email) return json({ error: "Enter a valid email address for your download link." }, 400, origin);
   let candidate;
   try {
-    const q = new URLSearchParams({ select: "id,full_name,position,status,cv_link", id: `eq.${candidateId}`, status: "eq.active", limit: "1" });
+    const q = new URLSearchParams({ select: "id,full_name,position,sector,location,experience_years,status,cv_link", id: `eq.${candidateId}`, status: "eq.active", limit: "1" });
     const response = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${q}`, {
       headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
     });
@@ -1262,6 +1338,7 @@ async function cvCheckoutResponse(request, env, origin) {
     return json({ error: "Could not verify this CV right now. Please try again." }, 502, origin);
   }
   if (!candidate || candidate.status !== "active") return json({ error: "This CV is no longer available." }, 404, origin);
+  if (!cvBoxCandidateIsComplete(candidate)) return json({ error: "This profile is incomplete and cannot be unlocked." }, 409, origin);
   if (!candidate.cv_link) return json({ error: "This profile does not have a downloadable CV yet." }, 409, origin);
   const orderId = crypto.randomUUID();
   const createdAt = new Date().toISOString();
