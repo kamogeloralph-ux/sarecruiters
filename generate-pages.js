@@ -508,7 +508,7 @@ function publicAdSlot(slot) {
   return `<div class="public-house-ad-wrap sp-wrap"><div class="public-house-ad-slot" data-public-ad-slot="${slot}" hidden></div></div>`;
 }
 function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, imageIsLogo = false, imageAlt = '', hero = '', active = '', narrow = false, applyBar = '' }) {
-  const ogImage = image || `${SITE_URL}/icons/sa-recruiters-icon-color-512.png`;
+  const ogImage = image || `${SITE_URL}/assets/sa-recruiters-social-square.png?v=3`;
   const breadcrumbLd = breadcrumbJsonLd(CTX.lastCrumbs, canonical);
   CTX.lastCrumbs = [];
   const ldScripts = [].concat(jsonLd || [], breadcrumbLd || [])
@@ -531,7 +531,7 @@ function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, ima
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
 <meta property="og:image" content="${escapeHtml(ogImage)}">
-${image ? '' : '<meta property="og:image:width" content="512">\n<meta property="og:image:height" content="512">\n'}${imageAlt ? `<meta property="og:image:alt" content="${escapeHtml(imageAlt)}">\n` : ''}<meta name="twitter:card" content="${image && !imageIsLogo ? 'summary_large_image' : 'summary'}">
+${image ? '' : '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="1200">\n<meta property="og:image:type" content="image/png">\n'}${imageAlt ? `<meta property="og:image:alt" content="${escapeHtml(imageAlt)}">\n` : ''}<meta name="twitter:card" content="${image && !imageIsLogo ? 'summary_large_image' : 'summary'}">
 <meta name="twitter:image" content="${escapeHtml(ogImage)}">
 
 <link rel="icon" type="image/png" sizes="256x256" href="/icons/sa-recruiters-icon-color.png?v=${DEPLOY_VERSION}">
