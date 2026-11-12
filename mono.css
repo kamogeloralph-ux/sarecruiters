@@ -477,13 +477,24 @@ html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:hover{box-sha
   border:1px solid rgba(23,105,207,.28)!important;border-radius:999px!important;
   background:#fff!important;box-shadow:0 4px 12px rgba(10,44,90,.14)!important
 }
-#screen-home .home-bottom-hero .support-ticker-item,#screen-menu .menu-hero .support-ticker-item{
-  position:static!important;display:block!important;width:100%!important;height:100%!important;padding:0 12px!important;
-  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;line-height:42px!important;
-  color:#1769cf!important;font-size:12px!important;font-weight:800!important;letter-spacing:0!important;animation:none!important
+#screen-home .home-bottom-hero .support-ticker-track,#screen-menu .menu-hero .support-ticker-track{
+  position:absolute!important;top:0;left:0;display:flex!important;align-items:center;width:max-content;height:100%;
+  animation:supportTickerCardScroll 18s linear infinite!important;will-change:transform
 }
+#screen-home .home-bottom-hero .support-ticker-item,#screen-menu .menu-hero .support-ticker-item{
+  position:static!important;display:block!important;flex:0 0 auto;height:100%;padding:0 28px 0 12px!important;
+  overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;line-height:42px!important;
+  color:#1769cf!important;font-size:12px!important;font-weight:800!important;letter-spacing:0!important
+}
+@keyframes supportTickerCardScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+#screen-home .home-bottom-hero .support-ticker:hover .support-ticker-track,#screen-menu .menu-hero .support-ticker:hover .support-ticker-track,
+#screen-home .home-bottom-hero .support-ticker:focus-visible .support-ticker-track,#screen-menu .menu-hero .support-ticker:focus-visible .support-ticker-track{animation-play-state:paused!important}
 #screen-home .home-bottom-hero .support-ticker:focus-visible,#screen-menu .menu-hero .support-ticker:focus-visible{outline:3px solid #fff!important;outline-offset:3px!important}
-@media(prefers-reduced-motion:reduce){.site-menu-trigger,.bottom-nav .navbtn{transition:none!important;transform:none!important}}
+@media(prefers-reduced-motion:reduce){
+  #screen-home .home-bottom-hero .support-ticker-track,#screen-menu .menu-hero .support-ticker-track{position:static!important;animation:none!important;transform:none!important}
+  #screen-home .home-bottom-hero .support-ticker-item,#screen-menu .menu-hero .support-ticker-item{padding-right:12px!important}
+  .site-menu-trigger,.bottom-nav .navbtn{transition:none!important;transform:none!important}
+}
 
 /* Home count icons: restore strong contrast and a clear, consistent icon tile. */
 #screen-home .stat-icon{
