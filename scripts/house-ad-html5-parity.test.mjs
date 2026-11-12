@@ -86,6 +86,18 @@ test('hand-built HTML5 ads are wrapped with the curtain cycle in every section',
   assert.ok(mod.houseAdWithCurtain('<p>bare</p>', 12).includes('class="hc hcr"'));
 });
 
+test('supplier creatives are self-contained HTML5 banners', () => {
+  for (const file of ['jw-aluminium-1200x400.html', 'rolaz-electrical-1200x400.html']) {
+    const doc = fs.readFileSync(path.join(root, 'assets', 'house-ads', file), 'utf8');
+    assert.match(doc, /name="ad\.size" content="width=1200,height=400"/);
+    assert.match(doc, /name="ad\.cycle" content="12\.00"/);
+    assert.match(doc, /src="data:image\/png;base64,[A-Za-z0-9+/=]+"/);
+    assert.match(doc, /class="hc hcl"/);
+    assert.match(doc, /class="hc hcr"/);
+    assert.doesNotMatch(doc, /https?:\/\//, `${file} must not depend on an external asset`);
+  }
+});
+
 test('every ad surface plays the curtain cycle (app slots, Ads list, static pages)', () => {
   const app = fs.readFileSync(path.join(root, 'app-data.js'), 'utf8');
   assert.match(app, /houseAdWithCurtain\(html, 12\)/);
