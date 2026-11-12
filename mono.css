@@ -642,3 +642,23 @@ html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:hover{box-sha
 #screen-home .tipchat-home-entry-row>button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 #screen-home .tipchat-home-quick-entry>small{display:block;margin:7px 4px 0;color:var(--text-2);font-size:10.5px;line-height:1.4}
 @media(prefers-reduced-motion:reduce){#screen-home .tipchat-home-entry-row,#screen-home .tipchat-home-entry-row>button{transition:none!important}}
+
+
+/* Let the content pane shrink inside the app's flex column so long screens scroll instead of being clipped. */
+.screen-scroll{min-height:0;overscroll-behavior-y:contain}
+
+/* Remove decorative horizontal separators from directory content. */
+#screen-allagencies .hub-contact-item,
+#screen-allemployers .hub-contact-item,
+#screen-allagencies .hub-row,
+#screen-allemployers .hub-row{border-top:0!important;border-bottom:0!important}
+#screen-pool .pool-mini-meta,
+#screen-pool .pool-mini-card .pool-mini-details{border-top:0!important}
+#screen-pool .pool-mini-meta>span+span{border-left:0!important;padding-left:0!important}
+#screen-allposters .poster-caption{border-top:0!important}
+#screen-allads #allads-list .house-ad-card{border:0!important;box-shadow:none!important}
+#screen-allagencies .screen-fixed,
+#screen-pool .screen-fixed,
+#screen-allposters .screen-fixed,
+#screen-allemployers .screen-fixed,
+#screen-allads .screen-fixed{border-bottom:0!important}

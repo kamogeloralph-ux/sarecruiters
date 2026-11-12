@@ -244,6 +244,17 @@ test('TipChat home entry transfers a draft to the existing composer without post
   assert.match(mono, /#screen-home \.tipchat-home-entry-row/);
   assert.match(mono, /#screen-home \.tipchat-home-entry-row input/);
 });
+test('directory screens scroll their full content and remove horizontal dividers', () => {
+  for (const id of ['screen-allagencies', 'screen-pool', 'screen-allposters', 'screen-allemployers', 'screen-allads']) {
+    assert.match(html, new RegExp('id=\\"' + id + '\\"'));
+  }
+  assert.match(mono, /\.screen-scroll\{min-height:0;overscroll-behavior-y:contain\}/);
+  assert.match(mono, /#screen-allagencies \.hub-contact-item,[\s\S]*?#screen-allemployers \.hub-row\{border-top:0!important;border-bottom:0!important\}/);
+  assert.match(mono, /#screen-pool \.pool-mini-meta,[\s\S]*?#screen-pool \.pool-mini-card \.pool-mini-details\{border-top:0!important\}/);
+  assert.match(mono, /#screen-allposters \.poster-caption\{border-top:0!important\}/);
+  assert.match(mono, /#screen-allads #allads-list \.house-ad-card\{border:0!important;box-shadow:none!important\}/);
+  assert.match(mono, /#screen-allagencies \.screen-fixed,[\s\S]*?#screen-allads \.screen-fixed\{border-bottom:0!important\}/);
+});
 test('TipChat exposes the original SA Recruiters emoji picker and reaction hooks', () => {
   assert.match(html, /community-post-emoji-picker/);
   assert.match(html, /Choose a custom SA Recruiters emoji/);
