@@ -507,3 +507,52 @@ html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:hover{box-sha
 #screen-home .stat-card:hover .stat-icon,#screen-home .stat-card:focus-visible .stat-icon{
   color:#1769cf!important;background:#fff!important;border-color:#1769cf!important;
 }
+
+
+/* Profile guest sign-in: refined, clear hierarchy with Google's official button intact. */
+#screen-account .account-signin-card{
+  position:relative;overflow:hidden;padding:18px!important;border:1px solid color-mix(in srgb,#1769cf 20%,var(--border))!important;
+  border-radius:20px!important;background:linear-gradient(145deg,color-mix(in srgb,#1769cf 6%,var(--card)),var(--card) 72%)!important;
+  box-shadow:0 12px 28px rgba(14,45,86,.08)!important;
+}
+#screen-account .account-signin-card:before{content:"";position:absolute;top:0;left:18px;right:18px;height:3px;border-radius:0 0 4px 4px;background:linear-gradient(90deg,#1769cf,#67a7ff)}
+#screen-account .account-signin-copy{gap:6px;margin:0 0 15px!important}
+#screen-account .account-signin-copy .account-signin-eyebrow{display:flex;align-items:center;gap:7px;margin-bottom:2px;color:#1769cf!important;font-size:9px!important;font-weight:850!important;letter-spacing:.13em;line-height:1.2;text-transform:uppercase}
+#screen-account .account-signin-eyebrow>span{width:7px;height:7px;flex:none;border-radius:50%;background:#1769cf;box-shadow:0 0 0 3px rgba(23,105,207,.12)}
+#screen-account .account-signin-copy strong{font-size:18px!important;font-weight:850;letter-spacing:-.035em;line-height:1.2}
+#screen-account .account-signin-copy>span:last-child{font-size:12.5px!important;line-height:1.5}
+#screen-account .account-signin-card .gsi-material-button{min-height:50px!important;height:50px!important;border:1px solid #d5dce7!important;border-radius:14px!important;background:#fff!important;color:#202124!important;box-shadow:0 4px 12px rgba(20,45,80,.09),inset 0 1px 0 #fff!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+#screen-account .account-signin-card .gsi-material-button:hover{transform:translateY(-1px);border-color:#aabbd3!important;background:#fff!important;box-shadow:0 7px 16px rgba(20,45,80,.14)!important}
+#screen-account .account-signin-card .gsi-material-button:active{transform:translateY(0) scale(.99)}
+#screen-account .account-signin-card .gsi-material-button:focus-visible{outline:3px solid rgba(23,105,207,.3)!important;outline-offset:3px}
+#screen-account .account-signin-terms{margin-top:12px!important;font-size:10.5px;line-height:1.55}
+#screen-account .account-signin-terms .gate-terms-link{padding:0;border:0!important;background:transparent!important;color:#1769cf!important;font:inherit;font-weight:750;text-decoration:underline;text-underline-offset:2px}
+[data-theme="dark"] #screen-account .account-signin-card{box-shadow:0 12px 30px rgba(0,0,0,.22)!important}
+[data-theme="dark"] #screen-account .account-signin-card .gsi-material-button{border-color:#d8dde5!important;box-shadow:0 5px 16px rgba(0,0,0,.24)!important}
+
+/* Hamburger control and the navigation drawer share one intentional, premium treatment. */
+.app .site-menu-trigger{display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;gap:5px!important;width:48px!important;height:48px!important;min-width:48px!important;padding:0!important;border:1px solid rgba(255,255,255,.48)!important;border-radius:15px!important;background:linear-gradient(145deg,#287be5,#1555a6)!important;color:#fff!important;box-shadow:0 8px 18px rgba(9,48,102,.28),inset 0 1px 0 rgba(255,255,255,.24)!important;transition:transform .18s ease,box-shadow .18s ease,background .18s ease!important}
+.app .site-menu-trigger span{display:block!important;flex:none!important;width:20px!important;height:2.3px!important;min-height:2.3px!important;border:0!important;border-radius:99px!important;background:#fff!important;transform-origin:center;transition:transform .2s ease,opacity .16s ease,width .18s ease!important}
+.app .site-menu-trigger:hover{transform:translateY(-1px)!important;box-shadow:0 11px 22px rgba(9,48,102,.34),inset 0 1px 0 rgba(255,255,255,.28)!important}
+.app .site-menu-trigger:focus-visible{outline:3px solid #8fc0ff!important;outline-offset:3px}
+.app .site-menu-trigger[aria-expanded="true"] span:nth-child(1){transform:translateY(7.3px) rotate(45deg)}
+.app .site-menu-trigger[aria-expanded="true"] span:nth-child(2){width:0!important;opacity:0}
+.app .site-menu-trigger[aria-expanded="true"] span:nth-child(3){transform:translateY(-7.3px) rotate(-45deg)}
+.site-menu-drawer{background:linear-gradient(155deg,#07182b 0%,#0b2542 54%,#071624 100%)!important;color:#f5f8ff!important;border-left:1px solid rgba(113,163,228,.24)!important}
+.site-menu-drawer-head{padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.site-menu-brand strong{font-size:18px!important;letter-spacing:-.025em}
+.site-menu-brand span{color:#b8c8dc!important}
+.site-menu-close{width:42px!important;height:42px!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:14px!important;background:rgba(255,255,255,.08)!important;color:#fff!important;transition:background .18s ease,transform .18s ease}
+.site-menu-close:hover{background:rgba(255,255,255,.15)!important;transform:rotate(90deg)}
+.site-menu-account{margin:16px 0 12px!important;border:1px solid rgba(120,171,237,.28)!important;border-radius:17px!important;background:linear-gradient(135deg,rgba(35,112,211,.28),rgba(255,255,255,.045))!important;box-shadow:inset 0 1px rgba(255,255,255,.1),0 8px 22px rgba(0,0,0,.16)!important}
+.site-menu-account:hover,.site-menu-account:focus-visible{border-color:rgba(143,192,255,.55)!important;background:linear-gradient(135deg,rgba(35,112,211,.38),rgba(255,255,255,.075))!important}
+.site-menu-nav{gap:6px!important}
+.site-menu-nav button,.site-menu-action{border:1px solid rgba(255,255,255,.075)!important;border-radius:14px!important;background:rgba(255,255,255,.035)!important;box-shadow:none!important}
+.site-menu-nav button:hover,.site-menu-nav button:focus-visible,.site-menu-action:hover,.site-menu-action:focus-visible{border-color:rgba(117,171,241,.3)!important;background:rgba(40,123,229,.17)!important;transform:translateX(-2px)}
+.site-menu-nav-icon{border:1px solid rgba(117,171,241,.19)!important;border-radius:11px!important;background:rgba(40,123,229,.14)!important;color:#d6e7ff!important}
+.site-menu-section-label{color:#a8bdd6!important;font-size:9px!important;letter-spacing:.15em!important}
+.site-menu-signout{border-color:rgba(255,255,255,.18)!important;border-radius:13px!important;background:rgba(255,255,255,.055)!important;color:#dbe6f3!important}
+.site-menu-signout:hover{border-color:rgba(255,255,255,.32)!important;background:rgba(255,255,255,.11)!important}
+.site-menu-drawer :focus-visible{outline:2px solid #8fc0ff!important;outline-offset:3px}
+@media(max-width:420px){#screen-account .account-signin-card{padding:16px!important;border-radius:18px!important}.app .site-menu-trigger{width:46px!important;height:46px!important;min-width:46px!important}}
+@media(prefers-reduced-motion:reduce){#screen-account .account-signin-card .gsi-material-button,.app .site-menu-trigger,.app .site-menu-trigger span,.site-menu-close,.site-menu-nav button,.site-menu-action{transition:none!important}.app .site-menu-trigger:hover,.site-menu-nav button:hover,.site-menu-action:hover{transform:none!important}}

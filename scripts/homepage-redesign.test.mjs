@@ -208,7 +208,7 @@ test('Google sign-in redirects explicitly and recovers from a stuck OAuth reques
   assert.match(core, /Promise\.race\(\[/);
   assert.match(core, /window\.location\.assign\(oauthUrl\)/);
   assert.match(core, /saAuthRedirecting = false;[\s\S]*?Google sign-in is taking too long/);
-  assert.match(html, /Save jobs, track applications, and unlock unlimited vacancy views/);
+  assert.match(html, /Save vacancies, follow applications, and keep your search in sync across devices/);
   assert.match(core, /loading: 'Connecting to Google…'/);
   assert.match(core, /error: 'Try Google sign-in again'/);
   assert.match(core, /tap “Try Google sign-in again” to retry/);
