@@ -157,7 +157,14 @@ export function isHouseAdHtml5(url) {
 // "unknown path -> app shell" fallback and the service worker: if the response is not a real
 // ad (no ad.size marker) the slot is hidden instead of showing the app inside the ad box.
 export function loadHouseAdHtml5(frame, url, slot) {
-  function hide() { if (slot) { slot.hidden = true; slot.innerHTML = ''; } }
+  // Prefer srcdoc for the shared curtain animation. The public media host does
+  // not expose CORS headers, so a direct sandboxed iframe is the safe fallback.
+  function direct() {
+    if (!frame) return;
+    frame.removeAttribute('srcdoc');
+    frame.src = url;
+    if (slot) slot.hidden = false;
+  }
   if (!frame) return;
   fetch(url, { credentials: 'omit', cache: 'no-cache' }).then(function(res) {
     if (!res.ok) throw new Error('ad ' + res.status);
@@ -167,7 +174,7 @@ export function loadHouseAdHtml5(frame, url, slot) {
     var doc = houseAdWithCurtain(html, 12); // same open/close curtain cycle as every other ad
     frame.srcdoc = doc;
     houseAdLoop(frame, doc);
-  }).catch(hide);
+  }).catch(direct);
 }
 export function houseAdHtml5Size(url) {
   var m = String(url || '').match(/(\d{2,4})x(\d{2,4})\.html?(?:[?#]|$)/i);

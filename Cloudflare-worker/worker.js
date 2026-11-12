@@ -1919,7 +1919,7 @@ __name(publicHouseAdCreativeUrl, "publicHouseAdCreativeUrl");
 async function houseAdsResponse(request, env, ctx, origin) {
   if (!env.DB) return json({ ads: [], error: "House ads mirror unavailable" }, 503, origin);
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/house-ads?schema=d1-v1", request.url).toString(), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/house-ads?schema=d1-v2", request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) {
     const headers = new Headers(cached.headers);
@@ -1930,6 +1930,9 @@ async function houseAdsResponse(request, env, ctx, origin) {
   try {
     const result = await env.DB.prepare("SELECT id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text FROM house_ads WHERE is_active = 1 AND julianday(starts_at) <= julianday('now') AND (ends_at IS NULL OR julianday(ends_at) > julianday('now')) ORDER BY sort_order ASC, created_at DESC LIMIT 50").all();
     ads = (result.results || []).map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url), target_screens: (() => { try { return JSON.parse(ad.target_screens || "[]"); } catch (e) { return []; } })() }));
+    if (ads.some((ad) => !/^https:\/\/media\.sa-recruiters\.co\.za\/assets\/house-ads\/.+\.html(?:[?#].*)?$/i.test(String(ad.image_url || "")))) {
+      throw new Error("D1 house ads contain a stale non-HTML5 creative");
+    }
   } catch (error) {
     // Keep the ads visible during a D1 migration/auth outage. This is a
     // bounded, edge-cached recovery path—not the normal public read path.

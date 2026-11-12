@@ -18,7 +18,7 @@ SELECT
   'Ikhaya Events & Legacy',
   'Ikhaya Events & Legacy',
   'Digital invitations & programmes for life’s most important moments.',
-  'https://files.manuscdn.com/user_upload_by_module/session_file/310519663926371118/jFlVCwHtqdqbLKRP.png',
+  'https://media.sa-recruiters.co.za/assets/house-ads/ikhaya-events-legacy-1200x400.html',
   'https://ikhayahub.co.za/',
   'directories',
   ARRAY['agencies', 'employers', 'candidates', 'posters']::text[],
@@ -31,7 +31,7 @@ WHERE NOT EXISTS (
   SELECT 1
   FROM public.house_ads
   WHERE advertiser_name = 'Ikhaya Events & Legacy'
-    AND image_url = 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663926371118/jFlVCwHtqdqbLKRP.png'
+    AND image_url = 'https://media.sa-recruiters.co.za/assets/house-ads/ikhaya-events-legacy-1200x400.html'
   LIMIT 1
 )
 LIMIT 1;

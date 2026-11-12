@@ -266,7 +266,11 @@
       + '<span style="display:block;position:relative;width:100%;aspect-ratio:' + w + ' / ' + h + ';background:#000;overflow:hidden;border-radius:18px">'
       + '<iframe title="' + alt + '" loading="lazy" tabindex="-1" scrolling="no" sandbox="allow-scripts" referrerpolicy="no-referrer" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none"></iframe></span></a>';
     var htmlFrame = slot.querySelector('iframe');
-    function hide() { slot.hidden = true; slot.innerHTML = ''; }
+    function directCreative() {
+      htmlFrame.removeAttribute('srcdoc');
+      htmlFrame.src = image;
+      slot.hidden = false;
+    }
     if (kind === 'html5') {
       fetch(image, { credentials: 'omit', cache: 'no-cache' }).then(function (res) {
         if (!res.ok) throw new Error('ad ' + res.status);
@@ -276,7 +280,7 @@
         var doc = houseAdWithCurtain(html, 12); // same open/close curtain cycle as every other ad
         htmlFrame.srcdoc = doc;
         houseAdLoop(htmlFrame, doc);
-      }).catch(hide);
+      }).catch(directCreative);
     } else {
       var adDoc = kind === 'card' ? buildHouseAdCardDocument(ad, image) : buildHouseAdImageDocument(image, ad);
       htmlFrame.srcdoc = adDoc;
