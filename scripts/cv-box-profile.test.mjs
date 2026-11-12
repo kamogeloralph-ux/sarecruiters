@@ -222,10 +222,12 @@ test('legacy CV Box sector records remain visible as Other and prefill the stand
   assert.match(appSheets, /sector\.toLowerCase\(\) === 'cv box' \? 'Other' : sector/);
 });
 
-test('CV Box upload entry is compact, follows search, and hides for recruiter or employer sessions', () => {
-  assert.ok(html.indexOf('id="pool-filters"') < html.indexOf('id="cv-box-actions"'));
+test('CV Box upload entry is a compact top line above search and hides for recruiter or employer sessions', () => {
+  assert.ok(html.indexOf('id="cv-box-actions"') < html.indexOf('id="pool-filters"'));
   assert.match(appSheets, /function syncCvBoxActionsVisibility\(/);
   assert.match(appSheets, /employerManagerMode/);
   assert.match(appSheets, /employer\|recruiter\|agency/);
+  assert.match(css, /#cv-box-actions\{[^}]*flex-direction:row/);
+  assert.match(css, /#cv-box-actions button\{[^}]*min-height:24px[^}]*white-space:nowrap/);
   assert.match(css, /#cv-box-actions\[hidden\]\{display:none!important\}/);
 });

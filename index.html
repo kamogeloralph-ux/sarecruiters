@@ -907,13 +907,13 @@ window.sentryOnLoad = function () {
       </header>
     </div>
     <div class="screen-scroll">
-      <div class="cv-box-filters" id="pool-filters" hidden>
-        <input type="search" id="pool-search" oninput="renderPoolList()" placeholder="Search names, roles, location" aria-label="Search CV Box profiles">
-        <select id="pool-sector-filter" onchange="renderPoolList()" aria-label="Filter by sector"><option value="">All sectors</option></select>
-      </div>
       <div class="cv-box-actions" id="cv-box-actions">
         <button class="cv-box-upload-btn" data-ripple onclick="openPoolRegisterSheet()">Looking for work? <strong>Add your CV — Free</strong></button>
         <button class="cv-box-manage-btn" data-ripple onclick="openMyCvBoxProfile()">Already uploaded? <strong>Manage profile</strong></button>
+      </div>
+      <div class="cv-box-filters" id="pool-filters" hidden>
+        <input type="search" id="pool-search" oninput="renderPoolList()" placeholder="Search names, roles, location" aria-label="Search CV Box profiles">
+        <select id="pool-sector-filter" onchange="renderPoolList()" aria-label="Filter by sector"><option value="">All sectors</option></select>
       </div>
       <div id="house-ad-candidates-top" class="house-ad-slot" hidden></div>
       <div id="pool-list"></div>
@@ -1574,7 +1574,7 @@ window.sentryOnLoad = function () {
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=6918a11229"></script>
+<script type="module" src="app.bundle.min.js?v=1148568fc7"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
 <script src="app-alerts.js?v=al-6" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

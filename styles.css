@@ -2883,13 +2883,13 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .home-available-roles-wrap{min-width:0}
 
 
-/* CV Box: keep search first and reduce the candidate upload entry to a calm, compact banner. */
-#cv-box-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:9px 0 14px;padding:8px 10px;border:1px solid color-mix(in srgb,#b79252 22%,var(--border));border-radius:14px;background:color-mix(in srgb,#c6a66b 7%,var(--card))}
+/* CV Box: keep the upload prompt to one short line, then show search and candidates. */
+#cv-box-actions{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;margin:2px 16px 4px;padding:0;border:0;border-radius:0;background:transparent}
 #cv-box-actions[hidden]{display:none!important}
-#cv-box-actions button{min-height:34px;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:var(--text-2);font:inherit;font-size:11px;line-height:1.3;text-align:left;cursor:pointer}
-#cv-box-actions .cv-box-upload-btn{color:var(--text);font-weight:650}
+#cv-box-actions button{display:inline-flex;align-items:center;width:auto;min-height:24px;padding:2px 0;border:0;border-radius:0;background:transparent!important;color:var(--text-2);font:inherit;font-size:11px;line-height:1.15;text-align:left;white-space:nowrap;cursor:pointer}
+#cv-box-actions .cv-box-upload-btn{flex:1 1 auto;color:var(--text);font-weight:650;text-align:left}
 #cv-box-actions .cv-box-upload-btn strong{color:var(--green);font-weight:850}
-#cv-box-actions .cv-box-manage-btn{flex:0 0 auto;text-align:right}
+#cv-box-actions .cv-box-manage-btn{display:inline-flex;flex:0 0 auto;text-align:right}
 #cv-box-actions .cv-box-manage-btn strong{color:var(--text);font-weight:800}
 #cv-box-actions button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .pool-mini-activity{display:block;margin-top:4px;color:var(--text-2);font-size:10.5px;font-weight:650;line-height:1.25}
@@ -2902,4 +2902,4 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .pool-still-looking button{min-height:36px;padding:0 12px;border:0;border-radius:9px;background:#13793f;color:#fff;font:inherit;font-size:11px;font-weight:850;cursor:pointer}
 .pool-still-looking button:disabled{opacity:.65;cursor:wait}
 .pool-still-looking[hidden]{display:none!important}
-@media(max-width:430px){#cv-box-actions{align-items:flex-start}#cv-box-actions button{padding:5px 4px;font-size:10.5px}.pool-still-looking{gap:8px}.pool-still-looking>div{flex-basis:100%}.pool-still-looking label{flex:1}}
+@media(max-width:430px){#cv-box-actions{align-items:center;gap:5px;margin:2px 12px 3px}#cv-box-actions button{padding:2px 0;font-size:10px}.pool-still-looking{gap:8px}.pool-still-looking>div{flex-basis:100%}.pool-still-looking label{flex:1}}
