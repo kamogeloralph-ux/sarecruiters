@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const worker = readFileSync(new URL('../Cloudflare-worker/worker.js', import.meta.url), 'utf8');
 const migration = readFileSync(new URL('../Cloudflare-worker/migrations/0003_d1_sync_indexes.sql', import.meta.url), 'utf8');
 const postersMigration = readFileSync(new URL('../Cloudflare-worker/migrations/0004_public_posters.sql', import.meta.url), 'utf8');
+const houseAdsMigration = readFileSync(new URL('../Cloudflare-worker/migrations/0008_house_ads.sql', import.meta.url), 'utf8');
 
 test('D1 sync uses batched keyed upserts and stale-key cleanup', () => {
   assert.match(worker, /async function syncD1Table\(/);
@@ -44,6 +45,18 @@ test('public posters are mirrored to D1 and served by the Worker', () => {
 test('vacancy deletion reconciliation is not run on every six-hour sync', () => {
   assert.match(worker, /VACANCY_RECONCILE_INTERVAL_SECONDS = 86400/);
   assert.match(worker, /vacancies_last_reconciled_at/);
+});
+
+test('house ads are mirrored to D1 and public delivery/tracking stay off Supabase', () => {
+  assert.match(worker, /syncD1Table\(env, "house_ads"/);
+  assert.match(houseAdsMigration, /CREATE TABLE IF NOT EXISTS house_ads/);
+  const ads = worker.slice(worker.indexOf('async function houseAdsResponse('), worker.indexOf('__name(houseAdsResponse'));
+  const events = worker.slice(worker.indexOf('async function houseAdEventResponse('), worker.indexOf('__name(houseAdEventResponse'));
+  assert.match(ads, /env\.DB\.prepare\("SELECT id,advertiser_name/);
+  assert.doesNotMatch(ads, /supabaseGet|supabaseRpc/);
+  assert.match(events, /UPDATE house_ads SET/);
+  assert.doesNotMatch(events, /supabaseGet|supabaseRpc/);
+  assert.match(worker, /publicHouseAdCreativeUrl/);
 });
 
 test('CV Box reads active profiles live and never shares startup cache', () => {

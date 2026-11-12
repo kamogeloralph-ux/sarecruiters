@@ -1161,7 +1161,8 @@ var D1_WRITE_THROUGH_COLUMNS = {
   employers: ['id','name','industry','website','contact','email','location','address','photo','verified','created_at'],
   app_settings: ['key','value'],
   employer_posters: ['id','employer_id','agency_id','image_url','caption','vacancy_id','created_at','expires_at'],
-  pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','photo_url','verified','status','created_at']
+  pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','photo_url','verified','status','created_at'],
+  house_ads: ['id','advertiser_name','title','message','image_url','target_url','placement','target_screens','ad_slot','ad_format','ad_details','cta_text','starts_at','ends_at','is_active','sort_order','impressions','clicks','created_at','updated_at']
 };
 async function writeThroughD1Mirror(table, value, operation){
   try {
@@ -1371,7 +1372,7 @@ async function getPosters(){
   return [];
 }
 async function getHouseAds(){
-  try { var { data, error } = await supabaseClient.from('house_ads').select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,ad_format,ad_details,cta_text,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at').order('sort_order',{ascending:true}).order('created_at',{ascending:false}); if(!error) return data||[]; console.error('house ads load',error); } catch(e){ console.error('house ads load',e); }
+  try { var auxiliary = await getAdminAuxiliaryData(); return Array.isArray(auxiliary.houseAds) ? auxiliary.houseAds : []; } catch(e){ console.error('house ads load',e); }
   return [];
 }
 // A missing optional table or one transient read failure must not reject the
@@ -2183,8 +2184,9 @@ async function saveHouseAd(){
   if(!screens.length){ alert('Choose at least one screen for this ad.'); return; }
   var payload={advertiser_name:advertiser,title:title,message:document.getElementById('ha-message').value.trim(),image_url:image,ad_format:document.getElementById('ha-format').value,ad_details:document.getElementById('ha-details').value.trim().split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean).slice(0,4).join('\n'),cta_text:document.getElementById('ha-cta').value.trim().slice(0,30),target_url:target,placement:'directories',target_screens:screens,ad_slot:document.getElementById('ha-slot').value,sort_order:parseInt(document.getElementById('ha-order').value,10)||0,starts_at:houseAdInputToISO(document.getElementById('ha-starts').value)||new Date().toISOString(),ends_at:houseAdInputToISO(document.getElementById('ha-ends').value),is_active:true,updated_at:new Date().toISOString()};
   var id=document.getElementById('ha-id').value; if(id) payload.id=id;
-  var res=await supabaseClient.from('house_ads').upsert(payload);
+  var res=await supabaseClient.from('house_ads').upsert(payload).select('id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,ad_format,ad_details,cta_text,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at').single();
   if(res.error){ alert('Could not save house ad: '+res.error.message); return; }
+  await writeThroughD1Mirror('house_ads',Object.assign({},payload,res.data||{}));
   closeSheet('house-ad-overlay'); cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast(id?'House ad updated':'House ad created');
 }
 function renderHouseAds(){
@@ -2192,7 +2194,7 @@ function renderHouseAds(){
   if(!cache.houseAds.length){el.innerHTML='<div class="empty-state"><h3>No house ads yet</h3><p>Create a banner to promote your own services or partners.</p></div>';return;}
   el.innerHTML=cache.houseAds.map(function(ad){ var ctr=ad.impressions?((ad.clicks||0)/ad.impressions*100).toFixed(1):'0.0'; return '<div class="row-item house-ad-admin-row" onclick="toggleRow(this)"><div class="row-avatar house-ad-admin-thumb">'+(/\.html?$/i.test(String(ad.image_url||'').split(/[?#]/)[0])?'<span class="badge verified">HTML5</span>':'<img src="'+escapeHtml(ad.image_url)+'" alt="">')+'</div><div class="row-main"><div class="row-title">'+escapeHtml(ad.title||'Untitled ad')+' '+houseAdStatus(ad)+'</div><div class="row-sub">'+escapeHtml(ad.advertiser_name||'')+' · '+(Array.isArray(ad.target_screens)?ad.target_screens.join(', '):'all screens')+' · '+escapeHtml(ad.ad_slot||'top')+' · '+(ad.impressions||0)+' impressions · '+(ad.clicks||0)+' clicks ('+ctr+'% CTR)</div></div><span class="row-chevron">⌄</span></div><div class="row-details"><div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(houseAdDateToInput(ad.starts_at)||'Now')+' → '+escapeHtml(houseAdDateToInput(ad.ends_at)||'No expiry')+'</div><div class="det-row"><span class="det-label">Destination:</span> <a href="'+escapeHtml(ad.target_url)+'" target="_blank" rel="noopener">'+escapeHtml(ad.target_url)+'</a></div><div class="row-expanded-actions"><button class="minibtn full" onclick="event.stopPropagation();openHouseAdSheet(\''+ad.id+'\')">Edit</button><button class="minibtn full danger" onclick="event.stopPropagation();deleteHouseAd(\''+ad.id+'\')">Delete</button></div></div>'; }).join('');
 }
-async function deleteHouseAd(id){ var ad=cache.houseAds.find(function(x){return x.id===id;}); if(!confirm('Delete “'+((ad&&ad.title)||'this house ad')+'”?')) return; var res=await supabaseClient.from('house_ads').delete().eq('id',id); if(res.error){alert('Could not delete house ad: '+res.error.message);return;} cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast('House ad deleted'); }
+async function deleteHouseAd(id){ var ad=cache.houseAds.find(function(x){return x.id===id;}); if(!confirm('Delete “'+((ad&&ad.title)||'this house ad')+'”?')) return; var res=await supabaseClient.from('house_ads').delete().eq('id',id); if(res.error){alert('Could not delete house ad: '+res.error.message);return;} await writeThroughD1Mirror('house_ads',id,'delete'); cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast('House ad deleted'); }
 
 function renderPosters(){
   var q = (document.getElementById('po-search').value||'').trim().toLowerCase();

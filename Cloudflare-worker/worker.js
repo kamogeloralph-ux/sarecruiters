@@ -667,7 +667,8 @@ const D1_WRITE_THROUGH_SPECS = {
   app_settings: { key: "key", columns: ["key", "value"], boolColumns: [] },
   employer_posters: { key: "id", columns: ["id", "employer_id", "agency_id", "image_url", "caption", "vacancy_id", "created_at", "expires_at"], boolColumns: [] },
   // This projection deliberately excludes candidate contacts, CV links, and admin fields.
-  pool_candidates: { key: "id", columns: ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"], boolColumns: ["verified"] }
+  pool_candidates: { key: "id", columns: ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"], boolColumns: ["verified"] },
+  house_ads: { key: "id", columns: ["id", "advertiser_name", "title", "message", "image_url", "target_url", "placement", "target_screens", "ad_slot", "ad_format", "ad_details", "cta_text", "starts_at", "ends_at", "is_active", "sort_order", "impressions", "clicks", "created_at", "updated_at"], boolColumns: ["is_active"] }
 };
 function prepareD1WriteThroughUpsert(env, table, spec, columns, row) {
   const updateColumns = columns.filter((column) => column !== spec.key);
@@ -735,7 +736,7 @@ async function syncD1FromSupabase(env) {
   if (hasFeaturedColumns) {
     vacancyColumns.push("is_featured", "featured_until", "featured_order");
   }
-  const [agencies, branches, vacancies, employers, pool, settings, posters] = await Promise.all([
+  const [agencies, branches, vacancies, employers, pool, settings, posters, houseAds] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,created_at",
       order: "created_at.desc"
@@ -764,6 +765,11 @@ async function syncD1FromSupabase(env) {
       select: "id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at",
       order: "created_at.desc",
       limit: "500"
+    }),
+    supabaseGet(env, "house_ads", {
+      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,ad_format,ad_details,cta_text,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at",
+      order: "sort_order.asc,created_at.desc",
+      limit: "200"
     })
   ]);
 
@@ -805,6 +811,9 @@ async function syncD1FromSupabase(env) {
   const postersSync = await syncD1Table(env, "employer_posters",
     ["id", "employer_id", "agency_id", "image_url", "caption", "vacancy_id", "created_at", "expires_at"],
     posters.body || []);
+  const houseAdsSync = await syncD1Table(env, "house_ads",
+    ["id", "advertiser_name", "title", "message", "image_url", "target_url", "placement", "target_screens", "ad_slot", "ad_format", "ad_details", "cta_text", "starts_at", "ends_at", "is_active", "sort_order", "impressions", "clicks", "created_at", "updated_at"],
+    houseAds.body || [], ["is_active"]);
 
   const summary = {
     synced_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -827,7 +836,10 @@ async function syncD1FromSupabase(env) {
     settings_deletes: settingsSync.deleted,
     posters: (posters.body || []).length,
     poster_writes: postersSync.written,
-    poster_deletes: postersSync.deleted
+    poster_deletes: postersSync.deleted,
+    house_ads: (houseAds.body || []).length,
+    house_ad_writes: houseAdsSync.written,
+    house_ad_deletes: houseAdsSync.deleted
   };
   await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
     .bind("last_sync", JSON.stringify(summary)).run();
@@ -1891,27 +1903,33 @@ async function postersResponse(request, env, origin) {
   return clientResponse(cachedResponse);
 }
 __name(postersResponse, "postersResponse");
+function publicHouseAdCreativeUrl(env, value) {
+  const raw = String(value || "");
+  try {
+    const source = new URL(raw);
+    const site = new URL(env.SITE_URL || "https://sa-recruiters.co.za");
+    const r2 = String(env.R2_PUBLIC_BASE_URL || "").replace(/\/$/, "");
+    if (r2 && source.origin === site.origin && source.pathname.startsWith("/assets/house-ads/")) {
+      return `${r2}${source.pathname}${source.search}${source.hash}`;
+    }
+  } catch (e) {}
+  return raw;
+}
+__name(publicHouseAdCreativeUrl, "publicHouseAdCreativeUrl");
 async function houseAdsResponse(request, env, ctx, origin) {
+  if (!env.DB) return json({ ads: [], error: "House ads mirror unavailable" }, 503, origin);
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/house-ads?schema=v3", request.url).toString(), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/house-ads?schema=d1-v1", request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) {
     const headers = new Headers(cached.headers);
     headers.set("Access-Control-Allow-Origin", origin || "*");
     return new Response(cached.body, { status: cached.status, headers });
   }
-  const now = new Date().toISOString();
   let ads = [];
   try {
-    const result = await supabaseGet(env, "house_ads", {
-      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text",
-      is_active: "eq.true",
-      starts_at: `lte.${now}`,
-      or: `(ends_at.is.null,ends_at.gt.${now})`,
-      order: "sort_order.asc,created_at.desc",
-      limit: "50"
-    });
-    ads = Array.isArray(result.body) ? result.body : [];
+    const result = await env.DB.prepare("SELECT id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text FROM house_ads WHERE is_active = 1 AND julianday(starts_at) <= julianday('now') AND (ends_at IS NULL OR julianday(ends_at) > julianday('now')) ORDER BY sort_order ASC, created_at DESC LIMIT 50").all();
+    ads = (result.results || []).map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url), target_screens: (() => { try { return JSON.parse(ad.target_screens || "[]"); } catch (e) { return []; } })() }));
   } catch (error) {
     console.error("house ads read failed", error);
     // Do not cache a failure; let the next visitor retry.
@@ -1933,7 +1951,9 @@ async function houseAdEventResponse(request, env, origin) {
     return json({ error: "Invalid house ad event" }, 400, origin);
   }
   try {
-    await supabaseRpc(env, "record_house_ad_event", { p_ad_id: id, p_event: event });
+    if (!env.DB) return json({ error: "House ads mirror unavailable" }, 503, origin);
+    const column = event === "impression" ? "impressions" : "clicks";
+    await env.DB.prepare(`UPDATE house_ads SET ${column} = ${column} + 1 WHERE id = ?`).bind(id).run();
   } catch (error) {
     console.error("house ad event failed", error);
   }
@@ -2419,6 +2439,10 @@ var worker_default = {
           tracks: "daily_tracks"
         };
         const readTable = async (table) => {
+          if (table === "house_ads" && env.DB) {
+            const result = await env.DB.prepare("SELECT id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,ad_format,ad_details,cta_text,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at FROM house_ads ORDER BY sort_order ASC, created_at DESC LIMIT 2000").all();
+            return (result.results || []).map((ad) => ({ ...ad, target_screens: (() => { try { return JSON.parse(ad.target_screens || "[]"); } catch (e) { return []; } })(), is_active: Boolean(ad.is_active) }));
+          }
           const query = new URLSearchParams({ select: "*", order: "created_at.desc", limit: "2000" });
           const response = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}?${query}`, { headers });
           if (!response.ok) {
