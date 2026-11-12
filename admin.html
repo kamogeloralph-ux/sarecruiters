@@ -2799,14 +2799,16 @@ function renderPoolCandidates(){
       quickActions = '<button class="minibtn ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Approve</button>' +
         '<button class="minibtn danger" onclick="stopProp(event);rejectPoolCandidate(\''+p.id+'\')">Reject</button>';
     } else if(p.status==='active'){
-      quickActions = '<button class="minibtn" onclick="stopProp(event);expirePoolCandidate(\''+p.id+'\')">Mark expired</button>';
+      quickActions = (!p.verified ? '<button class="minibtn ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Publish / verify</button>' : '') +
+        '<button class="minibtn" onclick="stopProp(event);expirePoolCandidate(\''+p.id+'\')">Mark expired</button>';
     }
     var approveBtn = '';
     if((p.status||'pending')==='pending'){
       approveBtn = '<button class="minibtn full ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Approve</button>' +
         '<button class="minibtn full danger" onclick="stopProp(event);rejectPoolCandidate(\''+p.id+'\')">Reject</button>';
     } else if(p.status==='active'){
-      approveBtn = '<button class="minibtn full" onclick="stopProp(event);expirePoolCandidate(\''+p.id+'\')">Mark expired</button>';
+      approveBtn = (!p.verified ? '<button class="minibtn full ok" onclick="stopProp(event);approvePoolCandidate(\''+p.id+'\')">Publish / verify</button>' : '') +
+        '<button class="minibtn full" onclick="stopProp(event);expirePoolCandidate(\''+p.id+'\')">Mark expired</button>';
     }
     return '<div class="row-item" onclick="toggleRow(this)">'+
       '<div class="row-avatar" style="background:linear-gradient(145deg,#5E5CE6,#3D3AB8)">'+(p.photo_url ? '<img src="'+escapeHtml(p.photo_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg>')+'</div>'+
@@ -2931,7 +2933,10 @@ async function approvePoolCandidate(id){
   var p = poolCandidateById(id);
   if(!p) return;
   var oneYear = new Date(); oneYear.setFullYear(oneYear.getFullYear()+1);
-  var saved = await upsertPoolCandidate({ id:id, status:'active', paid_until: oneYear.toISOString() });
+  // The scanner is advisory. Clicking Approve is the administrator's explicit
+  // decision to publish, even when the scan contains a review warning such as
+  // a profile/CV name mismatch.
+  var saved = await upsertPoolCandidate({ id:id, status:'active', verified:true, paid_until: oneYear.toISOString() });
   if(!saved){ showToast('Could not approve candidate — save failed. Please retry.'); return; }
   showToast('Approved — now live in the public CV Box');
   await loadAll(['aux']); renderNav(); renderPoolCandidates(); renderDashboard();
