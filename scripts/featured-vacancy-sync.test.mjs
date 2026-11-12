@@ -37,7 +37,7 @@ test('dedicated featured-vacancy sections and their extra startup query are remo
   assert.match(home, /target\.innerHTML = '[\s\S]*homeVacancySourceMarkup\(\) \+\s*homeWeeklyTopJobsMarkup\(\) \+\s*'<section class="home-jobs-section"/);
   assert.match(home, /var rows = matchingRows;/, 'featured listings remain eligible for normal retail-first role ordering');
   assert.match(home, /homeAvailableRolesMarkup\(rows\)/);
-  assert.match(home, /onclick="openCommunity\(\)"/, 'the Interview Tips shortcut must remain on the home screen');
+  assert.match(indexSrc, /onclick="openCommunity\(\)"/, 'the Interview Tips shortcut must remain on the home screen');
 
   assert.doesNotMatch(uiSrc, /career-featured-section|featured-vacancies-(?:heading|controls|rail|empty)|wireFeaturedRailGestures/);
   assert.doesNotMatch(sharedCss, /featured-vacancies-(?:heading|controls|rail|empty)/);

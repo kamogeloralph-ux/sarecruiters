@@ -17,6 +17,7 @@ const community = read('app-community.js');
 const appManagerEmployer = read('app-manager-employer.js');
 const css = read('styles.css');
 const communityCss = read('community.css');
+const mono = read('mono.css');
 const admin = read('admin.html');
 const vacancyCss = read('vacancy-v2.css');
 const sw = read('sw.js');
@@ -111,7 +112,7 @@ test('the homepage shows a slim source chip row, then top jobs, then the latest 
   assert.match(ui, /function ensureRetailPriorityVacancies\(/);
 
   assert.match(ui, /isRetailPriorityVacancy\(b\)/);
-  assert.match(homeRender, /onclick="openCommunity\(\)"/);
+  assert.match(html, /onclick="openCommunity\(\)"/);
   assert.match(ui, /\(rows \|\| \[\]\)\.slice\(0, 5\)/, 'the home feed shows only the five latest roles');
   const overview = vacancyV2.slice(vacancyV2.indexOf('function renderOverview()'), vacancyV2.indexOf('/* ---------- folder post-processing'));
   const sourcesPosition = overview.indexOf('vx-source-section');
@@ -225,13 +226,24 @@ test('home conversion sections use the compact Interview Tips card language', ()
 });
 
 test('TipChat uses a welcoming community banner with a clear join action', () => {
-  assert.match(ui, /class=\"tipchat-home-logo\" onclick=\"openCommunity\(\)\"/);
-  assert.match(ui, /icons\/tipchat-logo\.svg/);
+  assert.match(html, /class=\"tipchat-home-logo\" onclick=\"openCommunity\(\)\"/);
+  assert.match(html, /icons\/tipchat-logo\.svg/);
   assert.doesNotMatch(ui, /home-chat-banner/);
   assert.match(css, /\.tipchat-home-logo/);
   assert.match(html, /community-menu-badge.*>Join</);
 });
 
+test('TipChat home entry transfers a draft to the existing composer without posting', () => {
+  const entryPosition = html.indexOf('class="tipchat-home-entry"');
+  assert.ok(entryPosition >= 0 && entryPosition < html.indexOf('id="home-feed"'), 'the TipChat entry stays above the dynamic vacancy feed');
+  assert.match(html, /class=\"tipchat-home-quick-entry\" onsubmit=\"return openTipChatFromHome\(event\)\"/);
+  assert.match(html, /id=\"home-tipchat-text\" type=\"text\" maxlength=\"3000\" placeholder=\"Ask a question or share a tip/);
+  assert.match(community, /export function openTipChatFromHome\(event\)[\s\S]*?var draft = homeField \? homeField\.value\.trim\(\) : ''[\s\S]*?openCommunity\(\)[\s\S]*?composer\.value = draft[\s\S]*?composer\.focus/);
+  assert.match(community, /window\.openTipChatFromHome = openTipChatFromHome/);
+  assert.doesNotMatch(community.slice(community.indexOf('export function openTipChatFromHome'), community.indexOf('export function goBackFromCommunity')), /communitySubmitPost/);
+  assert.match(mono, /#screen-home \.tipchat-home-entry-row/);
+  assert.match(mono, /#screen-home \.tipchat-home-entry-row input/);
+});
 test('TipChat exposes the original SA Recruiters emoji picker and reaction hooks', () => {
   assert.match(html, /community-post-emoji-picker/);
   assert.match(html, /Choose a custom SA Recruiters emoji/);
@@ -245,7 +257,7 @@ test('TipChat exposes the original SA Recruiters emoji picker and reaction hooks
 });
 
 test('TipChat logo is used on home, in the community screen and the menu', () => {
-  assert.match(ui, /class="tipchat-home-logo"[\s\S]*?icons\/tipchat-logo\.svg/);
+  assert.match(html, /class="tipchat-home-logo"[\s\S]*?icons\/tipchat-logo\.svg/);
   assert.match(html, /class="tipchat-section-logo" src="icons\/tipchat-logo\.svg"/);
   assert.doesNotMatch(html, /community-banner-logo/);
   assert.match(html, /class="tipchat-menu-logo" src="icons\/tipchat-mark\.svg"/);

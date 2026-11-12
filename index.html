@@ -199,8 +199,8 @@ window.sentryOnLoad = function () {
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="mono.css?v=visibility-5" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-2"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=visibility-5"></noscript>
+<link rel="stylesheet" href="mono.css?v=visibility-6" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-2"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=visibility-6"></noscript>
 </head>
 <body>
 
@@ -308,6 +308,14 @@ window.sentryOnLoad = function () {
     </div>
 
     <div class="screen-scroll">
+    <section class="tipchat-home-entry" aria-label="TipChat community">
+      <button type="button" class="tipchat-home-logo" onclick="openCommunity()" aria-label="Open TipChat community"><img src="icons/tipchat-logo.svg" alt="TipChat" width="260" height="90" loading="lazy" decoding="async"><span>Open the conversation <b aria-hidden="true">→</b></span></button>
+      <form class="tipchat-home-quick-entry" onsubmit="return openTipChatFromHome(event)" aria-label="Start writing in TipChat">
+        <label class="sr-only" for="home-tipchat-text">Start a TipChat message</label>
+        <div class="tipchat-home-entry-row"><input id="home-tipchat-text" type="text" maxlength="3000" placeholder="Ask a question or share a tip…" autocomplete="off"><button type="submit" aria-label="Continue writing in TipChat" title="Continue in TipChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button></div>
+        <small>Your draft opens in TipChat. It will not post until you choose Post.</small>
+      </form>
+    </section>
     <div id="home-feed" aria-live="polite" aria-busy="true"></div>
     <div id="house-ad-home-bottom" class="house-ad-slot" hidden></div>
     <section class="home-bottom-hero" aria-label="Support the SA Recruiters directory">
@@ -1564,7 +1572,7 @@ window.sentryOnLoad = function () {
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=3993a42e56"></script>
+<script type="module" src="app.bundle.min.js?v=e19c2843fb"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
 <script src="app-alerts.js?v=al-6" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

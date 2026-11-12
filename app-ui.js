@@ -435,8 +435,6 @@ export function renderHomeFeed() {
       '<div class="home-available-roles-wrap" aria-live="polite">' + (rows.length ? homeAvailableRolesMarkup(rows) : empty) + '</div>' +
       '<button type="button" class="home-more-btn" onclick="showAllVacancies(\'home\')">View all ' + escapeHtml(totalLabel) + ' roles<span aria-hidden="true"> →</span></button>' +
     '</section>' +
-    '<button type="button" class="tipchat-home-logo" onclick="openCommunity()" aria-label="Open TipChat community"><img src="icons/tipchat-logo.svg" alt="TipChat" width=260 height=90 loading="lazy" decoding="async"><span>Join the conversation <b aria-hidden="true">→</b></span></button>' +
-
     '<div id="house-ad-home-middle" class="house-ad-slot" hidden></div>' +
     '<section class="home-tools-section" aria-labelledby="home-tools-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Start here</span><h2 id="home-tools-title">Take your next step</h2><p>Whether you’re looking for work or hiring talent, start here.</p></div></div>' +
       '<div class="home-tools-grid">' +

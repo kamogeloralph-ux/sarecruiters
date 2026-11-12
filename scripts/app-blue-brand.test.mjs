@@ -79,7 +79,7 @@ test('app icons, support wording, and the site-menu trigger remain visible and o
   assert.equal((shell.match(/<button class=\"support-ticker\" type=\"button\"[^>]*onclick=\"openSupportSheet\(\)\"/g) || []).length, 2);
   assert.doesNotMatch(shell, /onclick=\"openContentSheet\('support'\)\"/);
   assert.doesNotMatch(shell, /onkeydown="if\(event\.key==='Enter'\|\|event\.key===' '\)/);
-  assert.match(shell, /mono\.css\?v=visibility-5/);
+  assert.match(shell, /mono\.css\?v=visibility-6/);
   assert.match(brand, /#screen-home \.stat-icon\{[\s\S]*?border:1px solid rgba\(255,255,255,\.48\)!important;[\s\S]*?color:#fff!important;opacity:1!important/);
   assert.match(shell, /class="account-signin-eyebrow">[\s\S]*?FREE ACCOUNT \u00b7 GOOGLE SIGN-IN/);
   assert.match(brand, /#screen-account \.account-signin-card\{[\s\S]*?background:#fff!important/);
@@ -91,5 +91,5 @@ test('app icons, support wording, and the site-menu trigger remain visible and o
   assert.match(brand, /#site-menu-drawer \.site-menu-nav-icon\{[\s\S]*?background:transparent!important/);
   assert.match(ui, /drawer\.classList\.add\('is-open'\)/);
   assert.match(ui, /backdrop\.classList\.add\('is-visible'\)/);
-  assert.match(serviceWorker, /const VERSION = 'sa-recruiters-visibility1'/);
+  assert.match(serviceWorker, /const VERSION = 'sa-recruiters-tipchat-home1'/);
 });

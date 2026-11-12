@@ -289,6 +289,26 @@ export function openCommunity(fromDeepLink) {
   }
   communityLoad();
 }
+export function openTipChatFromHome(event) {
+  if (event && typeof event.preventDefault === 'function') event.preventDefault();
+  var homeField = document.getElementById('home-tipchat-text');
+  var draft = homeField ? homeField.value.trim() : '';
+  if (homeField) homeField.value = '';
+  openCommunity();
+  var focusComposer = function() {
+    var composer = document.getElementById('community-post-body');
+    if (!composer) return;
+    composer.value = draft;
+    composer.focus({ preventScroll: true });
+    if (typeof composer.setSelectionRange === 'function') {
+      var end = composer.value.length;
+      composer.setSelectionRange(end, end);
+    }
+  };
+  if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(focusComposer);
+  else window.setTimeout(focusComposer, 0);
+  return false;
+}
 export function goBackFromCommunity() {
   var screenName = communityMvp.returnScreen || 'home';
   var target = document.getElementById('screen-' + screenName) ? 'screen-' + screenName : 'screen-home';
@@ -948,6 +968,7 @@ export async function communityDismissReport(reportId) {
 }
 
 window.openCommunity = openCommunity;
+window.openTipChatFromHome = openTipChatFromHome;
 window.goBackFromCommunity = goBackFromCommunity;
 window.communityJoinGroup = communityJoinGroup;
 window.communitySetSort = communitySetSort;
