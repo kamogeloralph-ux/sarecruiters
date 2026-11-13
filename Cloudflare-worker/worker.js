@@ -1443,7 +1443,7 @@ async function cvCheckoutResponse(request, env, origin) {
   if (!email) return json({ error: "Enter a valid email address for your download link." }, 400, origin);
   let candidate;
   try {
-    const q = new URLSearchParams({ select: "id,full_name,position,sector,location,experience_years,status,cv_link", id: `eq.${candidateId}`, status: "eq.active", limit: "1" });
+    const q = new URLSearchParams({ select: "id,full_name,status,cv_link", id: `eq.${candidateId}`, status: "eq.active", limit: "1" });
     const response = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${q}`, {
       headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
     });

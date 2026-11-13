@@ -5,11 +5,33 @@ import { filterLiveVacancies } from './static-vacancy-filter.mjs';
 const DEFAULT_WORKER_URL = 'https://sarecruiters-uploader.kamogeloralph.workers.dev';
 const workerUrl = (process.env.SA_RECRUITERS_WORKER_URL || DEFAULT_WORKER_URL).replace(/\/$/, '');
 const outputPath = process.env.SEO_SNAPSHOT_PATH || new URL('../data/startup.json', import.meta.url);
+const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
+function pause(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchJsonWithRetry(fetchImpl, url, label) {
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    let response;
+    try {
+      response = await fetchImpl(url, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+    } catch (error) {
+      if (attempt === 4) throw new Error(`${label} request failed after ${attempt} attempts: ${error.message}`, { cause: error });
+      await pause(250 * (2 ** (attempt - 1)));
+      continue;
+    }
+    if (response.ok) return response.json();
+    if (!RETRYABLE_STATUSES.has(response.status) || attempt === 4) {
+      throw new Error(`${label} ${url} returned ${response.status} after ${attempt} attempt(s)`);
+    }
+    await pause(250 * (2 ** (attempt - 1)));
+  }
+  throw new Error(`${label} failed after retries`);
+}
 
 export async function fetchFreshSeoSnapshot(fetchImpl = fetch, baseUrl = workerUrl) {
-  const startupResponse = await fetchImpl(`${baseUrl}/api/startup`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
-  if (!startupResponse.ok) throw new Error(`Public startup endpoint returned ${startupResponse.status}`);
-  const startup = await startupResponse.json();
+  const startup = await fetchJsonWithRetry(fetchImpl, `${baseUrl}/api/startup`, 'Public startup endpoint');
   if (!startup || !Array.isArray(startup.agencies) || !Array.isArray(startup.branches) || !startup.generated_at) {
     throw new Error('Public startup payload is incomplete or has no generated_at timestamp');
   }
@@ -24,9 +46,7 @@ export async function fetchFreshSeoSnapshot(fetchImpl = fetch, baseUrl = workerU
   for (let page = 0; page < 500; page++) {
     const params = new URLSearchParams({ limit: '50' });
     if (cursor) params.set('cursor', cursor);
-    const response = await fetchImpl(`${baseUrl}/api/vacancies?${params}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
-    if (!response.ok) throw new Error(`Public vacancies endpoint returned ${response.status}`);
-    const payload = await response.json();
+    const payload = await fetchJsonWithRetry(fetchImpl, `${baseUrl}/api/vacancies?${params}`, 'Public vacancies endpoint');
     if (!payload || !Array.isArray(payload.vacancies)) throw new Error('Public vacancies payload is invalid');
     vacancies.push(...payload.vacancies);
     const next = payload.next_cursor || null;

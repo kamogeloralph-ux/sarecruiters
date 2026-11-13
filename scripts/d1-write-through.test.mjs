@@ -50,7 +50,10 @@ test('public startup and vacancy reads are edge-first and do not validate every 
   assert.match(worker, /schema\", \"edge-first-v3\"/);
   assert.match(worker, /const snapshotFresh = !!snapshot/);
   const startup = sourceBetween(worker, 'async function startupResponse(', '__name(startupResponse');
-  assert.match(startup, /loadStartupDataFromD1\(env\)/);
+  assert.match(startup, /D1 fallback disabled/);
+  assert.match(startup, /X-Data-Stale/);
+  assert.match(startup, /readPublicStartupSnapshot\(env\)/);
+  assert.doesNotMatch(startup, /loadStartupDataFromD1\(env\)/);
   assert.doesNotMatch(startup, /readPublicDataVersion\(env\)/);
   assert.doesNotMatch(startup, /syncD1FromSupabase|syncD1AndPublishSnapshot/);
   const vacancyPage = sourceBetween(worker, 'async function vacanciesResponse(', '__name(vacanciesResponse');

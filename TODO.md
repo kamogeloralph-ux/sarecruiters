@@ -10,13 +10,14 @@
 - [x] Agency and employer manager links show per-vacancy tracked apply-link clicks and self-reported application counts for the last 30 days.
 - [x] Keep event reads behind a server-role-only, manager-token-scoped SQL function; return aggregate counts only and preserve manager access when metrics are unavailable.
 - [x] Add regression coverage for owner scoping, service-role access, privacy, and the UI fallback.
-- [ ] Apply `supabase/migrations/20261111100000_manager_vacancy_analytics.sql` to the correct SA Recruiters Supabase project and verify the RPC there.
+- [x] Apply `supabase/migrations/20261111084515_manager_vacancy_analytics.sql` to SA.Recruiters; confirm it is recorded and `service_role`-only.
 
 ## Remaining production checks
 
-- [ ] Confirm the Worker and Pages deployments succeeded after the source update.
-- [ ] Confirm the Worker has `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and a verified `EMAIL_FROM` domain configured.
-- [ ] Verify the production grants for `20261104042157_restrict_server_only_rpc_execute.sql`.
+- [x] Worker deployment for commit `32fde7b` succeeded; check the latest Worker publish after upstream updates before closing rollout.
+- [ ] Publish and confirm the Pages workflow after applying the transient-503 retry; the live export also filters expired/capped rows and passed validation with 6,034 current rows.
+- [x] Confirm the Worker has `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and a non-empty `EMAIL_FROM` binding. The sender domain's verification status remains unconfirmed.
+- [x] Verify production grants for `20261104042157_restrict_server_only_rpc_execute.sql`; the protected RPCs show `postgres` and `service_role` execution only.
 
 ## Shared candidate flows and compact home/account cards
 

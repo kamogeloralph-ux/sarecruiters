@@ -12,7 +12,7 @@ const ciWorkflow = read('../.github/workflows/test.yml');
 const wrangler = read('../Cloudflare-worker/wrangler.toml');
 const managerAgency = read('../app-manager.js');
 const managerEmployer = read('../app-manager-employer.js');
-const managerAnalyticsMigration = read('../supabase/migrations/20261111100000_manager_vacancy_analytics.sql');
+const managerAnalyticsMigration = read('../supabase/migrations/20261111084515_manager_vacancy_analytics.sql');
 
 test('admin employer/branch/vacancy mutations report delete errors rather than success', () => {
   for (const entity of ['employer', 'branch', 'vacancy']) {
@@ -75,7 +75,7 @@ test('deploy workflow refreshes and validates the SEO snapshot before generation
   assert.match(wrangler, /crons = \["0 \*\/6 \* \* \*", "15,45 \* \* \* \*"\]/);
 });
 
-test('fresh SEO exporter paginates every row and refuses stale or malformed data', async () => {
+test('fresh SEO exporter paginates every row, filters expired listings, and rejects stale source data', async () => {
   const now = new Date().toISOString();
   const calls = [];
   const fakeFetch = async (url) => {
@@ -86,9 +86,24 @@ test('fresh SEO exporter paginates every row and refuses stale or malformed data
   };
   const snapshot = await fetchFreshSeoSnapshot(fakeFetch, 'https://worker.example');
   assert.equal(snapshot.vacancies.length, 2);
+  assert.equal(snapshot.vacancies.some((row) => row.id === '2'), false);
   assert.equal(calls.length, 3);
   assert.match(calls[2], /cursor=cursor-2/);
 
   const staleFetch = async () => Response.json({ agencies: [{ id: 'a' }], branches: [], generated_at: '2000-01-01T00:00:00Z' });
   await assert.rejects(fetchFreshSeoSnapshot(staleFetch, 'https://worker.example'), /stale or invalid/);
+});
+
+test('fresh SEO exporter retries transient Worker 503 responses with bounded backoff', async () => {
+  let vacancyAttempts = 0;
+  const now = new Date().toISOString();
+  const fakeFetch = async (url) => {
+    if (String(url).endsWith('/api/startup')) return Response.json({ agencies: [], branches: [], counts: { candidates: 0 }, generated_at: now });
+    vacancyAttempts++;
+    if (vacancyAttempts < 3) return new Response('temporarily unavailable', { status: 503 });
+    return Response.json({ vacancies: [{ id: 'live' }], next_cursor: null });
+  };
+  const snapshot = await fetchFreshSeoSnapshot(fakeFetch, 'https://worker.example');
+  assert.equal(vacancyAttempts, 3);
+  assert.equal(snapshot.vacancies.length, 1);
 });
