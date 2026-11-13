@@ -1212,24 +1212,46 @@ function buildPostAJobPage() {
   const body = `
 <div class="trust">${trustTile('tag', 'Free to list', 'SA Recruiters never charges employers')}${trustTile('shield', 'Admin reviewed', 'Nothing goes live until approved')}${trustTile('users', 'Reach candidates', 'Across every South African province')}</div>
 <div class="card pj-card">
+<div class="pj-intro"><span class="pj-step">01</span><div><h2>Tell us who you want to hire</h2><p>Share the role, candidate profile and application instructions. The clearer the brief, the faster we can prepare it for review.</p></div></div>
 <form id="pj-form" class="pj-form">
-  <label>Company name<input id="pj-company" name="company_name" required maxlength="120" autocomplete="organization"></label>
-  <label>Contact person<input id="pj-contact" name="contact_person" maxlength="120" autocomplete="name"></label>
-  <label>Work email<input id="pj-email" name="work_email" type="email" required maxlength="254" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false"></label>
-  <label>Phone number <span class="pj-optional">optional</span><input id="pj-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" pattern="\+?[0-9 \(\)\-]{10,20}" title="Enter a phone number, e.g. 082 123 4567 or +27 82 123 4567"></label>
-  <label>Industry <span class="pj-optional">optional</span><input id="pj-industry" name="industry"></label>
-  <label>Positions to fill <span class="pj-optional">optional</span>
-    <select id="pj-positions" name="positions_to_fill">
-      <option value="">Select</option>
-      <option>1</option><option>2-5</option><option>6-10</option><option>10+</option>
-    </select>
-  </label>
-  <fieldset class="pj-roles">
-    <legend>What kind of roles? <span class="pj-optional">optional</span></legend>
-    ${roleTypes.map((r) => `<label class="pj-role-check"><input type="checkbox" name="role_types" value="${escapeHtml(r)}"> ${escapeHtml(r)}</label>`).join('')}
-  </fieldset>
-  <label>Additional details <span class="pj-optional">optional</span><textarea id="pj-details" name="additional_details" rows="4"></textarea></label>
-  <label>Website <span class="pj-optional">optional</span><input id="pj-website" name="website" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="www.yourcompany.co.za"></label>
+  <div class="pj-section"><div class="pj-section-title"><span class="pj-step">02</span><div><h3>Employer details</h3><p>How should we identify and reach your organisation?</p></div></div>
+    <div class="pj-grid">
+      <label>Company name<input id="pj-company" name="company_name" required maxlength="120" autocomplete="organization" placeholder="e.g. Mzansi Retail Group"></label>
+      <label>Contact person<input id="pj-contact" name="contact_person" maxlength="120" autocomplete="name" placeholder="e.g. Thandi Mokoena"></label>
+      <label>Work email<input id="pj-email" name="work_email" type="email" required maxlength="254" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="careers@company.co.za"></label>
+      <label>Phone / WhatsApp <span class="pj-optional">optional</span><input id="pj-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" pattern="\\+?[0-9 \\(\\)\\-]{10,20}" title="Enter a phone number, e.g. 082 123 4567 or +27 82 123 4567" placeholder="082 123 4567"></label>
+      <label>Industry <span class="pj-optional">optional</span><input id="pj-industry" name="industry" placeholder="e.g. Construction, Finance, IT"></label>
+      <label>Company website <span class="pj-optional">optional</span><input id="pj-website" name="website" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="www.yourcompany.co.za"></label>
+    </div>
+  </div>
+  <div class="pj-section"><div class="pj-section-title"><span class="pj-step">03</span><div><h3>Role details</h3><p>Describe the opportunity candidates should apply for.</p></div></div>
+    <div class="pj-grid">
+      <label>Profession / job title<input id="pj-job-title" name="job_title" required maxlength="160" placeholder="e.g. Electrician, Sales Consultant, Software Developer"></label>
+      <label>Work location<input id="pj-location" name="location" maxlength="160" placeholder="e.g. Cape Town, Western Cape or Remote"></label>
+      <label>Employment type
+        <select id="pj-employment" name="employment_type"><option value="">Select</option><option>Permanent</option><option>Contract</option><option>Temporary</option><option>Part-time</option><option>Internship</option><option>Learnership</option><option>Graduate programme</option></select>
+      </label>
+      <label>Positions to fill
+        <select id="pj-positions" name="positions_to_fill"><option value="">Select</option><option>1</option><option>2-5</option><option>6-10</option><option>10+</option></select>
+      </label>
+      <label>Salary / package <span class="pj-optional">optional</span><input id="pj-salary" name="salary" maxlength="120" placeholder="e.g. R18 000–R25 000 per month, negotiable"></label>
+      <label>Closing date <span class="pj-optional">optional</span><input id="pj-closing" name="closing_date" type="date"></label>
+    </div>
+    <fieldset class="pj-roles"><legend>Role category <span class="pj-optional">optional</span></legend>${roleTypes.map((r) => `<label class="pj-role-check"><input type="checkbox" name="role_types" value="${escapeHtml(r)}"> ${escapeHtml(r)}</label>`).join('')}</fieldset>
+  </div>
+  <div class="pj-section"><div class="pj-section-title"><span class="pj-step">04</span><div><h3>Candidate profile</h3><p>Help us understand the person you are looking for.</p></div></div>
+    <div class="pj-grid">
+      <label>Minimum experience <span class="pj-optional">optional</span><input id="pj-experience" name="experience" maxlength="120" placeholder="e.g. 2 years, or entry-level"></label>
+      <label>Minimum qualification <span class="pj-optional">optional</span><input id="pj-qualification" name="qualification" maxlength="180" placeholder="e.g. N6 / Diploma in Electrical Engineering"></label>
+    </div>
+    <label>Key skills or candidate requirements <span class="pj-optional">optional</span><textarea id="pj-requirements" name="requirements" rows="3" maxlength="1500" placeholder="List licences, technical skills, languages, software or other requirements."></textarea></label>
+  </div>
+  <div class="pj-section"><div class="pj-section-title"><span class="pj-step">05</span><div><h3>Vacancy description</h3><p>Give candidates enough context to decide whether the role is right for them.</p></div></div>
+    <label>Main responsibilities <span class="pj-optional">optional</span><textarea id="pj-responsibilities" name="responsibilities" rows="4" maxlength="2200" placeholder="What will the successful candidate do day to day?"></textarea></label>
+    <label>How should candidates apply? <span class="pj-optional">optional</span><textarea id="pj-application" name="application_instructions" rows="3" maxlength="1200" placeholder="e.g. Email a CV to careers@company.co.za, or apply at www.company.co.za/careers"></textarea></label>
+    <label>Anything else we should know? <span class="pj-optional">optional</span><textarea id="pj-details" name="additional_details" rows="3" maxlength="1800" placeholder="Benefits, shift times, start date, screening questions or other useful details."></textarea></label>
+  </div>
+  <p class="pj-review-note"><strong>What happens next?</strong> We will review your brief, contact you if anything needs clarification, and only publish the vacancy after approval.</p>
   <div id="pj-turnstile" class="cf-turnstile" data-sitekey="${TURNSTILE_SITE_KEY}"></div>
   <button type="submit" id="pj-submit">Submit for admin review</button>
   <p id="pj-status" role="status" aria-live="polite"></p>
@@ -1243,6 +1265,19 @@ document.getElementById('pj-form').addEventListener('submit', async function(e){
   var roleTypes = Array.prototype.slice.call(form.querySelectorAll('input[name="role_types"]:checked')).map(function(c){ return c.value; });
   var token = '';
   try { if (window.turnstile) token = window.turnstile.getResponse() || ''; } catch (err) {}
+  var brief = [
+    'Profession / job title: ' + form.job_title.value.trim(),
+    'Location: ' + form.location.value.trim(),
+    'Employment type: ' + form.employment_type.value,
+    'Salary / package: ' + form.salary.value.trim(),
+    'Closing date: ' + form.closing_date.value,
+    'Minimum experience: ' + form.experience.value.trim(),
+    'Minimum qualification: ' + form.qualification.value.trim(),
+    'Key skills or candidate requirements:\n' + form.requirements.value.trim(),
+    'Main responsibilities:\n' + form.responsibilities.value.trim(),
+    'How candidates should apply:\n' + form.application_instructions.value.trim(),
+    'Additional details:\n' + form.additional_details.value.trim()
+  ].join('\n\n');
   var payload = {
     company_name: form.company_name.value.trim(),
     contact_person: form.contact_person.value.trim(),
@@ -1251,10 +1286,10 @@ document.getElementById('pj-form').addEventListener('submit', async function(e){
     industry: form.industry.value.trim(),
     positions_to_fill: form.positions_to_fill.value,
     role_types: roleTypes,
-    additional_details: form.additional_details.value.trim(),
+    additional_details: brief,
     website: form.website.value.trim()
   };
-  if (!payload.company_name || !payload.work_email) { status.textContent = 'Add your company name and work email.'; return; }
+  if (!payload.company_name || !payload.work_email || !form.job_title.value.trim()) { status.textContent = 'Add your company name, work email and the profession / job title.'; return; }
   btn.disabled = true; btn.textContent = 'Submitting…';
   try {
     var res = await fetch('${R2_WORKER_URL}/api/submit/job-enquiry', {
