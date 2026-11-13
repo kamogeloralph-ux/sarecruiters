@@ -520,6 +520,21 @@ async function buildPublicVacancySnapshot(env) {
   return { generated_at: new Date().toISOString(), vacancies: result.results || [] };
 }
 __name(buildPublicVacancySnapshot, "buildPublicVacancySnapshot");
+async function buildPublicVacancySnapshotFromSupabase(env) {
+  const columns = [
+    "id", "agency_id", "employer_id", "title", "company", "company_photo",
+    "location", "closing_date", "notes", "link", "email", "phone", "remote",
+    "experience_level", "employment_type", "contract_type", "work_schedule",
+    "hours", "salary", "start_date", "created_at", "source_type"
+  ].join(",");
+  const rows = await supabaseGetAll(env, "vacancies", {
+    select: columns,
+    or: "(closing_date.is.null,closing_date.gte." + new Date().toISOString().slice(0, 10) + ")",
+    order: "created_at.desc,id.desc"
+  }, 1000);
+  return { generated_at: new Date().toISOString(), vacancies: rows || [] };
+}
+__name(buildPublicVacancySnapshotFromSupabase, "buildPublicVacancySnapshotFromSupabase");
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
@@ -607,11 +622,14 @@ __name(upsertD1Rows, "upsertD1Rows");
 // Synchronizes a keyed table without deleting and reinserting unchanged rows.
 // The local-key read is intentionally narrow; it lets us remove records that
 // disappeared from Supabase while keeping normal sync cycles write-efficient.
-async function syncD1Table(env, table, columns, rows, boolCols = [], keyColumn = "id") {
+async function syncD1Table(env, table, columns, rows, boolCols = [], keyColumn = "id", reconcile = false) {
   const incoming = rows || [];
   const incomingKeys = new Set(incoming.map((row) => String(row[keyColumn])));
-  const local = await env.DB.prepare(`SELECT ${keyColumn} FROM ${table}`).all();
-  const staleKeys = (local.results || []).map((row) => String(row[keyColumn])).filter((key) => !incomingKeys.has(key));
+  let staleKeys = [];
+  if (reconcile) {
+    const local = await env.DB.prepare(`SELECT ${keyColumn} FROM ${table}`).all();
+    staleKeys = (local.results || []).map((row) => String(row[keyColumn])).filter((key) => !incomingKeys.has(key));
+  }
   for (let i = 0; i < staleKeys.length; i += 200) {
     const chunk = staleKeys.slice(i, i + 200);
     await env.DB.batch(chunk.map((key) => env.DB.prepare(`DELETE FROM ${table} WHERE ${keyColumn} = ?`).bind(key)));
@@ -627,6 +645,7 @@ async function readSyncMeta(env, key) {
 }
 __name(readSyncMeta, "readSyncMeta");
 const PUBLIC_DATA_VERSION_KEY = "public_data_version";
+const MIRROR_RECONCILE_INTERVAL_SECONDS = 86400;
 async function readPublicDataVersion(env) {
   try {
     const raw = await readSyncMeta(env, PUBLIC_DATA_VERSION_KEY);
@@ -773,12 +792,15 @@ async function syncD1FromSupabase(env) {
     })
   ]);
 
+  const lastMirrorReconciledAt = Number(await readSyncMeta(env, "mirror_last_reconciled_at") || 0);
+  const reconcileMirror = !lastMirrorReconciledAt || (Date.now() - lastMirrorReconciledAt) >= MIRROR_RECONCILE_INTERVAL_SECONDS * 1000;
+
   const agenciesSync = await syncD1Table(env, "agencies",
     ["id", "name", "website", "contact", "email", "location", "address", "cvpref", "photo", "companies", "trades", "verified", "created_at"],
-    agencies.body || [], ["verified"]);
+    agencies.body || [], ["verified"], "id", reconcileMirror);
   const branchesSync = await syncD1Table(env, "branches",
     ["id", "agency_id", "name", "location", "phone", "email"],
-    branches.body || []);
+    branches.body || [], [], "id", reconcileMirror);
   const previousVacancySync = await readSyncMeta(env, "vacancies_updated_through");
   const vacancyParams = { select: vacancyColumns.join(","), order: "updated_at.asc,id.asc" };
   if (previousVacancySync) {
@@ -803,17 +825,21 @@ async function syncD1FromSupabase(env) {
   }
   const employersSync = await syncD1Table(env, "employers",
     ["id", "name", "industry", "website", "contact", "email", "location", "address", "photo", "verified", "created_at"],
-    employers.body || [], ["verified"]);
+    employers.body || [], ["verified"], "id", reconcileMirror);
   const poolSync = await syncD1Table(env, "pool_candidates",
     ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"],
-    pool.body || [], ["verified"]);
-  const settingsSync = await syncD1Table(env, "app_settings", ["key", "value"], settings.body || [], [], "key");
+    pool.body || [], ["verified"], "id", reconcileMirror);
+  const settingsSync = await syncD1Table(env, "app_settings", ["key", "value"], settings.body || [], [], "key", reconcileMirror);
   const postersSync = await syncD1Table(env, "employer_posters",
     ["id", "employer_id", "agency_id", "image_url", "caption", "vacancy_id", "created_at", "expires_at"],
-    posters.body || []);
+    posters.body || [], [], "id", reconcileMirror);
   const houseAdsSync = await syncD1Table(env, "house_ads",
     ["id", "advertiser_name", "title", "message", "image_url", "target_url", "placement", "target_screens", "ad_slot", "ad_format", "ad_details", "cta_text", "starts_at", "ends_at", "is_active", "sort_order", "impressions", "clicks", "created_at", "updated_at"],
-    houseAds.body || [], ["is_active"]);
+    houseAds.body || [], ["is_active"], "id", reconcileMirror);
+  if (reconcileMirror) {
+    await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
+      .bind("mirror_last_reconciled_at", String(Date.now())).run();
+  }
 
   const summary = {
     synced_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -851,13 +877,16 @@ __name(syncD1FromSupabase, "syncD1FromSupabase");
 async function syncD1AndPublishSnapshot(env) {
   const summary = await syncD1FromSupabase(env);
   const dataVersion = env.DB ? await bumpPublicDataVersion(env) : 0;
-  const payload = env.DB ? await loadStartupDataFromD1(env) : await loadStartupData(env);
+  // D1 is the write mirror, not the snapshot source. Re-reading every local
+  // table here used to multiply rows-read on every six-hour sync. Supabase is
+  // already the authoritative source for this scheduled publication.
+  const payload = await loadStartupData(env);
   payload.data_version = dataVersion;
-  const vacancySnapshot = env.DB ? await buildPublicVacancySnapshot(env) : null;
-  if (vacancySnapshot) vacancySnapshot.data_version = dataVersion;
+  const vacancySnapshot = await buildPublicVacancySnapshotFromSupabase(env);
+  vacancySnapshot.data_version = dataVersion;
   await Promise.all([
     writePublicStartupSnapshot(env, payload),
-    vacancySnapshot ? writePublicVacancySnapshot(env, vacancySnapshot) : Promise.resolve(false)
+    writePublicVacancySnapshot(env, vacancySnapshot)
   ]);
   return { ...summary, data_version: dataVersion, snapshot: "r2", snapshot_generated_at: payload.generated_at, vacancy_snapshot_rows: vacancySnapshot?.vacancies?.length || 0 };
 }
@@ -1601,9 +1630,9 @@ async function cvDownloadResponse(request, env) {
 __name(cvDownloadResponse, "cvDownloadResponse");
 async function startupResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  // Public traffic must not use D1 as a cache validator. The scheduled sync
-  // publishes the authoritative R2 snapshot; D1 is only a recovery source
-  // when no snapshot exists at all.
+  // Public traffic must never use D1 as a cache validator or recovery source.
+  // The scheduled sync publishes the authoritative R2 snapshot. Serving the
+  // last good snapshot is safer than spending the account-wide D1 read budget.
   const cacheKey = new Request(new URL("/api/startup?schema=edge-first-v14", request.url), { method: "GET" });
   let dataVersion = 0;
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
@@ -1633,14 +1662,7 @@ async function startupResponse(request, env, ctx, origin) {
       await cache.put(cacheKey, response.clone());
       return snapshot;
     }
-    const source = env.DB ? await loadStartupDataFromD1(env) : await loadStartupDataOrFallback(env);
-    if (!source) throw new Error("Public startup mirror unavailable");
-    const payload = { ...source, data_version: Number(source.data_version) || 0 };
-    dataVersion = payload.data_version;
-    ctx.waitUntil(writePublicStartupSnapshot(env, payload).catch((e) => console.warn("Could not refresh public R2 startup snapshot", e)));
-    const response = await buildResponse(payload);
-    await cache.put(cacheKey, response.clone());
-    return payload;
+    throw new Error("Public startup snapshot unavailable; D1 fallback disabled");
   }
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) {
@@ -1652,6 +1674,12 @@ async function startupResponse(request, env, ctx, origin) {
         ctx.waitUntil(refreshAndCache().catch(() => {}));
         return clientResponse(cached);
       }
+      // Keep the last good response available even beyond the normal stale
+      // window. Do not fall through to D1 just because a snapshot is old.
+      const stale = clientResponse(cached);
+      stale.headers.set("X-Data-Stale", "true");
+      stale.headers.set("Cache-Control", "public, max-age=60");
+      return stale;
     } catch (e) { /* malformed/legacy cache; rebuild */ }
   }
   try { return clientResponse(await buildResponse(await refreshAndCache(), "no-store")); }
@@ -1686,11 +1714,14 @@ async function vacanciesResponse(request, env, ctx, origin) {
   }
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) return clientResponse(cached);
-  const snapshot = await readPublicVacancySnapshot(env);
+  // Public vacancy browsing is snapshot-only. If the dedicated vacancy
+  // snapshot is unavailable, the startup snapshot is still a safe bounded
+  // source; never turn a cache miss into a full D1 scan.
+  const snapshot = await readPublicVacancySnapshot(env) || await readPublicStartupSnapshot(env);
   // A snapshot is always preferable to a fresh D1 query for public traffic.
   // The scheduled sync is responsible for refreshing it; stale data is safer
   // than exhausting the account-wide D1 rows-read allowance.
-  const snapshotFresh = !!snapshot;
+  const snapshotFresh = !!snapshot && Array.isArray(snapshot.vacancies);
   const filterRows = (allRows) => {
     const dedicated = new Set(["himalayas", "adzuna", "government", "dpsa", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "learnerships", "careers_page"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
@@ -1713,27 +1744,6 @@ async function vacanciesResponse(request, env, ctx, origin) {
   let alreadyPaged = false;
   if (snapshotFresh) {
     rows = filterRows(snapshot.vacancies);
-  } else if (env.DB) {
-    const conditions = ["(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now'))"];
-    const values = [];
-    if (scope === "general") conditions.push("(agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND (source_type IS NULL OR source_type NOT IN ('himalayas','adzuna','government','dpsa','retail','shoprite','picknpay','woolworths','truworths','spar','career_board','learnerships','careers_page'))");
-    if (q) { conditions.push("instr(lower(COALESCE(title,'') || ' ' || COALESCE(company,'') || ' ' || COALESCE(location,'') || ' ' || COALESCE(notes,'')), ?) > 0"); values.push(q.toLowerCase()); }
-    if (location) { conditions.push("instr(lower(COALESCE(location,'')), ?) > 0"); values.push(location.toLowerCase()); }
-    if (remote) { conditions.push("remote = ?"); values.push(remote); }
-    if (experience) { conditions.push("experience_level = ?"); values.push(experience); }
-    const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
-    if (sources.length) { conditions.push(`source_type IN (${sources.map(() => "?").join(",")})`); values.push(...sources); }
-    if (cursor) {
-      const separator = cursor.indexOf("|");
-      const cursorCreated = separator >= 0 ? cursor.slice(0, separator) : cursor;
-      const cursorId = separator >= 0 ? cursor.slice(separator + 1) : "";
-      conditions.push("(created_at < ? OR (created_at = ? AND id < ?))");
-      values.push(cursorCreated, cursorCreated, cursorId);
-    }
-    const columns = ["id", "agency_id", "employer_id", "title", "company", "company_photo", "location", "closing_date", "notes", "link", "email", "phone", "remote", "experience_level", "employment_type", "contract_type", "work_schedule", "hours", "salary", "start_date", "created_at", "source_type"];
-    const result = await env.DB.prepare(`SELECT ${columns.join(",")} FROM vacancies WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`).bind(...values, limit + 1, hasOffset ? offset : 0).all();
-    rows = result.results || [];
-    alreadyPaged = true;
   } else return json({ error: "Public vacancy snapshot unavailable" }, 503, origin);
   const paged = alreadyPaged ? rows : ((cursor || hasOffset) ? rows.slice(offset, offset + limit + 1) : rows.slice(0, limit + 1));
   const hasMore = paged.length > limit;
@@ -1871,15 +1881,13 @@ async function syncStatusResponse(request, env, origin) {
 }
 __name(syncStatusResponse, "syncStatusResponse");
 async function postersResponse(request, env, origin) {
-  if (!env.DB) return json({ error: "Public poster mirror unavailable" }, 503, origin);
   const cache = caches.default;
-  const dataVersion = await readPublicDataVersion(env);
-  const cacheKey = new Request(new URL(`/api/posters?schema=d1-v6-versioned&version=${dataVersion}`, request.url), request);
+  const cacheKey = new Request(new URL("/api/posters?schema=supabase-v1", request.url), { method: "GET" });
   function clientResponse(response) {
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "public, max-age=60");
     headers.append("Vary", "Origin");
-    headers.set("X-Data-Version", String(dataVersion));
+    headers.set("X-Data-Version", "0");
     headers.set("Access-Control-Allow-Origin", origin || "*");
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   }
@@ -1887,18 +1895,24 @@ async function postersResponse(request, env, origin) {
   if (cached) return clientResponse(cached);
   let posters = [];
   let count = 0;
-  let source = "d1";
+  let source = "supabase";
   try {
-    const [rows, total] = await Promise.all([
-      env.DB.prepare("SELECT id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now') ORDER BY created_at DESC LIMIT 200").all(),
-      env.DB.prepare("SELECT COUNT(*) AS n FROM employer_posters WHERE expires_at IS NULL OR expires_at > datetime('now')").all()
-    ]);
-    posters = rows.results || [];
-    count = total.results?.[0]?.n || 0;
-  } catch (d1Error) { count = -1; }
-  const cachedResponse = json({ posters, count, source, data_version: dataVersion }, 200, origin);
+    const now = new Date().toISOString();
+    const result = await supabaseGet(env, "employer_posters", {
+      select: "id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at",
+      or: `(expires_at.is.null,expires_at.gt.${now})`,
+      order: "created_at.desc",
+      limit: "500"
+    });
+    posters = Array.isArray(result.body) ? result.body : [];
+    count = posters.length;
+  } catch (error) {
+    console.error("public poster Supabase read failed", error);
+    return json({ posters: [], count: 0, source: "unavailable", data_version: 0 }, 503, origin);
+  }
+  const cachedResponse = json({ posters, count, source, data_version: 0 }, 200, origin);
   cachedResponse.headers.set("Cache-Control", "public, max-age=86400");
-  cachedResponse.headers.set("X-Data-Version", String(dataVersion));
+  cachedResponse.headers.set("X-Data-Version", "0");
   await cache.put(cacheKey, cachedResponse.clone());
   return clientResponse(cachedResponse);
 }
@@ -1917,9 +1931,8 @@ function publicHouseAdCreativeUrl(env, value) {
 }
 __name(publicHouseAdCreativeUrl, "publicHouseAdCreativeUrl");
 async function houseAdsResponse(request, env, ctx, origin) {
-  if (!env.DB) return json({ ads: [], error: "House ads mirror unavailable" }, 503, origin);
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/house-ads?schema=d1-v2", request.url).toString(), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/house-ads?schema=supabase-v1", request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) {
     const headers = new Headers(cached.headers);
@@ -1928,30 +1941,22 @@ async function houseAdsResponse(request, env, ctx, origin) {
   }
   let ads = [];
   try {
-    const result = await env.DB.prepare("SELECT id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text FROM house_ads WHERE is_active = 1 AND julianday(starts_at) <= julianday('now') AND (ends_at IS NULL OR julianday(ends_at) > julianday('now')) ORDER BY sort_order ASC, created_at DESC LIMIT 50").all();
-    ads = (result.results || []).map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url), target_screens: (() => { try { return JSON.parse(ad.target_screens || "[]"); } catch (e) { return []; } })() }));
-    if (ads.some((ad) => !/^https:\/\/media\.sa-recruiters\.co\.za\/assets\/house-ads\/.+\.html(?:[?#].*)?$/i.test(String(ad.image_url || "")))) {
-      throw new Error("D1 house ads contain a stale non-HTML5 creative");
-    }
+    const now = new Date().toISOString();
+    // D1 is deliberately not a public fallback. It is a write mirror and can
+    // be quota-blocked account-wide. Read the small authoritative ad set from
+    // Supabase, then cache the response at the edge.
+    const result = await supabaseGet(env, "house_ads", {
+      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text",
+      is_active: "eq.true",
+      starts_at: `lte.${now}`,
+      or: `(ends_at.is.null,ends_at.gt.${now})`,
+      order: "sort_order.asc,created_at.desc",
+      limit: "50"
+    });
+    ads = (Array.isArray(result.body) ? result.body : []).map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url) }));
   } catch (error) {
-    // Keep the ads visible during a D1 migration/auth outage. This is a
-    // bounded, edge-cached recovery path—not the normal public read path.
-    console.warn("house ads D1 read failed; using cached Supabase recovery", error);
-    try {
-      const now = new Date().toISOString();
-      const result = await supabaseGet(env, "house_ads", {
-        select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text",
-        is_active: "eq.true",
-        starts_at: `lte.${now}`,
-        or: `(ends_at.is.null,ends_at.gt.${now})`,
-        order: "sort_order.asc,created_at.desc",
-        limit: "50"
-      });
-      ads = (Array.isArray(result.body) ? result.body : []).map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url) }));
-    } catch (recoveryError) {
-      console.error("house ads recovery read failed", recoveryError);
-      return json({ ads: [], error: "House ads temporarily unavailable" }, 200, origin);
-    }
+    console.error("house ads Supabase read failed", error);
+    return json({ ads: [], error: "House ads temporarily unavailable" }, 200, origin);
   }
   const response = json({ ads }, 200, origin);
   response.headers.set("Cache-Control", "public, max-age=300");

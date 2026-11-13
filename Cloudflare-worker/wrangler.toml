@@ -22,13 +22,13 @@ binding = "DB"
 database_name = "sarecruiters-d1"
 database_id = "7d1a4327-6056-45cf-ae62-b5b26a454627"
 
-# Keeps the D1 mirror of agencies/branches/vacancies/employers/pool_candidates
-# fresh so /api/startup (and, going forward, other read paths) can serve from
-# D1 instead of hitting Supabase on every cache expiry. D1 reads don't count
-# against the Supabase egress budget at all. The mirror upserts changed rows in
-# batches and removes stale keys, avoiding full-table rewrites. Use POST
-# /api/sync-d1 after an important admin data change if an immediate refresh is
-# needed.
+# Keeps the D1 write mirror of agencies/branches/vacancies/employers/pool_candidates
+# fresh for admin and operational recovery. Public startup, vacancy, poster, and
+# house-ad reads use R2/Supabase snapshots and edge caching; they never fall back
+# to D1, so public traffic cannot exhaust the account-wide D1 read budget. The
+# mirror upserts changed rows in batches and reconciles stale keys once daily.
+# Use POST /api/sync-d1 after an important admin data change if an immediate
+# mirror refresh is needed.
 #
 # Second schedule: the watchdog (watchdog.js) -- every 30 minutes, offset from the
 # 6-hourly tick. It restarts stale/disabled GitHub workflows, backs up the TipChat
