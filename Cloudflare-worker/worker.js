@@ -1737,6 +1737,10 @@ async function startupResponse(request, env, ctx, origin) {
 }
 __name(startupResponse, "startupResponse");
 async function vacanciesResponse(request, env, ctx, origin) {
+  // Normal app browsing still requests 20-50 rows; the larger ceiling lets
+  // read-only SEO snapshot exports page through the same public data with
+  // fewer repeated full-snapshot scans.
+  const PUBLIC_VACANCY_MAX_PAGE_SIZE = 200;
   const url = new URL(request.url);
   const q = String(url.searchParams.get("q") || "").trim().slice(0, 120);
   const location = String(url.searchParams.get("location") || "").trim().slice(0, 120);
@@ -1744,7 +1748,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const scope = String(url.searchParams.get("scope") || "").trim();
   const remote = String(url.searchParams.get("remote") || "").trim().slice(0, 30);
   const experience = String(url.searchParams.get("experience") || "").trim().slice(0, 60);
-  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 20) || 20, 1), 50);
+  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 20) || 20, 1), PUBLIC_VACANCY_MAX_PAGE_SIZE);
   const hasOffset = url.searchParams.has("offset");
   const offset = Math.min(Math.max(Number(url.searchParams.get("offset") || 0) || 0, 0), 5000);
   const cursor = String(url.searchParams.get("cursor") || "");
