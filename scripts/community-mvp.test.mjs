@@ -91,7 +91,7 @@ test('TipChat feed is the first visible content and remains in the scrollable pa
   const end = html.indexOf('<!-- ============ SMART MANAGER', start);
   const screen = html.slice(start, end);
   const scrollAt = screen.indexOf('<div class="screen-scroll">');
-  assert.match(screen, /<div class="screen-fixed">\s*<header class="community-header">[\s\S]*?<\/header>\s*<\/div>\s*<div class="screen-scroll">/);
+  assert.match(screen, /<div class="screen-fixed">\s*<header class="community-header">[\s\S]*?<\/header>\s*<nav class="community-action-nav"[\s\S]*?<\/nav>\s*<div class="community-search"[\s\S]*?<\/div>\s*<\/div>\s*<div class="screen-scroll">/);
   assert.ok(scrollAt >= 0, 'community screen must expose its scroll region');
   const divTags = /<\/?div\b[^>]*>/gi;
   divTags.lastIndex = scrollAt;

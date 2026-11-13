@@ -152,6 +152,22 @@ async function posterUploadAllowed(userId, limit = 10) {
   }
 }
 __name(posterUploadAllowed, "posterUploadAllowed");
+async function tipchatImageUploadAllowed(userId, limit = 30) {
+  try {
+    const hour = Math.floor(Date.now() / 3600000);
+    const key = new Request(`https://rate-limit.internal/tipchat-image/${userId}/${hour}`);
+    const cache = caches.default;
+    const hit = await cache.match(key);
+    const count = hit ? Number(await hit.text()) || 0 : 0;
+    if (count >= limit) return false;
+    await cache.put(key, new Response(String(count + 1), { headers: { "Cache-Control": "max-age=3700" } }));
+    return true;
+  } catch (e) {
+    console.warn("tipchat image limiter unavailable", e);
+    return true;
+  }
+}
+__name(tipchatImageUploadAllowed, "tipchatImageUploadAllowed");
 // Best-effort public-upload quota keyed by a one-way hash of Cloudflare's
 // edge-provided client IP. Cache API limits are per-colo, but stop repeated
 // abuse without retaining the raw address or blocking normal submissions.
@@ -3578,6 +3594,34 @@ var worker_default = {
           try { await env.MEDIA_BUCKET.delete(key); } catch (_) {}
           return json({ error: "Could not publish the poster." }, 502, origin);
         }
+      }
+      if (path === "/api/upload/tipchat-image" && request.method === "POST") {
+        const imageUserId = await verifiedUserId(request, env);
+        if (!imageUserId) return json({ error: "Please sign in to upload listing photos." }, 401, origin);
+        const contentType = request.headers.get("Content-Type") || "";
+        if (!contentType.startsWith("image/jpeg")) return json({ error: "Listing photos must be JPEG images." }, 400, origin);
+        const bytes = await request.arrayBuffer();
+        if (bytes.byteLength === 0) return json({ error: "Empty image." }, 400, origin);
+        if (bytes.byteLength > MAX_POSTER_BYTES) return json({ error: "Listing photo too large (max 5MB)." }, 413, origin);
+        if (!looksLikeJpeg(bytes)) return json({ error: "That listing photo is not a valid JPEG." }, 400, origin);
+        if (!await tipchatImageUploadAllowed(imageUserId)) return json({ error: "Too many listing photos. Please try again later." }, 429, origin);
+        const key = `tipchat-marketplace/${imageUserId}/${randomKey()}.jpg`;
+        await env.MEDIA_BUCKET.put(key, bytes, {
+          httpMetadata: { contentType: "image/jpeg", cacheControl: "public, max-age=31536000, immutable" },
+          customMetadata: { owner: imageUserId, purpose: "tipchat-marketplace" }
+        });
+        return json({ ok: true, url: publicUrlFor(env, key), key }, 200, origin);
+      }
+      if (path === "/api/upload/tipchat-image" && request.method === "DELETE") {
+        const imageUserId = await verifiedUserId(request, env);
+        if (!imageUserId) return json({ error: "Please sign in." }, 401, origin);
+        const imageKey = url.searchParams.get("key") || "";
+        if (!new RegExp(`^tipchat-marketplace/${imageUserId.replace(/[^A-Za-z0-9_-]/g, "")}/[A-Za-z0-9]+\\.jpg$`).test(imageKey)) return json({ error: "Invalid image key." }, 400, origin);
+        const head = await env.MEDIA_BUCKET.head(imageKey);
+        if (!head) return json({ ok: true }, 200, origin);
+        if (!head.customMetadata || head.customMetadata.owner !== imageUserId) return json({ error: "Not allowed." }, 403, origin);
+        await env.MEDIA_BUCKET.delete(imageKey);
+        return json({ ok: true }, 200, origin);
       }
       if (path === "/api/upload/employer-poster" && request.method === "POST") {
         const posterUserId = await verifiedUserId(request, env);

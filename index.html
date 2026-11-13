@@ -563,10 +563,27 @@ window.sentryOnLoad = function () {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <img class="tipchat-section-logo" src="icons/tipchat-logo.svg" alt="TipChat" width="174" height="60" loading="lazy" decoding="async"><div class="community-heading-copy"><h1 class="sr-only">TipChat</h1><p>Jobs, advice &amp; opportunities · South Africa</p></div>
-        <button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share TipChat">Share</button>
+        <div class="community-header-actions"><button class="community-notification-btn" type="button" data-ripple onclick="communityToggleNotifications()" aria-label="TipChat notifications"><span aria-hidden="true">♢</span><span id="community-notification-count" class="community-notification-count" hidden>0</span></button><button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share TipChat">Share</button></div>
       </header>
+      <nav class="community-action-nav" aria-label="TipChat actions">
+        <button type="button" class="community-nav-action is-active" data-community-nav="feed" onclick="communityFocusTipChat('feed')"><span class="community-nav-icon" aria-hidden="true">⌂</span><span>Feed</span></button>
+        <button type="button" class="community-nav-action" data-community-nav="discussion" onclick="communityFocusTipChat('discussion')"><span class="community-nav-icon" aria-hidden="true">＋</span><span>Ask / share</span></button>
+        <button type="button" class="community-nav-action" data-community-nav="vacancy" onclick="communityFocusTipChat('vacancy')"><span class="community-nav-icon" aria-hidden="true">▤</span><span>Vacancy</span></button>
+        <button type="button" class="community-nav-action" data-community-nav="marketplace" onclick="communityFocusTipChat('marketplace')"><span class="community-nav-icon" aria-hidden="true">▣</span><span>Buy &amp; sell</span></button>
+        <button type="button" class="community-nav-action" data-community-nav="mine" onclick="communityOpenMyPosts()"><span class="community-nav-icon" aria-hidden="true">○</span><span>My posts</span></button>
+        <button type="button" class="community-nav-action community-nav-join" data-community-nav="join" onclick="communityJoinGroup()"><span id="community-nav-join-label">Join</span></button>
+      </nav>
+      <div class="community-search" role="search">
+        <span class="community-search-icon" aria-hidden="true">⌕</span>
+        <input id="community-search-input" type="search" maxlength="80" autocomplete="off" placeholder="Search TipChat: items, locations, vacancies…" aria-label="Search TipChat" oninput="communitySearchTipChat(this.value)">
+        <button id="community-search-clear" type="button" onclick="communityClearSearch()" aria-label="Clear TipChat search" hidden>×</button>
+      </div>
     </div>
     <div class="screen-scroll">
+      <section class="community-notifications" id="community-notifications" hidden>
+        <div class="community-notifications-head"><strong>Notifications</strong><button type="button" onclick="communityToggleNotifications()" aria-label="Close notifications">Close</button></div>
+        <div id="community-notification-list"></div>
+      </section>
 
       <section class="community-admin-panel" id="community-moderator-panel" hidden>
         <button class="community-admin-toggle" type="button" onclick="communityToggleModeration()"><span>Reports · delete content</span><span id="community-moderation-count">0</span></button>
@@ -606,6 +623,7 @@ window.sentryOnLoad = function () {
           <div class="community-vacancy-field-grid"><div><label for="community-marketplace-title">Item or service title</label><input id="community-marketplace-title" maxlength="140" placeholder="e.g. Second-hand laptop"></div><div><label for="community-marketplace-price">Price</label><input id="community-marketplace-price" maxlength="80" placeholder="e.g. R2 500 or Make an offer"></div></div>
           <div class="community-vacancy-field-grid"><div><label for="community-marketplace-category">Category</label><input id="community-marketplace-category" maxlength="60" placeholder="e.g. Electronics, furniture, services"></div><div><label for="community-marketplace-condition">Condition</label><select id="community-marketplace-condition"><option value="good">Good</option><option value="new">New</option><option value="like_new">Like new</option><option value="fair">Fair</option><option value="wanted">Wanted</option><option value="service">Service</option></select></div></div>
           <div class="community-vacancy-field-grid"><div><label for="community-marketplace-location">Location</label><input id="community-marketplace-location" maxlength="120" placeholder="e.g. Soweto, Gauteng"></div><div><label for="community-marketplace-contact">How to buy or contact</label><input id="community-marketplace-contact" maxlength="300" placeholder="Use safe handover instructions; no banking details"></div></div>
+          <div class="community-marketplace-photos-field"><label for="community-marketplace-photos">Product photos <span>Up to 5 images · JPG, PNG or WebP</span></label><input id="community-marketplace-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple onchange="communityHandleMarketplacePhotos(event)"><div id="community-marketplace-photo-preview" class="community-marketplace-photo-preview" aria-live="polite"></div></div>
         </div>
         <label class="sr-only" for="community-post-body">Write a TipChat post</label>
         <textarea id="community-post-body" maxlength="3000" placeholder="What would you like advice on? Share a question or helpful tip…"></textarea>

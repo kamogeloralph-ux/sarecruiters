@@ -25,11 +25,16 @@ export var communityMvp = {
   lastUserId: null,
   reactionBusy: new Set(),
   pendingReload: false,
-  drafts: {}
+  drafts: {},
+  navSelection: 'feed',
+  search: '',
+  notifications: [],
+  notificationsOpen: false
 };
 export var communityComposerType = 'discussion';
 export var communityPosterBlob = null;
 export var communityPosterPreparing = false;
+export var communityMarketplacePhotos = [];
 export var COMMUNITY_SEEN_KEY = 'sa_tipchat_seen_v1';
 
 export function communityEsc(value) {
@@ -121,6 +126,38 @@ export function communitySetComposerType(type) {
   }
   var submit = document.getElementById('community-post-submit');
   if (submit) submit.textContent = communityComposerType === 'vacancy' ? 'Share vacancy' : (communityComposerType === 'marketplace' ? 'List item' : 'Post');
+  var selectedNav = communityMvp.navSelection || communityComposerType;
+  document.querySelectorAll('[data-community-nav]').forEach(function(button) {
+    var key = button.getAttribute('data-community-nav');
+    button.classList.toggle('is-active', key === selectedNav);
+  });
+}
+export function communityFocusTipChat(destination) {
+  var navKey = destination === 'vacancy' || destination === 'marketplace' || destination === 'discussion' ? destination : 'feed';
+  communityMvp.navSelection = navKey;
+  if (navKey !== 'feed') {
+    communitySetComposerType(navKey);
+    var composer = document.getElementById('community-post-form');
+    if (composer) composer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var field = document.getElementById('community-post-body');
+    if (field) window.setTimeout(function() { field.focus({ preventScroll: true }); }, 260);
+    return;
+  }
+  document.querySelectorAll('[data-community-nav]').forEach(function(button) { button.classList.toggle('is-active', button.getAttribute('data-community-nav') === 'feed'); });
+  var feed = document.getElementById('community-feed');
+  if (feed) feed.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+export function communityOpenMyPosts() {
+  if (!communityRequireSignIn()) return;
+  var panel = document.getElementById('community-mine');
+  var list = document.getElementById('community-mine-list');
+  if (!panel) return;
+  communityMvp.navSelection = 'mine';
+  panel.hidden = false;
+  if (list) list.hidden = false;
+  document.querySelectorAll('[data-community-nav]').forEach(function(button) { button.classList.toggle('is-active', button.getAttribute('data-community-nav') === 'mine'); });
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!communityMvp.submissions.length) communityToast('You have no TipChat posts or comments yet.');
 }
 export function communityReadVacancyMeta() {
   function value(id) { var field = document.getElementById(id); return field ? field.value.trim() : ''; }
@@ -149,6 +186,14 @@ export function communityMarketplaceMetaHtml(post) {
     (post.marketplace_title ? '<h3 class="community-marketplace-title">' + communityEsc(post.marketplace_title) + '</h3>' : '') +
     (meta.length ? '<div class="community-vacancy-meta">' + meta.join('') + '</div>' : '') +
     (post.marketplace_contact ? '<div class="community-marketplace-contact"><strong>How to buy:</strong> ' + communityEsc(post.marketplace_contact) + '</div>' : '');
+}
+export function communityMarketplaceGalleryHtml(post) {
+  var images = Array.isArray(post && post.marketplace_image_urls) ? post.marketplace_image_urls : [];
+  if (!images.length) return '';
+  return '<div class="community-marketplace-gallery" aria-label="Product photos">' + images.slice(0, 5).map(function(url, index) {
+    var safe = /^https:\/\//i.test(String(url || '')) ? communityEsc(url) : '';
+    return safe ? '<a href="' + safe + '" target="_blank" rel="noopener noreferrer"><img src="' + safe + '" alt="Product photo ' + (index + 1) + '" loading="lazy" decoding="async"></a>' : '';
+  }).join('') + '</div>';
 }
 export function communityPosterImageHtml(post) {
   if (!post || !post.poster_image_url) return '';
@@ -246,6 +291,85 @@ export async function communityDeletePosterFile(ref) {
   } catch (error) {
     console.warn('[TipChat] poster cleanup skipped', error);
   }
+}
+export function communityClearMarketplacePhotos() {
+  communityMarketplacePhotos.forEach(function(photo) { if (photo.preview) URL.revokeObjectURL(photo.preview); });
+  communityMarketplacePhotos = [];
+  var input = document.getElementById('community-marketplace-photos');
+  var preview = document.getElementById('community-marketplace-photo-preview');
+  if (input) input.value = '';
+  if (preview) preview.innerHTML = '';
+}
+export async function communityCompressMarketplaceImage(file) {
+  return new Promise(function(resolve, reject) {
+    if (!file || !/^image\/(jpeg|png|webp)$/i.test(file.type || '')) return reject(new Error('Choose JPG, PNG or WebP images.'));
+    if (file.size > 12 * 1024 * 1024) return reject(new Error('Each image must be smaller than 12 MB before compression.'));
+    var image = new Image();
+    image.onload = function() {
+      var maxSide = 1600, scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      var context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob) {
+        URL.revokeObjectURL(image.src);
+        if (!blob) return reject(new Error('That image could not be prepared.'));
+        resolve(blob);
+      }, 'image/jpeg', .82);
+    };
+    image.onerror = function() { URL.revokeObjectURL(image.src); reject(new Error('That image could not be read.')); };
+    image.src = URL.createObjectURL(file);
+  });
+}
+export async function communityHandleMarketplacePhotos(event) {
+  var files = Array.prototype.slice.call(event && event.target && event.target.files || []);
+  if (!files.length) return;
+  if (files.length > 5 || communityMarketplacePhotos.length + files.length > 5) {
+    communityToast('You can add up to 5 product photos.');
+    return;
+  }
+  var preview = document.getElementById('community-marketplace-photo-preview');
+  try {
+    for (var i = 0; i < files.length; i += 1) {
+      var blob = await communityCompressMarketplaceImage(files[i]);
+      var item = { blob: blob, preview: URL.createObjectURL(blob), url: null, key: null };
+      communityMarketplacePhotos.push(item);
+      if (preview) preview.insertAdjacentHTML('beforeend', '<div class="community-marketplace-photo"><img src="' + communityEsc(item.preview) + '" alt="Selected product photo ' + communityMarketplacePhotos.length + '"><button type="button" aria-label="Remove product photo" onclick="communityRemoveMarketplacePhoto(' + (communityMarketplacePhotos.length - 1) + ')">×</button></div>');
+    }
+  } catch (error) {
+    communityToast(error.message || 'Could not prepare that product photo.');
+  } finally {
+    if (event && event.target) event.target.value = '';
+  }
+}
+export function communityRemoveMarketplacePhoto(index) {
+  var photo = communityMarketplacePhotos[index];
+  if (photo && photo.preview) URL.revokeObjectURL(photo.preview);
+  communityMarketplacePhotos.splice(index, 1);
+  var preview = document.getElementById('community-marketplace-photo-preview');
+  if (preview) preview.innerHTML = communityMarketplacePhotos.map(function(item, i) { return '<div class="community-marketplace-photo"><img src="' + communityEsc(item.preview) + '" alt="Selected product photo ' + (i + 1) + '"><button type="button" aria-label="Remove product photo" onclick="communityRemoveMarketplacePhoto(' + i + ')">×</button></div>'; }).join('');
+}
+export async function communityUploadMarketplacePhoto(photo) {
+  var sessionResult = await supabaseClient.auth.getSession();
+  var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+  if (!token) throw new Error('Your sign-in has expired. Please sign in again.');
+  var response = await fetch(R2_WORKER_URL + '/api/upload/tipchat-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg' }, body: photo.blob });
+  var payload = await response.json().catch(function() { return {}; });
+  if (!response.ok || !payload.url) throw new Error(payload.error || 'Could not upload a product photo.');
+  var uploaded = new URL(payload.url);
+  if (uploaded.protocol !== 'https:' || uploaded.pathname.indexOf('/tipchat-marketplace/') < 0) throw new Error('The product photo returned an invalid URL.');
+  photo.url = uploaded.href; photo.key = payload.key || null;
+  return photo;
+}
+export async function communityDeleteMarketplacePhoto(ref) {
+  try {
+    if (!ref) return;
+    var sessionResult = await supabaseClient.auth.getSession();
+    var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+    if (!token) return;
+    await fetch(R2_WORKER_URL + '/api/upload/tipchat-image?key=' + encodeURIComponent(ref), { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+  } catch (error) { console.warn('[TipChat] marketplace photo cleanup skipped', error); }
 }
 export function communityEmojiButton(type, target) {
   var info = communityEmojiInfo(type);
@@ -345,6 +469,13 @@ export function communityRenderGroup() {
     join.setAttribute('aria-label', communityMvp.joined ? 'Leave TipChat' : 'Join TipChat');
     join.title = communityMvp.joined ? 'Leave TipChat' : 'Join TipChat';
   }
+  var navJoin = document.getElementById('community-nav-join-label');
+  if (navJoin) navJoin.textContent = communityMvp.joined ? 'Joined' : 'Join';
+  var navJoinButton = document.querySelector('[data-community-nav="join"]');
+  if (navJoinButton) {
+    navJoinButton.classList.toggle('is-joined', communityMvp.joined);
+    navJoinButton.setAttribute('aria-label', communityMvp.joined ? 'Leave TipChat' : 'Join TipChat');
+  }
   var adminPanel = document.getElementById('community-moderator-panel');
   if (adminPanel) adminPanel.hidden = !communityMvp.moderator;
   var postButton = document.getElementById('community-post-submit');
@@ -378,7 +509,7 @@ export async function communityLoad() {
     // The feed is the critical path. Run account-only checks together instead
     // of making visitors wait for membership, identity, submissions and admin
     // checks one after another.
-    var secondaryLoads = [communityLoadIdentityState(), communityLoadMySubmissions()];
+    var secondaryLoads = [communityLoadIdentityState(), communityLoadMySubmissions(), communityLoadNotifications()];
     if (communitySignedIn()) {
       secondaryLoads.push(
         supabaseClient.from('community_memberships')
@@ -414,7 +545,7 @@ export async function communityLoadFeed() {
   if (!communityMvp.posts.length) host.innerHTML = '<div class="community-empty">Loading posts…</div>';
   var authorPhotoSelect = communityMvp.authorIdentityAvailable ? ',author_photo_url' : '';
   var query = supabaseClient.from('community_posts')
-    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,marketplace_title,marketplace_price,marketplace_category,marketplace_condition,marketplace_location,marketplace_contact,likes_count,comments_count,created_at' + authorPhotoSelect)
+    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,marketplace_title,marketplace_price,marketplace_category,marketplace_condition,marketplace_location,marketplace_contact,marketplace_image_urls,likes_count,comments_count,created_at' + authorPhotoSelect)
     .eq('group_id', communityMvp.group.id)
     .eq('status', 'approved');
   if (communityMvp.sort === 'top') {
@@ -427,6 +558,11 @@ export async function communityLoadFeed() {
       .order('created_at', { ascending: false });
   } else {
     query = query.order('created_at', { ascending: false });
+  }
+  var searchTerm = String(communityMvp.search || '').trim().replace(/[\\%_(),]/g, ' ').replace(/\s+/g, ' ').slice(0, 80);
+  if (searchTerm) {
+    var search = '%' + searchTerm.replace(/\s/g, '%') + '%';
+    query = query.or(['body.ilike.' + search, 'author_label.ilike.' + search, 'vacancy_title.ilike.' + search, 'vacancy_location.ilike.' + search, 'marketplace_title.ilike.' + search, 'marketplace_price.ilike.' + search, 'marketplace_category.ilike.' + search, 'marketplace_location.ilike.' + search].join(','));
   }
   var result = await query.limit(40);
   if (result.error && communityMvp.authorIdentityAvailable && communityMissingIdentitySchema(result.error)) {
@@ -523,6 +659,7 @@ export function communityRenderFeed() {
       moreButton + '</div>' +
       communityVacancyMetaHtml(post) +
       communityMarketplaceMetaHtml(post) +
+      communityMarketplaceGalleryHtml(post) +
       (post.body ? '<div class="community-post-body">' + communityRenderBody(post.body) + '</div>' : '') +
       communityPosterImageHtml(post) +
       '<div class="community-post-actions">' + communityActionsHtml(post) + '</div>' +
@@ -560,6 +697,53 @@ export function communitySetSort(sort) {
   });
   communityLoadFeed().catch(function(error) { console.error(error); communityToast('Could not refresh posts.'); });
 }
+export function communitySearchTipChat(value) {
+  communityMvp.search = String(value || '').trim().slice(0, 80);
+  var clear = document.getElementById('community-search-clear');
+  if (clear) clear.hidden = !communityMvp.search;
+  window.clearTimeout(communitySearchTipChat.timer);
+  communitySearchTipChat.timer = window.setTimeout(function() {
+    communityLoadFeed().catch(function(error) { console.error('[TipChat] search failed', error); communityToast('Search is temporarily unavailable.'); });
+  }, 260);
+}
+export function communityClearSearch() {
+  var input = document.getElementById('community-search-input');
+  if (input) input.value = '';
+  communitySearchTipChat('');
+  if (input) input.focus();
+}
+export async function communityLoadNotifications() {
+  communityMvp.notifications = [];
+  if (!communitySignedIn()) { communityRenderNotifications(); return; }
+  var result = await supabaseClient.rpc('community_my_notifications');
+  if (!result.error) communityMvp.notifications = result.data || [];
+  communityRenderNotifications();
+}
+export function communityRenderNotifications() {
+  var badge = document.getElementById('community-notification-count');
+  var unread = communityMvp.notifications.filter(function(item) { return !item.read_at; }).length;
+  if (badge) { badge.textContent = unread > 9 ? '9+' : String(unread); badge.hidden = unread === 0; }
+  var panel = document.getElementById('community-notifications');
+  if (!panel) return;
+  panel.hidden = !communityMvp.notificationsOpen;
+  var list = document.getElementById('community-notification-list');
+  if (!list) return;
+  list.innerHTML = communityMvp.notifications.length ? communityMvp.notifications.map(function(item) {
+    return '<article class="community-notification' + (!item.read_at ? ' is-unread' : '') + '"><strong>' + communityEsc(item.title) + '</strong><p>' + communityEsc(item.body) + '</p><time>' + communityEsc(communityWhen(item.created_at)) + '</time></article>';
+  }).join('') : '<p class="community-notification-empty">You are all caught up. We will let you know if a moderator needs attention on one of your posts.</p>';
+}
+export async function communityToggleNotifications() {
+  if (!communityRequireSignIn()) return;
+  communityMvp.notificationsOpen = !communityMvp.notificationsOpen;
+  communityRenderNotifications();
+  if (!communityMvp.notificationsOpen) return;
+  var unread = communityMvp.notifications.filter(function(item) { return !item.read_at; }).map(function(item) { return item.id; });
+  if (unread.length) {
+    await supabaseClient.rpc('community_mark_notifications_read', { p_ids: unread });
+    communityMvp.notifications.forEach(function(item) { if (unread.indexOf(item.id) >= 0) item.read_at = new Date().toISOString(); });
+    communityRenderNotifications();
+  }
+}
 export function communityPromptParticipation() {
   if (!communityRequireSignIn()) return;
   if (!communityMvp.joined) communityToast('Join TipChat before posting, commenting or reacting.');
@@ -588,11 +772,18 @@ export async function communitySubmitPost(event) {
   if (button) button.disabled = true;
   var result;
   var poster = null;
+  var marketplacePhotosUploaded = [];
   try {
     if (isVacancy && communityPosterBlob) {
       communityStatus('Uploading your poster…', '');
       poster = await communityUploadPoster(vacancy.title || 'TipChat vacancy poster');
       if (!poster) { if (button) button.disabled = false; return false; }
+    }
+    if (isMarketplace && communityMarketplacePhotos.length) {
+      communityStatus('Uploading product photos…', '');
+      for (var photoIndex = 0; photoIndex < communityMarketplacePhotos.length; photoIndex += 1) {
+        marketplacePhotosUploaded.push(await communityUploadMarketplacePhoto(communityMarketplacePhotos[photoIndex]));
+      }
     }
     result = communityMvp.vacancySchemaAvailable
       ? await supabaseClient.from('community_posts').insert({
@@ -609,13 +800,15 @@ export async function communitySubmitPost(event) {
           marketplace_category: isMarketplace ? (marketplace.category || null) : null,
           marketplace_condition: isMarketplace ? (marketplace.condition || null) : null,
           marketplace_location: isMarketplace ? (marketplace.location || null) : null,
-          marketplace_contact: isMarketplace ? (marketplace.contact || null) : null
+          marketplace_contact: isMarketplace ? (marketplace.contact || null) : null,
+          marketplace_image_urls: isMarketplace ? marketplacePhotosUploaded.map(function(photo) { return photo.url; }) : []
         })
       : await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
   } catch (error) {
     result = { error: error };
   }
   if (result.error && poster) communityDeletePosterFile(poster.key || poster.url);
+  if (result.error && marketplacePhotosUploaded.length) marketplacePhotosUploaded.forEach(function(photo) { communityDeleteMarketplacePhoto(photo.key || photo.url); });
   if (result.error && communityMissingVacancySchema(result.error)) {
     communityMvp.vacancySchemaAvailable = false;
     communityStatus('TipChat vacancy support is still being enabled. Your draft is still here; please try again later.', 'error');
@@ -647,6 +840,7 @@ export async function communitySubmitPost(event) {
   if (field) field.value = '';
   ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application', 'community-marketplace-title', 'community-marketplace-price', 'community-marketplace-category', 'community-marketplace-condition', 'community-marketplace-location', 'community-marketplace-contact'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
   communityRemovePoster();
+  communityClearMarketplacePhotos();
   communitySetComposerType('discussion');
   communityStatus('Posted live. ' + (communityMvp.identity.show && communityMvp.identity.has ? 'Your CV Box name and photo are shown.' : 'You appear as Anonymous member.'), 'success');
   communityRenderGroup();
@@ -982,7 +1176,14 @@ window.openCommunity = openCommunity;
 window.openTipChatFromHome = openTipChatFromHome;
 window.goBackFromCommunity = goBackFromCommunity;
 window.communityJoinGroup = communityJoinGroup;
+window.communityFocusTipChat = communityFocusTipChat;
+window.communityOpenMyPosts = communityOpenMyPosts;
 window.communitySetSort = communitySetSort;
+window.communitySearchTipChat = communitySearchTipChat;
+window.communityClearSearch = communityClearSearch;
+window.communityToggleNotifications = communityToggleNotifications;
+window.communityHandleMarketplacePhotos = communityHandleMarketplacePhotos;
+window.communityRemoveMarketplacePhoto = communityRemoveMarketplacePhoto;
 window.communitySubmitPost = communitySubmitPost;
 window.communitySetComposerType = communitySetComposerType;
 window.communityHandlePosterPhoto = communityHandlePosterPhoto;
@@ -1061,6 +1262,7 @@ Object.assign(window, {
   communityReadMarketplaceMeta,
   communityVacancyMetaHtml,
   communityMarketplaceMetaHtml,
+  communityMarketplaceGalleryHtml,
   communityPosterImageHtml,
   communityHandlePosterPhoto,
   communityRemovePoster,
@@ -1078,6 +1280,8 @@ Object.assign(window, {
   openCommunity,
   goBackFromCommunity,
   communityRenderGroup,
+  communityFocusTipChat,
+  communityOpenMyPosts,
   communityLoad,
   communityLoadFeed,
   communityCurrentReaction,
@@ -1086,6 +1290,16 @@ Object.assign(window, {
   communityRenderFeed,
   communityJoinGroup,
   communitySetSort,
+  communitySearchTipChat,
+  communityClearSearch,
+  communityLoadNotifications,
+  communityRenderNotifications,
+  communityToggleNotifications,
+  communityHandleMarketplacePhotos,
+  communityRemoveMarketplacePhoto,
+  communityUploadMarketplacePhoto,
+  communityDeleteMarketplacePhoto,
+  communityClearMarketplacePhotos,
   communityPromptParticipation,
   communitySubmitPost,
   communityToggleLike,

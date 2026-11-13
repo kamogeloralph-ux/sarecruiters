@@ -28,6 +28,52 @@ test('TipChat UI exposes safe buy-and-sell listing fields', () => {
   assert.match(app, /marketplace_contact/);
 });
 
+test('TipChat supports searchable five-photo marketplace listings', () => {
+  const sql = read('supabase/migrations/20261114_tipchat_search_media_notifications.sql');
+  const html = read('index.html');
+  const app = read('app-community.js');
+  const worker = read('Cloudflare-worker/worker.js');
+  assert.match(sql, /marketplace_image_urls text\[\]/);
+  assert.match(sql, /community_marketplace_urls_ok/);
+  assert.match(html, /id="community-search-input"/);
+  assert.match(html, /id="community-marketplace-photos"[^>]*multiple/);
+  assert.match(app, /communitySearchTipChat/);
+  assert.match(app, /marketplace_image_urls/);
+  assert.match(app, /communityUploadMarketplacePhoto/);
+  assert.match(app, /slice\(0, 5\)/);
+  assert.match(worker, /\/api\/upload\/tipchat-image/);
+  assert.match(worker, /tipchat-marketplace\//);
+});
+
+test('TipChat provides private notifications when content is hidden or removed', () => {
+  const sql = read('supabase/migrations/20261114_tipchat_search_media_notifications.sql');
+  const html = read('index.html');
+  const app = read('app-community.js');
+  assert.match(sql, /create table if not exists public\.community_notifications/);
+  assert.match(sql, /community_my_notifications/);
+  assert.match(sql, /community_notify_on_content_change/);
+  assert.match(sql, /community_posts_notify_owner/);
+  assert.match(sql, /community_comments_notify_owner/);
+  assert.match(html, /community-notification-count/);
+  assert.match(html, /community-notifications/);
+  assert.match(app, /communityToggleNotifications/);
+  assert.match(app, /community_mark_notifications_read/);
+});
+
+test('TipChat keeps the main actions in the always-visible top menu', () => {
+  const html = read('index.html');
+  const app = read('app-community.js');
+  const css = read('community.css');
+  assert.match(html, /class="community-action-nav" aria-label="TipChat actions"/);
+  for (const action of ['feed', 'discussion', 'vacancy', 'marketplace', 'mine', 'join']) {
+    assert.match(html, new RegExp(`data-community-nav="${action}"`));
+  }
+  assert.match(app, /communityFocusTipChat/);
+  assert.match(app, /communityOpenMyPosts/);
+  assert.match(css, /\.community-action-nav\{display:flex/);
+  assert.match(css, /overflow-x:auto/);
+});
+
 test('scheduled roundup is deterministic, short and carries a safety reminder', () => {
   const worker = read('Cloudflare-worker/worker.js');
   const publisher = read('Cloudflare-worker/tipchat-publisher.js');
