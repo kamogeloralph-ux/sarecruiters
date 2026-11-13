@@ -50,6 +50,17 @@ test('admin startup isolates each loader and reports failures instead of blankin
   assert.match(admin, /fetchWithTimeout\(R2_WORKER_URL \+ '\/api\/admin\/vacancies/, 'worker requests must time out instead of hanging the dashboard');
 });
 
+test('admin house-ad reads fall back to Supabase when the D1 mirror table is unavailable', () => {
+  const start = worker.indexOf('const readTable = async (table) =>');
+  const end = worker.indexOf('// A failed table must not look like an empty table.', start);
+  assert.ok(start >= 0 && end > start);
+  const loader = worker.slice(start, end);
+  assert.match(loader, /table === "house_ads" && env\.DB/);
+  assert.match(loader, /try \{/);
+  assert.match(loader, /admin house_ads D1 read unavailable; using Supabase/);
+  assert.match(loader, /rest\/v1\/\$\{table\}/);
+});
+
 test('admin agency sheet defines every field the edit and save code reads', () => {
   const start = admin.indexOf('function openAgencySheet(');
   const end = admin.indexOf('async function deleteAgency(', start);

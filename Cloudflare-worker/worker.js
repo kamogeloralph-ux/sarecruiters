@@ -2458,8 +2458,16 @@ var worker_default = {
         };
         const readTable = async (table) => {
           if (table === "house_ads" && env.DB) {
-            const result = await env.DB.prepare("SELECT id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,ad_format,ad_details,cta_text,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at FROM house_ads ORDER BY sort_order ASC, created_at DESC LIMIT 2000").all();
-            return (result.results || []).map((ad) => ({ ...ad, target_screens: (() => { try { return JSON.parse(ad.target_screens || "[]"); } catch (e) { return []; } })(), is_active: Boolean(ad.is_active) }));
+            try {
+              const result = await env.DB.prepare("SELECT id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,ad_format,ad_details,cta_text,starts_at,ends_at,is_active,sort_order,impressions,clicks,created_at,updated_at FROM house_ads ORDER BY sort_order ASC, created_at DESC LIMIT 2000").all();
+              return (result.results || []).map((ad) => ({ ...ad, target_screens: (() => { try { return JSON.parse(ad.target_screens || "[]"); } catch (e) { return []; } })(), is_active: Boolean(ad.is_active) }));
+            } catch (error) {
+              // D1 migrations are applied separately from Worker deployment and
+              // may be temporarily unavailable. Fall through to the verified
+              // Supabase service-role read instead of breaking the whole admin
+              // auxiliary response.
+              console.warn("admin house_ads D1 read unavailable; using Supabase", error);
+            }
           }
           const query = new URLSearchParams({ select: "*", order: "created_at.desc", limit: "2000" });
           const response = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}?${query}`, { headers });
