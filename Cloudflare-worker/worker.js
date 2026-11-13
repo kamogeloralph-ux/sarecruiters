@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/cloudflare";
 import { candidateCvKey, cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, scanCvWithGemini } from "./cv-scan.js";
 import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
 import { putCached } from "./ai.js";
+import { publishTipchatVacancyRoundup } from "./tipchat-publisher.js";
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
@@ -2432,6 +2433,17 @@ var worker_default = {
         console.log("AI maintenance", JSON.stringify(ai));
       } catch (e) {
         { Sentry.captureException(e); console.error("scheduled AI maintenance failed", e); };
+      }
+      // Publish at most one deterministic official vacancy roundup per day.
+      // The app_settings kill switch is checked inside the publisher, so a
+      // missing setting or service key fails closed without affecting sync.
+      if (new Date(event.scheduledTime).getUTCHours() === 6) {
+        try {
+          const published = await publishTipchatVacancyRoundup(env, new Date(event.scheduledTime));
+          console.log("TipChat vacancy publisher", JSON.stringify(published));
+        } catch (e) {
+          { Sentry.captureException(e); console.error("scheduled TipChat vacancy publisher failed", e); };
+        }
       }
     })());
   },

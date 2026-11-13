@@ -513,9 +513,19 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
             <button class="btn" onclick="saveSocialLinksSettings()">Save social links</button>
           </div>
         </details>
+        <details class="banking-accordion">
+          <summary><span class="banking-summary-copy"><span class="t-label">TipChat automation</span><span class="muted">Control official vacancy roundups and marketplace safety</span></span><span class="banking-summary-chevron" aria-hidden="true">⌄</span></summary>
+          <div class="banking-accordion-body">
+            <div class="muted banking-help">When enabled, the scheduled Worker publishes at most one deterministic official vacancy roundup per day using live vacancies with a title, location and valid application link. It never publishes candidate information.</div>
+            <label style="display:flex;align-items:flex-start;gap:9px;margin:12px 0;font-weight:700"><input id="tipchat-auto-vacancy-posts" type="checkbox" style="margin-top:3px"><span>Enable daily official vacancy roundup<br><small class="muted">Turn this off to stop future automatic posts immediately.</small></span></label>
+            <button class="btn" onclick="saveTipchatAutomationSettings()">Save TipChat automation</button>
+            <div class="muted" style="margin-top:9px;font-size:12px">Marketplace listings remain community posts and follow the existing TipChat reporting and moderation controls.</div>
+          </div>
+        </details>
       </section>
 
       <!-- MEDIA -->
+
       <section class="section section-content" id="sec-media">
         <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Media</h2><div class="spacer"></div><button class="minibtn" onclick="openTrackSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Upload track</button></div>
         <div class="card card-pad" style="margin-bottom:16px">
@@ -1727,7 +1737,7 @@ function goSection(id, fromHistory){
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
   if(id==='media'){ renderDailyTracks(); loadMediaYoutubeUrl(); }
-  if(id==='settings'){ loadSocialLinksSettings(); }
+  if(id==='settings'){ loadSocialLinksSettings(); loadTipchatAutomationSettings(); }
   if(id==='ai' && window.renderAiAssistant) window.renderAiAssistant();
   if(id==='poolcandidates'){ renderPoolCandidates(); }
   window.scrollTo(0,0);
@@ -3511,6 +3521,17 @@ async function loadSocialLinksSettings(){
   document.getElementById('social-instagram').value = d.instagram || '';
   document.getElementById('social-whatsapp').value = d.whatsapp || '';
   document.getElementById('social-x').value = d.x || '';
+}
+async function loadTipchatAutomationSettings(){
+  var raw = await getAppSetting('tipchat_auto_vacancy_posts','false');
+  var input = document.getElementById('tipchat-auto-vacancy-posts');
+  if(input) input.checked = String(raw).toLowerCase() === 'true';
+}
+async function saveTipchatAutomationSettings(){
+  var input = document.getElementById('tipchat-auto-vacancy-posts');
+  var ok = await setAppSetting('tipchat_auto_vacancy_posts', input && input.checked ? 'true' : 'false');
+  if(ok) showToast(input && input.checked ? 'Daily TipChat vacancy roundup enabled' : 'Daily TipChat vacancy roundup disabled');
+  else alert('Could not save TipChat automation. Check your Supabase app_settings table.');
 }
 async function saveSocialLinksSettings(){
   var d = {

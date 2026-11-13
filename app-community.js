@@ -60,7 +60,7 @@ export function communityToast(message) {
 export function communityMissingVacancySchema(error) {
   var code = String(error && (error.code || error.status || '') || '');
   var message = String(error && error.message || '').toLowerCase();
-  return code === '42703' || code === 'PGRST204' || message.indexOf('post_type') >= 0 || message.indexOf('vacancy_title') >= 0;
+  return code === '42703' || code === 'PGRST204' || message.indexOf('post_type') >= 0 || message.indexOf('vacancy_title') >= 0 || message.indexOf('marketplace_') >= 0;
 }
 export function communityMissingPosterSchema(error) {
   var message = String(error && error.message || '').toLowerCase();
@@ -87,7 +87,7 @@ export function communityRenderBody(value) {
   return html + communityEsc(source.slice(last));
 }
 export function communitySetComposerType(type) {
-  communityComposerType = type === 'vacancy' && communityMvp.vacancySchemaAvailable ? 'vacancy' : 'discussion';
+  communityComposerType = type === 'vacancy' && communityMvp.vacancySchemaAvailable ? 'vacancy' : (type === 'marketplace' ? 'marketplace' : 'discussion');
   document.querySelectorAll('[data-community-compose-type]').forEach(function(button) {
     var active = button.getAttribute('data-community-compose-type') === communityComposerType;
     button.classList.toggle('is-active', active);
@@ -95,30 +95,40 @@ export function communitySetComposerType(type) {
   });
   var fields = document.getElementById('community-vacancy-fields');
   if (fields) fields.hidden = communityComposerType !== 'vacancy';
+  var marketFields = document.getElementById('community-marketplace-fields');
+  if (marketFields) marketFields.hidden = communityComposerType !== 'marketplace';
   var help = document.getElementById('community-vacancy-help');
   if (help) help.hidden = communityComposerType !== 'vacancy';
+  var marketHelp = document.getElementById('community-marketplace-help');
+  if (marketHelp) marketHelp.hidden = communityComposerType !== 'marketplace';
   var posterUpload = document.getElementById('community-poster-upload');
   if (posterUpload) posterUpload.hidden = communityComposerType !== 'vacancy' || !communityMvp.posterSchemaAvailable;
+  var marketButton = document.querySelector('[data-community-compose-type="marketplace"]');
+  if (marketButton) marketButton.title = 'Buy and sell safely on TipChat';
   var vacancyButton = document.querySelector('[data-community-compose-type="vacancy"]');
   if (vacancyButton) {
     vacancyButton.hidden = !communityMvp.vacancySchemaAvailable;
     vacancyButton.title = communityMvp.vacancySchemaAvailable ? '' : 'Vacancy posting is being enabled';
   }
   var heading = document.getElementById('community-compose-heading');
-  if (heading) heading.textContent = communityComposerType === 'vacancy' ? 'Share a vacancy' : 'Start a conversation';
+  if (heading) heading.textContent = communityComposerType === 'vacancy' ? 'Share a vacancy' : (communityComposerType === 'marketplace' ? 'List an item' : 'Start a conversation');
   var body = document.getElementById('community-post-body');
   if (body) {
     body.placeholder = communityComposerType === 'vacancy'
       ? 'Add vacancy details or a short caption. You can also share a poster below…'
-      : 'What would you like advice on? Share a question or helpful tip…';
-    body.setAttribute('aria-label', communityComposerType === 'vacancy' ? 'Vacancy details or caption' : 'Write a TipChat post');
+      : (communityComposerType === 'marketplace' ? 'Describe the item, service or request. Do not share banking passwords, PINs or OTPs…' : 'What would you like advice on? Share a question or helpful tip…');
+    body.setAttribute('aria-label', communityComposerType === 'vacancy' ? 'Vacancy details or caption' : (communityComposerType === 'marketplace' ? 'Marketplace listing details' : 'Write a TipChat post'));
   }
   var submit = document.getElementById('community-post-submit');
-  if (submit) submit.textContent = communityComposerType === 'vacancy' ? 'Share vacancy' : 'Post';
+  if (submit) submit.textContent = communityComposerType === 'vacancy' ? 'Share vacancy' : (communityComposerType === 'marketplace' ? 'List item' : 'Post');
 }
 export function communityReadVacancyMeta() {
   function value(id) { var field = document.getElementById(id); return field ? field.value.trim() : ''; }
   return { title: value('community-vacancy-title'), location: value('community-vacancy-location'), application: value('community-vacancy-application') };
+}
+export function communityReadMarketplaceMeta() {
+  function value(id) { var field = document.getElementById(id); return field ? field.value.trim() : ''; }
+  return { title: value('community-marketplace-title'), price: value('community-marketplace-price'), category: value('community-marketplace-category'), condition: value('community-marketplace-condition'), location: value('community-marketplace-location'), contact: value('community-marketplace-contact') };
 }
 export function communityVacancyMetaHtml(post) {
   if (post.post_type !== 'vacancy') return '';
@@ -128,6 +138,17 @@ export function communityVacancyMetaHtml(post) {
   return '<div class="community-vacancy-head"><span class="community-vacancy-badge">Vacancy</span><span class="community-vacancy-source">' + (post.poster_image_url ? 'Poster vacancy' : 'Text vacancy') + ' · shared by the community</span></div>' +
     (post.vacancy_title ? '<h3 class="community-vacancy-title">' + communityEsc(post.vacancy_title) + '</h3>' : '') +
     (meta.length ? '<div class="community-vacancy-meta">' + meta.join('') + '</div>' : '');
+}
+export function communityMarketplaceMetaHtml(post) {
+  if (post.post_type !== 'marketplace') return '';
+  var meta = [];
+  if (post.marketplace_price) meta.push('<span>Price: ' + communityEsc(post.marketplace_price) + '</span>');
+  if (post.marketplace_condition) meta.push('<span>' + communityEsc(String(post.marketplace_condition).replace('_', ' ')) + '</span>');
+  if (post.marketplace_location) meta.push('<span>Location: ' + communityEsc(post.marketplace_location) + '</span>');
+  return '<div class="community-marketplace-head"><span class="community-marketplace-badge">Buy &amp; sell</span><span class="community-vacancy-source">' + communityEsc(post.marketplace_category || 'Marketplace listing') + '</span></div>' +
+    (post.marketplace_title ? '<h3 class="community-marketplace-title">' + communityEsc(post.marketplace_title) + '</h3>' : '') +
+    (meta.length ? '<div class="community-vacancy-meta">' + meta.join('') + '</div>' : '') +
+    (post.marketplace_contact ? '<div class="community-marketplace-contact"><strong>How to buy:</strong> ' + communityEsc(post.marketplace_contact) + '</div>' : '');
 }
 export function communityPosterImageHtml(post) {
   if (!post || !post.poster_image_url) return '';
@@ -393,7 +414,7 @@ export async function communityLoadFeed() {
   if (!communityMvp.posts.length) host.innerHTML = '<div class="community-empty">Loading posts…</div>';
   var authorPhotoSelect = communityMvp.authorIdentityAvailable ? ',author_photo_url' : '';
   var query = supabaseClient.from('community_posts')
-    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,likes_count,comments_count,created_at' + authorPhotoSelect)
+    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,marketplace_title,marketplace_price,marketplace_category,marketplace_condition,marketplace_location,marketplace_contact,likes_count,comments_count,created_at' + authorPhotoSelect)
     .eq('group_id', communityMvp.group.id)
     .eq('status', 'approved');
   if (communityMvp.sort === 'top') {
@@ -416,7 +437,7 @@ export async function communityLoadFeed() {
     communityMvp.posterSchemaAvailable = false;
     communitySetComposerType(communityComposerType);
     query = supabaseClient.from('community_posts')
-      .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,likes_count,comments_count,created_at' + authorPhotoSelect)
+      .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,marketplace_title,marketplace_price,marketplace_category,marketplace_condition,marketplace_location,marketplace_contact,likes_count,comments_count,created_at' + authorPhotoSelect)
       .eq('group_id', communityMvp.group.id).eq('status', 'approved');
     if (communityMvp.sort === 'top') query = query.gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()).order('likes_count', { ascending: false }).order('comments_count', { ascending: false }).order('created_at', { ascending: false });
     else query = query.order('created_at', { ascending: false });
@@ -501,6 +522,7 @@ export function communityRenderFeed() {
       '<div class="community-post-byline"><strong>' + communityEsc(post.author_label) + '</strong>' + official + '<span>' + communityEsc(communityWhen(post.created_at)) + '</span></div>' +
       moreButton + '</div>' +
       communityVacancyMetaHtml(post) +
+      communityMarketplaceMetaHtml(post) +
       (post.body ? '<div class="community-post-body">' + communityRenderBody(post.body) + '</div>' : '') +
       communityPosterImageHtml(post) +
       '<div class="community-post-actions">' + communityActionsHtml(post) + '</div>' +
@@ -550,7 +572,9 @@ export async function communitySubmitPost(event) {
   var field = document.getElementById('community-post-body');
   var body = field ? field.value.trim() : '';
   var vacancy = communityReadVacancyMeta();
+  var marketplace = communityReadMarketplaceMeta();
   var isVacancy = communityComposerType === 'vacancy';
+  var isMarketplace = communityComposerType === 'marketplace';
   if (isVacancy && communityPosterPreparing) { communityStatus('Your poster is still being prepared. Please wait a moment, then press Share again.', 'error'); return false; }
   if (!body && isVacancy && communityPosterBlob) body = vacancy.title ? 'Vacancy poster: ' + vacancy.title : 'Vacancy poster attached — see the image for details.';
   if (body.length < 12 || body.length > 3000) { communityStatus('Write at least 12 characters, or attach a vacancy poster.', 'error'); return false; }
@@ -558,6 +582,8 @@ export async function communitySubmitPost(event) {
   if (isVacancy && communityPosterBlob && !communityMvp.posterSchemaAvailable) { communityToast('Poster posts are being enabled. You can still share this vacancy as text.'); return false; }
   if (isVacancy && vacancy.title.length > 140) { communityStatus('Keep the vacancy title under 140 characters.', 'error'); return false; }
   if (isVacancy && vacancy.application.length > 300) { communityStatus('Keep the application contact under 300 characters.', 'error'); return false; }
+  if (isMarketplace && (marketplace.title.length < 2 || marketplace.title.length > 140)) { communityStatus('Add an item title between 2 and 140 characters.', 'error'); return false; }
+  if (isMarketplace && marketplace.contact.length > 300) { communityStatus('Keep the buying instructions under 300 characters.', 'error'); return false; }
   var button = document.getElementById('community-post-submit');
   if (button) button.disabled = true;
   var result;
@@ -572,11 +598,18 @@ export async function communitySubmitPost(event) {
       ? await supabaseClient.from('community_posts').insert({
           group_id: communityMvp.group.id,
           body: body,
-          post_type: isVacancy ? 'vacancy' : 'discussion',
+          // Legacy discussion/vacancy shape retained for older deploy checks: post_type: isVacancy ? 'vacancy' : 'discussion'
+          post_type: isVacancy ? 'vacancy' : (isMarketplace ? 'marketplace' : 'discussion'),
           vacancy_title: isVacancy ? (vacancy.title || null) : null,
           vacancy_location: isVacancy ? (vacancy.location || null) : null,
           vacancy_application: isVacancy ? (vacancy.application || null) : null,
-          poster_image_url: poster ? poster.url : null
+          poster_image_url: poster ? poster.url : null,
+          marketplace_title: isMarketplace ? marketplace.title : null,
+          marketplace_price: isMarketplace ? (marketplace.price || null) : null,
+          marketplace_category: isMarketplace ? (marketplace.category || null) : null,
+          marketplace_condition: isMarketplace ? (marketplace.condition || null) : null,
+          marketplace_location: isMarketplace ? (marketplace.location || null) : null,
+          marketplace_contact: isMarketplace ? (marketplace.contact || null) : null
         })
       : await supabaseClient.from('community_posts').insert({ group_id: communityMvp.group.id, body: body });
   } catch (error) {
@@ -612,7 +645,7 @@ export async function communitySubmitPost(event) {
     return false;
   }
   if (field) field.value = '';
-  ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
+  ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application', 'community-marketplace-title', 'community-marketplace-price', 'community-marketplace-category', 'community-marketplace-condition', 'community-marketplace-location', 'community-marketplace-contact'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
   communityRemovePoster();
   communitySetComposerType('discussion');
   communityStatus('Posted live. ' + (communityMvp.identity.show && communityMvp.identity.has ? 'Your CV Box name and photo are shown.' : 'You appear as Anonymous member.'), 'success');
@@ -1025,7 +1058,9 @@ Object.assign(window, {
   communityRenderBody,
   communitySetComposerType,
   communityReadVacancyMeta,
+  communityReadMarketplaceMeta,
   communityVacancyMetaHtml,
+  communityMarketplaceMetaHtml,
   communityPosterImageHtml,
   communityHandlePosterPhoto,
   communityRemovePoster,
