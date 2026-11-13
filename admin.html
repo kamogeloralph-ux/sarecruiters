@@ -984,6 +984,7 @@ var editing = { agency: null, branch: null, vacancy: null, employer: null, artic
 var pendingPhoto = null;
 var pendingPhotoBlob = null;
 var subTab = 'reports';
+var adminHistoryReady = false;
 
 // ===== Theme =====
 function applyTheme(t){
@@ -1106,6 +1107,7 @@ async function enterConsole(user){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('who-am-i').textContent = user.email || 'admin';
+  initAdminHistory();
   // Paint the console immediately. The previous bootstrap awaited every
   // table—including all vacancy pages and posters—before showing Dashboard,
   // which made the admin page look stuck on slower mobile connections.
@@ -1665,7 +1667,33 @@ function navBadge(id){
   if(id==='poolcandidates'){ return cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; }
   return null;
 }
-function goSection(id){
+function adminHistoryState(section){
+  return { __saAdmin: true, section: section || 'dashboard' };
+}
+function initAdminHistory(){
+  if(adminHistoryReady || !window.history || !window.history.replaceState) return;
+  var current = window.history.state;
+  var section = current && current.__saAdmin && current.section ? current.section : 'dashboard';
+  window.history.replaceState(adminHistoryState(section), document.title, window.location.href);
+  adminHistoryReady = true;
+}
+function closeAllAdminSheets(){
+  document.querySelectorAll('.sheet-scrim.open').forEach(function(sheet){ sheet.classList.remove('open'); });
+}
+window.addEventListener('popstate', function(event){
+  if(!adminHistoryReady) return;
+  var state = event.state && event.state.__saAdmin ? event.state : adminHistoryState('dashboard');
+  closeAllAdminSheets();
+  goSection(state.section || 'dashboard', true);
+});
+function goSection(id, fromHistory){
+  id = id || 'dashboard';
+  if(!fromHistory && adminHistoryReady && window.history && window.history.pushState){
+    var current = window.history.state;
+    if(!current || !current.__saAdmin || current.section !== id){
+      window.history.pushState(adminHistoryState(id), document.title, window.location.href);
+    }
+  }
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('sec-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.toggle('active', n.dataset.nav===id); });
@@ -1684,7 +1712,12 @@ function goSection(id){
   window.scrollTo(0,0);
 }
 function goHome(){
-  goSection('dashboard');
+  if(adminHistoryReady && window.history && window.history.replaceState){
+    window.history.replaceState(adminHistoryState('dashboard'), document.title, window.location.href);
+    goSection('dashboard', true);
+  } else {
+    goSection('dashboard', true);
+  }
 }
 
 // ===== Dashboard =====

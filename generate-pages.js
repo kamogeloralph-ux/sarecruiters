@@ -508,7 +508,9 @@ function publicAdSlot(slot) {
   return `<div class="public-house-ad-wrap sp-wrap"><div class="public-house-ad-slot" data-public-ad-slot="${slot}" hidden></div></div>`;
 }
 function pageShell({ title, description, canonical, bodyHtml, jsonLd, image, imageIsLogo = false, imageAlt = '', hero = '', active = '', narrow = false, applyBar = '' }) {
-  const ogImage = image || `${SITE_URL}/assets/sa-recruiters-social-square.png?v=3`;
+  // WhatsApp renders link thumbnails as a compact square. Use the dedicated
+  // 1200px square artwork so the mark and wordmark stay sharp after cropping.
+  const ogImage = image || `${SITE_URL}/assets/sa-recruiters-social-square.png?v=4`;
   const breadcrumbLd = breadcrumbJsonLd(CTX.lastCrumbs, canonical);
   CTX.lastCrumbs = [];
   const ldScripts = [].concat(jsonLd || [], breadcrumbLd || [])
