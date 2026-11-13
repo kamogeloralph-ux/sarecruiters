@@ -534,6 +534,21 @@ async function writePublicJsonSnapshot(env, key, field, rows, dataVersion = 0) {
   return true;
 }
 __name(writePublicJsonSnapshot, "writePublicJsonSnapshot");
+async function bootstrapPublicAuxiliarySnapshot(env, kind) {
+  const isPosters = kind === "posters";
+  const now = new Date().toISOString();
+  const result = await supabaseGet(env, isPosters ? "employer_posters" : "house_ads", isPosters ? {
+    select: "id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at",
+    or: `(expires_at.is.null,expires_at.gt.${now})`, order: "created_at.desc", limit: "500"
+  } : {
+    select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text,starts_at,ends_at,is_active,created_at,updated_at",
+    is_active: "eq.true", starts_at: `lte.${now}`, or: `(ends_at.is.null,ends_at.gt.${now})`, order: "sort_order.asc,created_at.desc", limit: "50"
+  });
+  const rows = Array.isArray(result.body) ? result.body : [];
+  await writePublicJsonSnapshot(env, isPosters ? PUBLIC_POSTERS_SNAPSHOT_KEY : PUBLIC_HOUSE_ADS_SNAPSHOT_KEY, kind === "posters" ? "posters" : "ads", rows, 0);
+  return rows;
+}
+__name(bootstrapPublicAuxiliarySnapshot, "bootstrapPublicAuxiliarySnapshot");
 async function buildPublicVacancySnapshot(env) {
   const columns = [
     "id", "agency_id", "employer_id", "title", "company", "company_photo",
@@ -1928,9 +1943,18 @@ async function postersResponse(request, env, origin) {
   }
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) return clientResponse(cached);
-  const snapshot = await readPublicJsonSnapshot(env, PUBLIC_POSTERS_SNAPSHOT_KEY, "posters");
-  if (!snapshot) return json({ posters: [], count: 0, source: "unavailable", data_version: 0 }, 503, origin);
-  const posters = snapshot.posters.filter((poster) => !poster.expires_at || poster.expires_at > new Date().toISOString());
+  let snapshot = await readPublicJsonSnapshot(env, PUBLIC_POSTERS_SNAPSHOT_KEY, "posters");
+  let posters;
+  if (snapshot) {
+    posters = snapshot.posters;
+  } else {
+    // One-time migration only: seed the R2 object if an older deployment has
+    // never created it. All subsequent public reads are R2-only.
+    try { posters = await bootstrapPublicAuxiliarySnapshot(env, "posters"); }
+    catch (error) { console.error("poster R2 bootstrap failed", error); return json({ posters: [], count: 0, source: "unavailable", data_version: 0 }, 503, origin); }
+    snapshot = { data_version: 0 };
+  }
+  posters = posters.filter((poster) => !poster.expires_at || poster.expires_at > new Date().toISOString());
   const cachedResponse = json({ posters, count: posters.length, source: "r2", data_version: Number(snapshot.data_version) || 0 }, 200, origin);
   cachedResponse.headers.set("Cache-Control", "public, max-age=86400");
   cachedResponse.headers.set("X-Data-Version", String(Number(snapshot.data_version) || 0));
@@ -1960,10 +1984,18 @@ async function houseAdsResponse(request, env, ctx, origin) {
     headers.set("Access-Control-Allow-Origin", origin || "*");
     return new Response(cached.body, { status: cached.status, headers });
   }
-  const snapshot = await readPublicJsonSnapshot(env, PUBLIC_HOUSE_ADS_SNAPSHOT_KEY, "ads");
-  if (!snapshot) return json({ ads: [], error: "House ads temporarily unavailable" }, 503, origin);
+  let snapshot = await readPublicJsonSnapshot(env, PUBLIC_HOUSE_ADS_SNAPSHOT_KEY, "ads");
+  let snapshotAds;
+  if (snapshot) {
+    snapshotAds = snapshot.ads;
+  } else {
+    // One-time migration only; the scheduled sync will maintain this object.
+    try { snapshotAds = await bootstrapPublicAuxiliarySnapshot(env, "ads"); }
+    catch (error) { console.error("house-ad R2 bootstrap failed", error); return json({ ads: [], error: "House ads temporarily unavailable" }, 503, origin); }
+    snapshot = { data_version: 0 };
+  }
   const now = Date.now();
-  const ads = snapshot.ads
+  const ads = snapshotAds
     .filter((ad) => ad.is_active !== false && (!ad.starts_at || new Date(ad.starts_at).getTime() <= now) && (!ad.ends_at || new Date(ad.ends_at).getTime() > now))
     .map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url) }));
   const response = json({ ads, data_version: Number(snapshot.data_version) || 0 }, 200, origin);

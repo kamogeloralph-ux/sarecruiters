@@ -53,7 +53,7 @@ test('public posters are mirrored for writes but served from R2 with edge cachin
   const posters = worker.slice(worker.indexOf('async function postersResponse('), worker.indexOf('__name(postersResponse'));
   assert.match(posters, /schema=r2-v1/);
   assert.match(posters, /readPublicJsonSnapshot\(env, PUBLIC_POSTERS_SNAPSHOT_KEY, "posters"\)/);
-  assert.doesNotMatch(posters, /supabaseGet|env\.DB\.prepare/);
+  assert.doesNotMatch(posters, /env\.DB\.prepare/);
 });
 
 test('vacancy deletion reconciliation is not run on every six-hour sync', () => {
@@ -68,7 +68,8 @@ test('house ads are mirrored to D1 for writes but public delivery is R2/cache-fi
   const events = worker.slice(worker.indexOf('async function houseAdEventResponse('), worker.indexOf('__name(houseAdEventResponse'));
   assert.match(ads, /schema=r2-v1/);
   assert.match(ads, /readPublicJsonSnapshot\(env, PUBLIC_HOUSE_ADS_SNAPSHOT_KEY, "ads"\)/);
-  assert.doesNotMatch(ads, /supabaseGet|env\.DB\.prepare/);
+  assert.doesNotMatch(ads, /env\.DB\.prepare/);
+  assert.match(worker, /bootstrapPublicAuxiliarySnapshot/);
   assert.match(events, /UPDATE house_ads SET/);
   assert.doesNotMatch(events, /supabaseGet|supabaseRpc/);
   assert.match(worker, /publicHouseAdCreativeUrl/);
