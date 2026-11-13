@@ -24,8 +24,9 @@ database_id = "7d1a4327-6056-45cf-ae62-b5b26a454627"
 
 # Keeps the D1 write mirror of agencies/branches/vacancies/employers/pool_candidates
 # fresh for admin and operational recovery. Public startup, vacancy, poster, and
-# house-ad reads use R2/Supabase snapshots and edge caching; they never fall back
-# to D1, so public traffic cannot exhaust the account-wide D1 read budget. The
+# house-ad reads use R2 snapshots and edge caching; they never fall back to D1 or
+# Supabase, so public traffic cannot exhaust the account-wide D1 read budget or
+# create uncontrolled Supabase egress. The
 # mirror upserts changed rows in batches and reconciles stale keys once daily.
 # Use POST /api/sync-d1 after an important admin data change if an immediate
 # mirror refresh is needed.

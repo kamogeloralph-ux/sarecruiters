@@ -466,6 +466,8 @@ var STARTUP_CACHE_TTL = 3600;
 var STARTUP_STALE_TTL = 10800;
 var PUBLIC_STARTUP_SNAPSHOT_KEY = "snapshots/public-startup-v2-employer-vacancies.json";
 var PUBLIC_VACANCY_SNAPSHOT_KEY = "snapshots/public-vacancies-v1.json";
+var PUBLIC_POSTERS_SNAPSHOT_KEY = "snapshots/public-posters-v1.json";
+var PUBLIC_HOUSE_ADS_SNAPSHOT_KEY = "snapshots/public-house-ads-v1.json";
 async function readPublicStartupSnapshot(env) {
   if (!env.MEDIA_BUCKET) return null;
   try {
@@ -509,6 +511,29 @@ async function writePublicVacancySnapshot(env, payload) {
   return true;
 }
 __name(writePublicVacancySnapshot, "writePublicVacancySnapshot");
+async function readPublicJsonSnapshot(env, key, field) {
+  if (!env.MEDIA_BUCKET) return null;
+  try {
+    const object = await env.MEDIA_BUCKET.get(key);
+    if (!object) return null;
+    const payload = JSON.parse(await object.text());
+    return payload && Array.isArray(payload[field]) ? payload : null;
+  } catch (e) {
+    console.warn(`Could not read public R2 ${field} snapshot`, e);
+    return null;
+  }
+}
+__name(readPublicJsonSnapshot, "readPublicJsonSnapshot");
+async function writePublicJsonSnapshot(env, key, field, rows, dataVersion = 0) {
+  if (!env.MEDIA_BUCKET) return false;
+  const payload = { generated_at: new Date().toISOString(), data_version: dataVersion, [field]: rows || [] };
+  await env.MEDIA_BUCKET.put(key, JSON.stringify(payload), {
+    httpMetadata: { contentType: "application/json; charset=utf-8", cacheControl: "public, max-age=300" },
+    customMetadata: { generated_at: payload.generated_at }
+  });
+  return true;
+}
+__name(writePublicJsonSnapshot, "writePublicJsonSnapshot");
 async function buildPublicVacancySnapshot(env) {
   const columns = [
     "id", "agency_id", "employer_id", "title", "company", "company_photo",
@@ -871,11 +896,19 @@ async function syncD1FromSupabase(env) {
     .bind("last_sync", JSON.stringify(summary)).run();
   await env.DB.prepare("INSERT OR REPLACE INTO sync_meta (key, value) VALUES (?, ?)")
     .bind("sync_status", JSON.stringify({ status: "success", ...summary })).run();
-  return summary;
+  return {
+    ...summary,
+    publicSnapshots: {
+      posters: posters.body || [],
+      houseAds: houseAds.body || []
+    }
+  };
 }
 __name(syncD1FromSupabase, "syncD1FromSupabase");
 async function syncD1AndPublishSnapshot(env) {
-  const summary = await syncD1FromSupabase(env);
+  const syncResult = await syncD1FromSupabase(env);
+  const publicSnapshots = syncResult.publicSnapshots || { posters: [], houseAds: [] };
+  const { publicSnapshots: _ignoredSnapshots, ...summary } = syncResult;
   const dataVersion = env.DB ? await bumpPublicDataVersion(env) : 0;
   // D1 is the write mirror, not the snapshot source. Re-reading every local
   // table here used to multiply rows-read on every six-hour sync. Supabase is
@@ -886,7 +919,9 @@ async function syncD1AndPublishSnapshot(env) {
   vacancySnapshot.data_version = dataVersion;
   await Promise.all([
     writePublicStartupSnapshot(env, payload),
-    writePublicVacancySnapshot(env, vacancySnapshot)
+    writePublicVacancySnapshot(env, vacancySnapshot),
+    writePublicJsonSnapshot(env, PUBLIC_POSTERS_SNAPSHOT_KEY, "posters", publicSnapshots.posters, dataVersion),
+    writePublicJsonSnapshot(env, PUBLIC_HOUSE_ADS_SNAPSHOT_KEY, "ads", publicSnapshots.houseAds, dataVersion)
   ]);
   return { ...summary, data_version: dataVersion, snapshot: "r2", snapshot_generated_at: payload.generated_at, vacancy_snapshot_rows: vacancySnapshot?.vacancies?.length || 0 };
 }
@@ -1882,7 +1917,7 @@ async function syncStatusResponse(request, env, origin) {
 __name(syncStatusResponse, "syncStatusResponse");
 async function postersResponse(request, env, origin) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/posters?schema=supabase-v1", request.url), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/posters?schema=r2-v1", request.url), { method: "GET" });
   function clientResponse(response) {
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "public, max-age=60");
@@ -1893,26 +1928,12 @@ async function postersResponse(request, env, origin) {
   }
   const cached = await cache.match(cacheKey, { ignoreMethod: true });
   if (cached) return clientResponse(cached);
-  let posters = [];
-  let count = 0;
-  let source = "supabase";
-  try {
-    const now = new Date().toISOString();
-    const result = await supabaseGet(env, "employer_posters", {
-      select: "id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at",
-      or: `(expires_at.is.null,expires_at.gt.${now})`,
-      order: "created_at.desc",
-      limit: "500"
-    });
-    posters = Array.isArray(result.body) ? result.body : [];
-    count = posters.length;
-  } catch (error) {
-    console.error("public poster Supabase read failed", error);
-    return json({ posters: [], count: 0, source: "unavailable", data_version: 0 }, 503, origin);
-  }
-  const cachedResponse = json({ posters, count, source, data_version: 0 }, 200, origin);
+  const snapshot = await readPublicJsonSnapshot(env, PUBLIC_POSTERS_SNAPSHOT_KEY, "posters");
+  if (!snapshot) return json({ posters: [], count: 0, source: "unavailable", data_version: 0 }, 503, origin);
+  const posters = snapshot.posters.filter((poster) => !poster.expires_at || poster.expires_at > new Date().toISOString());
+  const cachedResponse = json({ posters, count: posters.length, source: "r2", data_version: Number(snapshot.data_version) || 0 }, 200, origin);
   cachedResponse.headers.set("Cache-Control", "public, max-age=86400");
-  cachedResponse.headers.set("X-Data-Version", "0");
+  cachedResponse.headers.set("X-Data-Version", String(Number(snapshot.data_version) || 0));
   await cache.put(cacheKey, cachedResponse.clone());
   return clientResponse(cachedResponse);
 }
@@ -1932,33 +1953,20 @@ function publicHouseAdCreativeUrl(env, value) {
 __name(publicHouseAdCreativeUrl, "publicHouseAdCreativeUrl");
 async function houseAdsResponse(request, env, ctx, origin) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/house-ads?schema=supabase-v1", request.url).toString(), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/house-ads?schema=r2-v1", request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) {
     const headers = new Headers(cached.headers);
     headers.set("Access-Control-Allow-Origin", origin || "*");
     return new Response(cached.body, { status: cached.status, headers });
   }
-  let ads = [];
-  try {
-    const now = new Date().toISOString();
-    // D1 is deliberately not a public fallback. It is a write mirror and can
-    // be quota-blocked account-wide. Read the small authoritative ad set from
-    // Supabase, then cache the response at the edge.
-    const result = await supabaseGet(env, "house_ads", {
-      select: "id,advertiser_name,title,message,image_url,target_url,placement,target_screens,ad_slot,sort_order,ad_format,ad_details,cta_text",
-      is_active: "eq.true",
-      starts_at: `lte.${now}`,
-      or: `(ends_at.is.null,ends_at.gt.${now})`,
-      order: "sort_order.asc,created_at.desc",
-      limit: "50"
-    });
-    ads = (Array.isArray(result.body) ? result.body : []).map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url) }));
-  } catch (error) {
-    console.error("house ads Supabase read failed", error);
-    return json({ ads: [], error: "House ads temporarily unavailable" }, 200, origin);
-  }
-  const response = json({ ads }, 200, origin);
+  const snapshot = await readPublicJsonSnapshot(env, PUBLIC_HOUSE_ADS_SNAPSHOT_KEY, "ads");
+  if (!snapshot) return json({ ads: [], error: "House ads temporarily unavailable" }, 503, origin);
+  const now = Date.now();
+  const ads = snapshot.ads
+    .filter((ad) => ad.is_active !== false && (!ad.starts_at || new Date(ad.starts_at).getTime() <= now) && (!ad.ends_at || new Date(ad.ends_at).getTime() > now))
+    .map((ad) => ({ ...ad, image_url: publicHouseAdCreativeUrl(env, ad.image_url) }));
+  const response = json({ ads, data_version: Number(snapshot.data_version) || 0 }, 200, origin);
   response.headers.set("Cache-Control", "public, max-age=300");
   const put = cache.put(cacheKey, response.clone());
   if (ctx && ctx.waitUntil) ctx.waitUntil(put); else await put;

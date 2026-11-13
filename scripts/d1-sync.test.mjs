@@ -44,16 +44,16 @@ test('public startup and vacancy reads never fall back to D1', () => {
   assert.doesNotMatch(vacancies, /env\.DB\.prepare/);
 });
 
-test('public posters are mirrored for writes but served from Supabase with edge caching', () => {
+test('public posters are mirrored for writes but served from R2 with edge caching', () => {
   assert.match(worker, /async function postersResponse\(request, env, origin\)/);
   assert.match(worker, /path === "\/api\/posters"/);
   assert.match(worker, /syncD1Table\(env, "employer_posters"/);
   assert.match(postersMigration, /CREATE TABLE IF NOT EXISTS employer_posters/);
   assert.match(postersMigration, /employer_posters_expires_at_idx/);
   const posters = worker.slice(worker.indexOf('async function postersResponse('), worker.indexOf('__name(postersResponse'));
-  assert.match(posters, /schema=supabase-v1/);
-  assert.match(posters, /supabaseGet\(env, "employer_posters"/);
-  assert.doesNotMatch(posters, /env\.DB\.prepare/);
+  assert.match(posters, /schema=r2-v1/);
+  assert.match(posters, /readPublicJsonSnapshot\(env, PUBLIC_POSTERS_SNAPSHOT_KEY, "posters"\)/);
+  assert.doesNotMatch(posters, /supabaseGet|env\.DB\.prepare/);
 });
 
 test('vacancy deletion reconciliation is not run on every six-hour sync', () => {
@@ -61,14 +61,14 @@ test('vacancy deletion reconciliation is not run on every six-hour sync', () => 
   assert.match(worker, /vacancies_last_reconciled_at/);
 });
 
-test('house ads are mirrored to D1 for writes but public delivery is Supabase/cache-first', () => {
+test('house ads are mirrored to D1 for writes but public delivery is R2/cache-first', () => {
   assert.match(worker, /syncD1Table\(env, "house_ads"/);
   assert.match(houseAdsMigration, /CREATE TABLE IF NOT EXISTS house_ads/);
   const ads = worker.slice(worker.indexOf('async function houseAdsResponse('), worker.indexOf('__name(houseAdsResponse'));
   const events = worker.slice(worker.indexOf('async function houseAdEventResponse('), worker.indexOf('__name(houseAdEventResponse'));
-  assert.match(ads, /schema=supabase-v1/);
-  assert.match(ads, /supabaseGet\(env, "house_ads"/);
-  assert.doesNotMatch(ads, /env\.DB\.prepare/);
+  assert.match(ads, /schema=r2-v1/);
+  assert.match(ads, /readPublicJsonSnapshot\(env, PUBLIC_HOUSE_ADS_SNAPSHOT_KEY, "ads"\)/);
+  assert.doesNotMatch(ads, /supabaseGet|env\.DB\.prepare/);
   assert.match(events, /UPDATE house_ads SET/);
   assert.doesNotMatch(events, /supabaseGet|supabaseRpc/);
   assert.match(worker, /publicHouseAdCreativeUrl/);
