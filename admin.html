@@ -727,7 +727,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="pool-admin-activity" id="pc-activity-summary" hidden><div><strong>Profile activity:</strong><span id="pc-profile-updated"></span></div><div><strong>Availability status:</strong><span id="pc-availability-status"></span></div></div>
     <div class="field"><label>Phone / WhatsApp <span class="field-optional">sent to buyers after payment, never shown publicly</span></label><input id="pc-phone" type="tel" inputmode="tel" maxlength="20"></div>
     <div class="field"><label>Email <span class="field-optional">optional</span></label><input id="pc-email" type="email"></div>
-    <div class="field"><label>CV link</label><input id="pc-cv" type="url" oninput="updatePoolCvOpenLink()"><a id="pc-cv-open" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:6px;font-size:13px;font-weight:700">Open CV ↗</a><button type="button" class="minibtn" id="pc-scan-btn" style="margin-top:8px" onclick="scanPoolCvFromSheet()">Scan CV &amp; add positions</button><div class="cv-scan-result" id="pc-scan-result"></div></div>
+    <div class="field"><label>CV link</label><input id="pc-cv" type="url" oninput="updatePoolCvOpenLink()"><a id="pc-cv-open" href="#" target="_self" rel="noopener noreferrer" style="display:none;margin-top:6px;font-size:13px;font-weight:700">Open CV ↗</a><button type="button" class="minibtn" id="pc-scan-btn" style="margin-top:8px" onclick="scanPoolCvFromSheet()">Scan CV &amp; add positions</button><div class="cv-scan-result" id="pc-scan-result"></div></div>
     <div class="field"><label>Status</label><select id="pc-status"><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div>
     <div class="toggle-row" style="margin-bottom:16px">
       <div><div class="t-label">Screened &amp; Verified</div><div class="t-sub">Confirms this candidate has passed screening and their information checks out — shows a badge publicly</div></div>
@@ -1010,8 +1010,29 @@ function showToast(msg){
 }
 
 // ===== Sheets =====
-function openSheet(id){ document.getElementById(id).classList.add('open'); }
-function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
+function activeAdminSection(){
+  var active = document.querySelector('.section.active');
+  return active ? active.id.replace(/^sec-/,'') : ((window.history.state && window.history.state.section) || 'dashboard');
+}
+function openSheet(id){
+  var el = document.getElementById(id); if(!el) return;
+  el.classList.add('open');
+  if(adminHistoryReady && window.history && window.history.pushState){
+    var current = window.history.state || adminHistoryState(activeAdminSection());
+    if(!current.sheet || current.sheet !== id){
+      window.history.pushState(adminHistoryState(current.section || activeAdminSection(), id), document.title, window.location.href);
+    }
+  }
+}
+function closeSheet(id){
+  var el = document.getElementById(id);
+  if(!el) return;
+  if(adminHistoryReady && window.history && window.history.state && window.history.state.__saAdmin && window.history.state.sheet === id){
+    window.history.back();
+    return;
+  }
+  el.classList.remove('open');
+}
 
 // ===== Helpers =====
 function jsq(v){ return String(v==null?'':v).replace(/[^A-Za-z0-9_-]/g,''); } // ids are safe tokens; strip anything that could break an inline handler
@@ -3257,7 +3278,7 @@ function renderJobSeekersList(){
       j.phone ? '<a class="minibtn" href="tel:'+escapeHtml(String(j.phone).replace(/[^\d+]/g,''))+'" onclick="stopProp(event)">Call</a>' : '',
       wa ? '<a class="minibtn ok" target="_blank" rel="noopener" href="https://wa.me/'+wa+'?text='+encodeURIComponent('Hi '+(j.full_name||'').split(' ')[0]+', this is SA Recruiters following up on your request.')+'" onclick="stopProp(event)">WhatsApp</a>' : '',
       j.email ? '<a class="minibtn" href="mailto:'+escapeHtml(j.email)+'" onclick="stopProp(event)">Email</a>' : '',
-      cv ? '<a class="minibtn" target="_blank" rel="noopener" href="'+escapeHtml(cv)+'" onclick="stopProp(event)">View CV</a>' : ''
+      cv ? '<a class="minibtn" target="_self" rel="noopener" href="'+escapeHtml(cv)+'" onclick="stopProp(event)">View CV</a>' : ''
     ].join('');
     return '<div class="row-item sub-item"><div class="row-main">'+
       '<div class="row-title">'+escapeHtml(j.full_name||'Unnamed')+' <span class="badge '+badgeCls+'">'+(st==='added'?'in CV Box':st)+'</span>'+(j.work_status==='work_visa'?' <span class="badge verified">Work visa</span>':'')+'</div>'+
