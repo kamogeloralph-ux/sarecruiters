@@ -23,13 +23,41 @@ var PROVINCE_LOCATION_TERMS = {
   "north-west": ["north west", "north-west", "rustenburg", "mahikeng", "mafikeng", "klerksdorp", "potchefstroom", "brits", "vryburg"],
   "northern-cape": ["northern cape", "northern-cape", "kimberley", "upington", "kuruman", "de aar", "springbok", "kathu"]
 };
+// Browsers on these origins may call the API. Anything else gets no
+// Access-Control-Allow-Origin header, so another website cannot read responses
+// with a visitor's token. Add more with the ALLOWED_ORIGINS variable
+// (comma-separated, e.g. "https://admin.example.co.za").
+let extraAllowedOrigins = [];
+function configureCors(env) {
+  extraAllowedOrigins = String((env && env.ALLOWED_ORIGINS) || "").split(",").map((v) => v.trim().replace(/\/$/, "")).filter(Boolean);
+  try {
+    const site = new URL((env && env.SITE_URL) || "https://sa-recruiters.co.za");
+    extraAllowedOrigins.push(site.origin);
+    extraAllowedOrigins.push(site.hostname.startsWith("www.") ? `${site.protocol}//${site.hostname.slice(4)}` : `${site.protocol}//www.${site.hostname}`);
+  } catch (_) {}
+}
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (extraAllowedOrigins.includes(origin)) return true;
+  try {
+    const u = new URL(origin);
+    if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return true;       // local dev and the installed app shell
+    if (u.protocol === "https:" && (u.hostname === "sarecruiters.pages.dev" || u.hostname.endsWith(".sarecruiters.pages.dev"))) return true; // Pages production + previews
+    if (u.protocol === "https:" && (u.hostname === "sa-recruiters.co.za" || u.hostname.endsWith(".sa-recruiters.co.za"))) return true;
+  } catch (_) {}
+  return false;
+}
 function corsHeaders(origin) {
-  return {
-    "Access-Control-Allow-Origin": origin || "*",
+  const headers = {
     "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, cf-turnstile-response",
-    "Access-Control-Max-Age": "86400"
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin"
   };
+  // No Origin header = not a browser cross-site call (cron, curl, same-origin): harmless to answer "*".
+  if (!origin) headers["Access-Control-Allow-Origin"] = "*";
+  else if (isAllowedOrigin(origin)) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
 }
 __name(corsHeaders, "corsHeaders");
 function json(data, status, origin) {
@@ -91,22 +119,38 @@ async function verifiedUserId(request, env) {
   }
 }
 __name(verifiedUserId, "verifiedUserId");
+// The duplicate check needs every CV Box row (phones are stored in free format,
+// so they can only be compared after normalising in code). Paging through the
+// whole table on every scan was slow and hammered Supabase when several CVs were
+// scanned in a row, so the list is kept for a minute in this Worker instance.
+// Only the service-role copy is cached; a per-user token never is.
+const CV_BOX_CACHE_MS = 60000;
+let cvBoxCache = { at: 0, rows: null };
 async function existingCvBoxCandidates(request, env) {
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
   const bearer = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   const key = serviceKey || env.SUPABASE_ANON_KEY;
   if (!env.SUPABASE_URL || !key || (!serviceKey && !bearer)) return null;
+  if (serviceKey && cvBoxCache.rows && Date.now() - cvBoxCache.at < CV_BOX_CACHE_MS) return cvBoxCache.rows;
   const rows = [];
-  for (let offset = 0; ; offset += 1000) {
-    const response = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?select=id,full_name,contact_email,contact_phone,location,status&order=id.asc&limit=1000&offset=${offset}`, {
-      headers: { apikey: key, Authorization: `Bearer ${serviceKey || bearer}` }
-    });
-    if (!response.ok) return null;
-    const page = await response.json().catch(() => null);
-    if (!Array.isArray(page)) return null;
-    rows.push(...page);
-    if (page.length < 1000) return rows;
+  try {
+    for (let offset = 0; ; offset += 1000) {
+      const response = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?select=id,full_name,contact_email,contact_phone,location,status&order=id.asc&limit=1000&offset=${offset}`, {
+        headers: { apikey: key, Authorization: `Bearer ${serviceKey || bearer}` },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) return null;
+      const page = await response.json().catch(() => null);
+      if (!Array.isArray(page)) return null;
+      rows.push(...page);
+      if (page.length < 1000) break;
+    }
+  } catch (error) {
+    console.error("CV Box duplicate lookup failed", error);
+    return null;
   }
+  if (serviceKey) cvBoxCache = { at: Date.now(), rows };
+  return rows;
 }
 __name(existingCvBoxCandidates, "existingCvBoxCandidates");
 function randomKey() {
@@ -2620,6 +2664,7 @@ var worker_default = {
     })());
   },
   async fetch(request, env, ctx) {
+    configureCors(env);
     const origin = request.headers.get("Origin");
     const url = new URL(request.url);
     const path = url.pathname;

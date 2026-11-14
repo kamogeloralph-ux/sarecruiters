@@ -273,11 +273,28 @@ export function cvScanModels(env) {
   return [...new Set([env.GEMINI_MODEL, "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"].filter(Boolean))];
 }
 
+// A scan has to finish well inside the browser/edge timeout. Previously every
+// one of up to 5 models got 40s, so a busy day could run for ~200s and the
+// admin page only saw "Could not reach the CV scanner". Now: a short per-model
+// timeout, at most N models, and one overall deadline for the whole scan.
+// All three can be tuned with Worker variables.
+function numberSetting(value, fallback, min, max) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
+}
+export function cvScanLimits(env) {
+  const e = env || {};
+  return {
+    attemptMs: numberSetting(e.GEMINI_SCAN_TIMEOUT_MS, 15000, 3000, 60000),
+    maxModels: numberSetting(e.GEMINI_SCAN_MAX_MODELS, 2, 1, 5),
+    deadlineMs: numberSetting(e.GEMINI_SCAN_DEADLINE_MS, 40000, 5000, 90000)
+  };
+}
+
 // 408/429, any 5xx and Cloudflare-style 52x timeouts mean "this model is slow or busy right now": try the next one.
 function isRetryableStatus(status) {
   return status === 404 || status === 408 || status === 429 || (status >= 500 && status <= 599);
 }
-const AI_ATTEMPT_TIMEOUT_MS = 40000;
 
 export async function scanCvWithGemini(env, bytes, mimeType) {
   if (!env.GEMINI_API_KEY) return { ok: false, status: 503, error: "CV scanning is not configured (GEMINI_API_KEY is missing)." };
@@ -287,17 +304,22 @@ export async function scanCvWithGemini(env, bytes, mimeType) {
     generationConfig: { temperature: 0, maxOutputTokens: 1200, responseMimeType: "application/json", responseSchema: CV_SCAN_RESPONSE_SCHEMA }
   });
   let failure = "The CV scanner could not be reached.";
-  for (const model of cvScanModels(env)) {
+  const limits = cvScanLimits(env);
+  const startedAt = Date.now();
+  for (const model of cvScanModels(env).slice(0, limits.maxModels)) {
+    const remaining = limits.deadlineMs - (Date.now() - startedAt);
+    if (remaining < 3000) { failure = "The AI service took too long to answer."; break; }
     let response;
     try {
       response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
         body,
-        signal: AbortSignal.timeout(AI_ATTEMPT_TIMEOUT_MS)
+        signal: AbortSignal.timeout(Math.min(limits.attemptMs, remaining))
       });
     } catch (error) {
       console.error("Gemini CV scan request failed", model, error);
+      failure = error && error.name === "TimeoutError" ? "The AI service took too long to answer." : "The AI service could not be reached.";
       continue;
     }
     if (!response.ok) {
@@ -319,7 +341,8 @@ export async function scanCvWithGemini(env, bytes, mimeType) {
       failure = "The CV scanner returned an unreadable answer.";
     }
   }
-  return { ok: false, status: 502, error: failure };
+  // 503 (not 502): the service is busy or slow, so the admin page can say "try again".
+  return { ok: false, status: 503, error: `${failure} Please try again in a minute.` };
 }
 
 // Only CVs stored in our own R2 bucket (candidate-cvs/...) can be scanned.

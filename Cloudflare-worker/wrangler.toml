@@ -64,6 +64,12 @@ CV_DOWNLOAD_PRICE_CENTS = "4900"
 #
 # WATCHDOG settings (all optional; each unlocks one more self-healing check):
 #   SITE_URL              default https://sa-recruiters.co.za
+#   ALLOWED_ORIGINS       Extra browser origins allowed to call the API, comma-separated
+#                         (SITE_URL, www, *.sa-recruiters.co.za, sarecruiters.pages.dev and
+#                         its previews, and localhost are always allowed).
+#   GEMINI_SCAN_TIMEOUT_MS / GEMINI_SCAN_MAX_MODELS / GEMINI_SCAN_DEADLINE_MS
+#                         CV scan limits: per-model timeout (default 15000), models tried
+#                         (default 2), whole-scan deadline (default 40000).
 #   GITHUB_REPO           "owner/repo" of this project. Enables workflow self-healing.
 #   GITHUB_BRANCH         default main
 #   WATCHDOG_GH_TOKEN     SECRET: fine-grained GitHub token, this repo only,
