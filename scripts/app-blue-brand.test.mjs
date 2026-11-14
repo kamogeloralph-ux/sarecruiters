@@ -91,5 +91,5 @@ test('app icons, support wording, and the site-menu trigger remain visible and o
   assert.match(brand, /#site-menu-drawer \.site-menu-nav-icon\{[\s\S]*?background:transparent!important/);
   assert.match(ui, /drawer\.classList\.add\('is-open'\)/);
   assert.match(ui, /backdrop\.classList\.add\('is-visible'\)/);
-  assert.match(serviceWorker, /const VERSION = 'sa-recruiters-directory-scroll1'/);
+  assert.match(serviceWorker, /const VERSION = 'sa-recruiters-directory-account1'/);
 });

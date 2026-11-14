@@ -161,13 +161,26 @@ test('home latest roles reuse the shared vacancy card and the existing exact-vac
   assert.match(data, /renderHouseAdSlot\('house-ad-home-bottom', 'home', 'bottom'\)/);
   assert.match(admin, /value="home"/);
   assert.match(admin, /option value="middle"/);
-  assert.match(html, /id="sendpulse-feedback-only"/);
-  assert.match(html, /body\.sendpulse-feedback-open sp-live-chat/);
-  assert.doesNotMatch(html, /body:has\(#screen-home\.active\) sp-live-chat/);
-  assert.match(html, /window\.__saStartSendPulse = start/);
-  assert.match(html, /var feedbackObserver = null/);
-  assert.match(html, /window\.__saSyncFeedbackChat = syncFeedback/);
-  assert.equal((sheets.match(/window\.__saSyncFeedbackChat\(\)/g) || []).length, 2);
+});
+
+test('SendPulse integration is removed while native feedback forms remain available', () => {
+  for (const file of ['index.html', 'app-sheets.js', 'content.js', 'privacy/index.html', 'app.bundle.min.js']) {
+    assert.doesNotMatch(read(file), /SendPulse|pulse\.is|sp-live-chat|__saStartSendPulse|__saSyncFeedbackChat/i);
+  }
+  assert.match(html, /id="suggestion-overlay"/);
+  assert.match(html, /onclick="openSuggestionSheet\(\)"/);
+});
+
+test('signed-in Profile collapses to the Google status badge and push state is truthful', () => {
+  const alerts = read('app-alerts.js');
+  assert.match(html, /id="account-provider"/);
+  assert.match(ui, /heroEl\.classList\.toggle\('account-hero--signed-in', !isGuest\)/);
+  assert.match(css, /account-hero--signed-in \.account-avatar[\s\S]*?account-provider/);
+  assert.match(html, /class="account-action-btn account-action-btn--install"/);
+  assert.match(alerts, /class="account-action-btn push-alert-enable"/);
+  assert.match(alerts, /setPushActionState\('enabled', 'Enabled', true\)/);
+  assert.match(alerts, /select\('endpoint'\)\.eq\('user_id', window\.saAuthUser\.id\)/);
+  assert.match(css, /\.account-action-btn\.is-enabled/);
 });
 
 test('bottom navigation keeps TipChat separate from Feedback', () => {

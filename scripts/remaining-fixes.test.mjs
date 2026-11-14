@@ -72,7 +72,7 @@ test('deploy workflow refreshes and validates the SEO snapshot before generation
   assert.match(refreshWorkflow, /if: steps\.refresh-seo\.outcome == 'success'/);
   assert.match(refreshWorkflow, /Continue with the checked-in SEO snapshot/);
   assert.match(ciWorkflow, /npm test/);
-  assert.match(wrangler, /crons = \["0 \*\/6 \* \* \*", "15,45 \* \* \* \*"\]/);
+  assert.match(wrangler, /crons = \["0 \*\/6 \* \* \*", "15,45 \* \* \* \*", "0 7 1 \* \*"\]/);
 });
 
 test('fresh SEO exporter paginates every row, filters expired listings, and rejects stale source data', async () => {

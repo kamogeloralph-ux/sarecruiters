@@ -819,6 +819,8 @@ export function renderAccountIdentity(user) {
   var emailEl = document.getElementById('account-email');
   var avatarEl = document.getElementById('account-avatar');
   var providerEl = document.getElementById('account-provider');
+  var heroEl = document.querySelector('#screen-account .account-hero');
+  if (heroEl) heroEl.classList.toggle('account-hero--signed-in', !isGuest);
   if (nameEl) nameEl.textContent = user ? name : 'Guest';
   if (emailEl) emailEl.textContent = user ? (user.email || '—') : 'Browsing as a guest';
   if (avatarEl) {

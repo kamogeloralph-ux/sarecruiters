@@ -16,9 +16,9 @@ test('Turnstile is deferred (not async) and queued after the app bundle', () => 
   assert.ok(html.indexOf('challenges.cloudflare.com/turnstile') > html.indexOf('app.bundle.min.js'));
 });
 
-test('live chat is not in the initial HTML as a static script tag', () => {
+test('SendPulse live chat is absent from the app shell', () => {
+  assert.ok(!/SendPulse|pulse\.is|sp-live-chat|__saStartSendPulse/i.test(html));
   assert.ok(!scriptTags.some((t) => /src="https:\/\/cdn\.pulse\.is/.test(t)));
-  assert.ok(/createElement\('script'\)[\s\S]{0,200}cdn\.pulse\.is\/livechat\/loader\.js/.test(html));
 });
 
 test('FAQ/content scripts are lazy (prefetch only) on the landing page', () => {

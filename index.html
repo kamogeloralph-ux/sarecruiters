@@ -197,13 +197,13 @@ window.sentryOnLoad = function () {
 <link rel="preload" as="image" href="icons/logo-152.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="icons/logo-96.webp" type="image/webp">
 <script src="vendor/supabase.min.js?v=1669864144" defer></script>
-<link rel="preload" as="style" href="styles.css?v=blue-brand-2">
-<link rel="stylesheet" href="styles.css?v=blue-brand-2" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
+<link rel="preload" as="style" href="styles.css?v=blue-brand-4">
+<link rel="stylesheet" href="styles.css?v=blue-brand-4" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="mono.css?v=visibility-7" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-2"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=visibility-7"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=blue-brand-4"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-2"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=visibility-7"></noscript>
 </head>
 <body>
 
@@ -423,8 +423,11 @@ window.sentryOnLoad = function () {
 
       <section class="saved-alerts-panel" id="saved-alerts-panel" aria-labelledby="saved-alerts-title"></section>
       <section class="install-app-card" id="install-app-card" hidden>
-        <div><strong>Install SA Recruiters</strong><span>Keep job searches one tap away, with a faster launch and offline shell.</span></div>
-        <button type="button" class="account-primary-btn" onclick="installSaRecruiters()">Install app</button>
+        <div class="account-action-card-copy">
+          <span class="account-action-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M12 7v8m-3-3 3 3 3-3M9 18h6"/></svg></span>
+          <span class="account-action-copy"><strong>Install SA Recruiters</strong><span>Keep job searches one tap away, with a faster launch and offline shell.</span></span>
+        </div>
+        <button type="button" class="account-action-btn account-action-btn--install" onclick="installSaRecruiters()"><svg class="account-action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M5 15v5h14v-5"/></svg><span>Install app</span></button>
       </section>
       <div class="pgroup-label">Activity</div>
       <div class="pgrouped-list">
@@ -716,6 +719,7 @@ window.sentryOnLoad = function () {
     </div>
     <div class="screen-scroll">
     <div class="sm-card" id="manager-agency-profile" style="margin-top:14px"></div>
+    <div id="manager-marketing-consent"></div>
     <div class="section-head"><div class="section-title">Branches</div></div>
     <div id="manager-branch-list"></div>
     <button class="manager-add-btn" data-ripple onclick="managerAddBranch()"><span class="mi-icon"><svg><use href="icons.svg#i0248b0"/></svg></span> Add branch</button>
@@ -1606,9 +1610,9 @@ window.sentryOnLoad = function () {
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=dc4317da1f"></script>
+<script type="module" src="app.bundle.min.js?v=27055d47d9"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
-<script src="app-alerts.js?v=al-6" defer></script>
+<script src="app-alerts.js?v=al-7" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js
      still loads/retries it on demand if it is not ready when a form opens. -->
 <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
@@ -1629,102 +1633,6 @@ window.sentryOnLoad = function () {
   </nav>
 </footer>
 
-<!-- SendPulse live chat: only available while the feedback sheet is open -->
-<style id="sendpulse-feedback-only">
-sp-live-chat{display:none!important}
-body.sendpulse-feedback-open sp-live-chat{display:block!important}
-</style>
-<script>
-(function () {
-  var GAP = 16;            // px between the chat button and the top of the nav bar
-  var timer = null;
-  var feedbackObserver = null;
-
-  function navHeight() {
-    var nav = document.querySelector('.bottom-nav');
-    var h = nav ? nav.getBoundingClientRect().height : 0;
-    return h >= 40 ? h : 76;   // fall back to the nav's normal height if it is not laid out yet
-  }
-
-  function place() {
-    var feedback = document.getElementById('suggestion-overlay');
-    if (!feedback || !feedback.classList.contains('open') || !document.body.classList.contains('sendpulse-feedback-open')) return false;
-    var lc = window.sp && window.sp.liveChat;
-    if (!lc || typeof lc.config !== 'function') return false;   // widget bundle not ready yet
-    var right = Math.max(18, (window.innerWidth - 520) / 2 + 18);
-    try {
-      lc.config({ chatPosition: { bottom: Math.round(navHeight() + GAP) + 'px', right: right + 'px' } });
-    } catch (e) { return false; }
-    return true;
-  }
-
-  // Apply now, and again shortly after in case the widget re-renders while mounting.
-  function lock() {
-    if (place()) { setTimeout(place, 600); setTimeout(place, 2000); }
-  }
-
-  // The widget bundle can finish after the loaded event, so keep retrying until config() exists.
-  // Polling only starts once the chat script has actually been requested (see the loader below).
-  var poll = null;
-  window.__saStartChatPlacement = function () {
-    if (poll) return;
-    var tries = 0;
-    poll = setInterval(function () {
-      if (place()) { clearInterval(poll); setTimeout(place, 600); setTimeout(place, 2000); }
-      else if (++tries > 80) clearInterval(poll);
-    }, 250);
-  };
-
-  document.addEventListener('spLiveChatLoaded', lock);
-
-  function later() { clearTimeout(timer); timer = setTimeout(place, 150); }
-  window.addEventListener('resize', later);
-  window.addEventListener('orientationchange', later);
-  window.addEventListener('pageshow', later);
-
-  // Show/load chat only while the feedback sheet is the active sheet.
-  function syncFeedback() {
-    var feedback = document.getElementById('suggestion-overlay');
-    if (!feedback || !document.body) return;
-    var otherSheetOpen = Array.prototype.some.call(document.querySelectorAll('.sheet-scrim.open'), function (sheet) { return sheet !== feedback; });
-    var active = feedback.classList.contains('open') && !otherSheetOpen;
-    document.body.classList.toggle('sendpulse-feedback-open', active);
-    if (active) {
-      if (window.__saStartSendPulse) window.__saStartSendPulse();
-      later();
-    }
-  }
-  function watchFeedback() {
-    var overlays = document.querySelectorAll('.sheet-scrim');
-    if (window.MutationObserver) {
-      feedbackObserver = new MutationObserver(syncFeedback);
-      overlays.forEach(function (overlay) { feedbackObserver.observe(overlay, { attributes: true, attributeFilter: ['class'] }); });
-    }
-    syncFeedback();
-  }
-  window.__saSyncFeedbackChat = syncFeedback;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchFeedback);
-  else watchFeedback();
-})();
-</script>
-<script>
-/* Load SendPulse only after the user opens the feedback sheet. */
-(function () {
-  var started = false;
-  function start() {
-    var feedback = document.getElementById('suggestion-overlay');
-    if (started || !feedback || !feedback.classList.contains('open')) return;
-    started = true;
-    var s = document.createElement('script');
-    s.src = 'https://cdn.pulse.is/livechat/loader.js';
-    s.async = true;
-    s.setAttribute('data-live-chat-id', '6abae6321b15f81d2b07a64b');
-    document.body.appendChild(s);
-    if (window.__saStartChatPlacement) window.__saStartChatPlacement();
-  }
-  window.__saStartSendPulse = start;
-})();
-</script>
 <script>
 /* Agency / vacancy "Submit your CV" buttons link to /?section=candidates&cvbox=submit.
    Once the app has opened the CV Box, open its upload form (openPoolRegisterSheet). */

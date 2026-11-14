@@ -2903,3 +2903,101 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .pool-still-looking button:disabled{opacity:.65;cursor:wait}
 .pool-still-looking[hidden]{display:none!important}
 @media(max-width:430px){#cv-box-actions{align-items:center;gap:5px;margin:2px 12px 3px}#cv-box-actions button{padding:2px 0;font-size:10px}.pool-still-looking{gap:8px}.pool-still-looking>div{flex-basis:100%}.pool-still-looking label{flex:1}}
+
+
+/* Compact signed-in identity: keep the Google status badge and remove the large hero card. */
+#screen-account .account-hero.account-hero--signed-in{
+  display:block!important;width:auto!important;max-width:none!important;margin:12px 18px 8px!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:transparent!important;color:var(--text)!important;box-shadow:none!important
+}
+#screen-account .account-hero--signed-in .account-avatar,
+#screen-account .account-hero--signed-in .account-name,
+#screen-account .account-hero--signed-in .account-email{display:none!important}
+#screen-account .account-hero--signed-in .account-hero-copy{display:block!important;min-width:0;flex:none}
+#screen-account .account-hero--signed-in .account-provider{
+  display:inline-flex!important;align-items:center;gap:8px;margin:0!important;padding:9px 13px!important;border:1px solid var(--border)!important;
+  border-radius:13px!important;background:var(--card)!important;color:var(--text)!important;opacity:1!important;
+  box-shadow:0 5px 15px rgba(15,35,60,.08)!important;font-size:12px!important;font-weight:700!important
+}
+
+/* Shared, polished install and push actions. */
+.install-app-card,.push-alert-card{
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;margin-top:14px;padding:15px!important;
+  border:1px solid color-mix(in srgb,#1769cf 22%,var(--border))!important;border-radius:18px!important;
+  background:linear-gradient(135deg,color-mix(in srgb,#1769cf 6%,var(--card)),var(--card))!important;
+  box-shadow:0 10px 24px rgba(23,55,95,.08)!important
+}
+.install-app-card[hidden]{display:none!important}
+.account-action-card-copy{display:flex;align-items:center;gap:12px;min-width:0}
+.account-action-mark{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,rgba(23,105,207,.16),rgba(23,105,207,.07));color:#1769cf}
+.account-action-mark svg{display:block;width:22px;height:22px}
+.account-action-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.account-action-copy strong{display:block;margin:0;color:var(--text);font-size:13px;font-weight:800;line-height:1.25}
+.account-action-copy>span{color:var(--text-2);font-size:11.5px;line-height:1.45}
+.account-action-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 15px;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  background:linear-gradient(135deg,#1769cf,#3988ed);color:#fff;font-family:inherit;font-size:12px;font-weight:800;line-height:1;white-space:nowrap;cursor:pointer;
+  box-shadow:0 8px 18px rgba(23,105,207,.24);transition:transform .16s ease,box-shadow .16s ease,filter .16s ease
+}
+.account-action-btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.04);box-shadow:0 11px 22px rgba(23,105,207,.3)}
+.account-action-btn:active:not(:disabled){transform:translateY(0) scale(.98)}
+.account-action-btn:focus-visible{outline:3px solid color-mix(in srgb,#1769cf 35%,transparent);outline-offset:3px}
+.account-action-btn:disabled{cursor:default;opacity:1}
+.account-action-btn-icon{display:block;width:17px;height:17px;flex:0 0 17px}
+.account-action-btn.is-enabled{background:linear-gradient(135deg,#137447,#20a15d);box-shadow:0 8px 18px rgba(19,116,71,.2)}
+.account-action-btn.is-blocked,.account-action-btn.is-unavailable{border-color:var(--border);background:var(--card-2);color:var(--text-2);box-shadow:none}
+.account-action-btn.is-loading{filter:saturate(.75);cursor:progress}
+@media(max-width:420px){
+  .install-app-card,.push-alert-card{grid-template-columns:minmax(0,1fr);gap:12px;padding:14px!important}
+  .account-action-btn{width:100%}
+}
+@media(prefers-reduced-motion:reduce){.account-action-btn{transition:none}.account-action-btn:hover:not(:disabled){transform:none}}
+
+/* ===== Manager-link mobile page scrolling =====
+   Keep the header, introductory banner, and all manager content in the same
+   touch-scrollable document; do not trap overflow inside only the inner list. */
+#screen-manager.active,
+#screen-manager-employer.active{
+  display:block;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+}
+#screen-manager.active .screen-fixed,
+#screen-manager-employer.active .screen-fixed{
+  border-bottom:0;
+}
+#screen-manager.active .screen-scroll,
+#screen-manager-employer.active .screen-scroll{
+  display:block;
+  flex:none;
+  min-height:0;
+  overflow:visible;
+  padding:0 16px calc(28px + env(safe-area-inset-bottom));
+}
+@media(max-width:420px){
+  #screen-manager.active .screen-scroll,
+  #screen-manager-employer.active .screen-scroll{
+    padding-left:14px;
+    padding-right:14px;
+  }
+}
+
+.manager-consent-card{margin:14px 0;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--card-2);box-shadow:0 8px 24px rgba(34,20,59,.06)}
+.manager-consent-heading{display:flex;align-items:flex-start;gap:11px}
+.manager-consent-icon{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,var(--card));color:var(--accent);font-size:18px}
+.manager-consent-heading h2{margin:1px 0 4px;font-size:15px;font-weight:800;color:var(--text)}
+.manager-consent-heading p,.manager-consent-unavailable{margin:0;color:var(--text-2);font-size:12px;line-height:1.5}
+.manager-consent-email{margin:13px 0 10px;color:var(--text-2);font-size:12px;overflow-wrap:anywhere}
+.manager-consent-email strong{color:var(--text);font-weight:700}
+.manager-consent-choice{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:12px;background:var(--card);color:var(--text);font-size:13px;line-height:1.5;cursor:pointer}
+.manager-consent-choice input{flex:0 0 18px;width:18px;height:18px;margin:1px 0 0;accent-color:var(--accent)}
+.manager-consent-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.manager-consent-save{min-height:40px;padding:9px 15px;border:0;border-radius:11px;background:var(--accent);color:#fff;font-size:13px;font-weight:750;cursor:pointer;transition:transform .15s ease,opacity .15s ease}
+.manager-consent-save:hover:not(:disabled){transform:translateY(-1px)}
+.manager-consent-save:disabled{opacity:.62;cursor:progress}
+#manager-consent-status{color:var(--text-2);font-size:12px;line-height:1.45}
+.manager-consent-unavailable{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--card)}
+@media(max-width:420px){.manager-consent-card{padding:14px}.manager-consent-actions{align-items:stretch}.manager-consent-save{width:100%}}
+@media(prefers-reduced-motion:reduce){.manager-consent-save{transition:none}.manager-consent-save:hover:not(:disabled){transform:none}}

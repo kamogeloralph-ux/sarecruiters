@@ -393,7 +393,8 @@ test('the daily digest is emailed only when requested', async () => {
 test('worker schedules the watchdog without colliding with the 6-hourly sync', () => {
   assert.match(worker, /^import \{ runWatchdog \} from "\.\/watchdog\.js";/);
   assert.match(worker, /event\.cron === "15,45 \* \* \* \*"/);
-  assert.match(wrangler, /crons = \["0 \*\/6 \* \* \*", "15,45 \* \* \* \*"\]/);
+  assert.match(wrangler, /crons = \["0 \*\/6 \* \* \*", "15,45 \* \* \* \*", "0 7 1 \* \*"\]/);
+  assert.match(worker, /event\.cron === "0 7 1 \* \*"/);
   // minute 15/45 can never equal minute 0 of the 6-hourly tick
   assert.match(worker, /getUTCHours\(\) === 6/);
 });

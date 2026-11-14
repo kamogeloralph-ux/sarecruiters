@@ -172,7 +172,7 @@ export var managerTokenKind = null;          // 'agency' | 'employer' (for the s
 export var managerStatusWatchdog = null;     // safety timeout that flips loading -> error
 // Resolved manager-link identities are cached for the session so repeated
 // renders don't re-hit the verify endpoint.
-export var managerSession = { agencyId: null, employerId: null, agencyAnalytics: null, employerAnalytics: null };
+export var managerSession = { agencyId: null, employerId: null, agencyAnalytics: null, employerAnalytics: null, agencyMarketingPreference: null };
 
 // SECURITY: verify a manager token SERVER-SIDE via the Cloudflare Worker,
 // which calls the verify_manager_token Postgres RPC. Tokens are no longer
@@ -196,7 +196,8 @@ export async function verifyManagerTokenServer(kind, token) {
     var record = kind === 'employer' ? data.employer : data.agency;
     if (!record) return null;
     return Object.assign({}, record, {
-      vacancy_analytics: Array.isArray(data.vacancy_analytics) ? data.vacancy_analytics : null
+      vacancy_analytics: Array.isArray(data.vacancy_analytics) ? data.vacancy_analytics : null,
+      marketing_preference: kind === 'employer' ? null : (data.marketing_preference || null)
     });
   } catch (e) {
     return null;
@@ -294,6 +295,7 @@ export async function enterManagerMode(token) {
   managerSession.agencyName = record.name;
   managerSession.agencyLocation = record.location;
   managerSession.agencyAnalytics = Array.isArray(record.vacancy_analytics) ? record.vacancy_analytics : null;
+  managerSession.agencyMarketingPreference = record.marketing_preference && typeof record.marketing_preference === 'object' ? record.marketing_preference : null;
   managerTokenRetries = 0;
   set_managerPendingToken( null);
   managerTokenKind = null;
@@ -326,6 +328,7 @@ export function exitManagerMode() {
   managerSession.agencyId = null;
   managerSession.agencyToken = null;
   managerSession.agencyAnalytics = null;
+  managerSession.agencyMarketingPreference = null;
   // Clean URL
   if (window.history && window.history.replaceState) {
     var clean = window.location.origin + window.location.pathname;
@@ -344,6 +347,7 @@ export function exitManagerMode() {
 export function renderManagerMode() {
   if (!managerMode || !managerAgency) return;
   renderManagerAgencyProfile();
+  renderAgencyMonthlyConsent();
   // Branches
   var branches = branchesFor(managerAgency.id);
   var bHtml = '';
@@ -375,6 +379,53 @@ export function renderManagerMode() {
     vHtml = vacancyScreenStateMarkup('manager', false, false);
   }
   document.getElementById('manager-vacancy-list').innerHTML = vHtml;
+}
+
+export function renderAgencyMonthlyConsent() {
+  var host = document.getElementById('manager-marketing-consent');
+  if (!host || !managerAgency) return;
+  var preference = managerSession.agencyMarketingPreference;
+  var email = String(preference && preference.email || managerAgency.email || '').trim();
+  var available = !!preference && !!email;
+  var optedIn = !!(preference && preference.opted_in === true);
+  host.innerHTML =
+    '<section class="manager-consent-card" aria-labelledby="manager-consent-title">' +
+      '<div class="manager-consent-heading"><span class="manager-consent-icon" aria-hidden="true">✉</span><div><h2 id="manager-consent-title">Monthly free-listing reminder</h2><p>One email per month about listing your agency vacancies for free.</p></div></div>' +
+      '<div class="manager-consent-email">Agency email: <strong>' + escapeHtml(email || 'No email on file') + '</strong></div>' +
+      (available ?
+        '<label class="manager-consent-choice"><input id="manager-agency-email-optin" type="checkbox" ' + (optedIn ? 'checked ' : '') + 'aria-describedby="manager-consent-copy">' +
+          '<span id="manager-consent-copy">I want to receive one monthly email from SA Recruiters about listing my agency’s vacancies for free. I can unsubscribe at any time.</span></label>' +
+        '<div class="manager-consent-actions"><button class="manager-consent-save" type="button" onclick="saveAgencyMonthlyEmailPreference()">Save preference</button><span id="manager-consent-status" role="status">' + (optedIn ? 'You are opted in. Uncheck and save to stop monthly emails.' : 'You are not opted in.') + '</span></div>' :
+        '<p class="manager-consent-unavailable" role="status">Monthly email preferences are temporarily unavailable. No new opt-in has been recorded.</p>') +
+    '</section>';
+}
+
+export async function saveAgencyMonthlyEmailPreference() {
+  if (!managerAgency || !managerAgency.manage_token) return;
+  var checkbox = document.getElementById('manager-agency-email-optin');
+  var button = document.querySelector('#manager-marketing-consent .manager-consent-save');
+  var status = document.getElementById('manager-consent-status');
+  if (!checkbox || !button) return;
+  var optedIn = checkbox.checked;
+  checkbox.disabled = true;
+  button.disabled = true;
+  if (status) status.textContent = 'Saving preference…';
+  try {
+    var res = await fetch(R2_WORKER_URL + '/api/manager/email-preference', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: managerAgency.manage_token, opted_in: optedIn })
+    });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok || !data.ok || !data.preference) throw new Error(data.error || 'Preference could not be saved. Please try again.');
+    managerSession.agencyMarketingPreference = data.preference;
+    renderAgencyMonthlyConsent();
+    showToast(data.preference.opted_in ? 'Monthly email opt-in saved' : 'Monthly emails turned off');
+  } catch (error) {
+    if (status) status.textContent = error && error.message || 'Preference could not be saved. Please try again.';
+    checkbox.disabled = false;
+    button.disabled = false;
+  }
 }
 
 export function managerVacancyMetricsMarkup(vacancyId, analytics) {
@@ -462,6 +513,8 @@ Object.assign(window, {
   exitManagerMode,
   renderManagerMode,
   renderManagerAgencyProfile,
+  renderAgencyMonthlyConsent,
+  saveAgencyMonthlyEmailPreference,
   managerAddBranch,
   managerAddVacancy,
 });

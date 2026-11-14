@@ -34,7 +34,7 @@
     var html = '<div class="saved-alerts-head"><div><span class="saved-alerts-kicker">VACANCY ALERTS</span><h3 id="saved-alerts-title">Saved searches</h3><p>Choose how you want to hear about matching jobs.</p></div><span class="saved-alerts-count">' + rows.length + '</span></div><div class="saved-alerts-list">';
     if (!rows.length) html += '<div class="saved-alerts-empty">No saved searches yet. Save a search from Vacancies and we’ll keep watch for new matches.</div>';
     rows.forEach(function(row) { html += '<article class="saved-alert-row" data-alert-id="' + esc(row.id) + '"><div class="saved-alert-copy"><strong>' + esc(label(row)) + '</strong><small>' + (row.active ? 'Active' : 'Paused') + (row.last_checked_at ? ' · checked ' + esc(new Date(row.last_checked_at).toLocaleDateString()) : '') + '</small></div><div class="saved-alert-actions"><button type="button" onclick="toggleSavedSearch(\'' + esc(row.id) + '\',' + (!row.active) + ')">' + (row.active ? 'Pause' : 'Resume') + '</button><button type="button" class="saved-alert-delete" onclick="deleteSavedSearch(\'' + esc(row.id) + '\')">Delete</button></div></article>'; });
-    html += '</div><div class="push-alert-card"><div><strong>Browser notifications</strong><span id="push-alert-status">Get a quiet notification when a matching vacancy is found. You choose when to enable this.</span></div><button type="button" class="account-primary-btn" onclick="enablePushForAlerts()">Enable push</button></div>';
+    html += '</div><div class="push-alert-card"><div class="account-action-card-copy"><span class="account-action-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><span class="account-action-copy"><strong>Browser notifications</strong><span id="push-alert-status" role="status" aria-live="polite">Get a quiet notification when a matching vacancy is found. You choose when to enable this.</span></span></div><button type="button" class="account-action-btn push-alert-enable" onclick="enablePushForAlerts()" aria-describedby="push-alert-status" aria-pressed="false" data-state="idle"><svg class="account-action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span data-push-action-label>Enable push</span></button></div>';
     host.innerHTML = html; updatePushStatus();
   }
   window.renderSavedAlerts = renderAlertManager;
@@ -42,20 +42,67 @@
   window.deleteSavedSearch = async function(id) { if (!canUseAccount()) return; var r = await supabaseClient.from('saved_searches').delete().eq('id', id).eq('user_id', saAuthUser.id); if (r.error) toast('Could not delete this alert'); else { toast('Alert deleted'); renderAlertManager(); if (typeof trackEvent === 'function') trackEvent('saved_search_deleted', 'saved_search', id); } };
   function urlBase64ToUint8Array(s) { var padding = '='.repeat((4 - s.length % 4) % 4), base64 = (s + padding).replace(/-/g, '+').replace(/_/g, '/'), raw = atob(base64); return Uint8Array.from([].map.call(raw, function(c){ return c.charCodeAt(0); })); }
   async function getPushSubscription() { return (await navigator.serviceWorker.ready).pushManager.getSubscription(); }
-  async function updatePushStatus() { var el = document.getElementById('push-alert-status'); if (!el) return; if (!('PushManager' in window) || !('Notification' in window)) { el.textContent = 'Push notifications are not supported by this browser. Email alerts remain active.'; return; } var sub = null; try { sub = await getPushSubscription(); } catch(e) {} el.textContent = sub ? 'Push notifications are enabled for this browser.' : (Notification.permission === 'denied' ? 'Notifications are blocked in browser settings.' : 'Get a quiet notification when a matching vacancy is found. You choose when to enable this.'); }
+  function setPushActionState(state, label, disabled) {
+    var btn = document.querySelector('.push-alert-enable');
+    if (!btn) return;
+    var labelEl = btn.querySelector('[data-push-action-label]');
+    var icon = btn.querySelector('.account-action-btn-icon');
+    btn.dataset.state = state;
+    ['enabled', 'blocked', 'unavailable', 'loading', 'setup'].forEach(function(name) { btn.classList.toggle('is-' + name, state === name); });
+    btn.disabled = !!disabled;
+    btn.setAttribute('aria-pressed', state === 'enabled' ? 'true' : 'false');
+    if (labelEl) labelEl.textContent = label;
+    if (icon) icon.innerHTML = state === 'enabled'
+      ? '<path d="m5 12 4 4L19 6"/>'
+      : '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>';
+  }
+  async function updatePushStatus() {
+    var el = document.getElementById('push-alert-status');
+    if (!el) return;
+    if (!('PushManager' in window) || !('Notification' in window)) {
+      el.textContent = 'Push notifications are not supported by this browser. Email alerts remain active.';
+      setPushActionState('unavailable', 'Unavailable', true);
+      return;
+    }
+    var sub = null;
+    try { sub = await getPushSubscription(); } catch (e) {}
+    var active = false;
+    if (sub && Notification.permission === 'granted' && canUseAccount()) {
+      try {
+        var saved = await supabaseClient.from('push_subscriptions').select('endpoint').eq('user_id', window.saAuthUser.id).eq('endpoint', sub.endpoint).maybeSingle();
+        active = !!(saved && !saved.error && saved.data);
+      } catch (e) {}
+    }
+    if (active) {
+      el.textContent = 'Push notifications are enabled on this device.';
+      setPushActionState('enabled', 'Enabled', true);
+    } else if (Notification.permission === 'denied') {
+      el.textContent = 'Notifications are blocked in browser settings. Allow them there to enable push.';
+      setPushActionState('blocked', 'Blocked', true);
+    } else if (Notification.permission === 'granted') {
+      el.textContent = 'Permission is granted, but setup is not complete. Tap to finish enabling alerts.';
+      setPushActionState('setup', 'Finish setup', false);
+    } else {
+      el.textContent = 'Get a quiet notification when a matching vacancy is found. You choose when to enable this.';
+      setPushActionState('idle', 'Enable push', false);
+    }
+  }
   window.enablePushForAlerts = async function() {
     if (!canUseAccount()) { toast('Sign in with Google first'); return; }
     if (!('PushManager' in window) || !('Notification' in window)) { toast('Push notifications are not supported here'); return; }
     if (VAPID_PUBLIC_KEY.indexOf('REPLACE_') === 0) { toast('Push notifications are being prepared — email alerts are active now'); return; }
+    setPushActionState('loading', 'Enabling…', true);
     try {
       var permission = await Notification.requestPermission();
       if (typeof trackEvent === 'function') trackEvent(permission === 'granted' ? 'push_permission_granted' : 'push_permission_denied', 'notification', null);
-      if (permission !== 'granted') { updatePushStatus(); return; }
-      var reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) }), json = sub.toJSON();
+      if (permission !== 'granted') { await updatePushStatus(); return; }
+      var reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+      var json = sub.toJSON();
       var row = { user_id: saAuthUser.id, endpoint: json.endpoint, p256dh: json.keys && json.keys.p256dh, auth: json.keys && json.keys.auth, user_agent: navigator.userAgent.slice(0, 240), updated_at: new Date().toISOString() };
       var saved = await supabaseClient.from('push_subscriptions').upsert(row, { onConflict: 'endpoint' }); if (saved.error) throw saved.error;
-      if (typeof trackEvent === 'function') trackEvent('push_subscription_created', 'notification', null); toast('Push alerts enabled'); updatePushStatus();
-    } catch (e) { console.warn('[SA Recruiters] push opt-in failed', e); toast('Could not enable push alerts — email alerts are still active'); }
+      if (typeof trackEvent === 'function') trackEvent('push_subscription_created', 'notification', null); toast('Push alerts enabled'); await updatePushStatus();
+    } catch (e) { console.warn('[SA Recruiters] push opt-in failed', e); toast('Could not enable push alerts — email alerts are still active'); await updatePushStatus(); }
   };
   async function handleUnsubscribe() { var p = new URLSearchParams(location.search), t = p.get('unsub_search'); if (!t || !supabaseClient) return; var r = await supabaseClient.rpc('unsubscribe_saved_search', { p_token: t }); toast(r && r.data ? 'Job alert stopped' : 'Could not stop that alert'); p.delete('unsub_search'); history.replaceState({}, document.title, location.pathname + (p.toString() ? '?' + p : '')); }
   var PENDING_APPLY_KEY = 'sa_pending_apply_confirmation';

@@ -365,6 +365,20 @@ async function managerVacancyAnalytics(env, token, kind) {
 }
 __name(managerVacancyAnalytics, "managerVacancyAnalytics");
 
+async function managerAgencyMarketingPreference(env, token) {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  try {
+    const rows = await supabaseServiceRpc(env, "get_agency_vacancy_email_preference", { p_token: token });
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row) return null;
+    return { email: String(row.agency_email || ""), opted_in: row.opted_in === true };
+  } catch (e) {
+    console.error("manager outreach preference unavailable", e.status || "error");
+    return null;
+  }
+}
+__name(managerAgencyMarketingPreference, "managerAgencyMarketingPreference");
+
 // ============================================================
 //  Transactional email via Resend. RESEND_API_KEY is a wrangler secret; the
 //  browser never sees it. Email is best-effort: a failure is logged and
@@ -443,6 +457,85 @@ async function sendNotificationEmail(env, payload) {
   }
 }
 __name(sendNotificationEmail, "sendNotificationEmail");
+
+function outreachUnsubscribePage(message, status = 200, token = "") {
+  const form = token ? `<form method="post" action="?token=${encodeURIComponent(token)}"><input type="hidden" name="List-Unsubscribe" value="One-Click"><button type="submit">Unsubscribe</button></form>` : "";
+  const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SA Recruiters email preferences</title><body style="margin:0;background:#f4f1f8;color:#211b2a;font:16px/1.55 Arial,sans-serif"><main style="max-width:560px;margin:10vh auto;padding:28px;background:#fff;border:1px solid #e6dfef;border-radius:18px"><h1 style="margin-top:0">SA Recruiters email preferences</h1><p>${message}</p>${form}<p style="font-size:13px;color:#6f6879">You can close this page after your preference is saved.</p></main></body></html>`;
+  return new Response(html, { status, headers: {
+    "Content-Type": "text/html; charset=UTF-8",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+  } });
+}
+__name(outreachUnsubscribePage, "outreachUnsubscribePage");
+
+async function agencyOutreachUnsubscribeResponse(request, env) {
+  const token = new URL(request.url).searchParams.get("token") || "";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token)) {
+    return outreachUnsubscribePage("This unsubscribe link is invalid or incomplete.", 400);
+  }
+  if (request.method === "GET") {
+    return outreachUnsubscribePage("To stop the monthly free-listing reminders, select the button below. Opening this page alone does not change your email preferences.", 200, token);
+  }
+  if (request.method !== "POST") return outreachUnsubscribePage("This request is not supported.", 405);
+  try {
+    const changed = await supabaseServiceRpc(env, "unsubscribe_agency_vacancy_email", { p_unsubscribe_token: token });
+    return outreachUnsubscribePage(changed === true ? "You have been unsubscribed from monthly agency vacancy reminders." : "This link has already been used, or the preference is no longer active. No further action is needed.");
+  } catch (e) {
+    console.error("agency outreach unsubscribe unavailable", e.status || "error");
+    return outreachUnsubscribePage("We could not update your preference right now. Please try again later.", 503);
+  }
+}
+__name(agencyOutreachUnsubscribeResponse, "agencyOutreachUnsubscribeResponse");
+
+async function sendAgencyVacancyOutreachEmail(env, recipient, campaignMonth) {
+  if (!env.RESEND_API_KEY) return { sent: false, reason: "email service unavailable" };
+  const email = String(recipient.recipient_email || "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { sent: false, reason: "invalid recipient" };
+  const siteUrl = new URL(env.SITE_URL || "https://sa-recruiters.co.za");
+  const managerUrl = new URL(siteUrl.pathname || "/", siteUrl.origin);
+  managerUrl.searchParams.set("manage", String(recipient.manager_token || ""));
+  const unsubscribeUrl = new URL("/api/unsubscribe/agency", env.WORKER_URL || "https://sarecruiters-uploader.kamogeloralph.workers.dev");
+  unsubscribeUrl.searchParams.set("token", String(recipient.unsubscribe_token || ""));
+  const agency = String(recipient.agency_name || "Agency").slice(0, 120);
+  const subject = "Share your agency vacancies for free on SA Recruiters";
+  const html = `<!doctype html><html lang="en"><body style="margin:0;padding:24px;background:#f4f1f8;font:16px/1.6 Arial,sans-serif;color:#241d30"><main style="max-width:620px;margin:auto;padding:28px;background:#fff;border:1px solid #e6dfef;border-radius:16px"><p>Hi ${escapeEmailHtml(agency)} team,</p><p>You can list your agency's current vacancies on SA Recruiters for free. Add or update your listings using your private manager link:</p><p><a href="${escapeEmailHtml(managerUrl.toString())}" style="display:inline-block;padding:12px 18px;background:#5b2ca0;color:#fff;border-radius:10px;text-decoration:none;font-weight:bold">Manage your listings</a></p><p>Your manager link is unique to your agency. Keep it private and do not forward it.</p><p>You are receiving this monthly reminder because your agency opted in. If you don't want any more monthly reminders, <a href="${escapeEmailHtml(unsubscribeUrl.toString())}">unsubscribe here</a>.</p><p>SA Recruiters<br><a href="${escapeEmailHtml(siteUrl.origin)}">${escapeEmailHtml(siteUrl.origin)}</a></p></main></body></html>`;
+  const text = `Hi ${agency} team,\n\nYou can list your agency's current vacancies on SA Recruiters for free. Add or update your listings using your private manager link:\n\nManage your listings: ${managerUrl.toString()}\n\nYour manager link is unique to your agency. Keep it private and do not forward it.\n\nYou are receiving this monthly reminder because your agency opted in. If you don't want any more monthly reminders, unsubscribe here: ${unsubscribeUrl.toString()}\n\nSA Recruiters\n${siteUrl.origin}`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${campaignMonth}:${recipient.agency_id}`));
+  const idempotency = `agency-outreach-${campaignMonth}-${Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24)}`;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotency
+      },
+      body: JSON.stringify({
+        from: env.EMAIL_FROM || DEFAULT_EMAIL_FROM,
+        to: [email],
+        subject,
+        html,
+        text,
+        headers: {
+          "List-Unsubscribe": `<${unsubscribeUrl.toString()}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+        }
+      })
+    });
+    if (!res.ok) {
+      console.error("agency outreach send failed", res.status);
+      return { sent: false, reason: `resend ${res.status}` };
+    }
+    return { sent: true };
+  } catch (e) {
+    console.error("agency outreach send error", e && e.name || "error");
+    return { sent: false, reason: "email delivery error" };
+  }
+}
+__name(sendAgencyVacancyOutreachEmail, "sendAgencyVacancyOutreachEmail");
 async function sendSubmissionStatusEmail(env, { to, name, kind, status }) {
   const recipient = String(to || "").trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) return;
@@ -2405,6 +2498,58 @@ async function backfillMissingEmployerPosterTitles(env) {
   return updated;
 }
 __name(backfillMissingEmployerPosterTitles, "backfillMissingEmployerPosterTitles");
+
+function agencyOutreachLocalTime(timestamp) {
+  const parts = new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23"
+  }).formatToParts(new Date(Number(timestamp) > 0 ? Number(timestamp) : Date.now()));
+  return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+}
+__name(agencyOutreachLocalTime, "agencyOutreachLocalTime");
+
+function isAgencyOutreachDue(timestamp) {
+  const local = agencyOutreachLocalTime(timestamp);
+  return local.day === "01" && Number(local.hour) >= 9;
+}
+__name(isAgencyOutreachDue, "isAgencyOutreachDue");
+
+async function runAgencyVacancyMonthlyOutreach(env, scheduledTime) {
+  if (env.AGENCY_VACANCY_OUTREACH_ENABLED !== "true") {
+    console.log("agency monthly outreach skipped: disabled");
+    return { skipped: "disabled" };
+  }
+  if (!env.RESEND_API_KEY || !env.SUPABASE_SERVICE_ROLE_KEY || !env.SUPABASE_URL) {
+    console.error("agency monthly outreach skipped: required service configuration is missing");
+    return { skipped: "configuration" };
+  }
+  if (!isAgencyOutreachDue(scheduledTime)) return { skipped: "outside schedule" };
+  const local = agencyOutreachLocalTime(scheduledTime);
+  const campaignMonth = `${local.year}-${local.month}-01`;
+  const recipients = await supabaseServiceRpc(env, "claim_agency_vacancy_monthly_outreach", { p_campaign_month: campaignMonth });
+  if (!Array.isArray(recipients)) throw new Error("Outreach claim RPC returned an invalid response");
+  let sent = 0;
+  let failed = 0;
+  for (const recipient of recipients) {
+    const result = await sendAgencyVacancyOutreachEmail(env, recipient, campaignMonth);
+    try {
+      await supabaseServiceRpc(env, "complete_agency_vacancy_monthly_outreach", {
+        p_agency_id: String(recipient.agency_id),
+        p_campaign_month: campaignMonth,
+        p_sent: result.sent === true,
+        p_error: result.sent ? null : String(result.reason || "delivery failed").slice(0, 240)
+      });
+    } catch (e) {
+      console.error("agency outreach ledger completion failed", e.status || "error");
+    }
+    if (result.sent) sent++;
+    else failed++;
+  }
+  console.log("agency monthly outreach completed", campaignMonth, "claimed", recipients.length, "sent", sent, "failed", failed);
+  return { claimed: recipients.length, sent, failed };
+}
+__name(runAgencyVacancyMonthlyOutreach, "runAgencyVacancyMonthlyOutreach");
+
 var worker_default = {
   // Cloudflare invokes this on the cron schedule in wrangler.toml's
   // [triggers] block -- this is what keeps the D1 mirror fresh without any
@@ -2416,6 +2561,17 @@ var worker_default = {
     ctx.waitUntil(deleteExpiredEmployerPosters(env)
       .then((removed) => { if (removed) console.log("Expired employer posters removed", removed); })
       .catch((e) => { Sentry.captureException(e); console.error("scheduled expired-poster cleanup failed", e); }));
+    if (event.cron === "0 7 1 * *") {
+      ctx.waitUntil(runAgencyVacancyMonthlyOutreach(env, event.scheduledTime)
+        .catch((e) => { Sentry.captureException(e); console.error("scheduled agency outreach failed", e.status || "error"); }));
+      return;
+    }
+    // The regular six-hour tick is a bounded retry path for the monthly run.
+    // The ledger still permits only one successful send per agency/month.
+    if (event.cron === "0 */6 * * *" && isAgencyOutreachDue(event.scheduledTime)) {
+      ctx.waitUntil(runAgencyVacancyMonthlyOutreach(env, event.scheduledTime)
+        .catch((e) => { Sentry.captureException(e); console.error("scheduled agency outreach retry failed", e.status || "error"); }));
+    }
     // "15,45 * * * *": lightweight self-healing watchdog (see watchdog.js). Offset from
     // the 6-hourly tick so the two never run at the same moment.
     if (event.cron === "15,45 * * * *") {
@@ -2473,6 +2629,9 @@ var worker_default = {
     try {
       if (path === "/api/yoco/webhook" && request.method === "POST") {
         return await yocoWebhookResponse(request, env);
+      }
+      if (path === "/api/unsubscribe/agency" && (request.method === "GET" || request.method === "POST")) {
+        return await agencyOutreachUnsubscribeResponse(request, env);
       }
       if (path === "/api/cv-box/checkout" && request.method === "POST") {
         return await cvCheckoutResponse(request, env, origin);
@@ -2853,9 +3012,39 @@ var worker_default = {
           const agency = Array.isArray(rows) ? rows[0] : null;
           if (!agency) return json({ valid: false }, 200, origin);
           const vacancyAnalytics = await managerVacancyAnalytics(env, String(body.token), "agency");
-          return json({ valid: true, agency, vacancy_analytics: vacancyAnalytics }, 200, origin);
+          const marketingPreference = await managerAgencyMarketingPreference(env, String(body.token));
+          return json({ valid: true, agency, vacancy_analytics: vacancyAnalytics, marketing_preference: marketingPreference }, 200, origin);
         } catch (e) {
           return json({ error: "Token check failed.", detail: e.detail }, 502, origin);
+        }
+      }
+      if (path === "/api/manager/email-preference" && request.method === "GET") {
+        const token = url.searchParams.get("token") || "";
+        if (!token) return json({ error: "Missing token." }, 400, origin);
+        const preference = await managerAgencyMarketingPreference(env, token);
+        if (!preference) return json({ error: "Preference settings are unavailable." }, 503, origin);
+        return json({ preference }, 200, origin);
+      }
+      if (path === "/api/manager/email-preference" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        if (typeof body.token !== "string" || !body.token || typeof body.opted_in !== "boolean") {
+          return json({ error: "A manager token and an explicit preference are required." }, 400, origin);
+        }
+        try {
+          const rows = await supabaseServiceRpc(env, "set_agency_vacancy_email_preference", {
+            p_token: body.token,
+            p_opted_in: body.opted_in
+          });
+          const row = Array.isArray(rows) ? rows[0] : null;
+          if (!row) return json({ error: "Manager link is invalid." }, 403, origin);
+          const preference = { email: String(row.agency_email || ""), opted_in: row.opted_in === true };
+          if (body.opted_in && !preference.opted_in) {
+            return json({ error: "A valid agency email address is required before opting in." }, 422, origin);
+          }
+          return json({ ok: true, preference }, 200, origin);
+        } catch (e) {
+          console.error("manager email preference save failed", e.status || "error");
+          return json({ error: "Preference settings are temporarily unavailable." }, 503, origin);
         }
       }
       if (path === "/api/verify-employer-manager" && request.method === "POST") {

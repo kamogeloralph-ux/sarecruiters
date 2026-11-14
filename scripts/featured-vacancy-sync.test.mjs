@@ -75,7 +75,7 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
   assert.match(indexSrc, /styles\.css\?v=[^"]+/, 'the shared stylesheet cache key must be refreshed');
   assert.match(indexSrc, /vacancy-v2\.css\?v=vx-clean-2/, 'the vacancy stylesheet cache key must be refreshed');
   assert.match(indexSrc, /app-vacancy-v2\.js\?v=vx-clean-1/, 'the vacancy renderer cache key must be refreshed');
-  assert.match(indexSrc, /app-alerts\.js\?v=al-6/, 'the saved-search and application-confirmation script cache key must be refreshed');
+  assert.match(indexSrc, /app-alerts\.js\?v=al-7/, 'the saved-search and application-confirmation script cache key must be refreshed');
   assert.match(vacancyCss, /\.vx-head\{flex:1 1 auto;min-width:0;min-height:0;height:auto/, 'vacancy rows should size to their content rather than reserve a tall blank area');
   assert.match(vacancyCss, /\.vx-card-meta\{display:flex;flex-wrap:wrap/, 'vacancy metadata should scan as a compact inline row');
   assert.doesNotMatch(vacancyCss, /all:unset/, 'cards must not reset all properties');

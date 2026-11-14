@@ -35,7 +35,7 @@ database_id = "7d1a4327-6056-45cf-ae62-b5b26a454627"
 # 6-hourly tick. It restarts stale/disabled GitHub workflows, backs up the TipChat
 # Autopilot sweep if pg_cron stalls, and emails only when self-healing fails.
 [triggers]
-crons = ["0 */6 * * *", "15,45 * * * *"]
+crons = ["0 */6 * * *", "15,45 * * * *", "0 7 1 * *"]
 
 
 # Sampled request logs (10%) so Workers & Pages -> this Worker -> Observability
@@ -52,6 +52,8 @@ SUPABASE_ANON_KEY = "sb_publishable_PU5_htQ0UZQoMrD6aY3rVQ_tzE3ztjH"
 # Must use the verified sa-recruiters.co.za Resend domain so notification
 # emails can reach recipients other than the Resend account owner.
 EMAIL_FROM = "SA Recruiters <notifications@sa-recruiters.co.za>"
+# Must remain false until the owner approves the exact campaign copy.
+AGENCY_VACANCY_OUTREACH_ENABLED = "false"
 # Enable public access on this bucket in the Cloudflare dashboard first
 # (R2 -> sarecruiters-media -> Settings -> Public Access), then use that
 # URL here. Already confirmed working:
