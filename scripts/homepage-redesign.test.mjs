@@ -416,3 +416,15 @@ test('public directory boot is not blocked on a Supabase session check', () => {
   assert.match(authStartup, /bootOnce\(\);\s*var authWired = false;/);
   assert.ok(authStartup.indexOf('bootOnce();') < authStartup.indexOf('client.auth.getSession()'), 'public data boot should begin before the auth session request resolves');
 });
+
+test('feedback is one sheet: reports and suggestions share it, and the old separate report sheet is gone', () => {
+  const html = readFileSync(path.join(root, 'index.html'), 'utf8');
+  const sheets = readFileSync(path.join(root, 'app-sheets.js'), 'utf8');
+  assert.doesNotMatch(html, /id="report-overlay"/);
+  assert.doesNotMatch(html, /onclick="openReportSheet\(\)"/);
+  assert.match(html, /<option>Report a problem<\/option>/);
+  assert.match(html, /id="s-reason"/);
+  assert.match(sheets, /if \(type === FEEDBACK_REPORT_TYPE\) return submitReport\(\)/);
+  assert.match(sheets, /export function openReportSheet\(presetAgency\)/); // agency cards still call it
+  assert.doesNotMatch(sheets, /report-turnstile/);
+});
