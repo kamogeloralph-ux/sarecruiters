@@ -84,7 +84,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'faq-report',
       title: 'How do I report incorrect information?',
-      body: '<p>Use Report a problem from the app menu, or the report action available on a listing where shown. Tell us which listing is affected and what needs attention. You may include contact details if you want us to follow up, but do not send passwords, identity numbers or banking information.</p>'
+      body: '<p>Open Feedback &amp; reports from the app menu and choose Report a problem, or use the report action available on a listing where shown. Tell us which listing is affected and what needs attention. You may include contact details if you want us to follow up, but do not send passwords, identity numbers or banking information.</p>'
     },
     {
       id: 'faq-offline',

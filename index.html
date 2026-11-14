@@ -532,11 +532,10 @@ window.sentryOnLoad = function () {
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
       <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><img class="tipchat-menu-logo" src="icons/tipchat-mark.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span><span>TipChat<span class="mi-sub">Share advice and vacancies by text or poster</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Suggest or comment<span class="mi-sub">Suggest an agency or share feedback</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
+      <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Feedback &amp; reports<span class="mi-sub">Suggest an agency, share feedback or report a problem</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openSupportSheet()"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="showAllAds('menu')"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span><span>Business Ads<span class="mi-sub">See businesses advertising on SA Recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="window.open('/advertise/','_blank','noopener')"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span><span>Advertise for FREE<span class="mi-sub">Put your business in front of South Africa</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
-      <button class="profile-menu-item" data-ripple onclick="openReportSheet()"><span class="mi-icon tile-red"><svg><use href="icons.svg#i70822b"/></svg></span><span>Report a problem<span class="mi-sub">Wrong info, broken link or abuse</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
 
     <div class="pgroup-label">Resources</div>
@@ -1405,20 +1404,26 @@ window.sentryOnLoad = function () {
   </div>
 </div>
 
-<!-- ============ REPORT SHEET ============ -->
-<div class="sheet-scrim" id="report-overlay">
+<!-- ============ FEEDBACK SHEET (suggest an agency, feedback, feature request, report a problem) ============ -->
+<div class="sheet-scrim" id="suggestion-overlay">
   <div class="sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
-    <h3>Report a problem</h3>
-    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Spotted wrong info, a broken link, or misuse of a listing? Let us know and we'll review it.</p>
+    <h3 id="s-title">Send feedback</h3>
+    <p id="s-intro" style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Know an agency we should list? Spotted wrong info? Have an idea? Share it here and we'll review it.</p>
     <div class="field">
-      <label>Agency this is about</label>
-      <input id="r-agency" list="r-agency-list" placeholder="Type or pick the agency name">
-      <datalist id="r-agency-list"></datalist>
+      <label>What is this about?</label>
+      <select id="s-type" onchange="onFeedbackTypeChange()">
+        <option>Suggest an agency</option>
+        <option>Feedback / comment</option>
+        <option>Feature request</option>
+        <option>Report a problem</option>
+        <option>Other</option>
+      </select>
     </div>
-    <div class="field">
+    <div class="field"><label id="s-agency-label">Agency name (if suggesting)</label><input id="s-agency" list="s-agency-list" placeholder="e.g. Prime Placements"><datalist id="s-agency-list"></datalist></div>
+    <div class="field" id="s-reason-field" style="display:none;">
       <label>Reason</label>
-      <select id="r-reason">
+      <select id="s-reason">
         <option>Incorrect contact details</option>
         <option>Broken website link</option>
         <option>Fake or misleading listing</option>
@@ -1427,33 +1432,10 @@ window.sentryOnLoad = function () {
         <option>Other</option>
       </select>
     </div>
-    <div class="field"><label>Details (optional)</label><textarea id="r-details" placeholder="Add anything that helps us fix it..."></textarea></div>
-    <div class="field"><label>Your contact (optional)</label><input id="r-contact" placeholder="Email or phone — so we can follow up"></div>
-    <div id="report-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
-    <button class="sheet-submit" data-ripple onclick="submitReport()">Submit report</button>
-  </div>
-</div>
-
-<!-- ============ SUGGESTION / COMMENT SHEET ============ -->
-<div class="sheet-scrim" id="suggestion-overlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet(this.closest('.sheet-scrim').id)" aria-label="Close" title="Close">×</button>
-    <h3>Suggest or comment</h3>
-    <p style="font-size:12.5px;color:var(--text-2);margin:-8px 0 16px;">Know an agency we should list? Have feedback or an idea? Share it here and we'll review it.</p>
-    <div class="field">
-      <label>Type</label>
-      <select id="s-type">
-        <option>Suggest an agency</option>
-        <option>Feedback / comment</option>
-        <option>Feature request</option>
-        <option>Other</option>
-      </select>
-    </div>
-    <div class="field"><label>Agency name (if suggesting)</label><input id="s-agency" placeholder="e.g. Prime Placements"></div>
     <div class="field"><label>Details</label><textarea id="s-details" placeholder="Tell us anything — location, contact, trades, or just your thoughts..." style="min-height:90px;"></textarea></div>
     <div class="field"><label>Your contact (optional)</label><input id="s-contact" placeholder="Email or phone — so we can follow up"></div>
     <div id="suggestion-error" style="color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;"></div>
-    <button class="sheet-submit" data-ripple onclick="submitSuggestion()">Submit</button>
+    <button class="sheet-submit" id="s-submit" data-ripple onclick="submitSuggestion()">Submit</button>
   </div>
 </div>
 

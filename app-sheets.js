@@ -400,25 +400,29 @@ export function copyEmployerManagerLink() {
   } else { showToast('Select and copy the link manually.'); }
 }
 
+// "Report a problem" now lives inside the single feedback sheet (type = Report a problem).
+// Kept as an entry point because agency cards call openReportSheet('Agency name').
+var FEEDBACK_REPORT_TYPE = 'Report a problem';
 export function openReportSheet(presetAgency) {
-  // Populate agency suggestions
-  var dl = document.getElementById('r-agency-list');
-  if (dl) dl.innerHTML = agenciesCache.map(function(a){ return '<option value="' + escapeHtml(a.name||'') + '">'; }).join('');
-  document.getElementById('r-agency').value = presetAgency || '';
-  document.getElementById('r-reason').selectedIndex = 0;
-  document.getElementById('r-details').value = '';
-  document.getElementById('r-contact').value = '';
-  var err = document.getElementById('report-error');
-  err.style.display = 'none'; err.textContent = '';
-  document.getElementById('report-overlay').classList.add('open');
-  renderTurnstile('report-turnstile', 'report-overlay');
+  openSuggestionSheet({ type: FEEDBACK_REPORT_TYPE, agency: presetAgency || '' });
+}
+export function onFeedbackTypeChange() {
+  var isReport = document.getElementById('s-type').value === FEEDBACK_REPORT_TYPE;
+  var reason = document.getElementById('s-reason-field');
+  if (reason) reason.style.display = isReport ? '' : 'none';
+  var label = document.getElementById('s-agency-label');
+  if (label) label.textContent = isReport ? 'Agency this is about' : 'Agency name (if suggesting)';
+  var details = document.getElementById('s-details');
+  if (details) details.placeholder = isReport ? 'Add anything that helps us fix it...' : 'Tell us anything \u2014 location, contact, trades, or just your thoughts...';
+  var submit = document.getElementById('s-submit');
+  if (submit) submit.textContent = isReport ? 'Submit report' : 'Submit';
 }
 export async function submitReport() {
-  var agencyName = document.getElementById('r-agency').value.trim();
-  var reason = document.getElementById('r-reason').value;
-  var details = document.getElementById('r-details').value.trim();
-  var contact = document.getElementById('r-contact').value.trim();
-  var err = document.getElementById('report-error');
+  var agencyName = document.getElementById('s-agency').value.trim();
+  var reason = document.getElementById('s-reason').value;
+  var details = document.getElementById('s-details').value.trim();
+  var contact = document.getElementById('s-contact').value.trim();
+  var err = document.getElementById('suggestion-error');
   err.style.display = 'none'; err.textContent = '';
   if (!agencyName && !details) {
     err.textContent = 'Please tell us which agency or add some details.'; err.style.display = 'block'; return;
@@ -441,7 +445,7 @@ export async function submitReport() {
     agency_id: payload.agency_id,
     reason: payload.reason,
     details: payload.details
-  }, 'report-turnstile');
+  }, 'suggestion-turnstile');
   var savedToDatabase = !!workerRes.ok;
   if (workerRes.ok) {
     console.log('report submitted via worker', workerRes.data && workerRes.data.email);
@@ -466,9 +470,9 @@ export async function submitReport() {
     local.push(payload);
     writeLocalReports(local);
   }
-  resetTurnstile('report-turnstile');
+  resetTurnstile('suggestion-turnstile');
   if (btn) { btn.disabled = false; btn.textContent = 'Submit report'; }
-  closeSheet('report-overlay');
+  closeSheet('suggestion-overlay');
   // Build WhatsApp message and show confirmation sheet
   var waMsg = 'SA Recruiters — REPORT%0A%0A' +
     'Agency: ' + encodeURIComponent(payload.agency_name || '-') + '%0A' +
@@ -576,18 +580,29 @@ export function reportEmailLink(p) {
 }
 
 // ===== Suggestion / Comment =====
-export function openSuggestionSheet() {
-  document.getElementById('s-type').selectedIndex = 0;
-  document.getElementById('s-agency').value = '';
+export function openSuggestionSheet(preset) {
+  var opts = (preset && typeof preset === 'object' && !preset.target) ? preset : {};
+  var typeSel = document.getElementById('s-type');
+  typeSel.selectedIndex = 0;
+  if (opts.type) {
+    for (var i = 0; i < typeSel.options.length; i++) { if (typeSel.options[i].text === opts.type) { typeSel.selectedIndex = i; break; } }
+  }
+  var dl = document.getElementById('s-agency-list');
+  if (dl) dl.innerHTML = agenciesCache.map(function(a){ return '<option value="' + escapeHtml(a.name||'') + '">'; }).join('');
+  document.getElementById('s-agency').value = opts.agency || '';
+  document.getElementById('s-reason').selectedIndex = 0;
   document.getElementById('s-details').value = '';
   document.getElementById('s-contact').value = '';
   var err = document.getElementById('suggestion-error');
   err.style.display = 'none'; err.textContent = '';
+  onFeedbackTypeChange();
   document.getElementById('suggestion-overlay').classList.add('open');
   renderTurnstile('suggestion-turnstile', 'suggestion-overlay');
 }
 export async function submitSuggestion() {
   var type = document.getElementById('s-type').value;
+  // Reports go to their own table/route (reports + /api/submit/report) so the admin queue is unchanged.
+  if (type === FEEDBACK_REPORT_TYPE) return submitReport();
   var agency = document.getElementById('s-agency').value.trim();
   var details = document.getElementById('s-details').value.trim();
   var contact = document.getElementById('s-contact').value.trim();
@@ -1680,6 +1695,7 @@ Object.assign(window, {
   showEmployerManagerLinkSheet,
   copyEmployerManagerLink,
   openReportSheet,
+  onFeedbackTypeChange,
   submitReport,
   openMySubmissions,
   reportWhatsAppLink,
