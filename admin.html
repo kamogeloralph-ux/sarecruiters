@@ -3069,11 +3069,17 @@ async function callCvScan(candidate){
   var auth = await r2AuthHeader();
   if(!auth.Authorization) return { error:'Your admin session expired. Please log in again.' };
   try {
-    var res = await fetch(R2_WORKER_URL+'/api/admin/cv-scan', { method:'POST', headers:Object.assign({'Content-Type':'application/json'}, auth), body:JSON.stringify({ candidate:candidate }) });
+    var ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function(){ ctl.abort(); }, 60000) : null;
+    var res;
+    try {
+      res = await fetch(R2_WORKER_URL+'/api/admin/cv-scan', { method:'POST', headers:Object.assign({'Content-Type':'application/json'}, auth), body:JSON.stringify({ candidate:candidate }), signal: ctl ? ctl.signal : undefined });
+    } finally { if(timer) clearTimeout(timer); }
     var data = await res.json().catch(function(){ return {}; });
     if(!res.ok) return { error:(data && data.error) || 'The CV could not be scanned.' };
     return data;
-  } catch(e){ console.error('cv scan', e); return { error:'Could not reach the CV scanner (' + ((e && e.message) || e) + '). If this repeats, check the worker logs for /api/admin/cv-scan.' }; }
+  } catch(e){ console.error('cv scan', e); if(e && e.name === 'AbortError') return { error:'The CV scan took longer than 60 seconds. Please try again in a minute.' };
+    return { error:'Could not reach the CV scanner (' + ((e && e.message) || e) + '). Check that ' + R2_WORKER_URL + ' is the live Worker address and that this site is allowed in ALLOWED_ORIGINS; then see the worker logs for /api/admin/cv-scan.' }; }
 }
 // Scans one saved profile and applies the result straight to the database.
 async function scanPoolCandidate(id, opts){
