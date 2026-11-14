@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, namesMatch, normalizeScan, candidateCvKey, cvScanModels, scanCvWithGemini } from '../Cloudflare-worker/cv-scan.js';
+import { cvScanLimits, cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, namesMatch, normalizeScan, candidateCvKey, cvScanModels, scanCvWithGemini } from '../Cloudflare-worker/cv-scan.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (name) => readFileSync(path.join(root, name), 'utf8');
@@ -127,7 +127,7 @@ test('CV scan uses the same stable Gemini alias as the CV Builder and falls back
     return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ is_cv: true, readable: true, confidence: 0.9, full_name: 'A B', positions: ['Cashier'], has_experience_section: true, has_education_section: false, has_contact_details: true }) }] } }] }), { status: 200 });
   };
   try {
-    const ok = await scanCvWithGemini({ GEMINI_API_KEY: 'k' }, new Uint8Array([1, 2, 3]).buffer, 'application/pdf');
+    const ok = await scanCvWithGemini({ GEMINI_API_KEY: 'k', GEMINI_SCAN_MAX_MODELS: '3' }, new Uint8Array([1, 2, 3]).buffer, 'application/pdf');
     assert.equal(ok.ok, true);
     assert.equal(ok.scan.positions[0], 'Cashier');
     assert.deepEqual(tried, ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.5-flash-lite']);
@@ -136,4 +136,42 @@ test('CV scan uses the same stable Gemini alias as the CV Builder and falls back
     assert.equal(bad.ok, false);
     assert.match(bad.error, /\(400\): API key not valid/);
   } finally { globalThis.fetch = realFetch; }
+});
+
+test('CV scan limits default to a short, bounded scan and ignore nonsense settings', () => {
+  assert.deepEqual(cvScanLimits({}), { attemptMs: 15000, maxModels: 2, deadlineMs: 40000 });
+  assert.deepEqual(cvScanLimits({ GEMINI_SCAN_TIMEOUT_MS: '8000', GEMINI_SCAN_MAX_MODELS: '3', GEMINI_SCAN_DEADLINE_MS: '20000' }), { attemptMs: 8000, maxModels: 3, deadlineMs: 20000 });
+  assert.deepEqual(cvScanLimits({ GEMINI_SCAN_TIMEOUT_MS: 'abc', GEMINI_SCAN_MAX_MODELS: '99', GEMINI_SCAN_DEADLINE_MS: '1' }), { attemptMs: 15000, maxModels: 2, deadlineMs: 40000 });
+});
+
+test('CV scan stops after two busy models and answers 503 with a try-again message', async () => {
+  const realFetch = globalThis.fetch;
+  const tried = [];
+  globalThis.fetch = async (url) => { tried.push(String(url).match(/models\/([^:]+):/)[1]); return new Response('busy', { status: 503 }); };
+  try {
+    const out = await scanCvWithGemini({ GEMINI_API_KEY: 'k' }, new Uint8Array([1]).buffer, 'application/pdf');
+    assert.equal(out.ok, false);
+    assert.equal(out.status, 503);
+    assert.equal(tried.length, 2);
+    assert.match(out.error, /try again in a minute/i);
+  } finally { globalThis.fetch = realFetch; }
+});
+
+test('CV scan reports a slow AI service as a timeout, not as unreachable', async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => { const e = new Error('timed out'); e.name = 'TimeoutError'; throw e; };
+  try {
+    const out = await scanCvWithGemini({ GEMINI_API_KEY: 'k' }, new Uint8Array([1]).buffer, 'application/pdf');
+    assert.equal(out.ok, false);
+    assert.match(out.error, /took too long/i);
+  } finally { globalThis.fetch = realFetch; }
+});
+
+test('Worker CORS only echoes known origins and the duplicate list is cached briefly', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(new URL('../Cloudflare-worker/worker.js', import.meta.url), 'utf8');
+  assert.match(src, /function isAllowedOrigin\(origin\)/);
+  assert.doesNotMatch(src.slice(src.indexOf('function corsHeaders(origin)'), src.indexOf('__name(corsHeaders')), /origin \|\| "\*"/);
+  assert.match(src, /configureCors\(env\);\n\s+const origin = request\.headers\.get\("Origin"\)/);
+  assert.match(src, /CV_BOX_CACHE_MS = 60000/);
 });
