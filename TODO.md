@@ -20,13 +20,13 @@
 
 - [x] Implement the monthly free-listing invitation with explicit opt-in only, no more than one email per agency and shared address per month, current-email/consent matching, one-click unsubscribe, the configured `EMAIL_FROM`, and a 1st-of-month 09:00 Africa/Johannesburg schedule with bounded retries.
 - [x] Add the private manager-link consent control and server-side preference routes; existing directory email addresses are not enrolled automatically.
-- [ ] Apply `supabase/migrations/20261114080000_agency_monthly_outreach.sql` to production and verify the service-role-only grants before enabling manager consent controls.
-- [ ] Keep `AGENCY_VACANCY_OUTREACH_ENABLED` false until the exact message in `AGENCY-OUTREACH-PLAN.md` is reviewed and approved; do not send the first campaign before approval.
+- [x] Apply `supabase/migrations/20261114080000_agency_monthly_outreach.sql` to production; verify both tables have RLS and all outreach RPCs use a fixed search path with execute grants only for `postgres` and `service_role`.
+- [x] Owner approved the exact message in `AGENCY-OUTREACH-PLAN.md` on 2026-11-15; activate `AGENCY_VACANCY_OUTREACH_ENABLED` for the next first-of-month 09:00 Africa/Johannesburg run, with no immediate send.
 
 ## Remaining production checks
 
-- [x] Worker deployment for commit `32fde7b` succeeded; check the latest Worker publish after upstream updates before closing rollout.
-- [ ] Publish and confirm the Pages workflow after applying the transient-503 retry; the live export also filters expired/capped rows and passed validation with 6,034 current rows.
+- [x] The Test, Cloudflare Pages, and Cloudflare Worker workflows succeeded for rollout commit `7c079c9`; verify the campaign-flag activation deployment separately.
+- [x] Publish and confirm the Pages workflow after applying the transient-503 retry; the live export also filters expired/capped rows and passed validation with 6,034 current rows.
 - [x] Confirm the Worker has `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and a non-empty `EMAIL_FROM` binding. The sender domain's verification status remains unconfirmed.
 - [x] Verify production grants for `20261104042157_restrict_server_only_rpc_execute.sql`; the protected RPCs show `postgres` and `service_role` execution only.
 
