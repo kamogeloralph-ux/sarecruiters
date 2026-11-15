@@ -20,14 +20,16 @@
 
 - [x] Implement the monthly free-listing invitation with explicit opt-in only, no more than one email per agency and shared address per month, current-email/consent matching, one-click unsubscribe, the configured `EMAIL_FROM`, and a 1st-of-month 09:00 Africa/Johannesburg schedule with bounded retries.
 - [x] Add the private manager-link consent control and server-side preference routes; existing directory email addresses are not enrolled automatically.
-- [x] Apply `supabase/migrations/20261114080000_agency_monthly_outreach.sql` to production; verify both tables have RLS and all outreach RPCs use a fixed search path with execute grants only for `postgres` and `service_role`.
-- [x] Owner approved the exact message in `AGENCY-OUTREACH-PLAN.md` on 2026-11-15; activate `AGENCY_VACANCY_OUTREACH_ENABLED` for the next first-of-month 09:00 Africa/Johannesburg run, with no immediate send.
+- [x] Apply `supabase/migrations/20261115043514_20261114080000_agency_monthly_outreach.sql` to production; verify both tables have RLS and all outreach RPCs use a fixed search path with execute grants only for `postgres` and `service_role`.
+- [x] Owner approved the exact message in `AGENCY-OUTREACH-PLAN.md` on 2026-11-15; campaign activation is deployed, with no immediate send and the first possible run on 2026-12-01 at 09:00 Africa/Johannesburg.
 
 ## Remaining production checks
 
-- [x] The Test, Cloudflare Pages, and Cloudflare Worker workflows succeeded for rollout commit `7c079c9`; verify the campaign-flag activation deployment separately.
+- [x] The Test, Cloudflare Pages, and Cloudflare Worker workflows succeeded for rollout commit `7c079c9`.
+- [x] Activation commit `0cc54ea` passed Test and Worker deployment; the live Worker now has the approved campaign flag enabled.
 - [x] Publish and confirm the Pages workflow after applying the transient-503 retry; the live export also filters expired/capped rows and passed validation with 6,034 current rows.
 - [x] Confirm the Worker has `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and a non-empty `EMAIL_FROM` binding. The sender domain's verification status remains unconfirmed.
+- [ ] Confirm Resend has verified `sa-recruiters.co.za` before the first scheduled message; the verification status is not confirmed here.
 - [x] Verify production grants for `20261104042157_restrict_server_only_rpc_execute.sql`; the protected RPCs show `postgres` and `service_role` execution only.
 
 ## Shared candidate flows and compact home/account cards
