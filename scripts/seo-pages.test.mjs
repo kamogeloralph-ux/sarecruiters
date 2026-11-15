@@ -192,6 +192,8 @@ test('privacy policy matches the guest app and current data providers', () => {
   assert.match(privacy, /Last updated: 14 November 2026/);
   assert.match(privacy, /canonical.*privacy\//i);
   assert.match(legacyPrivacy, /location\.replace\('\/privacy\/'\)/);
+  assert.match(homepage, /href="\/privacy\/"[^>]*>Privacy Policy/);
+  assert.doesNotMatch(homepage, /href="privacy\.html"/);
 });
 
 test('FAQ and privacy are crawlable HTML routes', () => {
