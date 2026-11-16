@@ -6,7 +6,7 @@
  * Static assets are stale-while-revalidate, while startup data is network-first
  * because it changes independently of the app shell.
  */
-const VERSION = 'sa-recruiters-directory-account2';
+const VERSION = 'sa-recruiters-directory-popia1';
 const CACHE_NAME = VERSION + '-runtime';
 const PRECACHE_URLS = [
   '/',
@@ -91,12 +91,24 @@ self.addEventListener('fetch', function(event) {
   if (url.pathname === '/sw.js') return;
 
   if (request.mode === 'navigate') {
+    // A certificate/PDF is a document navigation too, but it must never use
+    // the app shell as its offline fallback. Returning cached index.html for
+    // a failed PDF request makes Chrome show the homepage instead of the
+    // certificate. Successful PDF responses are still cached by networkFirst,
+    // so a certificate that was opened once remains available offline.
+    var isPdfNavigation = /\.pdf$/i.test(url.pathname);
     event.respondWith(
-      networkFirst(request, '/').then(function(response) {
+      networkFirst(request, isPdfNavigation ? null : '/').then(function(response) {
         if (!response) {
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clients) { clients.forEach(function(client) { client.postMessage({ type: 'OFFLINE_LAUNCH' }); }); });
-      }
-      return response || caches.match('/offline.html');
+          if (isPdfNavigation) {
+            return new Response('This certificate is unavailable offline. Please reconnect and try again.', {
+              status: 503,
+              headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+            });
+          }
+          self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clients) { clients.forEach(function(client) { client.postMessage({ type: 'OFFLINE_LAUNCH' }); }); });
+        }
+        return response || caches.match('/offline.html');
       })
     );
     return;

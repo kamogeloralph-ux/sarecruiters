@@ -316,7 +316,9 @@ test('production PWA worker provides a cached shell, offline fallback, and safe 
   assert.match(sw, /const CACHE_NAME = VERSION \+ '-runtime'/);
   assert.match(sw, /\/offline\.html/);
   assert.match(sw, /request\.mode === 'navigate'/);
-  assert.match(sw, /networkFirst\(request, '\/'\)/);
+  assert.match(sw, /networkFirst\(request, isPdfNavigation \? null : '\/'\)/);
+  assert.match(sw, /var isPdfNavigation = \/\\\.pdf\$\/i\.test\(url\.pathname\)/);
+  assert.match(sw, /certificate is unavailable offline/);
   assert.match(sw, /caches\.match\('\/offline\.html'\)/);
   assert.match(sw, /request\.destination\)/);
   assert.match(sw, /event\.data\.type === 'SKIP_WAITING'/);
