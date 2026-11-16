@@ -147,20 +147,11 @@ test('TipChat supports moderated text vacancy posts without exposing private IDs
   assert.match(communityCss, /\.community-vacancy-badge/);
 });
 
-test('TipChat unifies vacancy text and poster uploads in its moderated social feed', () => {
-  assert.match(posterMigration, /add column if not exists poster_image_url text/i);
-  assert.match(posterMigration, /poster_image_url.*like 'https:\/\/%\/employer-posters\/%'/is);
-  assert.match(posterMigration, /grant select \([\s\S]*poster_image_url[\s\S]*\) on public\.community_posts to anon, authenticated/i);
-  assert.match(posterMigration, /grant insert \(poster_image_url\) on public\.community_posts to authenticated/i);
+test('TipChat shares vacancies as text in its moderated social feed (no poster attachments)', () => {
   assert.match(posterMigration, /set title = 'TipChat'/);
-  assert.match(app, /communityUploadPoster/);
-  assert.match(app, /Authorization': 'Bearer ' \+ token/);
-  assert.match(app, /poster_image_url: poster \? poster\.url : null/);
-  assert.match(app, /communityPosterImageHtml/);
-  assert.match(app, /communityMissingPosterSchema/);
-  assert.match(app, /communityAdminDelete[\s\S]*communityPosterImageHtml|communityPosterImageHtml[\s\S]*communityAdminDelete/);
-  assert.match(html, /id="community-poster-file" type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(html, /Share a vacancy in text, attach its poster, or do both/);
+  assert.doesNotMatch(app, /communityUploadPoster|communityPosterImageHtml|communityMissingPosterSchema|poster_image_url/);
+  assert.doesNotMatch(html, /community-poster-file/);
+  assert.match(html, /Share a vacancy as text/);
   assert.match(html, /<h1 class="sr-only">TipChat<\/h1>/);
-  assert.match(communityCss, /\.community-post-poster img/);
 });
+

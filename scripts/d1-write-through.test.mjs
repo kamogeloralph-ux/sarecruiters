@@ -36,7 +36,6 @@ test('the client sends the Supabase mutation representation through the admin Wo
   assert.match(appData, /writeThroughD1Mirror\('app_settings'/);
   assert.match(appData, /writeThroughD1Mirror\(table, value, operation\)/);
   assert.match(admin, /writeThroughD1Mirror\('vacancies',Object\.assign\(\{\},v,result\.data\|\|\{\}\)\)/);
-  assert.match(admin, /writeThroughD1Mirror\('employer_posters',result\.data\)/);
   assert.match(admin, /writeThroughD1Mirror\('pool_candidates'/);
   assert.match(worker, /row\.updated_at = new Date\(\)\.toISOString\(\)/);
 });

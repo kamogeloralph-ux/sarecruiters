@@ -38,7 +38,7 @@ test('Pages generation uses committed public data and does not scan Supabase on 
   assert.match(generator, /path\.join\(dataDir, 'vacancy-notes\.json'\)/);
   assert.match(generator, /notes\[String\(vacancy\.id\)\]/);
   assert.doesNotMatch(generator, /supabase\.from\(/, 'deploy builds must not read public tables through PostgREST');
-  assert.match(generator, /\$\{R2_WORKER_URL\}\/api\/posters/, 'supplemental poster pages should use the public Worker feed');
+  assert.doesNotMatch(generator, /api\/posters/, 'CV pictures are in-app only and must not be pulled into static pages');
 });
 
 test('public SEO pages expose managed sponsored ad slots', () => {
@@ -269,7 +269,7 @@ test('app accent tokens follow the monochrome brand theme', () => {
 });
 
 test('public directory sections expose stable share links and deep-link routing', () => {
-  for (const section of ['vacancies', 'agencies', 'candidates', 'posters', 'employers']) {
+  for (const section of ['vacancies', 'agencies', 'candidates', 'cv-pictures', 'employers']) {
     assert.match(appUi, new RegExp(section));
   }
   assert.match(appUi, /getSectionLink/);
@@ -279,7 +279,7 @@ test('public directory sections expose stable share links and deep-link routing'
   assert.match(appUi, /window\.__saRestoredScreen = screenBySection\[section\]/);
   assert.match(appUi, /screenBySection = \{/);
   assert.match(appManagerEmployer, /setTimeout\(openDeepLinkedSection, 120\)/);
-  for (const section of ['vacancies', 'agencies', 'candidates', 'posters', 'employers']) {
+  for (const section of ['vacancies', 'agencies', 'candidates', 'cv-pictures', 'employers']) {
     assert.ok(homepage.includes(`shareSectionLink('${section}')`), `missing ${section} share control`);
   }
 });
@@ -354,17 +354,17 @@ test('hiring companies get their own crawlable pages and directory', () => {
   assert.match(generator, /More jobs at/);
 });
 
-test('every vacancy, agency and poster is reachable from a crawlable directory page', () => {
+test('every vacancy and agency is reachable from a crawlable directory page', () => {
   assert.match(generator, /base: '\/vacancies'/);
   assert.match(generator, /base: '\/agencies'/);
-  assert.match(generator, /base: '\/posters'/);
+  assert.doesNotMatch(generator, /base: '\/posters'/);
   assert.match(generator, /function pagerHtml\(/);
   assert.match(generator, /function writePaginated\(/);
   for (const slug of ['vacancies', 'agencies', 'companies', 'submit-cv']) {
     assert.match(generator, new RegExp(`href="/${slug}/"`));
     assert.ok(homepage.includes(`href="${slug}/"`), `homepage should link to ${slug}/`);
   }
-  assert.ok(homepage.includes('href="posters/"'));
+  assert.ok(!homepage.includes('href="posters/"'));
 });
 
 test('every agency CV submission redirects to the CV Box upload form', () => {
@@ -393,10 +393,8 @@ test('photos are crawlable: alt text, image sitemap and structured data', () => 
   assert.match(generator, /<image:image><image:loc>/);
   assert.match(generator, /images: imagesOf\(agency\.photo\)/);
   assert.match(generator, /images: imagesOf\(vacancy\.company_photo\)/);
-  assert.match(generator, /images: imagesOf\(poster\.image_url\)/);
   assert.match(generator, /images: imagesOf\(company\.photo\)/);
   assert.match(generator, /'@type': 'EmploymentAgency'/);
-  assert.match(generator, /'@type': 'ImageObject'/);
   assert.match(generator, /'@type': 'BreadcrumbList'/);
   assert.match(generator, /og:image:alt/);
 });

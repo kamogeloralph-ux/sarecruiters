@@ -211,9 +211,9 @@ test('worker: poster upload validates JPEG bytes, rate limits, tags the owner, o
   assert.equal(sandbox.f(new TextEncoder().encode('<html>').buffer), false);
 });
 
-test('poster helper reports unreadable images and unblocks submit', () => {
+test('CV picture helper reports unreadable images and unblocks submit', () => {
   const forms = read('app-forms.js');
   assert.match(forms, /img\.onerror = function\(\) \{ finish\(new Error\('decode failed'\)\)/);
   assert.match(forms, /ctx\.fillStyle = '#fff'/);
-  assert.match(appSource, /communityPosterPreparing/);
+  assert.doesNotMatch(appSource, /communityPosterPreparing/);
 });
