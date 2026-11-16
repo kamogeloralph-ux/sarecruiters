@@ -199,6 +199,8 @@ test('privacy policy matches the guest app and current data providers', () => {
 
 test('POPIA certificate links use a mobile-friendly viewer with a PDF fallback', () => {
   assert.match(homepage, /\/popia-certificate\//);
+  assert.doesNotMatch(homepage, /window\.open\(['"]\/popia-certificate\//);
+  assert.doesNotMatch(homepage, /href="\/popia-certificate\/"[^>]*target="_blank"/);
   assert.match(privacy, /href="\/popia-certificate\//);
   assert.match(certificateViewer, /information-regulator-certificate-preview\.webp/);
   assert.match(certificateViewer, /SA-Recruiters-Information-Officer-Registration-Certificate\.pdf/);

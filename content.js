@@ -321,7 +321,7 @@ var DEFAULT_CONTENT = {
     {
       id: 'priv-regulator',
       title: 'POPIA &amp; the Information Regulator',
-      body: '<p>SA Recruiters is registered with the Information Regulator (South Africa) as required by the Protection of Personal Information Act, 2013 (POPIA). Our Information Officer is Ralph Kamogelo Chiloane.</p><p><strong>Registration number:</strong> 2026-072335<br><strong>Registered:</strong> 16 November 2026</p><p><a href="/popia-certificate/" target="_blank" rel="noopener">View the registration certificate (PDF)</a><br><a href="https://eservices.inforegulator.org.za" target="_blank" rel="noopener">Verify on the Information Regulator eServices portal</a></p>'
+      body: '<p>SA Recruiters is registered with the Information Regulator (South Africa) as required by the Protection of Personal Information Act, 2013 (POPIA). Our Information Officer is Ralph Kamogelo Chiloane.</p><p><strong>Registration number:</strong> 2026-072335<br><strong>Registered:</strong> 16 November 2026</p><p><a href="/popia-certificate/">View the registration certificate (PDF)</a><br><a href="https://eservices.inforegulator.org.za" target="_blank" rel="noopener">Verify on the Information Regulator eServices portal</a></p>'
     },
     {
       id: 'priv-changes',
