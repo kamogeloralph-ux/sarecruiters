@@ -204,8 +204,9 @@ test('POPIA certificate links use a mobile-friendly viewer with a PDF fallback',
   assert.match(privacy, /href="\/popia-certificate\//);
   assert.match(certificateViewer, /information-regulator-certificate-preview\.webp/);
   assert.match(certificateViewer, /SA-Recruiters-Information-Officer-Registration-Certificate\.pdf/);
-  assert.match(certificateViewer, /Open original PDF/);
+  assert.match(certificateViewer, /href="#original-pdf">Open original PDF here/);
   assert.match(certificateViewer, /Download PDF/);
+  assert.match(certificateViewer, /id="original-pdf" open/);
   assert.match(certificateViewer, /<iframe title="Original SA Recruiters POPIA registration certificate"/);
   assert.doesNotMatch(certificateViewer, /Open original PDF<\/a>[^\n]*target="_blank"/);
 });
