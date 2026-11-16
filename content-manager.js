@@ -25,7 +25,7 @@
     // One-time official content migration. Older localStorage content can
     // otherwise keep restoring obsolete Support & Donations / Privacy text.
     // v3: privacy policy refreshed for Google sign-in + Talent Pool + analytics.
-    var contactVersion = 'official-contact-v3';
+    var contactVersion = 'official-contact-v4';
     if (store.__contact_details_version !== contactVersion) {
       if (DEFAULT_CONTENT.support) store.support = JSON.parse(JSON.stringify(DEFAULT_CONTENT.support));
       if (DEFAULT_CONTENT.privacy) store.privacy = JSON.parse(JSON.stringify(DEFAULT_CONTENT.privacy));

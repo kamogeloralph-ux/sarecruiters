@@ -372,3 +372,10 @@ a.pg:hover{background:var(--blue-soft);border-color:var(--blue-line)}
 .public-house-ad{border:0;background:transparent;box-shadow:none}
 .public-house-ad:hover{transform:none;box-shadow:none}
 .public-house-ad-label,.public-house-ad-message{display:none}
+
+/* POPIA / Information Regulator registration notice */
+.popia-notice{display:inline-flex;align-items:center;gap:10px;max-width:100%;margin:6px 0 4px;padding:9px 13px;border:1px solid var(--line);border-radius:12px;background:#fff;text-decoration:none}
+.popia-notice svg{flex:0 0 auto;color:var(--blue)}
+.popia-notice span{display:flex;flex-direction:column;line-height:1.3}
+.popia-notice strong{font-size:13px;color:var(--ink)}
+.popia-notice small{font-size:11.5px;color:var(--muted)}
