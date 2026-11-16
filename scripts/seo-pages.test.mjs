@@ -9,6 +9,7 @@ const advertisePage = readFileSync(new URL('../advertise/index.html', import.met
 const cards = readFileSync(new URL('../app-cards.js', import.meta.url), 'utf8');
 const appData = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
 const privacy = readFileSync(new URL('../privacy/index.html', import.meta.url), 'utf8');
+const certificateViewer = readFileSync(new URL('../popia-certificate/index.html', import.meta.url), 'utf8');
 const legacyPrivacy = readFileSync(new URL('../privacy.html', import.meta.url), 'utf8');
 const faq = readFileSync(new URL('../faq/index.html', import.meta.url), 'utf8');
 const terms = readFileSync(new URL('../terms/index.html', import.meta.url), 'utf8');
@@ -194,6 +195,15 @@ test('privacy policy matches the guest app and current data providers', () => {
   assert.match(legacyPrivacy, /location\.replace\('\/privacy\/'\)/);
   assert.match(homepage, /href="\/privacy\/"[^>]*>Privacy Policy/);
   assert.doesNotMatch(homepage, /href="privacy\.html"/);
+});
+
+test('POPIA certificate links use a mobile-friendly viewer with a PDF fallback', () => {
+  assert.match(homepage, /\/popia-certificate\//);
+  assert.match(privacy, /href="\/popia-certificate\//);
+  assert.match(certificateViewer, /information-regulator-certificate-preview\.webp/);
+  assert.match(certificateViewer, /SA-Recruiters-Information-Officer-Registration-Certificate\.pdf/);
+  assert.match(certificateViewer, /Open original PDF/);
+  assert.match(certificateViewer, /Download PDF/);
 });
 
 test('FAQ and privacy are crawlable HTML routes', () => {

@@ -17,6 +17,7 @@ on:
       - "docs/**"
       - "assets/**"
       - "privacy/**"
+      - "popia-certificate/**"
       - "terms/**"
       - "faq/**"
       - "know-your-rights/**"
