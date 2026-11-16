@@ -1,7 +1,6 @@
 /* SA Recruiters community feed — TipChat */
 
 import { R2_WORKER_URL, saAuthUser, signInWithGoogle, supabaseClient } from './app-core.js';
-import { processPosterPhoto } from './app-forms.js';
 import { resetActiveScreenScroll, showToast } from './app-ui.js';
 
 export var communityMvp = {
@@ -17,7 +16,6 @@ export var communityMvp = {
   returnScreen: 'home',
   reportTarget: null,
   vacancySchemaAvailable: true,
-  posterSchemaAvailable: true,
   authorIdentityAvailable: true,
   mine: new Map(),
   submissions: [],
@@ -32,8 +30,6 @@ export var communityMvp = {
   notificationsOpen: false
 };
 export var communityComposerType = 'discussion';
-export var communityPosterBlob = null;
-export var communityPosterPreparing = false;
 export var communityMarketplacePhotos = [];
 export var COMMUNITY_SEEN_KEY = 'sa_tipchat_seen_v1';
 
@@ -66,10 +62,6 @@ export function communityMissingVacancySchema(error) {
   var code = String(error && (error.code || error.status || '') || '');
   var message = String(error && error.message || '').toLowerCase();
   return code === '42703' || code === 'PGRST204' || message.indexOf('post_type') >= 0 || message.indexOf('vacancy_title') >= 0 || message.indexOf('marketplace_') >= 0;
-}
-export function communityMissingPosterSchema(error) {
-  var message = String(error && error.message || '').toLowerCase();
-  return message.indexOf('poster_image_url') >= 0;
 }
 export var COMMUNITY_EMOJIS = [
   { type: 'join', label: 'Join in', file: 'sa-recruiters-emoji-01-join.webp' },
@@ -106,8 +98,6 @@ export function communitySetComposerType(type) {
   if (help) help.hidden = communityComposerType !== 'vacancy';
   var marketHelp = document.getElementById('community-marketplace-help');
   if (marketHelp) marketHelp.hidden = communityComposerType !== 'marketplace';
-  var posterUpload = document.getElementById('community-poster-upload');
-  if (posterUpload) posterUpload.hidden = communityComposerType !== 'vacancy' || !communityMvp.posterSchemaAvailable;
   var marketButton = document.querySelector('[data-community-compose-type="marketplace"]');
   if (marketButton) marketButton.title = 'Buy and sell safely on TipChat';
   var vacancyButton = document.querySelector('[data-community-compose-type="vacancy"]');
@@ -120,7 +110,7 @@ export function communitySetComposerType(type) {
   var body = document.getElementById('community-post-body');
   if (body) {
     body.placeholder = communityComposerType === 'vacancy'
-      ? 'Add vacancy details or a short caption. You can also share a poster below…'
+      ? 'Add the vacancy details: role, location and how to apply…'
       : (communityComposerType === 'marketplace' ? 'Describe the item, service or request. Do not share banking passwords, PINs or OTPs…' : 'What would you like advice on? Share a question or helpful tip…');
     body.setAttribute('aria-label', communityComposerType === 'vacancy' ? 'Vacancy details or caption' : (communityComposerType === 'marketplace' ? 'Marketplace listing details' : 'Write a TipChat post'));
   }
@@ -172,7 +162,7 @@ export function communityVacancyMetaHtml(post) {
   var meta = [];
   if (post.vacancy_location) meta.push('<span>📍 ' + communityEsc(post.vacancy_location) + '</span>');
   if (post.vacancy_application) meta.push('<span>✉ ' + communityEsc(post.vacancy_application) + '</span>');
-  return '<div class="community-vacancy-head"><span class="community-vacancy-badge">Vacancy</span><span class="community-vacancy-source">' + (post.poster_image_url ? 'Poster vacancy' : 'Text vacancy') + ' · shared by the community</span></div>' +
+  return '<div class="community-vacancy-head"><span class="community-vacancy-badge">Vacancy</span><span class="community-vacancy-source">' + 'Shared by the community</span></div>' +
     (post.vacancy_title ? '<h3 class="community-vacancy-title">' + communityEsc(post.vacancy_title) + '</h3>' : '') +
     (meta.length ? '<div class="community-vacancy-meta">' + meta.join('') + '</div>' : '');
 }
@@ -194,103 +184,6 @@ export function communityMarketplaceGalleryHtml(post) {
     var safe = /^https:\/\//i.test(String(url || '')) ? communityEsc(url) : '';
     return safe ? '<a href="' + safe + '" target="_blank" rel="noopener noreferrer"><img src="' + safe + '" alt="Product photo ' + (index + 1) + '" loading="lazy" decoding="async"></a>' : '';
   }).join('') + '</div>';
-}
-export function communityPosterImageHtml(post) {
-  if (!post || !post.poster_image_url) return '';
-  var title = post.vacancy_title || 'Vacancy poster';
-  var url = communityEsc(post.poster_image_url);
-  return '<a class="community-post-poster" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="Open poster: ' + communityEsc(title) + '"><img src="' + url + '" alt="' + communityEsc(title) + ' vacancy poster" loading="lazy"><span>Open poster</span></a>';
-}
-export function communityHandlePosterPhoto(event) {
-  var file = event && event.target && event.target.files && event.target.files[0];
-  if (!file) return;
-  if (!/^image\/(jpeg|png|webp)$/i.test(file.type || '')) {
-    communityRemovePoster();
-    event.target.value = '';
-    communityToast('Choose a JPG, PNG or WebP poster image.');
-    return;
-  }
-  if (file.size > 12 * 1024 * 1024) {
-    communityRemovePoster();
-    event.target.value = '';
-    communityToast('Choose a poster smaller than 12 MB.');
-    return;
-  }
-  var preview = document.getElementById('community-poster-preview');
-  var fallback = document.getElementById('community-poster-fallback');
-  communityPosterBlob = null;
-  if (preview && preview.src && preview.src.indexOf('blob:') === 0) URL.revokeObjectURL(preview.src);
-  if (preview) { preview.src = ''; preview.style.display = 'none'; }
-  if (fallback) { fallback.textContent = 'Preparing poster preview…'; fallback.style.display = 'grid'; }
-  if (typeof processPosterPhoto !== 'function') {
-    communityToast('Poster upload is unavailable right now.');
-    return;
-  }
-  communityPosterPreparing = true;
-  processPosterPhoto(event, 'communityPosterBlob', 'community-poster-preview', 'community-poster-fallback', function(error) {
-    communityPosterPreparing = false;
-    if (error) {
-      communityRemovePoster();
-      communityToast('That image could not be read. Try a different JPG, PNG or WebP.');
-    }
-  });
-}
-export function communityRemovePoster() {
-  communityPosterBlob = null;
-  communityPosterPreparing = false;
-  var input = document.getElementById('community-poster-file');
-  var preview = document.getElementById('community-poster-preview');
-  var fallback = document.getElementById('community-poster-fallback');
-  if (input) input.value = '';
-  if (preview) {
-    if (preview.src && preview.src.indexOf('blob:') === 0) URL.revokeObjectURL(preview.src);
-    preview.src = '';
-    preview.style.display = 'none';
-  }
-  if (fallback) { fallback.textContent = 'Poster preview will appear here'; fallback.style.display = 'grid'; }
-}
-export async function communityUploadPoster(caption) {
-  if (!communityPosterBlob) return null;
-  try {
-    var sessionResult = await supabaseClient.auth.getSession();
-    var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
-    if (!token) throw new Error('Your sign-in has expired. Please sign in again.');
-    var response = await fetch(R2_WORKER_URL + '/api/upload/employer-poster' + (caption ? '?caption=' + encodeURIComponent(caption) : ''), {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'image/jpeg' },
-      body: communityPosterBlob
-    });
-    var payload = await response.json().catch(function() { return {}; });
-    if (!response.ok || !payload.url) throw new Error(payload.error || 'Could not upload the poster. Please try again.');
-    var uploaded = new URL(payload.url);
-    if (uploaded.protocol !== 'https:' || uploaded.pathname.indexOf('/employer-posters/') < 0) throw new Error('The poster upload returned an invalid image URL.');
-    return { url: uploaded.href, key: payload.key || null };
-  } catch (error) {
-    console.error('[TipChat] poster upload failed', error);
-    communityStatus(error.message || 'Could not upload the poster. Your draft is still here.', 'error');
-    return null;
-  }
-}
-// Best-effort cleanup of an uploaded poster that never became (or no longer is) a post.
-export async function communityDeletePosterFile(ref) {
-  try {
-    var key = String(ref || '');
-    if (!key) return;
-    if (/^https?:/i.test(key)) {
-      var match = key.match(/\/(employer-posters\/[A-Za-z0-9]+\.jpg)$/);
-      key = match ? match[1] : '';
-    }
-    if (!key) return;
-    var sessionResult = await supabaseClient.auth.getSession();
-    var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
-    if (!token) return;
-    await fetch(R2_WORKER_URL + '/api/upload/employer-poster?key=' + encodeURIComponent(key), {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-  } catch (error) {
-    console.warn('[TipChat] poster cleanup skipped', error);
-  }
 }
 export function communityClearMarketplacePhotos() {
   communityMarketplacePhotos.forEach(function(photo) { if (photo.preview) URL.revokeObjectURL(photo.preview); });
@@ -545,7 +438,7 @@ export async function communityLoadFeed() {
   if (!communityMvp.posts.length) host.innerHTML = '<div class="community-empty">Loading posts…</div>';
   var authorPhotoSelect = communityMvp.authorIdentityAvailable ? ',author_photo_url' : '';
   var query = supabaseClient.from('community_posts')
-    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,poster_image_url,marketplace_title,marketplace_price,marketplace_category,marketplace_condition,marketplace_location,marketplace_contact,marketplace_image_urls,likes_count,comments_count,created_at' + authorPhotoSelect)
+    .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,marketplace_title,marketplace_price,marketplace_category,marketplace_condition,marketplace_location,marketplace_contact,marketplace_image_urls,likes_count,comments_count,created_at' + authorPhotoSelect)
     .eq('group_id', communityMvp.group.id)
     .eq('status', 'approved');
   if (communityMvp.sort === 'top') {
@@ -568,16 +461,6 @@ export async function communityLoadFeed() {
   if (result.error && communityMvp.authorIdentityAvailable && communityMissingIdentitySchema(result.error)) {
     communityMvp.authorIdentityAvailable = false;
     return communityLoadFeed();
-  }
-  if (result.error && communityMissingPosterSchema(result.error)) {
-    communityMvp.posterSchemaAvailable = false;
-    communitySetComposerType(communityComposerType);
-    query = supabaseClient.from('community_posts')
-      .select('id,group_id,author_label,body,status,is_official,post_type,vacancy_title,vacancy_location,vacancy_application,marketplace_title,marketplace_price,marketplace_category,marketplace_condition,marketplace_location,marketplace_contact,likes_count,comments_count,created_at' + authorPhotoSelect)
-      .eq('group_id', communityMvp.group.id).eq('status', 'approved');
-    if (communityMvp.sort === 'top') query = query.gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()).order('likes_count', { ascending: false }).order('comments_count', { ascending: false }).order('created_at', { ascending: false });
-    else query = query.order('created_at', { ascending: false });
-    result = await query.limit(40);
   }
   if (result.error && communityMissingVacancySchema(result.error)) {
     communityMvp.vacancySchemaAvailable = false;
@@ -642,7 +525,7 @@ export function communityRenderFeed() {
   var host = document.getElementById('community-feed');
   if (!host) return;
   if (!communityMvp.posts.length) {
-    host.innerHTML = '<div class="community-empty"><strong>Start the TipChat feed</strong><span>Share an interview tip, ask for advice, or post a vacancy as text or a poster.</span></div>';
+    host.innerHTML = '<div class="community-empty"><strong>Start the TipChat feed</strong><span>Share an interview tip, ask for advice, or post a vacancy.</span></div>';
     return;
   }
   host.innerHTML = communityMvp.posts.map(function(post) {
@@ -661,7 +544,6 @@ export function communityRenderFeed() {
       communityMarketplaceMetaHtml(post) +
       communityMarketplaceGalleryHtml(post) +
       (post.body ? '<div class="community-post-body">' + communityRenderBody(post.body) + '</div>' : '') +
-      communityPosterImageHtml(post) +
       '<div class="community-post-actions">' + communityActionsHtml(post) + '</div>' +
       '<div class="community-reaction-picker" id="community-reaction-picker-' + id + '" hidden></div>' +
       '<div class="community-comments" id="community-comments-' + id + '"' + (expanded ? '' : ' hidden') + '></div>' +
@@ -759,11 +641,8 @@ export async function communitySubmitPost(event) {
   var marketplace = communityReadMarketplaceMeta();
   var isVacancy = communityComposerType === 'vacancy';
   var isMarketplace = communityComposerType === 'marketplace';
-  if (isVacancy && communityPosterPreparing) { communityStatus('Your poster is still being prepared. Please wait a moment, then press Share again.', 'error'); return false; }
-  if (!body && isVacancy && communityPosterBlob) body = vacancy.title ? 'Vacancy poster: ' + vacancy.title : 'Vacancy poster attached — see the image for details.';
-  if (body.length < 12 || body.length > 3000) { communityStatus('Write at least 12 characters, or attach a vacancy poster.', 'error'); return false; }
+  if (body.length < 12 || body.length > 3000) { communityStatus('Write at least 12 characters.', 'error'); return false; }
   if (isVacancy && !communityMvp.vacancySchemaAvailable) { communityToast('Vacancy posting is being enabled. Please try again shortly.'); return false; }
-  if (isVacancy && communityPosterBlob && !communityMvp.posterSchemaAvailable) { communityToast('Poster posts are being enabled. You can still share this vacancy as text.'); return false; }
   if (isVacancy && vacancy.title.length > 140) { communityStatus('Keep the vacancy title under 140 characters.', 'error'); return false; }
   if (isVacancy && vacancy.application.length > 300) { communityStatus('Keep the application contact under 300 characters.', 'error'); return false; }
   if (isMarketplace && (marketplace.title.length < 2 || marketplace.title.length > 140)) { communityStatus('Add an item title between 2 and 140 characters.', 'error'); return false; }
@@ -771,14 +650,8 @@ export async function communitySubmitPost(event) {
   var button = document.getElementById('community-post-submit');
   if (button) button.disabled = true;
   var result;
-  var poster = null;
   var marketplacePhotosUploaded = [];
   try {
-    if (isVacancy && communityPosterBlob) {
-      communityStatus('Uploading your poster…', '');
-      poster = await communityUploadPoster(vacancy.title || 'TipChat vacancy poster');
-      if (!poster) { if (button) button.disabled = false; return false; }
-    }
     if (isMarketplace && communityMarketplacePhotos.length) {
       communityStatus('Uploading product photos…', '');
       for (var photoIndex = 0; photoIndex < communityMarketplacePhotos.length; photoIndex += 1) {
@@ -794,7 +667,6 @@ export async function communitySubmitPost(event) {
           vacancy_title: isVacancy ? (vacancy.title || null) : null,
           vacancy_location: isVacancy ? (vacancy.location || null) : null,
           vacancy_application: isVacancy ? (vacancy.application || null) : null,
-          poster_image_url: poster ? poster.url : null,
           marketplace_title: isMarketplace ? marketplace.title : null,
           marketplace_price: isMarketplace ? (marketplace.price || null) : null,
           marketplace_category: isMarketplace ? (marketplace.category || null) : null,
@@ -807,18 +679,10 @@ export async function communitySubmitPost(event) {
   } catch (error) {
     result = { error: error };
   }
-  if (result.error && poster) communityDeletePosterFile(poster.key || poster.url);
   if (result.error && marketplacePhotosUploaded.length) marketplacePhotosUploaded.forEach(function(photo) { communityDeleteMarketplacePhoto(photo.key || photo.url); });
   if (result.error && communityMissingVacancySchema(result.error)) {
     communityMvp.vacancySchemaAvailable = false;
     communityStatus('TipChat vacancy support is still being enabled. Your draft is still here; please try again later.', 'error');
-    if (button) button.disabled = false;
-    communityRenderGroup();
-    return false;
-  }
-  if (result.error && communityMissingPosterSchema(result.error)) {
-    communityMvp.posterSchemaAvailable = false;
-    communityStatus('Poster posts are still being enabled. Your draft is still here; please try again later.', 'error');
     if (button) button.disabled = false;
     communityRenderGroup();
     return false;
@@ -839,7 +703,6 @@ export async function communitySubmitPost(event) {
   }
   if (field) field.value = '';
   ['community-vacancy-title', 'community-vacancy-location', 'community-vacancy-application', 'community-marketplace-title', 'community-marketplace-price', 'community-marketplace-category', 'community-marketplace-condition', 'community-marketplace-location', 'community-marketplace-contact'].forEach(function(id) { var input = document.getElementById(id); if (input) input.value = ''; });
-  communityRemovePoster();
   communityClearMarketplacePhotos();
   communitySetComposerType('discussion');
   communityStatus('Posted live. ' + (communityMvp.identity.show && communityMvp.identity.has ? 'Your CV Box name and photo are shown.' : 'You appear as Anonymous member.'), 'success');
@@ -1085,7 +948,6 @@ export async function communityDeleteOwn(kind, id) {
     communityToast('Could not delete that. Please try again.');
     return;
   }
-  if (result.data.poster_image_url) communityDeletePosterFile(result.data.poster_image_url);
   communityMvp.expanded.delete(id);
   communityToast('Deleted.');
   await communityLoadMySubmissions();
@@ -1152,7 +1014,6 @@ export async function communityAdminDelete(type, id) {
   if (!communityMvp.moderator) return false;
   var result = await supabaseClient.rpc('community_admin_delete', { p_kind: type === 'comment' ? 'comment' : 'post', p_id: id });
   if (result.error || !result.data || !result.data.deleted) { console.error(result.error); communityToast('Delete action failed.'); return false; }
-  if (result.data.poster_image_url) communityDeletePosterFile(result.data.poster_image_url);
   communityToast('Content deleted.');
   await communityLoadModerationQueue(true);
   await communityLoadFeed();
@@ -1186,8 +1047,6 @@ window.communityHandleMarketplacePhotos = communityHandleMarketplacePhotos;
 window.communityRemoveMarketplacePhoto = communityRemoveMarketplacePhoto;
 window.communitySubmitPost = communitySubmitPost;
 window.communitySetComposerType = communitySetComposerType;
-window.communityHandlePosterPhoto = communityHandlePosterPhoto;
-window.communityRemovePoster = communityRemovePoster;
 window.communityPromptParticipation = communityPromptParticipation;
 window.communityToggleLike = communityToggleLike;
 window.communityToggleReaction = communityToggleReaction;
@@ -1252,7 +1111,6 @@ Object.assign(window, {
   communityRateLimitMessage,
   communityToast,
   communityMissingVacancySchema,
-  communityMissingPosterSchema,
   communityEmojiInfo,
   communityEmojiUrl,
   communityEmojiToken,
@@ -1263,11 +1121,6 @@ Object.assign(window, {
   communityVacancyMetaHtml,
   communityMarketplaceMetaHtml,
   communityMarketplaceGalleryHtml,
-  communityPosterImageHtml,
-  communityHandlePosterPhoto,
-  communityRemovePoster,
-  communityUploadPoster,
-  communityDeletePosterFile,
   communityEmojiButton,
   communityInitEmojiPicker,
   communityToggleEmojiPicker,
@@ -1328,8 +1181,6 @@ Object.assign(window, {
 Object.defineProperties(window, {
   communityMvp: { get: () => communityMvp, set: (v) => { communityMvp = v; }, configurable: true, enumerable: true },
   communityComposerType: { get: () => communityComposerType, set: (v) => { communityComposerType = v; }, configurable: true, enumerable: true },
-  communityPosterBlob: { get: () => communityPosterBlob, set: (v) => { communityPosterBlob = v; }, configurable: true, enumerable: true },
-  communityPosterPreparing: { get: () => communityPosterPreparing, set: (v) => { communityPosterPreparing = v; }, configurable: true, enumerable: true },
   COMMUNITY_SEEN_KEY: { get: () => COMMUNITY_SEEN_KEY, set: (v) => { COMMUNITY_SEEN_KEY = v; }, configurable: true, enumerable: true },
   COMMUNITY_EMOJIS: { get: () => COMMUNITY_EMOJIS, set: (v) => { COMMUNITY_EMOJIS = v; }, configurable: true, enumerable: true },
 });

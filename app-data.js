@@ -11,7 +11,7 @@
 
 import { buildHouseAdCardDocument, buildHouseAdImageDocument, houseAdKind, houseAdLoop, houseAdWithCurtain, watchHouseAdFrame } from './house-ad-html5.js';
 import { R2_WORKER_URL, STARTUP_DATA_URL, STATIC_DATA_URL, agenciesCache, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyNextCursor, dedicatedVacancyPageSize, employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyNextCursor, generalVacancyPageSize, initials, isAdmin, managerMode, managerPendingToken, rebuildPublicListingSlugs, set_agenciesCache, set_branchesCache, set_dedicatedVacancyCounts, set_dedicatedVacancyCountsLoaded, set_dedicatedVacancyNextCursor, set_employerManagerPendingToken, set_employersCache, set_generalVacancyCount, set_generalVacancyCountLoaded, set_generalVacancyNextCursor, set_managerPendingToken, set_staticVacanciesCache, set_vacanciesCache, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
-import { filterAndRenderCached, loadPosterFeed, verifiedBadge } from './app-cards.js';
+import { filterAndRenderCached, loadCvPicFeed, verifiedBadge } from './app-cards.js';
 import { getPoolCandidateCount, openPostJobSheet, poolCache, poolCandidateCount, poolLoaded, set_poolCandidateCount } from './app-sheets.js';
 import { renderRestoredScreenContent, setRetryBanner, showToast, vacancyOverviewExtraRows } from './app-ui.js';
 import { enterManagerMode, renderManagerMode, renderSmartManager } from './app-manager.js';
@@ -298,9 +298,9 @@ export function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-candidates-top', 'candidates', 'top');
   renderHouseAdSlot('house-ad-candidates-middle', 'candidates', 'middle');
   renderHouseAdSlot('house-ad-candidates-bottom', 'candidates', 'bottom');
-  renderHouseAdSlot('house-ad-posters-top', 'posters', 'top');
-  renderHouseAdSlot('house-ad-posters-middle', 'posters', 'middle');
-  renderHouseAdSlot('house-ad-posters-bottom', 'posters', 'bottom');
+  renderHouseAdSlot('house-ad-cvpics-top', 'cvpics', 'top');
+  renderHouseAdSlot('house-ad-cvpics-middle', 'cvpics', 'middle');
+  renderHouseAdSlot('house-ad-cvpics-bottom', 'cvpics', 'bottom');
 }
 var houseAdsLoadedAt = 0;
 export async function loadHouseAds() {
@@ -332,35 +332,6 @@ export function trackHouseAdEvent(id, eventName) {
       body: JSON.stringify({ id: id, event: eventName }), keepalive: true
     }).catch(function(){});
   } catch(e) {}
-}
-
-export async function getManagedPosters() {
-  // Managed campaign posters are not part of the D1 mirror yet. Keep this
-  // public bundle Cloudflare-only rather than issuing a Supabase fallback.
-  return [];
-}
-export function renderManagedPoster(poster, targetId) {
-  var target = document.getElementById(targetId);
-  if (!target) return;
-  if (!poster || !poster.image_url) { target.hidden = true; target.innerHTML = ''; return; }
-  target.hidden = false;
-  target.innerHTML = '<img loading="lazy" decoding="async" src="'+escapeHtml(poster.image_url)+'" alt="'+escapeHtml(poster.title || '')+'" onerror="this.closest(\'.managed-poster\').hidden=true">' +
-    ((poster.title || poster.subtitle) ? '<div class="managed-poster-copy">'+(poster.title?'<strong>'+escapeHtml(poster.title)+'</strong>':'')+(poster.subtitle?'<span>'+escapeHtml(poster.subtitle)+'</span>':'')+'</div>' : '');
-}
-export function renderManagedPosters(posters) {
-  var target = document.getElementById('poster-managed-poster');
-  if (!target) return;
-  posters = (posters || []).filter(function(p){ return p && p.image_url; });
-  if (!posters.length) {
-    target.innerHTML = '<div class="poster-empty">Campaign posters will appear here soon.</div>';
-    return;
-  }
-  // The page intentionally displays one poster at a time. Admin ordering controls
-  // which active poster is shown, while the fixed frame prevents layout shifts.
-  var p = posters[0];
-  var label = p.audience === 'employers' ? 'For Employers' : 'For Candidates';
-  target.innerHTML = '<article class="managed-poster poster-page-card"><img loading="lazy" decoding="async" src="'+escapeHtml(p.image_url)+'" alt="'+escapeHtml(p.title || label+' campaign poster')+'" onerror="this.closest(\'.poster-page-card\').remove()">'+
-    '<div class="managed-poster-copy"><strong>'+escapeHtml(p.title || label)+'</strong>'+(p.subtitle?'<span>'+escapeHtml(p.subtitle)+'</span>':'')+'</div></article>';
 }
 
 // CV Box is deliberately loaded from a live endpoint, never from startup.json,
@@ -696,32 +667,34 @@ document.addEventListener('pause', function(e){
 export function openVacancyLockedSheet() { openPostJobSheet(); }
 export function openEmployerLockedSheet() { openPostJobSheet(); }
 
-// ----- Employer posters (swipeable poster feed) -----
-export var posterTotalCount = null;
-export function updatePosterStat() {
-  var el = document.getElementById('stat-posters');
-  if (el && posterTotalCount !== null) el.textContent = posterTotalCount;
+// ----- CV pictures -----
+export var cvPicTotalCount = null;
+export function updateCvPicStat() {
+  var el = document.getElementById('stat-cvpics');
+  if (el && cvPicTotalCount !== null) el.textContent = cvPicTotalCount;
 }
-export async function getEmployerPosters() {
+export async function getCvPictures() {
   try {
+    // NOTE: /api/posters is the Worker's existing route for the public image feed
+    // (backed by the employer_posters table). It now serves CV pictures.
     var response = await fetch(R2_WORKER_URL + '/api/posters', {
       method: 'GET', headers: { Accept: 'application/json' }
     });
-    if (!response.ok) throw new Error('Poster Worker request failed');
+    if (!response.ok) throw new Error('CV picture request failed');
     var payload = await response.json();
     var data = Array.isArray(payload.posters) ? payload.posters : [];
     // Real total (not capped by the 50-row feed limit) for the home stat card.
-    posterTotalCount = typeof payload.count === 'number' ? payload.count : data.length;
-    updatePosterStat();
+    cvPicTotalCount = typeof payload.count === 'number' ? payload.count : data.length;
+    updateCvPicStat();
     // The live count can differ from whatever was restored from cache —
     // re-sort in case it now belongs in a different spot (updateStats()'s
     // own sort already ran before this resolved, since this fetch is
     // deliberately deferred past the first paint).
     if (typeof reorderStatCardsByCount === 'function') reorderStatCardsByCount();
-    // loadAll() fires loadPosterFeed() WITHOUT awaiting it (posters are
+    // loadAll() fires loadCvPicFeed() WITHOUT awaiting it (CV pictures are
     // "non-critical to the first render"), then calls saveDataCache() on
     // the very next line — so the cache payload it writes is serialized
-    // before this query has any chance to resolve, and posterTotalCount is
+    // before this query has any chance to resolve, and cvPicTotalCount is
     // still null/stale at that point. Persisting the cache again here,
     // now that the real count is known, is what actually lets the NEXT
     // visit's instant-paint-from-cache pass restore a valid number instead
@@ -729,7 +702,7 @@ export async function getEmployerPosters() {
     // nothing correct to save in the first place.
     if (typeof saveDataCache === 'function') saveDataCache();
     return data;
-  } catch(e) { console.error('getEmployerPosters', e); return []; }
+  } catch(e) { console.error('getCvPictures', e); return []; }
 }
 
 // ----- Vacancies -----
@@ -1113,7 +1086,7 @@ export async function saveDataCache() {
       : cachedVacancyTotal,
     employers: employersCache,
     poolCount: poolCandidateCount,
-    posterCount: posterTotalCount,
+    cvPicCount: cvPicTotalCount,
     savedAt: Date.now()
   };
   try {
@@ -1149,10 +1122,10 @@ export async function loadDataCache() {
   cachedVacancyTotal = (typeof d.vacancyTotal === 'number') ? d.vacancyTotal : null;
   set_employersCache( d.employers || []);
   set_poolCandidateCount( (typeof d.poolCount === 'number') ? d.poolCount : 0);
-  // Restore the cached poster total too, so the Posters stat card paints
+  // Restore the cached CV picture total too, so the CV Pictures stat card paints
   // instantly alongside the others instead of sitting on its placeholder
-  // until the (deliberately deferred) live poster fetch resolves.
-  if (typeof d.posterCount === 'number') posterTotalCount = d.posterCount;
+  // until the (deliberately deferred) live CV picture fetch resolves.
+  if (typeof d.cvPicCount === 'number') cvPicTotalCount = d.cvPicCount;
   lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
   return true;
 }
@@ -1387,8 +1360,8 @@ export async function loadAll(options) {
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   if (startup && !window.__saStaticData) refreshSecondaryStartupData();
-  // Poster feed and first-party ads are non-critical to the first render.
-  if (typeof loadPosterFeed === 'function') loadPosterFeed();
+  // CV picture feed and first-party ads are non-critical to the first render.
+  if (typeof loadCvPicFeed === 'function') loadCvPicFeed();
   loadHouseAds();
   saveDataCache();
   scheduleDeferredVacancyNotes(startup);
@@ -1433,7 +1406,7 @@ export function setVacancyStat(el, total) {
 export function updateStats() {
   updateAdsStat();
   document.getElementById('stat-agencies').textContent = agenciesCache.length;
-  updatePosterStat();
+  updateCvPicStat();
   var vacancyStat = document.getElementById('stat-vacancies');
   if (vacancyStat) {
     if (window.__saStaticData && window.__saStaticData.counts && typeof window.__saStaticData.counts.vacancies === 'number') {
@@ -1457,7 +1430,7 @@ export function updateStats() {
   reorderStatCardsByCount();
 }
 
-// Keeps the home-screen stat cards (Agencies / Posters / Vacancies /
+// Keeps the home-screen stat cards (Agencies / CV Pictures / Vacancies /
 // Employers / Candidates) sorted so the highest count always leads,
 // lowest trails — re-run every time updateStats() refreshes the numbers.
 // Uses a lightweight FLIP animation (record position -> reorder the DOM ->
@@ -1592,9 +1565,6 @@ Object.assign(window, {
   mountHouseAd,
   loadHouseAds,
   trackHouseAdEvent,
-  getManagedPosters,
-  renderManagedPoster,
-  renderManagedPosters,
   getPublicPoolCandidatesFromWorker,
   upsertEmployer,
   removeEmployer,
@@ -1620,8 +1590,8 @@ Object.assign(window, {
   onTrackEnded,
   openVacancyLockedSheet,
   openEmployerLockedSheet,
-  updatePosterStat,
-  getEmployerPosters,
+  updateCvPicStat,
+  getCvPictures,
   parseVacancyClosingDate,
   isVacancyExpired,
   filterExpiredVacancies,
@@ -1683,7 +1653,7 @@ Object.defineProperties(window, {
   todayTrack: { get: () => todayTrack, set: (v) => { todayTrack = v; }, configurable: true, enumerable: true },
   trackAudio: { get: () => trackAudio, set: (v) => { trackAudio = v; }, configurable: true, enumerable: true },
   trackIsPlaying: { get: () => trackIsPlaying, set: (v) => { trackIsPlaying = v; }, configurable: true, enumerable: true },
-  posterTotalCount: { get: () => posterTotalCount, set: (v) => { posterTotalCount = v; }, configurable: true, enumerable: true },
+  cvPicTotalCount: { get: () => cvPicTotalCount, set: (v) => { cvPicTotalCount = v; }, configurable: true, enumerable: true },
   DEDICATED_VACANCY_FOLDER_SOURCES: { get: () => DEDICATED_VACANCY_FOLDER_SOURCES, set: (v) => { DEDICATED_VACANCY_FOLDER_SOURCES = v; }, configurable: true, enumerable: true },
   DATA_CACHE_DB: { get: () => DATA_CACHE_DB, set: (v) => { DATA_CACHE_DB = v; }, configurable: true, enumerable: true },
   DATA_CACHE_STORE: { get: () => DATA_CACHE_STORE, set: (v) => { DATA_CACHE_STORE = v; }, configurable: true, enumerable: true },

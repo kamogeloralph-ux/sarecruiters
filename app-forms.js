@@ -11,7 +11,7 @@
 
 import { R2_WORKER_URL, agenciesCache, branchesCache, editingId, employerManagerMode, employersCache, escapeHtml, genToken, isAdmin, managerAgency, managerEmployer, managerMode, publicEmployerRegistrationOpen, publicVacancyPostingOpen, saAuthUser, setManagerToken, set_editingId, set_vacanciesCache, supabaseClient, vacanciesCache } from './app-core.js';
 import { loadAll, openEmployerLockedSheet, openVacancyLockedSheet, readLocal, removeAgency, removeBranch, removeEmployer, removeVacancy, saveDataCache, sortVacancies, upsertAgency, upsertBranch, upsertEmployer, upsertVacancy, writeThroughD1Mirror } from './app-data.js';
-import { loadPosterFeed, renderAllEmployersList } from './app-cards.js';
+import { loadCvPicFeed, renderAllEmployersList } from './app-cards.js';
 import { closeSheet, getTurnstileResponse, renderTurnstile, resetTurnstile, showEmployerManagerLinkSheet, submitViaWorker, turnstileConfigured } from './app-sheets.js';
 import { showToast } from './app-ui.js';
 import { renderManagerMode } from './app-manager.js';
@@ -266,12 +266,12 @@ export function handleEmployerPhoto(evt) {
   };
   reader.readAsDataURL(file);
 }
-// ----- Employer poster upload (full recruitment-ad image) -----
-// Unlike handleEmployerPhoto, this keeps the original aspect ratio (posters
-// are portrait, like a printed flyer) instead of square-cropping.
+// ----- CV picture upload (a job seeker's CV as an image) -----
+// Unlike handleEmployerPhoto, this keeps the original aspect ratio (a CV is
+// portrait, like a printed page) instead of square-cropping.
 // done(error, blob) is optional: it lets callers react to unreadable images instead of
-// leaving the preview stuck on "Preparing…" and block submits while a poster is processing.
-export function processPosterPhoto(evt, blobKey, previewId, fallbackId, done) {
+// leaving the preview stuck on "Preparing…" and block submits while a picture is processing.
+export function processCvPicPhoto(evt, blobKey, previewId, fallbackId, done) {
   var file = evt.target.files[0];
   if (!file) return;
   function finish(error, blob) {
@@ -288,7 +288,7 @@ export function processPosterPhoto(evt, blobKey, previewId, fallbackId, done) {
     var img = new Image();
     img.onerror = function() { finish(new Error('decode failed')); };
     img.onload = function() {
-      var maxW = 1080;
+      var maxW = 1600; // keep small CV text readable
       var scale = Math.min(1, maxW / img.width);
       var canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(img.width * scale));
@@ -312,91 +312,46 @@ export function processPosterPhoto(evt, blobKey, previewId, fallbackId, done) {
   };
   reader.readAsDataURL(file);
 }
-export function handlePosterPhoto(evt) { processPosterPhoto(evt, 'pendingPosterBlob', 'poster-preview', 'poster-fallback'); }
-export function handlePublicPosterPhoto(evt) { processPosterPhoto(evt, 'publicPosterBlob', 'public-poster-preview', 'public-poster-fallback'); }
-export async function submitPublicPoster() {
-  if (!window.publicPosterBlob) { showToast('Choose a poster image first.'); return; }
-  var token = getTurnstileResponse('public-poster-turnstile');
+export function handlePublicCvPicPhoto(evt) { processCvPicPhoto(evt, 'publicCvPicBlob', 'public-cvpic-preview', 'public-cvpic-fallback'); }
+export async function submitPublicCvPic() {
+  if (!window.publicCvPicBlob) { showToast('Choose your CV picture first.'); return; }
+  var caption = ((document.getElementById('public-cvpic-caption') || {}).value || '').trim();
+  if (caption.length < 3) { showToast('Add your name and the job you are looking for.'); return; }
+  var consent = document.getElementById('public-cvpic-consent');
+  if (consent && !consent.checked) { showToast('Please confirm you are happy for this CV picture to be public.'); return; }
+  var token = getTurnstileResponse('public-cvpic-turnstile');
   if (turnstileConfigured() && !token) { showToast('Please complete the spam check first.'); return; }
-  var caption = ((document.getElementById('public-poster-caption') || {}).value || '').trim();
-  var submit = document.getElementById('public-poster-submit');
+  var submit = document.getElementById('public-cvpic-submit');
   if (submit) { submit.disabled = true; submit.textContent = 'Publishing…'; }
   try {
-    var query = caption ? '?caption=' + encodeURIComponent(caption) : '';
+    // The caption is always sent, so the Worker never has to guess a title from the image.
+    var query = '?caption=' + encodeURIComponent(caption.slice(0, 120));
     var headers = { 'Content-Type': 'image/jpeg' };
     if (token) headers['cf-turnstile-response'] = token;
-    var res = await fetch(R2_WORKER_URL + '/api/submit/poster' + query, { method: 'POST', headers: headers, body: window.publicPosterBlob });
+    var res = await fetch(R2_WORKER_URL + '/api/submit/poster' + query, { method: 'POST', headers: headers, body: window.publicCvPicBlob });
     var data = await res.json().catch(function(){ return {}; });
-    if (!res.ok) { showToast(data.error || 'Could not publish poster. Please try again.'); return; }
-    closeSheet('public-poster-overlay');
-    showToast('Poster posted successfully');
-    if (typeof loadPosterFeed === 'function') loadPosterFeed();
+    if (!res.ok) { showToast(data.error || 'Could not post your CV picture. Please try again.'); return; }
+    closeSheet('public-cvpic-overlay');
+    showToast('Your CV picture is now live');
+    if (typeof loadCvPicFeed === 'function') loadCvPicFeed();
   } catch (e) { showToast('Could not reach SA Recruiters — please try again.'); }
-  finally { if (submit) { submit.disabled = false; submit.textContent = 'Post poster'; } }
+  finally { if (submit) { submit.disabled = false; submit.textContent = 'Post my CV picture'; } }
 }
-export function openPublicPosterSheet() {
-  window.publicPosterBlob = null;
-  var preview = document.getElementById('public-poster-preview');
-  var fallback = document.getElementById('public-poster-fallback');
+export function openPublicCvPicSheet() {
+  window.publicCvPicBlob = null;
+  var preview = document.getElementById('public-cvpic-preview');
+  var fallback = document.getElementById('public-cvpic-fallback');
   if (preview) { preview.src = ''; preview.style.display = 'none'; }
   if (fallback) fallback.style.display = 'flex';
-  var caption = document.getElementById('public-poster-caption');
+  var caption = document.getElementById('public-cvpic-caption');
   if (caption) caption.value = '';
-  var overlay = document.getElementById('public-poster-overlay');
+  var consent = document.getElementById('public-cvpic-consent');
+  if (consent) consent.checked = false;
+  var overlay = document.getElementById('public-cvpic-overlay');
   if (overlay) overlay.classList.add('open');
-  renderTurnstile('public-poster-turnstile', 'public-poster-overlay');
+  renderTurnstile('public-cvpic-turnstile', 'public-cvpic-overlay');
 }
 
-export async function uploadPosterIfAny(caption) {
-  if (!window.pendingPosterBlob) return null;
-  try {
-    var url = R2_WORKER_URL + '/api/upload/employer-poster' + (caption ? '?caption=' + encodeURIComponent(caption) : '');
-    var res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'image/jpeg' },
-      body: window.pendingPosterBlob
-    });
-    var data = await res.json();
-    if (!res.ok) { console.error('poster upload', data && data.error); showToast(data && data.error || 'Could not upload poster.'); return null; }
-    return data.url ? { url: data.url, caption: data.caption || '' } : null;
-  } catch(e) { console.error('poster upload', e); showToast('Could not upload poster — check your connection.'); return null; }
-}
-
-export function openPosterUploadSheet(employerId) {
-  window.pendingPosterEmployerId = employerId || null;
-  window.pendingPosterBlob = null;
-  var preview = document.getElementById('poster-preview');
-  var fallback = document.getElementById('poster-fallback');
-  var caption = document.getElementById('poster-caption');
-  if (preview) { preview.src = ''; preview.style.display = 'none'; }
-  if (fallback) fallback.style.display = 'flex';
-  if (caption) caption.value = '';
-  var overlay = document.getElementById('poster-upload-overlay');
-  if (overlay) overlay.classList.add('open');
-}
-
-export async function savePoster() {
-  if (!window.pendingPosterBlob) { alert('Choose a poster image first.'); return; }
-  var enteredCaption = ((document.getElementById('poster-caption') || {}).value || '').trim();
-  var uploadedPoster = await uploadPosterIfAny(enteredCaption);
-  if (!uploadedPoster) return;
-  var payload = {
-    employer_id: window.pendingPosterEmployerId || null,
-    image_url: uploadedPoster.url,
-    caption: enteredCaption || uploadedPoster.caption || 'Vacancy poster'
-  };
-  var posterMutation = supabaseClient.from('employer_posters').insert([payload]);
-  var result = isAdmin ? await posterMutation.select('*').single() : await posterMutation;
-  if (result.error) {
-    console.error('poster save', result.error);
-    showToast('Could not save poster. Check ADD_EMPLOYER_POSTERS.sql has been run.');
-    return;
-  }
-  if (isAdmin && result.data) await writeThroughD1Mirror('employer_posters', result.data);
-  closeSheet('poster-upload-overlay');
-  showToast('Poster published');
-  if (typeof loadPosterFeed === 'function') loadPosterFeed();
-}
 
 export async function saveEmployer() {
   var name = document.getElementById('e-name').value.trim();
@@ -1184,14 +1139,10 @@ Object.assign(window, {
   deleteAgencyById,
   openEmployerForm,
   handleEmployerPhoto,
-  processPosterPhoto,
-  handlePosterPhoto,
-  handlePublicPosterPhoto,
-  submitPublicPoster,
-  openPublicPosterSheet,
-  uploadPosterIfAny,
-  openPosterUploadSheet,
-  savePoster,
+  processCvPicPhoto,
+  handlePublicCvPicPhoto,
+  submitPublicCvPic,
+  openPublicCvPicSheet,
   saveEmployer,
   deleteEmployerById,
   openBranchSheet,

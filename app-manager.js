@@ -11,7 +11,7 @@
 
 import { R2_WORKER_URL, agenciesCache, buildManagerLink, employerManagerPendingToken, escapeHtml, getManagerToken, initials, isAdmin, managerAgency, managerMode, managerPendingToken, publicAgencySlug, publicVacancySlug, set_managerAgency, set_managerMode, set_managerPendingToken, trackEvent, vacanciesCache } from './app-core.js';
 import { branchesFor, vacanciesFor, vacancyScreenStateMarkup } from './app-data.js';
-import { ICON_LINK, IS, postersCache, verifiedBadge } from './app-cards.js';
+import { ICON_LINK, IS, cvPicsCache, verifiedBadge } from './app-cards.js';
 import { openBranchSheet, set_pendingVacancyAgency } from './app-forms.js';
 import { copyText } from './app-sheets.js';
 import { goBackToHome, showToast } from './app-ui.js';
@@ -126,26 +126,23 @@ export function shareVacancy(vacancyId) {
     showToast('Link copied — paste it into a message');
   }
 }
-/* Share a vacancy poster. Preferred: the poster image itself through the OS
-   share sheet (instant, looks right in WhatsApp) with the public poster page
-   link in the text. Falls back to link-only share, then copy-link. */
-export function posterPublicSlug(p) {
-  var base = String(p.caption || 'vacancy-poster').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'vacancy-poster';
-  return base + '-' + String(p.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toLowerCase();
-}
-export async function sharePoster(posterId) {
-  var p = (typeof postersCache !== 'undefined' ? postersCache : []).find(function(x){ return String(x.id) === String(posterId); });
-  if (!p) { showToast('Poster not found'); return; }
-  var link = window.location.origin + '/poster/' + posterPublicSlug(p) + '/';
-  var title = (p.caption || 'Vacancy poster') + ' — SA Recruiters';
-  var text = (p.caption || 'Vacancy poster') + ' — see it on SA Recruiters: ' + link;
-  trackEvent('poster_share', 'poster', posterId);
+/* Share a CV picture. Preferred: the picture itself through the OS share
+   sheet (instant, looks right in WhatsApp) with a link to the CV Pictures
+   screen in the text. Falls back to link-only share, then copy-link.
+   There is deliberately no per-person public web page: a CV carries personal
+   contact details, so it only lives inside the app. */
+export async function shareCvPic(cvPicId) {
+  var p = (typeof cvPicsCache !== 'undefined' ? cvPicsCache : []).find(function(x){ return String(x.id) === String(cvPicId); });
+  if (!p) { showToast('CV picture not found'); return; }
+  var link = window.location.origin + '/?section=cv-pictures';
+  var title = (p.caption || 'CV picture') + ' — SA Recruiters';
+  var text = (p.caption || 'CV picture') + ' — see it on SA Recruiters: ' + link;
+  trackEvent('cvpic_share', 'cvpic', cvPicId);
   if (navigator.share) {
     try {
       var res = await fetch(p.image_url);
       var blob = await res.blob();
-      var file = new File([blob], 'vacancy-poster.jpg', { type: blob.type || 'image/jpeg' });
+      var file = new File([blob], 'cv-picture.jpg', { type: blob.type || 'image/jpeg' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ title: title, text: text, files: [file] });
         return;
@@ -502,8 +499,7 @@ Object.assign(window, {
   shareManagerLink,
   shareAgency,
   shareVacancy,
-  posterPublicSlug,
-  sharePoster,
+  shareCvPic,
   openManagerLink,
   verifyManagerTokenServer,
   showManagerStatus,

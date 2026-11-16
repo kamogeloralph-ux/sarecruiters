@@ -10,9 +10,9 @@
  */
 
 import { agenciesCache, analyticsSessionId, branchesCache, employersCache, escapeHtml, guestViewsRemaining, initials, isAdmin, publicAgencySlug, publicVacancySlug, registerVacancyOpen, saAuthUser, savedSet, staticVacanciesCache, supabaseClient, syncSavedVacancy, trackEvent, vacanciesCache } from './app-core.js';
-import { branchesFor, getEmployerPosters, isVacancyExpired, renderHouseAdSlots, vacanciesFor, vacanciesForEmployer, vacancyScreenStateMarkup } from './app-data.js';
+import { branchesFor, getCvPictures, isVacancyExpired, renderHouseAdSlots, vacanciesFor, vacanciesForEmployer, vacancyScreenStateMarkup } from './app-data.js';
 import { closeSheet } from './app-sheets.js';
-import { homeSourceVacancies, renderHomeFeaturedVacancy, renderHomeFeed, showAllVacancies, showToast, syncPreciseLocationChip } from './app-ui.js';
+import { homeSourceVacancies, renderHomeFeed, showAllVacancies, showToast, syncPreciseLocationChip } from './app-ui.js';
 
 
 // ===== Shared verified badge (one look for every section) =====
@@ -158,7 +158,7 @@ export function hubContact(a) {
 export function hubCountBadge(icon, count, noun) {
   var label = count + ' ' + noun + (count === 1 ? '' : noun === 'branch' ? 'es' : 's');
   if (noun === 'vacancy') label = count + (count === 1 ? ' vacancy' : ' vacancies');
-  var employerClass = (noun === 'job' || noun === 'poster') ? ' hub-employer-count' : '';
+  var employerClass = (noun === 'job') ? ' hub-employer-count' : '';
   return '<span class="hub-branch-badge' + employerClass + '" title="' + label + '" aria-label="' + label + '"><span class="hub-branch-pin" aria-hidden="true">' + icon + '</span><span>' + count + '</span></span>';
 }
 
@@ -169,10 +169,8 @@ export function hubCountBadge(icon, count, noun) {
 // main Vacancies list/section.
 export function employerHubCard(e) {
   var vCount = typeof e.vacancy_count === 'number' ? e.vacancy_count : vacanciesForEmployer(e.id).length;
-  var pCount = postersForEmployer(e.id).length;
   var verifiedCheck = e.verified ? '' + verifiedBadge('Verified') + '' : '';
   var jobsBadge = vCount > 0 ? hubCountBadge('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>', vCount, 'job') : '';
-  var postersBadge = pCount > 0 ? hubCountBadge('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>', pCount, 'poster') : '';
   return '' +
   '<div class="hub-card" id="emphub-' + e.id + '">' +
     '<button class="hub-summary" data-ripple onclick="toggleEmpHub(\'' + e.id + '\')" aria-expanded="false">' +
@@ -182,14 +180,12 @@ export function employerHubCard(e) {
         (e.industry ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Industry:</span> ' + escapeHtml(e.industry) + '</div>' : (e.location ? '<div class="hub-summary-desc"><span style="color:var(--text);font-weight:600">Location:</span> ' + escapeHtml(e.location) + '</div>' : '')) +
       '</div>' +
       jobsBadge +
-      postersBadge +
       '<span class="chevron">' + ICON_CHEVRON + '</span>' +
     '</button>' +
     '<div class="hub-panel" id="emphub-panel-' + e.id + '">' +
       '<div class="hub-panel-inner">' +
         '<div class="hub-tabs">' +
           '<button class="hub-tab active" data-ripple onclick="switchEmpHubTab(this,\'' + e.id + '\',\'vacancies\')">Vacancies</button>' +
-          '<button class="hub-tab" data-ripple onclick="switchEmpHubTab(this,\'' + e.id + '\',\'posters\')">Posters' + (pCount ? ' (' + pCount + ')' : '') + '</button>' +
           '<button class="hub-tab" data-ripple onclick="switchEmpHubTab(this,\'' + e.id + '\',\'contact\')">Contact</button>' +
         '</div>' +
         '<div class="hub-tab-content" data-employer="' + e.id + '">' + employerHubVacancies(e) + '</div>' +
@@ -213,22 +209,7 @@ export function employerHubVacancies(e) {
   }
   // Employer vacancies use the same direct card flow as the main vacancies view.
   if (isAdmin) {
-    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openEmployerVacancySheet(\'' + e.id + '\')">+ Post vacancy</button>' +
-      '<button class="hub-add-btn" data-ripple onclick="openPosterUploadSheet(\'' + e.id + '\')">+ Upload poster</button></div>';
-  }
-  return html;
-}
-
-// Posters are kept apart from vacancies: they have their own tab and never
-// appear in the Vacancies tab above.
-export function employerHubPosters(e) {
-  var list = postersForEmployer(e.id);
-  var html = '<div class="poster-list" style="padding:4px 0;">';
-  if (!list.length) html += '<div class="poster-feed-empty">No posters from this employer yet.</div>';
-  else html += list.map(posterCard).join('');
-  html += '</div>';
-  if (isAdmin) {
-    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openPosterUploadSheet(\'' + e.id + '\')">+ Upload poster</button></div>';
+    html += '<div class="hub-admin-row"><button class="hub-add-btn" data-ripple onclick="openEmployerVacancySheet(\'' + e.id + '\')">+ Post vacancy</button></div>';
   }
   return html;
 }
@@ -276,7 +257,6 @@ window.switchEmpHubTab = function(btn, employerId, tab) {
   var target = card ? card.querySelector('.hub-tab-content') : null;
   if (!target) return;
   if (tab === 'vacancies') target.innerHTML = employerHubVacancies(e);
-  if (tab === 'posters') target.innerHTML = employerHubPosters(e);
   if (tab === 'contact') target.innerHTML = employerHubContact(e);
 };
 
@@ -905,63 +885,54 @@ export function renderSaved() {
   }).join('');
 }
 
-// ----- Employer posters (swipeable poster feed) -----
-// A poster is a full recruitment-ad image an employer/agency uploads,
-// distinct from the small company_photo logo shown on a vacancyCard.
-// Posters render as a vertical list on their own screen (screen-allposters),
-// separate from vacancies (see .poster-list in styles.css).
-export var postersCache = [];
-export function postersForEmployer(employerId) {
-  return postersCache.filter(function(p){ return p.employer_id && String(p.employer_id) === String(employerId); });
-}
+// ----- CV pictures feed -----
+// A CV picture is an image of a job seeker's CV (or "available for work" card)
+// that they post publicly so employers can see it. It renders as a vertical
+// list on its own screen (screen-allcvpics), separate from vacancies.
+export var cvPicsCache = [];
 
-export function posterCard(p) {
-  var caption = p.caption ? '<div class="poster-caption-text">' + escapeHtml(p.caption) + '</div>' : '<div class="poster-caption-text"></div>';
-  return '<div class="poster-card" data-poster-id="' + escapeHtml(p.id) + '" ' +
-    'onclick="openPosterLightbox(\'' + escapeHtml(p.image_url) + '\')">' +
-    '<img src="' + escapeHtml(p.image_url) + '" alt="' + escapeHtml(p.caption || 'Vacancy poster') + '" loading="lazy" decoding="async" ' +
-    'onerror="this.closest(\'.poster-card\').remove()">' +
-    '<div class="poster-caption">' + caption +
-    '<button class="vac-share" type="button" onclick="event.stopPropagation();sharePoster(\'' + escapeHtml(p.id) + '\')" aria-label="Share poster">' + SHARE_SVG + '</button>' +
+export function cvPicCard(p) {
+  var caption = p.caption ? '<div class="cvpic-caption-text">' + escapeHtml(p.caption) + '</div>' : '<div class="cvpic-caption-text"></div>';
+  return '<div class="cvpic-card" data-cvpic-id="' + escapeHtml(p.id) + '" ' +
+    'onclick="openCvPicLightbox(\'' + escapeHtml(p.image_url) + '\')">' +
+    '<img src="' + escapeHtml(p.image_url) + '" alt="' + escapeHtml(p.caption || 'CV picture') + '" loading="lazy" decoding="async" ' +
+    'onerror="this.closest(\'.cvpic-card\').remove()">' +
+    '<div class="cvpic-caption">' + caption +
+    '<button class="vac-share" type="button" onclick="event.stopPropagation();shareCvPic(\'' + escapeHtml(p.id) + '\')" aria-label="Share CV picture">' + SHARE_SVG + '</button>' +
     '</div></div>';
 }
 
-export function renderPosterFeed(posters) {
-  var container = document.getElementById('poster-feed');
-  postersCache = posters || [];
+export function renderCvPicFeed(items) {
+  var container = document.getElementById('cvpic-feed');
+  cvPicsCache = items || [];
   if (!container) return;
-  var q = ((document.getElementById('allposters-search') || {}).value || '').trim().toLowerCase();
-  var list = q ? postersCache.filter(function(p){ return (p.caption || '').toLowerCase().indexOf(q) !== -1; }) : postersCache;
+  var q = ((document.getElementById('allcvpics-search') || {}).value || '').trim().toLowerCase();
+  var list = q ? cvPicsCache.filter(function(p){ return (p.caption || '').toLowerCase().indexOf(q) !== -1; }) : cvPicsCache;
   if (!list.length) {
-    container.innerHTML = '<div class="poster-feed-empty">' + (q ? 'No posters match your search.' : 'No posters right now — check back soon.') + '</div>';
+    container.innerHTML = '<div class="cvpic-feed-empty">' + (q ? 'No CV pictures match your search.' : 'No CV pictures yet — be the first to post yours.') + '</div>';
     return;
   }
   var middleAt = Math.max(1, Math.ceil(list.length / 2));
-  container.innerHTML = list.map(function(item, index){ return (index === middleAt ? '<div id="house-ad-posters-middle" class="house-ad-slot" hidden></div>' : '') + posterCard(item); }).join('');
+  container.innerHTML = list.map(function(item, index){ return (index === middleAt ? '<div id="house-ad-cvpics-middle" class="house-ad-slot" hidden></div>' : '') + cvPicCard(item); }).join('');
   renderHouseAdSlots();
 }
 
-export async function loadPosterFeed() {
-  var posters = await getEmployerPosters();
-  renderPosterFeed(posters);
-  if (typeof renderHomeFeaturedVacancy === 'function') renderHomeFeaturedVacancy(homeSourceVacancies());
-  // Employer cards show a poster count; refresh them once posters arrive
-  // (skipped while a card is expanded so it doesn't collapse under the user).
-  var empScreen = document.getElementById('screen-allemployers');
-  if (empScreen && empScreen.classList.contains('active') && !empScreen.querySelector('.hub-card.open')) renderAllEmployersList();
+export async function loadCvPicFeed() {
+  var items = await getCvPictures();
+  renderCvPicFeed(items);
 }
 
-window.openPosterLightbox = function(imageUrl) {
-  var overlay = document.getElementById('poster-lightbox-overlay');
+window.openCvPicLightbox = function(imageUrl) {
+  var overlay = document.getElementById('cvpic-lightbox-overlay');
   if (!overlay) return;
-  var img = document.getElementById('poster-lightbox-img');
+  var img = document.getElementById('cvpic-lightbox-img');
   if (img) img.src = imageUrl;
   overlay.classList.add('open');
-  trackEvent('poster_view', 'poster', imageUrl);
+  trackEvent('cvpic_view', 'cvpic', imageUrl);
 };
 
-window.closePosterLightbox = function() {
-  var overlay = document.getElementById('poster-lightbox-overlay');
+window.closeCvPicLightbox = function() {
+  var overlay = document.getElementById('cvpic-lightbox-overlay');
   if (overlay) overlay.classList.remove('open');
 };
 
@@ -983,7 +954,6 @@ Object.assign(window, {
   hubCountBadge,
   employerHubCard,
   employerHubVacancies,
-  employerHubPosters,
   employerHubContact,
   rememberCvBoxIdentity,
   cvBoxMemberExists,
@@ -1008,10 +978,9 @@ Object.assign(window, {
   vacDetRow,
   vacGradFor,
   renderSaved,
-  postersForEmployer,
-  posterCard,
-  renderPosterFeed,
-  loadPosterFeed,
+  cvPicCard,
+  renderCvPicFeed,
+  loadCvPicFeed,
 });
 Object.defineProperties(window, {
   VERIFIED_SEAL_SVG: { get: () => VERIFIED_SEAL_SVG, set: (v) => { VERIFIED_SEAL_SVG = v; }, configurable: true, enumerable: true },
@@ -1047,5 +1016,5 @@ Object.defineProperties(window, {
   VAC_GRADS: { get: () => VAC_GRADS, set: (v) => { VAC_GRADS = v; }, configurable: true, enumerable: true },
   VAC_ICONS: { get: () => VAC_ICONS, set: (v) => { VAC_ICONS = v; }, configurable: true, enumerable: true },
   SHARE_SVG: { get: () => SHARE_SVG, set: (v) => { SHARE_SVG = v; }, configurable: true, enumerable: true },
-  postersCache: { get: () => postersCache, set: (v) => { postersCache = v; }, configurable: true, enumerable: true },
+  cvPicsCache: { get: () => cvPicsCache, set: (v) => { cvPicsCache = v; }, configurable: true, enumerable: true },
 });

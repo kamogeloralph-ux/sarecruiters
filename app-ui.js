@@ -11,7 +11,7 @@
 
 import { R2_WORKER_URL, VAC_PAGE_SIZE, agenciesCache, agencyFolderDisplayPage, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyDisplayPage, dedicatedVacancyError, dedicatedVacancyFolder, dedicatedVacancyHasMore, dedicatedVacancyLoading, dedicatedVacancyPage, dedicatedVacancyPageSize, dedicatedVacancyQueryKey, dedicatedVacancyRequestId, dedicatedVacancyRows, employerManagerMode, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyDisplayPage, generalVacancyError, generalVacancyHasMore, generalVacancyLoading, generalVacancyPage, generalVacancyPageSize, generalVacancyQueryKey, generalVacancyRequestId, generalVacancyRows, guestQuotaState, isAdmin, managerMode, renderAuthUser, saAuthUser, set_agencyFolderDisplayPage, set_dedicatedVacancyDisplayPage, set_dedicatedVacancyError, set_dedicatedVacancyFolder, set_dedicatedVacancyHasMore, set_dedicatedVacancyLoading, set_dedicatedVacancyNextCursor, set_dedicatedVacancyPage, set_dedicatedVacancyQueryKey, set_dedicatedVacancyRequestId, set_dedicatedVacancyRows, set_generalVacancyDisplayPage, set_generalVacancyError, set_generalVacancyHasMore, set_generalVacancyLoading, set_generalVacancyNextCursor, set_generalVacancyPage, set_generalVacancyQueryKey, set_generalVacancyRequestId, set_generalVacancyRows, set_saAuthUser, signOutSaRecruiters, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
 import { DEDICATED_VACANCY_FOLDER_SOURCES, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
-import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, loadPosterFeed, mailLink, mapsLink, postersCache, renderAllEmployersList, renderPosterFeed, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
+import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, loadCvPicFeed, mailLink, mapsLink, cvPicsCache, renderAllEmployersList, renderCvPicFeed, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
 import { closeSheet, copyText, goPool, loadPoolCandidates, openMyCvBoxProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnNavTab, poolReturnScreen, renderPoolList } from './app-sheets.js';
 import { exitManagerMode } from './app-manager.js';
 import { exitEmployerManagerMode } from './app-manager-employer.js';
@@ -50,7 +50,7 @@ export var SA_ACTIVE_SCREEN_KEY = 'sa_active_screen_v1';
 export var SA_RESTORABLE_SCREENS = {
   home: true, account: true, saved: true, menu: true,
   allagencies: true, allbranches: true, allvacancies: true,
-  allemployers: true, allposters: true, allads: true, pool: true
+  allemployers: true, allcvpics: true, allads: true, pool: true
 };
 export function isRestorableScreen(name) {
   return !!SA_RESTORABLE_SCREENS[name];
@@ -279,59 +279,6 @@ export function homeVacancySourceMarkup() {
     }).join('') + '</div></section>';
 }
 
-function featuredVacancyApplyUrl(vacancy) {
-  var raw = String(vacancy && vacancy.link || '').trim();
-  if (!raw) return '';
-  try {
-    var url = new URL(raw, window.location.origin);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
-  } catch (e) { return ''; }
-}
-export function getDailyFeaturedVacancy(vacancies) {
-  var list = filterExpiredVacancies(Array.isArray(vacancies) ? vacancies : []).filter(function (vacancy) {
-    return vacancy && String(vacancy.title || '').trim() && featuredVacancyApplyUrl(vacancy);
-  }).slice().sort(function (a, b) {
-    var postedA = Date.parse(a.created_at || '') || 0;
-    var postedB = Date.parse(b.created_at || '') || 0;
-    return postedB - postedA || String(a.id || a.title).localeCompare(String(b.id || b.title));
-  });
-  if (!list.length) return null;
-  // Rotate among the 20 newest eligible roles so the feature stays fresh
-  // without changing several times during the same day.
-  list = list.slice(0, Math.min(20, list.length));
-  var now = new Date();
-  var day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
-  return list[((day % list.length) + list.length) % list.length];
-}
-export function renderHomeFeaturedVacancy(vacancies) {
-  var slot = document.getElementById('home-featured-poster-slot');
-  if (!slot) return;
-  var featured = getDailyFeaturedVacancy(vacancies);
-  if (!featured) {
-    slot.innerHTML = '<div class="poster-empty">No current vacancy with a direct application link is featured right now. Browse all vacancies and check back soon.</div>';
-    return;
-  }
-  var applyUrl = featuredVacancyApplyUrl(featured);
-  var applyHost = '';
-  try { applyHost = new URL(applyUrl).hostname.replace(/^www\./i, ''); } catch (e) { applyHost = 'the employer website'; }
-  var company = String(featured.company || 'South African employer');
-  var location = String(featured.location || 'South Africa');
-  var closing = '';
-  if (featured.closing_date) {
-    var closeDate = new Date(String(featured.closing_date).slice(0, 10) + 'T00:00:00Z');
-    closing = isNaN(closeDate.getTime()) ? String(featured.closing_date) : new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(closeDate);
-  }
-  var salary = String(featured.salary || '');
-  slot.innerHTML = '<a class="home-featured-vacancy" href="' + escapeHtml(applyUrl) + '" data-vacancy-id="' + escapeHtml(featured.id) + '" onclick="trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.dataset.vacancyId)" target="_blank" rel="noopener noreferrer" aria-label="Apply for ' + escapeHtml(featured.title) + ' at ' + escapeHtml(company) + ' on ' + escapeHtml(applyHost) + '">' +
-    '<div class="hf-vacancy-brand"><img class="hf-vacancy-logo" src="icons/v2-icon-512.png" alt="SA Recruiters app logo" width="38" height="38" decoding="async"><span><strong>SA RECRUITERS</strong><small>Connecting South Africa’s recruitment community</small></span><span class="hf-vacancy-badge">FEATURED ROLE</span></div>' +
-    '<div class="hf-vacancy-rule"></div><div class="hf-vacancy-kicker"><span class="hf-vacancy-live-dot"></span> NOW HIRING</div>' +
-    '<h3 class="hf-vacancy-title">' + escapeHtml(featured.title) + '</h3><p class="hf-vacancy-company">' + escapeHtml(company) + '</p>' +
-    '<div class="hf-vacancy-facts"><div><small>LOCATION</small><strong>' + escapeHtml(location) + '</strong></div>' +
-    (closing ? '<div><small>APPLICATION DEADLINE</small><strong>' + escapeHtml(closing) + '</strong></div>' : '') +
-    (salary ? '<div><small>REMUNERATION</small><strong>' + escapeHtml(salary) + '</strong></div>' : '') + '</div>' +
-    '<div class="hf-vacancy-footer"><span class="hf-vacancy-destination">Apply directly at <strong>' + escapeHtml(applyHost) + '</strong></span><span class="hf-vacancy-apply">Apply for this role <b aria-hidden="true">↗</b></span></div>' +
-    '</a>';
-}
 export var HOME_WEEKLY_PROVINCES = [
   { key: 'gauteng', label: 'Gauteng', pattern: /gauteng|johannesburg|joburg|pretoria|centurion|sandton|randburg|midrand|benoni|kempton park|eastrand|roodepoort|krugersdorp/i },
   { key: 'western-cape', label: 'Western Cape', pattern: /western[\s-]?cape|cape town|stellenbosch|paarl|george|mossel bay|bellville|worcester/i },
@@ -427,7 +374,6 @@ export function renderHomeFeed() {
       '<div class="home-media-track"><div class="home-media-track-art" aria-hidden="true">♫</div><div class="home-media-track-copy"><span>Track of the Day</span><strong id="home-media-track-title">Loading…</strong><small id="home-media-track-artist"></small></div><a class="home-media-track-spotify" id="home-media-track-spotify" hidden target="_blank" rel="noopener" aria-label="Open Track of the Day on Spotify" href="">Spotify</a><button type="button" class="home-media-track-play" id="home-media-track-play" disabled onclick="toggleTrackPlay()" aria-label="Play Track of the Day"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button></div>' +
       '<audio id="track-audio" preload="none" ontimeupdate="updateTrackProgress()" onended="onTrackEnded()" onloadedmetadata="onTrackLoaded()"></audio>' +
     '</section>' +
-    '<section class="home-featured-poster" aria-labelledby="home-featured-poster-title"><div class="poster-cta-heading"><span class="poster-cta-kicker">Featured today</span><h2 id="home-featured-poster-title">Vacancy poster of the day</h2><p>Tap the premium vacancy card to apply directly on the employer’s website.</p></div><div class="poster-deck" id="home-featured-poster-slot"><div class="poster-empty">Loading a live vacancy…</div></div></section>' +
     homeVacancySourceMarkup() +
     homeWeeklyTopJobsMarkup() +
     '<section class="home-jobs-section" aria-labelledby="home-jobs-title">' +
@@ -443,7 +389,6 @@ export function renderHomeFeed() {
       '</div></section>';
 
   target.setAttribute('aria-busy', 'false');
-  if (typeof renderHomeFeaturedVacancy === 'function') renderHomeFeaturedVacancy(homeSourceVacancies());
   if (typeof renderHomeMediaSection === 'function') renderHomeMediaSection();
   if (typeof renderHouseAdSlots === 'function') renderHouseAdSlots();
   if (typeof todayTrack !== 'undefined' && todayTrack) renderTrackReady();
@@ -470,12 +415,12 @@ export function renderHomeFeed() {
 // Public section links are intentionally query-based so Cloudflare Pages can
 // serve the normal PWA shell while the link remains stable and easy to share:
 // /?section=vacancies, /?section=agencies, /?section=candidates,
-// /?section=posters and /?section=employers.
+// /?section=cv-pictures and /?section=employers.
 export var SA_SECTION_LINKS = {
   vacancies: { label: 'Vacancies', title: 'SA Recruiters — Vacancies' },
   agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
   candidates: { label: 'Upload to the CV Box', title: 'SA Recruiters — Upload to the CV Box', shareKey: 'candidates' },
-  posters: { label: 'Vacancy posters', title: 'SA Recruiters — Vacancy Posters' },
+  'cv-pictures': { label: 'CV pictures', title: 'SA Recruiters — CV Pictures' },
   employers: { label: 'Employers', title: 'SA Recruiters — Employers' },
   ads: { label: 'Ads', title: 'SA Recruiters — Ads' }
 };
@@ -508,13 +453,13 @@ export function openDeepLinkedSection() {
   // prevents the destination from staying on an early loading/count state.
   var screenBySection = {
     vacancies: 'allvacancies', agencies: 'allagencies', candidates: 'pool',
-    posters: 'allposters', employers: 'allemployers', ads: 'allads'
+    'cv-pictures': 'allcvpics', employers: 'allemployers', ads: 'allads'
   };
   window.__saRestoredScreen = screenBySection[section];
   if (section === 'vacancies') showAllVacancies('home');
   else if (section === 'agencies') showAllAgencies('home');
   else if (section === 'candidates') goPool('home');
-  else if (section === 'posters') showVacancyPosters('home');
+  else if (section === 'cv-pictures') showCvPictures('home');
   else if (section === 'employers') showAllEmployers('home');
   else if (section === 'ads') showAllAds('home');
   if (paymentReturn) {
@@ -596,9 +541,9 @@ export function renderRestoredScreenContent() {
   else if (name === 'allads' && typeof renderAllAdsList === 'function') renderAllAdsList();
   else if (name === 'allemployers' && typeof renderAllEmployersList === 'function') renderAllEmployersList();
   else if (name === 'allvacancies' && typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList();
-  else if (name === 'allposters') {
-    if (typeof renderPosterFeed === 'function') renderPosterFeed(postersCache);
-    if (typeof loadPosterFeed === 'function') loadPosterFeed();
+  else if (name === 'allcvpics') {
+    if (typeof renderCvPicFeed === 'function') renderCvPicFeed(cvPicsCache);
+    if (typeof loadCvPicFeed === 'function') loadCvPicFeed();
   } else if (name === 'pool' && typeof loadPoolCandidates === 'function') {
     loadPoolCandidates();
   }
@@ -1214,17 +1159,17 @@ export function showAllVacancies() {
   resetActiveScreenScroll('screen-allvacancies');
 }
 
-// Vacancy posters live on their own screen, separate from All Vacancies.
-export function showVacancyPosters() {
+// CV pictures live on their own screen, separate from All Vacancies.
+export function showCvPictures() {
   set_directoryReturnScreen( arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home'));
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById('screen-allposters').classList.add('active');
+  document.getElementById('screen-allcvpics').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
-  var search = document.getElementById('allposters-search');
+  var search = document.getElementById('allcvpics-search');
   if (search) search.value = '';
-  renderPosterFeed(postersCache);
-  if (typeof loadPosterFeed === 'function') loadPosterFeed();
-  resetActiveScreenScroll('screen-allposters');
+  renderCvPicFeed(cvPicsCache);
+  if (typeof loadCvPicFeed === 'function') loadCvPicFeed();
+  resetActiveScreenScroll('screen-allcvpics');
 }
 
 // ---- Precise-location filter (Agencies / Branches / Employers / Vacancies / Pool) ----
@@ -2264,8 +2209,6 @@ Object.assign(window, {
   openCompanyFeatureInquiry,
   openFeaturedCompanyWebsite,
   homeVacancySourceMarkup,
-  getDailyFeaturedVacancy,
-  renderHomeFeaturedVacancy,
   homeWeeklyProvince,
   homeWeeklyRows,
   homeWeeklyTopJobsMarkup,
@@ -2318,7 +2261,7 @@ Object.assign(window, {
   showAllAds,
   showAllBranches,
   showAllVacancies,
-  showVacancyPosters,
+  showCvPictures,
   resetPreciseLocationChipVisual,
   syncPreciseLocationChip,
   usePreciseLocation,

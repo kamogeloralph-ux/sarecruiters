@@ -222,9 +222,6 @@ a.fact:hover b{color:var(--blue-deep)}
 .hub-note a{font-weight:750}
 .empty{padding:26px;border-radius:var(--r);border:1.5px dashed var(--blue-line);background:var(--surface);text-align:center;color:var(--ink-2)}
 .empty p{margin:0 0 14px}
-.poster-frame{margin:26px auto 0;max-width:640px;padding:12px;border-radius:26px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-md)}
-.poster-frame img{display:block;width:100%;height:auto;border-radius:18px}
-.poster-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px}
 .trust{display:grid;gap:12px;margin-top:18px;grid-template-columns:minmax(0,1fr)}
 @media (min-width:720px){.trust{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .trust .tile{box-shadow:none;background:var(--surface-2)}
@@ -349,20 +346,15 @@ a.fact:hover b{color:var(--blue-deep)}
 .btn-ghost{background:#fff;color:var(--ink)!important;border:2px solid var(--line)}
 .btn-primary:hover,.sp-cta:hover{filter:none;opacity:.88}
 :focus-visible{outline:3px solid var(--blue);outline-offset:3px}
-/* Keep source colors for agency/company logos, portraits, posters, and brand marks. */
-.av img,.jc img,.card img,.sp-brand img,.poster-tile img{filter:none}
+/* Keep source colors for agency/company logos, portraits and brand marks. */
+.av img,.jc img,.card img,.sp-brand img{filter:none}
 
-/* ---- directories, archives, poster gallery and CV submission ---- */
+/* ---- directories, archives and CV submission ---- */
 .pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:34px 0 8px}
 .pg{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:42px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink)!important;font-size:14px;font-weight:700;text-decoration:none!important}
 a.pg:hover{background:var(--blue-soft);border-color:var(--blue-line)}
 .pg.is-active{background:var(--blue);border-color:var(--blue);color:var(--m-on-ink)!important}
 .pg-gap{border-color:transparent;background:none;min-width:auto;padding:0 4px;color:var(--muted)!important}
-.poster-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr))}
-.poster-tile{display:flex;flex-direction:column;gap:10px;min-width:0;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-sm);color:var(--ink)!important;font-size:13.5px;font-weight:650;line-height:1.35;text-decoration:none!important;transition:transform .18s,box-shadow .18s}
-.poster-tile:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
-.poster-tile img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:var(--surface-2);filter:var(--mono-photo-filter)}
-.poster-tile span{overflow-wrap:anywhere}
 .cv-card .cv-lead{margin:0 0 10px;color:var(--ink-2)}
 .cv-card .cv-pref{margin:0 0 14px;font-size:13.5px;color:var(--muted)}
 .cv-methods{display:grid;gap:10px}

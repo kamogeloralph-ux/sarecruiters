@@ -655,10 +655,10 @@ html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:hover{box-sha
 #screen-pool .pool-mini-meta,
 #screen-pool .pool-mini-card .pool-mini-details{border-top:0!important}
 #screen-pool .pool-mini-meta>span+span{border-left:0!important;padding-left:0!important}
-#screen-allposters .poster-caption{border-top:0!important}
+#screen-allcvpics .cvpic-caption{border-top:0!important}
 #screen-allads #allads-list .house-ad-card{border:0!important;box-shadow:none!important}
 #screen-allagencies .screen-fixed,
 #screen-pool .screen-fixed,
-#screen-allposters .screen-fixed,
+#screen-allcvpics .screen-fixed,
 #screen-allemployers .screen-fixed,
 #screen-allads .screen-fixed{border-bottom:0!important}
