@@ -10,7 +10,7 @@
 <link rel="icon" type="image/png" sizes="256x256" href="/icons/sa-recruiters-icon-color.png?v=legal-color-1">
 <style>
 :root{color-scheme:light;--ink:#17212b;--muted:#637184;--line:#d9e2ec;--blue:#1769cf;--surface:#fff;--wash:#f5f8fb}
-*{box-sizing:border-box}html{background:var(--surface)}body{margin:0;background:var(--surface);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55}.wrap{max-width:760px;margin:0 auto;padding:24px 16px 48px}.brand{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:750;text-decoration:none;margin-bottom:20px}.brand img{width:40px;height:40px;border-radius:11px;box-shadow:0 4px 12px rgba(23,105,207,.2)}h1{font-size:25px;line-height:1.2;margin:0 0 8px}p{color:#3d4a58;font-size:15px;margin:8px 0}.meta{color:var(--muted);font-size:13px}.actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 15px;border-radius:9px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:750;text-decoration:none}.btn.secondary{background:#fff;color:var(--blue)}.certificate{margin:22px 0;padding:12px;background:var(--wash);border:1px solid var(--line);border-radius:14px;text-align:center}.certificate img{display:block;width:100%;max-width:595px;height:auto;margin:0 auto;background:#fff;box-shadow:0 3px 14px rgba(23,33,43,.14)}.original-document{margin:18px 0;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}.original-document summary{cursor:pointer;padding:13px 15px;color:var(--blue);font-weight:750}.original-document iframe{display:block;width:100%;height:min(78vh,900px);border:0;border-top:1px solid var(--line);background:#fff}.original-document p{padding:0 15px 12px;font-size:13px}.hint{font-size:13px;color:var(--muted);margin-top:14px}.back{color:var(--blue);font-weight:700;text-decoration:underline;text-underline-offset:3px}@media(max-width:520px){.wrap{padding:18px 12px 36px}h1{font-size:22px}.actions{display:grid;grid-template-columns:1fr}.btn{width:100%}.original-document iframe{height:70vh}}
+*{box-sizing:border-box}html{background:var(--surface)}body{margin:0;background:var(--surface);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55}.wrap{max-width:760px;margin:0 auto;padding:24px 16px 48px}.brand{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:750;text-decoration:none;margin-bottom:20px}.brand img{width:40px;height:40px;border-radius:11px;box-shadow:0 4px 12px rgba(23,105,207,.2)}h1{font-size:25px;line-height:1.2;margin:0 0 8px}p{color:#3d4a58;font-size:15px;margin:8px 0}.meta{color:var(--muted);font-size:13px}.actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 15px;border-radius:9px;border:2px solid var(--blue);background:var(--blue);color:#fff;font-weight:750;text-decoration:none}.btn.secondary{background:#fff;color:var(--blue)}.certificate{margin:22px 0;padding:12px;background:var(--wash);border:1px solid var(--line);border-radius:14px;text-align:center}.certificate img{display:block;width:100%;max-width:595px;height:auto;margin:0 auto;background:#fff;box-shadow:0 3px 14px rgba(23,33,43,.14)}.hint{font-size:13px;color:var(--muted);margin-top:14px}.back{color:var(--blue);font-weight:700;text-decoration:underline;text-underline-offset:3px}@media(max-width:520px){.wrap{padding:18px 12px 36px}h1{font-size:22px}.actions{display:grid;grid-template-columns:1fr}.btn{width:100%}}
 </style>
 </head>
 <body>
@@ -20,18 +20,13 @@
   <p class="meta">Information Regulator (South Africa) · Registration no. 2026-072335 · Registered 16 November 2026</p>
   <p>This is the official registration certificate for SA Recruiters. The certificate is shown below so it can be viewed directly on mobile devices without depending on the device PDF viewer.</p>
   <div class="actions">
-    <a class="btn" href="#original-pdf">Open original PDF here</a>
-    <a class="btn secondary" href="/docs/SA-Recruiters-Information-Officer-Registration-Certificate.pdf" download>Download PDF</a>
+    <a class="btn" href="#certificate-preview">View original certificate</a>
+    <a class="btn secondary" href="/docs/SA-Recruiters-Information-Officer-Registration-Certificate.pdf" download>Download original PDF</a>
   </div>
-  <figure class="certificate">
+  <figure class="certificate" id="certificate-preview">
     <img src="/assets/information-regulator-certificate-preview.webp" alt="SA Recruiters Information Officer Registration Certificate issued by the Information Regulator" width="595" height="842" fetchpriority="high">
-    <figcaption class="hint">Certificate preview · Tap “Open original PDF” for the electronic source document.</figcaption>
+    <figcaption class="hint">Official certificate view. Use “Download original PDF” to save the electronic source document.</figcaption>
   </figure>
-  <details class="original-document" id="original-pdf" open>
-    <summary>Original PDF document</summary>
-    <iframe title="Original SA Recruiters POPIA registration certificate" src="/docs/SA-Recruiters-Information-Officer-Registration-Certificate.pdf#page=1"></iframe>
-    <p>If your browser cannot display PDFs, use <a href="/docs/SA-Recruiters-Information-Officer-Registration-Certificate.pdf" download>Download PDF</a> or use the certificate preview above.</p>
-  </details>
   <p><a class="back" href="/privacy/">Read our Privacy Policy</a> · <a class="back" href="/">Return to SA Recruiters</a></p>
 </main>
 </body>
