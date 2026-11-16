@@ -3774,59 +3774,33 @@ var worker_default = {
           return json({ error: "Only image uploads are allowed." }, 400, origin);
         }
         const bytes = await request.arrayBuffer();
-        if (bytes.byteLength === 0) return json({ error: "Choose a poster image first." }, 400, origin);
-        if (bytes.byteLength > MAX_POSTER_BYTES) return json({ error: "Poster too large (max 5MB)." }, 413, origin);
+        if (bytes.byteLength === 0) return json({ error: "Choose your CV picture first." }, 400, origin);
+        if (bytes.byteLength > MAX_POSTER_BYTES) return json({ error: "CV picture too large (max 5MB)." }, 413, origin);
         const key = `employer-posters/${randomKey()}.jpg`;
         await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
         const imageUrl = publicUrlFor(env, key);
         const submittedCaption = (url.searchParams.get("caption") || "").trim();
-        const caption = submittedCaption || await inferEmployerPosterTitle(env, bytes, key) || "Vacancy poster";
+        const caption = submittedCaption || await inferEmployerPosterTitle(env, bytes, key) || "CV picture";
         try {
           const posterId = await supabaseRpc(env, "public_submit_poster", {
             p_image_url: imageUrl,
             p_caption: caption.slice(0, 500)
           });
-          return json({ ok: true, id: posterId, url: imageUrl, caption: caption.slice(0, 120) }, 200, origin);
-        } catch (e) {
-          try { await env.MEDIA_BUCKET.delete(key); } catch (_) {}
-          return json({ error: "Could not publish the poster." }, 502, origin);
-        }
-      }
-      if (path === "/api/automation/poster" && request.method === "POST") {
-        // Daily auto-poster: GitHub Action uploads a rendered JPEG. Protected by a
-        // shared secret (POSTER_AUTOMATION_TOKEN), never exposed to browsers.
-        const expected = env.POSTER_AUTOMATION_TOKEN || "";
-        const supplied = request.headers.get("X-Automation-Token") || "";
-        let diff = expected.length === supplied.length ? 0 : 1;
-        for (let i = 0; i < Math.max(expected.length, supplied.length); i++) {
-          diff |= (expected.charCodeAt(i) || 0) ^ (supplied.charCodeAt(i) || 0);
-        }
-        if (!expected || diff !== 0) return json({ error: "Not allowed." }, 403, origin);
-        const bytes = await request.arrayBuffer();
-        if (bytes.byteLength === 0 || bytes.byteLength > MAX_POSTER_BYTES || !looksLikeJpeg(bytes)) {
-          return json({ error: "A JPEG poster under 5MB is required." }, 400, origin);
-        }
-        const key = `employer-posters/${randomKey()}.jpg`;
-        await env.MEDIA_BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/jpeg" } });
-        const imageUrl = publicUrlFor(env, key);
-        const caption = ((url.searchParams.get("caption") || "").trim() || "Vacancy poster").slice(0, 120);
-        try {
-          const posterId = await supabaseRpc(env, "public_submit_poster", { p_image_url: imageUrl, p_caption: caption });
-          // The app reads posters from the D1 mirror, which otherwise only refreshes on the
-          // 6-hourly sync. Mirror this row now and bump the data version so it shows at once.
+          // The feed reads from the D1 mirror, which otherwise only refreshes on the
+          // 6-hourly sync. Mirror the row now so the person sees their CV picture at once.
           if (env.DB && posterId) {
             try {
               const createdAt = new Date();
-              const expiresAt = new Date(createdAt.getTime() + 14 * 86400000);
+              const expiresAt = new Date(createdAt.getTime() + 90 * 86400000);
               await env.DB.prepare("INSERT OR REPLACE INTO employer_posters (id, employer_id, agency_id, image_url, caption, vacancy_id, created_at, expires_at) VALUES (?, NULL, NULL, ?, ?, NULL, ?, ?)")
-                .bind(String(posterId), imageUrl, caption, createdAt.toISOString(), expiresAt.toISOString()).run();
+                .bind(String(posterId), imageUrl, caption.slice(0, 500), createdAt.toISOString(), expiresAt.toISOString()).run();
               await bumpPublicDataVersion(env);
-            } catch (mirrorError) { console.warn("Could not mirror automation poster to D1", mirrorError); }
+            } catch (mirrorError) { console.warn("Could not mirror CV picture to D1", mirrorError); }
           }
-          return json({ ok: true, id: posterId, url: imageUrl, caption }, 200, origin);
+          return json({ ok: true, id: posterId, url: imageUrl, caption: caption.slice(0, 120) }, 200, origin);
         } catch (e) {
           try { await env.MEDIA_BUCKET.delete(key); } catch (_) {}
-          return json({ error: "Could not publish the poster." }, 502, origin);
+          return json({ error: "Could not publish your CV picture." }, 502, origin);
         }
       }
       if (path === "/api/upload/tipchat-image" && request.method === "POST") {
