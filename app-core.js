@@ -392,7 +392,18 @@ export var publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMa
 export var isAdmin = false;
 export var publicVacancyPostingOpen = false; // fixed closed; job enquiries remain available
 export var publicEmployerRegistrationOpen = false; // fixed closed
-export var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
+// localStorage access itself can throw (SecurityError when the browser blocks
+// site storage). This runs at module top level, so an uncaught throw here
+// aborts the whole bundle and the window bridge below is never installed.
+export var savedSet = (function () {
+  try {
+    var parsed = JSON.parse(localStorage.getItem('savedVacancies') || '[]');
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch (e) {
+    console.warn('[SA Recruiters] Saved vacancies unavailable from localStorage', e);
+    return new Set();
+  }
+})();
 // ===== Saved vacancies: per-account sync (saved_vacancies table) =====
 // savedSet above still seeds instantly from localStorage so Saved renders
 // with zero lag, but Supabase (RLS: one row per signed-in user) is now the
@@ -411,7 +422,7 @@ export async function loadSavedVacanciesFromSupabase() {
     var remoteIds = (result.data || []).map(function(r){ return r.vacancy_id; });
     var localOnly = Array.from(savedSet).filter(function(id){ return remoteIds.indexOf(id) === -1; });
     remoteIds.forEach(function(id){ savedSet.add(id); });
-    localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+    try { localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet))); } catch (storageError) {}
     if (typeof renderSaved === 'function') renderSaved();
     // Push up anything saved locally before this account had synced yet.
     if (localOnly.length) {
@@ -704,11 +715,12 @@ export function applyTheme(theme) {
 export function toggleTheme() {
   var current = document.documentElement.getAttribute('data-theme') || 'light';
   var next = current === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('saTheme', next);
+  try { localStorage.setItem('saTheme', next); } catch (e) {}
   applyTheme(next);
 }
 (function initTheme() {
-  var saved = localStorage.getItem('saTheme') || 'light';
+  var saved = 'light';
+  try { saved = localStorage.getItem('saTheme') || 'light'; } catch (e) {}
   applyTheme(saved);
 })();
 
