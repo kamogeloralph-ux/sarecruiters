@@ -9,7 +9,7 @@
  * Bundled by Vite via app-entry.js (see scripts/bundle-app.js).
  */
 
-import { agenciesCache, analyticsSessionId, branchesCache, employersCache, escapeHtml, guestViewsRemaining, initials, isAdmin, publicAgencySlug, publicVacancySlug, registerVacancyOpen, saAuthUser, savedSet, staticVacanciesCache, supabaseClient, syncSavedVacancy, trackEvent, vacanciesCache } from './app-core.js';
+import { agenciesCache, analyticsSessionId, branchesCache, employersCache, escapeHtml, guestViewsRemaining, initials, isAdmin, publicAgencySlug, publicVacancySlug, registerVacancyOpen, saAuthUser, savedSet, staticVacanciesCache, storageSet, supabaseClient, syncSavedVacancy, trackEvent, vacanciesCache } from './app-core.js';
 import { branchesFor, getCvPictures, isVacancyExpired, renderHouseAdSlots, vacanciesFor, vacanciesForEmployer, vacancyScreenStateMarkup } from './app-data.js';
 import { closeSheet } from './app-sheets.js';
 import { homeSourceVacancies, renderHomeFeed, showAllVacancies, showToast, syncPreciseLocationChip } from './app-ui.js';
@@ -543,7 +543,7 @@ window.toggleSave = function(btn, key) {
   var nowSaved;
   if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); showToast('Removed from saved'); nowSaved = false; }
   else { savedSet.add(key); btn.classList.add('saved'); showToast('Saved \u2605'); nowSaved = true; }
-  localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+  storageSet('savedVacancies', JSON.stringify(Array.from(savedSet)));
   syncSavedVacancy(key, nowSaved);
   renderSaved();
 };
@@ -865,7 +865,7 @@ window.toggleSave = function(btn, key) {
   var nowSaved;
   if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); btn.innerHTML = STAR_SVG; showToast('Removed from saved'); nowSaved = false; }
   else { savedSet.add(key); btn.classList.add('saved'); btn.innerHTML = STAR_SVG; showToast('Saved'); nowSaved = true; }
-  localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+  storageSet('savedVacancies', JSON.stringify(Array.from(savedSet)));
   syncSavedVacancy(key, nowSaved);
   renderSaved();
 };
