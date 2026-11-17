@@ -392,7 +392,25 @@ export var publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMa
 export var isAdmin = false;
 export var publicVacancyPostingOpen = false; // fixed closed; job enquiries remain available
 export var publicEmployerRegistrationOpen = false; // fixed closed
-export var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
+// localStorage can throw (SecurityError) when the browser blocks site
+// storage, e.g. cookies/site data disabled or some Android WebViews. These
+// helpers keep module init and UI handlers working without persistence.
+export function storageGet(key, fallback) {
+  try {
+    var v = localStorage.getItem(key);
+    return v === null ? fallback : v;
+  } catch (e) { return fallback; }
+}
+export function storageSet(key, value) {
+  try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
+}
+function readSavedVacancies() {
+  try {
+    var parsed = JSON.parse(storageGet('savedVacancies', '[]'));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) { return []; }
+}
+export var savedSet = new Set(readSavedVacancies());
 // ===== Saved vacancies: per-account sync (saved_vacancies table) =====
 // savedSet above still seeds instantly from localStorage so Saved renders
 // with zero lag, but Supabase (RLS: one row per signed-in user) is now the
@@ -411,7 +429,7 @@ export async function loadSavedVacanciesFromSupabase() {
     var remoteIds = (result.data || []).map(function(r){ return r.vacancy_id; });
     var localOnly = Array.from(savedSet).filter(function(id){ return remoteIds.indexOf(id) === -1; });
     remoteIds.forEach(function(id){ savedSet.add(id); });
-    localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+    storageSet('savedVacancies', JSON.stringify(Array.from(savedSet)));
     if (typeof renderSaved === 'function') renderSaved();
     // Push up anything saved locally before this account had synced yet.
     if (localOnly.length) {
@@ -704,11 +722,11 @@ export function applyTheme(theme) {
 export function toggleTheme() {
   var current = document.documentElement.getAttribute('data-theme') || 'light';
   var next = current === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('saTheme', next);
+  storageSet('saTheme', next);
   applyTheme(next);
 }
 (function initTheme() {
-  var saved = localStorage.getItem('saTheme') || 'light';
+  var saved = storageGet('saTheme', 'light') || 'light';
   applyTheme(saved);
 })();
 
