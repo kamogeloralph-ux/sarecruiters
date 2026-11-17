@@ -200,7 +200,9 @@
     if (c) c.textContent = f ? 'All sources › ' + (LABELS[f] || f) : totalLabel();
   }
   function totalLabel() {
-    if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading live roles…';
+    // Read bundle globals via window so a bundle that failed to boot shows the
+    // loading label instead of throwing a ReferenceError.
+    if (!window.generalVacancyCountLoaded || !window.dedicatedVacancyCountsLoaded) return 'Loading live roles…';
     var d = dedicatedVacancyCounts, n = (generalVacancyCount || 0) + vacanciesCache.filter(hasAssignedAgency).length;
     Object.keys(d).forEach(function (k) { n += d[k] || 0; });
     return (window.formatCompactCount ? window.formatCompactCount(n) : Number(n).toLocaleString()) + ' live roles across ' + Object.keys(LABELS).length + ' sources';
@@ -236,7 +238,7 @@
   function sourceSummary() {
     var d = dedicatedVacancyCounts || {};
     return {
-      ready: !!(generalVacancyCountLoaded && dedicatedVacancyCountsLoaded),
+      ready: !!(window.generalVacancyCountLoaded && window.dedicatedVacancyCountsLoaded),
       order: ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'],
       labels: LABELS, icons: SRC_ICON,
       counts: { general: generalVacancyCount || 0, agency: vacanciesCache.filter(hasAssignedAgency).length, government: d.government || 0, retail: d.retail || 0, learnerships: d.learnerships || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, careers_page: d.careers_page || 0 }
