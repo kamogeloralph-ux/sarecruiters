@@ -392,7 +392,29 @@ export var publicVacancyRecordSlugs = typeof WeakMap === 'function' ? new WeakMa
 export var isAdmin = false;
 export var publicVacancyPostingOpen = false; // fixed closed; job enquiries remain available
 export var publicEmployerRegistrationOpen = false; // fixed closed
-export var savedSet = new Set(JSON.parse(localStorage.getItem('savedVacancies') || '[]'));
+// Storage can be blocked (privacy mode, WebView, "block site data"): reading
+// window.localStorage then throws a SecurityError. Anything that runs at module
+// top level must never throw, or app-core stops before it publishes its window
+// globals (see Object.defineProperties below) and later scripts break.
+var __saStorageWarned = false;
+function __saWarnStorage(e) {
+  if (__saStorageWarned) return;
+  __saStorageWarned = true;
+  console.warn('[SA Recruiters] localStorage unavailable; using in-memory fallbacks', e);
+}
+export function storageGet(key, fallback) {
+  try {
+    var v = localStorage.getItem(key);
+    return v == null ? fallback : v;
+  } catch (e) { __saWarnStorage(e); return fallback; }
+}
+export function storageSet(key, value) {
+  try { localStorage.setItem(key, value); return true; } catch (e) { __saWarnStorage(e); return false; }
+}
+export var savedSet = (function () {
+  try { return new Set(JSON.parse(storageGet('savedVacancies', '[]')) || []); }
+  catch (e) { return new Set(); }
+})();
 // ===== Saved vacancies: per-account sync (saved_vacancies table) =====
 // savedSet above still seeds instantly from localStorage so Saved renders
 // with zero lag, but Supabase (RLS: one row per signed-in user) is now the
@@ -411,7 +433,7 @@ export async function loadSavedVacanciesFromSupabase() {
     var remoteIds = (result.data || []).map(function(r){ return r.vacancy_id; });
     var localOnly = Array.from(savedSet).filter(function(id){ return remoteIds.indexOf(id) === -1; });
     remoteIds.forEach(function(id){ savedSet.add(id); });
-    localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+    storageSet('savedVacancies', JSON.stringify(Array.from(savedSet)));
     if (typeof renderSaved === 'function') renderSaved();
     // Push up anything saved locally before this account had synced yet.
     if (localOnly.length) {
@@ -704,11 +726,11 @@ export function applyTheme(theme) {
 export function toggleTheme() {
   var current = document.documentElement.getAttribute('data-theme') || 'light';
   var next = current === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('saTheme', next);
+  storageSet('saTheme', next);
   applyTheme(next);
 }
 (function initTheme() {
-  var saved = localStorage.getItem('saTheme') || 'light';
+  var saved = storageGet('saTheme', 'light') || 'light';
   applyTheme(saved);
 })();
 
