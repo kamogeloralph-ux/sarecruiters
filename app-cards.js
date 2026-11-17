@@ -543,7 +543,7 @@ window.toggleSave = function(btn, key) {
   var nowSaved;
   if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); showToast('Removed from saved'); nowSaved = false; }
   else { savedSet.add(key); btn.classList.add('saved'); showToast('Saved \u2605'); nowSaved = true; }
-  localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+  try { localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet))); } catch (e) { console.warn('[SA Recruiters] could not persist saved vacancies', e); }
   syncSavedVacancy(key, nowSaved);
   renderSaved();
 };
@@ -865,7 +865,7 @@ window.toggleSave = function(btn, key) {
   var nowSaved;
   if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); btn.innerHTML = STAR_SVG; showToast('Removed from saved'); nowSaved = false; }
   else { savedSet.add(key); btn.classList.add('saved'); btn.innerHTML = STAR_SVG; showToast('Saved'); nowSaved = true; }
-  localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
+  try { localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet))); } catch (e) { console.warn('[SA Recruiters] could not persist saved vacancies', e); }
   syncSavedVacancy(key, nowSaved);
   renderSaved();
 };
