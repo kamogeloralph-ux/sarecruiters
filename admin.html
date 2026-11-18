@@ -405,7 +405,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
       <!-- AGENCIES -->
       <section class="section section-manage" id="sec-agencies">
-        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Agencies</h2><div class="spacer"></div><button class="minibtn" onclick="regenerateAllAgencyTokens()" title="Use once after running SMART_MANAGER_SETUP.sql">Regenerate ALL tokens</button><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
+        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>Agencies</h2><div class="spacer"></div><button class="minibtn" onclick="regenerateAllAgencyTokens()" title="Use once after running SMART_MANAGER_SETUP.sql">Regenerate ALL tokens</button><button class="minibtn" id="publish-app-btn" onclick="publishToApp()" title="Make your latest changes visible in the public app now">Publish to app</button><button class="minibtn ok" onclick="openAgencySheet()">+ Add agency</button></div>
         <input class="search" id="ag-search" placeholder="Search name, location, trades, companies..." oninput="renderAgencies()">
         <div id="ag-list"></div>
       </section>
@@ -1422,6 +1422,20 @@ async function upsertVacancy(v){
 }
 
 async function removeVacancy(id){ try { var { error } = await supabaseClient.from('vacancies').delete().eq('id',id); if(error){ console.error('vacancy del',error); alert('Could not delete vacancy: '+error.message); return false; } await writeThroughD1Mirror('vacancies',id,'delete'); return true; } catch(error){ console.error('vacancy delete failed',error); alert('Could not delete vacancy: '+(error.message||error)); return false; } }
+// The public app reads a published snapshot that the Worker rebuilds every 6 hours. This forces a rebuild now
+// so a new or edited agency shows in the app within seconds instead of waiting for the next scheduled run.
+async function publishToApp(silent){
+  var btn = document.getElementById('publish-app-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
+  try {
+    await adminApi('POST', '/api/sync-d1');
+    showToast(silent ? 'Published to the app' : 'Published. The app will show your changes after a refresh.');
+  } catch (e) {
+    if (silent) showToast('Saved, but publishing to the app failed. Tap "Publish to app" to retry.');
+    else alert('Could not publish to the app: ' + (e.message || 'try again'));
+  }
+  if (btn) { btn.disabled = false; btn.textContent = 'Publish to app'; }
+}
 // One place for every admin write that goes through the Worker (service role).
 // Throws an Error carrying the server's message so callers can show it.
 async function adminApi(method, path, body){
@@ -2037,6 +2051,7 @@ async function saveAgency(){
   else cache.agencies.unshift(Object.assign({ created_at: new Date().toISOString() }, payload));
   closeSheet('agency-overlay');
   showToast(editing.agency ? 'Agency updated' : 'Agency added');
+  publishToApp(true); // push the change to the public app now (not awaited)
   editing.agency = null; pendingPhoto = null; pendingPhotoBlob = null;
   await loadAll(['agencies','branches']); renderNav(); renderAgencies(); renderDashboard();
 }
