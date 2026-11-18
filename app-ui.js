@@ -434,7 +434,9 @@ export function shareSectionLink(section) {
   var link = getSectionLink(section);
   if (!meta || !link) return;
   var shareLabel = section === 'candidates' ? 'Upload to the CV Box' : meta.label;
-  var text = (section === 'candidates' ? shareLabel : 'Explore ' + shareLabel.toLowerCase()) + ' on SA Recruiters: ' + link;
+  // The link goes ONLY in `url`. Share targets (WhatsApp, Messages, etc.) append
+  // `url` to `text`, so putting the link in both made it show up twice.
+  var text = (section === 'candidates' ? shareLabel : 'Explore ' + shareLabel.toLowerCase()) + ' on SA Recruiters';
   if (navigator.share) {
     navigator.share({ title: meta.title, text: text, url: link }).catch(function() {});
   } else {

@@ -81,7 +81,7 @@ export function shareManagerLink(agencyId) {
   if (!token) { showToast('Link not ready'); return; }
   var link = buildManagerLink(token);
   var agency = agenciesCache.find(function(a){ return a.id === agencyId; });
-  var shareText = 'Hello ' + (agency ? agency.name : '') + ', here is your link to add branches and vacancies to SA Recruiters: ' + link;
+  var shareText = 'Hello ' + (agency ? agency.name : '') + ', here is your link to add branches and vacancies to SA Recruiters:';
   if (navigator.share) {
     navigator.share({ title: 'SA Recruiters — Agency Update Link', text: shareText, url: link }).catch(function(){});
   } else {
@@ -137,6 +137,8 @@ export async function shareCvPic(cvPicId) {
   var link = window.location.origin + '/?section=cv-pictures';
   var title = (p.caption || 'CV picture') + ' — SA Recruiters';
   var text = (p.caption || 'CV picture') + ' — see it on SA Recruiters: ' + link;
+  // Link-only variant for the url-based share below, so the link isn't duplicated.
+  var textNoLink = (p.caption || 'CV picture') + ' — see it on SA Recruiters';
   trackEvent('cvpic_share', 'cvpic', cvPicId);
   if (navigator.share) {
     try {
@@ -150,7 +152,7 @@ export async function shareCvPic(cvPicId) {
     } catch (e) {
       if (e && e.name === 'AbortError') return; // user closed the share sheet
     }
-    navigator.share({ title: title, text: text, url: link }).catch(function(){});
+    navigator.share({ title: title, text: textNoLink, url: link }).catch(function(){});
   } else {
     copyText(link, null);
     showToast('Link copied — paste it into a message');
