@@ -2090,7 +2090,7 @@ async function syncStatusResponse(request, env, origin) {
 __name(syncStatusResponse, "syncStatusResponse");
 async function postersResponse(request, env, origin) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/api/posters?schema=r2-v1", request.url), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/posters?schema=r2-v2", request.url), { method: "GET" });
   function clientResponse(response) {
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "public, max-age=60");
@@ -2114,7 +2114,7 @@ async function postersResponse(request, env, origin) {
   }
   posters = posters.filter((poster) => !poster.expires_at || poster.expires_at > new Date().toISOString());
   const cachedResponse = json({ posters, count: posters.length, source: "r2", data_version: Number(snapshot.data_version) || 0 }, 200, origin);
-  cachedResponse.headers.set("Cache-Control", "public, max-age=86400");
+  cachedResponse.headers.set("Cache-Control", "public, max-age=60");
   cachedResponse.headers.set("X-Data-Version", String(Number(snapshot.data_version) || 0));
   await cache.put(cacheKey, cachedResponse.clone());
   return clientResponse(cachedResponse);

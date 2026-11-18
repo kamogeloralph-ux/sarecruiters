@@ -668,10 +668,12 @@ export function openVacancyLockedSheet() { openPostJobSheet(); }
 export function openEmployerLockedSheet() { openPostJobSheet(); }
 
 // ----- CV pictures -----
+const CV_PIC_COUNT_CACHE_TTL_MS = 60_000;
 export var cvPicTotalCount = null;
+var cvPicCountFetchedAt = null;
 export function updateCvPicStat() {
   var el = document.getElementById('stat-cvpics');
-  if (el && cvPicTotalCount !== null) el.textContent = cvPicTotalCount;
+  if (el) el.textContent = cvPicTotalCount === null ? '…' : cvPicTotalCount;
 }
 export async function getCvPictures() {
   try {
@@ -685,6 +687,7 @@ export async function getCvPictures() {
     var data = Array.isArray(payload.posters) ? payload.posters : [];
     // Real total (not capped by the 50-row feed limit) for the home stat card.
     cvPicTotalCount = typeof payload.count === 'number' ? payload.count : data.length;
+    cvPicCountFetchedAt = Date.now();
     updateCvPicStat();
     // The live count can differ from whatever was restored from cache —
     // re-sort in case it now belongs in a different spot (updateStats()'s
@@ -702,7 +705,16 @@ export async function getCvPictures() {
     // nothing correct to save in the first place.
     if (typeof saveDataCache === 'function') saveDataCache();
     return data;
-  } catch(e) { console.error('getCvPictures', e); return []; }
+  } catch(e) {
+    console.error('getCvPictures', e);
+    // Never leave an old cached count visible when the live source is unavailable.
+    cvPicTotalCount = null;
+    cvPicCountFetchedAt = null;
+    updateCvPicStat();
+    if (typeof reorderStatCardsByCount === 'function') reorderStatCardsByCount();
+    if (typeof saveDataCache === 'function') await saveDataCache();
+    return [];
+  }
 }
 
 // ----- Vacancies -----
@@ -1087,6 +1099,7 @@ export async function saveDataCache() {
     employers: employersCache,
     poolCount: poolCandidateCount,
     cvPicCount: cvPicTotalCount,
+    cvPicCountFetchedAt: cvPicCountFetchedAt,
     savedAt: Date.now()
   };
   try {
@@ -1122,10 +1135,20 @@ export async function loadDataCache() {
   cachedVacancyTotal = (typeof d.vacancyTotal === 'number') ? d.vacancyTotal : null;
   set_employersCache( d.employers || []);
   set_poolCandidateCount( (typeof d.poolCount === 'number') ? d.poolCount : 0);
-  // Restore the cached CV picture total too, so the CV Pictures stat card paints
-  // instantly alongside the others instead of sitting on its placeholder
-  // until the (deliberately deferred) live CV picture fetch resolves.
-  if (typeof d.cvPicCount === 'number') cvPicTotalCount = d.cvPicCount;
+  // Reuse only a recently fetched CV picture count. Older app versions stored
+  // this number indefinitely, so their cached value must be treated as stale.
+  var cacheNow = Date.now();
+  if (typeof d.cvPicCount === 'number' &&
+      typeof d.cvPicCountFetchedAt === 'number' &&
+      d.cvPicCountFetchedAt <= cacheNow &&
+      cacheNow - d.cvPicCountFetchedAt <= CV_PIC_COUNT_CACHE_TTL_MS) {
+    cvPicTotalCount = d.cvPicCount;
+    cvPicCountFetchedAt = d.cvPicCountFetchedAt;
+  } else {
+    cvPicTotalCount = null;
+    cvPicCountFetchedAt = null;
+  }
+  updateCvPicStat();
   lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
   return true;
 }

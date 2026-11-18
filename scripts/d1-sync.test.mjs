@@ -51,7 +51,8 @@ test('public posters are mirrored for writes but served from R2 with edge cachin
   assert.match(postersMigration, /CREATE TABLE IF NOT EXISTS employer_posters/);
   assert.match(postersMigration, /employer_posters_expires_at_idx/);
   const posters = worker.slice(worker.indexOf('async function postersResponse('), worker.indexOf('__name(postersResponse'));
-  assert.match(posters, /schema=r2-v1/);
+  assert.match(posters, /schema=r2-v2/);
+  assert.match(posters, /cachedResponse\.headers\.set\("Cache-Control", "public, max-age=60"\)/);
   assert.match(posters, /readPublicJsonSnapshot\(env, PUBLIC_POSTERS_SNAPSHOT_KEY, "posters"\)/);
   assert.doesNotMatch(posters, /env\.DB\.prepare/);
 });

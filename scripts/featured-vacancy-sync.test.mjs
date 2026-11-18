@@ -81,22 +81,11 @@ test('vacancy overview shows all eight sources before retail-prioritized roles',
   assert.doesNotMatch(vacancyCss, /all:unset/, 'cards must not reset all properties');
 });
 
-test('Home renders one deterministic daily featured vacancy poster', () => {
-  assert.match(uiSrc, /function getDailyFeaturedVacancy\(vacancies\)/);
-  assert.match(uiSrc, /function renderHomeFeaturedVacancy\(vacancies\)/);
-  assert.match(uiSrc, /home-featured-poster-slot/);
-  assert.match(uiSrc, /Date\.UTC\(now\.getFullYear\(\), now\.getMonth\(\), now\.getDate\(\)/);
-  assert.match(uiSrc, /filterExpiredVacancies\(Array\.isArray\(vacancies\) \? vacancies : \[\]\)/);
-  assert.match(uiSrc, /featuredVacancyApplyUrl\(vacancy\)/);
-  assert.match(uiSrc, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
-  assert.match(uiSrc, /class="home-featured-vacancy" href="' \+ escapeHtml\(applyUrl\)/);
-  assert.match(uiSrc, /data-vacancy-id="' \+ escapeHtml\(featured\.id\) \+ '" onclick="trackEvent\(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this\.dataset\.vacancyId\)/);
-  assert.match(uiSrc, /target="_blank" rel="noopener noreferrer"/);
-  assert.match(uiSrc, /renderHomeFeaturedVacancy\(homeSourceVacancies\(\)\)/);
-  assert.match(cardsSrc, /renderHomeFeaturedVacancy\(homeSourceVacancies\(\)\)/);
-  assert.match(sharedCss, /\.home-featured-vacancy\{/);
-  assert.match(sharedCss, /\.hf-vacancy-apply\{/);
-  assert.match(uiSrc, /id="home-featured-poster-slot"/);
+test('Home does not render a retired daily featured vacancy poster', () => {
+  assert.doesNotMatch(uiSrc, /getDailyFeaturedVacancy|renderHomeFeaturedVacancy|home-featured-poster-slot/);
+  assert.doesNotMatch(cardsSrc, /renderHomeFeaturedVacancy/);
+  assert.doesNotMatch(indexSrc, /home-featured-poster-slot|home-featured-vacancy/);
+  assert.doesNotMatch(sharedCss, /home-featured-vacancy|hf-vacancy-apply/);
 });
 
 test('all vacancy filters are wired to the overview and folder render paths', () => {
