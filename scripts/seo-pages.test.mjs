@@ -90,6 +90,7 @@ test('vacancy overview uses eight square source tiles in a fixed grid', () => {
   assert.match(appUi, /vacancyMatchesOverviewSource/);
   assert.doesNotMatch(appUi, /vacancy-source-rail/);
   assert.match(appUi, /sourceCards = \[/);
+  assert.match(appUi, /sourceCards\.sort\(function\(a, b\) \{ return \(Number\(b\.count\) \|\| 0\) - \(Number\(a\.count\) \|\| 0\); \}\)/);
   assert.doesNotMatch(appUi, /vacancy-group-grid/);
 });
 test('vacancy overview filters are wired to live recent listings', () => {

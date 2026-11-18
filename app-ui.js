@@ -1810,6 +1810,9 @@ export function renderAllVacanciesList() {
       { type:'adzuna', label:'Adzuna Vacancies', short:'Adzuna', count:adzunaCount, icon:'A' },
       { type:'careers_page', label:'Cruise Careers', short:'Cruise', count:careersPageCount, icon:'⚓' }
     ];
+    // Put the fullest categories first. Array#sort is stable in supported
+    // browsers, so equal counts retain the curated fallback order above.
+    sourceCards.sort(function(a, b) { return (Number(b.count) || 0) - (Number(a.count) || 0); });
     var sourceRow = function(item) {
       return '<button class="vac-cat-row" data-ripple onclick="openVacancyFolder(\'' + item.type + '\')" aria-label="Open ' + escapeHtml(item.label) + '">' +
         '<span class="vac-cat-row-left">' +
