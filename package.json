@@ -14,6 +14,7 @@
     "scrape:retail": "node scripts/scrape-retail.mjs",
     "scrape:simplify": "node scripts/scrape-simplify.mjs",
     "purge:stale": "node scripts/purge-stale-vacancies.mjs",
+    "reconcile:vacancies": "node scripts/reconcile-vacancy-freshness.mjs",
     "enforce:vacancy-caps": "node scripts/enforce-vacancy-caps.mjs",
     "scrape:graduates24": "node scripts/scrape-graduates24.mjs",
     "scrape:careers-page": "node scripts/scrape-careers-page.mjs",

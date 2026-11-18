@@ -177,5 +177,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     if (page < PAGE_COUNT && processed < MAX_VACANCIES) await sleep(REQUEST_DELAY_MS);
   }
 
+  if (!processed && !failures) {
+    console.error('[adzuna] run returned no vacancies; refusing to mark the source healthy');
+    process.exitCode = 1;
+  }
   if (failures > 0) process.exitCode = 1;
 }
