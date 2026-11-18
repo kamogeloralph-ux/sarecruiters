@@ -2965,3 +2965,17 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .mcb-share-title{font-size:13.5px;font-weight:800;color:var(--text)}
 .mcb-share p{margin:4px 0 8px;color:var(--text-2);font-size:12px;line-height:1.5}
 .mcb-link{padding:8px 10px;border-radius:9px;background:var(--card-2);color:var(--text);font-size:12px;overflow-wrap:anywhere}
+
+/* ---- Manager screens: keep the last buttons reachable on mobile browsers ----
+   .app is 100vh, which on Chrome/Safari mobile is taller than the visible area while the
+   address bar / bottom bar is showing, so the end of the scroll was hidden underneath it.
+   Use the dynamic viewport height on manager screens and leave extra room below the content. */
+.app:has(#screen-manager.active),
+.app:has(#screen-manager-employer.active){
+  height:100vh;height:100dvh;
+  min-height:0;
+}
+#screen-manager.active .screen-scroll,
+#screen-manager-employer.active .screen-scroll{
+  padding-bottom:calc(96px + env(safe-area-inset-bottom));
+}
