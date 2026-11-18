@@ -416,7 +416,7 @@ __name(managerVacancyAnalytics, "managerVacancyAnalytics");
 const CV_PARTNER_DAILY_LIMIT = 150;
 const CV_PARTNER_PAGE_SIZE = 20;
 async function cvBoxPartnerFromToken(env, token) {
-  if (typeof token !== "string" || token.length < 16 || token.length > 200) return null;
+  if (typeof token !== "string" || token.length < 8 || token.length > 200) return null;
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) { const e = new Error("not configured"); e.status = 503; throw e; }
   const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/manager_cv_box_partner`, {
     method: "POST",
