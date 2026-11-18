@@ -1382,6 +1382,13 @@ export async function loadAll(options) {
   }).catch(function () {});
   filterAndRenderCached();
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
+  // The user may already be viewing Vacancies while startup counts are
+  // loading. Refresh that screen after the counts arrive so count-based
+  // category ordering is applied instead of leaving the initial fixed order.
+  var activeVacancyScreen = document.getElementById('screen-allvacancies');
+  if (activeVacancyScreen && activeVacancyScreen.classList.contains('active') && typeof window.renderAllVacanciesList === 'function') {
+    window.renderAllVacanciesList();
+  }
   if (startup && !window.__saStaticData) refreshSecondaryStartupData();
   // CV picture feed and first-party ads are non-critical to the first render.
   if (typeof loadCvPicFeed === 'function') loadCvPicFeed();

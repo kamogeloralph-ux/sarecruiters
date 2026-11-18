@@ -106,6 +106,10 @@ test('vacancy overview filters are wired to live recent listings', () => {
   assert.doesNotMatch(appUi, /career-category-section/);
   assert.doesNotMatch(cards, /vac-featured-icon/);
 });
+test('live count loading rerenders the active vacancy category rail', () => {
+  assert.match(appData, /activeVacancyScreen = document\.getElementById\('screen-allvacancies'\)/);
+  assert.match(appData, /activeVacancyScreen\.classList\.contains\('active'\)[\s\S]*?window\.renderAllVacanciesList\(\)/);
+});
 test('the dedicated featured-vacancy carousel is removed', () => {
   assert.doesNotMatch(appUi, /featured-vacancies-rail|scrollFeaturedVacancies/);
   assert.doesNotMatch(styles, /featured-vacancies-rail/);
