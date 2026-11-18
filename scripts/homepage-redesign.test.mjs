@@ -35,6 +35,15 @@ test('home replaces the direct agency feed with the job-search feed while retain
   assert.doesNotMatch(html, /Browse jobs by province|home-province-section|home-province-links/);
 });
 
+test('home statistic cards reorder by live counts instead of fixed positions', () => {
+  assert.match(data, /reorderStatCardsByCount\(\);/);
+  assert.match(data, /agencyStat\.setAttribute\('data-count', agenciesCache\.length\)/);
+  assert.match(data, /statEmployers\.setAttribute\('data-count', employersCache\.length\)/);
+  assert.match(data, /statPool\.setAttribute\('data-count'/);
+  assert.match(data, /withCounts\.sort\(function\(a, b\) \{ return b\.count - a\.count \|\| a\.i - b\.i; \}\)/);
+  assert.doesNotMatch(css, /#screen-home \.stat-card-(?:vacancies|agencies|pool|cvpics|employers|ads)\{order:/);
+});
+
 test('location filters and category shortcuts feed real vacancy results', () => {
   const provinces = ['gauteng', 'western-cape', 'kwazulu-natal', 'eastern-cape', 'free-state', 'limpopo', 'mpumalanga', 'north-west', 'northern-cape'];
   for (const location of provinces) {

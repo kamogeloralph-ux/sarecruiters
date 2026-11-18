@@ -673,7 +673,10 @@ export var cvPicTotalCount = null;
 var cvPicCountFetchedAt = null;
 export function updateCvPicStat() {
   var el = document.getElementById('stat-cvpics');
-  if (el) el.textContent = cvPicTotalCount === null ? '…' : cvPicTotalCount;
+  if (el) {
+    el.textContent = cvPicTotalCount === null ? '…' : cvPicTotalCount;
+    el.setAttribute('data-count', cvPicTotalCount === null ? '' : cvPicTotalCount);
+  }
 }
 export async function getCvPictures() {
   try {
@@ -1435,7 +1438,11 @@ export function setVacancyStat(el, total) {
 
 export function updateStats() {
   updateAdsStat();
-  document.getElementById('stat-agencies').textContent = agenciesCache.length;
+  var agencyStat = document.getElementById('stat-agencies');
+  if (agencyStat) {
+    agencyStat.textContent = agenciesCache.length;
+    agencyStat.setAttribute('data-count', agenciesCache.length);
+  }
   updateCvPicStat();
   var vacancyStat = document.getElementById('stat-vacancies');
   if (vacancyStat) {
@@ -1448,9 +1455,16 @@ export function updateStats() {
     }
   }
   var statEmployers = document.getElementById('stat-employers');
-  if (statEmployers) statEmployers.textContent = employersCache.length;
+  if (statEmployers) {
+    statEmployers.textContent = employersCache.length;
+    statEmployers.setAttribute('data-count', employersCache.length);
+  }
   var statPool = document.getElementById('stat-pool');
-  if (statPool) statPool.textContent = poolLoaded ? poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length : poolCandidateCount;
+  if (statPool) {
+    var poolCount = poolLoaded ? poolCache.filter(function(c){ return (c.status || 'pending') === 'active'; }).length : poolCandidateCount;
+    statPool.textContent = poolCount;
+    statPool.setAttribute('data-count', typeof poolCount === 'number' ? poolCount : '');
+  }
   var provinceCounts = window.__saStartupPayload && window.__saStartupPayload.counts && window.__saStartupPayload.counts.provinces;
   document.querySelectorAll('[data-province-count]').forEach(function (node) {
     var key = node.getAttribute('data-province-count');
