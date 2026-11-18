@@ -326,7 +326,7 @@ export function exitManagerMode() {
   managerSession.agencyToken = null;
   managerSession.agencyAnalytics = null;
   managerSession.agencyMarketingPreference = null;
-  managerCvBox = { token: '', loaded: false, loading: false, partner: false, items: [], total: 0, offset: 0, pageSize: 20, q: '', actionsLeft: null, error: '', revealed: {}, requested: false, searchTimer: null };
+  managerCvBox = { open: false, token: '', loaded: false, loading: false, partner: false, items: [], total: 0, offset: 0, pageSize: 20, q: '', actionsLeft: null, error: '', revealed: {}, requested: false, searchTimer: null };
   // Clean URL
   if (window.history && window.history.replaceState) {
     var clean = window.location.origin + window.location.pathname;
@@ -431,7 +431,7 @@ export async function saveAgencyMonthlyEmailPreference() {
 // The manager token only identifies the agency. The Worker returns candidates only when an admin has
 // switched this agency to "CV Box partner"; contact details and CV files are fetched one candidate at
 // a time and logged server-side (see 20261117_cv_box_partner_access.sql).
-export var managerCvBox = { token: '', loaded: false, loading: false, partner: false, items: [], total: 0, offset: 0, pageSize: 20, q: '', actionsLeft: null, error: '', revealed: {}, requested: false, searchTimer: null };
+export var managerCvBox = { open: false, token: '', loaded: false, loading: false, partner: false, items: [], total: 0, offset: 0, pageSize: 20, q: '', actionsLeft: null, error: '', revealed: {}, requested: false, searchTimer: null };
 
 function cvBoxSubmitLink() { return window.location.origin + '/?section=candidates&cvbox=submit'; }
 function cvBoxSafeId(id) { return String(id == null ? '' : id).replace(/[^A-Za-z0-9_-]/g, ''); }
@@ -470,7 +470,7 @@ export function renderManagerCvBox() {
   var host = document.getElementById('manager-cvbox');
   if (!host || !managerAgency) return;
   var st = managerCvBox;
-  if (!st.loaded && !st.loading && !st.error && st.token !== managerAgency.manage_token) { managerCvBoxLoad(false); }
+  if (st.open && !st.loaded && !st.loading && !st.error && st.token !== managerAgency.manage_token) { managerCvBoxLoad(false); }
   var link = cvBoxSubmitLink();
   var shareBlock =
     '<div class="mcb-share"><div class="mcb-share-title">Send your candidates to the CV Box</div>' +
@@ -497,8 +497,14 @@ export function renderManagerCvBox() {
   var hadSearch = document.getElementById('mcb-search');
   var focus = hadSearch && document.activeElement === hadSearch;
   host.innerHTML =
-    '<section class="manager-consent-card mcb-card" aria-labelledby="mcb-title"><div class="manager-consent-heading"><span class="manager-consent-icon" aria-hidden="true">CV</span><div><h2 id="mcb-title">CV Box</h2><p>Candidates who added their CV to SA Recruiters.</p></div></div>' + body + '</section>';
-  if (st.loaded && st.partner) {
+    '<section class="manager-consent-card mcb-card' + (st.open ? ' is-open' : '') + '" aria-labelledby="mcb-title">' +
+      '<button type="button" class="mcb-toggle" onclick="managerCvBoxToggle()" aria-expanded="' + (st.open ? 'true' : 'false') + '" aria-controls="mcb-body">' +
+        '<span class="manager-consent-icon" aria-hidden="true">CV</span>' +
+        '<span class="mcb-toggle-text"><span class="mcb-toggle-title" id="mcb-title">CV Box</span><span class="mcb-toggle-sub">' + (st.open ? 'Tap to close' : 'Tap to open') + '</span></span>' +
+        '<span class="mcb-chevron" aria-hidden="true">' + (st.open ? '−' : '+') + '</span>' +
+      '</button>' +
+      (st.open ? '<div id="mcb-body">' + body + '</div>' : '') + '</section>';
+  if (st.open && st.loaded && st.partner) {
     renderManagerCvBoxList();
     if (focus) { var el = document.getElementById('mcb-search'); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} } }
   }
@@ -535,6 +541,7 @@ function renderManagerCvBoxList() {
   if (more) more.innerHTML = (st.items.length < st.total) ? '<div class="mcb-actions"><button type="button" class="mcb-btn mcb-btn-alt" onclick="managerCvBoxMore()"' + (st.loading ? ' disabled' : '') + '>Load more</button></div>' : '';
 }
 
+export function managerCvBoxToggle() { managerCvBox.open = !managerCvBox.open; renderManagerCvBox(); }
 export function managerCvBoxSearchInput(value) {
   var st = managerCvBox; st.q = String(value || '').slice(0, 60);
   clearTimeout(st.searchTimer);
@@ -683,6 +690,7 @@ Object.assign(window, {
   renderAgencyMonthlyConsent,
   saveAgencyMonthlyEmailPreference,
   renderManagerCvBox,
+  managerCvBoxToggle,
   managerCvBoxLoad,
   managerCvBoxSearchInput,
   managerCvBoxMore,

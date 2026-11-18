@@ -2979,3 +2979,12 @@ html[data-inapp] .install-banner{bottom:88px!important}
 #screen-manager-employer.active .screen-scroll{
   padding-bottom:calc(96px + env(safe-area-inset-bottom));
 }
+
+/* CV Box collapsible header (tap to open) */
+.mcb-toggle{display:flex;align-items:center;gap:11px;width:100%;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mcb-toggle-text{flex:1;min-width:0;display:flex;flex-direction:column}
+.mcb-toggle-title{font-size:15px;font-weight:800;color:var(--text)}
+.mcb-toggle-sub{margin-top:1px;color:var(--text-2);font-size:12px}
+.mcb-chevron{flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:18px;line-height:1}
+#mcb-body{margin-top:4px}
+.mcb-card:not(.is-open){padding-top:12px;padding-bottom:12px}
