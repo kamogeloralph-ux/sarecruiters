@@ -409,6 +409,80 @@ async function managerVacancyAnalytics(env, token, kind) {
 }
 __name(managerVacancyAnalytics, "managerVacancyAnalytics");
 
+// ---------- CV Box partner access (agencies, from their private Manager Link) ----------
+// The Manager Link token only says WHICH agency is asking. Candidate data is returned only when an
+// admin has switched that agency to cv_box_partner. Contact reveals and CV downloads are logged
+// and capped per agency per 24 hours (see 20261117_cv_box_partner_access.sql).
+const CV_PARTNER_DAILY_LIMIT = 150;
+const CV_PARTNER_PAGE_SIZE = 20;
+async function cvBoxPartnerFromToken(env, token) {
+  if (typeof token !== "string" || token.length < 16 || token.length > 200) return null;
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) { const e = new Error("not configured"); e.status = 503; throw e; }
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/manager_cv_box_partner`, {
+    method: "POST",
+    headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_token: token })
+  });
+  if (!res.ok) { const e = new Error("partner lookup failed"); e.status = 502; throw e; }
+  const rows = await res.json().catch(() => []);
+  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+}
+__name(cvBoxPartnerFromToken, "cvBoxPartnerFromToken");
+function cvBoxServiceHeaders(env, extra) {
+  return { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, ...(extra || {}) };
+}
+__name(cvBoxServiceHeaders, "cvBoxServiceHeaders");
+async function cvBoxPartnerActionsToday(env, agencyId) {
+  const since = new Date(Date.now() - 86400000).toISOString();
+  const q = new URLSearchParams({ select: "id", agency_id: `eq.${agencyId}`, created_at: `gte.${since}` });
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/cv_box_partner_access_log?${q}`, {
+    headers: cvBoxServiceHeaders(env, { Prefer: "count=exact", Range: "0-0" })
+  });
+  const range = res.headers.get("content-range") || "";
+  const total = parseInt(range.split("/")[1], 10);
+  return Number.isFinite(total) ? total : 0;
+}
+__name(cvBoxPartnerActionsToday, "cvBoxPartnerActionsToday");
+async function cvBoxPartnerLog(env, partner, candidateId, action) {
+  try {
+    await fetch(`${env.SUPABASE_URL}/rest/v1/cv_box_partner_access_log`, {
+      method: "POST",
+      headers: cvBoxServiceHeaders(env, { "Content-Type": "application/json", Prefer: "return=minimal" }),
+      body: JSON.stringify({ agency_id: String(partner.id), agency_name: String(partner.name || "").slice(0, 200), candidate_id: String(candidateId), action })
+    });
+  } catch (e) { console.error("cv box partner log failed", e && e.message); }
+}
+__name(cvBoxPartnerLog, "cvBoxPartnerLog");
+// Reads a stored candidate CV (R2 candidate-cvs/ or this project's public Supabase storage) with the same
+// location and size limits as the paid-download path. Returns { bytes, contentType, ext } or { error, status }.
+async function cvBoxFetchStoredCv(env, cvUrl) {
+  try {
+    const source = new URL(cvUrl);
+    const ext = (String(cvUrl).match(/\.(pdf|png|jpe?g)(?:\?|$)/i) || ["", "pdf"])[1].toLowerCase();
+    const publicBase = env.R2_PUBLIC_BASE_URL ? new URL(env.R2_PUBLIC_BASE_URL) : null;
+    if (publicBase && source.origin === publicBase.origin && source.pathname.startsWith(`${publicBase.pathname.replace(/\/$/, "")}/candidate-cvs/`)) {
+      const key = decodeURIComponent(source.pathname.slice(publicBase.pathname.replace(/\/$/, "").length + 1));
+      if (!/^candidate-cvs\/[A-Za-z0-9._-]+\.(pdf|png|jpe?g)$/i.test(key)) return { error: "Invalid CV location", status: 404 };
+      const object = await env.MEDIA_BUCKET.get(key);
+      if (!object) return { error: "CV file is no longer available", status: 404 };
+      const bytes = await object.arrayBuffer();
+      if (bytes.byteLength > 4 * 1024 * 1024) return { error: "CV file is too large", status: 413 };
+      return { bytes, contentType: object.httpMetadata?.contentType || "application/octet-stream", ext };
+    }
+    if (source.origin === new URL(env.SUPABASE_URL).origin && source.pathname.startsWith("/storage/v1/object/public/")) {
+      const response = await fetch(source.href, { redirect: "error" });
+      if (!response.ok) return { error: "CV file is no longer available", status: 404 };
+      const bytes = await response.arrayBuffer();
+      if (bytes.byteLength > 4 * 1024 * 1024) return { error: "CV file is too large", status: 413 };
+      return { bytes, contentType: response.headers.get("Content-Type") || "application/octet-stream", ext };
+    }
+    return { error: "CV storage location is not supported", status: 404 };
+  } catch (e) {
+    console.error("partner CV retrieval failed", e && e.message);
+    return { error: "CV file is temporarily unavailable", status: 502 };
+  }
+}
+__name(cvBoxFetchStoredCv, "cvBoxFetchStoredCv");
 async function managerAgencyMarketingPreference(env, token) {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return null;
   try {
@@ -2848,6 +2922,22 @@ var worker_default = {
       }
 
       // Ad requests (free advertising applications): status / notes / delete / file download.
+      const cvPartnerMatch = path.match(/^\/api\/admin\/cv-box-partner\/([A-Za-z0-9_-]{1,80})$/);
+      if (cvPartnerMatch && request.method === "POST") {
+        if (!await isAdminRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: "Admin data access is not configured." }, 503, origin);
+        const body = await request.json().catch(() => ({}));
+        if (typeof body.partner !== "boolean") return json({ error: "partner must be true or false." }, 400, origin);
+        const res = await fetch(`${env.SUPABASE_URL}/rest/v1/agencies?id=eq.${encodeURIComponent(cvPartnerMatch[1])}`, {
+          method: "PATCH",
+          headers: cvBoxServiceHeaders(env, { "Content-Type": "application/json", Prefer: "return=representation" }),
+          body: JSON.stringify({ cv_box_partner: body.partner, cv_box_partner_since: body.partner ? new Date().toISOString() : null })
+        });
+        if (!res.ok) return json({ error: "Could not update partner access. Has the 20261117 migration been run?" }, 502, origin);
+        const rows = await res.json().catch(() => []);
+        if (!Array.isArray(rows) || !rows.length) return json({ error: "Agency not found." }, 404, origin);
+        return json({ ok: true, partner: body.partner }, 200, origin);
+      }
       const adReqMatch = path.match(/^\/api\/admin\/ad-requests\/([0-9a-fA-F-]{36})$/);
       const adReqFileMatch = path.match(/^\/api\/admin\/ad-requests\/([0-9a-fA-F-]{36})\/file\/(\d{1,2})$/);
       if ((adReqMatch && (request.method === "POST" || request.method === "DELETE")) || (adReqFileMatch && request.method === "GET")) {
@@ -3062,6 +3152,86 @@ var worker_default = {
         } catch (e) {
           return json({ error: "Token check failed.", detail: e.detail }, 502, origin);
         }
+      }
+      // ---------- CV Box for partner agencies (Manager Link) ----------
+      if (path.startsWith("/api/manager/cv-box") && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        let partner;
+        try { partner = await cvBoxPartnerFromToken(env, String(body.token || "")); }
+        catch (e) { return json({ error: "CV Box is temporarily unavailable." }, e.status === 503 ? 503 : 502, origin); }
+        if (!partner) return json({ error: "Invalid manager link." }, 403, origin);
+
+        // Ask for partner access (works for any valid manager link, does nothing for existing partners)
+        if (path === "/api/manager/cv-box/request") {
+          if (partner.cv_box_partner) return json({ ok: true, already: true }, 200, origin);
+          await sendNotificationEmail(env, {
+            to_email: env.ADMIN_NOTIFY_EMAIL || "sarecruiters.directory@gmail.com",
+            email_subject: "SA Recruiters | CV Box partner request — " + String(partner.name || "").slice(0, 120),
+            notification_type: "CV BOX PARTNER REQUEST",
+            notification_title: "An agency asked for CV Box access",
+            notification_intro: "Check that the agency has started sending its candidates to the CV Box, then switch on 'CV Box partner' in Admin > Agencies > Edit.",
+            notification_body: "Agency: " + String(partner.name || "") + "\nAgency ID: " + String(partner.id)
+          });
+          return json({ ok: true }, 200, origin);
+        }
+
+        if (!partner.cv_box_partner) return json({ partner: false, agency: String(partner.name || "") }, 200, origin);
+
+        // Searchable list: public-safe profile fields only. Contact details and CV files are never in this list.
+        if (path === "/api/manager/cv-box") {
+          const rawQ = String(body.q || "").replace(/[^\p{L}\p{N} .'-]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+          const sector = String(body.sector || "").replace(/[^\p{L}\p{N} &,/'.()-]/gu, "").slice(0, 80);
+          const offset = Math.max(0, Math.min(5000, parseInt(body.offset, 10) || 0));
+          const q = new URLSearchParams({
+            select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,created_at,availability,availability_expires_at,cv_link,contact_phone,contact_email",
+            status: "eq.active", order: "created_at.desc", limit: String(CV_PARTNER_PAGE_SIZE), offset: String(offset)
+          });
+          if (rawQ) q.set("or", `(full_name.ilike.*${rawQ}*,position.ilike.*${rawQ}*,location.ilike.*${rawQ}*,sector.ilike.*${rawQ}*)`);
+          if (sector) q.set("sector", `eq.${sector}`);
+          const res = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${q}`, { headers: cvBoxServiceHeaders(env, { Prefer: "count=exact" }) });
+          if (!res.ok) return json({ error: "CV Box could not be loaded." }, 502, origin);
+          const total = parseInt((res.headers.get("content-range") || "").split("/")[1], 10);
+          const rows = await res.json().catch(() => []);
+          const now = Date.now();
+          const items = (Array.isArray(rows) ? rows : []).map((r) => ({
+            id: r.id, full_name: r.full_name, position: r.position, sector: cvBoxPublicSector(r.sector), location: r.location,
+            experience_years: r.experience_years, about_you: String(r.about_you || "").slice(0, 400), photo_url: r.photo_url || "",
+            verified: !!r.verified, created_at: r.created_at, availability: String(r.availability || "").slice(0, 40),
+            availability_expired: !!(r.availability_expires_at && Date.parse(r.availability_expires_at) < now),
+            has_cv: !!r.cv_link, has_contact: !!(String(r.contact_phone || "").trim() || String(r.contact_email || "").trim())
+          }));
+          const used = await cvBoxPartnerActionsToday(env, partner.id);
+          return json({ partner: true, agency: String(partner.name || ""), items, total: Number.isFinite(total) ? total : items.length, offset, page_size: CV_PARTNER_PAGE_SIZE, actions_left: Math.max(0, CV_PARTNER_DAILY_LIMIT - used) }, 200, origin);
+        }
+
+        // One candidate at a time: reveal contact details, or download the CV file. Both are logged and capped.
+        const candidateId = String(body.id || "");
+        if (!/^[A-Za-z0-9_-]{1,64}$/.test(candidateId)) return json({ error: "Invalid candidate." }, 400, origin);
+        if (await cvBoxPartnerActionsToday(env, partner.id) >= CV_PARTNER_DAILY_LIMIT) {
+          return json({ error: "You have reached today's CV Box limit. It resets within 24 hours. Contact SA Recruiters if you need more." }, 429, origin);
+        }
+        const cq = new URLSearchParams({ select: "id,full_name,cv_link,contact_phone,contact_email", id: `eq.${candidateId}`, status: "eq.active", limit: "1" });
+        const cres = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${cq}`, { headers: cvBoxServiceHeaders(env) });
+        if (!cres.ok) return json({ error: "CV Box could not be loaded." }, 502, origin);
+        const candidate = (await cres.json().catch(() => []))[0];
+        if (!candidate) return json({ error: "This candidate is no longer in the CV Box." }, 404, origin);
+
+        if (path === "/api/manager/cv-box/candidate") {
+          await cvBoxPartnerLog(env, partner, candidate.id, "contact");
+          return json({ id: candidate.id, phone: String(candidate.contact_phone || "").trim(), email: String(candidate.contact_email || "").trim() }, 200, origin);
+        }
+        if (path === "/api/manager/cv-box/download") {
+          if (!candidate.cv_link) return json({ error: "This profile does not have a CV file yet." }, 409, origin);
+          const file = await cvBoxFetchStoredCv(env, candidate.cv_link);
+          if (file.error) return json({ error: file.error }, file.status || 502, origin);
+          await cvBoxPartnerLog(env, partner, candidate.id, "download");
+          const safeName = String(candidate.full_name || "candidate").replace(/[^a-z0-9_-]+/gi, "-").slice(0, 60) || "candidate";
+          return new Response(file.bytes, { status: 200, headers: {
+            ...corsHeaders(origin), "Content-Type": file.contentType, "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": `attachment; filename="SA-Recruiters-CV-${safeName}.${file.ext}"`, "Access-Control-Expose-Headers": "Content-Disposition"
+          } });
+        }
+        return json({ error: "Not found" }, 404, origin);
       }
       if (path === "/api/manager/email-preference" && request.method === "GET") {
         const token = url.searchParams.get("token") || "";
