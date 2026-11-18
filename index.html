@@ -719,6 +719,7 @@ window.sentryOnLoad = function () {
     <div class="screen-scroll">
     <div class="sm-card" id="manager-agency-profile" style="margin-top:14px"></div>
     <div id="manager-marketing-consent"></div>
+    <div id="manager-cvbox"></div>
     <div class="section-head"><div class="section-title">Branches</div></div>
     <div id="manager-branch-list"></div>
     <button class="manager-add-btn" data-ripple onclick="managerAddBranch()"><span class="mi-icon"><svg><use href="icons.svg#i0248b0"/></svg></span> Add branch</button>
@@ -1224,7 +1225,7 @@ window.sentryOnLoad = function () {
         <select id="pool-gender"><option value="">—</option></select><select id="pool-grade12"><option value="">—</option></select><select id="pool-criminal"><option value="">—</option></select><input id="pool-qualification"><select id="pool-drivers-license"><option value="">—</option></select><select id="pool-transport"><option value="">—</option></select><select id="pool-relocate"><option value="">—</option></select><select id="pool-employment"><option value="">—</option></select><input id="pool-salary"><select id="pool-work-authorized"><option value="">—</option></select><textarea id="pool-about"></textarea><input id="pool-email-alerts" type="checkbox">
       </div>
     </div>
-    <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the CV Box, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>. Your information is handled under POPIA &mdash; <a href="/popia-certificate/">view our Information Regulator registration certificate</a>.</small></span></label>
+    <label class="terms-accept-row" for="pool-terms-accept"><input id="pool-terms-accept" type="checkbox"><span><strong>I ACCEPT TERMS AND CONDITIONS</strong><small>By joining the CV Box, you agree to the <a href="terms/" target="_blank" rel="noopener">SA Recruiters Terms and Conditions</a>. Recruiters and partner agencies approved by SA Recruiters can view your profile, contact details and CV so they can contact you about work. Your information is handled under POPIA &mdash; <a href="/popia-certificate/">view our Information Regulator registration certificate</a>.</small></span></label>
     <button class="sheet-submit" data-ripple onclick="submitPoolRegistration()" id="pool-submit-btn">Upload CV</button>
     <button class="sheet-submit danger" data-ripple onclick="deleteMyPoolProfile()" id="pool-delete-btn" style="display:none">Remove my profile</button>
   </div>

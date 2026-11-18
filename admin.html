@@ -560,6 +560,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Head office address</label><input id="a-address" placeholder="Street address"></div>
     <div class="field"><label>Companies (comma separated)</label><input id="a-companies" placeholder="e.g. Standard Bank, Shoprite"></div>
     <div class="field"><label>Trades / Industries (comma separated)</label><input id="a-trades" placeholder="e.g. Mining, Logistics, Construction"></div>
+    <div class="field"><label>CV Box partner access</label><select id="a-cvpartner"><option value="no">Not a partner</option><option value="yes">Partner: can view CVs from their Manager Link</option></select><div class="muted" style="font-size:12px;margin-top:4px">Switch on once the agency sends its candidates to the CV Box. Needs the 20261117 migration.</div></div>
     <div class="field"><label>CV preference</label><select id="a-cvpref"><option>Email</option><option>WhatsApp</option><option>Online form</option><option>Phone</option><option>Upload portal</option></select></div>
     <div class="toggle-row" style="margin-bottom:16px">
       <div><div class="t-label">Mark as verified</div><div class="t-sub">Verified agencies show a badge on their listing</div></div>
@@ -1212,7 +1213,9 @@ async function writeThroughD1Mirror(table, value, operation){
 // ===== Data access =====
 async function getAgencies(){
   var cols = 'id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified,manage_token';
-  var res = await withTimeout(supabaseClient.from('agencies').select(cols).order('created_at',{ascending:false}), 30000, 'Agencies');
+  var res = await withTimeout(supabaseClient.from('agencies').select(cols + ',cv_box_partner').order('created_at',{ascending:false}), 30000, 'Agencies');
+  // cv_box_partner only exists after migration 20261117; fall back to the original columns until it is run.
+  if (res.error) res = await withTimeout(supabaseClient.from('agencies').select(cols).order('created_at',{ascending:false}), 30000, 'Agencies');
   if (res.error) {
     // If the token column is not readable from the browser role, still load the list.
     console.warn('agencies: retrying without manage_token', res.error);
@@ -1882,6 +1885,7 @@ function openAgencySheet(id){
   document.getElementById('a-companies').value = a ? (a.companies||'') : '';
   document.getElementById('a-trades').value = a ? (a.trades||'') : '';
   document.getElementById('a-cvpref').value = a ? (a.cvpref||'Email') : 'Email';
+  var cvPartnerSel = document.getElementById('a-cvpartner'); if(cvPartnerSel) cvPartnerSel.value = (a && a.cv_box_partner) ? 'yes' : 'no';
   var verifiedBox = document.getElementById('a-verified'); if(verifiedBox) verifiedBox.checked = a ? !!a.verified : false;
   pendingPhoto = a ? (a.photo||null) : null;
   pendingPhotoBlob = null;
@@ -2018,6 +2022,15 @@ async function saveAgency(){
   if (isNewAgency) payload.manage_token = genToken(); // write once, atomically
   var saved = await upsertAgency(payload);
   if (!saved) return;
+  // CV Box partner access is saved separately (service role, Worker) so a missing migration can never block saving an agency.
+  var cvPartnerSel = document.getElementById('a-cvpartner');
+  if (cvPartnerSel) {
+    var wantPartner = cvPartnerSel.value === 'yes', prev = !isNewAgency ? agencyById(id) : null;
+    if (wantPartner !== !!(prev && prev.cv_box_partner)) {
+      try { await adminApi('POST', '/api/admin/cv-box-partner/' + encodeURIComponent(id), { partner: wantPartner }); payload.cv_box_partner = wantPartner; }
+      catch (e) { alert('Agency saved, but CV Box partner access could not be changed: ' + (e.message || 'check the migration and try again')); }
+    }
+  }
   if (isNewAgency) { var verified = await saveManagerToken(id, payload.manage_token); if (!verified) payload.manage_token = ''; }
   var cachedIndex = cache.agencies.findIndex(function(x){ return x.id === id; });
   if (cachedIndex >= 0) cache.agencies[cachedIndex] = Object.assign({}, cache.agencies[cachedIndex], payload);

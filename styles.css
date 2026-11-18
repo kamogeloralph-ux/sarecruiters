@@ -2939,3 +2939,29 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .popia-notice small{font-size:11px;font-weight:500;color:var(--text-2,inherit)}
 .account-signin-popia{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin:6px 0 0;font-size:10.5px;line-height:1.4;color:var(--text-2)}
 .account-signin-popia a{color:var(--accent,#1769cf);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+
+/* ---- CV Box inside the agency Manager Link ---- */
+.mcb-badge{display:inline-block;margin:12px 0 8px;padding:4px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,var(--card));color:var(--accent);font-size:12px;font-weight:750}
+.mcb-search{width:100%;min-height:44px;margin:6px 0 4px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:15px}
+.mcb-count{margin:2px 2px 8px;color:var(--text-2);font-size:12px}
+.mcb-note{margin:10px 0 0;color:var(--text-2);font-size:12px;line-height:1.5}
+.mcb-error{color:#c0392b}
+.mcb-item{margin:10px 0;padding:13px;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+.mcb-item-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.mcb-name{font-size:15px;font-weight:800;color:var(--text)}
+.mcb-ok{color:var(--accent)}
+.mcb-role{margin-top:1px;color:var(--text-2);font-size:13px;font-weight:600}
+.mcb-meta,.mcb-about{margin-top:6px;color:var(--text-2);font-size:12.5px;line-height:1.45}
+.mcb-about{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mcb-chip{flex:0 0 auto;padding:3px 9px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);color:var(--text);font-size:11.5px;font-weight:700}
+.mcb-chip-old{color:var(--text-2);font-weight:600}
+.mcb-contact{margin-top:9px;padding:9px 11px;border-radius:10px;background:var(--card-2);font-size:13px;overflow-wrap:anywhere}
+.mcb-contact a{color:var(--accent);font-weight:700}
+.mcb-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+.mcb-btn{min-height:40px;padding:9px 15px;border:0;border-radius:11px;background:var(--accent);color:#fff;font-size:13px;font-weight:750;cursor:pointer}
+.mcb-btn-alt{background:var(--card-2);color:var(--text);border:1px solid var(--border)}
+.mcb-btn:disabled{opacity:.55;cursor:not-allowed}
+.mcb-share{margin-top:14px;padding:13px;border-radius:12px;background:var(--card);border:1px dashed var(--border)}
+.mcb-share-title{font-size:13.5px;font-weight:800;color:var(--text)}
+.mcb-share p{margin:4px 0 8px;color:var(--text-2);font-size:12px;line-height:1.5}
+.mcb-link{padding:8px 10px;border-radius:9px;background:var(--card-2);color:var(--text);font-size:12px;overflow-wrap:anywhere}

@@ -326,6 +326,7 @@ export function exitManagerMode() {
   managerSession.agencyToken = null;
   managerSession.agencyAnalytics = null;
   managerSession.agencyMarketingPreference = null;
+  managerCvBox = { token: '', loaded: false, loading: false, partner: false, items: [], total: 0, offset: 0, pageSize: 20, q: '', actionsLeft: null, error: '', revealed: {}, requested: false, searchTimer: null };
   // Clean URL
   if (window.history && window.history.replaceState) {
     var clean = window.location.origin + window.location.pathname;
@@ -345,6 +346,7 @@ export function renderManagerMode() {
   if (!managerMode || !managerAgency) return;
   renderManagerAgencyProfile();
   renderAgencyMonthlyConsent();
+  renderManagerCvBox();
   // Branches
   var branches = branchesFor(managerAgency.id);
   var bHtml = '';
@@ -423,6 +425,175 @@ export async function saveAgencyMonthlyEmailPreference() {
     checkbox.disabled = false;
     button.disabled = false;
   }
+}
+
+// ===== CV BOX FOR PARTNER AGENCIES (from the private Manager Link) =====
+// The manager token only identifies the agency. The Worker returns candidates only when an admin has
+// switched this agency to "CV Box partner"; contact details and CV files are fetched one candidate at
+// a time and logged server-side (see 20261117_cv_box_partner_access.sql).
+export var managerCvBox = { token: '', loaded: false, loading: false, partner: false, items: [], total: 0, offset: 0, pageSize: 20, q: '', actionsLeft: null, error: '', revealed: {}, requested: false, searchTimer: null };
+
+function cvBoxSubmitLink() { return window.location.origin + '/?section=candidates&cvbox=submit'; }
+function cvBoxSafeId(id) { return String(id == null ? '' : id).replace(/[^A-Za-z0-9_-]/g, ''); }
+function cvBoxWaHref(phone) {
+  var digits = String(phone || '').replace(/\D/g, '');
+  if (digits.charAt(0) === '0') digits = '27' + digits.slice(1);
+  return digits.length >= 9 ? 'https://wa.me/' + digits : '';
+}
+async function cvBoxPost(path, payload) {
+  var res = await fetch(R2_WORKER_URL + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ token: managerAgency && managerAgency.manage_token }, payload || {})) });
+  return res;
+}
+
+export async function managerCvBoxLoad(append) {
+  if (!managerAgency || !managerAgency.manage_token) return;
+  var st = managerCvBox;
+  if (st.loading) return;
+  st.loading = true; st.error = '';
+  if (!append) { st.offset = 0; }
+  renderManagerCvBox();
+  try {
+    var res = await cvBoxPost('/api/manager/cv-box', { q: st.q, offset: st.offset });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok) throw new Error(data.error || 'The CV Box could not be loaded. Please try again.');
+    st.loaded = true; st.token = managerAgency.manage_token; st.partner = data.partner === true;
+    if (st.partner) {
+      st.items = append ? st.items.concat(data.items || []) : (data.items || []);
+      st.total = data.total || st.items.length; st.pageSize = data.page_size || 20; st.actionsLeft = data.actions_left;
+    }
+  } catch (e) { st.error = e && e.message || 'The CV Box could not be loaded. Please try again.'; }
+  st.loading = false;
+  renderManagerCvBox();
+}
+
+export function renderManagerCvBox() {
+  var host = document.getElementById('manager-cvbox');
+  if (!host || !managerAgency) return;
+  var st = managerCvBox;
+  if (!st.loaded && !st.loading && !st.error && st.token !== managerAgency.manage_token) { managerCvBoxLoad(false); }
+  var link = cvBoxSubmitLink();
+  var shareBlock =
+    '<div class="mcb-share"><div class="mcb-share-title">Send your candidates to the CV Box</div>' +
+    '<p>Partner agencies send their candidates, and anyone who asks about work, to add their CV here. Share this link in your email signature, WhatsApp replies and job adverts.</p>' +
+    '<div class="mcb-link">' + escapeHtml(link) + '</div>' +
+    '<div class="mcb-actions"><button type="button" class="mcb-btn" onclick="managerCvBoxCopyLink()">Copy link</button>' +
+    '<button type="button" class="mcb-btn mcb-btn-alt" onclick="managerCvBoxShareLink()">Share on WhatsApp</button></div></div>';
+  var body = '';
+  if (st.loading && !st.loaded) {
+    body = '<p class="mcb-note">Checking your CV Box access…</p>';
+  } else if (st.error && !st.loaded) {
+    body = '<p class="mcb-note mcb-error" role="alert">' + escapeHtml(st.error) + '</p><div class="mcb-actions"><button type="button" class="mcb-btn" onclick="managerCvBoxLoad(false)">Try again</button></div>';
+  } else if (!st.partner) {
+    body = '<p class="mcb-note">Partner agencies get access to every CV collected in the CV Box. To become a partner, start sending your candidates to the CV Box, then ask for access.</p>' +
+      shareBlock +
+      '<div class="mcb-actions"><button type="button" class="mcb-btn" id="mcb-request-btn" onclick="managerCvBoxRequest()"' + (st.requested ? ' disabled' : '') + '>' + (st.requested ? 'Request sent' : 'Request partner access') + '</button></div>' +
+      '<p class="mcb-note" id="mcb-request-status" role="status">' + (st.requested ? 'Thank you. We will review your request and message you.' : '') + '</p>';
+  } else {
+    body = '<div class="mcb-badge">Partner access active</div>' +
+      '<input id="mcb-search" class="mcb-search" type="search" placeholder="Search a profession, sector, name or town" value="' + escapeHtml(st.q) + '" oninput="managerCvBoxSearchInput(this.value)" aria-label="Search CV Box">' +
+      '<div class="mcb-count" id="mcb-count"></div><div id="mcb-list"></div><div id="mcb-more"></div>' +
+      '<p class="mcb-note">Candidate details are for recruitment purposes only. Every contact view and CV download is logged' + (st.actionsLeft != null ? ' (' + st.actionsLeft + ' left today)' : '') + '. Do not share or resell them.</p>' + shareBlock;
+  }
+  var hadSearch = document.getElementById('mcb-search');
+  var focus = hadSearch && document.activeElement === hadSearch;
+  host.innerHTML =
+    '<section class="manager-consent-card mcb-card" aria-labelledby="mcb-title"><div class="manager-consent-heading"><span class="manager-consent-icon" aria-hidden="true">CV</span><div><h2 id="mcb-title">CV Box</h2><p>Candidates who added their CV to SA Recruiters.</p></div></div>' + body + '</section>';
+  if (st.loaded && st.partner) {
+    renderManagerCvBoxList();
+    if (focus) { var el = document.getElementById('mcb-search'); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} } }
+  }
+}
+
+function renderManagerCvBoxList() {
+  var st = managerCvBox, list = document.getElementById('mcb-list');
+  if (!list) return;
+  var count = document.getElementById('mcb-count');
+  if (count) count.textContent = st.total ? st.total + (st.total === 1 ? ' candidate' : ' candidates') : '';
+  if (!st.items.length) { list.innerHTML = '<p class="mcb-note">' + (st.loading ? 'Searching…' : (st.q ? 'No candidates match your search.' : 'No candidates in the CV Box yet.')) + '</p>'; }
+  else list.innerHTML = st.items.map(function(c) {
+    var id = cvBoxSafeId(c.id), rev = st.revealed[id];
+    var meta = [c.location, c.experience_years ? c.experience_years + ' yrs experience' : '', c.sector].filter(Boolean).map(escapeHtml).join(' · ');
+    var contact = '';
+    if (rev) {
+      var wa = cvBoxWaHref(rev.phone);
+      contact = '<div class="mcb-contact">' +
+        (rev.phone ? '<a href="tel:' + escapeHtml(rev.phone.replace(/[^\d+]/g, '')) + '">' + escapeHtml(rev.phone) + '</a>' + (wa ? ' · <a href="' + escapeHtml(wa) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') : '') +
+        (rev.email ? '<div><a href="mailto:' + escapeHtml(rev.email) + '">' + escapeHtml(rev.email) + '</a></div>' : '') +
+        (!rev.phone && !rev.email ? '<span class="mcb-note">No separate contact details on file. Check the CV.</span>' : '') + '</div>';
+    }
+    return '<div class="mcb-item"><div class="mcb-item-head"><div><div class="mcb-name">' + escapeHtml(c.full_name || 'Candidate') + (c.verified ? ' <span class="mcb-ok" title="Verified">✓</span>' : '') + '</div>' +
+      '<div class="mcb-role">' + escapeHtml(c.position || '') + '</div></div>' +
+      (c.availability ? '<span class="mcb-chip' + (c.availability_expired ? ' mcb-chip-old' : '') + '">' + escapeHtml(c.availability_expired ? 'Availability to confirm' : c.availability) + '</span>' : '') + '</div>' +
+      (meta ? '<div class="mcb-meta">' + meta + '</div>' : '') +
+      (c.about_you ? '<div class="mcb-about">' + escapeHtml(c.about_you) + '</div>' : '') + contact +
+      '<div class="mcb-actions">' +
+        (rev ? '' : '<button type="button" class="mcb-btn" onclick="managerCvBoxReveal(\'' + id + '\', this)"' + (c.has_contact ? '' : ' disabled title="No contact details on file"') + '>Show contact</button>') +
+        '<button type="button" class="mcb-btn mcb-btn-alt" onclick="managerCvBoxDownload(\'' + id + '\', this)"' + (c.has_cv ? '' : ' disabled title="No CV file on file"') + '>Download CV</button>' +
+      '</div></div>';
+  }).join('');
+  var more = document.getElementById('mcb-more');
+  if (more) more.innerHTML = (st.items.length < st.total) ? '<div class="mcb-actions"><button type="button" class="mcb-btn mcb-btn-alt" onclick="managerCvBoxMore()"' + (st.loading ? ' disabled' : '') + '>Load more</button></div>' : '';
+}
+
+export function managerCvBoxSearchInput(value) {
+  var st = managerCvBox; st.q = String(value || '').slice(0, 60);
+  clearTimeout(st.searchTimer);
+  st.searchTimer = setTimeout(function() { managerCvBoxLoad(false); }, 350);
+}
+export function managerCvBoxMore() { managerCvBox.offset = managerCvBox.items.length; managerCvBoxLoad(true); }
+
+export async function managerCvBoxReveal(id, btn) {
+  id = cvBoxSafeId(id); if (!id) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  try {
+    var res = await cvBoxPost('/api/manager/cv-box/candidate', { id: id });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok) throw new Error(data.error || 'Could not load the contact details.');
+    managerCvBox.revealed[id] = { phone: data.phone || '', email: data.email || '' };
+    if (managerCvBox.actionsLeft != null) managerCvBox.actionsLeft = Math.max(0, managerCvBox.actionsLeft - 1);
+    renderManagerCvBox();
+  } catch (e) {
+    showToast(e && e.message || 'Could not load the contact details.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Show contact'; }
+  }
+}
+
+export async function managerCvBoxDownload(id, btn) {
+  id = cvBoxSafeId(id); if (!id) return;
+  var label = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Preparing…'; }
+  try {
+    var res = await cvBoxPost('/api/manager/cv-box/download', { id: id });
+    if (!res.ok) { var err = await res.json().catch(function(){ return {}; }); throw new Error(err.error || 'Could not download this CV.'); }
+    var blob = await res.blob();
+    var cd = res.headers.get('Content-Disposition') || '';
+    var m = cd.match(/filename="([^"]+)"/);
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = m ? m[1] : 'SA-Recruiters-CV.pdf'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    if (managerCvBox.actionsLeft != null) managerCvBox.actionsLeft = Math.max(0, managerCvBox.actionsLeft - 1);
+    showToast('CV downloaded');
+  } catch (e) { showToast(e && e.message || 'Could not download this CV.'); }
+  if (btn) { btn.disabled = false; btn.textContent = label || 'Download CV'; }
+}
+
+export async function managerCvBoxRequest() {
+  var btn = document.getElementById('mcb-request-btn'), status = document.getElementById('mcb-request-status');
+  if (btn) btn.disabled = true;
+  try {
+    var res = await cvBoxPost('/api/manager/cv-box/request', {});
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not send your request. Please try again.');
+    managerCvBox.requested = true; renderManagerCvBox();
+  } catch (e) {
+    if (btn) btn.disabled = false;
+    if (status) status.textContent = e && e.message || 'Could not send your request. Please try again.';
+  }
+}
+export function managerCvBoxCopyLink() { copyText(cvBoxSubmitLink()); showToast('CV Box link copied'); }
+export function managerCvBoxShareLink() {
+  var text = 'Looking for work? Add your CV free to the SA Recruiters CV Box: ' + cvBoxSubmitLink();
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
 }
 
 export function managerVacancyMetricsMarkup(vacancyId, analytics) {
@@ -511,6 +682,15 @@ Object.assign(window, {
   renderManagerAgencyProfile,
   renderAgencyMonthlyConsent,
   saveAgencyMonthlyEmailPreference,
+  renderManagerCvBox,
+  managerCvBoxLoad,
+  managerCvBoxSearchInput,
+  managerCvBoxMore,
+  managerCvBoxReveal,
+  managerCvBoxDownload,
+  managerCvBoxRequest,
+  managerCvBoxCopyLink,
+  managerCvBoxShareLink,
   managerAddBranch,
   managerAddVacancy,
 });
