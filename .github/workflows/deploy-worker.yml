@@ -60,6 +60,18 @@ jobs:
         working-directory: Cloudflare-worker
         run: npx --yes wrangler@4.147.0 deploy --config wrangler.toml
 
+      - name: Sync Supabase service-role key to the Worker
+        working-directory: Cloudflare-worker
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]]; then
+            echo "::warning::GitHub secret SUPABASE_SERVICE_ROLE_KEY is empty; the Worker's admin data endpoints will stay disabled."
+            exit 0
+          fi
+          printf '%s' "${SUPABASE_SERVICE_ROLE_KEY}" | npx --yes wrangler@4.147.0 secret put SUPABASE_SERVICE_ROLE_KEY --config wrangler.toml
+
       - name: Publish house-ad creatives to R2
         shell: bash
         run: |
