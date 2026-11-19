@@ -784,8 +784,18 @@ async function buildPublicVacancySnapshot(env) {
     "experience_level", "employment_type", "contract_type", "work_schedule",
     "hours", "salary", "start_date", "created_at", "source_type"
   ];
-  const result = await env.DB.prepare(`SELECT ${columns.join(",")} FROM vacancies WHERE closing_date IS NULL OR closing_date = '' OR closing_date >= date('now') ORDER BY created_at DESC, id DESC`).all();
-  return { generated_at: new Date().toISOString(), vacancies: result.results || [] };
+  const result = await env.DB.prepare(`SELECT ${columns.join(",")} FROM vacancies ORDER BY created_at DESC, id DESC`).all();
+  const today = new Date();
+  const startOfToday = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const live = (result.results || []).filter((row) => {
+    const raw = String(row.closing_date || '').trim();
+    if (!raw) return true;
+    const parsed = Date.parse(raw);
+    // Preserve rows with an unrecognised closing-date format; the client and
+    // admin use the same conservative rule for dates they cannot parse.
+    return Number.isNaN(parsed) || parsed >= startOfToday;
+  });
+  return { generated_at: new Date().toISOString(), vacancies: live };
 }
 __name(buildPublicVacancySnapshot, "buildPublicVacancySnapshot");
 async function buildPublicVacancySnapshotFromSupabase(env) {
@@ -1162,7 +1172,10 @@ async function syncD1AndPublishSnapshot(env) {
   // already the authoritative source for this scheduled publication.
   const payload = await loadStartupData(env);
   payload.data_version = dataVersion;
-  const vacancySnapshot = await buildPublicVacancySnapshotFromSupabase(env);
+  // Admin vacancy browsing reads D1. Publish the public R2 vacancy snapshot
+  // from that same mirror so both surfaces contain the same current rows and
+  // publication does not create a second, differently filtered Supabase feed.
+  const vacancySnapshot = await buildPublicVacancySnapshot(env);
   vacancySnapshot.data_version = dataVersion;
   await Promise.all([
     writePublicStartupSnapshot(env, payload),
