@@ -17,6 +17,7 @@ const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
 
 const SOURCE_GROUPS = {
   adzuna: ['adzuna'],
+  jooble: ['jooble'],
   himalayas: ['himalayas'],
   simplify: ['simplify'],
   learnerships: ['learnerships'],
