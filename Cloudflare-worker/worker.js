@@ -813,7 +813,10 @@ async function buildPublicVacancySnapshotFromSupabase(env) {
   // has no closing date, so a PostgREST "closing_date.is.null OR >= today" filter silently dropped
   // every one of them. Filter here instead: keep rows with no closing date or one still in the future.
   const today = new Date().toISOString().slice(0, 10);
-  const live = (rows || []).filter((row) => !row.closing_date || row.closing_date >= today);
+  const live = (rows || []).filter((row) => {
+    const closingDate = publicClosingDate(row.closing_date);
+    return !closingDate || closingDate >= today;
+  });
   return { generated_at: new Date().toISOString(), vacancies: live };
 }
 __name(buildPublicVacancySnapshotFromSupabase, "buildPublicVacancySnapshotFromSupabase");
@@ -1175,7 +1178,10 @@ async function syncD1AndPublishSnapshot(env) {
   // Admin vacancy browsing reads D1. Publish the public R2 vacancy snapshot
   // from that same mirror so both surfaces contain the same current rows and
   // publication does not create a second, differently filtered Supabase feed.
-  const vacancySnapshot = await buildPublicVacancySnapshot(env);
+  // Supabase is authoritative for the scheduled public publication. The D1
+  // mirror is intentionally incremental, so using it here can omit scraper
+  // rows whose updated_at is NULL (notably Himalayas and Adzuna listings).
+  const vacancySnapshot = await buildPublicVacancySnapshotFromSupabase(env);
   vacancySnapshot.data_version = dataVersion;
   await Promise.all([
     writePublicStartupSnapshot(env, payload),
