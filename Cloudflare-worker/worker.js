@@ -2063,6 +2063,19 @@ async function vacanciesResponse(request, env, ctx, origin) {
   let alreadyPaged = false;
   if (snapshotFresh) {
     rows = filterRows(snapshot.vacancies);
+    // A legacy/incomplete R2 snapshot can contain general listings while
+    // omitting dedicated scraper sources. Recover those filtered requests
+    // from Supabase immediately; the next scheduled publication will persist
+    // the complete inventory back to R2.
+    if (source && !rows.length) {
+      try {
+        const authoritative = await buildPublicVacancySnapshotFromSupabase(env);
+        const recovered = filterRows(authoritative.vacancies);
+        if (recovered.length) rows = recovered;
+      } catch (error) {
+        console.warn("Could not recover source-filtered vacancy snapshot", error);
+      }
+    }
   } else return json({ error: "Public vacancy snapshot unavailable" }, 503, origin);
   const paged = alreadyPaged ? rows : ((cursor || hasOffset) ? rows.slice(offset, offset + limit + 1) : rows.slice(0, limit + 1));
   const hasMore = paged.length > limit;
