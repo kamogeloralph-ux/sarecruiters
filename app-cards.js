@@ -599,6 +599,7 @@ export function vacancyCard(v, agency, options) {
   var isEmployerPost = !!employer;
   var orgName = isEmployerPost ? (employer.name || 'Employer') : (isGeneral ? (v.company || 'General Vacancy') : (agency.name || ''));
   var isAdzuna = String(v.id || '').indexOf('adzuna-') === 0;
+  var isJooble = v.source_type === 'jooble' || String(v.id || '').indexOf('jooble-') === 0;
   var isHimalayas = v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0;
   var isGovernment = ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || ''));
   var isLearnership = v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0;
@@ -652,7 +653,7 @@ export function vacancyCard(v, agency, options) {
 
   var desc = v.notes ? '<div class="vac-desc-title">Job description</div><div class="vac-desc">' + escapeHtml(v.notes) + '</div>' : '';
   /* Platform attribution for vacancies posted by SA Recruiters or its agencies. */
-  var saRecruitersAttribution = !isHimalayas && !isAdzuna && (isGovernment || isGeneral || (!isEmployerPost && !isGeneral && agency))
+  var saRecruitersAttribution = !isHimalayas && !isAdzuna && !isJooble && (isGovernment || isGeneral || (!isEmployerPost && !isGeneral && agency))
     ? '<div class="sa-recruiters-attribution" aria-label="Jobs by SA Recruiters">' +
         '<a href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" title="Jobs by SA Recruiters" onclick="event.stopPropagation()">' +
           '<img src="/icons/logo-96.webp" alt="SA Recruiters logo" loading="lazy" decoding="async" width="20" height="20">' +
@@ -675,6 +676,12 @@ export function vacancyCard(v, agency, options) {
   var himalayasAttribution = isHimalayas
     ? '<div class="himalayas-attribution" aria-label="Remote job from Himalayas">' +
         '<a href="https://himalayas.app/" target="_blank" rel="noopener">Remote jobs by Himalayas</a>' +
+      '</div>'
+    : '';
+  /* Jooble listings credit Jooble (link-back) instead of the SA Recruiters badge. */
+  var joobleAttribution = isJooble
+    ? '<div class="himalayas-attribution" aria-label="Jobs from Jooble">' +
+        '<a href="https://za.jooble.org/" target="_blank" rel="noopener">Jobs via Jooble</a>' +
       '</div>'
     : '';
   var actions = '<div class="vac-actions">';
@@ -744,7 +751,7 @@ export function vacancyCard(v, agency, options) {
     '</div>' +
     homePreviewMarkup +
     '<div class="vac-detail" id="vd-' + key + '"><div class="vac-detail-inner">' +
-      detail + desc + saRecruitersAttribution + adzunaAttribution + himalayasAttribution + actions + admin +
+      detail + desc + saRecruitersAttribution + adzunaAttribution + joobleAttribution + himalayasAttribution + actions + admin +
     '</div></div>' +
   '</article>';
 }
