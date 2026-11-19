@@ -48,6 +48,14 @@ jobs:
         working-directory: Cloudflare-worker
         run: npm install --no-audit --no-fund
 
+      - name: Apply remote D1 migrations
+        id: d1_migrate
+        # The Worker still deploys if this step fails (e.g. D1 quota), but the
+        # final step below turns the whole run red so the failure is never silent.
+        continue-on-error: true
+        working-directory: Cloudflare-worker
+        run: npx --yes wrangler@4.147.0 d1 migrations apply sarecruiters-d1 --remote --config wrangler.toml
+
       - name: Deploy Worker
         working-directory: Cloudflare-worker
         run: npx --yes wrangler@4.147.0 deploy --config wrangler.toml
@@ -68,10 +76,8 @@ jobs:
             npx --yes wrangler@4.147.0 r2 object put "sarecruiters-media/$key" --file="$file" --content-type="$content_type" --remote --config=Cloudflare-worker/wrangler.toml
           done
 
-      - name: Apply remote D1 migrations when quota permits
-        continue-on-error: true
-        working-directory: Cloudflare-worker
+      - name: Fail the run if D1 migrations did not apply
+        if: steps.d1_migrate.outcome == 'failure'
         run: |
-          if ! npx --yes wrangler@4.147.0 d1 migrations apply sarecruiters-d1 --remote --config wrangler.toml; then
-            echo "D1 migration was not applied. The Worker has a cached Supabase fallback and will retry on the next deployment."
-          fi
+          echo "::error title=D1 migrations NOT applied::The Worker was deployed, but new D1 tables/columns were not created. The Worker may fail until this is fixed. Re-run this workflow (often a D1 quota limit), or run: cd Cloudflare-worker && npx wrangler d1 migrations apply sarecruiters-d1 --remote"
+          exit 1
