@@ -172,6 +172,12 @@ test('home latest roles reuse the shared vacancy card and the existing exact-vac
   assert.match(admin, /option value="middle"/);
 });
 
+test('vacancy apply actions keep their labels visible above theme overrides', () => {
+  assert.match(cards, /class="vac-apply-label"/);
+  assert.match(css, /\.vac-apply:not\(\.vac-apply-secondary\)\{color:#fff!important/);
+  assert.match(css, /-webkit-text-fill-color:#fff!important/);
+});
+
 test('SendPulse integration is removed while native feedback forms remain available', () => {
   for (const file of ['index.html', 'app-sheets.js', 'content.js', 'privacy/index.html', 'app.bundle.min.js']) {
     assert.doesNotMatch(read(file), /SendPulse|pulse\.is|sp-live-chat|__saStartSendPulse|__saSyncFeedbackChat/i);

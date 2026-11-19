@@ -686,23 +686,23 @@ export function vacancyCard(v, agency, options) {
     : '';
   var actions = '<div class="vac-actions">';
   if (v.link) {
-    actions += '<a class="vac-apply" href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + 'Apply here</a>';
+    actions += '<a class="vac-apply" href="' + escapeHtml(v.link) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + '<span class="vac-apply-label">Apply here</span></a>';
   } else if (v.email || v.phone) {
     /* No link but has email/phone — show contact buttons */
     if (v.email) {
-      actions += '<a class="vac-apply" href="mailto:' + escapeHtml(v.email) + '" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.mail + 'Email to apply</a>';
+      actions += '<a class="vac-apply" href="mailto:' + escapeHtml(v.email) + '" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.mail + '<span class="vac-apply-label">Email to apply</span></a>';
     }
     if (v.phone) {
-      actions += '<a class="vac-apply' + (v.email ? ' vac-apply-secondary' : '') + '" href="tel:' + escapeHtml(v.phone.replace(/\s/g,'')) + '" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.phone + 'Call to apply</a>';
+      actions += '<a class="vac-apply' + (v.email ? ' vac-apply-secondary' : '') + '" href="tel:' + escapeHtml(v.phone.replace(/\s/g,'')) + '" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.phone + '<span class="vac-apply-label">Call to apply</span></a>';
     }
   } else if (isEmployerPost && (employer.contact || employer.email || employer.website)) {
     var ecta = employer.website ? escapeHtml(employer.website) : '#';
-    actions += '<a class="vac-apply" href="' + ecta + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + 'Contact employer</a>';
+    actions += '<a class="vac-apply" href="' + ecta + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + '<span class="vac-apply-label">Contact employer</span></a>';
   } else if (!isGeneral && !isEmployerPost && agency && (agency.contact || agency.email || agency.website)) {
     var cta = agency.website ? escapeHtml(agency.website) : '#';
-    actions += '<a class="vac-apply" href="' + cta + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + 'Contact agency</a>';
+    actions += '<a class="vac-apply" href="' + cta + '" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">' + VAC_ICONS.apply + '<span class="vac-apply-label">Contact agency</span></a>';
   } else {
-    actions += '<button class="vac-apply" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId);showToast(\'Contact the agency or company directly to apply.\')">' + VAC_ICONS.apply + 'Contact to apply</button>';
+    actions += '<button class="vac-apply" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId);showToast(\'Contact the agency or company directly to apply.\')">' + VAC_ICONS.apply + '<span class="vac-apply-label">Contact to apply</span></button>';
   }
   actions += '<a class="vac-apply vac-apply-secondary" href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" onclick="event.stopPropagation();trackEvent(&#39;vacancy_click&#39;,&#39;vacancy&#39;,this.closest(&#39;.vac-card&#39;).dataset.vacancyId)">View public listing ↗</a>';
   actions += '<button class="vac-close-btn" onclick="event.stopPropagation();closeVac(this)">Close</button></div>';

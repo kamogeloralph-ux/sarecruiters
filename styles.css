@@ -652,7 +652,9 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .vac-apply{flex:1;background:linear-gradient(135deg,var(--accent) 0%,color-mix(in srgb,var(--accent) 76%,#000) 100%);color: var(--m-on-ink);border:none;padding:14px;border-radius:13px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;text-decoration:none;min-width:140px;box-shadow:0 10px 22px -10px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .18s var(--ease),filter .18s}
 .vac-apply-secondary{background:var(--accent)}
 .vac-apply:active{transform:scale(.98)}
-.vac-apply svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.vac-apply:not(.vac-apply-secondary){color:#fff!important;-webkit-text-fill-color:#fff!important}
+.vac-apply-label{display:inline-block!important;color:inherit!important;-webkit-text-fill-color:inherit!important;font-size:inherit!important;font-weight:inherit!important;line-height:1.2!important;opacity:1!important;visibility:visible!important;white-space:nowrap}
+.vac-apply svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;color:inherit}
 .vac-close-btn{background:var(--card-2);color:var(--text-2);border:1px solid var(--border);padding:14px 20px;border-radius:13px;font-size:14px;font-weight:600;cursor:pointer}
 .vac-admin-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--separator)}
 .vac-admin-actions button{flex:1;background:var(--card-2);border:1px solid var(--border);color:var(--text-2);padding:9px;border-radius:10px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
