@@ -2033,7 +2033,9 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? `${last.created_at || ""}|${last.id || ""}` : null;
   const response = json({ vacancies: page, next_cursor: nextCursor, limit, data_version: Number(snapshot?.data_version) || 0 }, 200, origin);
-  response.headers.set("Cache-Control", "public, max-age=86400");
+  // Edge entries are keyed by URL only (not data_version), so keep them short: a 24h TTL kept
+  // serving the previous snapshot for a full day after the scheduled sync published new jobs.
+  response.headers.set("Cache-Control", "public, max-age=300");
   response.headers.set("X-Data-Version", String(Number(snapshot?.data_version) || 0));
   await cache.put(cacheKey, response.clone());
   return clientResponse(response);
