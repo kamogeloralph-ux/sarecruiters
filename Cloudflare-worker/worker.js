@@ -797,10 +797,14 @@ async function buildPublicVacancySnapshotFromSupabase(env) {
   ].join(",");
   const rows = await supabaseGetAll(env, "vacancies", {
     select: columns,
-    or: "(closing_date.is.null,closing_date.gte." + new Date().toISOString().slice(0, 10) + ")",
     order: "created_at.desc,id.desc"
   }, 1000);
-  return { generated_at: new Date().toISOString(), vacancies: rows || [] };
+  // Scrapers (Adzuna, Himalayas, Jooble, learnerships...) store an EMPTY STRING, not NULL, when a job
+  // has no closing date, so a PostgREST "closing_date.is.null OR >= today" filter silently dropped
+  // every one of them. Filter here instead: keep rows with no closing date or one still in the future.
+  const today = new Date().toISOString().slice(0, 10);
+  const live = (rows || []).filter((row) => !row.closing_date || row.closing_date >= today);
+  return { generated_at: new Date().toISOString(), vacancies: live };
 }
 __name(buildPublicVacancySnapshotFromSupabase, "buildPublicVacancySnapshotFromSupabase");
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;

@@ -71,11 +71,12 @@ export async function publishTipchatVacancyRoundup(env, now = new Date()) {
   const vacancies = await getRows(env, "vacancies", {
     select: "id,title,location,link,closing_date,created_at",
     title: "not.is.null", location: "not.is.null", link: "not.is.null",
-    or: `(closing_date.is.null,closing_date.gte.${today})`,
     order: "created_at.desc,id.desc", limit: "100"
   });
   const chosen = (vacancies || []).filter((row) => {
     const id = String(row.id || "");
+    // empty-string closing_date means "no closing date" (scrapers), same as NULL
+    if (row.closing_date && row.closing_date < today) return false;
     return id && !promoted.has(id) && clean(row.title, 110) && clean(row.location, 80) && /^https?:\/\//i.test(String(row.link || ""));
   }).slice(0, MAX_VACANCIES_PER_ROUNDUP);
   if (!chosen.length) return { skipped: "no-eligible-vacancies" };
