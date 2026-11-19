@@ -64,8 +64,22 @@ export async function fetchFreshSeoSnapshot(fetchImpl = fetch, baseUrl = workerU
   return { ...startup, vacancies: liveVacancies, generated_at: startup.generated_at, seo_refreshed_at: new Date().toISOString() };
 }
 
+// The app and generate-pages expect a lean startup snapshot: descriptions live in a separate
+// { id: notes } map that the app fetches at idle (see app-data.js "notes_url").
+export function splitVacancyNotes(snapshot) {
+  const notes = {};
+  const vacancies = snapshot.vacancies.map((row) => {
+    const { notes: text, ...rest } = row;
+    if (text) notes[row.id] = text;
+    return rest;
+  });
+  return { snapshot: { ...snapshot, vacancies, notes_url: 'data/vacancy-notes.json' }, notes };
+}
+
 async function main() {
-  const snapshot = await fetchFreshSeoSnapshot();
+  const fresh = await fetchFreshSeoSnapshot();
+  const { snapshot, notes } = splitVacancyNotes(fresh);
+  await fs.writeFile(new URL('../data/vacancy-notes.json', import.meta.url), `${JSON.stringify(notes)}\n`);
   await fs.writeFile(outputPath, `${JSON.stringify(snapshot)}\n`);
   console.log(`[seo-snapshot] refreshed ${snapshot.vacancies.length} vacancies from ${workerUrl}; source generated ${snapshot.generated_at}`);
 }
