@@ -45,6 +45,11 @@ buildSupabaseVendor(__dirname);
 // ------------------------------------------------------------
 const STATIC_ASSETS = [
   'index.html',
+  // App code must participate in the deploy hash; otherwise a changed bundle
+  // can ship under the old service-worker version and installed clients never
+  // receive the update banner.
+  'app.bundle.min.js',
+  'app-vacancy-v2.js',
   'public-ads.js',
   'admin.html',
   'privacy.html',
