@@ -122,7 +122,7 @@ label{color:var(--text)}
 #screen-home .search-inner :focus-visible{outline:none!important}
 
 /* ---------- 7. Links ---------- */
-.screen-scroll a:not(.btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn){text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px}
+.screen-scroll a:not(.btn):not(.vx-btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn){text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px}
 .home-site-footer a,.legal a,.account-legal a{text-decoration:underline;text-underline-offset:3px}
 
 /* ---------- 8. Badges and status: shape + weight + icon, not colour ---------- */
@@ -263,7 +263,7 @@ html body span.verified-check svg{fill:currentColor}
 /* active chips / filters / tabs */
 .vacancy-overview-filter.active,.vac-filter-chip.active,.chip.active,.sub-tab.active,.seg-btn.active,.tab.active{background:var(--m-green);color:var(--m-on-green);border-color:var(--m-green)}
 /* links and small accents */
-.screen-scroll a:not(.btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn){color:var(--m-green)}
+.screen-scroll a:not(.btn):not(.vx-btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn){color:var(--m-green)}
 .quick-access-label,.section-kicker,.eyebrow,.spotlight-more-copy,.vac-folder-count,.hub-row-cta,.pool-mini-link{color:var(--m-green)}
 .account-signin-copy a,.gate-terms-link{color:var(--m-green)!important}
 .vac-folder-icon,.quick-card-icon,.vac-detail-icon,.wa-tile{background:var(--m-green-soft);color:var(--m-green)}
@@ -385,7 +385,7 @@ html,body{background:var(--bg);color:var(--text)}
 .vacancy-overview-filter.active,.vac-filter-chip.active,.chip.active,.sub-tab.active,.seg-btn.active,.tab.active{
   background:var(--m-ink)!important;color:var(--m-on-ink)!important;border-color:var(--m-ink)!important
 }
-.screen-scroll a:not(.btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn),
+.screen-scroll a:not(.btn):not(.vx-btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn),
 .quick-access-label,.section-kicker,.eyebrow,.spotlight-more-copy,.vac-folder-count,.hub-row-cta,.pool-mini-link,
 .account-signin-copy a,.gate-terms-link{color:var(--m-ink)!important}
 .vac-folder-icon,.quick-card-icon,.vac-detail-icon,.wa-tile{background:var(--m-wash-2)!important;color:var(--m-ink)!important}
@@ -662,3 +662,10 @@ html body .pool-mini-card .pool-mini-actions .pool-cv-download-btn:hover{box-sha
 #screen-allcvpics .screen-fixed,
 #screen-allemployers .screen-fixed,
 #screen-allads .screen-fixed{border-bottom:0!important}
+
+/* Vacancy "Apply now" / "Email to apply" / "Contact" buttons: white text on the blue button.
+   Must sit last and use !important because the link-colour rule above also uses !important. */
+.screen-scroll a.vx-btn--primary,
+a.vx-btn--primary,
+button.vx-btn--primary{color:#fff!important;text-decoration:none!important;-webkit-text-fill-color:#fff}
+.screen-scroll a.vx-btn:not(.vx-btn--primary){text-decoration:none!important}

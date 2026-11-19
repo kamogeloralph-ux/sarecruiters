@@ -8,7 +8,7 @@
  */
 // Change this version whenever the deployed app shell or bundled assets change.
 // The app uses the installing worker to show an explicit update banner.
-const VERSION = 'sa-recruiters-directory-cvpics2';
+const VERSION = 'sa-recruiters-directory-cvpics3';
 const CACHE_NAME = VERSION + '-runtime';
 const PRECACHE_URLS = [
   '/',
