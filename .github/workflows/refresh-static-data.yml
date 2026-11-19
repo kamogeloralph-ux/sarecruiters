@@ -74,13 +74,24 @@ jobs:
           date -u +%Y-%m-%dT%H:%M:%SZ > refresh-started-at.txt
           run_source() {
             local name="$1"; shift
-            echo "--- running $name ($*) ---"
-            if ! "$@"; then
-              echo "Source failed but refresh will continue: $name" >&2
-              echo "$name" >> failed-sources.txt
-            else
-              echo "$name" >> successful-sources.txt
-            fi
+            local log="scraper-${name}.log"
+            local attempt=1
+            local max_attempts=2
+            : > "$log"
+            while [ "$attempt" -le "$max_attempts" ]; do
+              echo "--- running $name (attempt $attempt/$max_attempts; $*) ---" | tee -a "$log"
+              if "$@" 2>&1 | tee -a "$log"; then
+                echo "$name" >> successful-sources.txt
+                echo "[$name] succeeded on attempt $attempt" | tee -a "$log"
+                return 0
+              fi
+              echo "[$name] attempt $attempt failed" | tee -a "$log" >&2
+              if [ "$attempt" -lt "$max_attempts" ]; then sleep 10; fi
+              attempt=$((attempt + 1))
+            done
+            echo "Source failed after $max_attempts attempts; its rows will be preserved: $name" | tee -a "$log" >&2
+            echo "$name" >> failed-sources.txt
+            return 1
           }
           run_source adzuna npm run sync:adzuna
           # Jooble only runs once the JOOBLE_API_KEY secret exists (free key: 100 requests/day).
@@ -110,6 +121,38 @@ jobs:
         if: always()
         continue-on-error: true
         run: node scripts/scraper-failure-report.mjs
+      - name: Publish scraper diagnostics
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Vacancy refresh diagnostics"
+            echo
+            echo "Refresh started: $(cat refresh-started-at.txt 2>/dev/null || echo unknown)"
+            echo
+            echo "### Successful sources"
+            if [ -s successful-sources.txt ]; then sed 's/^/- /' successful-sources.txt; else echo "- none"; fi
+            echo
+            echo "### Failed sources"
+            if [ -s failed-sources.txt ]; then sed 's/^/- /' failed-sources.txt; else echo "- none"; fi
+            for log in scraper-*.log; do
+              [ -f "$log" ] || continue
+              echo
+              echo "### $log (tail)"
+              tail -30 "$log"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload scraper diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-diagnostics-${{ github.run_id }}
+          path: |
+            scraper-*.log
+            failed-sources.txt
+            successful-sources.txt
+            refresh-started-at.txt
+          if-no-files-found: warn
       - name: Save scraper failure history
         if: always()
         uses: actions/cache/save@v4

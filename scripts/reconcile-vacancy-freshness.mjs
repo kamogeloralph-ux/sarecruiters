@@ -59,6 +59,8 @@ async function loadAllVacancies() {
 
 function sourceWasSuccessful(successful, source) {
   if (source === 'retail') return successful.has('oracle') && successful.has('retail');
+  if (source === 'careers_page') return successful.has('careers-page') || successful.has('careers_page');
+  if (source === 'learnerships') return successful.has('graduates24') || successful.has('learnerships');
   return successful.has(source);
 }
 
