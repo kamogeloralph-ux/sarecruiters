@@ -1981,6 +1981,18 @@ async function startupResponse(request, env, ctx, origin) {
   catch (error) { return json({ error: "Startup data unavailable", detail: error.message }, 502, origin); }
 }
 __name(startupResponse, "startupResponse");
+function publicClosingDate(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const match = raw.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  if (!match) return null;
+  const months = { january: "01", february: "02", march: "03", april: "04", may: "05", june: "06", july: "07", august: "08", september: "09", october: "10", november: "11", december: "12" };
+  const month = months[match[2].toLowerCase()];
+  if (!month) return null;
+  return `${match[3]}-${month}-${String(match[1]).padStart(2, "0")}`;
+}
+__name(publicClosingDate, "publicClosingDate");
 async function vacanciesResponse(request, env, ctx, origin) {
   // Normal app browsing still requests 20-50 rows; the larger ceiling lets
   // read-only SEO snapshot exports page through the same public data with
@@ -2028,7 +2040,9 @@ async function vacanciesResponse(request, env, ctx, origin) {
     const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;
     const cursorId = cursorSeparator >= 0 ? cursor.slice(cursorSeparator + 1) : "";
     return (allRows || []).filter((row) => {
-      if (row.closing_date && row.closing_date < new Date().toISOString().slice(0, 10)) return false;
+      const closingDate = publicClosingDate(row.closing_date);
+      // Free-text values such as "ASAP" or "Open until filled" are not expiry dates.
+      if (closingDate && closingDate < new Date().toISOString().slice(0, 10)) return false;
       if (q && ![row.title, row.company, row.location, row.notes].some((value) => String(value || "").toLowerCase().includes(q.toLowerCase()))) return false;
       if (location && !String(row.location || "").toLowerCase().includes(location.toLowerCase())) return false;
       if (remote && String(row.remote || "") !== remote) return false;

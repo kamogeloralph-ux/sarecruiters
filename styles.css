@@ -1129,6 +1129,8 @@ header{margin-bottom:18px}
 /* The three large controls: clear hierarchy, consistent geometry, thumb-friendly targets. */
 .vac-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
 .vac-apply{min-width:0;min-height:54px;padding:14px 12px;border-radius:15px;background:linear-gradient(135deg,var(--accent) 0%,color-mix(in srgb,var(--accent) 76%,#000) 100%);box-shadow:0 10px 20px color-mix(in srgb,var(--accent) 30%,transparent);font-size:14px;font-weight:800;letter-spacing:-.01em;transition:transform .18s var(--ease),filter .18s,box-shadow .18s}
+.vac-actions .vac-apply{color:#fff!important;font-size:14px!important;font-weight:800!important;text-indent:0!important;visibility:visible!important;opacity:1!important;white-space:normal!important}
+.vac-actions .vac-apply svg{flex:0 0 auto;visibility:visible!important;opacity:1!important}
 .vac-apply-secondary{background:linear-gradient(135deg,var(--m-ink),var(--m-ink));box-shadow:0 10px 20px rgba(0,0,0,0.24)}
 .vac-apply:hover{filter:brightness(1.07);box-shadow:0 13px 24px color-mix(in srgb,var(--accent) 34%,transparent)}
 .vac-apply-secondary:hover{box-shadow:0 13px 24px rgba(0,0,0,0.32)}
