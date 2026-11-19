@@ -1988,7 +1988,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const cacheUrl = new URL(request.url);
   // The R2 vacancy snapshot is refreshed by the scheduled sync. Do not make
   // every public vacancy request spend a D1 row read validating a version.
-  cacheUrl.searchParams.set("__schema", "edge-first-v3");
+  cacheUrl.searchParams.set("__schema", "edge-first-v4");
   cacheUrl.searchParams.sort();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   function clientResponse(cachedResponse) {
@@ -2036,10 +2036,17 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const page = hasMore ? paged.slice(0, limit) : paged;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? `${last.created_at || ""}|${last.id || ""}` : null;
-  const response = json({ vacancies: page, next_cursor: nextCursor, limit, data_version: Number(snapshot?.data_version) || 0 }, 200, origin);
-  // Edge entries are keyed by URL only (not data_version), so keep them short: a 24h TTL kept
-  // serving the previous snapshot for a full day after the scheduled sync published new jobs.
-  response.headers.set("Cache-Control", "public, max-age=300");
+  const response = json({
+    vacancies: page,
+    next_cursor: nextCursor,
+    limit,
+    total: rows.length,
+    generated_at: snapshot.generated_at || null,
+    data_version: Number(snapshot?.data_version) || 0
+  }, 200, origin);
+  // Keep pages aligned with the latest R2 publication. A long edge TTL can
+  // otherwise keep the previous vacancy cards visible after a refresh.
+  response.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=60");
   response.headers.set("X-Data-Version", String(Number(snapshot?.data_version) || 0));
   await cache.put(cacheKey, response.clone());
   return clientResponse(response);

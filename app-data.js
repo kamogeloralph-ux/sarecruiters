@@ -748,10 +748,14 @@ export async function getVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type,is_featured,featured_until,featured_order';
   var pageSize = 1000;
   var rows = [];
-  // Public vacancy reads are served by the Cloudflare Worker (D1/R2). Never
-  // fall back to an unbounded browser-side PostgREST scan if that path is
-  // unavailable; authenticated manager/admin writes remain below unchanged.
-  return filterExpiredVacancies(markLoadError(readLocal('vacancies')));
+  // Public vacancy reads are served by the Cloudflare Worker (R2 snapshot).
+  // If startup is unavailable, still fetch a current bounded page rather than
+  // presenting an old local cache as if it were the live directory.
+  try {
+    var live = await fetchVacancyPageFromWorker({ limit: 100, cursor: '' });
+    if (live && Array.isArray(live.vacancies)) return filterExpiredVacancies(live.vacancies);
+  } catch (error) { console.warn('live vacancy fallback', error); }
+  return filterExpiredVacancies(markLoadError([]));
 }
 export async function getEmployerVacancies() {
   var columns = 'id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type';
@@ -1262,6 +1266,24 @@ export function getStartupData(forceFresh) {
   }, function(){ startupDataResolved = true; startupDataPromise = null; });
   return startupDataPromise;
 }
+export async function refreshLiveVacancyPreview(startup) {
+  if (!startup || !R2_WORKER_URL) return startup;
+  try {
+    var live = await fetchVacancyPageFromWorker({ limit: 100, cursor: '' });
+    if (!live || !Array.isArray(live.vacancies) || !live.vacancies.length) return startup;
+    var byId = {};
+    (startup.vacancies || []).concat(live.vacancies).forEach(function(row) {
+      if (row && row.id && !byId[row.id]) byId[row.id] = row;
+    });
+    startup.vacancies = Object.keys(byId).map(function(id){ return byId[id]; });
+    if (typeof live.total === 'number') startup.counts = Object.assign({}, startup.counts, { vacancies: live.total });
+    if (live.generated_at) startup.generated_at = live.generated_at;
+    return startup;
+  } catch (error) {
+    console.warn('live vacancy preview refresh', error);
+    return startup;
+  }
+}
 export async function refreshSecondaryStartupData() {
   try {
     var employerRows = await getEmployerVacancies();
@@ -1306,6 +1328,10 @@ export async function loadAll(options) {
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
   // original independent Supabase reads so launch remains resilient.
   var startup = await getStartupData(forceFresh);
+  // Startup is a bounded first-paint payload. Refresh the homepage preview
+  // from the same Worker inventory used by public vacancy folders and the
+  // admin mirror, so new cards appear without waiting for a static snapshot.
+  startup = await refreshLiveVacancyPreview(startup);
   window.__saStartupPayload = startup;
   window.__saStaticData = (startup && startup.schema === 1 && Array.isArray(startup.vacancies)) ? startup : null;
   if (window.__saStaticData) set_staticVacanciesCache( filterExpiredVacancies(startup.vacancies || []));
