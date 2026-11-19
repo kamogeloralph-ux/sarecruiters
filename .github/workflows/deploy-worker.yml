@@ -54,7 +54,10 @@ jobs:
         # final step below turns the whole run red so the failure is never silent.
         continue-on-error: true
         working-directory: Cloudflare-worker
-        run: npx --yes wrangler@4.147.0 d1 migrations apply sarecruiters-d1 --remote --config wrangler.toml
+        shell: bash
+        run: |
+          set -o pipefail
+          npx --yes wrangler@4.147.0 d1 migrations apply sarecruiters-d1 --remote --config wrangler.toml 2>&1 | tee /tmp/d1-migrate.log
 
       - name: Deploy Worker
         working-directory: Cloudflare-worker
@@ -90,6 +93,9 @@ jobs:
 
       - name: Fail the run if D1 migrations did not apply
         if: steps.d1_migrate.outcome == 'failure'
+        shell: bash
         run: |
-          echo "::error title=D1 migrations NOT applied::The Worker was deployed, but new D1 tables/columns were not created. The Worker may fail until this is fixed. Re-run this workflow (often a D1 quota limit), or run: cd Cloudflare-worker && npx wrangler d1 migrations apply sarecruiters-d1 --remote"
+          reason="$(tail -n 12 /tmp/d1-migrate.log 2>/dev/null | tr '\n' ' ' | cut -c1-900)"
+          echo "::error title=D1 migration error::${reason:-no output captured}"
+          echo "::error title=D1 migrations NOT applied::The Worker was deployed, but new D1 tables/columns were not created. Re-run this workflow (often a D1 quota limit), or run: cd Cloudflare-worker && npx wrangler d1 migrations apply sarecruiters-d1 --remote"
           exit 1
