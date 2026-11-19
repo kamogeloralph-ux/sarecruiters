@@ -1,7 +1,7 @@
 /* SA Recruiters alert experience: saved searches, alert management and Web Push opt-in. */
 (function () {
   'use strict';
-  var VAPID_PUBLIC_KEY = 'BBSEiWTe7QXBPImjQtJpgz7WthmSz_DQi0PZXPcLCK6U3sTSTViI2XZHOPnXIacB7K_3bfLPtI6yYu5QX1_N99M';
+  var VAPID_PUBLIC_KEY = 'BCgCecPY65I0MnzN0cQtTyAix8cAcic85zoKCFApqVuOpfkg-SOOv6DBL0hRK7nYCRJOLVx5y14DCXQjqigKTBk';
   function val(id) { var el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; }
   function toast(m) { if (typeof showToast === 'function') showToast(m); }
   function esc(v) { return typeof escapeHtml === 'function' ? escapeHtml(v == null ? '' : String(v)) : String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
