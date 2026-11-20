@@ -462,3 +462,91 @@ test('worker.js wires the AI routes, the daily job and the POPIA cleanup', () =>
     assert.ok(!routes.includes(forbidden), `AI code must never ${forbidden}`);
   }
 });
+
+// ---------- public scam check ("Is this job real?") ----------
+
+const scamPost = (text, headers = {}) => post('/api/ai/scam-check', { text }, headers);
+const turnstileOnly = { 'cf-turnstile-response': 'ok' };
+const FEE_SCAM = 'URGENT HIRING!! No experience needed. Pay a registration fee of R350 to secure your uniform. WhatsApp 082 123 4567 to start Monday.';
+const REAL_AD = 'Cashier, Shoprite Checkers Durban. Matric and 1 year retail experience. Email your CV to careers@shoprite.co.za by 30 November. No application fee.';
+
+test('scam check: rules alone call a fee scam "likely a scam" and a normal ad clean, with no Gemini call', withFetch([], async (impl) => {
+  const env = baseEnv();
+  const bad = await (await route(scamPost(FEE_SCAM, turnstileOnly), env)).json();
+  assert.equal(bad.verdict.level, 'high');
+  assert.ok(bad.reasons.some((r) => /fee/i.test(r)));
+  assert.ok(bad.tips.length > 0 && bad.tips.length <= 3);
+  assert.deepEqual(bad.found.phones, ['0821234567']);
+  const good = await (await route(scamPost(REAL_AD, turnstileOnly), env)).json();
+  assert.equal(good.verdict.level, 'low');
+  assert.equal(good.verdict.title, 'No clear warning signs');
+  assert.equal(impl.calls.length, 0);
+}));
+
+test('scam check: "no application fee" and "never pay for a job" are reassurance, not a warning', () => {
+  const calm = ai.stripReassurances('We never charge a fee. Applicants should never pay for a job. No registration fee.');
+  assert.equal(ai.heuristicScamSignals(calm, { company: 'Acme' }).signals.includes('fee_request'), false);
+});
+
+test('scam check: untraceable payments, equipment purchases and government jobs for sale are caught', async () => {
+  const env = baseEnv();
+  const a = await ai.publicScamCheck(env, 'Government job available at Home Affairs. Send R2000 deposit via e-wallet to secure your appointment. Call 0711234567.');
+  assert.equal(a.verdict.level, 'high');
+  const b = await ai.publicScamCheck(env, 'Work from home data capturer. Buy your own laptop and starter kit first, it is refundable after week one. Contact hr.jobs@gmail.com');
+  assert.ok(['medium', 'high'].includes(b.verdict.level));
+});
+
+test('scam check: a bare number or email is "not enough to judge", and the directory match is neutral information', async () => {
+  const env = baseEnv();
+  env.DB.raw.prepare("INSERT INTO vacancies (id,title,company,email,phone,created_at) VALUES ('v9','Packer','Acme','hr@acme.co.za','011 555 0199','2026-11-08')").run();
+  const r = await ai.publicScamCheck(env, '0115550199');
+  assert.equal(r.verdict.level, 'unknown');
+  assert.equal(r.contact_only, true);
+  assert.deepEqual(r.known, [{ type: 'phone', value: '0115550199', listings: 1 }]);
+  const e = await ai.publicScamCheck(env, 'hr@acme.co.za');
+  assert.equal(e.known[0].type, 'email');
+});
+
+test('scam check: a link an admin confirmed as a scam makes the result "likely a scam"', async () => {
+  const env = baseEnv();
+  env.DB.raw.prepare("INSERT INTO ai_flags (subject_type, subject_id, title, link, risk_score, level, reasons, signals, status, created_at) VALUES ('vacancy','v7','Fake','https://quick-hire-sa.example/apply',70,'high','[]','[]','confirmed','2026-11-01')").run();
+  const r = await ai.publicScamCheck(env, 'Packers needed in Midrand, apply at https://quick-hire-sa.example/form with your details today please.');
+  assert.equal(r.verdict.level, 'high');
+  assert.ok(r.tips.some((t) => /confirmed as a scam/.test(t)));
+});
+
+test('scam check: phone numbers are read in SA formats, and ID numbers are not mistaken for phones', () => {
+  const c = ai.extractContacts('Call +27 82 123 4567 or 0711234567. ID 8001015009087. Mail Jobs@Acme.co.za');
+  assert.deepEqual(c.phones, ['0821234567', '0711234567']);
+  assert.deepEqual(c.emails, ['jobs@acme.co.za']);
+});
+
+test('scam check: the model never sees phone numbers or emails, and the pasted text is never stored', withFetch([{ risk: 40, signals: ['vague_employer'], reasons: ['No employer is named'] }], async (impl) => {
+  const env = baseEnv();
+  const text = 'We need 10 packers in Midrand. Limited slots, good pay. Send your name to 0821234567 or jobs@packhire.co.za today.';
+  const first = await (await route(scamPost(text, { 'x-test-user': 'user-1', ...turnstileOnly }), env)).json();
+  assert.equal(first.used_ai, true);
+  const prompt = impl.calls[0].body.contents[0].parts[0].text;
+  assert.ok(!prompt.includes('0821234567') && !prompt.includes('packhire.co.za'));
+  assert.ok(prompt.includes('[phone]') && prompt.includes('[email]'));
+  // same text again: served from the saved answer, even for an anonymous visitor
+  const again = await (await route(scamPost(text, turnstileOnly), env)).json();
+  assert.equal(again.used_ai, true);
+  assert.equal(impl.calls.length, 1);
+  const stored = env.DB.raw.prepare("SELECT subject_id, result FROM ai_results WHERE kind = 'scam-check'").all();
+  assert.equal(stored.length, 1);
+  assert.ok(!JSON.stringify(stored).includes('packers') && !JSON.stringify(stored).includes('0821234567'));
+}));
+
+test('scam check: anonymous visitors never trigger Gemini, need Turnstile and have a tighter hourly limit', withFetch([], async (impl) => {
+  const env = baseEnv();
+  const vague = 'We need 10 packers in Midrand. Good pay. Send your name today.';
+  assert.equal((await route(scamPost(vague), env)).status, 400, 'no Turnstile token');
+  assert.equal((await route(scamPost('hi'), env)).status, 400, 'too short');
+  const ok = await (await route(scamPost(vague, turnstileOnly), env)).json();
+  assert.equal(ok.used_ai, false);
+  let last;
+  for (let i = 0; i < 9; i++) last = await route(scamPost(vague, turnstileOnly), env);
+  assert.equal(last.status, 429);
+  assert.equal(impl.calls.length, 0);
+}));

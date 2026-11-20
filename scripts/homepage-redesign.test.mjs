@@ -28,7 +28,7 @@ test('home replaces the direct agency feed with the job-search feed while retain
   assert.doesNotMatch(html, /id="hub-list"/);
   assert.match(html, /<h1 class="sr-only">South African recruitment agencies and job vacancies<\/h1>/);
   assert.match(html, /Job title, skill, company, or location/);
-  for (const id of ['stat-agencies', 'stat-cvpics', 'stat-vacancies', 'stat-employers', 'stat-pool']) {
+  for (const id of ['stat-agencies', 'stat-scamcheck', 'stat-vacancies', 'stat-employers', 'stat-pool']) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(html, /onclick="showAllAgencies\(\)"/);
@@ -41,7 +41,7 @@ test('home statistic cards reorder by live counts instead of fixed positions', (
   assert.match(data, /statEmployers\.setAttribute\('data-count', employersCache\.length\)/);
   assert.match(data, /statPool\.setAttribute\('data-count'/);
   assert.match(data, /withCounts\.sort\(function\(a, b\) \{ return b\.count - a\.count \|\| a\.i - b\.i; \}\)/);
-  assert.doesNotMatch(css, /#screen-home \.stat-card-(?:vacancies|agencies|pool|cvpics|employers|ads)\{order:/);
+  assert.doesNotMatch(css, /#screen-home \.stat-card-(?:vacancies|agencies|pool|scamcheck|employers|ads)\{order:/);
 });
 
 test('location filters and category shortcuts feed real vacancy results', () => {
@@ -273,13 +273,12 @@ test('TipChat home entry transfers a draft to the existing composer without post
   assert.match(mono, /#screen-home \.tipchat-home-entry-row input/);
 });
 test('directory screens scroll their full content and remove horizontal dividers', () => {
-  for (const id of ['screen-allagencies', 'screen-pool', 'screen-allcvpics', 'screen-allemployers', 'screen-allads']) {
+  for (const id of ['screen-allagencies', 'screen-pool', 'screen-scamcheck', 'screen-allemployers', 'screen-allads']) {
     assert.match(html, new RegExp('id=\\"' + id + '\\"'));
   }
   assert.match(mono, /\.screen-scroll\{min-height:0;overscroll-behavior-y:contain\}/);
   assert.match(mono, /#screen-allagencies \.hub-contact-item,[\s\S]*?#screen-allemployers \.hub-row\{border-top:0!important;border-bottom:0!important\}/);
   assert.match(mono, /#screen-pool \.pool-mini-meta,[\s\S]*?#screen-pool \.pool-mini-card \.pool-mini-details\{border-top:0!important\}/);
-  assert.match(mono, /#screen-allcvpics \.cvpic-caption\{border-top:0!important\}/);
   assert.match(mono, /#screen-allads #allads-list \.house-ad-card\{border:0!important;box-shadow:none!important\}/);
   assert.match(mono, /#screen-allagencies \.screen-fixed,[\s\S]*?#screen-allads \.screen-fixed\{border-bottom:0!important\}/);
 });

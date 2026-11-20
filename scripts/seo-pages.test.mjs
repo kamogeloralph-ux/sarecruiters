@@ -288,7 +288,7 @@ test('app accent tokens follow the monochrome brand theme', () => {
 });
 
 test('public directory sections expose stable share links and deep-link routing', () => {
-  for (const section of ['vacancies', 'agencies', 'candidates', 'cv-pictures', 'employers']) {
+  for (const section of ['vacancies', 'agencies', 'candidates', 'scam-check', 'employers']) {
     assert.match(appUi, new RegExp(section));
   }
   assert.match(appUi, /getSectionLink/);
@@ -298,7 +298,7 @@ test('public directory sections expose stable share links and deep-link routing'
   assert.match(appUi, /window\.__saRestoredScreen = screenBySection\[section\]/);
   assert.match(appUi, /screenBySection = \{/);
   assert.match(appManagerEmployer, /setTimeout\(openDeepLinkedSection, 120\)/);
-  for (const section of ['vacancies', 'agencies', 'candidates', 'cv-pictures', 'employers']) {
+  for (const section of ['vacancies', 'agencies', 'candidates', 'scam-check', 'employers']) {
     assert.ok(homepage.includes(`shareSectionLink('${section}')`), `missing ${section} share control`);
   }
 });

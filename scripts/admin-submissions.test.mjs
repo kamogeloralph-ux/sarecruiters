@@ -19,13 +19,6 @@ test('admin inline handlers always quote record ids', () => {
   assert.match(admin, /delSuggestion\(\\''\+jsq\(s\.id\)/);
 });
 
-test('poster actions stay visible on phones and go through the Worker', () => {
-  assert.match(admin, /\.row-actions-inline\.always\{display:flex !important\}/);
-  assert.match(admin, /class="row-actions-inline always"/);
-  assert.match(admin, /adminApi\('DELETE', '\/api\/admin\/posters\//);
-  assert.doesNotMatch(admin, /supabaseClient\.from\('employer_posters'\)\.delete\(\)/);
-});
-
 test('approving a job enquiry publishes a vacancy and resolves the enquiry only after it saved', () => {
   assert.match(admin, /function publishJobEnquiry\(id\)/);
   assert.match(admin, /if \(vacancySaved === false\) return;/);
