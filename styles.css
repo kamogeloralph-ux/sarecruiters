@@ -2737,9 +2737,9 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .pool-mini-card.manager-item{padding:0!important;overflow:hidden;border:1px solid color-mix(in srgb,#60708a 42%,var(--border))!important;border-radius:22px!important;background:#172131!important;color:#fff!important;box-shadow:0 12px 28px rgba(3,10,20,.22)!important}
 .pool-profile-cover{position:relative;height:126px;background:radial-gradient(circle at 78% 18%,rgba(180,225,189,.42),transparent 28%),linear-gradient(135deg,#344b3e 0%,#1e3131 48%,#182334 100%);overflow:hidden}
 .pool-profile-cover:after{content:"";position:absolute;inset:auto -10% 0;height:70%;background:linear-gradient(145deg,transparent 20%,rgba(225,185,105,.2) 45%,transparent 46%),linear-gradient(180deg,transparent,rgba(7,13,21,.18));transform:skewY(-5deg)}
-.pool-profile-badge{position:absolute;z-index:2;top:26px;display:inline-flex;align-items:center;gap:7px;max-width:68%;padding:8px 12px;border-radius:999px;background:rgba(11,19,29,.9);color:#eef4f7;font-size:11px;font-weight:850;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 10px rgba(0,0,0,.16)}
+.pool-profile-badge{position:absolute;z-index:2;top:64px;display:inline-flex;align-items:center;justify-content:center;gap:7px;width:calc(50% - 24px);max-width:calc(50% - 24px);padding:8px 12px;border-radius:999px;background:rgba(11,19,29,.9);color:#eef4f7;font-size:11px;font-weight:850;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 10px rgba(0,0,0,.16)}
 .pool-profile-availability{left:16px;background:#40e582;color:#062113;box-shadow:0 5px 14px rgba(64,229,130,.32)}.pool-profile-availability i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#062113}
-.pool-profile-seniority{right:16px;max-width:28%;background:#ffc94d;color:#211500;box-shadow:0 5px 14px rgba(255,201,77,.3)}
+.pool-profile-seniority{right:16px;background:#ffc94d;color:#211500;box-shadow:0 5px 14px rgba(255,201,77,.3)}
 .pool-profile-body{position:relative;padding:0 18px 18px}
 .pool-profile-avatar{position:relative;margin-top:-39px;width:82px;height:82px;padding:4px;border-radius:24px;background:#172131;z-index:3}
 .pool-profile-avatar .pool-mini-avatar{width:74px!important;height:74px!important;border-radius:20px!important;box-shadow:none}
