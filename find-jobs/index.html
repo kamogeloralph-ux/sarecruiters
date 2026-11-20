@@ -129,7 +129,7 @@ a.apply:hover{background:var(--blue);color:#fff}
       q: (p.get("s") || "").slice(0, 100),
       l: (p.get("l") || "").slice(0, 80),
       sort: sort === "date" || sort === "salary" ? sort : "relevance",
-      page: Math.max(1, Math.min(50, parseInt(p.get("p"), 10) || 1))
+      page: Math.max(1, Math.min(10, parseInt(p.get("p"), 10) || 1))
     };
   }
 

@@ -20,7 +20,9 @@ const ENDPOINT = "https://search.api.careerjet.net/v4/query";
 const DEFAULT_LOCALE = "en_ZA";
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 20;
-const MAX_PAGE = 50;
+// Careerjet v4 documents page values from 1 through 10. Keeping this limit in
+// the proxy also prevents the frontend from requesting an upstream-invalid page.
+const MAX_PAGE = 10;
 const SORTS = ["relevance", "date", "salary"];
 const TIMEOUT_MS = 8000;
 
@@ -162,13 +164,20 @@ export function mapCareerjetResponse(data, page) {
   throw new Error("Unrecognised reply from Careerjet.");
 }
 
+// Secrets copied from a dashboard or CI variable occasionally contain a
+// trailing newline. Careerjet treats that newline as part of the Basic-auth
+// username, so normalize the value at the boundary without ever logging it.
+export function normaliseApiKey(value) {
+  return String(value == null ? "" : value).replace(/\s+/g, "");
+}
+
 function fail(json, origin, status, error) {
   return json({ ok: false, error }, status, origin);
 }
 
 // `json` is the Worker's own helper (adds CORS headers for the caller's origin).
 export async function careerjetSearchResponse(request, env, origin, json) {
-  const apiKey = env && env.CAREERJET_API_KEY;
+  const apiKey = normaliseApiKey(env && env.CAREERJET_API_KEY);
   if (!apiKey) return fail(json, origin, 503, "Job search is not switched on yet.");
 
   const url = new URL(request.url);
@@ -200,13 +209,18 @@ export async function careerjetSearchResponse(request, env, origin, json) {
     clearTimeout(timer);
   }
 
+  // Read once so both JSON and plain-text upstream errors can be diagnosed.
+  // Never include the API key or the full request URL in logs.
+  const responseText = await response.text().catch(() => "");
+  let data = null;
+  try { data = responseText ? JSON.parse(responseText) : null; } catch (_) {}
+
   if (response.status === 401 || response.status === 403) {
-    console.error("careerjet rejected credentials", response.status);
+    console.error("careerjet rejected credentials", response.status, data && data.error ? String(data.error).slice(0, 240) : "");
     return fail(json, origin, 502, "Job search is temporarily unavailable.");
   }
-  const data = await response.json().catch(() => null);
   if (!response.ok && !(data && data.type)) {
-    console.warn("careerjet http error", response.status);
+    console.warn("careerjet http error", response.status, data && data.error ? String(data.error).slice(0, 240) : responseText.slice(0, 240));
     return fail(json, origin, 502, "Job search is temporarily unavailable.");
   }
 

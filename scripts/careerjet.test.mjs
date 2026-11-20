@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   parseSearchParams, refererFor, buildCareerjetUrl, plainText,
-  mapCareerjetResponse, careerjetSearchResponse
+  mapCareerjetResponse, normaliseApiKey, careerjetSearchResponse
 } from "../Cloudflare-worker/careerjet.js";
 
 const sp = (q) => new URLSearchParams(q);
@@ -15,10 +15,15 @@ test("search needs keywords or a location", () => {
 
 test("page, page size and sort are clamped", () => {
   const { query } = parseSearchParams(sp("keywords=a&page=9999&page_size=500&sort=evil"));
-  assert.equal(query.page, 50);
+  assert.equal(query.page, 10);
   assert.equal(query.pageSize, 20);
   assert.equal(query.sort, "relevance");
   assert.equal(parseSearchParams(sp("keywords=a&page=-3")).query.page, 1);
+});
+
+test("API keys are normalized before Basic authentication", () => {
+  assert.equal(normaliseApiKey("  secret-key\n\t"), "secret-key");
+  assert.equal(normaliseApiKey(""), "");
 });
 
 test("control characters and long input are cleaned", () => {
@@ -98,7 +103,7 @@ test("route: sends Basic auth + referer and returns mapped jobs", async () => {
       encodeURIComponent("https://sa-recruiters.co.za/find-jobs/?s=welder"), {
       headers: { "CF-Connecting-IP": "102.165.0.9", "User-Agent": "TestUA/1.0" }
     });
-    const res = await careerjetSearchResponse(req, { CAREERJET_API_KEY: "secret", SITE_URL: "https://sa-recruiters.co.za" }, null, json);
+    const res = await careerjetSearchResponse(req, { CAREERJET_API_KEY: "\n secret \t", SITE_URL: "https://sa-recruiters.co.za" }, null, json);
     const body = await res.json();
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("Cache-Control"), "private, no-store");
