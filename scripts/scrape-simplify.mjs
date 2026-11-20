@@ -6,7 +6,7 @@ import { isStaleVacancy } from './vacancy-freshness.mjs';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SIMPLIFY_BASE_URL = process.env.SIMPLIFY_BASE_URL || 'https://jobs.simplify.hr';
-const MAX_VACANCIES = 50;
+const MAX_VACANCIES = 100;
 const PAGE_SIZE = Math.min(parsePositiveInt(process.env.SIMPLIFY_PAGE_SIZE, 100), MAX_VACANCIES);
 const MAX_PAGES = parsePositiveInt(process.env.SIMPLIFY_MAX_PAGES, 100);
 const REQUEST_DELAY_MS = parsePositiveInt(process.env.SIMPLIFY_REQUEST_DELAY_MS, 750);

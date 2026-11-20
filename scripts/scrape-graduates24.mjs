@@ -20,7 +20,7 @@ import { isStaleVacancy } from './vacancy-freshness.mjs';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const GENERAL_URL = process.env.GRADUATES24_GENERAL_URL || 'https://www.graduates24.com/learnerships';
-const MAX_VACANCIES = 50;
+const MAX_VACANCIES = 100;
 const PAGE_COUNT = parsePositiveInt(process.env.GRADUATES24_PAGES, 60);
 const REQUEST_DELAY_MS = parsePositiveInt(process.env.GRADUATES24_REQUEST_DELAY_MS, 1_500);
 const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.GRADUATES24_REQUEST_TIMEOUT_MS, 60_000);
