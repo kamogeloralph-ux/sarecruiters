@@ -2746,9 +2746,9 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .pool-cover-brand{align-self:center;font-size:17px;font-weight:750;letter-spacing:.01em}.pool-cover-caption{position:absolute;left:63px;bottom:18px;color:rgba(222,235,244,.72);font-size:8px;font-weight:600;letter-spacing:.13em;text-transform:uppercase}
 .pool-detail-cover .pool-cover-placeholder{padding:26px 30px}.pool-detail-cover .pool-cover-brand{font-size:20px}.pool-detail-cover .pool-cover-caption{left:71px;bottom:24px;font-size:9px}
 .pool-profile-cover:after{content:"";position:absolute;inset:auto -10% 0;height:70%;background:linear-gradient(145deg,transparent 20%,rgba(225,185,105,.2) 45%,transparent 46%),linear-gradient(180deg,transparent,rgba(7,13,21,.18));transform:skewY(-5deg)}
-.pool-profile-badge{position:absolute;z-index:2;top:18px;display:inline-flex;align-items:center;justify-content:center;gap:7px;width:auto;max-width:calc(50% - 42px);padding:8px 12px;border-radius:999px;background:rgba(11,19,29,.9);color:#fff!important;font-size:11px;font-weight:400;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 10px rgba(0,0,0,.16)}
-.pool-profile-availability{left:16px;background:#168a4a;color:#fff!important;box-shadow:0 5px 14px rgba(22,138,74,.32)}.pool-profile-availability i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#fff!important}
-.pool-profile-seniority{right:64px;background:#a96800;color:#fff!important;box-shadow:0 5px 14px rgba(169,104,0,.3)}
+.pool-profile-badge{position:absolute;z-index:2;top:18px;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;max-width:calc(50% - 42px);padding:6px 9px;border:1px solid rgba(142,166,194,.2);border-radius:999px;background:#202d3f;color:#c3ccd7!important;font-size:10px;font-weight:400;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none}
+.pool-profile-availability{left:16px;background:#202d3f;color:#c3ccd7!important}.pool-profile-availability i{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#75e7a2!important}
+.pool-profile-seniority{right:64px;background:#202d3f;color:#c3ccd7!important}
 .pool-profile-body{position:relative;padding:0 18px 18px}
 .pool-profile-avatar{position:relative;float:left;margin:-39px 14px 8px 0;width:82px;height:82px;padding:4px;border-radius:24px;background:#172131;z-index:3}
 .pool-profile-avatar .pool-mini-avatar{width:74px!important;height:74px!important;border-radius:20px!important;box-shadow:none}
