@@ -1187,7 +1187,7 @@ window.sentryOnLoad = function () {
       <span class="pool-time-chip">⏱ ~1 min</span>
     </div>
     <div class="manager-banner pool-intro" style="padding:0 0 12px">
-      <p>Upload your CV in under a minute. We need your name, role, sector, location, experience, availability, phone number, profile photo and CV. Your profile is reviewed before it appears in the CV Box; your phone number, email and full CV stay off public profiles and are shared only with employers who pay to unlock your CV. Immediately availability expires unless you reconfirm it.</p>
+      <p>Upload your CV in under a minute. We need your name, role, sector, location, experience, availability, phone number, profile photo and CV. Your profile is reviewed before it appears in the CV Box; your phone number, email and full CV are never shown on your public profile. They are only shared with employers and recruiters approved by SA Recruiters. Immediately availability expires unless you reconfirm it.</p>
     </div>
     <div class="cv-box-form">
       <div class="cv-box-form-icon" aria-hidden="true">CV</div>
@@ -1201,8 +1201,8 @@ window.sentryOnLoad = function () {
       <div class="field"><label for="pool-availability">When can you start? *</label><select id="pool-availability" onchange="updatePoolStillLookingPanel()"><option value="">Choose…</option><option value="Immediately">Immediately</option><option value="Within 1 week">Within 1 week</option><option value="Within 2 weeks">Within 2 weeks</option><option value="Within 1 month">Within 1 month</option><option value="More than 1 month">More than 1 month</option></select><small class="helper-note">Shown on your public profile.</small></div>
       <div class="pool-still-looking" id="pool-still-looking-panel" hidden><div><strong>Keep “Immediately” current</strong><small id="pool-still-looking-status">Tap Still Looking to confirm your availability.</small></div><label for="pool-still-looking-days">Confirm for<select id="pool-still-looking-days"><option value="30" selected>30 days</option><option value="14">14 days</option></select></label><button type="button" id="pool-still-looking-btn" onclick="confirmPoolStillLooking()">Still Looking</button></div>
       <div class="field cv-box-story-field"><label for="pool-about">Introduction &amp; past jobs <span class="field-optional">optional</span></label><textarea id="pool-about" maxlength="500" rows="4" placeholder="Mention your experience, previous roles or employers, and the work you do best."></textarea><small class="helper-note">Shown on your public profile · up to 500 characters. Do not include your phone number or email.</small></div>
-      <div class="field cv-box-contact-field"><label for="pool-phone">Phone / WhatsApp number *</label><input id="pool-phone" type="tel" inputmode="tel" placeholder="e.g. 071 234 5678" autocomplete="tel" maxlength="20"><small class="helper-note">Not shown publicly. Shared only with an employer who pays to unlock your full CV.</small></div>
-      <div class="field cv-box-contact-field"><label>Email for CV enquiries <span class="field-optional">optional</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Not shown publicly. Shared only with an employer who pays to unlock your full CV.</small></div>
+      <div class="field cv-box-contact-field"><label for="pool-phone">Phone / WhatsApp number *</label><input id="pool-phone" type="tel" inputmode="tel" placeholder="e.g. 071 234 5678" autocomplete="tel" maxlength="20"><small class="helper-note">Never shown publicly. Only shared with employers and recruiters approved by SA Recruiters.</small></div>
+      <div class="field cv-box-contact-field"><label>Email for CV enquiries <span class="field-optional">optional</span></label><input id="pool-email" type="email" placeholder="e.g. thabo@email.com" autocomplete="email"><small class="helper-note">Never shown publicly. Only shared with employers and recruiters approved by SA Recruiters.</small></div>
       <div class="cv-box-legacy-fields" aria-hidden="true">
         <select id="pool-gender"><option value="">—</option></select><select id="pool-grade12"><option value="">—</option></select><select id="pool-criminal"><option value="">—</option></select><input id="pool-qualification"><select id="pool-drivers-license"><option value="">—</option></select><select id="pool-transport"><option value="">—</option></select><select id="pool-relocate"><option value="">—</option></select><select id="pool-employment"><option value="">—</option></select><input id="pool-salary"><select id="pool-work-authorized"><option value="">—</option></select><input id="pool-email-alerts" type="checkbox">
       </div>
@@ -1221,13 +1221,13 @@ window.sentryOnLoad = function () {
   </div>
 </div>
 
-<!-- ============ PAID CV DOWNLOAD REQUEST ============ -->
+<!-- ============ SECURE CV DOWNLOAD REQUEST ============ -->
 <div class="sheet-scrim" id="cv-download-overlay">
   <div class="sheet cv-download-sheet">
     <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('cv-download-overlay')" aria-label="Close" title="Close">×</button>
-    <div class="cv-box-kicker">PAID CV DOWNLOAD</div>
+    <div class="cv-box-kicker">SECURE CV DOWNLOAD</div>
     <h3 id="cv-download-title">Request this CV</h3>
-    <p class="manager-banner" style="padding:0 0 12px">Pay securely by card. After Yoco confirms payment, we’ll email you a private CV download link together with the candidate’s contact details.</p>
+    <p class="manager-banner" style="padding:0 0 12px">Checkout is secured by Yoco. Once it is confirmed, we’ll email you a private CV download link together with the candidate’s contact details.</p>
     <div class="field"><label for="cv-download-email">Email for your download link</label><input type="email" id="cv-download-email" autocomplete="email" maxlength="254" placeholder="you@example.com" required></div>
     <button class="sheet-submit" data-ripple id="cv-download-checkout">Pay R49 and download CV</button>
     <div class="cv-payment-methods" role="group" aria-label="Payment methods">
