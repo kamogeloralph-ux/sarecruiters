@@ -674,6 +674,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .navbtn-label{font-size:9.5px;font-weight:600}
 
 .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:60}
+.sheet-close-btn,.site-menu-close,.install-banner-x{display:none!important}
 /* CV Box / Employer registration sheets can be opened straight from the
    sign-in gate (before Google auth resolves) or forced open as the
    mandatory post-sign-in profile step — in both cases the gate curtain

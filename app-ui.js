@@ -525,6 +525,82 @@ document.addEventListener('keydown', function(event) {
   if (event.key === 'Escape') closeSiteMenu();
 });
 
+// Treat app navigation like a native Android stack. Every meaningful open
+// state gets a same-URL history entry, so the device Back button can close the
+// topmost card/sheet or return from a full-screen section without leaving the
+// site. Direct close buttons and Cancel actions still work normally; they do
+// not create extra history entries.
+function saUiSnapshot() {
+  return {
+    screen: (document.querySelector('.screen.active') || {}).id || 'screen-home',
+    sheets: Array.prototype.map.call(document.querySelectorAll('.sheet-scrim.open'), function(el) { return el.id; }),
+    report: Array.prototype.map.call(document.querySelectorAll('.community-report-overlay:not([hidden])'), function(el) { return el.id; }),
+    menu: !!document.querySelector('.site-menu-drawer.is-open'),
+    cards: Array.prototype.map.call(document.querySelectorAll('.vac-card.open,.hub-card.open,.branch-block.open,.contact-card.open'), function(el) { return el.id; })
+  };
+}
+function saUiSnapshotKey(snapshot) {
+  return JSON.stringify(snapshot || {});
+}
+function saRestoreSnapshot(snapshot) {
+  snapshot = snapshot || {};
+  document.querySelectorAll('.sheet-scrim.open').forEach(function(el) { el.classList.remove('open'); });
+  document.querySelectorAll('.community-report-overlay:not([hidden])').forEach(function(el) { el.hidden = true; });
+  document.querySelectorAll('.vac-card.open,.hub-card.open,.branch-block.open,.contact-card.open').forEach(function(el) { el.classList.remove('open'); el.setAttribute('aria-expanded', 'false'); });
+  closeSiteMenu();
+  document.querySelectorAll('.screen').forEach(function(el) { el.classList.remove('active'); });
+  var screen = document.getElementById(snapshot.screen || 'screen-home');
+  if (screen) screen.classList.add('active');
+  (snapshot.sheets || []).forEach(function(id) {
+    var sheet = document.getElementById(id);
+    if (sheet) sheet.classList.add('open');
+  });
+  (snapshot.report || []).forEach(function(id) {
+    var report = document.getElementById(id);
+    if (report) report.hidden = false;
+  });
+  (snapshot.cards || []).forEach(function(id) {
+    var card = document.getElementById(id);
+    if (card) { card.classList.add('open'); card.setAttribute('aria-expanded', 'true'); }
+  });
+  if (snapshot.menu) openSiteMenu();
+}
+(function initNativeBackNavigation() {
+  if (!window.history || !window.history.replaceState || !window.history.pushState) return;
+  var initial = saUiSnapshot();
+  window.history.replaceState({ saUi: true, saSnapshot: initial }, document.title, window.location.href);
+  var previousKey = saUiSnapshotKey(initial);
+  var restoring = false;
+  var ready = false;
+  var syncTimer = null;
+  function syncUiHistory() {
+    if (!ready || restoring) return;
+    var next = saUiSnapshot();
+    var nextKey = saUiSnapshotKey(next);
+    if (nextKey === previousKey) return;
+    var previous = JSON.parse(previousKey);
+    previousKey = nextKey;
+    // Opening a sheet/menu or moving to another screen is a new native-style
+    // navigation step. Closing is left alone so Cancel buttons stay instant.
+    var opened = next.sheets.length > previous.sheets.length || next.report.length > previous.report.length || next.cards.length > previous.cards.length || next.menu || next.screen !== previous.screen;
+    if (opened) window.history.pushState({ saUi: true, saSnapshot: next }, document.title, window.location.href);
+  }
+  var observer = new MutationObserver(function() { clearTimeout(syncTimer); syncTimer = setTimeout(syncUiHistory, 0); });
+  observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class', 'hidden'] });
+  setTimeout(function() { ready = true; previousKey = saUiSnapshotKey(saUiSnapshot()); }, 0);
+  window.addEventListener('popstate', function(event) {
+    if (!event.state || !event.state.saUi) {
+      saRestoreSnapshot({ screen: 'screen-home' });
+      previousKey = saUiSnapshotKey(saUiSnapshot());
+      return;
+    }
+    restoring = true;
+    saRestoreSnapshot(event.state.saSnapshot);
+    previousKey = saUiSnapshotKey(saUiSnapshot());
+    setTimeout(function() { restoring = false; }, 0);
+  });
+})();
+
 document.querySelectorAll('.navbtn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     if (!btn.dataset.tab) return; // action buttons (e.g. Feedback) handle their own click
