@@ -1,1 +1,293 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
+<title>Find jobs in South Africa — SA Recruiters</title>
+<link rel="canonical" href="https://sa-recruiters.co.za/find-jobs/">
+<meta name="description" content="Search thousands of jobs across South Africa by job title, skill or town, with results from our partner Careerjet.">
+<link rel="icon" type="image/png" sizes="256x256" href="/icons/sa-recruiters-icon-color.png?v=legal-color-1">
+<style>
+:root{--bg:#fff;--ink:#17212b;--muted:#637184;--line:#d9e2ec;--blue:#1769cf;--blue-deep:#1252a0;--wash:#f7f9fc;--warn:#fff8e6;--warn-line:#f0d58a;--err:#a4262c;color-scheme:light}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;overflow-x:clip}
+body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:8px}
+.wrap{max-width:820px;margin:0 auto;padding:1.5rem 1.1rem 3rem}
+.brand{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:750;text-decoration:none;margin-bottom:1.25rem}
+.brand img{width:40px;height:40px;border-radius:11px;display:block}
+h1{font-size:clamp(1.7rem,4.5vw,2.3rem);line-height:1.15;letter-spacing:-.02em;margin:0 0 .4rem}
+.lede{color:var(--muted);margin:0 0 1.25rem;max-width:60ch}
+form.search{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;padding:1rem;border:1px solid var(--line);border-radius:16px;background:var(--wash)}
+.field{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.field label{font-size:.88rem;font-weight:650}
+.field input,.field select{font:inherit;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:.7rem .8rem;min-height:46px;width:100%}
+.field input:focus,.field select:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px rgba(23,105,207,.18)}
+.actions{grid-column:1/-1;display:flex;gap:.75rem;align-items:end;flex-wrap:wrap}
+.actions .field{flex:0 1 190px}
+button.go{font:inherit;font-weight:700;background:var(--blue);color:#fff;border:2px solid var(--blue);border-radius:999px;padding:.7rem 1.6rem;min-height:46px;cursor:pointer}
+button.go:hover{background:var(--blue-deep);border-color:var(--blue-deep)}
+button.go[disabled]{opacity:.6;cursor:progress}
+.notice{margin:1rem 0 0;padding:.7rem .9rem;border:1px solid var(--warn-line);border-left:4px solid #d9a21b;border-radius:10px;background:var(--warn);font-size:.92rem}
+#status{margin:1.25rem 0 .5rem;font-weight:650;min-height:1.5rem}
+#status.err{color:var(--err)}
+ul.results{list-style:none;margin:0;padding:0;display:grid;gap:.75rem}
+.job{border:1px solid var(--line);border-radius:14px;padding:1rem 1.1rem;background:#fff}
+.job h2{font-size:1.1rem;line-height:1.3;margin:0 0 .15rem;letter-spacing:-.01em}
+.job h2 a{color:var(--ink);text-decoration:none}
+.job h2 a:hover{color:var(--blue);text-decoration:underline}
+.meta{color:var(--muted);font-size:.92rem;margin:0}
+.meta .co{color:var(--ink);font-weight:600}
+.salary{display:inline-block;margin:.45rem 0 0;font-weight:650;color:#087a45;font-size:.92rem}
+.desc{margin:.5rem 0 .7rem;color:#3d4a58;font-size:.95rem}
+.job .foot{display:flex;justify-content:space-between;gap:.75rem;align-items:center;flex-wrap:wrap}
+.job .src{color:var(--muted);font-size:.85rem}
+a.apply{display:inline-block;font-weight:700;font-size:.92rem;text-decoration:none;color:var(--blue);border:1.5px solid var(--blue);border-radius:999px;padding:.4rem .95rem}
+a.apply:hover{background:var(--blue);color:#fff}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin:1.25rem 0 0}
+.pager button{font:inherit;font-weight:650;background:#fff;color:var(--blue);border:1.5px solid var(--blue);border-radius:999px;padding:.55rem 1.2rem;min-height:44px;cursor:pointer}
+.pager button[disabled]{opacity:.4;cursor:not-allowed}
+.pager span{color:var(--muted);font-size:.92rem}
+.picks{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0 0}
+.picks button{font:inherit;background:#fff;color:var(--blue);border:1.5px solid var(--blue-deep);border-radius:999px;padding:.4rem .95rem;cursor:pointer}
+.picks button:hover{background:var(--blue);color:#fff}
+.empty{border:1px dashed var(--line);border-radius:14px;padding:1.2rem;color:#3d4a58}
+.empty p{margin:.25rem 0}
+.attrib{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media(max-width:560px){form.search{grid-template-columns:1fr}.actions .field{flex:1 1 100%}button.go{width:100%}}
+@media(prefers-reduced-motion:no-preference){.job{transition:border-color .15s}.job:hover{border-color:var(--blue)}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<a class="brand" href="/"><img src="/icons/sa-recruiters-icon-color.png?v=legal-color-1" alt="" width="40" height="40"><span>SA Recruiters</span></a>
+<h1>Find jobs in South Africa</h1>
+<p class="lede">Search by job title, skill or town. Results come from our partner Careerjet and open on the employer’s or job board’s own site.</p>
 
+<form class="search" id="form" role="search" autocomplete="off">
+  <div class="field">
+    <label for="q">Job title or skill</label>
+    <input id="q" name="q" type="search" maxlength="100" placeholder="e.g. electrician, accountant, python" enterkeyhint="search">
+  </div>
+  <div class="field">
+    <label for="l">Town or city</label>
+    <input id="l" name="l" type="search" maxlength="80" placeholder="e.g. Durban, Benoni, Cape Town" enterkeyhint="search">
+  </div>
+  <div class="actions">
+    <div class="field">
+      <label for="sort">Sort by</label>
+      <select id="sort" name="sort">
+        <option value="relevance">Best match</option>
+        <option value="date">Newest first</option>
+        <option value="salary">Highest salary</option>
+      </select>
+    </div>
+    <button class="go" id="go" type="submit">Search jobs</button>
+  </div>
+</form>
+<p class="notice"><strong>Stay safe:</strong> never pay to apply for a job or share your ID, bank details or OTPs in an application. <a href="/know-your-rights/">Know your rights</a>.</p>
+
+<div id="status" role="status" aria-live="polite"></div>
+<div id="picks"></div>
+<ul class="results" id="results"></ul>
+<nav class="pager" id="pager" aria-label="Results pages" hidden>
+  <button type="button" id="prev">Previous</button>
+  <span id="pageinfo"></span>
+  <button type="button" id="next">Next</button>
+</nav>
+
+<p class="attrib">Jobs by <a href="https://www.careerjet.co.za/" target="_blank" rel="noopener">Careerjet</a>. SA Recruiters does not control these listings and cannot verify the advertisers. Looking for vacancies we have checked ourselves? <a href="/">Browse the SA Recruiters directory</a>.</p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var API = "https://sarecruiters-uploader.kamogeloralph.workers.dev/api/jobs/careerjet";
+  var PAGE_SIZE = 10;
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $("form"), qEl = $("q"), lEl = $("l"), sortEl = $("sort"), go = $("go");
+  var statusEl = $("status"), picksEl = $("picks"), listEl = $("results");
+  var pager = $("pager"), prev = $("prev"), next = $("next"), info = $("pageinfo");
+  var state = { q: "", l: "", sort: "relevance", page: 1, pages: 0 };
+  var seq = 0;
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function readUrl() {
+    var p = new URLSearchParams(location.search);
+    var sort = p.get("sort");
+    return {
+      q: (p.get("s") || "").slice(0, 100),
+      l: (p.get("l") || "").slice(0, 80),
+      sort: sort === "date" || sort === "salary" ? sort : "relevance",
+      page: Math.max(1, Math.min(50, parseInt(p.get("p"), 10) || 1))
+    };
+  }
+
+  function writeUrl(push) {
+    var p = new URLSearchParams();
+    if (state.q) p.set("s", state.q);
+    if (state.l) p.set("l", state.l);
+    if (state.sort !== "relevance") p.set("sort", state.sort);
+    if (state.page > 1) p.set("p", String(state.page));
+    var qs = p.toString();
+    var url = location.pathname + (qs ? "?" + qs : "");
+    try { history[push ? "pushState" : "replaceState"](null, "", url); } catch (e) {}
+    setNoindex(!!qs);
+  }
+
+  // Search result URLs shouldn't be indexed; the bare /find-jobs/ page is.
+  function setNoindex(on) {
+    var m = document.querySelector('meta[name="robots"]');
+    if (on && !m) { m = el("meta"); m.name = "robots"; m.content = "noindex,follow"; document.head.appendChild(m); }
+    if (!on && m) m.remove();
+  }
+
+  function setStatus(text, isErr) {
+    statusEl.textContent = text || "";
+    statusEl.className = isErr ? "err" : "";
+  }
+
+  function clearResults() {
+    listEl.textContent = "";
+    picksEl.textContent = "";
+    pager.hidden = true;
+  }
+
+  function when(raw) {
+    var d = raw ? new Date(raw) : null;
+    if (!d || isNaN(d.getTime())) return "";
+    var days = Math.floor((Date.now() - d.getTime()) / 864e5);
+    if (days <= 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 30) return days + " days ago";
+    return d.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function card(job) {
+    var li = el("li", "job");
+    var h = el("h2");
+    var a = el("a", null, job.title);
+    a.href = job.url; a.target = "_blank"; a.rel = "noopener sponsored nofollow";
+    h.appendChild(a); li.appendChild(h);
+
+    var meta = el("p", "meta");
+    if (job.company) meta.appendChild(el("span", "co", job.company));
+    var bits = [job.location, when(job.date)].filter(Boolean).join(" · ");
+    if (bits) meta.appendChild(document.createTextNode((job.company ? " · " : "") + bits));
+    li.appendChild(meta);
+
+    if (job.salary) li.appendChild(el("span", "salary", job.salary));
+    if (job.description) li.appendChild(el("p", "desc", job.description));
+
+    var foot = el("div", "foot");
+    foot.appendChild(el("span", "src", job.source ? "via " + job.source : ""));
+    var apply = el("a", "apply", "View and apply");
+    apply.href = job.url; apply.target = "_blank"; apply.rel = "noopener sponsored nofollow";
+    apply.setAttribute("aria-label", "View and apply: " + job.title);
+    foot.appendChild(apply);
+    li.appendChild(foot);
+    return li;
+  }
+
+  function showJobs(data) {
+    state.pages = data.pages || 0;
+    if (!data.jobs.length) {
+      var box = el("li", "empty");
+      box.appendChild(el("p", null, "No jobs found for that search."));
+      box.appendChild(el("p", null, "Try a broader title (for example “driver” instead of “code 14 truck driver”), check the spelling, or leave the town blank to search the whole country."));
+      listEl.appendChild(box);
+      setStatus("");
+      return;
+    }
+    var total = data.total ? data.total.toLocaleString("en-ZA") + " jobs found" : "Jobs found";
+    setStatus(total);
+    data.jobs.forEach(function (j) { listEl.appendChild(card(j)); });
+    pager.hidden = !(state.page > 1 || state.pages > state.page);
+    prev.disabled = state.page <= 1;
+    next.disabled = !(state.pages > state.page);
+    info.textContent = "Page " + state.page + (state.pages ? " of " + state.pages : "");
+  }
+
+  function showLocations(data) {
+    setStatus("Which place do you mean?");
+    if (!data.locations.length) {
+      setStatus("We couldn’t recognise that location. Try a nearby town or city.", true);
+      return;
+    }
+    var wrap = el("div", "picks");
+    data.locations.forEach(function (name) {
+      var b = el("button", null, name);
+      b.type = "button";
+      b.addEventListener("click", function () { lEl.value = name; run(1, true); });
+      wrap.appendChild(b);
+    });
+    picksEl.appendChild(wrap);
+  }
+
+  function run(page, push) {
+    state.q = qEl.value.trim();
+    state.l = lEl.value.trim();
+    state.sort = sortEl.value;
+    state.page = page || 1;
+    clearResults();
+    if (!state.q && !state.l) {
+      setStatus("Enter a job title, skill or town to search.", true);
+      qEl.focus();
+      return;
+    }
+    writeUrl(push);
+    var mine = ++seq;
+    go.disabled = true;
+    setStatus("Searching…");
+
+    var u = new URL(API);
+    if (state.q) u.searchParams.set("keywords", state.q);
+    if (state.l) u.searchParams.set("location", state.l);
+    u.searchParams.set("sort", state.sort);
+    u.searchParams.set("page", String(state.page));
+    u.searchParams.set("page_size", String(PAGE_SIZE));
+    u.searchParams.set("page_url", location.href);
+
+    fetch(u.toString(), { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.json().catch(function () { return null; }).then(function (body) { return { ok: r.ok, body: body }; }); })
+      .then(function (res) {
+        if (mine !== seq) return;
+        var b = res.body;
+        if (!res.ok || !b || !b.ok) {
+          setStatus((b && b.error) || "Job search is unavailable right now. Please try again in a moment.", true);
+          return;
+        }
+        if (b.type === "locations") showLocations(b); else showJobs(b);
+      })
+      .catch(function () {
+        if (mine !== seq) return;
+        setStatus("Couldn’t reach job search. Check your connection and try again.", true);
+      })
+      .then(function () { if (mine === seq) go.disabled = false; });
+  }
+
+  form.addEventListener("submit", function (e) { e.preventDefault(); run(1, true); });
+  prev.addEventListener("click", function () { run(state.page - 1, true); window.scrollTo({ top: 0 }); });
+  next.addEventListener("click", function () { run(state.page + 1, true); window.scrollTo({ top: 0 }); });
+
+  function restore() {
+    var s = readUrl();
+    qEl.value = s.q; lEl.value = s.l; sortEl.value = s.sort;
+    if (s.q || s.l) { run(s.page, false); } else { clearResults(); setStatus(""); setNoindex(false); }
+  }
+  window.addEventListener("popstate", restore);
+  restore();
+})();
+</script>
+</body>
+</html>
