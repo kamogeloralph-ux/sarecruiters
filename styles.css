@@ -129,7 +129,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .stat-card{flex:0 0 calc((100% - 24px)/4);min-width:0;background:var(--card);border-radius:16px;padding:12px 4px;text-align:center;border:1px solid var(--border);cursor:pointer;transition:border-color .2s,transform .15s,box-shadow .2s;position:relative;overflow:hidden;scroll-snap-align:start}
 .stat-icon{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin:0 auto 5px;color:var(--accent)}
 .stat-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.stat-card-branches .stat-icon{color:var(--text)}.stat-card-cvpics .stat-icon{color:var(--text)}.stat-card-vacancies .stat-icon{color:var(--text)}.stat-card-employers .stat-icon{color:var(--text)}.stat-card-agencies .stat-icon{color:var(--text)}.stat-card-pool .stat-icon{color:var(--text)}@media(min-width:760px){.stat-card{flex-basis:calc((100% - 32px)/5)}}
+.stat-card-branches .stat-icon{color:var(--text)}.stat-card-scamcheck .stat-icon{color:var(--text)}.stat-card-vacancies .stat-icon{color:var(--text)}.stat-card-employers .stat-icon{color:var(--text)}.stat-card-agencies .stat-icon{color:var(--text)}.stat-card-pool .stat-icon{color:var(--text)}@media(min-width:760px){.stat-card{flex-basis:calc((100% - 32px)/5)}}
 .stat-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px -8px rgba(0,0,0,.25)}
 .stat-card:active{transform:translateY(0)}
 .stat-card .stat-arrow{position:absolute;top:6px;right:7px;opacity:.3;font-size:10px}
@@ -1573,57 +1573,6 @@ header{margin-bottom:18px}
 .cvb-template-executive .cvb-name{letter-spacing:.02em}
 .cvb-template-executive .cvb-section-title{color:#282828}
 
-/* ============ CV pictures feed ============ */
-.cvpic-feed{
-  display:flex;
-  gap:12px;
-  overflow-x:auto;
-  scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;
-  padding:4px 16px 14px;
-  scrollbar-width:none}
-.cvpic-feed::-webkit-scrollbar{display:none}
-.cvpic-feed-empty{
-  padding:24px 16px;
-  color:var(--text-2);
-  font-size:13.5px;
-  text-align:center}
-.cvpic-card{
-  flex:0 0 78%;
-  scroll-snap-align:center;
-  border-radius:var(--radius-sm);
-  overflow:hidden;
-  background:var(--card);
-  box-shadow:var(--shadow-sm);
-  cursor:pointer}
-.cvpic-card img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover;background:var(--card-2)}
-.cvpic-caption{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding:9px 12px;
-  font-size:13px;
-  color:var(--text-2);
-  border-top:1px solid var(--separator)}
-
-.cvpic-caption-text{flex:1;min-width:0}
-/* CV pictures screen: full-width vertical list, picture shown uncropped */
-.cvpic-list{display:flex;flex-direction:column;gap:14px;padding:4px 0 24px}
-.cvpic-list .cvpic-card{flex:none;width:100%}
-.cvpic-list .cvpic-card img{aspect-ratio:auto;height:auto;object-fit:contain}
-
-/* Full-screen lightbox for a tapped CV picture */
-#cvpic-lightbox-overlay{
-  position:fixed;inset:0;z-index:200;
-  background:rgba(0,0,0,.92);
-  display:none;align-items:center;justify-content:center;
-  padding:24px}
-#cvpic-lightbox-overlay.open{display:flex}
-#cvpic-lightbox-overlay img{max-width:100%;max-height:90vh;border-radius:var(--radius-sm)}
-.cvpic-lightbox-close{
-  position:absolute;top:20px;right:20px;
-  width:38px;height:38px;border-radius:50%;
-  background:rgba(255,255,255,.12);color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  border:none}
 
 /* ===== My Account (general signed-in profile) ===== */
 /* Hero card: Google identity. Reuses the app's card + accent tokens so it
@@ -2041,7 +1990,7 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 @media(max-width:759px){.vacancy-market-search-panel{margin-left:10px;margin-right:10px}.vacancy-market-screen .vacancy-market-hero{padding-left:16px;padding-right:16px}.vacancy-market-topbar{gap:10px}.vacancy-market-brand h1{font-size:28px}.vacancy-market-subtitle{font-size:13px}.vacancy-market-stats{gap:18px}.vacancy-market-stats strong{font-size:18px}.vacancy-market-search-row{grid-template-columns:1fr;gap:7px}.vacancy-search-button{padding:12px}.vacancy-location-use{display:none}.vacancy-market-filter-row{display:grid;grid-template-columns:1fr 1fr}.vacancy-filter-control,.vacancy-sort-control{max-width:none;min-width:0}.vacancy-clear-button{grid-column:span 2;text-align:left;padding-left:2px}.vacancy-industry-section{margin:26px 10px 18px}.vacancy-section-heading h2{font-size:17px}.vacancy-section-hint{font-size:10px}.vacancy-market-results{margin:0 10px}.vacancy-market-results .vac-card-main{padding:15px 13px}.vacancy-market-results .vac-card-side .chevron{display:none}.vacancy-market-share span{display:none}}
 @media(prefers-reduced-motion:reduce){.vacancy-market-results>.vac-card,.vac-industry-chip,.vacancy-search-button{transition:none}.vacancy-market-results>.vac-card:hover,.vac-industry-chip:hover,.vacancy-search-button:hover{transform:none}}
 
-.section-title-actions{display:flex;align-items:center;gap:8px}.cvpic-post-btn{border:0;border-radius:999px;padding:8px 12px;background:var(--accent);color: var(--m-on-ink);font-weight:800;font-size:12px;cursor:pointer}.cvpic-post-btn:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:2px}.sheet-help-text{margin:-4px 0 14px;color:var(--text-2);font-size:13px;line-height:1.45}
+.section-title-actions{display:flex;align-items:center;gap:8px}.sheet-help-text{margin:-4px 0 14px;color:var(--text-2);font-size:13px;line-height:1.45}
 
 
 /* ===== Vacancy-first home feed ===== */
@@ -2325,7 +2274,7 @@ html,body{font-family:'Inter','Inter Fallback',-apple-system,BlinkMacSystemFont,
 .section-head,.home-section-heading{margin-top:16px}
 .card,.hub-card,.directory-group,.vacancy-overview-section,.profile-card,.contact-card,.pgrouped-list,.account-signin-card,.account-quota-card,.quick-card,.spotlight-mini,.home-community-card,.vacancy-card{border-color:var(--it-line);border-radius:var(--it-radius);box-shadow:var(--it-shadow)}
 [data-theme="dark"] .card,[data-theme="dark"] .hub-card,[data-theme="dark"] .directory-group,[data-theme="dark"] .vacancy-overview-section,[data-theme="dark"] .profile-card,[data-theme="dark"] .contact-card,[data-theme="dark"] .pgrouped-list,[data-theme="dark"] .account-signin-card,[data-theme="dark"] .account-quota-card,[data-theme="dark"] .quick-card,[data-theme="dark"] .spotlight-mini,[data-theme="dark"] .home-community-card,[data-theme="dark"] .vacancy-card{box-shadow:0 6px 22px rgba(0,0,0,.16)}
-.btn-primary,.community-submit-btn,.community-comment-form button,.home-vacancy-apply,.home-feed-empty button,.cvpic-post-btn{border-radius:11px;font-weight:800;box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 20%,transparent)}
+.btn-primary,.community-submit-btn,.community-comment-form button,.home-vacancy-apply,.home-feed-empty button{border-radius:11px;font-weight:800;box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 20%,transparent)}
 button,input,select,textarea{font-family:inherit}
 input,select,textarea{border-color:var(--border-strong);border-radius:11px}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);outline:0}
@@ -2345,8 +2294,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #screen-home .home-section-heading p{font-size:11px}
 .home-community-icon svg{width:21px;height:21px;display:block}
 .home-community-card>button{background:var(--accent);border-radius:10px}
-#screen-allagencies .screen-fixed,#screen-allbranches .screen-fixed,#screen-allvacancies .screen-fixed,#screen-allcvpics .screen-fixed,#screen-allemployers .screen-fixed,#screen-pool .screen-fixed,#screen-saved .screen-fixed,#screen-account .screen-fixed{background:var(--bg)}
-#screen-allagencies .screen-scroll,#screen-allbranches .screen-scroll,#screen-allvacancies .screen-scroll,#screen-allcvpics .screen-scroll,#screen-allemployers .screen-scroll,#screen-pool .screen-scroll,#screen-saved .screen-scroll,#screen-account .screen-scroll{background:var(--bg)}
+#screen-allagencies .screen-fixed,#screen-allbranches .screen-fixed,#screen-allvacancies .screen-fixed,#screen-scamcheck .screen-fixed,#screen-allemployers .screen-fixed,#screen-pool .screen-fixed,#screen-saved .screen-fixed,#screen-account .screen-fixed{background:var(--bg)}
+#screen-allagencies .screen-scroll,#screen-allbranches .screen-scroll,#screen-allvacancies .screen-scroll,#screen-scamcheck .screen-scroll,#screen-allemployers .screen-scroll,#screen-pool .screen-scroll,#screen-saved .screen-scroll,#screen-account .screen-scroll{background:var(--bg)}
 #screen-allagencies #allagencies-list .hub-card,#screen-allemployers .hub-card,#screen-allbranches .hub-card{border-radius:15px;box-shadow:var(--it-shadow)}
 #screen-allagencies #allagencies-list .hub-card.open{border-color:color-mix(in srgb,var(--accent) 40%,var(--border));box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 10%,transparent)}
 #screen-allagencies #allagencies-list .hub-branch-badge{background:var(--accent-soft);color:var(--accent);border-color:transparent}
@@ -2932,8 +2881,6 @@ html[data-inapp] .install-banner{bottom:88px!important}
 @media(prefers-reduced-motion:reduce){.manager-consent-save{transition:none}.manager-consent-save:hover:not(:disabled){transform:none}}
 
 /* CV picture consent line in the "Post my CV picture" sheet */
-.cvpic-consent{display:flex;align-items:flex-start;gap:9px;margin:4px 0 12px;font-size:12.5px;line-height:1.4;color:var(--text-2)}
-.cvpic-consent input{margin-top:3px;flex:0 0 auto}
 
 /* POPIA / Information Regulator registration notice */
 .popia-notice{display:inline-flex;align-items:center;gap:10px;max-width:100%;margin:2px auto 10px;padding:9px 13px;border:1px solid var(--line,rgba(127,127,127,.35));border-radius:12px;background:var(--surface,transparent);color:var(--accent,#1769cf);text-decoration:none!important;text-align:left}
@@ -2992,3 +2939,29 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .mcb-chevron{flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:18px;line-height:1}
 #mcb-body{margin-top:4px}
 .mcb-card:not(.is-open){padding-top:12px;padding-bottom:12px}
+
+/* ============ Scam check ("Is this job real?") ============ */
+/* Literal colours on purpose: the blue brand theme remaps --accent and --m-on-ink in places. */
+.scamcheck{padding:4px 16px 28px;display:flex;flex-direction:column;gap:14px}
+.scamcheck-intro{margin:0;color:var(--text-2);font-size:14px;line-height:1.5}
+.scamcheck-intro strong{color:var(--text)}
+.scamcheck-input{width:100%;min-height:150px;resize:vertical;padding:14px;border:1.5px solid var(--border-strong);border-radius:14px;background:var(--card);color:var(--text);font:inherit;font-size:15px;line-height:1.45;box-sizing:border-box}
+.scamcheck-input:focus{outline:none;border-color:#1769cf;box-shadow:0 0 0 3px rgba(23,105,207,.22)}
+.scamcheck-actions{display:flex;gap:10px;flex-wrap:wrap}
+.scamcheck-btn{flex:1 1 150px;height:48px;border:1.5px solid #1769cf;border-radius:14px;background:#1769cf;color:#fff;font-size:15px;font-weight:800;cursor:pointer}
+.scamcheck-btn:disabled{opacity:.6;cursor:default}
+.scamcheck-btn--ghost{flex:0 0 auto;padding:0 22px;background:transparent;color:var(--text);border-color:var(--border-strong)}
+.scamcheck-result:empty{display:none}
+.scamcheck-result{display:flex;flex-direction:column;gap:14px}
+.scamcheck-verdict{display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:16px;border:2px solid var(--border-strong);background:var(--card)}
+.scamcheck-verdict-icon{flex:none;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;background:#5b6472}
+.scamcheck-verdict strong{display:block;font-size:18px;line-height:1.25;color:var(--text)}
+.scamcheck-verdict p{margin:4px 0 0;font-size:14px;line-height:1.45;color:var(--text-2)}
+.scamcheck-verdict--high{border-color:#b42318}.scamcheck-verdict--high .scamcheck-verdict-icon{background:#b42318}
+.scamcheck-verdict--medium{border-color:#946200}.scamcheck-verdict--medium .scamcheck-verdict-icon{background:#946200}
+.scamcheck-verdict--low{border-color:#087a45}.scamcheck-verdict--low .scamcheck-verdict-icon{background:#087a45}
+.scamcheck-section h4{margin:0 0 6px;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2)}
+.scamcheck-section ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45;color:var(--text)}
+.scamcheck-note{margin:0;font-size:12.5px;line-height:1.5;color:var(--text-2)}
+.scamcheck-loading,.scamcheck-error{padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--border);font-size:14px;color:var(--text-2)}
+.scamcheck-error{border-color:#b42318;color:var(--text)}

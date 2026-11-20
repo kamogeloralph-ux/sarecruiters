@@ -197,7 +197,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
   .row-item .row-actions-inline{display:flex;gap:6px;flex-shrink:0}
 }
 .row-actions-inline{display:none;gap:6px;flex-shrink:0}
-/* CV pictures open the editor on tap, so their Edit/Delete buttons must stay visible on phones too */
+/* Rows whose editor opens on tap keep their Edit/Delete buttons visible on phones too */
 .row-actions-inline.always{display:flex !important}
 /* Submissions rows (reports / suggestions / job enquiries) */
 .row-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
@@ -322,7 +322,6 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 .pb-item.pb-done{opacity:.55}
 .pb-item.pb-failed{border-color:var(--danger)}
 .pb-status{font-size:12px;font-weight:600;margin-top:2px}
-.cvpic-thumb{width:48px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--card-2)}
 
 .load-banner{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:0 0 12px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text-2);font-size:13px}
 .load-banner.err{border-color:var(--danger);color:var(--text)}
@@ -431,14 +430,6 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
         <div class="muted" style="margin-bottom:14px">Companies that post their own vacancies directly (separate from the agency directory). Their jobs also show up in the Vacancies list once posted.</div>
         <input class="search" id="emp-search" placeholder="Search name, industry, location..." oninput="renderEmployers()">
         <div id="emp-list"></div>
-      </section>
-
-      <!-- CV PICTURES -->
-      <section class="section section-manage" id="sec-cvpics">
-        <div class="section-head"><button class="back-btn" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Home</button><h2>CV Pictures</h2></div>
-        <div class="muted" style="margin-bottom:14px">CV pictures posted by job seekers in the app. Edit a caption or expiry, or delete anything inappropriate.</div>
-        <input class="search" id="po-search" placeholder="Search captions..." oninput="renderCvPictures()">
-        <div id="po-list"></div>
       </section>
 
       <!-- HOUSE ADS -->
@@ -679,25 +670,11 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Button text <span style="font-weight:400;color:var(--text-2)">(optional)</span></label><input id="ha-cta" maxlength="30" placeholder="Learn more"></div>
     <div class="field"><label>Banner image, HTML5 ad or logo URL *</label><input id="ha-image" type="url" placeholder="https://…"><small style="display:block;margin-top:5px;color:var(--text-2)">Image (1200 × 400 px) or an animated HTML5 ad (a .html file; put the size in the file name, e.g. name-1200x400.html). Host it on your own storage or CDN.</small></div>
     <div class="field"><label>Destination URL *</label><input id="ha-target" type="url" placeholder="https://…"></div>
-    <div class="field"><label>Show this ad on</label><div id="ha-screens" class="house-ad-screen-options"><label><input type="checkbox" value="agencies"> Agencies</label><label><input type="checkbox" value="employers"> Employers</label><label><input type="checkbox" value="candidates"> Candidates</label><label><input type="checkbox" value="posters"> CV Pictures</label><label><input type="checkbox" value="home"> Home</label><label><input type="checkbox" value="public"> Public SEO pages (all sections &amp; provinces)</label></div></div><div class="pb-row"><div class="field"><label>Ad slot</label><select id="ha-slot"><option value="top">Top</option><option value="middle">Middle</option><option value="bottom">Bottom</option></select></div><div class="field"><label>Display order</label><input id="ha-order" type="number" min="0" step="1" value="0"></div></div>
+    <div class="field"><label>Show this ad on</label><div id="ha-screens" class="house-ad-screen-options"><label><input type="checkbox" value="agencies"> Agencies</label><label><input type="checkbox" value="employers"> Employers</label><label><input type="checkbox" value="candidates"> Candidates</label><label><input type="checkbox" value="home"> Home</label><label><input type="checkbox" value="public"> Public SEO pages (all sections &amp; provinces)</label></div></div><div class="pb-row"><div class="field"><label>Ad slot</label><select id="ha-slot"><option value="top">Top</option><option value="middle">Middle</option><option value="bottom">Bottom</option></select></div><div class="field"><label>Display order</label><input id="ha-order" type="number" min="0" step="1" value="0"></div></div>
     <div class="pb-row"><div class="field"><label>Starts</label><input id="ha-starts" type="datetime-local"></div><div class="field"><label>Ends (optional)</label><input id="ha-ends" type="datetime-local"></div></div>
     <div class="sheet-actions"><button class="btn secondary" onclick="closeSheet('house-ad-overlay')">Cancel</button><button class="btn" onclick="saveHouseAd()">Save ad</button></div>
   </div>
 </div>
-<!-- ============ CV PICTURES: EDIT SHEET ============ -->
-<div class="scrim" id="cvpic-edit-overlay">
-  <div class="sheet">
-    <h3>Edit CV picture</h3>
-    <div style="margin-bottom:12px"><img id="pe-img" alt="" style="max-width:140px;max-height:200px;border-radius:10px;border:1px solid var(--border);object-fit:contain;background:var(--card-2)"></div>
-    <div class="field"><label>Caption</label><input id="pe-caption" placeholder="e.g. Thandi M. — Cashier, Durban"></div>
-    <div class="field"><label>Expires on (leave empty for no expiry)</label><input type="date" id="pe-expiry"></div>
-    <div class="sheet-actions">
-      <button class="btn secondary" onclick="closeSheet('cvpic-edit-overlay')">Cancel</button>
-      <button class="btn" onclick="saveCvPicEdit()">Save</button>
-    </div>
-  </div>
-</div>
-
 <!-- ============ CV BOX CANDIDATE SHEET ============ -->
 <div class="scrim" id="pool-overlay">
   <div class="sheet">
@@ -858,7 +835,7 @@ async function deleteR2Object(key) {
 var ADMIN_WHATSAPP = '27715531005';
 
 // ===== State =====
-var cache = { agencies: [], branches: [], vacancies: [], employers: [], cvPics: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [], jobSeekers: [], houseAds: [], adRequests: [] };
+var cache = { agencies: [], branches: [], vacancies: [], employers: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [], jobSeekers: [], houseAds: [], adRequests: [] };
 var adminDataReady = false;
 // Each dataset loads, succeeds or fails on its own, so one slow source can no
 // longer leave every dashboard tile on "…" or silently show zero.
@@ -866,7 +843,7 @@ var loadState = { agencies:'loading', branches:'loading', vacancies:'loading', e
 var loadErrors = {};
 var restoredFlags = {};
 var vacancyProgress = 0;
-var LOAD_LABELS = { agencies:'Agencies', branches:'Branches', vacancies:'Vacancies', employers:'Employers', aux:'Reports, CV pictures, CV Box & media' };
+var LOAD_LABELS = { agencies:'Agencies', branches:'Branches', vacancies:'Vacancies', employers:'Employers', aux:'Reports, CV Box & media' };
 function resetLoadState(){ Object.keys(loadState).forEach(function(k){ loadState[k]='loading'; }); loadErrors={}; restoredFlags={}; vacancyProgress=0; }
 function dsShown(k){ return loadState[k]==='ok' || !!restoredFlags[k] || (k==='vacancies' && vacancyProgress>0); }
 function withTimeout(promise, ms, label){
@@ -1092,7 +1069,7 @@ async function doLogout(){
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
-  cache = { agencies:[], branches:[], vacancies:[], employers:[], cvPics:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[], jobSeekers:[] };
+  cache = { agencies:[], branches:[], vacancies:[], employers:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[], jobSeekers:[] };
   adminDataReady = false; resetLoadState();
 }
 
@@ -1102,7 +1079,7 @@ if (supabaseClient && supabaseClient.auth) {
   supabaseClient.auth.onAuthStateChange(function(event, session){
     if (event === 'SIGNED_OUT' || !session) {
       adminDataReady = false; resetLoadState();
-      cache = { agencies:[], branches:[], vacancies:[], employers:[], cvPics:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[], jobSeekers:[] };
+      cache = { agencies:[], branches:[], vacancies:[], employers:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[], jobSeekers:[] };
       var app = document.getElementById('app');
       var login = document.getElementById('login-screen');
       if (app) app.style.display = 'none';
@@ -1116,7 +1093,7 @@ async function enterConsole(user){
   document.getElementById('who-am-i').textContent = user.email || 'admin';
   initAdminHistory();
   // Paint the console immediately. The previous bootstrap awaited every
-  // table—including all vacancy pages and CV pictures—before showing Dashboard,
+  // table—including all vacancy pages—before showing Dashboard,
   // which made the admin page look stuck on slower mobile connections.
   renderNav();
   renderDashboard();
@@ -1368,20 +1345,6 @@ async function getEmployers(){
   if (res.error) throw new Error(res.error.message || 'Employers could not be read');
   return res.data || [];
 }
-// Expired CV pictures are gone from the app, so they must not linger in the admin list
-// while the scheduled cleanup (Worker) is still catching up.
-function activeCvPictures(rows){
-  var now = Date.now();
-  return (Array.isArray(rows) ? rows : []).filter(function(p){
-    if(!p || !p.expires_at) return true;
-    var t = new Date(p.expires_at).getTime();
-    return isNaN(t) || t > now;
-  });
-}
-async function getCvPictures(){
-  try { var { data, error } = await supabaseClient.from('employer_posters').select('id,employer_id,agency_id,image_url,caption,vacancy_id,created_at,expires_at').order('created_at',{ascending:false}).limit(500); if(!error) return activeCvPictures(data); console.error('posters load',error); } catch(e){ console.error('posters load',e); }
-  return [];
-}
 async function getHouseAds(){
   try { var auxiliary = await getAdminAuxiliaryData(); return Array.isArray(auxiliary.houseAds) ? auxiliary.houseAds : []; } catch(e){ console.error('house ads load',e); }
   return [];
@@ -1573,7 +1536,7 @@ function refreshActiveSection(){
   try {
     if(id==='agencies') renderAgencies(); else if(id==='branches') renderBranches();
     else if(id==='vacancies') renderVacancies(); else if(id==='employers') renderEmployers();
-    else if(id==='cvpics') renderCvPictures(); else if(id==='houseads') renderHouseAds();
+    else if(id==='houseads') renderHouseAds();
     else if(id==='submissions') renderSubmissions(); else if(id==='poolcandidates') renderPoolCandidates();
   } catch(e){ console.error('refresh section', id, e); }
 }
@@ -1604,7 +1567,6 @@ async function loadAll(scope){
     cache.suggestions = Array.isArray(auxiliary.suggestions) ? auxiliary.suggestions : [];
     cache.tracks = Array.isArray(auxiliary.tracks) ? auxiliary.tracks : [];
     cache.poolCandidates = Array.isArray(auxiliary.poolCandidates) ? auxiliary.poolCandidates : [];
-    cache.cvPics = activeCvPictures(auxiliary.posters);
     cache.jobEnquiries = Array.isArray(auxiliary.jobEnquiries) ? auxiliary.jobEnquiries : [];
     cache.jobSeekers = Array.isArray(auxiliary.jobSeekers) ? auxiliary.jobSeekers : [];
     cache.houseAds = Array.isArray(auxiliary.houseAds) ? auxiliary.houseAds : [];
@@ -1643,7 +1605,6 @@ var NAV = [
   { id:'branches', label:'Branches', tile:'hc-tile-green', sub:'Agency branch locations', icon:'<path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
   { id:'vacancies', label:'Vacancies', tile:'hc-tile-amber', sub:'Job postings & vacancies', icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
   { id:'employers', label:'Employers', tile:'hc-tile-indigo', sub:'Companies posting their own vacancies', icon:'<path d="M3 21h18M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M10 9h0M10 13h0M14 21v-6h4v6"/>' },
-  { id:'cvpics', label:'CV Pictures', tile:'hc-tile-pink', sub:'Moderate CV pictures posted by users', icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
   { id:'houseads', label:'House Ads', tile:'hc-tile-teal', sub:'Create & schedule your own banners', icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5V3M16 5V3"/>' },
   { id:'submissions', label:'Submissions', tile:'hc-tile-purple', sub:'Reports & suggestions', icon:'<path d="M4 4h16v12H4z"/><path d="M4 16l4-4 3 3 5-5 4 4"/>' },
   { id:'poolcandidates', label:'CV Box', tile:'hc-tile-blue', sub:'CV uploads & approvals', icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 8.5a3 3 0 1 1 0-6M20 20c0-2.5-1.7-4.3-4-5"/>' },
@@ -1660,12 +1621,11 @@ function renderNav(){
     if(dsShown('branches') && n.id==='branches') badge = '<span class="nav-badge">'+cache.branches.length+'</span>';
     if(dsShown('vacancies') && n.id==='vacancies') badge = '<span class="nav-badge">'+cache.vacancies.length+'</span>';
     if(dsShown('employers') && n.id==='employers') badge = '<span class="nav-badge">'+cache.employers.length+'</span>';
-    if(dsShown('aux') && n.id==='cvpics') badge = '<span class="nav-badge">'+cache.cvPics.length+'</span>';
     if(dsShown('aux') && n.id==='houseads') badge = '<span class="nav-badge">'+cache.houseAds.length+'</span>';
     if(dsShown('aux') && n.id==='submissions'){ var c = cache.reports.filter(function(r){return (r.status||'open')!=='resolved';}).length + cache.suggestions.length + cache.jobEnquiries.filter(function(j){return (j.status||'new')==='new';}).length + cache.jobSeekers.filter(function(j){return (j.status||'new')==='new';}).length + (cache.adRequests||[]).filter(function(j){return (j.status||'new')==='new';}).length; badge = '<span class="nav-badge">'+c+'</span>'; }
     if(dsShown('aux') && n.id==='poolcandidates'){ var pc = cache.poolCandidates.filter(function(p){return (p.status||'pending')==='pending';}).length; badge = '<span class="nav-badge'+(pc?' warn':'')+'">'+pc+'</span>'; }
     if(dsShown('aux') && n.id==='media') badge = '<span class="nav-badge">'+cache.tracks.length+'</span>';
-    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','cvpics','houseads'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates','ai'].indexOf(n.id)>=0 ? 'nav-review' : (['content','media'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
+    var navGroup = n.id==='dashboard' ? 'nav-dashboard' : (['agencies','branches','vacancies','employers','houseads'].indexOf(n.id)>=0 ? 'nav-manage' : (['submissions','poolcandidates','ai'].indexOf(n.id)>=0 ? 'nav-review' : (['content','media'].indexOf(n.id)>=0 ? 'nav-content' : 'nav-settings')));
     return '<div class="nav-item '+navGroup+'" data-nav="'+n.id+'" onclick="goSection(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+n.icon+'</svg> '+n.label+badge+'</div>';
   }).join('');
 }
@@ -1678,8 +1638,6 @@ function navBadge(id){
   if(id==='vacancies') return cache.vacancies.length;
   if(id==='employers' && !dsShown('employers')) return null;
   if(id==='employers') return cache.employers.length;
-  if(id==='cvpics' && !dsShown('aux')) return null;
-  if(id==='cvpics') return cache.cvPics.length;
   if(id==='houseads' && !dsShown('aux')) return null;
   if(id==='houseads') return cache.houseAds.length;
   if(id==='submissions' && !dsShown('aux')) return null;
@@ -1724,7 +1682,6 @@ function goSection(id, fromHistory){
   if(id==='branches') renderBranches();
   if(id==='vacancies') renderVacancies();
   if(id==='employers') renderEmployers();
-  if(id==='cvpics') renderCvPictures();
   if(id==='houseads') renderHouseAds();
   if(id==='submissions') renderSubmissions();
   if(id==='content') renderContent();
@@ -1758,7 +1715,6 @@ function renderDashboard(){
     tile('vacancies', cache.vacancies.length, 'Vacancies stored'),
     tile('vacancies', publicLiveVacancyCount(cache.vacancies), 'Public live vacancies'),
     tile('employers', cache.employers.length, 'Employers'),
-    tile('aux', cache.cvPics.length, 'CV Pictures'),
     tile('aux', cache.reports.length, 'Reports', 'Reports ('+openReports+' open)'),
     tile('aux', cache.suggestions.length, 'Suggestions'),
     tile('aux', cache.tracks.length, 'Media tracks'),
@@ -1783,7 +1739,7 @@ function renderDashboard(){
   var homeEl = document.getElementById('home-cards');
   if(homeEl){
     // Group: Manage
-    var manageItems = ['agencies','branches','vacancies','employers','cvpics','houseads'];
+    var manageItems = ['agencies','branches','vacancies','employers','houseads'];
     var reviewItems = ['submissions','poolcandidates','ai'];
     var mediaItems = ['media','content'];
     var configItems = ['settings'];
@@ -2204,12 +2160,6 @@ async function saveEmployer(){
   editing.employer = null; pendingEmployerPhoto = null; pendingEmployerPhotoBlob = null;
   await loadAll(['employers']); renderNav(); renderEmployers(); renderDashboard();
 }
-// ===== CV Pictures =====
-var editingCvPicId = null;
-
-function cvPicExpiryToInput(iso){ if(!iso) return ''; var d = new Date(iso); return isNaN(d) ? '' : d.toISOString().slice(0,10); }
-function cvPicInputToExpiry(val){ return val ? new Date(val+'T23:59:59').toISOString() : null; }
-
 function houseAdDateToInput(iso){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d)) return ''; var pad=function(n){return String(n).padStart(2,'0')}; return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
 function houseAdInputToISO(value){ return value ? new Date(value).toISOString() : null; }
 function houseAdStatus(ad){ var now=Date.now(), start=new Date(ad.starts_at||0).getTime(), end=ad.ends_at?new Date(ad.ends_at).getTime():Infinity; if(!ad.is_active) return '<span class="badge unverified">Paused</span>'; if(start>now) return '<span class="badge open">Scheduled</span>'; if(end<=now) return '<span class="badge unverified">Expired</span>'; return '<span class="badge verified">Live</span>'; }
@@ -2225,7 +2175,7 @@ function openHouseAdSheet(id){
   document.getElementById('ha-format').value=ad&&ad.ad_format==='card'?'card':'auto';
   document.getElementById('ha-details').value=ad?ad.ad_details||'':'';
   document.getElementById('ha-cta').value=ad?ad.cta_text||'':'';
-  var screens = ad && Array.isArray(ad.target_screens) && ad.target_screens.length ? ad.target_screens : ['agencies','employers','candidates','cvpics','home','public'];
+  var screens = ad && Array.isArray(ad.target_screens) && ad.target_screens.length ? ad.target_screens : ['agencies','employers','candidates','home','public'];
   document.querySelectorAll('#ha-screens input').forEach(function(input){ input.checked = screens.indexOf(input.value) !== -1; });
   document.getElementById('ha-slot').value=ad?ad.ad_slot||'top':'top';
   document.getElementById('ha-order').value=ad?ad.sort_order||0:0;
@@ -2251,66 +2201,6 @@ function renderHouseAds(){
   el.innerHTML=cache.houseAds.map(function(ad){ var ctr=ad.impressions?((ad.clicks||0)/ad.impressions*100).toFixed(1):'0.0'; return '<div class="row-item house-ad-admin-row" onclick="toggleRow(this)"><div class="row-avatar house-ad-admin-thumb">'+(/\.html?$/i.test(String(ad.image_url||'').split(/[?#]/)[0])?'<span class="badge verified">HTML5</span>':'<img src="'+escapeHtml(ad.image_url)+'" alt="">')+'</div><div class="row-main"><div class="row-title">'+escapeHtml(ad.title||'Untitled ad')+' '+houseAdStatus(ad)+'</div><div class="row-sub">'+escapeHtml(ad.advertiser_name||'')+' · '+(Array.isArray(ad.target_screens)?ad.target_screens.join(', '):'all screens')+' · '+escapeHtml(ad.ad_slot||'top')+' · '+(ad.impressions||0)+' impressions · '+(ad.clicks||0)+' clicks ('+ctr+'% CTR)</div></div><span class="row-chevron">⌄</span></div><div class="row-details"><div class="det-row"><span class="det-label">Schedule:</span> '+escapeHtml(houseAdDateToInput(ad.starts_at)||'Now')+' → '+escapeHtml(houseAdDateToInput(ad.ends_at)||'No expiry')+'</div><div class="det-row"><span class="det-label">Destination:</span> <a href="'+escapeHtml(ad.target_url)+'" target="_blank" rel="noopener">'+escapeHtml(ad.target_url)+'</a></div><div class="row-expanded-actions"><button class="minibtn full" onclick="event.stopPropagation();openHouseAdSheet(\''+ad.id+'\')">Edit</button><button class="minibtn full danger" onclick="event.stopPropagation();deleteHouseAd(\''+ad.id+'\')">Delete</button></div></div>'; }).join('');
 }
 async function deleteHouseAd(id){ var ad=cache.houseAds.find(function(x){return x.id===id;}); if(!confirm('Delete “'+((ad&&ad.title)||'this house ad')+'”?')) return; var res=await supabaseClient.from('house_ads').delete().eq('id',id); if(res.error){alert('Could not delete house ad: '+res.error.message);return;} await writeThroughD1Mirror('house_ads',id,'delete'); cache.houseAds=await getHouseAds(); renderHouseAds(); renderNav(); renderDashboard(); showToast('House ad deleted'); }
-
-function renderCvPictures(){
-  var q = (document.getElementById('po-search').value||'').trim().toLowerCase();
-  var list = cache.cvPics.slice();
-  if(q){ list = list.filter(function(p){ return (p.caption||'').toLowerCase().indexOf(q)!==-1; }); }
-  var el = document.getElementById('po-list');
-  if(!list.length){ el.innerHTML = listPlaceholder('aux','No CV pictures', cache.cvPics.length ? 'Nothing matches your search.' : 'No CV pictures have been posted yet.'); return; }
-  var now = Date.now();
-  el.innerHTML = list.map(function(p){
-    var badge = '<span class="badge expiry-ok">No expiry</span>';
-    if(p.expires_at){
-      var ms = new Date(p.expires_at).getTime() - now;
-      badge = ms < 0 ? '<span class="badge expiry-gone">Expired</span>'
-        : '<span class="badge '+(ms < 3*86400000 ? 'expiry-soon' : 'expiry-ok')+'">Expires '+escapeHtml(new Date(p.expires_at).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}))+'</span>';
-    }
-    return '<div class="row-item" onclick="openCvPicEditSheet(\''+p.id+'\')">'+
-      '<img class="cvpic-thumb" src="'+escapeHtml(p.image_url)+'" alt="" loading="lazy">'+
-      '<div class="row-main"><div class="row-title">'+escapeHtml(p.caption||'Untitled CV picture')+' '+badge+'</div>'+
-      '<div class="row-sub">'+escapeHtml(fmtDate(p.created_at))+'</div></div>'+
-      '<div class="row-actions-inline always">'+
-        '<button class="minibtn" onclick="stopProp(event);openCvPicEditSheet(\''+p.id+'\')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>'+
-        '<button class="minibtn danger" onclick="stopProp(event);deleteCvPicture(\''+p.id+'\')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
-      '</div></div>';
-  }).join('');
-}
-
-// ----- Edit / delete a CV picture -----
-function openCvPicEditSheet(id){
-  var p = cache.cvPics.find(function(x){ return x.id===id; }); if(!p) return;
-  editingCvPicId = id;
-  document.getElementById('pe-img').src = p.image_url;
-  document.getElementById('pe-caption').value = p.caption || '';
-  document.getElementById('pe-expiry').value = cvPicExpiryToInput(p.expires_at);
-  openSheet('cvpic-edit-overlay');
-}
-async function saveCvPicEdit(){
-  if(!editingCvPicId) return;
-  var patch = {
-    caption: document.getElementById('pe-caption').value.trim(),
-    expires_at: cvPicInputToExpiry(document.getElementById('pe-expiry').value)
-  };
-  var result;
-  try { result = await adminApi('POST', '/api/admin/posters/' + encodeURIComponent(editingCvPicId), patch); }
-  catch(e){ console.error('cv picture update', e); alert('Could not save changes: ' + (e.message || 'check your connection')); return; }
-  var id = editingCvPicId;
-  var i = cache.cvPics.findIndex(function(x){ return String(x.id)===String(id); });
-  if(i >= 0) cache.cvPics[i] = Object.assign({}, cache.cvPics[i], patch, (result && result.poster) || {});
-  closeSheet('cvpic-edit-overlay'); editingCvPicId = null;
-  showToast('CV picture updated');
-  renderNav(); renderCvPictures(); renderDashboard();
-}
-async function deleteCvPicture(id){
-  var p = cache.cvPics.find(function(x){ return String(x.id)===String(id); });
-  if(!confirm('Delete "'+((p && p.caption) || 'this CV picture')+'"? This cannot be undone.')) return;
-  try { await adminApi('DELETE', '/api/admin/posters/' + encodeURIComponent(id)); }
-  catch(e){ console.error('cv picture delete', e); alert('Could not delete CV picture: ' + (e.message || 'check your connection')); return; }
-  cache.cvPics = cache.cvPics.filter(function(x){ return String(x.id)!==String(id); });
-  showToast('CV picture deleted');
-  renderNav(); renderCvPictures(); renderDashboard();
-}
 
 async function regenEmployerToken(id){
   if(!confirm('Generate a new Smart Manager link? The old link will stop working.')) return;

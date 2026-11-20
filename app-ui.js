@@ -11,8 +11,8 @@
 
 import { R2_WORKER_URL, VAC_PAGE_SIZE, agenciesCache, agencyFolderDisplayPage, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyDisplayPage, dedicatedVacancyError, dedicatedVacancyFolder, dedicatedVacancyHasMore, dedicatedVacancyLoading, dedicatedVacancyPage, dedicatedVacancyPageSize, dedicatedVacancyQueryKey, dedicatedVacancyRequestId, dedicatedVacancyRows, employerManagerMode, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyDisplayPage, generalVacancyError, generalVacancyHasMore, generalVacancyLoading, generalVacancyPage, generalVacancyPageSize, generalVacancyQueryKey, generalVacancyRequestId, generalVacancyRows, guestQuotaState, isAdmin, managerMode, renderAuthUser, saAuthUser, set_agencyFolderDisplayPage, set_dedicatedVacancyDisplayPage, set_dedicatedVacancyError, set_dedicatedVacancyFolder, set_dedicatedVacancyHasMore, set_dedicatedVacancyLoading, set_dedicatedVacancyNextCursor, set_dedicatedVacancyPage, set_dedicatedVacancyQueryKey, set_dedicatedVacancyRequestId, set_dedicatedVacancyRows, set_generalVacancyDisplayPage, set_generalVacancyError, set_generalVacancyHasMore, set_generalVacancyLoading, set_generalVacancyNextCursor, set_generalVacancyPage, set_generalVacancyQueryKey, set_generalVacancyRequestId, set_generalVacancyRows, set_saAuthUser, signOutSaRecruiters, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
 import { DEDICATED_VACANCY_FOLDER_SOURCES, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
-import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, loadCvPicFeed, mailLink, mapsLink, cvPicsCache, renderAllEmployersList, renderCvPicFeed, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
-import { closeSheet, copyText, goPool, loadPoolCandidates, openMyCvBoxProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnNavTab, poolReturnScreen, renderPoolList } from './app-sheets.js';
+import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, mailLink, mapsLink, renderAllEmployersList, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
+import { closeSheet, copyText, getTurnstileResponse, goPool, loadPoolCandidates, openMyCvBoxProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnNavTab, poolReturnScreen, renderPoolList, renderTurnstile, resetTurnstile, turnstileConfigured } from './app-sheets.js';
 import { exitManagerMode } from './app-manager.js';
 import { exitEmployerManagerMode } from './app-manager-employer.js';
 
@@ -50,7 +50,7 @@ export var SA_ACTIVE_SCREEN_KEY = 'sa_active_screen_v1';
 export var SA_RESTORABLE_SCREENS = {
   home: true, account: true, saved: true, menu: true,
   allagencies: true, allbranches: true, allvacancies: true,
-  allemployers: true, allcvpics: true, allads: true, pool: true
+  allemployers: true, scamcheck: true, allads: true, pool: true
 };
 export function isRestorableScreen(name) {
   return !!SA_RESTORABLE_SCREENS[name];
@@ -415,12 +415,12 @@ export function renderHomeFeed() {
 // Public section links are intentionally query-based so Cloudflare Pages can
 // serve the normal PWA shell while the link remains stable and easy to share:
 // /?section=vacancies, /?section=agencies, /?section=candidates,
-// /?section=cv-pictures and /?section=employers.
+// /?section=scam-check and /?section=employers.
 export var SA_SECTION_LINKS = {
   vacancies: { label: 'Vacancies', title: 'SA Recruiters — Vacancies' },
   agencies: { label: 'Recruitment agencies', title: 'SA Recruiters — Recruitment Agencies' },
   candidates: { label: 'Upload to the CV Box', title: 'SA Recruiters — Upload to the CV Box', shareKey: 'candidates' },
-  'cv-pictures': { label: 'CV pictures', title: 'SA Recruiters — CV Pictures' },
+  'scam-check': { label: 'Scam check', title: 'SA Recruiters — Scam Check', shareText: 'Is that job real? Check it for scam warning signs on SA Recruiters.' },
   employers: { label: 'Employers', title: 'SA Recruiters — Employers' },
   ads: { label: 'Ads', title: 'SA Recruiters — Ads' }
 };
@@ -436,7 +436,7 @@ export function shareSectionLink(section) {
   var shareLabel = section === 'candidates' ? 'Upload to the CV Box' : meta.label;
   // The link goes ONLY in `url`. Share targets (WhatsApp, Messages, etc.) append
   // `url` to `text`, so putting the link in both made it show up twice.
-  var text = (section === 'candidates' ? shareLabel : 'Explore ' + shareLabel.toLowerCase()) + ' on SA Recruiters';
+  var text = meta.shareText || ((section === 'candidates' ? shareLabel : 'Explore ' + shareLabel.toLowerCase()) + ' on SA Recruiters');
   if (navigator.share) {
     navigator.share({ title: meta.title, text: text, url: link }).catch(function() {});
   } else {
@@ -455,13 +455,13 @@ export function openDeepLinkedSection() {
   // prevents the destination from staying on an early loading/count state.
   var screenBySection = {
     vacancies: 'allvacancies', agencies: 'allagencies', candidates: 'pool',
-    'cv-pictures': 'allcvpics', employers: 'allemployers', ads: 'allads'
+    'scam-check': 'scamcheck', employers: 'allemployers', ads: 'allads'
   };
   window.__saRestoredScreen = screenBySection[section];
   if (section === 'vacancies') showAllVacancies('home');
   else if (section === 'agencies') showAllAgencies('home');
   else if (section === 'candidates') goPool('home');
-  else if (section === 'cv-pictures') showCvPictures('home');
+  else if (section === 'scam-check') showScamCheck('home');
   else if (section === 'employers') showAllEmployers('home');
   else if (section === 'ads') showAllAds('home');
   if (paymentReturn) {
@@ -543,9 +543,8 @@ export function renderRestoredScreenContent() {
   else if (name === 'allads' && typeof renderAllAdsList === 'function') renderAllAdsList();
   else if (name === 'allemployers' && typeof renderAllEmployersList === 'function') renderAllEmployersList();
   else if (name === 'allvacancies' && typeof window.renderAllVacanciesList === 'function') window.renderAllVacanciesList();
-  else if (name === 'allcvpics') {
-    if (typeof renderCvPicFeed === 'function') renderCvPicFeed(cvPicsCache);
-    if (typeof loadCvPicFeed === 'function') loadCvPicFeed();
+  else if (name === 'scamcheck') {
+    renderScamCheckTurnstile();
   } else if (name === 'pool' && typeof loadPoolCandidates === 'function') {
     loadPoolCandidates();
   }
@@ -1161,17 +1160,120 @@ export function showAllVacancies() {
   resetActiveScreenScroll('screen-allvacancies');
 }
 
-// CV pictures live on their own screen, separate from All Vacancies.
-export function showCvPictures() {
+// ===== Scam check ("Is this job real?") =====
+// Sends what the person pasted to the Worker, which looks for known scam signs. The Worker
+// keeps nothing of the text. Signed-in users also get an AI second opinion on unclear messages.
+var scamCheckLast = null;
+
+export function renderScamCheckTurnstile() {
+  if (turnstileConfigured()) renderTurnstile('scamcheck-turnstile', 'screen-scamcheck');
+}
+
+export function showScamCheck() {
   set_directoryReturnScreen( arguments.length && arguments[0] ? arguments[0] : (document.getElementById('screen-account').classList.contains('active') ? 'account' : 'home'));
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById('screen-allcvpics').classList.add('active');
+  document.getElementById('screen-scamcheck').classList.add('active');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.remove('active'); });
-  var search = document.getElementById('allcvpics-search');
-  if (search) search.value = '';
-  renderCvPicFeed(cvPicsCache);
-  if (typeof loadCvPicFeed === 'function') loadCvPicFeed();
-  resetActiveScreenScroll('screen-allcvpics');
+  renderScamCheckTurnstile();
+  resetActiveScreenScroll('screen-scamcheck');
+  trackEvent('scamcheck_open', 'scamcheck', 'screen');
+}
+
+function scamSymbol(level) {
+  return level === 'high' ? '✕' : level === 'medium' ? '!' : level === 'low' ? '✓' : '?';
+}
+
+function scamKnownLine(k) {
+  var what = k.type === 'phone' ? 'This phone number' : k.type === 'email' ? 'This email address' : 'This website';
+  var n = k.listings === 1 ? '1 listing' : k.listings + ' listings';
+  return escapeHtml(what + ' (' + k.value + ') appears on ' + n + ' in SA Recruiters.');
+}
+
+function scamList(title, items, render) {
+  if (!items.length) return '';
+  return '<div class="scamcheck-section"><h4>' + title + '</h4><ul>' + items.map(function(i){ return '<li>' + render(i) + '</li>'; }).join('') + '</ul></div>';
+}
+
+export function renderScamResult(data) {
+  var v = data.verdict || {};
+  var level = ['high', 'medium', 'low', 'unknown'].indexOf(v.level) !== -1 ? v.level : 'unknown';
+  var reasons = Array.isArray(data.reasons) ? data.reasons : [];
+  var known = Array.isArray(data.known) ? data.known : [];
+  var tips = Array.isArray(data.tips) ? data.tips : [];
+  var html = '<div class="scamcheck-verdict scamcheck-verdict--' + level + '" role="status">' +
+    '<span class="scamcheck-verdict-icon" aria-hidden="true">' + scamSymbol(level) + '</span>' +
+    '<div><strong>' + escapeHtml(v.title || '') + '</strong><p>' + escapeHtml(v.summary || '') + '</p></div></div>';
+  html += scamList(level === 'low' ? 'Worth noting' : 'What we noticed', reasons, escapeHtml);
+  html += scamList('Contact details', known, scamKnownLine);
+  if (known.length) html += '<p class="scamcheck-note">Being listed here does not prove an employer is genuine. Check them yourself.</p>';
+  html += scamList('What to do', tips, escapeHtml);
+  if (level === 'high' || level === 'medium') {
+    html += '<div class="scamcheck-actions"><button type="button" class="scamcheck-btn" data-ripple onclick="shareScamResult()">Warn your friends</button></div>';
+  }
+  return html;
+}
+
+export async function runScamCheck() {
+  var input = document.getElementById('scamcheck-input');
+  var out = document.getElementById('scamcheck-result');
+  var btn = document.getElementById('scamcheck-submit');
+  if (!input || !out || !btn) return;
+  var text = (input.value || '').trim();
+  if (text.length < 8) { showToast('Paste the job ad, message, email or phone number first.'); return; }
+  var token = getTurnstileResponse('scamcheck-turnstile');
+  if (turnstileConfigured() && !token) { showToast('Please complete the spam check first.'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+  out.innerHTML = '<div class="scamcheck-loading">Checking for warning signs…</div>';
+  var headers = { 'Content-Type': 'application/json' };
+  if (token) headers['cf-turnstile-response'] = token;
+  try {
+    var session = supabaseClient && supabaseClient.auth ? await supabaseClient.auth.getSession() : null;
+    var accessToken = session && session.data && session.data.session && session.data.session.access_token;
+    if (accessToken) headers['Authorization'] = 'Bearer ' + accessToken;
+  } catch (e) {}
+  try {
+    var res = await fetch(R2_WORKER_URL + '/api/ai/scam-check', { method: 'POST', headers: headers, body: JSON.stringify({ text: text }) });
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok || !data || !data.verdict) {
+      scamCheckLast = null;
+      out.innerHTML = '<div class="scamcheck-error">' + escapeHtml((data && data.error) || 'The check could not be done. Please try again.') + '</div>';
+      return;
+    }
+    scamCheckLast = data;
+    out.innerHTML = renderScamResult(data);
+    trackEvent('scamcheck_run', 'scamcheck', data.verdict.level);
+    out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    scamCheckLast = null;
+    out.innerHTML = '<div class="scamcheck-error">Could not reach SA Recruiters. Please check your connection and try again.</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Check it';
+    if (turnstileConfigured()) resetTurnstile('scamcheck-turnstile');
+  }
+}
+
+export function resetScamCheck() {
+  var input = document.getElementById('scamcheck-input');
+  var out = document.getElementById('scamcheck-result');
+  if (input) { input.value = ''; input.focus(); }
+  if (out) out.innerHTML = '';
+  scamCheckLast = null;
+  renderScamCheckTurnstile();
+}
+
+export function shareScamResult() {
+  if (!scamCheckLast || !scamCheckLast.verdict) return;
+  var link = getSectionLink('scam-check');
+  var text = 'I checked a job message on SA Recruiters and the result was "' + scamCheckLast.verdict.title + '". Check yours before you pay or share your documents.';
+  trackEvent('scamcheck_share', 'scamcheck', scamCheckLast.verdict.level);
+  // The link goes ONLY in `url` for the native share sheet, so it is not shown twice.
+  if (navigator.share) {
+    navigator.share({ title: 'SA Recruiters — Scam Check', text: text, url: link }).catch(function() {});
+  } else {
+    window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + link), '_blank', 'noopener');
+  }
 }
 
 // ---- Precise-location filter (Agencies / Branches / Employers / Vacancies / Pool) ----
@@ -2266,7 +2368,11 @@ Object.assign(window, {
   showAllAds,
   showAllBranches,
   showAllVacancies,
-  showCvPictures,
+  showScamCheck,
+  runScamCheck,
+  resetScamCheck,
+  shareScamResult,
+  renderScamCheckTurnstile,
   resetPreciseLocationChipVisual,
   syncPreciseLocationChip,
   usePreciseLocation,

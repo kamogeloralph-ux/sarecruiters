@@ -11,7 +11,7 @@
 
 import { buildHouseAdCardDocument, buildHouseAdImageDocument, houseAdKind, houseAdLoop, houseAdWithCurtain, watchHouseAdFrame } from './house-ad-html5.js';
 import { R2_WORKER_URL, STARTUP_DATA_URL, STATIC_DATA_URL, agenciesCache, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyNextCursor, dedicatedVacancyPageSize, employerManagerMode, employerManagerPendingToken, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyNextCursor, generalVacancyPageSize, initials, isAdmin, managerMode, managerPendingToken, rebuildPublicListingSlugs, set_agenciesCache, set_branchesCache, set_dedicatedVacancyCounts, set_dedicatedVacancyCountsLoaded, set_dedicatedVacancyNextCursor, set_employerManagerPendingToken, set_employersCache, set_generalVacancyCount, set_generalVacancyCountLoaded, set_generalVacancyNextCursor, set_managerPendingToken, set_staticVacanciesCache, set_vacanciesCache, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
-import { filterAndRenderCached, loadCvPicFeed, verifiedBadge } from './app-cards.js';
+import { filterAndRenderCached, verifiedBadge } from './app-cards.js';
 import { getPoolCandidateCount, openPostJobSheet, poolCache, poolCandidateCount, poolLoaded, set_poolCandidateCount } from './app-sheets.js';
 import { renderRestoredScreenContent, setRetryBanner, showToast, vacancyOverviewExtraRows } from './app-ui.js';
 import { enterManagerMode, renderManagerMode, renderSmartManager } from './app-manager.js';
@@ -298,9 +298,6 @@ export function renderHouseAdSlots() {
   renderHouseAdSlot('house-ad-candidates-top', 'candidates', 'top');
   renderHouseAdSlot('house-ad-candidates-middle', 'candidates', 'middle');
   renderHouseAdSlot('house-ad-candidates-bottom', 'candidates', 'bottom');
-  renderHouseAdSlot('house-ad-cvpics-top', 'cvpics', 'top');
-  renderHouseAdSlot('house-ad-cvpics-middle', 'cvpics', 'middle');
-  renderHouseAdSlot('house-ad-cvpics-bottom', 'cvpics', 'bottom');
 }
 var houseAdsLoadedAt = 0;
 export async function loadHouseAds() {
@@ -667,58 +664,6 @@ document.addEventListener('pause', function(e){
 export function openVacancyLockedSheet() { openPostJobSheet(); }
 export function openEmployerLockedSheet() { openPostJobSheet(); }
 
-// ----- CV pictures -----
-const CV_PIC_COUNT_CACHE_TTL_MS = 60_000;
-export var cvPicTotalCount = null;
-var cvPicCountFetchedAt = null;
-export function updateCvPicStat() {
-  var el = document.getElementById('stat-cvpics');
-  if (el) {
-    el.textContent = cvPicTotalCount === null ? '…' : cvPicTotalCount;
-    el.setAttribute('data-count', cvPicTotalCount === null ? '' : cvPicTotalCount);
-  }
-}
-export async function getCvPictures() {
-  try {
-    // NOTE: /api/posters is the Worker's existing route for the public image feed
-    // (backed by the employer_posters table). It now serves CV pictures.
-    var response = await fetch(R2_WORKER_URL + '/api/posters', {
-      method: 'GET', headers: { Accept: 'application/json' }
-    });
-    if (!response.ok) throw new Error('CV picture request failed');
-    var payload = await response.json();
-    var data = Array.isArray(payload.posters) ? payload.posters : [];
-    // Real total (not capped by the 50-row feed limit) for the home stat card.
-    cvPicTotalCount = typeof payload.count === 'number' ? payload.count : data.length;
-    cvPicCountFetchedAt = Date.now();
-    updateCvPicStat();
-    // The live count can differ from whatever was restored from cache —
-    // re-sort in case it now belongs in a different spot (updateStats()'s
-    // own sort already ran before this resolved, since this fetch is
-    // deliberately deferred past the first paint).
-    if (typeof reorderStatCardsByCount === 'function') reorderStatCardsByCount();
-    // loadAll() fires loadCvPicFeed() WITHOUT awaiting it (CV pictures are
-    // "non-critical to the first render"), then calls saveDataCache() on
-    // the very next line — so the cache payload it writes is serialized
-    // before this query has any chance to resolve, and cvPicTotalCount is
-    // still null/stale at that point. Persisting the cache again here,
-    // now that the real count is known, is what actually lets the NEXT
-    // visit's instant-paint-from-cache pass restore a valid number instead
-    // of null — without this, the earlier cache/restore plumbing had
-    // nothing correct to save in the first place.
-    if (typeof saveDataCache === 'function') saveDataCache();
-    return data;
-  } catch(e) {
-    console.error('getCvPictures', e);
-    // Never leave an old cached count visible when the live source is unavailable.
-    cvPicTotalCount = null;
-    cvPicCountFetchedAt = null;
-    updateCvPicStat();
-    if (typeof reorderStatCardsByCount === 'function') reorderStatCardsByCount();
-    if (typeof saveDataCache === 'function') await saveDataCache();
-    return [];
-  }
-}
 
 // ----- Vacancies -----
 export function parseVacancyClosingDate(value) {
@@ -1105,8 +1050,6 @@ export async function saveDataCache() {
       : cachedVacancyTotal,
     employers: employersCache,
     poolCount: poolCandidateCount,
-    cvPicCount: cvPicTotalCount,
-    cvPicCountFetchedAt: cvPicCountFetchedAt,
     savedAt: Date.now()
   };
   try {
@@ -1142,20 +1085,6 @@ export async function loadDataCache() {
   cachedVacancyTotal = (typeof d.vacancyTotal === 'number') ? d.vacancyTotal : null;
   set_employersCache( d.employers || []);
   set_poolCandidateCount( (typeof d.poolCount === 'number') ? d.poolCount : 0);
-  // Reuse only a recently fetched CV picture count. Older app versions stored
-  // this number indefinitely, so their cached value must be treated as stale.
-  var cacheNow = Date.now();
-  if (typeof d.cvPicCount === 'number' &&
-      typeof d.cvPicCountFetchedAt === 'number' &&
-      d.cvPicCountFetchedAt <= cacheNow &&
-      cacheNow - d.cvPicCountFetchedAt <= CV_PIC_COUNT_CACHE_TTL_MS) {
-    cvPicTotalCount = d.cvPicCount;
-    cvPicCountFetchedAt = d.cvPicCountFetchedAt;
-  } else {
-    cvPicTotalCount = null;
-    cvPicCountFetchedAt = null;
-  }
-  updateCvPicStat();
   lastDataRefreshAt = (typeof d.savedAt === 'number') ? d.savedAt : null;
   return true;
 }
@@ -1419,8 +1348,7 @@ export async function loadAll(options) {
     window.renderAllVacanciesList();
   }
   if (startup && !window.__saStaticData) refreshSecondaryStartupData();
-  // CV picture feed and first-party ads are non-critical to the first render.
-  if (typeof loadCvPicFeed === 'function') loadCvPicFeed();
+  // First-party ads are non-critical to the first render.
   loadHouseAds();
   saveDataCache();
   scheduleDeferredVacancyNotes(startup);
@@ -1469,7 +1397,6 @@ export function updateStats() {
     agencyStat.textContent = agenciesCache.length;
     agencyStat.setAttribute('data-count', agenciesCache.length);
   }
-  updateCvPicStat();
   var vacancyStat = document.getElementById('stat-vacancies');
   if (vacancyStat) {
     if (window.__saStaticData && window.__saStaticData.counts && typeof window.__saStaticData.counts.vacancies === 'number') {
@@ -1500,7 +1427,7 @@ export function updateStats() {
   reorderStatCardsByCount();
 }
 
-// Keeps the home-screen stat cards (Agencies / CV Pictures / Vacancies /
+// Keeps the home-screen stat cards (Agencies / Vacancies /
 // Employers / Candidates) sorted so the highest count always leads,
 // lowest trails — re-run every time updateStats() refreshes the numbers.
 // Uses a lightweight FLIP animation (record position -> reorder the DOM ->
@@ -1520,6 +1447,7 @@ export function reorderStatCardsByCount() {
   var withCounts = cards.map(function(card, i) {
     var valueEl = card.querySelector('.stat-value');
     var n = valueEl ? parseInt(valueEl.getAttribute('data-count') || valueEl.textContent, 10) : NaN;
+    if (card.hasAttribute('data-pin-first')) return { card: card, count: Number.MAX_SAFE_INTEGER, i: i };
     return { card: card, count: isNaN(n) ? -1 : n, i: i };
   });
   withCounts.sort(function(a, b) { return b.count - a.count || a.i - b.i; });
@@ -1660,8 +1588,6 @@ Object.assign(window, {
   onTrackEnded,
   openVacancyLockedSheet,
   openEmployerLockedSheet,
-  updateCvPicStat,
-  getCvPictures,
   parseVacancyClosingDate,
   isVacancyExpired,
   filterExpiredVacancies,
@@ -1723,7 +1649,6 @@ Object.defineProperties(window, {
   todayTrack: { get: () => todayTrack, set: (v) => { todayTrack = v; }, configurable: true, enumerable: true },
   trackAudio: { get: () => trackAudio, set: (v) => { trackAudio = v; }, configurable: true, enumerable: true },
   trackIsPlaying: { get: () => trackIsPlaying, set: (v) => { trackIsPlaying = v; }, configurable: true, enumerable: true },
-  cvPicTotalCount: { get: () => cvPicTotalCount, set: (v) => { cvPicTotalCount = v; }, configurable: true, enumerable: true },
   DEDICATED_VACANCY_FOLDER_SOURCES: { get: () => DEDICATED_VACANCY_FOLDER_SOURCES, set: (v) => { DEDICATED_VACANCY_FOLDER_SOURCES = v; }, configurable: true, enumerable: true },
   DATA_CACHE_DB: { get: () => DATA_CACHE_DB, set: (v) => { DATA_CACHE_DB = v; }, configurable: true, enumerable: true },
   DATA_CACHE_STORE: { get: () => DATA_CACHE_STORE, set: (v) => { DATA_CACHE_STORE = v; }, configurable: true, enumerable: true },

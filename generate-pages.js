@@ -415,7 +415,7 @@ function appTiles() {
     ['/?section=vacancies', 'Vacancies', 'search', 'Browse every listed vacancy'],
     ['/?section=agencies', 'Recruitment agencies', 'building', 'Verified agencies and branches'],
     ['/?section=candidates', 'CV Box', 'users', 'Get found by recruiters'],
-    ['/?section=cv-pictures', 'CV pictures', 'image', 'Job seekers post their CVs'],
+    ['/?section=scam-check', 'Scam check', 'shield', 'Is that job real? Check it free'],
     ['/?section=employers', 'Employers', 'briefcase', 'Companies that are hiring'],
     ['/post-a-job/', 'Post a job', 'tag', 'Free to list, admin reviewed'],
   ].map(([h, l, i, s]) => tileHtml(h, l, i, s)).join('')}</div>`;
@@ -501,7 +501,7 @@ function footerHtml() {
 </div>
 <div><h3>Explore</h3><div class="sp-footer-links"><a href="/careers/">Careers</a><a href="/apply/">Apply</a><a href="/contact/">Contact</a><a href="/register/">Register</a><a href="/candidates/">Candidates</a><a href="/about/">About</a><a href="/post-a-job/">Post a job</a></div></div>
 <div><h3>Directory</h3><div class="sp-foot-col"><a href="/vacancies/">All vacancies</a><a href="/agencies/">Recruitment agencies</a>${CTX.hasCompanies ? '<a href="/companies/">Hiring companies</a>' : ''}<a href="/submit-cv/">Submit your CV</a></div></div>
-<div><h3>In the app</h3><div class="sp-foot-col"><a href="/?section=vacancies">Vacancies</a><a href="/?section=agencies">Agencies</a><a href="/?section=candidates">CV Box</a><a href="/?section=cv-pictures">CV pictures</a><a href="/?section=employers">Employers</a></div></div>
+<div><h3>In the app</h3><div class="sp-foot-col"><a href="/?section=vacancies">Vacancies</a><a href="/?section=agencies">Agencies</a><a href="/?section=candidates">CV Box</a><a href="/?section=scam-check">Scam check</a><a href="/?section=employers">Employers</a></div></div>
 ${provs ? `<div><h3>Jobs by province</h3><div class="sp-foot-col">${provs}</div></div>` : ''}
 ${cats ? `<div><h3>Browse by type</h3><div class="sp-foot-col">${cats}</div></div>` : ''}
 </div>

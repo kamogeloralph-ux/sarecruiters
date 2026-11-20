@@ -46,3 +46,20 @@ See the `GEMINI_*` and `AI_*` notes in `Cloudflare-worker/wrangler.toml`. The da
 ## Tests
 
 `node --test scripts/ai.test.mjs` (uses Node's built-in SQLite as a stand-in for D1; no network).
+
+## Scam Check ("Is this job real?")
+
+A job seeker pastes a job ad, a WhatsApp message, an email address or a phone number on the **Scam Check** screen
+(home card, or `/?section=scam-check`). It replaced the CV Pictures feature.
+
+- Route: `POST /api/ai/scam-check` (`ai-routes.js` → `publicScamCheck` in `ai.js`).
+- **The rules decide.** The verdict comes from the signal list in `ai.js` (fees, e-wallet/voucher payments, starter kits,
+  government jobs for sale, free-email contacts for big brands, WhatsApp-only, unrealistic pay, and so on). Phrases such as
+  "no application fee" are ignored. A link an admin confirmed as a scam in `ai_flags` forces "Likely a scam".
+- **The model only adds reasons** and can raise the score no higher than "medium" (`combineScam`). It is asked only when the
+  rules are unsure, never for a bare number or email, and it never sees phone numbers, emails or long digit strings (`redactForAi`).
+- **Who can call it.** Anyone with Turnstile (8 checks an hour per visitor). Signed-in users get 30 an hour and the model's
+  second opinion. Anonymous visitors never trigger a Gemini call, but they do get a saved model answer if someone already
+  checked the same text.
+- **Nothing is saved.** Only a hash of the text and the model's short answer are cached in `ai_results` (kind `scam-check`).
+- Contact details are also looked up in the directory (`vacancies`) and shown as neutral information, never as proof.

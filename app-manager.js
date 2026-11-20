@@ -11,7 +11,7 @@
 
 import { R2_WORKER_URL, agenciesCache, buildManagerLink, employerManagerPendingToken, escapeHtml, getManagerToken, initials, isAdmin, managerAgency, managerMode, managerPendingToken, publicAgencySlug, publicVacancySlug, set_managerAgency, set_managerMode, set_managerPendingToken, trackEvent, vacanciesCache } from './app-core.js';
 import { branchesFor, vacanciesFor, vacancyScreenStateMarkup } from './app-data.js';
-import { ICON_LINK, IS, cvPicsCache, verifiedBadge } from './app-cards.js';
+import { ICON_LINK, IS, verifiedBadge } from './app-cards.js';
 import { openBranchSheet, set_pendingVacancyAgency } from './app-forms.js';
 import { copyText } from './app-sheets.js';
 import { goBackToHome, showToast } from './app-ui.js';
@@ -121,38 +121,6 @@ export function shareVacancy(vacancyId) {
   trackEvent('vacancy_share', 'vacancy', vacancyId);
   if (navigator.share) {
     navigator.share({ title: v.title + ' — SA Recruiters', text: shareText, url: link }).catch(function(){});
-  } else {
-    copyText(link, null);
-    showToast('Link copied — paste it into a message');
-  }
-}
-/* Share a CV picture. Preferred: the picture itself through the OS share
-   sheet (instant, looks right in WhatsApp) with a link to the CV Pictures
-   screen in the text. Falls back to link-only share, then copy-link.
-   There is deliberately no per-person public web page: a CV carries personal
-   contact details, so it only lives inside the app. */
-export async function shareCvPic(cvPicId) {
-  var p = (typeof cvPicsCache !== 'undefined' ? cvPicsCache : []).find(function(x){ return String(x.id) === String(cvPicId); });
-  if (!p) { showToast('CV picture not found'); return; }
-  var link = window.location.origin + '/?section=cv-pictures';
-  var title = (p.caption || 'CV picture') + ' — SA Recruiters';
-  var text = (p.caption || 'CV picture') + ' — see it on SA Recruiters: ' + link;
-  // Link-only variant for the url-based share below, so the link isn't duplicated.
-  var textNoLink = (p.caption || 'CV picture') + ' — see it on SA Recruiters';
-  trackEvent('cvpic_share', 'cvpic', cvPicId);
-  if (navigator.share) {
-    try {
-      var res = await fetch(p.image_url);
-      var blob = await res.blob();
-      var file = new File([blob], 'cv-picture.jpg', { type: blob.type || 'image/jpeg' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ title: title, text: text, files: [file] });
-        return;
-      }
-    } catch (e) {
-      if (e && e.name === 'AbortError') return; // user closed the share sheet
-    }
-    navigator.share({ title: title, text: textNoLink, url: link }).catch(function(){});
   } else {
     copyText(link, null);
     showToast('Link copied — paste it into a message');
@@ -679,7 +647,6 @@ Object.assign(window, {
   shareManagerLink,
   shareAgency,
   shareVacancy,
-  shareCvPic,
   openManagerLink,
   verifyManagerTokenServer,
   showManagerStatus,
