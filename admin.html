@@ -682,12 +682,14 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Full name *</label><input id="pc-name"></div>
     <div class="field"><label>Profile photo <span id="pc-photo-req">*</span></label><input type="file" id="pc-photo" accept="image/*" onchange="handlePoolPhoto(event)"></div>
     <div id="pc-photo-preview" style="display:none;margin-bottom:12px"><img id="pc-photo-img" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:1px solid var(--border)"></div>
+    <div class="field"><label>Profile banner <span style="font-weight:400;color:var(--text-2)">(optional)</span></label><input type="file" id="pc-banner" accept="image/jpeg,image/png,image/webp" onchange="handlePoolBanner(event)"><small style="display:block;margin-top:5px;color:var(--text-2)">Upload a wide banner for the top of the public candidate card. JPG, PNG or WebP · max 3MB.</small><div id="pc-banner-preview" style="display:none;margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid var(--border)"><img id="pc-banner-img" style="display:block;width:100%;height:100px;object-fit:cover"></div></div>
     <div class="field"><label>Position *</label><input id="pc-position"></div>
     <div class="field"><label for="pc-sector">Sector *</label><select id="pc-sector"><option value="">Choose a standardized sector…</option><option>Accounting &amp; Finance</option><option>Administration &amp; Office Support</option><option>Agriculture &amp; Farming</option><option>Arts &amp; Media</option><option>Construction &amp; Engineering</option><option>Customer Service &amp; Call Centre</option><option>Education &amp; Training</option><option>Government &amp; Public Sector</option><option>Healthcare &amp; Social Care</option><option>Hospitality &amp; Tourism</option><option>Human Resources</option><option>Information Technology</option><option>Legal</option><option>Logistics &amp; Supply Chain</option><option>Manufacturing &amp; Production</option><option>Marketing &amp; Communications</option><option>Retail &amp; Sales</option><option>Security &amp; Safety</option><option>Skilled Trades</option><option>Transport &amp; Driving</option><option>Other</option></select></div>
     <div class="field"><label>Location *</label><input id="pc-location" placeholder="e.g. Durban, KwaZulu-Natal" maxlength="80"></div>
     <div class="field"><label>Years of experience *</label><select id="pc-experience"><option value="">Choose…</option><option value="0">No experience yet</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div>
     <div class="field"><label>Availability *</label><select id="pc-availability"><option value="">Choose…</option><option value="Immediately">Immediately</option><option value="Within 1 week">Within 1 week</option><option value="Within 2 weeks">Within 2 weeks</option><option value="Within 1 month">Within 1 month</option><option value="More than 1 month">More than 1 month</option></select></div>
     <div class="pool-admin-activity" id="pc-activity-summary" hidden><div><strong>Profile activity:</strong><span id="pc-profile-updated"></span></div><div><strong>Availability status:</strong><span id="pc-availability-status"></span></div></div>
+    <div class="field"><label>Candidate introduction <span style="font-weight:400;color:var(--text-2)">(optional)</span></label><textarea id="pc-about" rows="4" maxlength="500" placeholder="Experience, previous roles or employers, and the work the candidate does best."></textarea><small style="display:block;margin-top:5px;color:var(--text-2)">Shown on the public CV Box profile · maximum 500 characters.</small></div>
     <div class="field"><label>Phone / WhatsApp <span class="field-optional">sent to buyers after payment, never shown publicly</span></label><input id="pc-phone" type="tel" inputmode="tel" maxlength="20"></div>
     <div class="field"><label>Email <span class="field-optional">optional</span></label><input id="pc-email" type="email"></div>
     <div class="field"><label>CV link</label><input id="pc-cv" type="url" oninput="updatePoolCvOpenLink()"><a id="pc-cv-open" href="#" target="_self" rel="noopener noreferrer" style="display:none;margin-top:6px;font-size:13px;font-weight:700">Open CV ↗</a><button type="button" class="minibtn" id="pc-scan-btn" style="margin-top:8px" onclick="scanPoolCvFromSheet()">Scan CV &amp; add positions</button><div class="cv-scan-result" id="pc-scan-result"></div></div>
@@ -1147,7 +1149,7 @@ var D1_WRITE_THROUGH_COLUMNS = {
   employers: ['id','name','industry','website','contact','email','location','address','photo','verified','created_at'],
   app_settings: ['key','value'],
   employer_posters: ['id','employer_id','agency_id','image_url','caption','vacancy_id','created_at','expires_at'],
-  pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','photo_url','verified','status','created_at'],
+  pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','banner_url','photo_url','verified','status','created_at'],
   house_ads: ['id','advertiser_name','title','message','image_url','target_url','placement','target_screens','ad_slot','ad_format','ad_details','cta_text','starts_at','ends_at','is_active','sort_order','impressions','clicks','created_at','updated_at']
 };
 async function writeThroughD1Mirror(table, value, operation){
@@ -1264,8 +1266,8 @@ async function getJobEnquiries(){
   return [];
 }
 async function getPoolCandidates(){
-  var cols = 'id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,availability_confirmed_at,availability_expires_at,profile_updated_at,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,photo_url,verified,created_at';
-  var optional = ['profile_updated_at','availability_confirmed_at','availability_expires_at','photo_url','verified'];
+  var cols = 'id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,availability_confirmed_at,availability_expires_at,profile_updated_at,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,banner_url,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,photo_url,verified,created_at';
+  var optional = ['profile_updated_at','availability_confirmed_at','banner_url','photo_url','verified'];
   var { data, error } = await supabaseClient.from('pool_candidates').select(cols).order('created_at', { ascending: false });
   // If optional activity, photo or verification columns are not available yet,
   // drop them one at a time and retry so the admin list still loads.
@@ -1280,7 +1282,7 @@ async function getPoolCandidates(){
 }
 async function upsertPoolCandidate(p){
   var payload = Object.assign({}, p);
-  var optional = ['photo_url','verified'];
+  var optional = ['banner_url','photo_url','verified'];
   var droppedAny = false;
   var result = await supabaseClient.from('pool_candidates').upsert(payload).select('*').single();
   while(result.error && /column|schema cache/i.test(result.error.message||'') && optional.length){
@@ -1970,6 +1972,31 @@ async function uploadPoolAdminPhotoIfAny(){
     return data.url || null;
   }catch(e){ console.error('pool admin photo upload', e); return window.pendingPoolAdminPhoto || null; }
 }
+var pendingPoolAdminBannerBlob = null;
+function handlePoolBanner(evt){
+  var file = evt.target.files[0]; if(!file) return;
+  var reader = new FileReader(); var img = new Image();
+  reader.onload = function(e){ img.onload = function(){
+    var c=document.createElement('canvas'); var maxW=1400; var maxH=520; var sc=Math.min(1,maxW/img.width,maxH/img.height);
+    c.width=Math.max(1,Math.round(img.width*sc)); c.height=Math.max(1,Math.round(img.height*sc));
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    c.toBlob(function(blob){
+      pendingPoolAdminBannerBlob = blob;
+      document.getElementById('pc-banner-img').src = URL.createObjectURL(blob);
+      document.getElementById('pc-banner-preview').style.display = 'block';
+    }, 'image/jpeg', 0.82);
+  }; img.src=e.target.result; };
+  reader.readAsDataURL(file);
+}
+async function uploadPoolAdminBannerIfAny(){
+  if(!pendingPoolAdminBannerBlob) return window.pendingPoolAdminBanner || null;
+  try{
+    var res = await fetch(R2_WORKER_URL + '/api/upload/candidate-photo?prefix=candidate-banners', { method:'POST', headers:{'Content-Type':'image/jpeg'}, body:pendingPoolAdminBannerBlob });
+    var data = await res.json();
+    if(!res.ok){ console.error('pool admin banner upload', data && data.error); alert('Could not upload banner: '+(data && data.error)); return window.pendingPoolAdminBanner || null; }
+    return data.url || null;
+  }catch(e){ console.error('pool admin banner upload', e); alert('Could not upload banner. Please try again.'); return window.pendingPoolAdminBanner || null; }
+}
 async function saveAgency(){
   var name = document.getElementById('a-name').value.trim();
   if(!name){ alert('Add at least the agency name.'); return; }
@@ -2638,13 +2665,21 @@ function openPoolSheet(id){
   document.getElementById('pool-sheet-title').textContent = id ? 'Edit candidate' : 'Add candidate';
   document.getElementById('pc-name').value = p ? (p.full_name||'') : '';
   window.pendingPoolAdminPhoto = p ? (p.photo_url||null) : null;
+  window.pendingPoolAdminBanner = p ? (p.banner_url||null) : null;
   pendingPoolAdminPhotoBlob = null;
+  pendingPoolAdminBannerBlob = null;
   var pcPreview = document.getElementById('pc-photo-preview');
   var pcImg = document.getElementById('pc-photo-img');
   var pcFile = document.getElementById('pc-photo');
   if (pcFile) pcFile.value = '';
   if (p && p.photo_url) { pcImg.src = p.photo_url; pcPreview.style.display = 'block'; }
   else { pcImg.src = ''; pcPreview.style.display = 'none'; }
+  var pcBannerPreview = document.getElementById('pc-banner-preview');
+  var pcBannerImg = document.getElementById('pc-banner-img');
+  var pcBannerFile = document.getElementById('pc-banner');
+  if (pcBannerFile) pcBannerFile.value = '';
+  if (p && p.banner_url) { pcBannerImg.src = p.banner_url; pcBannerPreview.style.display = 'block'; }
+  else { pcBannerImg.src = ''; pcBannerPreview.style.display = 'none'; }
   // A profile photo is mandatory for every new CV Box upload; existing
   // profiles can still be edited/approved without one.
   var photoReq = document.getElementById('pc-photo-req');
@@ -2662,6 +2697,7 @@ function openPoolSheet(id){
     document.getElementById('pc-availability-status').textContent = p ? poolAdminAvailabilityStatus(p) : '';
   }
   document.getElementById('pc-position').value = p ? (p.position||'') : '';
+  document.getElementById('pc-about').value = p ? (p.about_you||'') : '';
   document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
   updatePoolCvOpenLink();
   document.getElementById('pc-status').value = p ? (p.status||'pending') : 'pending';
@@ -2705,6 +2741,7 @@ async function savePoolCandidate(){
   var id = editingPool || newId();
   var photoUrl = await uploadPoolAdminPhotoIfAny();
   if(!editingPool && !photoUrl){ return; }   // upload failed; the error was already shown
+  var bannerUrl = await uploadPoolAdminBannerIfAny();
   var fromSeeker = editingSeeker;
   // Only the fields that are on the form are written, so any older
   // profile data already stored for this candidate is left untouched.
@@ -2719,6 +2756,8 @@ async function savePoolCandidate(){
     experience_years:parseInt(experience, 10),
     availability:availability,
     position:position,
+    about_you:document.getElementById('pc-about').value.trim().slice(0,500),
+    banner_url:bannerUrl,
     cv_link:document.getElementById('pc-cv').value.trim(),
     status:document.getElementById('pc-status').value,
     verified:document.getElementById('pc-verified').checked

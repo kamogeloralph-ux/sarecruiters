@@ -972,7 +972,7 @@ const D1_WRITE_THROUGH_SPECS = {
   app_settings: { key: "key", columns: ["key", "value"], boolColumns: [] },
   employer_posters: { key: "id", columns: ["id", "employer_id", "agency_id", "image_url", "caption", "vacancy_id", "created_at", "expires_at"], boolColumns: [] },
   // This projection deliberately excludes candidate contacts, CV links, and admin fields.
-  pool_candidates: { key: "id", columns: ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"], boolColumns: ["verified"] },
+  pool_candidates: { key: "id", columns: ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "banner_url", "photo_url", "verified", "status", "created_at"], boolColumns: ["verified"] },
   house_ads: { key: "id", columns: ["id", "advertiser_name", "title", "message", "image_url", "target_url", "placement", "target_screens", "ad_slot", "ad_format", "ad_details", "cta_text", "starts_at", "ends_at", "is_active", "sort_order", "impressions", "clicks", "created_at", "updated_at"], boolColumns: ["is_active"] }
 };
 function prepareD1WriteThroughUpsert(env, table, spec, columns, row) {
@@ -1549,7 +1549,7 @@ async function cvBoxResponse(request, env, origin) {
   // contact information or CV links ever leave this handler.
   if (env.SUPABASE_SERVICE_ROLE_KEY && candidates.length) {
     try {
-      const q = new URLSearchParams({ select: "id,availability,profile_updated_at,availability_confirmed_at,availability_expires_at", status: "eq.active", limit: "1000" });
+      const q = new URLSearchParams({ select: "id,availability,profile_updated_at,availability_confirmed_at,availability_expires_at,banner_url", status: "eq.active", limit: "1000" });
       const r = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${q}`, {
         headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
       });
@@ -1566,6 +1566,7 @@ async function cvBoxResponse(request, env, origin) {
           const expiresAt = row.availability_expires_at || derivedExpiresAt;
           c.availability = String(row.availability || "").trim().slice(0, 40);
           c.profile_updated_at = row.profile_updated_at || c.created_at || null;
+          c.banner_url = typeof row.banner_url === "string" ? row.banner_url.trim().slice(0, 1000) : "";
           c.availability_confirmed_at = fallbackConfirmedAt;
           c.availability_expires_at = row.availability_expires_at || derivedExpiresAt;
           c.availability_current = String(c.availability).toLowerCase() === "immediately" &&
@@ -1576,7 +1577,7 @@ async function cvBoxResponse(request, env, origin) {
         }
       } else {
         console.warn("CV Box activity lookup failed", r.status);
-        const legacyQ = new URLSearchParams({ select: "id,availability", status: "eq.active", limit: "1000" });
+        const legacyQ = new URLSearchParams({ select: "id,availability,banner_url", status: "eq.active", limit: "1000" });
         const legacyResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/pool_candidates?${legacyQ}`, {
           headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
         });
@@ -1590,6 +1591,7 @@ async function cvBoxResponse(request, env, origin) {
             const expiresAt = confirmedAt ? new Date(Date.parse(confirmedAt) + 30 * 86400000).toISOString() : null;
             c.availability = String(row.availability || "").trim().slice(0, 40);
             c.profile_updated_at = c.created_at || null;
+            c.banner_url = typeof row.banner_url === "string" ? row.banner_url.trim().slice(0, 1000) : "";
             c.availability_confirmed_at = confirmedAt;
             c.availability_expires_at = expiresAt;
             c.availability_current = String(c.availability).toLowerCase() === "immediately" &&
@@ -3992,7 +3994,7 @@ var worker_default = {
         const isPng = signature.length >= 8 && signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4e && signature[3] === 0x47 && signature[4] === 0x0d && signature[5] === 0x0a && signature[6] === 0x1a && signature[7] === 0x0a;
         const isJpeg = signature.length >= 3 && signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff;
         if (!(isJpeg || isPng)) return json({ error: "The photo contents are not a valid JPEG or PNG image." }, 400, origin);
-        const allowedPrefixes = ["candidate-photos", "agency-logos", "employer-logos", "vacancy-photos"];
+        const allowedPrefixes = ["candidate-photos", "candidate-banners", "agency-logos", "employer-logos", "vacancy-photos"];
         const reqPrefix = url.searchParams.get("prefix");
         const prefix = allowedPrefixes.includes(reqPrefix) ? reqPrefix : "candidate-photos";
         const photoType = isPng ? "image/png" : "image/jpeg";
