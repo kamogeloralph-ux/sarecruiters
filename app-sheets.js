@@ -1041,7 +1041,8 @@ function poolProfileCoverMarkup(c, detail) {
   var safe = '';
   try { var parsed = new URL(raw, window.location.href); if (parsed.protocol === 'https:') safe = parsed.href; } catch (e) {}
   var style = safe ? ' style="background-image:linear-gradient(180deg,rgba(7,13,21,.08),rgba(7,13,21,.42)),url(\''+escapeHtml(safe)+'\')"' : '';
-  return '<div class="'+(detail ? 'pool-detail-cover' : 'pool-profile-cover')+' pool-profile-cover-image"'+style+'>';
+  var fallback = safe ? '' : '<div class="pool-cover-placeholder" aria-label="SA Recruiters default banner"><span class="pool-cover-mark"><i></i><i></i><i></i></span><span class="pool-cover-brand">SA Recruiters</span><span class="pool-cover-caption">Professional talent directory</span></div>';
+  return '<div class="'+(detail ? 'pool-detail-cover' : 'pool-profile-cover')+' pool-profile-cover-image"'+style+'>'+fallback;
 }
 
 export async function loadPoolCandidates() {
