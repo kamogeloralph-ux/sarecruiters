@@ -998,6 +998,22 @@ function poolFactAvailability(c) {
   var v = String((c && c.availability) || '').trim();
   return v || 'Not stated';
 }
+function poolAvailabilityBadge(c) {
+  var value = String((c && c.availability) || '').trim();
+  if (!value) return 'Open to offers';
+  if (value.toLowerCase() === 'immediately' && c && c.availability_current !== false) return 'Open to offers';
+  return value;
+}
+function poolSeniority(c) {
+  var years = Number(c && c.experience_years);
+  if (!Number.isFinite(years) || years <= 2) return 'Junior';
+  if (years >= 8) return 'Senior';
+  return 'Mid-level';
+}
+function poolPublicSummary(c) {
+  var summary = String((c && c.about_you) || '').trim();
+  return summary || 'Add a short introduction about your experience and the work you do best.';
+}
 
 export async function loadPoolCandidates() {
   var listEl = document.getElementById('pool-list');
@@ -1061,16 +1077,15 @@ export function renderPoolList() {
   var middleAt = Math.max(1, Math.ceil(list.length / 2));
   listEl.innerHTML = list.map(function(c, index){
     var middleAd = index === middleAt ? '<div id="house-ad-candidates-middle" class="house-ad-slot" hidden></div>' : '';
-    // Public cards intentionally show only the photo, name, role and safe freshness.
-    // Mini-CV answers (about me, etc.)
-    // and contact details stay private; the full CV is a paid secure download (price shown only after Unlock).
+    // Public cards show only candidate-written professional information. Contact
+    // details and the full CV remain private; the full CV is a paid secure download.
     var role = c.position || 'Open to opportunities';
     var avatar = c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar pool-mini-avatar">'+initials(c.full_name)+'</div>';
-    return middleAd + '<div class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'">' +
-      '<div class="pool-mini-head">'+avatar+'<div class="pool-mini-copy"><div class="manager-item-title pool-mini-name"><span class="pool-mini-name-text" title="'+escapeHtml(c.full_name||'Candidate')+'">'+escapeHtml(c.full_name||'Candidate')+'</span>'+(c.verified?'<span class="pool-mini-seal">' + verifiedBadge('Screened &amp; Verified') + '</span>':'')+'</div><div class="pool-mini-role">'+escapeHtml(role)+'</div><small class="pool-mini-activity">'+escapeHtml(poolActivityLabel(c))+'</small></div></div>' +
-      '<div class="pool-mini-facts" aria-label="Candidate summary"><div><small>Location</small><b>'+escapeHtml(poolFactLocation(c))+'</b></div><div><small>Experience</small><b>'+escapeHtml(poolFactExperience(c))+'</b></div><div><small>Available</small><b>'+escapeHtml(poolFactAvailability(c))+'</b></div></div>' +
-      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" style="background:#0b7a35 !important;background-image:none !important;color:#fff !important;-webkit-text-fill-color:#fff !important;border:2px solid #0b7a35 !important" aria-label="Unlock full CV" onclick="event.stopPropagation();openCvDownloadRequestById(this.parentElement.parentElement.dataset.candidateId)"><svg class="pool-cv-lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span class="pool-cv-label">Unlock full CV</span></button></div>' +
-      '</div>'
+    return middleAd + '<article class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'">' +
+      '<div class="pool-profile-cover"><span class="pool-profile-badge pool-profile-availability"><i></i>'+escapeHtml(poolAvailabilityBadge(c))+'</span><span class="pool-profile-badge pool-profile-seniority">'+escapeHtml(poolSeniority(c))+'</span></div>' +
+      '<div class="pool-profile-body"><div class="pool-profile-avatar">'+avatar+'</div><div class="pool-profile-location"><span aria-hidden="true">⌖</span>'+escapeHtml(poolFactLocation(c))+'</div><div class="manager-item-title pool-mini-name"><span class="pool-mini-name-text" title="'+escapeHtml(c.full_name||'Candidate')+'">'+escapeHtml(c.full_name||'Candidate')+'</span>'+(c.verified?'<span class="pool-mini-seal">' + verifiedBadge('Screened &amp; Verified') + '</span>':'')+'</div><h3 class="pool-profile-role">'+escapeHtml(role)+'</h3><p class="pool-profile-summary">'+escapeHtml(poolPublicSummary(c))+'</p><div class="pool-profile-chips"><span>'+escapeHtml(c.sector || 'Professional')+'</span><span>'+escapeHtml(poolFactExperience(c))+'</span><span>'+escapeHtml(poolFactAvailability(c))+'</span></div>' +
+      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" style="background:#0b7a35 !important;background-image:none !important;color:#fff !important;-webkit-text-fill-color:#fff !important;border:2px solid #0b7a35 !important" aria-label="Unlock full CV" onclick="event.stopPropagation();openCvDownloadRequestById(this.closest(\'.pool-mini-card\').dataset.candidateId)"><svg class="pool-cv-lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span class="pool-cv-label">Unlock full CV</span></button></div>' +
+      '</div></div></article>'
   }).join('');
 }
 
@@ -1454,7 +1469,7 @@ export function poolFormToProfileFields() {
     p_preferred_employment: document.getElementById('pool-employment').value,
     p_salary_expectation: document.getElementById('pool-salary').value.trim(),
     p_work_authorized: document.getElementById('pool-work-authorized').value,
-    p_about_you: document.getElementById('pool-about').value.trim().slice(0, 150),
+    p_about_you: document.getElementById('pool-about').value.trim().slice(0, 500),
     p_cv_link: window.currentPoolCvUrl || null,
     p_email_alert_opt_in: !!(document.getElementById('pool-email-alerts') && document.getElementById('pool-email-alerts').checked)
   };
@@ -1596,7 +1611,7 @@ export async function submitPoolRegistration() {
     preferred_employment: document.getElementById('pool-employment').value,
     salary_expectation: document.getElementById('pool-salary').value.trim(),
     work_authorized: document.getElementById('pool-work-authorized').value,
-    about_you: document.getElementById('pool-about').value.trim().slice(0, 150),
+    about_you: document.getElementById('pool-about').value.trim().slice(0, 500),
     cv_link: window.currentPoolCvUrl || null,
     status: 'pending'
   };
