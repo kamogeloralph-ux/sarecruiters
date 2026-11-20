@@ -1049,7 +1049,12 @@ function poolSkillsMarkup(c, detail) {
 function poolProfileCoverMarkup(c, detail) {
   var raw = String((c && c.banner_url) || '').trim();
   var safe = '';
-  try { var parsed = new URL(raw, window.location.href); if (parsed.protocol === 'https:') safe = parsed.href; } catch (e) {}
+  try {
+    // Empty, root, and same-site placeholder values are not candidate banners.
+    // Treat them as missing so the branded light-pink fallback is shown.
+    var parsed = raw ? new URL(raw) : null;
+    if (parsed && parsed.protocol === 'https:' && parsed.origin !== window.location.origin) safe = parsed.href;
+  } catch (e) {}
   var style = safe ? ' style="background-image:linear-gradient(180deg,rgba(7,13,21,.08),rgba(7,13,21,.42)),url(\''+escapeHtml(safe)+'\')"' : '';
   var fallback = safe ? '' : '<div class="pool-cover-placeholder" aria-label="SA Recruiters default banner"><img class="pool-cover-wordmark" src="/assets/sa-recruiters-logo-400x50-white.png" alt="SA Recruiters" loading="lazy" decoding="async"><span class="pool-cover-caption">CV Box · Professional talent directory</span></div>';
   return '<div class="'+(detail ? 'pool-detail-cover' : 'pool-profile-cover')+' pool-profile-cover-image"'+style+'>'+fallback;
