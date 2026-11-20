@@ -1,6 +1,7 @@
 import { runWatchdog } from "./watchdog.js";
 import * as Sentry from "@sentry/cloudflare";
 import { candidateCvKey, cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, scanCvWithGemini } from "./cv-scan.js";
+import { fetchProfile, listUntidied, pairPositions, similarPosition, splitTitles, tidyCandidateById } from "./cv-tidy.js";
 import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
 import { careerjetSearchResponse } from "./careerjet.js";
 import { putCached } from "./ai.js";
@@ -3830,6 +3831,49 @@ var worker_default = {
         const aiResponse = await handleAiRequest(request, env, origin, path, { json, isAdminRequest, verifiedUserId, verifyTurnstile, employerPosterKey });
         if (aiResponse) return aiResponse;
       }
+      if (path === "/api/cv-box/tidy" && request.method === "POST") {
+        // Free Workers AI: fixes typos/grammar and keeps 1 profession + 1 alternate for ONE CV Box profile.
+        // Allowed for a profile created in the last 3 hours, its signed-in owner, or an admin (see cv-tidy.js).
+        const body = await request.json().catch(() => ({}));
+        const tidyId = String(body.id ?? "").trim();
+        if (!/^[A-Za-z0-9_-]{1,64}$/.test(tidyId)) return json({ error: "Choose a valid CV Box profile." }, 400, origin);
+        const tidyAdmin = await isAdminRequest(request, env);
+        let tidyAllowed = tidyAdmin;
+        if (!tidyAllowed) {
+          let tidyRow = null;
+          try { tidyRow = await fetchProfile(env, tidyId); } catch (e) { return json({ error: "Profile could not be loaded." }, 502, origin); }
+          if (!tidyRow) return json({ error: "Profile not found." }, 404, origin);
+          const fresh = Date.now() - new Date(tidyRow.created_at).getTime() < 3 * 3600000;
+          const owner = tidyRow.user_id ? (await verifiedUserId(request, env)) === tidyRow.user_id : false;
+          tidyAllowed = fresh || owner;
+        }
+        if (!tidyAllowed) return json({ error: "Not allowed." }, 403, origin);
+        const tidied = await tidyCandidateById(env, tidyId, { force: tidyAdmin && body.force === true });
+        if (!tidied.ok) return json({ error: tidied.error }, tidied.status || 500, origin);
+        return json({ ok: true, changed: tidied.changes || [], skipped: !!tidied.skipped }, 200, origin);
+      }
+      if (path === "/api/admin/cv-box/tidy" && request.method === "POST") {
+        // Admin: tidy existing CV Box profiles in small batches (replaces cleaning them by hand in Supabase).
+        // Body: { limit?: 1-10 (default 5), dry_run?: true, force?: true, ids?: [...] }. Call again until pending_before is 0.
+        if (!await isAdminRequest(request, env)) return json({ error: "Not authorized." }, 401, origin);
+        const body = await request.json().catch(() => ({}));
+        const dryRun = body.dry_run === true;
+        const batch = Math.min(Math.max(parseInt(body.limit, 10) || 5, 1), 10);
+        let ids;
+        let pendingBefore = null;
+        if (Array.isArray(body.ids) && body.ids.length) {
+          ids = body.ids.map(String).filter((id) => /^[A-Za-z0-9_-]{1,64}$/.test(id)).slice(0, batch);
+        } else {
+          try { const listed = await listUntidied(env, { limit: batch }); ids = listed.ids; pendingBefore = listed.pending; }
+          catch (e) { console.error("cv-tidy list failed", e); return json({ error: "Could not list CV Box profiles." }, 502, origin); }
+        }
+        const results = [];
+        for (const id of ids) {
+          const r = await tidyCandidateById(env, id, { force: body.force === true, dryRun });
+          results.push({ id, ok: r.ok, skipped: !!r.skipped, changes: r.changes || [], patch: dryRun ? r.patch : undefined, profession: r.profession, alternate: r.alternate, alternateSource: r.alternateSource, merged: r.merged, needsAlternate: r.needsAlternate, usedAi: r.usedAi, note: r.note || undefined, error: r.ok ? undefined : r.error });
+        }
+        return json({ ok: true, processed: results.length, pending_before: pendingBefore, dry_run: dryRun, results }, 200, origin);
+      }
       if (path === "/api/admin/cv-scan" && request.method === "POST") {
         // Admin CV Box: read the uploaded CV, merge the positions found on it
         // into the profile, and say whether it can be auto-approved + verified.
@@ -3859,7 +3903,10 @@ var worker_default = {
         if (candidate.id && scanned.scan.is_cv && scanned.scan.skills && scanned.scan.skills.length) {
           await putCached(env, "cv-skills", String(candidate.id).slice(0, 80), { model: scanned.model, result: { skills: scanned.scan.skills } });
         }
-        const merged = mergePositions(candidate.position, scanned.scan.positions);
+        // One profession + one alternate: similar titles are merged, the CV supplies a different alternate.
+        const pair = pairPositions(candidate.position, scanned.scan.positions);
+        const typedBefore = splitTitles(candidate.position);
+        const merged = { text: pair.text, list: [pair.profession, pair.alternate].filter(Boolean), added: [pair.profession, pair.alternate].filter((t) => t && !typedBefore.some((x) => similarPosition(x, t))) };
         const corrections = cvProfileCorrections(scanned.scan, { ...candidate, position: merged.text });
         const verdict = evaluateCvScan(scanned.scan, { ...candidate, ...corrections, position: merged.text }, { contentType });
         if (duplicate) verdict.reasons.unshift(`This candidate already exists in the CV Box (${duplicate.name}; matched by ${duplicate.matchedBy})`);

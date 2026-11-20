@@ -22,6 +22,14 @@ binding = "DB"
 database_name = "sarecruiters-d1"
 database_id = "7d1a4327-6056-45cf-ae62-b5b26a454627"
 
+# Free Cloudflare Workers AI. Tidies CV Box profiles (typos, grammar, 1 profession + 1 alternate)
+# in cv-tidy.js. No API key needed. Optional plain Variables:
+#   CF_AI_MODEL           default @cf/meta/llama-3.1-8b-instruct
+#   CV_TIDY_DAILY_CAP     max AI tidies per day (default 300)
+#   CV_TIDY_AI_ALTERNATE  set "0" to stop the AI suggesting an alternate position
+[ai]
+binding = "AI"
+
 # Keeps the D1 write mirror of agencies/branches/vacancies/employers/pool_candidates
 # fresh for admin and operational recovery. Public startup, vacancy, poster, and
 # house-ad reads use R2 snapshots and edge caching; they never fall back to D1 or
