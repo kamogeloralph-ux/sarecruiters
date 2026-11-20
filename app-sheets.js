@@ -926,7 +926,7 @@ function poolActivityLabel(candidate) {
   if (days === 0) return 'Updated today';
   if (days < 30) return 'Updated ' + days + 'd ago';
   var months = Math.floor(days / 30);
-  return 'Updated ' + months + (months === 1 ? 'mo ago' : 'mo ago');
+  return 'Updated ' + months + 'mo ago';
 }
 function syncCvBoxActionsVisibility() {
   var actions = document.getElementById('cv-box-actions');
@@ -989,7 +989,7 @@ export function openPoolCandidateProfileById(id) {
     : '<span>'+escapeHtml(initials(candidate.full_name))+'</span>';
   var summary = String(candidate.about_you || '').trim();
   detail.innerHTML = poolProfileCoverMarkup(candidate, true)+'<span class="pool-profile-badge pool-profile-availability"><i></i>'+escapeHtml(poolAvailabilityBadge(candidate))+'</span><span class="pool-profile-badge pool-profile-seniority">'+escapeHtml(poolSeniority(candidate))+'</span></div>' +
-    '<div class="pool-detail-body"><div class="pool-detail-avatar">'+avatar+'</div><div class="pool-detail-identity"><h2>'+escapeHtml(candidate.full_name || 'Candidate')+'</h2><h3>'+escapeHtml(candidate.position || 'Open to opportunities')+'</h3><div class="pool-detail-status"><i></i>'+escapeHtml(poolAvailabilityBadge(candidate))+' · '+escapeHtml(poolActivityLabel(candidate))+'</div></div><div class="pool-detail-action-row"><button type="button" class="pool-detail-contact" onclick="openCvDownloadRequestById(\''+escapeHtml(String(candidate.id))+'\')"><span aria-hidden="true">✉</span> Contact candidate</button><button type="button" class="pool-detail-share" onclick="sharePoolCandidateProfile(\''+escapeHtml(String(candidate.id))+'\')" aria-label="Share candidate profile">↗ Share</button></div><section class="pool-detail-at-glance" aria-labelledby="pool-detail-glance-title"><div class="pool-detail-section-label" id="pool-detail-glance-title">At a glance</div><div class="pool-detail-facts"><div><small>Location</small><strong>'+escapeHtml(poolFactLocation(candidate))+'</strong></div><div><small>Experience level</small><strong>'+escapeHtml(poolSeniority(candidate))+'</strong></div><div><small>Experience</small><strong>'+escapeHtml(poolFactExperience(candidate))+'</strong></div><div><small>Field</small><strong>'+escapeHtml(candidate.sector || 'Professional')+'</strong></div></div></section><section class="pool-detail-section"><div class="pool-detail-section-label">About</div>'+(summary ? '<p class="pool-profile-summary">'+escapeHtml(summary)+'</p>' : '<p class="pool-detail-empty">This professional has not added a public introduction yet.</p>')+'</section><section class="pool-detail-section"><div class="pool-detail-section-label">Skills</div>'+poolSkillsMarkup(candidate, true)+'</section><section class="pool-detail-section"><div class="pool-detail-section-label">Availability</div><div class="pool-detail-availability"><span>'+escapeHtml(poolFactAvailability(candidate))+'</span><span>'+escapeHtml(poolActivityLabel(candidate))+'</span></div></section><small class="pool-detail-private-note">Contact details and the full CV are released securely after payment.</small></div>';
+    '<div class="pool-detail-body"><div class="pool-detail-avatar">'+avatar+'</div><div class="pool-detail-identity"><h2>'+escapeHtml(candidate.full_name || 'Candidate')+'</h2><h3>'+escapeHtml(poolRoleLabel(candidate))+'</h3><div class="pool-detail-status"><i></i>'+escapeHtml(poolAvailabilityBadge(candidate))+' · '+escapeHtml(poolActivityLabel(candidate))+'</div></div><div class="pool-detail-action-row"><button type="button" class="pool-detail-contact" onclick="openCvDownloadRequestById(\''+escapeHtml(String(candidate.id))+'\')"><span aria-hidden="true">✉</span> Contact candidate</button><button type="button" class="pool-detail-share" onclick="sharePoolCandidateProfile(\''+escapeHtml(String(candidate.id))+'\')" aria-label="Share candidate profile">↗ Share</button></div><section class="pool-detail-at-glance" aria-labelledby="pool-detail-glance-title"><div class="pool-detail-section-label" id="pool-detail-glance-title">At a glance</div><div class="pool-detail-facts"><div><small>Location</small><strong>'+escapeHtml(poolFactLocation(candidate))+'</strong></div><div><small>Experience level</small><strong>'+escapeHtml(poolSeniority(candidate))+'</strong></div><div><small>Experience</small><strong>'+escapeHtml(poolFactExperience(candidate))+'</strong></div><div><small>Field</small><strong>'+escapeHtml(candidate.sector || 'Professional')+'</strong></div></div></section><section class="pool-detail-section"><div class="pool-detail-section-label">About</div>'+(summary ? '<p class="pool-profile-summary">'+escapeHtml(summary)+'</p>' : '<p class="pool-detail-empty">This professional has not added a public introduction yet.</p>')+'</section><section class="pool-detail-section"><div class="pool-detail-section-label">Skills</div>'+poolSkillsMarkup(candidate, true)+'</section><section class="pool-detail-section"><div class="pool-detail-section-label">Availability</div><div class="pool-detail-availability"><span>'+escapeHtml(poolFactAvailability(candidate))+'</span><span>'+escapeHtml(poolActivityLabel(candidate))+'</span></div></section><small class="pool-detail-private-note">Contact details and the full CV are released securely after payment.</small></div>';
   document.getElementById('pool-profile-overlay').classList.add('open');
 }
 export async function sharePoolCandidateProfile(id) {
@@ -1032,6 +1032,11 @@ function poolSeniority(c) {
   if (years >= 8) return 'Senior';
   return 'Mid-level';
 }
+function poolRoleLabel(c) {
+  // Tidy hand-typed roles: "Driver, Security , Clerk" -> "Driver, Security, Clerk"
+  var v = String((c && c.position) || '').replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ').replace(/(,\s*)+$/, '').trim();
+  return v || 'Open to opportunities';
+}
 function poolPublicSummary(c) {
   var summary = String((c && c.about_you) || '').trim();
   return summary;
@@ -1056,7 +1061,7 @@ function poolProfileCoverMarkup(c, detail) {
     if (parsed && parsed.protocol === 'https:' && parsed.origin !== window.location.origin) safe = parsed.href;
   } catch (e) {}
   var style = safe ? ' style="background-image:linear-gradient(180deg,rgba(7,13,21,.08),rgba(7,13,21,.42)),url(\''+escapeHtml(safe)+'\')"' : '';
-  var fallback = safe ? '' : '<div class="pool-cover-placeholder" aria-label="SA Recruiters default banner"><img class="pool-cover-wordmark" src="/assets/sa-recruiters-logo-400x50-white.png" alt="SA Recruiters" loading="lazy" decoding="async"><span class="pool-cover-caption">CV Box · Professional talent directory</span></div>';
+  var fallback = safe ? '' : '<div class="pool-cover-placeholder" aria-label="SA Recruiters default banner"><img class="pool-cover-wordmark" src="/assets/sa-recruiters-logo-400x50-black.png" srcset="/assets/sa-recruiters-logo-400x50-black.png 1x, /assets/sa-recruiters-logo-400x50-black@2x.png 2x" alt="SA Recruiters" loading="lazy" decoding="async"><span class="pool-cover-caption">CV Box · Professional talent directory</span></div>';
   return '<div class="'+(detail ? 'pool-detail-cover' : 'pool-profile-cover')+' pool-profile-cover-image"'+style+'>'+fallback;
 }
 
@@ -1124,12 +1129,12 @@ export function renderPoolList() {
     var middleAd = index === middleAt ? '<div id="house-ad-candidates-middle" class="house-ad-slot" hidden></div>' : '';
     // Public cards show only candidate-written professional information. Contact
     // details and the full CV remain private; the full CV is a paid secure download.
-    var role = c.position || 'Open to opportunities';
+    var role = poolRoleLabel(c);
     var avatar = c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar pool-mini-avatar">'+initials(c.full_name)+'</div>';
     return middleAd + '<article class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'" onclick="openPoolCandidateProfileById(this.dataset.candidateId)" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openPoolCandidateProfileById(this.dataset.candidateId)}">' +
       poolProfileCoverMarkup(c, false)+'<span class="pool-profile-badge pool-profile-availability"><i></i>'+escapeHtml(poolAvailabilityBadge(c))+'</span><span class="pool-profile-badge pool-profile-seniority">'+escapeHtml(poolSeniority(c))+'</span></div>' +
-      '<div class="pool-profile-body"><div class="pool-profile-avatar">'+avatar+'</div><div class="manager-item-title pool-mini-name"><span class="pool-mini-name-text" title="'+escapeHtml(c.full_name||'Candidate')+'">'+escapeHtml(c.full_name||'Candidate')+'</span>'+(c.verified?'<span class="pool-mini-seal">' + verifiedBadge('Screened &amp; Verified') + '</span>':'')+'</div><div class="pool-profile-location"><span aria-hidden="true">⌖</span>'+escapeHtml(poolFactLocation(c))+'</div><h3 class="pool-profile-role">'+escapeHtml(role)+'</h3>'+(poolPublicSummary(c) ? '<p class="pool-profile-summary">'+escapeHtml(poolPublicSummary(c))+'</p>' : '')+'<div class="pool-profile-activity">'+(String(c.availability || '').toLowerCase() === 'immediately' && c.availability_current !== false ? '<strong>Still looking</strong><span> · </span>' : '')+escapeHtml(poolActivityLabel(c))+'</div><div class="pool-profile-chips"><span>'+escapeHtml(c.sector || 'Professional')+'</span><span>'+escapeHtml(poolFactExperience(c))+'</span><span>'+escapeHtml(poolFactAvailability(c))+'</span></div>'+poolSkillsMarkup(c, false)+'' +
-      '</div></div></article>'
+      '<div class="pool-profile-body"><div class="pool-profile-avatar">'+avatar+'</div><div class="manager-item-title pool-mini-name"><span class="pool-mini-name-text" title="'+escapeHtml(c.full_name||'Candidate')+'">'+escapeHtml(c.full_name||'Candidate')+'</span>'+(c.verified?'<span class="pool-mini-seal">' + verifiedBadge('Screened &amp; Verified') + '</span>':'')+'</div><div class="pool-profile-location"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>'+escapeHtml(poolFactLocation(c))+'</span></div><h3 class="pool-profile-role">'+escapeHtml(role)+'</h3>'+(poolPublicSummary(c) ? '<p class="pool-profile-summary">'+escapeHtml(poolPublicSummary(c))+'</p>' : '')+'<div class="pool-profile-activity">'+(String(c.availability || '').toLowerCase() === 'immediately' && c.availability_current !== false ? '<strong>Still looking</strong><span> · </span>' : '')+escapeHtml(poolActivityLabel(c))+'</div><div class="pool-profile-chips"><span>'+escapeHtml(c.sector || 'Professional')+'</span><span>'+escapeHtml(poolFactExperience(c))+'</span><span>'+escapeHtml(poolFactAvailability(c))+'</span></div>'+poolSkillsMarkup(c, false)+'' +
+      '</div></article>'
   }).join('');
 }
 

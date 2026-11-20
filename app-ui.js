@@ -84,9 +84,27 @@ export function closeTransientOutsideUi() {
 }
 window.__saCloseTransientOutsideUi = closeTransientOutsideUi;
 window.addEventListener('pagehide', closeTransientOutsideUi);
+// How this page load started. A refresh / pull-to-refresh / history restore
+// must land on the home screen; only a fresh open of a shared link may go
+// straight to its section.
+var SA_STARTUP_IS_RELOAD = (function () {
+  try {
+    var nav = performance.getEntriesByType('navigation')[0];
+    if (nav) return nav.type === 'reload' || nav.type === 'back_forward';
+    return !!(performance.navigation && performance.navigation.type === 2 || performance.navigation && performance.navigation.type === 1);
+  } catch (e) { return false; }
+})();
 export function normalizeStartupScreen() {
   var params = new URLSearchParams(window.location.search);
   closeTransientOutsideUi();
+  // On refresh, drop the section/tab deep link from the address bar so the app
+  // opens on Home instead of re-opening the last shared section (e.g. CV Box).
+  // Payment returns and token-based manager links are never stripped.
+  if (SA_STARTUP_IS_RELOAD && (params.has('section') || params.has('tab')) && !params.has('cvPayment') && !params.has('manage') && !params.has('manage_employer') && !params.has('action')) {
+    params.delete('section'); params.delete('tab'); params.delete('cvbox');
+    var qs = params.toString();
+    try { window.history.replaceState(window.history.state, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash); } catch (e) {}
+  }
   // Explicit manager/action/deep-link URLs are intentional entry points.
   if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
   // Community shares use a hash deep link. Preserve that intent across the

@@ -3004,3 +3004,28 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .scamcheck-note{margin:0;font-size:12.5px;line-height:1.5;color:var(--text-2)}
 .scamcheck-loading,.scamcheck-error{padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--border);font-size:14px;color:var(--text-2)}
 .scamcheck-error{border-color:#b42318;color:var(--text)}
+
+/* ==== CV Box candidate card polish (v2) ==================================
+   - Banner words on the pink cover are dark so they stand out.
+   - The "CV Box · Professional talent directory" slogan sits bottom-right,
+     clear of the overlapping profile photo.
+   - Badges are solid pills above every decoration layer.
+   - Corners: the cover follows the card's radius and the card is isolated so
+     Android Chrome never leaks square edges while clipping.
+   ======================================================================= */
+.pool-mini-card.manager-item{isolation:isolate;overflow:hidden;border-radius:22px!important;-webkit-mask-image:-webkit-radial-gradient(white,black);background-clip:padding-box}
+.pool-profile-cover,.pool-detail-cover{border-radius:21px 21px 0 0}
+.pool-profile-sheet .pool-detail-cover{border-radius:0}
+.pool-cover-placeholder{align-items:center;justify-content:flex-start;padding:44px 20px 0 20px}
+.pool-cover-wordmark{width:min(230px,70%);filter:none;opacity:1}
+.pool-cover-caption{left:auto;right:18px;bottom:14px;max-width:calc(100% - 132px);text-align:right;white-space:normal;line-height:1.35;color:#4a1230;font-size:9px;font-weight:800;letter-spacing:.1em;text-shadow:none}
+.pool-detail-cover .pool-cover-placeholder{padding:56px 30px 0}
+.pool-detail-cover .pool-cover-wordmark{width:min(290px,80%)}
+.pool-detail-cover .pool-cover-caption{left:auto;right:24px;bottom:20px;max-width:calc(100% - 150px);font-size:10px}
+.pool-profile-cover .pool-profile-badge,.pool-detail-cover .pool-profile-badge{z-index:4;opacity:1!important;background:#172131!important;border:1px solid rgba(255,255,255,.22);color:#fff!important;font-weight:650!important;box-shadow:0 2px 8px rgba(23,33,49,.28)}
+.pool-profile-cover .pool-profile-availability,.pool-detail-cover .pool-profile-availability{left:16px}
+.pool-profile-cover .pool-profile-seniority,.pool-detail-cover .pool-profile-seniority{right:16px;left:auto;max-width:calc(50% - 24px)}
+.pool-profile-location svg{flex:0 0 15px;color:#c4ccd5}
+.pool-profile-location span{font-size:inherit;color:#b6c0cc;min-width:0;overflow-wrap:anywhere}
+.pool-profile-body{padding-bottom:20px}
+@media(max-width:380px){.pool-profile-cover .pool-profile-seniority{right:12px}.pool-profile-cover .pool-profile-availability{left:12px}.pool-cover-caption{font-size:8px;letter-spacing:.08em}}
