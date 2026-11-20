@@ -905,3 +905,224 @@ export function photoDecision(raw) {
   if (confidence < 0.7 && problems.length === 0) problems.push("The AI was not confident");
   return { decision: usable ? "usable" : "needs_human", usable, confidence, problems };
 }
+
+// ---------- 8. Public scam check ("Is this job real?") ----------
+//
+// A job seeker pastes an ad, a WhatsApp message, an email address or a phone number.
+// The RULES decide the verdict; the model may only add reasons and nudge the score up to
+// "medium" (see combineScam). Nothing the person pastes is saved: only a hash of the text and,
+// when the model was used, its short answer are cached, so the same message is never paid for twice.
+
+const PUBLIC_SIGNALS = {
+  equipment_purchase: {
+    weight: 40, label: "Asks you to buy equipment, a starter kit or a laptop first",
+    re: /\b(?:buy|purchase|pay\s+for|order)\s+(?:your\s+own\s+|a\s+|an\s+|the\s+)?(?:starter\s+kit|laptop|equipment|uniform|tools|work\s+permit|police\s+clearance|training\s+(?:pack|materials?|course))\b|\b(?:refundable|will\s+be\s+refunded|reimbursed?)\b[^.\n]{0,60}\b(?:deposit|fee|kit|equipment|laptop)\b/i
+  },
+  untraceable_payment: {
+    weight: 45, label: "Asks for payment by e-wallet, cash send, airtime, voucher or gift card",
+    re: /\b(?:e-?wallet|cash\s?send|instant\s+money|airtime|gift\s?card|1voucher|ott\s?voucher|western\s+union|moneygram)\b[^.\n]{0,80}\b(?:pay|send|deposit|transfer)\b|\b(?:pay|send|deposit|transfer)\b[^.\n]{0,80}\b(?:e-?wallet|cash\s?send|airtime|gift\s?card|1voucher|ott\s?voucher)\b/i
+  },
+  government_job_for_sale: {
+    weight: 45, label: "Offers a government or state-company job in exchange for money",
+    re: /\b(?:government|municipal(?:ity)?|saps|sandf|eskom|transnet|home\s+affairs|sars|prasa)\b[^.\n]{0,100}\b(?:pay|fee|deposit|bribe)\b|\b(?:pay|fee|deposit|bribe)\b[^.\n]{0,100}\b(?:government|municipal(?:ity)?|saps|sandf|eskom|transnet|home\s+affairs|sars|prasa)\b/i
+  },
+  id_or_selfie_request: {
+    weight: 15, label: "Asks you to send ID copies or a selfie",
+    re: /\b(?:send|share|forward|whatsapp)\b[^.\n]{0,40}\b(?:copy\s+of\s+(?:your\s+)?id|id\s+copy|selfie|proof\s+of\s+(?:address|residence))\b/i
+  },
+  chat_only_hiring: {
+    weight: 15, label: "Interviews or hires only through WhatsApp or Telegram chat",
+    re: /\b(?:interview|hired|appointed)\b[^.\n]{0,60}\b(?:whats\s?app|telegram)\b|\b(?:whats\s?app|telegram)\b[^.\n]{0,60}\binterview\b/i
+  },
+  very_high_pay: {
+    weight: 15, label: "Promises very high weekly or daily pay",
+    re: /\bR\s?\d{1,3}[ ,]?\d{3}\s*(?:per|a|\/)\s*(?:week|day)\b/i
+  }
+};
+
+const BIG_BRANDS_RE = /\b(?:shoprite|checkers|pick\s?n\s?pay|woolworths|spar|capitec|fnb|first\s+national\s+bank|absa|nedbank|standard\s+bank|eskom|transnet|sasol|vodacom|telkom|sars|saps|sanral|prasa|takealot|dis-?chem|clicks|massmart|makro|mr\s?price|ackermans)\b/i;
+const COMPANY_RE = /\b[A-Z][\w&'.-]*(?:\s+[A-Z][\w&'.-]*){0,3}\s+(?:\(?Pty\)?\s*)?(?:Ltd|Limited|Group|Holdings)\b/;
+const SHARED_HOSTS = /^(?:facebook|fb|instagram|twitter|x|tiktok|linkedin|youtube|wa|t|bit|tinyurl|goo|rb|cutt|forms|docs|drive|google|wa\.me|linktr|gumroad)\./i;
+
+// Phrases like "no application fee" or "never pay for a job" are reassurance, not a warning.
+export function stripReassurances(text) {
+  return String(text || "")
+    .replace(/\b(?:no|without|zero|free\s+of|never\s+(?:pay|charge|ask\s+for))\s+(?:any\s+|an?\s+|the\s+)?(?:application\s+|registration\s+|admin(?:istration)?\s+|processing\s+|recruitment\s+)?(?:fees?|payments?|deposits?|money)\b/gi, " ")
+    .replace(/\bnever\s+pay\s+(?:for|to)\s+(?:a\s+|any\s+)?(?:job|work|employment|recruiter)\b/gi, " ");
+}
+
+export function normalizeZaPhone(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (digits.startsWith("27") && digits.length === 11) return "0" + digits.slice(2);
+  if (digits.length === 10 && digits.startsWith("0")) return digits;
+  return "";
+}
+
+export function extractContacts(text) {
+  const body = String(text || "");
+  const emails = [...new Set((body.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi) || []).map((e) => e.toLowerCase()))].slice(0, 4);
+  const links = [...new Set((body.match(/(?:https?:\/\/|www\.)[^\s<>"')]+/gi) || []).map((l) => l.replace(/[.,;:!?]+$/, "")))].slice(0, 4);
+  const phones = [...new Set((body.match(/(?<!\d)(?:\+?27|0)[\s\-().]?\d{2}[\s\-().]?\d{3}[\s\-().]?\d{4}(?!\d)/g) || []).map(normalizeZaPhone).filter(Boolean))].slice(0, 4);
+  return { emails, links, phones };
+}
+
+function hostOf(link) {
+  try {
+    const url = new URL(/^https?:\/\//i.test(link) ? link : `https://${link}`);
+    return url.hostname.toLowerCase().replace(/^www\./, "");
+  } catch (_) {
+    return "";
+  }
+}
+
+function guessCompany(body) {
+  const m = COMPANY_RE.exec(body) || BIG_BRANDS_RE.exec(body);
+  return m ? m[0] : "";
+}
+
+export function publicExtraSignals(body, contacts) {
+  const signals = [];
+  const reasons = [];
+  let score = 0;
+  for (const [code, def] of Object.entries(PUBLIC_SIGNALS)) {
+    if (def.re.test(body)) { signals.push(code); reasons.push(def.label); score += def.weight; }
+  }
+  const freeMail = contacts.emails.some((e) => FREE_MAIL_RE.test(e));
+  const chatOnly = /whats\s?app|telegram/i.test(body) && !contacts.emails.length && !contacts.links.length;
+  if (BIG_BRANDS_RE.test(body) && (freeMail || chatOnly)) {
+    signals.push("brand_free_contact");
+    reasons.push("Uses a well-known company's name but asks you to apply through a free email address or WhatsApp");
+    score += 30;
+  }
+  return { score, signals, reasons };
+}
+
+// Looks the contacts up in the directory. Being listed is only neutral information;
+// a link that an admin confirmed as a scam is the one hard signal.
+export async function lookupKnownContacts(env, contacts) {
+  const matches = [];
+  const flagged = [];
+  if (!env.DB) return { matches, flagged };
+  try {
+    for (const email of contacts.emails.slice(0, 3)) {
+      const domain = email.split("@")[1] || "";
+      const row = FREE_MAIL_RE.test(email) || !domain
+        ? await env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE lower(email) = ?").bind(email).first()
+        : await env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE lower(email) LIKE ?").bind(`%@${domain}`).first();
+      if (row && row.n > 0) matches.push({ type: "email", value: email, listings: Number(row.n) });
+    }
+    for (const phone of contacts.phones.slice(0, 3)) {
+      const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', ''), '(', '') LIKE ?").bind(`%${phone.slice(1)}%`).first();
+      if (row && row.n > 0) matches.push({ type: "phone", value: phone, listings: Number(row.n) });
+    }
+    for (const link of contacts.links.slice(0, 3)) {
+      const host = hostOf(link);
+      if (!host || SHARED_HOSTS.test(host + ".")) continue;
+      const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE lower(link) LIKE ?").bind(`%${host}%`).first();
+      if (row && row.n > 0) matches.push({ type: "link", value: host, listings: Number(row.n) });
+      const bad = await env.DB.prepare("SELECT COUNT(*) AS n FROM ai_flags WHERE status = 'confirmed' AND lower(link) LIKE ?").bind(`%${host}%`).first();
+      if (bad && bad.n > 0) flagged.push({ type: "link", value: host });
+    }
+  } catch (error) {
+    console.error("scam check lookup failed", error);
+  }
+  return { matches, flagged };
+}
+
+// The model never sees phone numbers, emails or long digit strings: the rules already read those.
+export function redactForAi(text) {
+  return String(text || "")
+    .replace(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi, "[email]")
+    .replace(/(?<!\d)(?:\+?27|0)[\s\-().]?\d{2}[\s\-().]?\d{3}[\s\-().]?\d{4}(?!\d)/g, "[phone]")
+    .replace(/\d[\d\s-]{8,}\d/g, "[number]");
+}
+
+export function publicScamVerdict({ level, contactOnly = false, flagged = false }) {
+  if (flagged || level === "high") {
+    return { level: "high", title: "Likely a scam", summary: "This has several of the warning signs we see in job scams. Do not pay anything or send personal documents." };
+  }
+  if (level === "medium") {
+    return { level: "medium", title: "Be careful", summary: "This has warning signs. Check the employer yourself before you share documents or pay anything." };
+  }
+  if (contactOnly) {
+    return { level: "unknown", title: "Not enough to judge", summary: "A number or email on its own does not tell us much. Paste the whole ad or message for a proper check." };
+  }
+  return { level: "low", title: "No clear warning signs", summary: "We did not find the usual scam signs. That is not a guarantee, so still check the employer before you share documents." };
+}
+
+const SCAM_TIPS = {
+  fee_request: "A real employer never asks you to pay to be hired. No registration, training, uniform or admin fees.",
+  equipment_purchase: "Never buy a starter kit, laptop or equipment for a job you have not started. Promised refunds do not come.",
+  untraceable_payment: "E-wallet, CashSend, airtime and vouchers are used because the money cannot be traced back.",
+  credential_request: "Never share your banking PIN, password or OTP with anyone, even someone who says they are a recruiter.",
+  personal_info_upfront: "Keep ID copies and bank details until you have met the employer and have a signed contract.",
+  id_or_selfie_request: "Keep ID copies and selfies until you have met the employer and have a signed contract.",
+  government_job_for_sale: "Government jobs are never sold. They are advertised on the official department websites.",
+  brand_free_contact: "Call the company's main number from its own website and ask if the vacancy is real.",
+  whatsapp_only: "Call the company's main number from its own website and ask if the vacancy is real.",
+  free_email_contact: "Real company vacancies normally apply through a company email address, not a free one.",
+  vague_employer: "If you cannot find who the employer is, do not apply. Ask for the company name and look it up yourself.",
+  guaranteed_job: "No honest employer can promise you a job before an interview.",
+  crypto_or_investment: "A job that asks you to invest money or recruit others is a scheme, not a job.",
+  link_shortener: "Do not open shortened links. Ask for the company's official website instead.",
+  unrealistic_pay: "If the pay sounds too good for the work, it usually is.",
+  very_high_pay: "If the pay sounds too good for the work, it usually is.",
+  flagged_contact: "A contact in this message matches a listing our team confirmed as a scam."
+};
+
+export function scamTips(signals) {
+  const tips = [];
+  for (const s of signals) {
+    const tip = SCAM_TIPS[s];
+    if (tip && !tips.includes(tip)) tips.push(tip);
+  }
+  return tips.slice(0, 3);
+}
+
+export function normalizeForHash(text) {
+  return String(text || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+export async function publicScamCheck(env, rawText, { allowAi = false, deps = {} } = {}) {
+  const original = String(rawText || "").replace(/[ \t\u00a0]+/g, " ").replace(/\n{3,}/g, "\n\n").trim().slice(0, 4000);
+  const contacts = extractContacts(original);
+  const body = stripReassurances(original);
+  const letters = original.replace(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi, " ").replace(/(?:https?:\/\/|www\.)\S+/gi, " ").replace(/[^a-z]/gi, "");
+  const contactOnly = letters.length < 25;
+
+  const heur = heuristicScamSignals(body, { company: guessCompany(body) });
+  const extra = publicExtraSignals(body, contacts);
+  const known = await lookupKnownContacts(env, contacts);
+  const flagged = known.flagged.length > 0;
+  const rules = {
+    score: Math.min(100, heur.score + extra.score + (flagged ? 60 : 0)),
+    signals: [...heur.signals, ...extra.signals, ...(flagged ? ["flagged_contact"] : [])],
+    reasons: [...heur.reasons, ...extra.reasons, ...(flagged ? ["A contact in this message matches a listing our team confirmed as a scam"] : [])]
+  };
+
+  // Second opinion from the model: only when the rules are unsure, never for a bare number or email,
+  // and the saved answer is reused so the same text is processed once.
+  let ai = null;
+  if (!contactOnly && original.length >= 40 && shouldAskAiAboutScam(rules)) {
+    const hash = await sha256Hex(normalizeForHash(original));
+    const cached = await getCached(env, "scam-check", hash);
+    if (cached) {
+      ai = cached.result;
+    } else if (allowAi && env.GEMINI_API_KEY && await reserveAiCall(env, { bucket: "all" })) {
+      const res = await geminiJson(env, { parts: [{ text: scamPrompt(redactForAi(original), "message pasted by a job seeker") }], schema: SCAM_AI_SCHEMA, maxOutputTokens: 400, fetchImpl: deps.fetchImpl });
+      if (res.ok) { ai = res.data; await putCached(env, "scam-check", hash, { model: res.model, result: res.data }); }
+    }
+  }
+
+  const combined = combineScam(rules, ai);
+  return {
+    verdict: publicScamVerdict({ level: combined.level, contactOnly, flagged }),
+    score: combined.score,
+    reasons: combined.reasons.slice(0, 6),
+    tips: scamTips(combined.signals),
+    found: contacts,
+    known: known.matches,
+    contact_only: contactOnly,
+    used_ai: combined.used_ai
+  };
+}

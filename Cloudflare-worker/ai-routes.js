@@ -7,6 +7,7 @@
 //    /api/admin/ai/*  admin session only.
 //    /api/ai/*        an admin, OR a signed-in user who passes Turnstile and the
 //                     per-user hourly limit. Both are counted against the daily budget.
+//    POST /api/ai/scam-check  anyone with Turnstile + an hourly limit; the model's second opinion is for signed-in users only.
 //    GET /api/ai/vacancy-summary only READS a saved summary, so it needs no sign-in and never calls Gemini.
 //
 //  Nothing here publishes, hides or deletes anything. Results are suggestions or
@@ -19,7 +20,7 @@ import {
   clean, cleanPrompt, combineScam, companyKey, dailyDraftPrompt, extractPoster, geminiJson, getCached, heuristicScamSignals,
   interviewAnswerPrompt, interviewQuestionsPrompt, isNearDuplicate, normalizeCleanItem, normalizeCvFeedback, normalizeDraft,
   normalizeInterviewAnswer, normalizeInterviewQuestions, normalizeSearchFilters, normalizeSummary, photoDecision,
-  pruneAiUsage, putCached, rankCandidates, replyPrompt, reserveAiCall, screenText, searchKey, searchPrompt, sha256Hex, sniffImageType,
+  pruneAiUsage, publicScamCheck, putCached, rankCandidates, replyPrompt, reserveAiCall, screenText, searchKey, searchPrompt, sha256Hex, sniffImageType,
   summaryMentionsOnlyKnownContacts, summaryPrompt, toBase64, untrusted, userWithinLimit, vacancyFacts, vacancyFingerprint
 } from "./ai.js";
 
@@ -255,6 +256,30 @@ async function interviewRoute(request, env, origin, deps) {
   return deps.json({ ok: true, feedback: normalizeInterviewAnswer(res.data) }, 200, origin);
 }
 
+// ---------- 8. public scam check ("Is this job real?") ----------
+
+// Open to everyone, because the rule-based check costs nothing and reads no personal data.
+// Anonymous visitors need Turnstile and get a tighter hourly limit; only signed-in users (or an
+// admin) can trigger the model's second opinion. Nothing pasted is stored, see publicScamCheck.
+async function scamCheckRoute(request, env, origin, deps) {
+  if (!env.DB) return deps.json({ error: "The scam check is temporarily unavailable." }, 503, origin);
+  const body = await readBody(request);
+  const text = String(body.text || "").trim();
+  if (text.length < 8) return deps.json({ error: "Paste the job ad, message, email address or phone number you want checked." }, 400, origin);
+  const userId = await deps.verifiedUserId(request, env);
+  const admin = !!userId && !request.headers.get("cf-turnstile-response") && await deps.isAdminRequest(request, env);
+  if (!admin) {
+    const ts = await deps.verifyTurnstile(request, env, origin, true);
+    if (!ts.ok) return deps.json({ error: ts.error }, ts.status, origin);
+    const who = userId || `ip:${(await sha256Hex(request.headers.get("CF-Connecting-IP") || "unknown")).slice(0, 24)}`;
+    if (!await userWithinLimit(env, who, "scam-check", userId ? 30 : 8)) {
+      return deps.json({ error: "You have checked a lot of messages in the last hour. Please try again later." }, 429, origin);
+    }
+  }
+  const result = await publicScamCheck(env, text, { allowAi: !!userId });
+  return deps.json({ ok: true, ...result }, 200, origin);
+}
+
 // ---------- admin routes ----------
 
 async function adminFlagsRoute(request, env, origin, deps) {
@@ -380,6 +405,7 @@ export async function handleAiRequest(request, env, origin, path, deps) {
   if (path === "/api/ai/search" && method === "POST") return searchRoute(request, env, origin, deps);
   if (path === "/api/ai/cv-feedback" && method === "POST") return cvFeedbackRoute(request, env, origin, deps);
   if (path === "/api/ai/interview" && method === "POST") return interviewRoute(request, env, origin, deps);
+  if (path === "/api/ai/scam-check" && method === "POST") return scamCheckRoute(request, env, origin, deps);
   if (path === "/api/admin/ai/flags" && method === "GET") return adminFlagsRoute(request, env, origin, deps);
   if (path === "/api/admin/ai/flags/resolve" && method === "POST") return adminResolveRoute(request, env, origin, deps);
   if (path === "/api/admin/ai/screen" && method === "POST") return adminScreenRoute(request, env, origin, deps);

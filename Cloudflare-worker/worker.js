@@ -2827,7 +2827,8 @@ var worker_default = {
         return await vacanciesResponse(request, env, ctx, origin);
       }
       if (path === "/api/posters" && request.method === "GET") {
-        return await postersResponse(request, env, origin);
+        // CV Pictures were retired from the app (replaced by the Scam Check). Nothing is served any more.
+        return json({ posters: [], count: 0, retired: true }, 200, origin);
       }
       if (path === "/api/house-ads" && request.method === "GET") {
         return await houseAdsResponse(request, env, ctx, origin);
@@ -3996,6 +3997,10 @@ var worker_default = {
         return json({ url: publicUrlFor(env, key), key }, 200, origin);
       }
       if (path === "/api/submit/poster" && request.method === "POST") {
+        // CV Pictures were retired from the app, so public uploads are closed.
+        return json({ error: "CV pictures are no longer available." }, 410, origin);
+      }
+      if (false && path === "/api/submit/poster" && request.method === "POST") {
         const ts = await verifyTurnstile(request, env, origin, true);
         if (!ts.ok) return json({ error: ts.error }, ts.status, origin);
         const contentType = request.headers.get("Content-Type") || "";
