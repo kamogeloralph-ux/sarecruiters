@@ -82,7 +82,7 @@ test('saved CV is viewable by its signed-in owner but private in public listings
   const start = worker.indexOf('async function cvBoxResponse(');
   const end = worker.indexOf('function yocoSecretKey(', start);
   const publicBox = worker.slice(start, end);
-  assert.match(publicBox, /select:\s*"id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at"/);
+  assert.match(publicBox, /select:\s*"id,full_name,position,sector,location,experience_years,about_you,skills,photo_url,verified,status,created_at"/);
   assert.doesNotMatch(publicBox, /cv_link/);
   assert.match(appSheets, /Unlock full CV/);
   assert.doesNotMatch(appSheets, /pool-cv-price|Unlock full CV for R49/); // price stays hidden until Unlock is pressed

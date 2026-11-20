@@ -972,7 +972,7 @@ const D1_WRITE_THROUGH_SPECS = {
   app_settings: { key: "key", columns: ["key", "value"], boolColumns: [] },
   employer_posters: { key: "id", columns: ["id", "employer_id", "agency_id", "image_url", "caption", "vacancy_id", "created_at", "expires_at"], boolColumns: [] },
   // This projection deliberately excludes candidate contacts, CV links, and admin fields.
-  pool_candidates: { key: "id", columns: ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "banner_url", "photo_url", "verified", "status", "created_at"], boolColumns: ["verified"] },
+  pool_candidates: { key: "id", columns: ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "skills", "banner_url", "photo_url", "verified", "status", "created_at"], boolColumns: ["verified"] },
   house_ads: { key: "id", columns: ["id", "advertiser_name", "title", "message", "image_url", "target_url", "placement", "target_screens", "ad_slot", "ad_format", "ad_details", "cta_text", "starts_at", "ends_at", "is_active", "sort_order", "impressions", "clicks", "created_at", "updated_at"], boolColumns: ["is_active"] }
 };
 function prepareD1WriteThroughUpsert(env, table, spec, columns, row) {
@@ -1062,7 +1062,7 @@ async function syncD1FromSupabase(env) {
     // pool_candidates_public query in app-sheets.js). Never sync the raw,
     // admin-only pool_candidates table into this D1 database.
     supabaseGet(env, "pool_candidates_public", {
-      select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
+      select: "id,full_name,position,sector,location,experience_years,about_you,skills,photo_url,verified,status,created_at",
       order: "created_at.desc"
     }),
     supabaseGet(env, "app_settings", { select: "key,value" }),
@@ -1113,7 +1113,7 @@ async function syncD1FromSupabase(env) {
     ["id", "name", "industry", "website", "contact", "email", "location", "address", "photo", "verified", "created_at"],
     employers.body || [], ["verified"], "id", reconcileMirror);
   const poolSync = await syncD1Table(env, "pool_candidates",
-    ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "photo_url", "verified", "status", "created_at"],
+    ["id", "full_name", "position", "sector", "location", "experience_years", "about_you", "skills", "photo_url", "verified", "status", "created_at"],
     pool.body || [], ["verified"], "id", reconcileMirror);
   const settingsSync = await syncD1Table(env, "app_settings", ["key", "value"], settings.body || [], [], "key", reconcileMirror);
   const postersSync = await syncD1Table(env, "employer_posters",
@@ -1432,7 +1432,7 @@ async function loadStartupData(env) {
         .then((res) => [key, readCountHeader(res.headers)])
     )),
     supabaseGet(env, "pool_candidates_public", {
-      select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
+      select: "id,full_name,position,sector,location,experience_years,about_you,skills,photo_url,verified,status,created_at",
       order: "created_at.desc"
     }),
     supabaseGet(env, "vacancies", {
@@ -1531,7 +1531,7 @@ async function cvBoxResponse(request, env, origin) {
   let result;
   try {
     result = await supabaseGet(env, "pool_candidates_public", {
-      select: "id,full_name,position,sector,location,experience_years,about_you,photo_url,verified,status,created_at",
+      select: "id,full_name,position,sector,location,experience_years,about_you,skills,photo_url,verified,status,created_at",
       status: "eq.active",
       order: "created_at.desc",
       limit: "1000"

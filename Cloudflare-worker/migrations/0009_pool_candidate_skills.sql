@@ -1,0 +1,1 @@
+ALTER TABLE pool_candidates ADD COLUMN skills TEXT NOT NULL DEFAULT '';

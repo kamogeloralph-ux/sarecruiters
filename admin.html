@@ -697,6 +697,7 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
     <div class="field"><label>Location *</label><input id="pc-location" placeholder="e.g. Durban, KwaZulu-Natal" maxlength="80"></div>
     <div class="field"><label>Years of experience *</label><select id="pc-experience"><option value="">Choose…</option><option value="0">No experience yet</option><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option><option value="6">6 years</option><option value="7">7 years</option><option value="8">8 years</option><option value="9">9 years</option><option value="10">10+ years</option></select></div></section>
     <section class="cv-admin-section"><div class="cv-admin-section-heading"><strong>About &amp; availability</strong><span>Candidate-written introduction and work preferences</span></div>
+    <div class="field"><label>Skills <span style="font-weight:400;color:var(--text-2)">(optional)</span></label><textarea id="pc-skills" rows="3" maxlength="500" placeholder="e.g. Payroll, Excel, Sage, Recruitment"></textarea><small style="display:block;margin-top:5px;color:var(--text-2)">Separate skills with commas. Maximum 12 skills.</small></div>
     <div class="field"><label>Availability *</label><select id="pc-availability"><option value="">Choose…</option><option value="Immediately">Immediately</option><option value="Within 1 week">Within 1 week</option><option value="Within 2 weeks">Within 2 weeks</option><option value="Within 1 month">Within 1 month</option><option value="More than 1 month">More than 1 month</option></select></div>
     <div class="pool-admin-activity" id="pc-activity-summary" hidden><div><strong>Profile activity:</strong><span id="pc-profile-updated"></span></div><div><strong>Availability status:</strong><span id="pc-availability-status"></span></div></div>
     <div class="field"><label>Candidate introduction <span style="font-weight:400;color:var(--text-2)">(optional)</span></label><textarea id="pc-about" rows="5" maxlength="500" placeholder="Write in the candidate's own voice: past roles, employers, strengths and the work they do best."></textarea><small style="display:block;margin-top:5px;color:var(--text-2)">Shown on the public CV Box profile · maximum 500 characters.</small></div></section>
@@ -1161,7 +1162,7 @@ var D1_WRITE_THROUGH_COLUMNS = {
   employers: ['id','name','industry','website','contact','email','location','address','photo','verified','created_at'],
   app_settings: ['key','value'],
   employer_posters: ['id','employer_id','agency_id','image_url','caption','vacancy_id','created_at','expires_at'],
-  pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','banner_url','photo_url','verified','status','created_at'],
+  pool_candidates: ['id','full_name','position','sector','location','experience_years','about_you','skills','banner_url','photo_url','verified','status','created_at'],
   house_ads: ['id','advertiser_name','title','message','image_url','target_url','placement','target_screens','ad_slot','ad_format','ad_details','cta_text','starts_at','ends_at','is_active','sort_order','impressions','clicks','created_at','updated_at']
 };
 async function writeThroughD1Mirror(table, value, operation){
@@ -1278,8 +1279,8 @@ async function getJobEnquiries(){
   return [];
 }
 async function getPoolCandidates(){
-  var cols = 'id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,availability_confirmed_at,availability_expires_at,profile_updated_at,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,banner_url,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,photo_url,verified,created_at';
-  var optional = ['profile_updated_at','availability_confirmed_at','banner_url','photo_url','verified'];
+  var cols = 'id,full_name,gender,position,experience_years,location,sector,qualification,drivers_license,reliable_transport,willing_relocate,availability,availability_confirmed_at,availability_expires_at,profile_updated_at,preferred_employment,salary_expectation,work_authorized,grade12,criminal_record,about_you,skills,banner_url,cv_link,contact_phone,contact_email,email_alert_opt_in,alert_sectors,alert_locations,alert_unsubscribe_token,status,paid_until,payment_ref,admin_notes,photo_url,verified,created_at';
+  var optional = ['profile_updated_at','availability_confirmed_at','skills','banner_url','photo_url','verified'];
   var { data, error } = await supabaseClient.from('pool_candidates').select(cols).order('created_at', { ascending: false });
   // If optional activity, photo or verification columns are not available yet,
   // drop them one at a time and retry so the admin list still loads.
@@ -1294,7 +1295,7 @@ async function getPoolCandidates(){
 }
 async function upsertPoolCandidate(p){
   var payload = Object.assign({}, p);
-  var optional = ['banner_url','photo_url','verified'];
+  var optional = ['skills','banner_url','photo_url','verified'];
   var droppedAny = false;
   var result = await supabaseClient.from('pool_candidates').upsert(payload).select('*').single();
   while(result.error && /column|schema cache/i.test(result.error.message||'') && optional.length){
@@ -2709,6 +2710,7 @@ function openPoolSheet(id){
     document.getElementById('pc-availability-status').textContent = p ? poolAdminAvailabilityStatus(p) : '';
   }
   document.getElementById('pc-position').value = p ? (p.position||'') : '';
+  document.getElementById('pc-skills').value = p ? (Array.isArray(p.skills) ? p.skills.join(', ') : (p.skills||'')) : '';
   document.getElementById('pc-about').value = p ? (p.about_you||'') : '';
   document.getElementById('pc-cv').value = p ? (p.cv_link||'') : '';
   updatePoolCvOpenLink();
@@ -2769,6 +2771,7 @@ async function savePoolCandidate(){
     availability:availability,
     position:position,
     about_you:document.getElementById('pc-about').value.trim().slice(0,500),
+    skills:document.getElementById('pc-skills').value.split(/[\n,;]+/).map(function(v){ return v.trim(); }).filter(Boolean).filter(function(v,i,a){ return a.indexOf(v)===i; }).slice(0,12).map(function(v){ return v.slice(0,50); }).join(', '),
     banner_url:bannerUrl,
     cv_link:document.getElementById('pc-cv').value.trim(),
     status:document.getElementById('pc-status').value,
