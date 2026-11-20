@@ -21,6 +21,7 @@ on:
       - "terms/**"
       - "faq/**"
       - "know-your-rights/**"
+      - "find-jobs/**"
       - "post-a-job/**"
       - "content.js"
       - "vendor/**"
