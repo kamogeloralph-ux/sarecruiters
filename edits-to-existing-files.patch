@@ -1,0 +1,55 @@
+--- a/Cloudflare-worker/worker.js	2026-11-20 04:34:44.000000000 +0000
++++ b/Cloudflare-worker/worker.js	2026-11-20 04:41:15.146172864 +0000
+@@ -2,6 +2,7 @@
+ import * as Sentry from "@sentry/cloudflare";
+ import { candidateCvKey, cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, scanCvWithGemini } from "./cv-scan.js";
+ import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
++import { careerjetSearchResponse } from "./careerjet.js";
+ import { putCached } from "./ai.js";
+ import { publishTipchatVacancyRoundup } from "./tipchat-publisher.js";
+ var __defProp = Object.defineProperty;
+@@ -3818,6 +3819,10 @@
+         }
+         return json({ ok: true, sent: results.filter((row) => row.sent).length, matched: results.length, results }, 200, origin);
+       }
++      if (path === "/api/jobs/careerjet" && request.method === "GET") {
++        // Careerjet partner search (see careerjet.js). The API key stays in a Worker secret.
++        return await careerjetSearchResponse(request, env, origin, json);
++      }
+       if (path.startsWith("/api/ai/") || path.startsWith("/api/admin/ai/")) {
+         // Gemini features (see ai-routes.js). Admin-only, or signed-in + Turnstile + rate limit.
+         const aiResponse = await handleAiRequest(request, env, origin, path, { json, isAdminRequest, verifiedUserId, verifyTurnstile, employerPosterKey });
+--- a/Cloudflare-worker/wrangler.toml	2026-11-20 04:34:44.000000000 +0000
++++ b/Cloudflare-worker/wrangler.toml	2026-11-20 04:41:15.146795500 +0000
+@@ -100,6 +100,10 @@
+ #                         Optional: GEMINI_MODEL to override the default
+ #                         model (gemini-2.5-flash) as a plain Variable.
+ #
++#   CAREERJET_API_KEY     Careerjet partner API key — powers /find-jobs/ via
++#                         /api/jobs/careerjet (careerjet.js). Secret only.
++#                         Optional plain Variable: CAREERJET_LOCALE (default en_ZA).
++#
+ #   More Gemini features (see ../AI-FEATURES.md). All optional plain Variables:
+ #   GEMINI_PAID_TIER=1    Say "1" ONLY once the Gemini key is on a paid plan that does not
+ #                         train on your data. Until then CV feedback and photo checks stay
+--- a/sitemap.xml	2026-11-20 04:34:44.000000000 +0000
++++ b/sitemap.xml	2026-11-20 04:41:59.459620850 +0000
+@@ -3,6 +3,7 @@
+   <url><loc>https://sa-recruiters.co.za/</loc></url>
+   <url><loc>https://sa-recruiters.co.za/privacy/</loc></url>
+   <url><loc>https://sa-recruiters.co.za/faq/</loc></url>
++  <url><loc>https://sa-recruiters.co.za/find-jobs/</loc></url>
+   <url><loc>https://sa-recruiters.co.za/know-your-rights/</loc></url>
+   <url><loc>https://sa-recruiters.co.za/careers/</loc></url>
+   <url><loc>https://sa-recruiters.co.za/apply/</loc></url>
+--- a/generate-pages.js	2026-11-20 04:34:44.000000000 +0000
++++ b/generate-pages.js	2026-11-20 04:41:59.460839515 +0000
+@@ -1862,7 +1862,7 @@
+   };
+   const agencyRecordById = new Map(agencies.map((a) => [String(a.id), a]));
+ 
+-  const sitemapUrls = [`${SITE_URL}/`, `${SITE_URL}/privacy/`, `${SITE_URL}/faq/`, `${SITE_URL}/know-your-rights/`, `${SITE_URL}/terms/`];
++  const sitemapUrls = [`${SITE_URL}/`, `${SITE_URL}/privacy/`, `${SITE_URL}/faq/`, `${SITE_URL}/find-jobs/`, `${SITE_URL}/know-your-rights/`, `${SITE_URL}/terms/`];
+ 
+   // Permanent navigation pages are written on every build, independent of
+   // vacancy inventory, so their URLs stay indexable and stable.
