@@ -261,6 +261,10 @@ export function openFeaturedCompanyWebsite(event) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+export function openExternalJobs() {
+  window.location.assign('/find-jobs/');
+}
+
 export function homeVacancySourceMarkup() {
   var summary = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
   var order = summary && summary.order ? summary.order : ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
@@ -384,7 +388,7 @@ export function renderHomeFeed() {
     '<div id="house-ad-home-middle" class="house-ad-slot" hidden></div>' +
     '<section class="home-tools-section" aria-labelledby="home-tools-title"><div class="home-section-heading home-section-heading--compact"><div><span class="home-section-kicker">Start here</span><h2 id="home-tools-title">Take your next step</h2><p>Whether you’re looking for work or hiring talent, start here.</p></div></div>' +
       '<div class="home-tools-grid">' +
-        '<article class="quick-card quick-card-candidates home-tool-card"><div class="quick-card-head"><span class="quick-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or upload a CV</small></div></div><div class="quick-card-actions"><button type="button" data-ripple onclick="showAllVacancies(\'profile\')">Browse jobs</button><button type="button" data-ripple onclick="openCvBoxApplication()">Upload a CV</button></div></article>' +
+        '<article class="quick-card quick-card-candidates home-tool-card"><div class="quick-card-head"><span class="quick-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or upload a CV</small></div></div><div class="quick-card-actions"><button type="button" data-ripple onclick="showAllVacancies(\'profile\')">Browse jobs</button><button type="button" data-ripple onclick="openExternalJobs()">Search external jobs</button><button type="button" data-ripple onclick="openCvBoxApplication()">Upload a CV</button></div></article>' +
         '<article class="quick-card quick-card-employers home-tool-card"><div class="quick-card-head"><span class="quick-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div><strong>Employers</strong><small>Find candidates or post a vacancy</small></div></div><div class="quick-card-actions"><button type="button" data-ripple onclick="goPool(\'profile\')">Browse CV Box</button><button type="button" data-ripple onclick="openGeneralVacancySheet()">Post vacancy</button></div></article>' +
       '</div></section>';
 
@@ -2315,6 +2319,7 @@ Object.assign(window, {
   homeVacancyMatchesLocation,
   openCompanyFeatureInquiry,
   openFeaturedCompanyWebsite,
+  openExternalJobs,
   homeVacancySourceMarkup,
   homeWeeklyProvince,
   homeWeeklyRows,

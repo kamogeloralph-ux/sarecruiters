@@ -233,6 +233,7 @@ window.sentryOnLoad = function () {
   </div>
   <nav class="site-menu-nav" aria-label="Site navigation">
     <button type="button" data-ripple onclick="closeSiteMenu();openCvBoxApplication()"><span class="site-menu-nav-icon">✋</span><span>Looking for work?<small>Create or update your CV Box profile</small></span><b>›</b></button>
+    <button type="button" data-ripple onclick="closeSiteMenu();openExternalJobs()"><span class="site-menu-nav-icon">↗</span><span>Search thousands of external jobs<small>Browse jobs from Careerjet</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();openPostJobSheet()"><span class="site-menu-nav-icon">⊕</span><span>Post a job<small>Tell us about the roles you're hiring for</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();showAllVacancies('home')"><span class="site-menu-nav-icon">⌕</span><span>Browse vacancies<small>Find your next opportunity</small></span><b>›</b></button>
     <button type="button" data-ripple onclick="closeSiteMenu();showAllAgencies()"><span class="site-menu-nav-icon">⌂</span><span>Recruitment agencies<small>Explore agencies and branches</small></span><b>›</b></button>
@@ -525,7 +526,7 @@ window.sentryOnLoad = function () {
       <div class="quick-access-grid">
         <div class="quick-card quick-card-candidates">
           <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-3.2 2.4-5 6-5s5.5 1.8 6 5M19 8v6M16 11h6"/></svg></span><div><strong>Candidates</strong><small>Find jobs or upload a CV</small></div></div>
-          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openCvBoxApplication()">Upload a CV</button></div>
+          <div class="quick-card-actions"><button data-ripple onclick="showAllVacancies('profile')">Browse jobs</button><button data-ripple onclick="openExternalJobs()">Search external jobs</button><button data-ripple onclick="openCvBoxApplication()">Upload a CV</button></div>
         </div>
         <div class="quick-card quick-card-employers">
           <div class="quick-card-head"><span class="quick-card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><div><strong>Employers</strong><small>Find candidates or post a vacancy</small></div></div>
