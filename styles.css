@@ -2104,20 +2104,20 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 
 /* ===== Reference-inspired home screen =====
    Keeps the existing data/navigation behavior while giving the landing screen a
-   blue branded hero, compact stats strip, swipeable vacancies, and two-column
+   light-pink branded hero, compact stats strip, swipeable vacancies, and two-column
    action/category cards. */
 #screen-home{background:#fafafa}
 #screen-home .screen-fixed{
   padding:12px 16px 16px;
-  background:linear-gradient(155deg,var(--m-ink) 0%,var(--m-ink) 52%,var(--m-ink) 100%);
+  background:linear-gradient(155deg,#f9dce9 0%,#f6cfdf 52%,#fbe7f0 100%);
   border-radius:0;
-  box-shadow:0 12px 30px rgba(0,0,0,0.22)}
+  box-shadow:0 12px 30px rgba(117,47,82,0.16)}
 #screen-home .screen-fixed header{padding:0 0 9px}
-#screen-home .logo-text{color:#fff}
-#screen-home .logo-slogan{color:rgba(255,255,255,.78)}
+#screen-home .logo-text{color:#472438}
+#screen-home .logo-slogan{color:rgba(71,36,56,.72)}
 #screen-home .site-menu-trigger{background:#fff!important;border-color:rgba(255,255,255,.7)!important;color:#222222!important;box-shadow:0 8px 20px rgba(0,0,0,.15)!important}
 #screen-home .site-menu-trigger span{background:currentColor}
-#screen-home .connection-status{color:rgba(255,255,255,.78);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18)}
+#screen-home .connection-status{color:rgba(71,36,56,.78);background:rgba(255,255,255,.42);border-color:rgba(117,47,82,.16)}
 #screen-home .search-mini{margin:0 0 9px}
 #screen-home .search-mini .search-inner{height:48px;border:0;border-radius:24px;background:#fff;box-shadow:0 5px 14px rgba(0,0,0,0.16);padding:0 14px}
 #screen-home .search-mini .search-inner svg{width:19px;height:19px;color:var(--text);opacity:.8}
@@ -2127,12 +2127,12 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 #screen-home .stats-wrap{margin:0 -2px;gap:0}
 #screen-home .stats-wrap .stats-scroll-btn{display:none}
 #screen-home .stats{gap:6px;padding:0 0 2px;overflow:hidden}
-#screen-home .stat-card{flex:1 1 0;min-width:0;padding:9px 3px 8px;border:1px solid rgba(255,255,255,.08);border-radius:19px;background:color-mix(in srgb,var(--m-ink) 78%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+#screen-home .stat-card{flex:1 1 0;min-width:0;padding:9px 3px 8px;border:1px solid rgba(117,47,82,.14);border-radius:19px;background:rgba(255,255,255,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
 #screen-home .stat-card .stat-arrow{display:none}
-#screen-home .stat-icon{width:26px;height:26px;margin-bottom:5px;color:#e8e8e8!important}
+#screen-home .stat-icon{width:26px;height:26px;margin-bottom:5px;color:#6b3850!important}
 #screen-home .stat-icon svg{width:22px;height:22px}
-#screen-home .stat-value{font-size:18px;color:#fff}
-#screen-home .stat-label{height:2.45em;font-size:10px;color:rgba(255,255,255,.8)}
+#screen-home .stat-value{font-size:18px;color:#472438}
+#screen-home .stat-label{height:2.45em;font-size:10px;color:rgba(71,36,56,.76)}
 #screen-home .screen-scroll{padding:18px 16px 112px;background:#fafafa}
 #screen-home .browse-jobs-row{margin:0 -16px 14px;padding:0 16px}
 #screen-home .browse-jobs-scroll{gap:10px}
