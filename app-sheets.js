@@ -1524,6 +1524,27 @@ export function poolFormToProfileFields() {
   };
 }
 
+// Asks the Worker to fix typos/grammar and keep 1 profession + 1 alternate on this profile (free Workers AI).
+// Fire-and-forget: the candidate never waits for it, and a failure changes nothing.
+async function requestCvBoxTidy(candidateId) {
+  if (!candidateId) return;
+  try {
+    var authToken = '';
+    try {
+      if (supabaseClient) {
+        var sessionResult = await supabaseClient.auth.getSession();
+        authToken = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token || '';
+      }
+    } catch (e) {}
+    fetch(R2_WORKER_URL + '/api/cv-box/tidy', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authToken ? { 'Authorization': 'Bearer ' + authToken } : {}),
+      body: JSON.stringify({ id: String(candidateId) }),
+      keepalive: true
+    }).catch(function() {});
+  } catch (e) {}
+}
+
 export async function submitPoolRegistration() {
   var name = document.getElementById('pool-name').value.trim();
   var phone = (document.getElementById('pool-phone') || {}).value || '';
@@ -1577,6 +1598,7 @@ export async function submitPoolRegistration() {
     catch(e) { console.error('pool self update', e); showToast('Could not save — please try again.'); if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
     if (editResult.error || editResult.data !== true) { console.error('pool self update', editResult.error); showToast('Could not save — please try again.'); if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; } return; }
     if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
+    requestCvBoxTidy(editingPoolCandidateId);
     closeSheet('pool-register-overlay');
     showToast('Your CV Box upload has been updated.');
     poolLoaded = false; // force a fresh load next time the list is viewed
@@ -1626,6 +1648,7 @@ export async function submitPoolRegistration() {
         if (claimUpdate.error) console.error('pool claim update', claimUpdate.error);
         if (btn) { btn.disabled = false; btn.textContent = defaultBtnLabel; }
         rememberCvBoxIdentity(phone, email);
+        requestCvBoxTidy(claim.data);
         cvBoxMemberExists(phone, email, true);
         closeSheet('pool-register-overlay');
         showToast('Found your existing registration and linked it to your account.');
@@ -1706,6 +1729,7 @@ export async function submitPoolRegistration() {
   rememberCvBoxIdentity(phone, email);
   try { localStorage.setItem('sa_gate_registration_pending', saAuthUser ? 'linked' : 'pending'); } catch(e){}
   cvBoxMemberExists(phone, email, true);
+  requestCvBoxTidy(payload.id);
   trackEvent('candidate_registration_submitted', 'candidate', null, { alert_opt_in: alertOptIn });
   closeSheet('pool-register-overlay');
   showToast('Registration received — you\'ll go live once it\'s reviewed.');
