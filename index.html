@@ -1213,6 +1213,14 @@ window.sentryOnLoad = function () {
   </div>
 </div>
 
+<!-- ============ CV BOX CANDIDATE PROFILE ============ -->
+<div class="sheet-scrim" id="pool-profile-overlay">
+  <div class="sheet pool-profile-sheet">
+    <div class="sheet-handle"></div><button class="sheet-close-btn" data-ripple onclick="closeSheet('pool-profile-overlay')" aria-label="Close" title="Close">×</button>
+    <div id="pool-profile-detail"></div>
+  </div>
+</div>
+
 <!-- ============ PAID CV DOWNLOAD REQUEST ============ -->
 <div class="sheet-scrim" id="cv-download-overlay">
   <div class="sheet cv-download-sheet">
@@ -1559,7 +1567,7 @@ window.sentryOnLoad = function () {
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=1d9e1b67df"></script>
+<script type="module" src="app.bundle.min.js?v=7c77a3c79d"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
 <script src="app-alerts.js?v=al-8" defer></script>
 <!-- Turnstile is deferred and queued behind the app scripts so it cannot delay first render; app-sheets.js

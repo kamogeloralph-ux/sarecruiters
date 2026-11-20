@@ -980,6 +980,29 @@ export function openPoolCandidateCard(id) {
   card.setAttribute('aria-expanded', 'true');
   setTimeout(function(){ card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 150);
 }
+export function openPoolCandidateProfileById(id) {
+  var candidate = poolCache.find(function(item){ return String(item.id) === String(id); });
+  if (!candidate) return;
+  var detail = document.getElementById('pool-profile-detail');
+  if (!detail) return;
+  var avatar = candidate.photo_url
+    ? '<img src="'+escapeHtml(candidate.photo_url)+'" loading="eager" decoding="async" alt="'+escapeHtml(candidate.full_name || 'Candidate')+'">'
+    : '<span>'+escapeHtml(initials(candidate.full_name))+'</span>';
+  var summary = String(candidate.about_you || '').trim() || 'This candidate has not added a public introduction yet.';
+  detail.innerHTML = '<div class="pool-detail-cover"><span class="pool-profile-badge pool-profile-availability"><i></i>'+escapeHtml(poolAvailabilityBadge(candidate))+'</span><span class="pool-profile-badge pool-profile-seniority">'+escapeHtml(poolSeniority(candidate))+'</span></div>' +
+    '<div class="pool-detail-body"><div class="pool-detail-avatar">'+avatar+'</div><button type="button" class="pool-detail-share" onclick="sharePoolCandidateProfile(\''+escapeHtml(String(candidate.id))+'\')" aria-label="Share candidate profile">↗ Share</button><div class="pool-profile-location"><span aria-hidden="true">⌖</span>'+escapeHtml(poolFactLocation(candidate))+'</div><h2>'+escapeHtml(candidate.full_name || 'Candidate')+'</h2><h3>'+escapeHtml(candidate.position || 'Open to opportunities')+'</h3><p class="pool-profile-summary">'+escapeHtml(summary)+'</p><div class="pool-profile-chips"><span>'+escapeHtml(candidate.sector || 'Professional')+'</span><span>'+escapeHtml(poolFactExperience(candidate))+'</span><span>'+escapeHtml(poolFactAvailability(candidate))+'</span></div><button type="button" class="pool-detail-contact" onclick="openCvDownloadRequestById(\''+escapeHtml(String(candidate.id))+'\')"><span aria-hidden="true">✉</span> Contact candidate</button><small class="pool-detail-private-note">Contact details and the full CV are released securely after payment.</small></div>';
+  document.getElementById('pool-profile-overlay').classList.add('open');
+}
+export async function sharePoolCandidateProfile(id) {
+  var candidate = poolCache.find(function(item){ return String(item.id) === String(id); });
+  if (!candidate) return;
+  var url = window.location.origin + window.location.pathname + '#cv-box-candidate-' + encodeURIComponent(String(candidate.id));
+  try {
+    if (navigator.share) await navigator.share({ title: candidate.full_name || 'CV Box candidate', text: candidate.position || 'CV Box candidate profile', url: url });
+    else if (navigator.clipboard) { await navigator.clipboard.writeText(url); showToast('Profile link copied.'); }
+    else showToast(url);
+  } catch (e) { if (!e || e.name !== 'AbortError') showToast('Could not share this profile.'); }
+}
 
 // Facts shown on the public card BEFORE payment (never contact details).
 function poolFactLocation(c) {
@@ -1081,10 +1104,10 @@ export function renderPoolList() {
     // details and the full CV remain private; the full CV is a paid secure download.
     var role = c.position || 'Open to opportunities';
     var avatar = c.photo_url ? '<div class="avatar pool-mini-avatar"><img src="'+escapeHtml(c.photo_url)+'" loading="lazy" decoding="async" alt=""></div>' : '<div class="avatar pool-mini-avatar">'+initials(c.full_name)+'</div>';
-    return middleAd + '<article class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'">' +
+    return middleAd + '<article class="manager-item pool-mini-card" data-candidate-id="'+escapeHtml(c.id)+'" onclick="openPoolCandidateProfileById(this.dataset.candidateId)" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openPoolCandidateProfileById(this.dataset.candidateId)}">' +
       '<div class="pool-profile-cover"><span class="pool-profile-badge pool-profile-availability"><i></i>'+escapeHtml(poolAvailabilityBadge(c))+'</span><span class="pool-profile-badge pool-profile-seniority">'+escapeHtml(poolSeniority(c))+'</span></div>' +
       '<div class="pool-profile-body"><div class="pool-profile-avatar">'+avatar+'</div><div class="pool-profile-location"><span aria-hidden="true">⌖</span>'+escapeHtml(poolFactLocation(c))+'</div><div class="manager-item-title pool-mini-name"><span class="pool-mini-name-text" title="'+escapeHtml(c.full_name||'Candidate')+'">'+escapeHtml(c.full_name||'Candidate')+'</span>'+(c.verified?'<span class="pool-mini-seal">' + verifiedBadge('Screened &amp; Verified') + '</span>':'')+'</div><h3 class="pool-profile-role">'+escapeHtml(role)+'</h3><p class="pool-profile-summary">'+escapeHtml(poolPublicSummary(c))+'</p><div class="pool-profile-chips"><span>'+escapeHtml(c.sector || 'Professional')+'</span><span>'+escapeHtml(poolFactExperience(c))+'</span><span>'+escapeHtml(poolFactAvailability(c))+'</span></div>' +
-      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" style="background:#0b7a35 !important;background-image:none !important;color:#fff !important;-webkit-text-fill-color:#fff !important;border:2px solid #0b7a35 !important" aria-label="Unlock full CV" onclick="event.stopPropagation();openCvDownloadRequestById(this.closest(\'.pool-mini-card\').dataset.candidateId)"><svg class="pool-cv-lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span class="pool-cv-label">Unlock full CV</span></button></div>' +
+      '<div class="pool-mini-actions"><button type="button" class="pool-cv-download-btn" aria-label="View candidate profile" onclick="event.stopPropagation();openPoolCandidateProfileById(this.closest(\'.pool-mini-card\').dataset.candidateId)"><span class="pool-cv-label">View CV profile</span><span aria-hidden="true">→</span></button></div>' +
       '</div></div></article>'
   }).join('');
 }
@@ -1726,6 +1749,8 @@ Object.assign(window, {
   getPoolCandidateCount,
   goPool,
   openPoolCandidateCard,
+  openPoolCandidateProfileById,
+  sharePoolCandidateProfile,
   loadPoolCandidates,
   renderPoolList,
   poolCandidateWhatsAppLink,

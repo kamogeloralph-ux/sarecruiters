@@ -2752,6 +2752,14 @@ html[data-inapp] .install-banner{bottom:88px!important}
 [data-theme="light"] .pool-mini-card.manager-item{background:#172131!important;color:#fff!important}
 @media(max-width:380px){.pool-profile-body{padding-left:15px;padding-right:15px}.pool-profile-role{font-size:21px}.pool-profile-badge{left:12px}.pool-profile-seniority{left:auto;right:12px}.pool-profile-summary{font-size:14px}}
 
+.pool-profile-sheet{padding:0!important;overflow:hidden;background:#172131!important;color:#fff!important}
+.pool-profile-sheet>.sheet-handle{position:absolute;z-index:5;top:8px;left:50%;background:rgba(255,255,255,.55)}
+.pool-detail-cover{position:relative;height:190px;background:radial-gradient(circle at 78% 16%,rgba(180,225,189,.48),transparent 27%),linear-gradient(135deg,#344b3e,#1e3131 48%,#182334);overflow:hidden}
+.pool-detail-cover:after{content:"";position:absolute;inset:auto -10% 0;height:75%;background:linear-gradient(145deg,transparent 18%,rgba(225,185,105,.2) 45%,transparent 46%),linear-gradient(180deg,transparent,rgba(7,13,21,.22));transform:skewY(-5deg)}
+.pool-detail-body{position:relative;padding:0 24px 24px}.pool-detail-avatar{position:relative;margin:-54px auto 0;width:108px;height:108px;padding:5px;border-radius:30px;background:#172131;z-index:3}.pool-detail-avatar img,.pool-detail-avatar span{display:flex;align-items:center;justify-content:center;width:98px;height:98px;border-radius:25px;object-fit:cover;background:#293a4c;color:#fff;font-size:25px;font-weight:850}
+.pool-detail-share{position:absolute;top:14px;right:20px;border:1px solid rgba(176,193,212,.28);border-radius:999px;background:transparent;color:#d8e0e9;padding:8px 12px;font:inherit;font-size:11px;font-weight:800}.pool-detail-body>.pool-profile-location{justify-content:center;margin-top:14px}.pool-detail-body h2{margin:20px 0 0;text-align:center;color:#fff;font-size:23px;line-height:1.2}.pool-detail-body h3{margin:24px 0 0;text-align:center;color:#fff;font-size:28px;line-height:1.16;letter-spacing:-.035em}.pool-detail-body .pool-profile-summary{margin-top:18px}.pool-detail-body .pool-profile-chips{justify-content:center}.pool-detail-contact{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;margin-top:24px;border:0;border-radius:15px;background:#fff;color:#172131;font:inherit;font-size:15px;font-weight:850}.pool-detail-private-note{display:block;margin:10px 12px 0;color:#9eabb9;font-size:10.5px;line-height:1.45;text-align:center}
+@media(max-width:430px){.pool-detail-cover{height:170px}.pool-detail-body{padding-left:18px;padding-right:18px}.pool-detail-body h3{font-size:25px}}
+
 /* Animated HTML5 house ads (sandboxed iframe). The anchor wrapping the card receives every click. */
 .house-ad-creative--html5{background:#000}
 .house-ad-creative--html5>iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;pointer-events:none;background:#000}
