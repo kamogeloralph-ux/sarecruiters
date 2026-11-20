@@ -2761,7 +2761,7 @@ html[data-inapp] .install-banner{bottom:88px!important}
 [data-theme="light"] .pool-mini-card.manager-item{background:#172131!important;color:#fff!important}
 @media(max-width:380px){.pool-profile-body{padding-left:15px;padding-right:15px}.pool-profile-role{font-size:19px}.pool-profile-badge{left:12px}.pool-profile-seniority{left:auto;right:60px}.pool-profile-summary{font-size:13px}}
 
-.pool-profile-sheet{padding:0!important;overflow:hidden;background:#172131!important;color:#fff!important}
+.pool-profile-sheet{top:0!important;bottom:0!important;height:100dvh;max-height:none!important;padding:0!important;overflow-y:auto!important;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border-radius:0!important;background:#172131!important;color:#fff!important}
 .mcb-about-label{display:block;margin-bottom:4px;color:var(--accent);font-size:10px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
 .pool-profile-sheet>.sheet-handle{position:absolute;z-index:5;top:8px;left:50%;background:rgba(255,255,255,.55)}
 .pool-detail-cover{position:relative;height:190px;background:radial-gradient(circle at 78% 16%,rgba(180,225,189,.48),transparent 27%),linear-gradient(135deg,#344b3e,#1e3131 48%,#182334);overflow:hidden}
