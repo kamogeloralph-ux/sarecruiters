@@ -2737,9 +2737,9 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .pool-mini-card.manager-item{padding:0!important;overflow:hidden;border:1px solid color-mix(in srgb,#60708a 42%,var(--border))!important;border-radius:22px!important;background:#172131!important;color:#fff!important;box-shadow:0 12px 28px rgba(3,10,20,.22)!important}
 .pool-profile-cover{position:relative;height:126px;background:radial-gradient(circle at 78% 18%,rgba(180,225,189,.42),transparent 28%),linear-gradient(135deg,#344b3e 0%,#1e3131 48%,#182334 100%);overflow:hidden}
 .pool-profile-cover:after{content:"";position:absolute;inset:auto -10% 0;height:70%;background:linear-gradient(145deg,transparent 20%,rgba(225,185,105,.2) 45%,transparent 46%),linear-gradient(180deg,transparent,rgba(7,13,21,.18));transform:skewY(-5deg)}
-.pool-profile-badge{position:absolute;z-index:2;top:26px;display:inline-flex;align-items:center;gap:7px;max-width:68%;padding:8px 12px;border-radius:999px;background:rgba(11,19,29,.9);color:#eef4f7;font-size:11px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 10px rgba(0,0,0,.16)}
-.pool-profile-availability{left:16px}.pool-profile-availability i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#43d17c;box-shadow:0 0 0 3px rgba(67,209,124,.12)}
-.pool-profile-seniority{right:16px;max-width:28%}
+.pool-profile-badge{position:absolute;z-index:2;top:26px;display:inline-flex;align-items:center;gap:7px;max-width:68%;padding:8px 12px;border-radius:999px;background:rgba(11,19,29,.9);color:#eef4f7;font-size:11px;font-weight:850;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 10px rgba(0,0,0,.16)}
+.pool-profile-availability{left:16px;background:#40e582;color:#062113;box-shadow:0 5px 14px rgba(64,229,130,.32)}.pool-profile-availability i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#062113}
+.pool-profile-seniority{right:16px;max-width:28%;background:#ffc94d;color:#211500;box-shadow:0 5px 14px rgba(255,201,77,.3)}
 .pool-profile-body{position:relative;padding:0 18px 18px}
 .pool-profile-avatar{position:relative;margin-top:-39px;width:82px;height:82px;padding:4px;border-radius:24px;background:#172131;z-index:3}
 .pool-profile-avatar .pool-mini-avatar{width:74px!important;height:74px!important;border-radius:20px!important;box-shadow:none}
@@ -2748,11 +2748,12 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .pool-profile-role{margin:25px 0 0;color:#fff;font-size:23px;line-height:1.18;letter-spacing:-.03em;font-weight:850}
 .pool-profile-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;margin:16px 0 0;color:#c5ccd5;font-size:15px;line-height:1.65}
 .pool-profile-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.pool-profile-chips span{max-width:100%;padding:7px 11px;border:1px solid rgba(142,166,194,.2);border-radius:999px;background:#202d3f;color:#c3ccd7;font-size:11px;line-height:1.2}
-.pool-profile-body .pool-mini-actions{margin-top:18px}.pool-profile-body .pool-cv-download-btn{min-height:44px;border-radius:13px!important}
+.pool-profile-body .pool-mini-actions{display:none}.pool-profile-body .pool-cv-download-btn{min-height:44px;border-radius:13px!important}
 [data-theme="light"] .pool-mini-card.manager-item{background:#172131!important;color:#fff!important}
 @media(max-width:380px){.pool-profile-body{padding-left:15px;padding-right:15px}.pool-profile-role{font-size:21px}.pool-profile-badge{left:12px}.pool-profile-seniority{left:auto;right:12px}.pool-profile-summary{font-size:14px}}
 
 .pool-profile-sheet{padding:0!important;overflow:hidden;background:#172131!important;color:#fff!important}
+.mcb-about-label{display:block;margin-bottom:4px;color:var(--accent);font-size:10px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
 .pool-profile-sheet>.sheet-handle{position:absolute;z-index:5;top:8px;left:50%;background:rgba(255,255,255,.55)}
 .pool-detail-cover{position:relative;height:190px;background:radial-gradient(circle at 78% 16%,rgba(180,225,189,.48),transparent 27%),linear-gradient(135deg,#344b3e,#1e3131 48%,#182334);overflow:hidden}
 .pool-detail-cover:after{content:"";position:absolute;inset:auto -10% 0;height:75%;background:linear-gradient(145deg,transparent 18%,rgba(225,185,105,.2) 45%,transparent 46%),linear-gradient(180deg,transparent,rgba(7,13,21,.22));transform:skewY(-5deg)}

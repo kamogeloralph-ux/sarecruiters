@@ -501,7 +501,7 @@ function renderManagerCvBoxList() {
       '<div class="mcb-role">' + escapeHtml(c.position || '') + '</div></div>' +
       (c.availability ? '<span class="mcb-chip' + (c.availability_expired ? ' mcb-chip-old' : '') + '">' + escapeHtml(c.availability_expired ? 'Availability to confirm' : c.availability) + '</span>' : '') + '</div>' +
       (meta ? '<div class="mcb-meta">' + meta + '</div>' : '') +
-      (c.about_you ? '<div class="mcb-about">' + escapeHtml(c.about_you) + '</div>' : '') + contact +
+      (c.about_you ? '<div class="mcb-about"><small class="mcb-about-label">Candidate introduction</small>' + escapeHtml(c.about_you) + '</div>' : '') + contact +
       '<div class="mcb-actions">' +
         (rev ? '' : '<button type="button" class="mcb-btn" onclick="managerCvBoxReveal(\'' + id + '\', this)"' + (c.has_contact ? '' : ' disabled title="No contact details on file"') + '>Show contact</button>') +
         '<button type="button" class="mcb-btn mcb-btn-alt" onclick="managerCvBoxDownload(\'' + id + '\', this)"' + (c.has_cv ? '' : ' disabled title="No CV file on file"') + '>Download CV</button>' +
