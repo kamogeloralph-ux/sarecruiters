@@ -38,3 +38,14 @@ test('saved vacancy alerts card is compact and matches centered account card wid
   const css = read('styles.css');
   assert.match(css, /\.saved-alerts-panel\{width:min\(100%,420px\);box-sizing:border-box;margin:0 auto 14px;padding:12px/);
 });
+
+test('Home has a compact Find jobs card and the candidates card no longer carries the external-jobs button', () => {
+  const ui = read('app-ui.js');
+  const homeMarkup = ui.slice(ui.indexOf('home-tools-section'), ui.indexOf('target.setAttribute', ui.indexOf('home-tools-section')));
+  assert.match(homeMarkup, /class="home-find-jobs-card"[^>]*onclick="openExternalJobs\(\)"/);
+  assert.ok(homeMarkup.indexOf('home-find-jobs-card') < homeMarkup.indexOf('home-tools-grid'));
+  assert.equal((homeMarkup.match(/openExternalJobs\(\)/g) || []).length, 1);
+  assert.doesNotMatch(homeMarkup, /Search external jobs/);
+  assert.doesNotMatch(read('index.html'), /Search external jobs<\/button>/);
+  assert.match(read('styles.css'), /\.home-find-jobs-card\{/);
+});
