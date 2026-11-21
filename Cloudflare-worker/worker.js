@@ -2942,8 +2942,13 @@ var worker_default = {
     try {
       if (path === "/api/ats/sync" && request.method === "GET") {
         if (!atsAuthMatches(request, env, url.searchParams.get("secret") || "")) return json({ ok: false, error: "Unauthorized" }, 401, origin);
-        try { return json({ ok: true, results: await syncAtsFeeds(env) }, 200, origin); }
-        catch (error) { return json({ ok: false, error: "ATS sync failed", detail: String(error.message || error) }, 502, origin); }
+        try {
+          const results = await syncAtsFeeds(env);
+          const vacancySnapshot = await buildPublicVacancySnapshotFromSupabase(env);
+          vacancySnapshot.data_version = await bumpPublicDataVersion(env);
+          await writePublicVacancySnapshot(env, vacancySnapshot);
+          return json({ ok: true, results, published_vacancies: vacancySnapshot.vacancies.length }, 200, origin);
+        } catch (error) { return json({ ok: false, error: "ATS sync failed", detail: String(error.message || error) }, 502, origin); }
       }
       if (path === "/api/v1/ats/jobs" && request.method === "POST") {
         return await handleAtsPush(request, env, origin);
