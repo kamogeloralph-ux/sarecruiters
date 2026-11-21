@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/cloudflare";
 import { candidateCvKey, cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, scanCvWithGemini } from "./cv-scan.js";
 import { fetchProfile, listUntidied, pairPositions, similarPosition, splitTitles, tidyCandidateById } from "./cv-tidy.js";
 import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
-import { careerjetSearchResponse } from "./careerjet.js";
+import { careerjetSearchResponse, careerjetEgressDiagnostic } from "./careerjet.js";
 import { putCached } from "./ai.js";
 import { publishTipchatVacancyRoundup } from "./tipchat-publisher.js";
 var __defProp = Object.defineProperty;
@@ -3821,6 +3821,9 @@ var worker_default = {
           results.push({ candidate_id: candidateId, sent: !!sent.sent, error: sent.sent ? null : sent.reason || "Resend failed." });
         }
         return json({ ok: true, sent: results.filter((row) => row.sent).length, matched: results.length, results }, 200, origin);
+      }
+      if (path === "/api/jobs/careerjet-egress" && request.method === "GET") {
+        return await careerjetEgressDiagnostic(request, env, origin, json);
       }
       if (path === "/api/jobs/careerjet" && request.method === "GET") {
         // Careerjet partner search (see careerjet.js). The API key stays in a Worker secret.

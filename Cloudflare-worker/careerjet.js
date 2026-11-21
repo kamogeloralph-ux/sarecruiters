@@ -178,7 +178,12 @@ function fail(json, origin, status, error) {
 // `json` is the Worker's own helper (adds CORS headers for the caller's origin).
 export async function careerjetSearchResponse(request, env, origin, json) {
   const apiKey = normaliseApiKey(env && env.CAREERJET_API_KEY);
-  if (!apiKey) return fail(json, origin, 503, "Job search is not switched on yet.");
+  // When a relay is configured the Careerjet call is made from a fixed-IP server (Careerjet requires
+  // declared server IPs; Workers have none). The relay holds the API key, so the Worker needs none.
+  const relayUrl = String((env && env.CAREERJET_RELAY_URL) || "").replace(/\/+$/, "");
+  const relaySecret = String((env && env.CAREERJET_RELAY_SECRET) || "");
+  const useRelay = Boolean(relayUrl && relaySecret);
+  if (!apiKey && !useRelay) return fail(json, origin, 503, "Job search is not switched on yet.");
 
   const url = new URL(request.url);
   const parsed = parseSearchParams(url.searchParams);
@@ -194,14 +199,22 @@ export async function careerjetSearchResponse(request, env, origin, json) {
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   let response;
   try {
-    response = await fetch(target, {
-      headers: {
-        Authorization: "Basic " + btoa(apiKey + ":"),
-        Referer: referer,
-        Accept: "application/json"
-      },
-      signal: controller.signal
-    });
+    if (useRelay) {
+      const q = new URLSearchParams({ keywords: parsed.query.keywords, location: parsed.query.location, page: String(parsed.query.page), page_size: String(parsed.query.pageSize), sort: parsed.query.sort });
+      response = await fetch(`${relayUrl}/careerjet?${q.toString()}`, {
+        headers: { "X-Relay-Secret": relaySecret, "X-Visitor-IP": ip, "X-Visitor-UA": userAgent, "X-Referer": referer, Accept: "application/json" },
+        signal: controller.signal
+      });
+    } else {
+      response = await fetch(target, {
+        headers: {
+          Authorization: "Basic " + btoa(apiKey + ":"),
+          Referer: referer,
+          Accept: "application/json"
+        },
+        signal: controller.signal
+      });
+    }
   } catch (err) {
     console.warn("careerjet fetch failed", err && err.name);
     return fail(json, origin, 504, "Job search took too long. Please try again.");
@@ -234,6 +247,33 @@ export async function careerjetSearchResponse(request, env, origin, json) {
 
   // Results depend on the visitor's IP, so they must not be shared between people.
   const res = json({ ok: true, ...result }, 200, origin);
+  res.headers.set("Cache-Control", "private, no-store");
+  return res;
+}
+
+// ---------------------------------------------------------------------------
+// TEMPORARY diagnostic: shows which public IP(s) Careerjet-bound calls leave this
+// Worker from, so they can be declared under Careerjet > Access API > Server IP
+// addresses. Disabled unless CAREERJET_DEBUG_TOKEN is set; remove the secret when done.
+//   GET /api/jobs/careerjet-egress?token=<CAREERJET_DEBUG_TOKEN>
+// ---------------------------------------------------------------------------
+export async function careerjetEgressDiagnostic(request, env, origin, json) {
+  const token = String((env && env.CAREERJET_DEBUG_TOKEN) || "");
+  const given = new URL(request.url).searchParams.get("token") || "";
+  if (token.length < 16 || given.length !== token.length || given !== token) return json({ ok: false, error: "not found" }, 404, origin);
+  const probe = async (url) => {
+    const out = [];
+    for (let i = 0; i < 4; i += 1) {
+      try {
+        const r = await fetch(`${url}${url.includes("?") ? "&" : "?"}n=${i}-${Date.now()}`, { headers: { Accept: "application/json" } });
+        const body = await r.json().catch(() => ({}));
+        out.push(String(body.ip || "unknown"));
+      } catch (_) { out.push("unreachable"); }
+    }
+    return out;
+  };
+  const [ipv4, ipv6] = await Promise.all([probe("https://api.ipify.org?format=json"), probe("https://api6.ipify.org?format=json")]);
+  const res = json({ ok: true, ipv4, ipv6, stableIpv4: new Set(ipv4).size === 1 && ipv4[0] !== "unreachable", note: "Declare only values that repeat across calls. Re-run from different times of day." }, 200, origin);
   res.headers.set("Cache-Control", "private, no-store");
   return res;
 }
