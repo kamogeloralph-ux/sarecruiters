@@ -1061,7 +1061,7 @@ function poolProfileCoverMarkup(c, detail) {
     if (parsed && parsed.protocol === 'https:' && parsed.origin !== window.location.origin) safe = parsed.href;
   } catch (e) {}
   var style = safe ? ' style="background-image:linear-gradient(180deg,rgba(7,13,21,.08),rgba(7,13,21,.42)),url(\''+escapeHtml(safe)+'\')"' : '';
-  var fallback = safe ? '' : '<div class="pool-cover-placeholder" aria-label="SA Recruiters default banner"><img class="pool-cover-wordmark" src="/assets/sa-recruiters-logo-400x50-black.png" srcset="/assets/sa-recruiters-logo-400x50-black.png 1x, /assets/sa-recruiters-logo-400x50-black@2x.png 2x" alt="SA Recruiters" loading="lazy" decoding="async"><span class="pool-cover-caption">CV Box · Professional talent directory</span></div>';
+  var fallback = safe ? '' : '<div class="pool-cover-placeholder" aria-label="SA Recruiters CV Box professional talent directory"><span class="pool-cover-caption"><img class="pool-cover-mark" src="/assets/sa-recruiters-mark-plum.png" alt="SA Recruiters" width="20" height="18" loading="lazy" decoding="async"><span>Professional talent directory</span></span></div>';
   return '<div class="'+(detail ? 'pool-detail-cover' : 'pool-profile-cover')+' pool-profile-cover-image"'+style+'>'+fallback;
 }
 

@@ -3035,3 +3035,18 @@ html[data-inapp] .install-banner{bottom:88px!important}
    regular weight as the location line. */
 .pool-profile-cover,.pool-detail-cover,.pool-profile-body{--pool-meta-size:12px}
 .pool-profile-location{font-size:var(--pool-meta-size)}
+
+/* ==== CV Box banner refresh (v3) ==========================================
+   Icon-only SA Recruiters mark replaces the "CV Box" words in the slogan;
+   the wordmark text is gone. Softer rose gradient, faint watermark + sheen,
+   glass slogan pill centred in the free band between badges and photo.
+   ======================================================================= */
+.pool-cover-placeholder{align-items:center;justify-content:flex-start;padding:36px 18px 30px;background:radial-gradient(circle at 88% 18%,rgba(255,255,255,.55),transparent 30%),linear-gradient(135deg,#fde9f0 0%,#f6c9da 46%,#e8a9c4 100%);color:#4a1230}
+.pool-cover-placeholder:before{content:"";position:absolute;inset:auto;top:50%;right:-12px;bottom:auto;left:auto;width:150px;height:132px;border:0;border-radius:0;box-shadow:none;transform:translateY(-50%) rotate(-8deg);background:url(/assets/sa-recruiters-mark-plum.png) center/contain no-repeat;opacity:.09}
+.pool-cover-placeholder:after{content:"";position:absolute;inset:auto;left:-25%;top:-70%;right:auto;bottom:auto;width:70%;height:190%;border:0;border-radius:0;box-shadow:none;transform:rotate(18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent)}
+.pool-cover-caption{position:relative;z-index:1;left:auto;right:auto;bottom:auto;max-width:none;display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 10px;border-radius:999px;background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.9);box-shadow:0 6px 18px rgba(74,18,48,.14);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap;text-align:left;color:#4a1230;font-size:9px;font-weight:800;letter-spacing:.12em;line-height:1;text-transform:uppercase}
+.pool-cover-mark{display:block;width:20px;height:auto;flex:none}
+.pool-detail-cover .pool-cover-placeholder{padding:44px 26px 58px}
+.pool-detail-cover .pool-cover-caption{left:auto;right:auto;bottom:auto;max-width:none;font-size:10px;padding:8px 16px 8px 12px}
+.pool-detail-cover .pool-cover-mark{width:23px}
+@media(max-width:380px){.pool-cover-caption{font-size:8px;letter-spacing:.08em;gap:6px;padding:6px 11px 6px 8px}.pool-cover-mark{width:17px}}
