@@ -19,8 +19,6 @@
 //  Public API (window.SAGuide), also reachable via a DOM event:
 //    document.dispatchEvent(new CustomEvent('sa-guide',
 //        { detail: { type: 'applyStep', label: 'Resume uploaded' } }))
-//    window/document.dispatchEvent(new CustomEvent('sa-guide:event',
-//        { detail: { type: 'new-jobs-loaded' } }))
 //
 //    onAppOpen()                  wave, pop in, point at Available Vacancies
 //    onScroll(direction, velocity, progress)   direction: 1 down / -1 up,
@@ -29,8 +27,7 @@
 //    onApplyStep(stepLabel)       clap + cheer + micro message
 //    onSaveVacancy()              nod + sparkle
 //    onEmptyResults(kind)         scratch head + quick tip
-//    say(text, opts) / setQuiet(bool) / setEnabled(bool) / setTipsOnly(bool)
-//    setIntensity('low'|'standard') / resetOnboarding() / show() / hide()
+//    say(text, opts) / setQuiet(bool) / show() / hide()
 //
 //  Rules it keeps: pointer-events are off everywhere except the 44px
 //  character when it is resting (and the menu when open); it hides while a
@@ -48,17 +45,13 @@
   var PI = Math.PI;
   var SIZE = 44;
   var KEY_QUIET = 'sa_guide_quiet';
-  var KEY_ENABLED = 'sa_guide_enabled';
-  var KEY_TIPS_ONLY = 'sa_guide_tips_only';
-  var KEY_INTENSITY = 'sa_guide_intensity';
-  var KEY_ONBOARDED = 'sa_guide_onboarded';
   var KEY_HIDDEN = 'sa_guide_hidden_until';
   var KEY_SESSION = 'sa_guide_session';
   var DAY = 24 * 60 * 60 * 1000;
 
   // ---------- copy (one line each, kept short for 320px phones) ----------
   var MSG = {
-    onboard: 'Hi, I\u2019m your SA Recruiters guide. Tap me anytime for help.',
+    onboard: 'Start here\u2014fresh vacancies are live!',
     welcome: 'Welcome! Tap me for quick help.',
     opened: ['Nice move! Keep going!', 'Good pick\u2014read the details.', 'Looking good\u2014you\u2019ve got this!'],
     apply: 'Application step complete\u2014you\u2019ve got this!',
@@ -68,14 +61,7 @@
     emptySearch: 'Try fewer words or a wider area.',
     emptySaved: 'Nothing saved yet\u2014tap the star on a job.',
     quietOn: 'Quiet mode on. Tap me if you need me.',
-    quietOff: 'Tips are back on!',
-    newJobs: 'New vacancies were added.',
-    savedEvent: 'Saved! Find it under Saved.',
-    application: 'Tap Apply to continue.',
-    profile: 'Your profile needs a little more detail.',
-    filters: 'Filters active. Try widening your search.',
-    offline: 'You\u2019re offline. I\u2019ll be here when you reconnect.',
-    fresh: 'Fresh jobs are ready to explore.'
+    quietOff: 'Tips are back on!'
   };
   var TIPS = [
     { id: 'fee', text: 'Real jobs never charge to apply.' },
@@ -370,7 +356,7 @@
   // ============================================================
   function createGuide(win) {
     var doc = win.document;
-    var store = createStore({ enabled: true, quiet: false, tipsOnly: false, intensity: 'standard', hidden: false, offscreen: false, away: false, menuOpen: false, started: false, bubble: null, screen: '' });
+    var store = createStore({ quiet: false, hidden: false, away: false, menuOpen: false, started: false, bubble: null, screen: '' });
     var reducedMQ = win.matchMedia ? win.matchMedia('(prefers-reduced-motion: reduce)') : null;
     var reduced = !!(reducedMQ && reducedMQ.matches);
     if (reducedMQ && reducedMQ.addEventListener) reducedMQ.addEventListener('change', function (e) { reduced = e.matches; wake(); });
@@ -399,12 +385,11 @@
       var bin = doc.createElement('span'); bin.className = 'sa-guide__bubble-in';
       ui.icon = doc.createElement('span'); ui.icon.className = 'sa-guide__icon'; ui.icon.setAttribute('aria-hidden', 'true');
       ui.text = doc.createElement('span'); ui.text.className = 'sa-guide__text';
-      ui.closeBubble = doc.createElement('button'); ui.closeBubble.type = 'button'; ui.closeBubble.className = 'sa-guide__bubble-close'; ui.closeBubble.textContent = '×'; ui.closeBubble.setAttribute('aria-label', 'Dismiss guide tip');
-      bin.appendChild(ui.icon); bin.appendChild(ui.text); bin.appendChild(ui.closeBubble); ui.bubble.appendChild(bin);
+      bin.appendChild(ui.icon); bin.appendChild(ui.text); ui.bubble.appendChild(bin);
 
       ui.btn = doc.createElement('button');
       ui.btn.type = 'button'; ui.btn.className = 'sa-guide__char';
-      ui.btn.setAttribute('aria-label', 'SA Recruiters guide');
+      ui.btn.setAttribute('aria-label', 'Open quick help');
       ui.btn.setAttribute('aria-haspopup', 'true'); ui.btn.setAttribute('aria-expanded', 'false');
       rig = buildRig(doc);
       ui.btn.appendChild(rig.svg);
@@ -425,13 +410,6 @@
       ui.hideBtn = doc.createElement('button'); ui.hideBtn.type = 'button'; ui.hideBtn.className = 'sa-guide__toggle'; ui.hideBtn.setAttribute('data-act', 'hide');
       ui.hideBtn.textContent = 'Hide for today';
       foot.appendChild(ui.quietBtn); foot.appendChild(ui.hideBtn); ui.menu.appendChild(foot);
-      ui.settings = doc.createElement('div'); ui.settings.className = 'sa-guide__settings';
-      ui.enabledBtn = doc.createElement('button'); ui.enabledBtn.type = 'button'; ui.enabledBtn.className = 'sa-guide__toggle'; ui.enabledBtn.setAttribute('data-act', 'enabled');
-      ui.tipsBtn = doc.createElement('button'); ui.tipsBtn.type = 'button'; ui.tipsBtn.className = 'sa-guide__toggle'; ui.tipsBtn.setAttribute('data-act', 'tips');
-      ui.intensityBtn = doc.createElement('button'); ui.intensityBtn.type = 'button'; ui.intensityBtn.className = 'sa-guide__toggle'; ui.intensityBtn.setAttribute('data-act', 'intensity');
-      ui.resetBtn = doc.createElement('button'); ui.resetBtn.type = 'button'; ui.resetBtn.className = 'sa-guide__toggle'; ui.resetBtn.setAttribute('data-act', 'reset'); ui.resetBtn.textContent = 'Reset intro';
-      ui.settings.appendChild(ui.enabledBtn); ui.settings.appendChild(ui.quietBtn); ui.settings.appendChild(ui.tipsBtn); ui.settings.appendChild(ui.intensityBtn); ui.settings.appendChild(ui.resetBtn);
-      foot.removeChild(ui.quietBtn); foot.removeChild(ui.hideBtn); ui.menu.appendChild(ui.settings); foot.appendChild(ui.hideBtn);
 
       host.appendChild(ui.ring); host.appendChild(ui.bubble); host.appendChild(ui.btn); host.appendChild(ui.menu);
       doc.body.appendChild(host);
@@ -456,11 +434,10 @@
     var lastRoamAt = 0, lastTipAt = 0, startedAt = 0, nextTipGap = rnd(80000, 120000);
     var lastEmptyAt = -1e9, seenEmpty = (typeof WeakSet === 'function') ? new WeakSet() : null;
     var interactive = false;
-    var guideObserver = null;
 
     function st() { return store.get(); }
     function sheetOpen() { return layout.sheetTop !== null; }
-    function live() { var s = st(); return s.started && s.enabled && !s.quiet && !s.hidden && !s.offscreen && !s.away && !doc.hidden; }
+    function live() { var s = st(); return s.started && !s.quiet && !s.hidden && !s.away && !doc.hidden; }
 
     // ---------- layout ----------
     function visible(el) { return !!el && el.getClientRects().length > 0 && win.getComputedStyle(el).visibility !== 'hidden'; }
@@ -613,7 +590,7 @@
     function say(text, o) {
       o = o || {};
       var s = st();
-      if (!s.started || !s.enabled || s.hidden || s.away || (s.quiet && !o.force) || (s.tipsOnly && !(o.tip || o.icon === 'shield'))) return false;
+      if (!s.started || s.hidden || s.away || (s.quiet && !o.force)) return false;
       clearTimeout(bubbleTimer);
       ui.text.textContent = text;
       ui.icon.innerHTML = o.icon && ICONS[o.icon] ? ICONS[o.icon] : '';
@@ -670,7 +647,8 @@
       if (!s.started || s.away) return;
       cancelSeq(); hideBubble();
       ui.menuTip.textContent = SCREEN_TIPS[currentScreenId()] || 'Need a hand? Jump to a section.';
-      refreshSettingsLabels();
+      ui.quietBtn.textContent = s.quiet ? 'Turn tips on' : 'Quiet mode';
+      ui.quietBtn.setAttribute('aria-pressed', s.quiet ? 'true' : 'false');
       ui.menu.hidden = false;
       ui.menu.classList.add('is-measure');
       var w = ui.menu.offsetWidth, h = ui.menu.offsetHeight;
@@ -720,11 +698,9 @@
     }
 
     function startOnboarding() {
-      if (lsGet(KEY_ONBOARDED) === '1') return;
-      lsSet(KEY_ONBOARDED, '1');
       var token = ++seqToken;
       var el = firstPriorityTarget();
-      if (!el) { say(MSG.onboard, { ms: 4400 }); return; }
+      if (!el) { say(MSG.welcome, { ms: 3200 }); return; }
       var scrolled = bringIntoView(el);
       setTimeout(function () {
         if (token !== seqToken || !live()) return;
@@ -811,11 +787,8 @@
         facing = layout.side === 'right' ? -1 : 1;
         var hiddenUntil = parseInt(lsGet(KEY_HIDDEN) || '0', 10);
         var quiet = lsGet(KEY_QUIET) === '1';
-        var enabled = lsGet(KEY_ENABLED) !== '0';
-        var tipsOnly = lsGet(KEY_TIPS_ONLY) === '1';
-        var intensity = lsGet(KEY_INTENSITY) === 'low' ? 'low' : 'standard';
         startedAt = now();
-        store.set({ started: true, enabled: enabled, quiet: quiet, tipsOnly: tipsOnly, intensity: intensity, hidden: hiddenUntil > Date.now() });
+        store.set({ started: true, quiet: quiet, hidden: hiddenUntil > Date.now() });
         measure();
         snapTo(layout.rest);
         ui.host.classList.add('is-on');
@@ -824,7 +797,7 @@
         refreshQuietLabel();
         popAt = now();
         wake();
-        if (!enabled || quiet || st().hidden) return;
+        if (quiet || st().hidden) return;
         playGesture('wave', { ms: 1000, prio: 3 });
         if (doc.querySelector('#screen-home.active')) setTimeout(function () { if (live()) startOnboarding(); }, 950);
         else say(MSG.welcome, { ms: 3200 });
@@ -874,20 +847,6 @@
         say(pick(MSG.saved), { ms: 2600 });
       },
 
-      onRecruitmentEvent: function (type, detail) {
-        detail = detail || {};
-        if (!live()) return false;
-        if (type === 'new-jobs-loaded') { playGesture('wave', { ms: 1000, prio: 3 }); say(MSG.newJobs, { ms: 3200 }); }
-        else if (type === 'job-saved') { playGesture('sparkle', { ms: DUR.sparkle, prio: 2 }); say(MSG.savedEvent, { ms: 3000 }); }
-        else if (type === 'application-opened') { playGesture('point', { ms: 2500, prio: 3, aim: { dx: 1, dy: 0 } }); say(MSG.application, { ms: 3000 }); }
-        else if (type === 'profile-incomplete') { playGesture('think', { ms: DUR.think, prio: 2 }); say(detail.message || MSG.profile, { tip: true, ms: 4200 }); }
-        else if (type === 'filters-active') { playGesture('headsup', { ms: 2400, prio: 2 }); say(detail.message || MSG.filters, { tip: true, ms: 4200 }); }
-        else if (type === 'offline') { playGesture('think', { ms: DUR.think, prio: 3 }); say(detail.message || MSG.offline, { force: true, ms: 4200 }); }
-        else if (type === 'fresh-jobs') { playGesture('wave', { ms: 1200, prio: 3 }); say(detail.message || MSG.fresh, { ms: 3200 }); }
-        else return false;
-        return true;
-      },
-
       onEmptyResults: function (kind) {
         if (!live()) return;
         var t = now();
@@ -905,10 +864,6 @@
 
       say: function (text, o) { return say(text, o); },
       setQuiet: function (on) { setQuiet(!!on, true); },
-      setEnabled: function (on) { setEnabled(!!on); },
-      setTipsOnly: function (on) { setTipsOnly(!!on); },
-      setIntensity: function (value) { setIntensity(value); },
-      resetOnboarding: function () { lsSet(KEY_ONBOARDED, null); hideBubble(); },
       show: function () { restore(); },
       hide: function () { hideForDay(); },
       state: function () { return store.get(); },
@@ -920,28 +875,11 @@
       ui.quietBtn.textContent = st().quiet ? 'Turn tips on' : 'Quiet mode';
       ui.quietBtn.setAttribute('aria-pressed', st().quiet ? 'true' : 'false');
     }
-    function refreshSettingsLabels() {
-      var s = st();
-      ui.enabledBtn.textContent = s.enabled ? 'Guide: On' : 'Guide: Off';
-      ui.enabledBtn.setAttribute('aria-pressed', s.enabled ? 'true' : 'false');
-      ui.tipsBtn.textContent = s.tipsOnly ? 'Tips only: On' : 'Tips only: Off';
-      ui.tipsBtn.setAttribute('aria-pressed', s.tipsOnly ? 'true' : 'false');
-      ui.intensityBtn.textContent = 'Animation: ' + (s.intensity === 'low' ? 'Low' : 'Standard');
-      ui.intensityBtn.setAttribute('aria-pressed', s.intensity === 'low' ? 'true' : 'false');
-      refreshQuietLabel();
-    }
-    function setEnabled(on) {
-      lsSet(KEY_ENABLED, on ? '1' : '0'); store.set({ enabled: on }); refreshSettingsLabels();
-      if (!on) { closeMenu(); hideBubble(); hideRing(); gesture = null; mode = 'rest'; }
-      ui.host.classList.toggle('is-disabled', !on); measure(); wake();
-    }
-    function setTipsOnly(on) { lsSet(KEY_TIPS_ONLY, on ? '1' : '0'); store.set({ tipsOnly: on }); refreshSettingsLabels(); }
-    function setIntensity(value) { var low = value === 'low'; lsSet(KEY_INTENSITY, low ? 'low' : 'standard'); store.set({ intensity: low ? 'low' : 'standard' }); refreshSettingsLabels(); wake(); }
     function setQuiet(on, announce) {
       lsSet(KEY_QUIET, on ? '1' : null);
       store.set({ quiet: on });
       ui.host.classList.toggle('is-quiet', on);
-      refreshSettingsLabels();
+      refreshQuietLabel();
       closeMenu();
       if (on) {
         seqToken++; hideRing(); hideBubble(); gesture = null; mode = 'rest'; look = lookGoal = 0;
@@ -976,7 +914,6 @@
         case 'applyStep': api.onApplyStep(d.label); break;
         case 'save': api.onSaveVacancy(); break;
         case 'empty': api.onEmptyResults(d.kind); break;
-        default: api.onRecruitmentEvent(d.type, d); break;
       }
     }
 
@@ -1064,8 +1001,6 @@
       doc.addEventListener('transitionend', function (e) { if (e.target && e.target.classList && (e.target.classList.contains('sheet') || e.target.classList.contains('sheet-scrim'))) scheduleScan(); }, true);
       doc.addEventListener('visibilitychange', function () { if (!doc.hidden) { measure(); wake(); } });
       doc.addEventListener('sa-guide', function (e) { dispatch(e.detail); });
-      doc.addEventListener('sa-guide:event', function (e) { dispatch(e.detail); });
-      win.addEventListener('sa-guide:event', function (e) { dispatch(e.detail); });
       win.addEventListener('resize', function () { scheduleScan(); });
       win.addEventListener('orientationchange', function () { setTimeout(scan, 250); });
       if (win.visualViewport) win.visualViewport.addEventListener('resize', scheduleScan);
@@ -1080,21 +1015,11 @@
           if (step) api.onApplyStep(step);
         }).observe(toast, { childList: true, characterData: true, subtree: true });
       }
-      if (win.IntersectionObserver) {
-        guideObserver = new win.IntersectionObserver(function (entries) {
-          var visibleNow = entries.length ? entries[entries.length - 1].isIntersecting : true;
-          store.set({ offscreen: !visibleNow });
-          if (visibleNow) wake();
-        }, { threshold: 0.01 });
-        guideObserver.observe(ui.btn);
-      }
       setInterval(tick, 1000);
     }
 
     function wireUi() {
       ui.btn.addEventListener('click', function () { st().menuOpen ? closeMenu() : openMenu(); });
-      ui.btn.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); st().menuOpen ? closeMenu() : openMenu(); } });
-      ui.closeBubble.addEventListener('click', function (e) { e.stopPropagation(); hideBubble(); });
       ui.bubble.addEventListener('click', function () {
         var a = bubbleAction; hideBubble();
         if (a === 'scam') callGlobal('showScamCheck');
@@ -1105,10 +1030,6 @@
         var act = e.target.closest && e.target.closest('[data-act]');
         if (!act) return;
         if (act.getAttribute('data-act') === 'quiet') setQuiet(!st().quiet, true);
-        else if (act.getAttribute('data-act') === 'enabled') setEnabled(!st().enabled);
-        else if (act.getAttribute('data-act') === 'tips') setTipsOnly(!st().tipsOnly);
-        else if (act.getAttribute('data-act') === 'intensity') setIntensity(st().intensity === 'low' ? 'standard' : 'low');
-        else if (act.getAttribute('data-act') === 'reset') { api.resetOnboarding(); say(MSG.onboard, { force: true, ms: 4400 }); }
         else hideForDay();
       });
       doc.addEventListener('pointerdown', function (e) { if (st().menuOpen && !ui.host.contains(e.target)) closeMenu(); }, true);

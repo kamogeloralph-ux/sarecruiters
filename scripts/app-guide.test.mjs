@@ -39,10 +39,7 @@ test("toast steps count successes only", () => {
 
 test("messages stay short enough for one line on a phone", () => {
   const all = [G.MSG.onboard, G.MSG.apply, G.MSG.done, G.MSG.empty, G.MSG.emptySaved, ...G.MSG.opened, ...G.MSG.saved, ...G.TIPS.map(t => t.text)];
-  for (const m of all) {
-    if (m === G.MSG.onboard) assert.equal(m, "Hi, I’m your SA Recruiters guide. Tap me anytime for help.");
-    else assert.ok(m.length <= 46, m);
-  }
+  for (const m of all) assert.ok(m.length <= 46, m);
 });
 
 test("guide is loaded by the app and versioned with the deploy", () => {
