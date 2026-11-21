@@ -2090,7 +2090,7 @@ async function startupResponse(request, env, ctx, origin) {
   // Public traffic must never use D1 as a cache validator or recovery source.
   // The scheduled sync publishes the authoritative R2 snapshot. Serving the
   // last good snapshot is safer than spending the account-wide D1 read budget.
-  const cacheKey = new Request(new URL("/api/startup?schema=edge-first-v14", request.url), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/startup?schema=edge-first-v15", request.url), { method: "GET" });
   let dataVersion = 0;
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
