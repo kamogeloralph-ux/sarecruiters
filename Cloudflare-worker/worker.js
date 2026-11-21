@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/cloudflare";
 import { candidateCvKey, cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, scanCvWithGemini } from "./cv-scan.js";
 import { fetchProfile, listUntidied, pairPositions, similarPosition, splitTitles, tidyCandidateById } from "./cv-tidy.js";
 import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
-import { careerjetSearchResponse, careerjetEgressDiagnostic } from "./careerjet.js";
+import { adzunaSearchResponse } from "./adzuna.js";
 import { putCached } from "./ai.js";
 import { publishTipchatVacancyRoundup } from "./tipchat-publisher.js";
 var __defProp = Object.defineProperty;
@@ -3822,12 +3822,9 @@ var worker_default = {
         }
         return json({ ok: true, sent: results.filter((row) => row.sent).length, matched: results.length, results }, 200, origin);
       }
-      if (path === "/api/jobs/careerjet-egress" && request.method === "GET") {
-        return await careerjetEgressDiagnostic(request, env, origin, json);
-      }
-      if (path === "/api/jobs/careerjet" && request.method === "GET") {
-        // Careerjet partner search (see careerjet.js). The API key stays in a Worker secret.
-        return await careerjetSearchResponse(request, env, origin, json);
+      if (path === "/api/jobs/adzuna" && request.method === "GET") {
+        // Adzuna live job search for /find-jobs/ (see adzuna.js). App ID/Key stay in Worker secrets.
+        return await adzunaSearchResponse(request, env, origin, json);
       }
       if (path.startsWith("/api/ai/") || path.startsWith("/api/admin/ai/")) {
         // Gemini features (see ai-routes.js). Admin-only, or signed-in + Turnstile + rate limit.
