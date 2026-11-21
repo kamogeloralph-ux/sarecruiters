@@ -7,7 +7,7 @@
 <meta name="color-scheme" content="light">
 <title>Find jobs in South Africa — SA Recruiters</title>
 <link rel="canonical" href="https://sa-recruiters.co.za/find-jobs/">
-<meta name="description" content="Search thousands of jobs across South Africa by job title, skill or town, with results from our partner Careerjet.">
+<meta name="description" content="Search thousands of jobs across South Africa by job title, skill or town, with results from our partner Adzuna.">
 <link rel="icon" type="image/png" sizes="256x256" href="/icons/sa-recruiters-icon-color.png?v=legal-color-1">
 <style>
 :root{--bg:#fff;--ink:#17212b;--muted:#637184;--line:#d9e2ec;--blue:#1769cf;--blue-deep:#1252a0;--wash:#f7f9fc;--warn:#fff8e6;--warn-line:#f0d58a;--err:#a4262c;color-scheme:light}
@@ -66,7 +66,7 @@ a.apply:hover{background:var(--blue);color:#fff}
 <main class="wrap">
 <a class="brand" href="/"><img src="/icons/sa-recruiters-icon-color.png?v=legal-color-1" alt="" width="40" height="40"><span>SA Recruiters</span></a>
 <h1>Find jobs in South Africa</h1>
-<p class="lede">Search by job title, skill or town. Results come from our partner Careerjet and open on the employer’s or job board’s own site.</p>
+<p class="lede">Search by job title, skill or town. Results come from our partner Adzuna and open on the employer’s or job board’s own site.</p>
 
 <form class="search" id="form" role="search" autocomplete="off">
   <div class="field">
@@ -100,13 +100,13 @@ a.apply:hover{background:var(--blue);color:#fff}
   <button type="button" id="next">Next</button>
 </nav>
 
-<p class="attrib">Jobs by <a href="https://www.careerjet.co.za/" target="_blank" rel="noopener">Careerjet</a>. SA Recruiters does not control these listings and cannot verify the advertisers. Looking for vacancies we have checked ourselves? <a href="/">Browse the SA Recruiters directory</a>.</p>
+<p class="attrib">Jobs by <a href="https://www.adzuna.co.za/" target="_blank" rel="noopener">Adzuna</a>. SA Recruiters does not control these listings and cannot verify the advertisers. Looking for vacancies we have checked ourselves? <a href="/">Browse the SA Recruiters directory</a>.</p>
 </main>
 
 <script>
 (function () {
   "use strict";
-  var API = "https://sarecruiters-uploader.kamogeloralph.workers.dev/api/jobs/careerjet";
+  var API = "https://sarecruiters-uploader.kamogeloralph.workers.dev/api/jobs/adzuna";
   var PAGE_SIZE = 10;
   var $ = function (id) { return document.getElementById(id); };
   var form = $("form"), qEl = $("q"), lEl = $("l"), sortEl = $("sort"), go = $("go");
@@ -218,22 +218,6 @@ a.apply:hover{background:var(--blue);color:#fff}
     info.textContent = "Page " + state.page + (state.pages ? " of " + state.pages : "");
   }
 
-  function showLocations(data) {
-    setStatus("Which place do you mean?");
-    if (!data.locations.length) {
-      setStatus("We couldn’t recognise that location. Try a nearby town or city.", true);
-      return;
-    }
-    var wrap = el("div", "picks");
-    data.locations.forEach(function (name) {
-      var b = el("button", null, name);
-      b.type = "button";
-      b.addEventListener("click", function () { lEl.value = name; run(1, true); });
-      wrap.appendChild(b);
-    });
-    picksEl.appendChild(wrap);
-  }
-
   function run(page, push) {
     state.q = qEl.value.trim();
     state.l = lEl.value.trim();
@@ -256,7 +240,6 @@ a.apply:hover{background:var(--blue);color:#fff}
     u.searchParams.set("sort", state.sort);
     u.searchParams.set("page", String(state.page));
     u.searchParams.set("page_size", String(PAGE_SIZE));
-    u.searchParams.set("page_url", location.href);
 
     fetch(u.toString(), { headers: { Accept: "application/json" } })
       .then(function (r) { return r.json().catch(function () { return null; }).then(function (body) { return { ok: r.ok, body: body }; }); })
@@ -267,7 +250,7 @@ a.apply:hover{background:var(--blue);color:#fff}
           setStatus((b && b.error) || "Job search is unavailable right now. Please try again in a moment.", true);
           return;
         }
-        if (b.type === "locations") showLocations(b); else showJobs(b);
+        showJobs(b);
       })
       .catch(function () {
         if (mine !== seq) return;
