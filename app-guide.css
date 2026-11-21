@@ -1,22 +1,25 @@
 /* ============================================================
-   SA RECRUITERS — app-guide.css  (Character Guide, see app-guide.js)
-   Everything is scoped under #sa-guide. The layer ignores pointer
-   events; only the 44px character (while resting), an action tip, and
-   the open quick-help menu can be tapped.
+   SA RECRUITERS — app-guide.css  (Character Guide v2, see app-guide.js)
+   The overlay ignores pointer events. Only the 44px character at rest,
+   the bubble's close/action buttons, and the open menu can be tapped.
    ============================================================ */
 #sa-guide{
-  position:fixed;inset:0;z-index:10040;pointer-events:none;
-  --sg-ink:var(--m-ink,#1769cf);
-  --sg-ink-far:#0f4f9c;
-  --sg-gold:#ffb612;
-  --sg-hand:#ffffff;
-  --sg-hand-far:#dbe7f8;
-  --sg-surface:var(--card,#1c1c1e);
-  --sg-text:var(--text,#fff);
-  --sg-border:var(--border-strong,rgba(255,255,255,.14));
-  contain:layout style;
+  position:fixed;inset:0;z-index:10040;pointer-events:none;contain:layout style;
+  /* dark is the app default; light overrides below */
+  --sg-ink:#5aa2ff;--sg-ink-far:#3b7fd6;
+  --sg-disc:#26272b;--sg-disc-edge:rgba(255,255,255,.16);
+  --sg-gold:#ffb612;--sg-hand:#fff;--sg-hand-far:#dbe7f8;--sg-eye:#0d1b2e;
+  --sg-surface:var(--card,#1c1c1e);--sg-text:var(--text,#fff);
+  --sg-border:var(--border-strong,rgba(255,255,255,.2));
+  --sg-accent:#5aa2ff;--sg-act-text:#07213f;
 }
-[data-theme="light"] #sa-guide{--sg-surface:var(--card,#fff);--sg-text:var(--text,#111)}
+[data-theme="light"] #sa-guide{
+  --sg-ink:#1769cf;--sg-ink-far:#0f4f9c;
+  --sg-disc:#ffffff;--sg-disc-edge:rgba(16,24,40,.16);
+  --sg-eye:#ffffff;--sg-surface:var(--card,#fff);--sg-text:var(--text,#111);
+  --sg-border:var(--border-strong,rgba(16,24,40,.22));--sg-accent:#1769cf;--sg-act-text:#fff;
+}
+#sa-guide.is-off{display:none}
 
 /* ---------- character ---------- */
 #sa-guide .sa-guide__char{
@@ -27,70 +30,84 @@
   -webkit-tap-highlight-color:transparent;transition:opacity .25s ease;
 }
 #sa-guide.is-on .sa-guide__char{opacity:1}
-#sa-guide.is-on.is-mini .sa-guide__char{opacity:.7}
-#sa-guide.is-on.is-quiet .sa-guide__char{opacity:.88}
+#sa-guide.is-on.is-quiet .sa-guide__char{opacity:.85}
 #sa-guide .sa-guide__char[data-live="true"]{pointer-events:auto}
-#sa-guide .sa-guide__char:focus-visible{outline:2px solid var(--sg-ink);outline-offset:2px}
-
-/* Away = a text field has focus or a tall sheet needs the space: fade out and stay untappable */
+#sa-guide .sa-guide__char:focus-visible{outline:3px solid var(--sg-accent);outline-offset:2px}
+/* away = typing / tall sheet / toast over its spot: fade out, stay untappable */
 #sa-guide.is-away .sa-guide__char,#sa-guide.is-away .sa-guide__bubble{opacity:0;pointer-events:none!important}
 
 .sa-guide__svg{display:block;width:100%;height:100%;overflow:visible;
-  filter:drop-shadow(0 0 .7px rgba(255,255,255,.95)) drop-shadow(0 2px 2.5px rgba(0,0,0,.30))}
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.30))}
+.sa-guide__svg .sg-disc{fill:var(--sg-disc);stroke:var(--sg-disc-edge);stroke-width:1}
 .sa-guide__svg .sg-limb line{stroke:var(--sg-ink);stroke-linecap:round;fill:none}
 .sa-guide__svg .sg-far line{stroke:var(--sg-ink-far)}
 .sa-guide__svg .sg-fill{fill:var(--sg-ink)}
-.sa-guide__svg .sg-hand{fill:var(--sg-hand);stroke:var(--sg-ink);stroke-width:.9}
+.sa-guide__svg .sg-hand{fill:var(--sg-hand);stroke:var(--sg-ink);stroke-width:1.1}
 .sa-guide__svg .sg-far .sg-hand{fill:var(--sg-hand-far);stroke:var(--sg-ink-far)}
 .sa-guide__svg .sg-tie{fill:var(--sg-gold)}
-.sa-guide__svg .sg-eye{fill:#fff}
-.sa-guide__svg .sg-shadow{fill:rgba(0,0,0,.28)}
+.sa-guide__svg .sg-eye{fill:var(--sg-eye)}
+.sa-guide__svg .sg-shadow{fill:rgba(0,0,0,.22)}
 .sa-guide__svg .sg-star{fill:var(--sg-gold)}
-.sa-guide__svg .sg-q path{stroke:var(--sg-gold)}
+.sa-guide__svg .sg-q path,.sa-guide__svg .sg-zz path{stroke:var(--sg-gold)}
 .sa-guide__svg .sg-qdot{fill:var(--sg-gold)}
+/* held props sit on a white badge so they read at 32px in either theme */
+.sa-guide__svg .sg-badge{fill:#fff;stroke:var(--sg-ink);stroke-width:1.2}
+.sa-guide__svg .sg-bookmark{fill:var(--sg-gold);stroke:#0f4f9c;stroke-width:1;stroke-linejoin:round}
+.sa-guide__svg .sg-funnel{fill:#1769cf;stroke:#1769cf;stroke-width:.8;stroke-linejoin:round}
+.sa-guide__svg .sg-wifi{fill:none;stroke:#1769cf;stroke-width:1.6;stroke-linecap:round}
+.sa-guide__svg .sg-wifidot{fill:#1769cf}
+.sa-guide__svg .sg-slash{fill:none;stroke:#c2410c;stroke-width:1.8;stroke-linecap:round}
 
-/* Idle breathing is the only always-on animation, and it is compositor-only */
-#sa-guide.is-calm .sa-guide__svg{transform-origin:50% 100%;animation:sg-breathe 3.6s ease-in-out infinite}
-@keyframes sg-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.012,1.028)}}
+/* offline badge: an icon, not just a colour */
+.sa-guide__badge{position:absolute;right:-3px;top:-3px;width:18px;height:18px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;background:#c2410c;color:#fff;
+  border:1.5px solid var(--sg-disc);pointer-events:none}
+.sa-guide__badge[hidden]{display:none}
+.sa-guide__badge svg{width:11px;height:11px}
 
-/* ---------- speech bubble (one line, never intercepts taps) ---------- */
+/* Idle breathing is the only always-on animation (compositor only) */
+#sa-guide.is-calm .sa-guide__svg{transform-origin:50% 100%;animation:sg-breathe 4s ease-in-out infinite}
+@keyframes sg-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.01,1.022)}}
+
+/* ---------- speech bubble: max two lines, strong contrast, close button ---------- */
 #sa-guide .sa-guide__bubble{
-  position:absolute;left:0;top:0;max-width:min(300px,calc(100vw - 24px));
+  position:absolute;left:0;top:0;width:max-content;max-width:min(272px,calc(100vw - 24px));
   visibility:hidden;opacity:0;pointer-events:none;
   transition:opacity .2s ease,visibility 0s linear .2s;
 }
 #sa-guide .sa-guide__bubble.is-visible{visibility:visible;opacity:1;transition:opacity .2s ease}
-#sa-guide .sa-guide__bubble.is-action{pointer-events:auto;cursor:pointer}
 .sa-guide__bubble-in{
-  position:relative;display:flex;align-items:center;gap:6px;max-width:inherit;box-sizing:border-box;
-  padding:7px 11px;border-radius:12px;
+  position:relative;display:flex;align-items:center;gap:7px;box-sizing:border-box;max-width:inherit;
+  padding:8px 6px 8px 12px;border-radius:14px;
   background:var(--sg-surface);color:var(--sg-text);
-  border:1px solid var(--sg-border);box-shadow:0 6px 18px -6px rgba(0,0,0,.45);
-  font:600 12.5px/1.25 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
-  white-space:nowrap;
+  border:1px solid var(--sg-border);box-shadow:0 8px 22px -8px rgba(0,0,0,.5);
+  font:600 13px/1.3 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
 }
-.sa-guide__text{overflow:hidden;text-overflow:ellipsis}
-.sa-guide__icon{display:inline-flex;flex:none;color:var(--sg-ink)}
+.sa-guide__text{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.sa-guide__icon{display:inline-flex;flex:none;color:var(--sg-accent)}
+.sa-guide__act,.sa-guide__x{pointer-events:auto;appearance:none;margin:0;cursor:pointer;font:inherit}
+.sa-guide__act{flex:none;min-height:30px;padding:0 10px;border:0;border-radius:9px;background:var(--sg-accent);color:var(--sg-act-text);font-weight:700;font-size:12px}
+.sa-guide__act[hidden]{display:none}
+.sa-guide__x{flex:none;width:30px;height:30px;border:0;border-radius:50%;background:transparent;color:var(--sg-text);opacity:.7;font-size:20px;line-height:1}
+.sa-guide__x:hover,.sa-guide__x:focus-visible{opacity:1;background:rgba(127,127,127,.18)}
+.sa-guide__act:focus-visible,.sa-guide__x:focus-visible{outline:2px solid var(--sg-accent);outline-offset:1px}
 .sa-guide__bubble-in::after{
-  content:"";position:absolute;left:var(--sg-tail,24px);width:9px;height:9px;margin-left:-4.5px;
-  background:var(--sg-surface);transform:rotate(45deg);
+  content:"";position:absolute;left:var(--sg-tail,24px);width:10px;height:10px;margin-left:-5px;
+  background:var(--sg-surface);transform:rotate(45deg);pointer-events:none;
 }
-.sa-guide__bubble[data-side="above"] .sa-guide__bubble-in::after{bottom:-5px;border-right:1px solid var(--sg-border);border-bottom:1px solid var(--sg-border)}
-.sa-guide__bubble[data-side="below"] .sa-guide__bubble-in::after{top:-5px;border-left:1px solid var(--sg-border);border-top:1px solid var(--sg-border)}
-#sa-guide .sa-guide__bubble.is-visible .sa-guide__bubble-in{animation:sg-pop .26s cubic-bezier(.2,1.2,.4,1) both}
-@keyframes sg-pop{from{transform:translateY(4px) scale(.94);opacity:0}to{transform:none;opacity:1}}
+.sa-guide__bubble[data-side="above"] .sa-guide__bubble-in::after{bottom:-6px;border-right:1px solid var(--sg-border);border-bottom:1px solid var(--sg-border)}
+.sa-guide__bubble[data-side="below"] .sa-guide__bubble-in::after{top:-6px;border-left:1px solid var(--sg-border);border-top:1px solid var(--sg-border)}
+#sa-guide .sa-guide__bubble.is-visible .sa-guide__bubble-in{animation:sg-pop .24s cubic-bezier(.2,1.2,.4,1) both}
+@keyframes sg-pop{from{transform:translateY(4px) scale(.95);opacity:0}to{transform:none;opacity:1}}
 
-/* ---------- highlight ring around the card being pointed at ---------- */
-#sa-guide .sa-guide__ring{
-  position:absolute;box-sizing:border-box;pointer-events:none;opacity:0;
-  border:2px solid var(--sg-ink);transition:opacity .2s ease;
-}
-#sa-guide .sa-guide__ring.is-on{opacity:1;animation:sg-ring 1.3s ease-out 3}
-@keyframes sg-ring{0%{box-shadow:0 0 0 0 rgba(23,105,207,.55)}100%{box-shadow:0 0 0 12px rgba(23,105,207,0)}}
+/* ---------- highlight ring around what is being pointed at ---------- */
+#sa-guide .sa-guide__ring{position:absolute;box-sizing:border-box;pointer-events:none;opacity:0;border:2px solid var(--sg-accent);transition:opacity .2s ease}
+#sa-guide .sa-guide__ring.is-on{opacity:1;animation:sg-ring 1.3s ease-out 2}
+@keyframes sg-ring{0%{box-shadow:0 0 0 0 rgba(90,162,255,.5)}100%{box-shadow:0 0 0 10px rgba(90,162,255,0)}}
 
 /* ---------- quick-help menu (tap the character) ---------- */
 #sa-guide .sa-guide__menu{
-  position:absolute;left:0;top:0;width:232px;box-sizing:border-box;padding:12px;
+  position:absolute;left:0;top:0;width:240px;box-sizing:border-box;padding:12px;
   background:var(--sg-surface);color:var(--sg-text);
   border:1px solid var(--sg-border);border-radius:16px;box-shadow:0 14px 34px -10px rgba(0,0,0,.55);
   pointer-events:auto;opacity:0;visibility:hidden;
@@ -98,24 +115,46 @@
 }
 #sa-guide .sa-guide__menu[hidden]{display:none}
 #sa-guide .sa-guide__menu.is-open{opacity:1;visibility:visible;animation:sg-pop .2s ease both}
+.sa-guide__who{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--sg-accent)}
 .sa-guide__tip{margin:0 0 10px;font-weight:600}
 .sa-guide__chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.sa-guide__chip,.sa-guide__toggle{
+.sa-guide__chip,.sa-guide__toggle,.sa-guide__link{
   appearance:none;margin:0;border:1px solid var(--sg-border);border-radius:10px;cursor:pointer;
   background:transparent;color:inherit;font:inherit;font-weight:600;
 }
 .sa-guide__chip{min-height:40px;padding:6px 8px;font-size:12.5px;line-height:1.2}
-.sa-guide__chip:active,.sa-guide__toggle:active{background:var(--m-wash-2,rgba(23,105,207,.14))}
 .sa-guide__foot{display:flex;gap:6px;margin-top:8px}
-.sa-guide__toggle{flex:1;min-height:36px;padding:4px 8px;font-size:12px;font-weight:500;color:var(--text-2,#8f8f8f)}
-.sa-guide__toggle[aria-pressed="true"]{color:var(--sg-ink);border-color:var(--sg-ink)}
-.sa-guide__chip:focus-visible,.sa-guide__toggle:focus-visible{outline:2px solid var(--sg-ink);outline-offset:1px}
+.sa-guide__toggle{flex:1;min-height:38px;padding:4px 8px;font-size:12px;font-weight:600}
+.sa-guide__toggle[aria-pressed="true"]{color:var(--sg-accent);border-color:var(--sg-accent)}
+.sa-guide__link{display:block;width:100%;margin-top:6px;min-height:36px;border:0;font-size:12px;font-weight:600;color:var(--sg-accent);text-decoration:underline}
+.sa-guide__chip:active,.sa-guide__toggle:active{background:rgba(127,127,127,.16)}
+.sa-guide__chip:focus-visible,.sa-guide__toggle:focus-visible,.sa-guide__link:focus-visible{outline:2px solid var(--sg-accent);outline-offset:1px}
+
+/* ---------- Guide card in Menu (settings) ---------- */
+.sa-guide-settings{margin:14px 16px 4px;padding:14px;border-radius:16px;border:1px solid var(--border-strong,rgba(127,127,127,.28));background:var(--card,#1c1c1e);color:var(--text,#fff)}
+.sa-guide-settings.is-disabled .sa-guide-settings__row:not(:first-of-type){opacity:.55}
+.sa-guide-settings__title{margin:0 0 6px;font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--text-2,#9a9aa0)}
+.sa-guide-settings__row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:6px 0;border-top:1px solid var(--border,rgba(127,127,127,.18))}
+.sa-guide-settings__title+.sa-guide-settings__row{border-top:0}
+.sa-guide-settings__copy{display:flex;flex-direction:column;min-width:0}
+.sa-guide-settings__label{font-size:15px;font-weight:600}
+.sa-guide-settings__help{font-size:12px;color:var(--text-2,#9a9aa0)}
+.sa-guide-settings__switch{position:relative;flex:none;width:52px;height:32px;border-radius:16px;border:0;padding:0;cursor:pointer;background:rgba(127,127,127,.35);transition:background .2s}
+.sa-guide-settings__switch.is-on{background:var(--m-ink,#1769cf)}
+.sa-guide-settings__knob{position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .2s}
+.sa-guide-settings__switch.is-on .sa-guide-settings__knob{transform:translateX(20px)}
+.sa-guide-settings__switch:disabled,.sa-guide-settings__opt:disabled{cursor:default;opacity:.5}
+.sa-guide-settings__seg{display:flex;flex:none;border:1px solid var(--border-strong,rgba(127,127,127,.35));border-radius:10px;overflow:hidden}
+.sa-guide-settings__opt{appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:600;min-height:36px;padding:0 14px;cursor:pointer}
+.sa-guide-settings__opt[aria-checked="true"]{background:var(--m-ink,#1769cf);color:#fff}
+.sa-guide-settings__reset{display:block;width:100%;margin-top:8px;min-height:44px;border-radius:10px;border:1px solid var(--border-strong,rgba(127,127,127,.35));background:transparent;color:inherit;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.sa-guide-settings button:focus-visible{outline:2px solid var(--m-ink,#1769cf);outline-offset:2px}
 
 @media (prefers-reduced-motion:reduce){
   #sa-guide.is-calm .sa-guide__svg{animation:none}
-  #sa-guide .sa-guide__ring.is-on{animation:none;box-shadow:0 0 0 5px rgba(23,105,207,.22)}
+  #sa-guide .sa-guide__ring.is-on{animation:none;box-shadow:0 0 0 5px rgba(90,162,255,.25)}
   #sa-guide .sa-guide__bubble.is-visible .sa-guide__bubble-in,
   #sa-guide .sa-guide__menu.is-open{animation:none}
-  #sa-guide .sa-guide__char{transition:none}
+  #sa-guide .sa-guide__char,.sa-guide-settings__switch,.sa-guide-settings__knob{transition:none}
 }
 @media print{#sa-guide{display:none}}
