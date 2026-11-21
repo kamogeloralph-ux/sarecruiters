@@ -441,7 +441,6 @@ window.sentryOnLoad = function () {
 
       <div class="pgroup-label">Preferences</div>
       <div class="pgrouped-list">
-        <button class="profile-menu-item" data-ripple onclick="openSaGuideSettings()" aria-label="Guide settings"><span class="mi-icon tile-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l2.5 2.5"/><path d="M8 3.8 6.5 2.5M16 3.8 17.5 2.5"/></svg></span><span>Guide settings<span class="mi-sub">Control tips, quiet mode and animation</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
         <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray"><svg><use href="icons.svg#i52b638"/></svg></span><span>Switch theme<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
         <button class="profile-menu-item" data-ripple onclick="window.open('/privacy/','_blank','noopener')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>Privacy Policy<span class="mi-sub">How your data is handled &amp; protected</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
         <button class="profile-menu-item" data-ripple onclick="window.location.assign('/popia-certificate/')"><span class="mi-icon tile-gray"><svg><use href="icons.svg#ib91007"/></svg></span><span>POPIA Registration<span class="mi-sub">Information Regulator certificate, Reg. no. 2026-072335</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -1018,19 +1017,6 @@ window.sentryOnLoad = function () {
   </div>
 </div>
 
-<div class="sheet-scrim" id="sa-guide-settings-overlay">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sa-guide-settings-title">
-    <div class="sheet-handle"></div><button class="sheet-close-btn" type="button" data-sa-guide-close aria-label="Close guide settings" title="Close">×</button>
-    <h3 id="sa-guide-settings-title">Guide settings</h3>
-    <p class="helper-note">Choose when the SA Recruiters guide can speak or animate. Changes are saved on this device.</p>
-    <label class="terms-accept-row" for="sa-guide-enabled"><input id="sa-guide-enabled" type="checkbox"><span><strong>Guide</strong><small>Show the guide and contextual help.</small></span></label>
-    <label class="terms-accept-row" for="sa-guide-quiet"><input id="sa-guide-quiet" type="checkbox"><span><strong>Quiet mode</strong><small>Keep the guide visible but stop unsolicited tips.</small></span></label>
-    <label class="terms-accept-row" for="sa-guide-tips-only"><input id="sa-guide-tips-only" type="checkbox"><span><strong>Show tips only</strong><small>Prefer short actionable tips over celebrations.</small></span></label>
-    <div class="field"><label for="sa-guide-intensity">Animation intensity</label><select id="sa-guide-intensity"><option value="low">Low</option><option value="standard">Standard</option></select></div>
-    <button class="sheet-submit" type="button" data-sa-guide-reset>Reset guide onboarding</button>
-  </div>
-</div>
-
 <!-- ============ PROFILE SETTINGS: EDIT PROFILE ============ -->
 <div class="sheet-scrim" id="edit-profile-overlay">
   <div class="sheet">
@@ -1582,7 +1568,7 @@ window.sentryOnLoad = function () {
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=3f0df464b1"></script>
+<script type="module" src="app.bundle.min.js?v=3fe19957db"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
 <script src="app-alerts.js?v=al-8" defer></script>
 <script src="app-pull-refresh.js?v=ptr-1" defer></script>

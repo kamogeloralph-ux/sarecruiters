@@ -6,7 +6,6 @@
 //  top-level side effects (everything else resolves via imports).
 //  Built by scripts/bundle-app.js (vite build) into app.bundle.min.js.
 // ============================================================
-import './app-guide-integration.js';
 import './app-core.js';
 import './app-data.js';
 import './app-cards.js';

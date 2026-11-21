@@ -1032,7 +1032,7 @@ export function setConnectionStatus(state, timestamp) {
 }
 
 export function initConnectionStatus() {
-  window.addEventListener('offline', function() { setConnectionStatus('offline', lastDataRefreshAt); if (typeof window.saGuideEvent === 'function') window.saGuideEvent('offline', { source: 'connection' }); try { trackEvent('offline_detected', 'pwa', null); } catch(e) {} });
+  window.addEventListener('offline', function() { setConnectionStatus('offline', lastDataRefreshAt); try { trackEvent('offline_detected', 'pwa', null); } catch(e) {} });
   window.addEventListener('online', function() {
     setConnectionStatus('loading', lastDataRefreshAt);
     loadAll();
@@ -1244,7 +1244,6 @@ export var loadAllRequestId = 0;
 export async function loadAll(options) {
   var requestId = ++loadAllRequestId;
   var forceFresh = !!(options && options.fresh);
-  var hadVacanciesBeforeLoad = vacanciesCache.length > 0;
   setConnectionStatus(navigator.onLine ? 'loading' : 'offline', lastDataRefreshAt);
   if (navigator.onLine === false) {
     try { trackEvent('offline_launch', 'pwa', null); } catch(e) {}
@@ -1254,7 +1253,6 @@ export async function loadAll(options) {
       if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
     }
     setConnectionStatus('offline', lastDataRefreshAt);
-    if (typeof window.saGuideEvent === 'function') window.saGuideEvent('offline', { source: 'load' });
     return;
   }
   // Prefer the edge-cached aggregate. If it is unavailable, preserve the
@@ -1342,10 +1340,6 @@ export async function loadAll(options) {
     if (typeof n === 'number') { set_poolCandidateCount(n); updateStats(); }
   }).catch(function () {});
   filterAndRenderCached();
-  if (typeof window.saGuideEvent === 'function') {
-    window.saGuideEvent('new-jobs-loaded', { count: vacanciesCache.length, fresh: forceFresh });
-    if (forceFresh && hadVacanciesBeforeLoad) window.saGuideEvent('fresh-jobs', { count: vacanciesCache.length });
-  }
   if (typeof renderRestoredScreenContent === 'function') renderRestoredScreenContent();
   // The user may already be viewing Vacancies while startup counts are
   // loading. Refresh that screen after the counts arrive so count-based
