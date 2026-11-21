@@ -1205,15 +1205,20 @@
 
     // ---------- settings card inside the Menu screen ----------
     var cardRefs = null;
+    function switchControl(id, labelledBy) {
+      var sw = el('button', 'sa-guide-settings__switch'); sw.type = 'button'; sw.id = id;
+      sw.setAttribute('role', 'switch'); sw.setAttribute('aria-labelledby', labelledBy); sw.setAttribute('aria-checked', 'false');
+      var txt = el('span', 'sa-guide-settings__state', 'OFF'); txt.setAttribute('aria-hidden', 'true');
+      sw.appendChild(txt); sw.appendChild(el('span', 'sa-guide-settings__knob'));
+      return sw;
+    }
     function switchRow(id, label, help) {
       var row = el('div', 'sa-guide-settings__row');
       var copy = el('div', 'sa-guide-settings__copy');
       var l = el('span', 'sa-guide-settings__label', label); l.id = id + '-l';
       copy.appendChild(l);
       if (help) copy.appendChild(el('span', 'sa-guide-settings__help', help));
-      var sw = el('button', 'sa-guide-settings__switch'); sw.type = 'button'; sw.id = id;
-      sw.setAttribute('role', 'switch'); sw.setAttribute('aria-labelledby', id + '-l'); sw.setAttribute('aria-checked', 'false');
-      sw.appendChild(el('span', 'sa-guide-settings__knob'));
+      var sw = switchControl(id, id + '-l');
       row.appendChild(copy); row.appendChild(sw);
       return { row: row, sw: sw };
     }
@@ -1221,35 +1226,70 @@
       var menu = doc.querySelector('#screen-menu .menu-scroll');
       if (!menu || doc.getElementById('sa-guide-settings')) return;
       var sec = el('section', 'sa-guide-settings'); sec.id = 'sa-guide-settings'; sec.setAttribute('aria-labelledby', 'sa-guide-settings-title');
-      var h = el('h2', 'sa-guide-settings__title', 'Guide \u00b7 ' + NAME); h.id = 'sa-guide-settings-title';
-      sec.appendChild(h);
-      var on = switchRow('sa-guide-on', 'Guide', 'Your job-search helper');
+
+      // header: avatar, name, status, master ON/OFF
+      var head = el('div', 'sa-guide-settings__head');
+      var av = el('span', 'sa-guide-settings__avatar'); av.setAttribute('aria-hidden', 'true');
+      var avRig = buildRig(doc); applyJoints(avRig, J({}), 1, 0, null); av.appendChild(avRig.svg);
+      var who = el('div', 'sa-guide-settings__who');
+      var h = el('h2', 'sa-guide-settings__title', NAME + ' \u00b7 Guide'); h.id = 'sa-guide-settings-title';
+      var sub = el('p', 'sa-guide-settings__sub');
+      who.appendChild(h); who.appendChild(sub);
+      var master = switchControl('sa-guide-on', 'sa-guide-settings-title');
+      head.appendChild(av); head.appendChild(who); head.appendChild(master);
+      sec.appendChild(head);
+
+      var more = el('button', 'sa-guide-settings__more'); more.type = 'button';
+      more.setAttribute('aria-expanded', 'false'); more.setAttribute('aria-controls', 'sa-guide-settings-body');
+      var moreTxt = el('span', '', 'Customize'); more.appendChild(moreTxt);
+      var chev = el('span', 'sa-guide-settings__chev'); chev.setAttribute('aria-hidden', 'true'); chev.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      more.appendChild(chev);
+      sec.appendChild(more);
+
+      var body = el('div', 'sa-guide-settings__body'); body.id = 'sa-guide-settings-body'; body.hidden = true;
       var quiet = switchRow('sa-guide-quiet', 'Quiet mode', 'No speech or reactions');
-      var tips = switchRow('sa-guide-tips', 'Show tips only', 'Helpful tips, no celebrations');
-      sec.appendChild(on.row); sec.appendChild(quiet.row); sec.appendChild(tips.row);
-      var seg = el('div', 'sa-guide-settings__row sa-guide-settings__row--seg');
+      var tips = switchRow('sa-guide-tips', 'Tips only', 'Helpful tips, no celebrations');
+      body.appendChild(quiet.row); body.appendChild(tips.row);
+      var seg = el('div', 'sa-guide-settings__row');
       var sl = el('span', 'sa-guide-settings__label', 'Animation'); sl.id = 'sa-guide-int-l';
       var grp = el('div', 'sa-guide-settings__seg'); grp.setAttribute('role', 'radiogroup'); grp.setAttribute('aria-labelledby', 'sa-guide-int-l');
       var optLow = el('button', 'sa-guide-settings__opt', 'Low'); optLow.type = 'button'; optLow.setAttribute('role', 'radio'); optLow.setAttribute('data-int', 'low');
       var optStd = el('button', 'sa-guide-settings__opt', 'Standard'); optStd.type = 'button'; optStd.setAttribute('role', 'radio'); optStd.setAttribute('data-int', 'standard');
-      grp.appendChild(optLow); grp.appendChild(optStd); seg.appendChild(sl); seg.appendChild(grp); sec.appendChild(seg);
+      grp.appendChild(optLow); grp.appendChild(optStd); seg.appendChild(sl); seg.appendChild(grp); body.appendChild(seg);
+      var rrow = el('div', 'sa-guide-settings__row');
+      var rcopy = el('div', 'sa-guide-settings__copy');
+      rcopy.appendChild(el('span', 'sa-guide-settings__label', 'Welcome intro'));
+      rcopy.appendChild(el('span', 'sa-guide-settings__help', 'Show the first-launch hello again'));
       var reset = el('button', 'sa-guide-settings__reset', 'Reset guide intro'); reset.type = 'button';
-      sec.appendChild(reset);
+      rrow.appendChild(rcopy); rrow.appendChild(reset); body.appendChild(rrow);
+      sec.appendChild(body);
+
       var anchor = menu.querySelector('.quick-access');
       if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(sec, anchor.nextSibling); else menu.insertBefore(sec, menu.firstChild);
 
-      on.sw.addEventListener('click', function () { applySettings({ enabled: !settings.enabled }); });
+      master.addEventListener('click', function () { applySettings({ enabled: !settings.enabled }); });
       quiet.sw.addEventListener('click', function () { applySettings({ mode: settings.mode === 'quiet' ? 'full' : 'quiet' }); });
       tips.sw.addEventListener('click', function () { applySettings({ mode: settings.mode === 'tips' ? 'full' : 'tips' }); });
       grp.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-int]'); if (b) applySettings({ intensity: b.getAttribute('data-int') }); });
       reset.addEventListener('click', function () { resetOnboarding(); });
-      cardRefs = { sec: sec, on: on.sw, quiet: quiet.sw, tips: tips.sw, low: optLow, std: optStd };
+      more.addEventListener('click', function () { toggleSettingsBody(); });
+      cardRefs = { sec: sec, on: master, quiet: quiet.sw, tips: tips.sw, low: optLow, std: optStd, sub: sub, more: more, body: body };
       renderSettingsCard();
+    }
+    function toggleSettingsBody(force) {
+      if (!cardRefs) return;
+      var open = force === undefined ? cardRefs.body.hidden : !!force;
+      cardRefs.body.hidden = !open;
+      cardRefs.more.setAttribute('aria-expanded', open ? 'true' : 'false');
+      cardRefs.sec.classList.toggle('is-open', open);
     }
     function renderSettingsCard() {
       if (!cardRefs) return;
       var s = settings;
-      function setSw(b, v, dis) { b.setAttribute('aria-checked', v ? 'true' : 'false'); b.disabled = !!dis; b.classList.toggle('is-on', !!v); }
+      function setSw(b, v, dis) {
+        b.setAttribute('aria-checked', v ? 'true' : 'false'); b.disabled = !!dis; b.classList.toggle('is-on', !!v);
+        var t = b.querySelector('.sa-guide-settings__state'); if (t) t.textContent = v ? 'ON' : 'OFF';
+      }
       setSw(cardRefs.on, s.enabled, false);
       setSw(cardRefs.quiet, s.mode === 'quiet', !s.enabled);
       setSw(cardRefs.tips, s.mode === 'tips', !s.enabled);
@@ -1257,6 +1297,7 @@
       cardRefs.std.setAttribute('aria-checked', s.intensity === 'standard' ? 'true' : 'false');
       cardRefs.low.disabled = cardRefs.std.disabled = !s.enabled;
       cardRefs.sec.classList.toggle('is-disabled', !s.enabled);
+      cardRefs.sub.textContent = !s.enabled ? 'Turned off' : (s.mode === 'quiet' ? 'Quiet mode' : s.mode === 'tips' ? 'Tips only' : 'Active') + ' \u00b7 ' + (s.intensity === 'low' ? 'Low' : 'Standard') + ' animation';
     }
     function openSettingsScreen() {
       closeMenu();
@@ -1264,6 +1305,7 @@
       if (tab) tab.click();
       setTimeout(function () {
         var sec = doc.getElementById('sa-guide-settings');
+        toggleSettingsBody(true);
         if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
         var first = sec && sec.querySelector('button'); if (first && first.focus) first.focus({ preventScroll: true });
       }, 120);
