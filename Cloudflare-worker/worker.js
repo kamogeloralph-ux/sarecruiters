@@ -2948,8 +2948,8 @@ var worker_default = {
       return new Response(null, { headers: corsHeaders(origin) });
     }
     try {
-      if (path === "/api/ats/sync" && request.method === "GET") {
-        if (!atsAuthMatches(request, env, url.searchParams.get("secret") || "")) return json({ ok: false, error: "Unauthorized" }, 401, origin);
+      if (path === "/api/ats/sync" && (request.method === "GET" || request.method === "POST")) {
+        if (!atsAuthMatches(request, env, request.method === "GET" ? (url.searchParams.get("secret") || "") : "")) return json({ ok: false, error: "Unauthorized" }, 401, origin);
         try {
           const results = await syncAtsFeeds(env);
           const vacancySnapshot = await buildPublicVacancySnapshotFromSupabase(env);
