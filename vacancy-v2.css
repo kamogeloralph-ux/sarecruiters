@@ -153,6 +153,8 @@
 #screen-allvacancies .vx-bar{padding-top:calc(env(safe-area-inset-top,0px) + 14px);padding-bottom:12px}
 #screen-allvacancies .vx-bar-title{text-align:left}
 #screen-allvacancies .vx-bar-title h1{font-size:22px;letter-spacing:-.035em}
+/* Back button is hidden app-wide (styles.css), so the header has two children: title + share. Use a 2-column grid so the title gets the full width instead of the 44px back-button slot. */
+#screen-allvacancies .vx-bar{grid-template-columns:minmax(0,1fr) 44px}
 #screen-allvacancies .vx-search{padding-top:10px;padding-bottom:12px;background:color-mix(in srgb,var(--bg) 94%,transparent);border-bottom:1px solid var(--separator)}
 #screen-allvacancies .vx-fields{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:8px}
 #screen-allvacancies .vx-field input{height:44px;border-radius:10px;font-size:14px;padding-left:39px}
