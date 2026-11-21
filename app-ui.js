@@ -130,6 +130,7 @@ restoreActiveScreenBeforeReveal();
 // ===== Vacancy-first home feed =====
 export var homeLocationFilter = '';
 export var HOME_VACANCY_CARD_LIMIT = 8;
+var lastGuideFilterKey = '';
 if (!Array.isArray(window.retailPriorityPreviewRows)) window.retailPriorityPreviewRows = [];
 export var retailPriorityPreviewPromise = null;
 export var retailPriorityPreviewLoaded = false;
@@ -377,6 +378,10 @@ export function renderHomeFeed() {
       homeVacancyMatchesLocation(v, homeLocationFilter);
   });
   var rows = matchingRows;
+  var guideFilterKey = query + '|' + (homeLocationFilter || '');
+  if (guideFilterKey !== lastGuideFilterKey && (query || homeLocationFilter) && typeof window.saGuideEvent === 'function') window.saGuideEvent('filters-active', { query: query, location: homeLocationFilter || null, count: matchingRows.length });
+  lastGuideFilterKey = guideFilterKey;
+  if (!matchingRows.length && (query || homeLocationFilter) && typeof window.saGuideEvent === 'function') window.saGuideEvent('empty-results', { kind: 'search' });
   rows.sort(function (a, b) {
     var retailOrder = Number(isRetailPriorityVacancy(b)) - Number(isRetailPriorityVacancy(a));
     return retailOrder || new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
@@ -936,6 +941,11 @@ export async function renderAccountPoolStatus() {
   try {
     var res = await supabaseClient.from('pool_candidates').select('id').eq('user_id', saAuthUser.id).limit(1).maybeSingle();
     if (el) el.textContent = (res && res.data) ? 'Listed — tap to update your CV' : 'Not listed yet — join free';
+    if (res && res.data) window.__saGuideProfileIncomplete = false;
+    else if (!window.__saGuideProfileIncomplete && typeof window.saGuideEvent === 'function') {
+      window.__saGuideProfileIncomplete = true;
+      window.saGuideEvent('profile-incomplete', { reason: 'cv-box-profile-missing' });
+    }
   } catch(e) { /* keep default copy on failure */ }
 }
 

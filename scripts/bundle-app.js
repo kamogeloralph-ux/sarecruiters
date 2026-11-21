@@ -37,6 +37,7 @@ const { verifyCriticalGlobals } = require('./verify-critical-globals');
 const ENTRY = 'app-entry.js';
 // Every module the entry must import (order matches app-entry.js).
 const FILES = [
+  'app-guide-integration.js',
   'app-core.js',
   'app-data.js',
   'app-cards.js',

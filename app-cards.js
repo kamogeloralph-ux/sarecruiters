@@ -874,6 +874,7 @@ window.toggleSave = function(btn, key) {
   else { savedSet.add(key); btn.classList.add('saved'); btn.innerHTML = STAR_SVG; showToast('Saved'); nowSaved = true; }
   localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
   syncSavedVacancy(key, nowSaved);
+  if (nowSaved && typeof window.saGuideEvent === 'function') window.saGuideEvent('job-saved', { vacancyId: key });
   renderSaved();
 };
 

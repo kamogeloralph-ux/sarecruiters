@@ -46,6 +46,8 @@
   var SIZE = 44;
   var KEY_QUIET = 'sa_guide_quiet';
   var KEY_HIDDEN = 'sa_guide_hidden_until';
+  var KEY_SETTINGS = 'sa_guide_settings';
+  var KEY_ONBOARDED = 'sa_guide_onboarded';
   var KEY_SESSION = 'sa_guide_session';
   var DAY = 24 * 60 * 60 * 1000;
 
@@ -356,12 +358,21 @@
   // ============================================================
   function createGuide(win) {
     var doc = win.document;
-    var store = createStore({ quiet: false, hidden: false, away: false, menuOpen: false, started: false, bubble: null, screen: '' });
+    var defaults = { enabled: true, quiet: false, tipsOnly: false, intensity: 'standard' };
+    function readSettings() {
+      var raw = lsGet(KEY_SETTINGS);
+      try { var parsed = raw ? JSON.parse(raw) : {}; return Object.assign({}, defaults, parsed); } catch (e) { return Object.assign({}, defaults); }
+    }
+    var initialSettings = readSettings();
+    var store = createStore({ quiet: initialSettings.quiet, hidden: false, away: false, menuOpen: false, started: false, bubble: null, screen: '', settings: initialSettings });
     var reducedMQ = win.matchMedia ? win.matchMedia('(prefers-reduced-motion: reduce)') : null;
     var reduced = !!(reducedMQ && reducedMQ.matches);
     if (reducedMQ && reducedMQ.addEventListener) reducedMQ.addEventListener('change', function (e) { reduced = e.matches; wake(); });
 
     function now() { return (win.performance && win.performance.now) ? win.performance.now() : Date.now(); }
+    function settings() { return st().settings || defaults; }
+    function saveSettings(next) { lsSet(KEY_SETTINGS, JSON.stringify(next)); store.set({ settings: next, quiet: !!next.quiet }); }
+    function event(type, detail) { try { win.dispatchEvent(new win.CustomEvent('sa-guide:event', { detail: Object.assign({ type: type, __fromGuide: true }, detail || {}) })); } catch (e) {} }
     function lsGet(k) { try { return win.localStorage.getItem(k); } catch (e) { return null; } }
     function lsSet(k, v) { try { if (v === null) win.localStorage.removeItem(k); else win.localStorage.setItem(k, v); } catch (e) {} }
     function ssGet() { try { return JSON.parse(win.sessionStorage.getItem(KEY_SESSION) || '{}') || {}; } catch (e) { return {}; } }
@@ -381,15 +392,16 @@
       ui.ring = doc.createElement('div'); ui.ring.className = 'sa-guide__ring'; ui.ring.setAttribute('aria-hidden', 'true');
 
       ui.bubble = doc.createElement('div'); ui.bubble.className = 'sa-guide__bubble';
+      ui.closeBubble = doc.createElement('button'); ui.closeBubble.type = 'button'; ui.closeBubble.className = 'sa-guide__bubble-close'; ui.closeBubble.setAttribute('aria-label', 'Dismiss guide tip'); ui.closeBubble.textContent = '×';
       ui.bubble.setAttribute('role', 'status'); ui.bubble.setAttribute('aria-live', 'polite');
       var bin = doc.createElement('span'); bin.className = 'sa-guide__bubble-in';
       ui.icon = doc.createElement('span'); ui.icon.className = 'sa-guide__icon'; ui.icon.setAttribute('aria-hidden', 'true');
       ui.text = doc.createElement('span'); ui.text.className = 'sa-guide__text';
-      bin.appendChild(ui.icon); bin.appendChild(ui.text); ui.bubble.appendChild(bin);
+      bin.appendChild(ui.icon); bin.appendChild(ui.text); bin.appendChild(ui.closeBubble); ui.bubble.appendChild(bin);
 
       ui.btn = doc.createElement('button');
       ui.btn.type = 'button'; ui.btn.className = 'sa-guide__char';
-      ui.btn.setAttribute('aria-label', 'Open quick help');
+      ui.btn.setAttribute('aria-label', 'SA Recruiters job-search guide. Open quick help');
       ui.btn.setAttribute('aria-haspopup', 'true'); ui.btn.setAttribute('aria-expanded', 'false');
       rig = buildRig(doc);
       ui.btn.appendChild(rig.svg);
@@ -405,11 +417,19 @@
       });
       ui.menu.appendChild(chips);
       var foot = doc.createElement('div'); foot.className = 'sa-guide__foot';
+      ui.guideBtn = doc.createElement('button'); ui.guideBtn.type = 'button'; ui.guideBtn.className = 'sa-guide__toggle'; ui.guideBtn.setAttribute('data-act', 'enabled');
+      ui.guideBtn.setAttribute('aria-pressed', 'true');
       ui.quietBtn = doc.createElement('button'); ui.quietBtn.type = 'button'; ui.quietBtn.className = 'sa-guide__toggle';
       ui.quietBtn.setAttribute('data-act', 'quiet');
       ui.hideBtn = doc.createElement('button'); ui.hideBtn.type = 'button'; ui.hideBtn.className = 'sa-guide__toggle'; ui.hideBtn.setAttribute('data-act', 'hide');
       ui.hideBtn.textContent = 'Hide for today';
-      foot.appendChild(ui.quietBtn); foot.appendChild(ui.hideBtn); ui.menu.appendChild(foot);
+      foot.appendChild(ui.guideBtn); foot.appendChild(ui.quietBtn); ui.menu.appendChild(foot);
+      ui.settingsRow = doc.createElement('div'); ui.settingsRow.className = 'sa-guide__settings';
+      ui.tipsBtn = doc.createElement('button'); ui.tipsBtn.type = 'button'; ui.tipsBtn.className = 'sa-guide__toggle'; ui.tipsBtn.setAttribute('data-act', 'tips');
+      ui.intensityBtn = doc.createElement('button'); ui.intensityBtn.type = 'button'; ui.intensityBtn.className = 'sa-guide__toggle'; ui.intensityBtn.setAttribute('data-act', 'intensity');
+      ui.resetBtn = doc.createElement('button'); ui.resetBtn.type = 'button'; ui.resetBtn.className = 'sa-guide__toggle'; ui.resetBtn.setAttribute('data-act', 'reset'); ui.resetBtn.textContent = 'Reset intro';
+      ui.settingsRow.appendChild(ui.tipsBtn); ui.settingsRow.appendChild(ui.intensityBtn); ui.settingsRow.appendChild(ui.resetBtn); ui.menu.appendChild(ui.settingsRow);
+      foot.appendChild(ui.hideBtn);
 
       host.appendChild(ui.ring); host.appendChild(ui.bubble); host.appendChild(ui.btn); host.appendChild(ui.menu);
       doc.body.appendChild(host);
@@ -433,11 +453,12 @@
     var lastStepAt = 0, lastBubbleAt = -1e9, lastActivity = now(), idleDelay = rnd(26000, 38000);
     var lastRoamAt = 0, lastTipAt = 0, startedAt = 0, nextTipGap = rnd(80000, 120000);
     var lastEmptyAt = -1e9, seenEmpty = (typeof WeakSet === 'function') ? new WeakSet() : null;
-    var interactive = false;
+    var interactive = false, visibleOnScreen = true;
 
     function st() { return store.get(); }
     function sheetOpen() { return layout.sheetTop !== null; }
-    function live() { var s = st(); return s.started && !s.quiet && !s.hidden && !s.away && !doc.hidden; }
+    function live() { var s = st(), cfg = settings(); return s.started && cfg.enabled && !s.quiet && !s.hidden && !s.away && visibleOnScreen && !doc.hidden && !documentHasBlockingUi(); }
+    function documentHasBlockingUi() { return !!(doc.querySelector('.toast.show, .toast.is-visible, .modal.open, .sheet-scrim.open .sheet') && !inputFocused()); }
 
     // ---------- layout ----------
     function visible(el) { return !!el && el.getClientRects().length > 0 && win.getComputedStyle(el).visibility !== 'hidden'; }
@@ -510,6 +531,7 @@
       var t = now(), prio = o.prio || 1;
       if (gesture && t < gesture.until && gesture.prio > prio) return false;
       var ms = o.ms || DUR[name] || 1500;
+      if (settings().intensity === 'low') ms = Math.min(ms, 900);
       gesture = { name: name, start: t, until: t + ms, prio: prio, aim: o.aim || null, done: o.done || null };
       if (o.aim && Math.abs(o.aim.dx) > 4) facing = o.aim.dx >= 0 ? 1 : -1;
       if (reduced) setTimeout(wake, ms + 30);
@@ -605,7 +627,8 @@
       store.set({ bubble: { text: text } });
       ui.bubble.classList.add('is-visible');
       placeBubble();
-      var ms = o.ms || clamp(1900 + text.length * 55, 2800, 5200);
+      var ms = o.ms || clamp(1900 + text.length * 45, 2600, 4800);
+      event('bubble-shown', { text: text });
       bubbleTimer = setTimeout(hideBubble, ms);
       return true;
     }
@@ -617,12 +640,15 @@
     }
     function placeBubble() {
       var ar = layout.ar, w = bubbleW, h = bubbleH;
+      if (!w || !h) { w = Math.min(300, layout.vw - 24); h = 42; }
+      var blockers = doc.querySelectorAll('.bottom-nav, .toast.show, .toast.is-visible, .floating-whatsapp, .install-banner, .sheet-scrim.open .sheet, [data-guide-avoid]');
       var side = bubbleSide === 'auto' ? (pos.y > h + 24 ? 'above' : 'below') : bubbleSide;
       var cx = pos.x + SIZE / 2, mid = (ar.left + ar.right) / 2;
       var left = cx > mid ? pos.x + SIZE - w + 6 : pos.x - 6;
       left = clamp(left, ar.left + 8, Math.max(ar.left + 8, ar.right - 8 - w));
       var top = side === 'above' ? pos.y - h - 9 : pos.y + SIZE + 8;
       top = clamp(top, 6, layout.vh - h - 6);
+      for (var bi = 0; bi < blockers.length; bi++) { var br = blockers[bi].getBoundingClientRect(); if (left < br.right && left + w > br.left && top < br.bottom && top + h > br.top) { top = br.top - h - 8; if (top < 6) top = br.bottom + 8; } }
       ui.bubble.style.transform = 'translate3d(' + left.toFixed(1) + 'px,' + top.toFixed(1) + 'px,0)';
       ui.bubble.setAttribute('data-side', side);
       ui.bubble.style.setProperty('--sg-tail', clamp(cx - left, 14, Math.max(14, w - 14)).toFixed(1) + 'px');
@@ -648,6 +674,11 @@
       cancelSeq(); hideBubble();
       ui.menuTip.textContent = SCREEN_TIPS[currentScreenId()] || 'Need a hand? Jump to a section.';
       ui.quietBtn.textContent = s.quiet ? 'Turn tips on' : 'Quiet mode';
+      ui.guideBtn.textContent = settings().enabled ? 'Turn guide off' : 'Turn guide on';
+      ui.guideBtn.setAttribute('aria-pressed', settings().enabled ? 'true' : 'false');
+      ui.tipsBtn.textContent = settings().tipsOnly ? 'Tips only: on' : 'Tips only: off';
+      ui.tipsBtn.setAttribute('aria-pressed', settings().tipsOnly ? 'true' : 'false');
+      ui.intensityBtn.textContent = 'Motion: ' + (settings().intensity === 'low' ? 'low' : 'standard');
       ui.quietBtn.setAttribute('aria-pressed', s.quiet ? 'true' : 'false');
       ui.menu.hidden = false;
       ui.menu.classList.add('is-measure');
@@ -797,9 +828,9 @@
         refreshQuietLabel();
         popAt = now();
         wake();
-        if (quiet || st().hidden) return;
+        if (quiet || st().hidden || !settings().enabled) return;
         playGesture('wave', { ms: 1000, prio: 3 });
-        if (doc.querySelector('#screen-home.active')) setTimeout(function () { if (live()) startOnboarding(); }, 950);
+        if (!lsGet(KEY_ONBOARDED) && doc.querySelector('#screen-home.active')) { lsSet(KEY_ONBOARDED, '1'); setTimeout(function () { if (live()) startOnboarding(); }, 950); }
         else say(MSG.welcome, { ms: 3200 });
       },
 
@@ -847,6 +878,20 @@
         say(pick(MSG.saved), { ms: 2600 });
       },
 
+      notify: function (type, detail) {
+        noteActivity();
+        if (!live() && type !== 'offline') return false;
+        closeMenu(); cancelSeq();
+        var cfg = {
+          'new-jobs-loaded': ['wave', MSG.newJobs], 'job-saved': ['sparkle', MSG.savedEvent],
+          'application-opened': ['point', MSG.application], 'profile-incomplete': ['think', MSG.profile],
+          'filters-active': ['headsup', MSG.filters], 'offline': ['think', MSG.offline],
+          'fresh-jobs': ['cheer', MSG.fresh], 'empty-results': ['think', MSG.emptySearch]
+        }[type];
+        if (!cfg || (settings().tipsOnly && type !== 'profile-incomplete' && type !== 'offline')) return false;
+        playGesture(cfg[0], { ms: DUR[cfg[0]] || 1800, prio: 2 }); say(cfg[1], { ms: 3200, icon: type === 'offline' ? 'shield' : null }); event(type, detail); return true;
+      },
+
       onEmptyResults: function (kind) {
         if (!live()) return;
         var t = now();
@@ -864,6 +909,9 @@
 
       say: function (text, o) { return say(text, o); },
       setQuiet: function (on) { setQuiet(!!on, true); },
+      getSettings: function () { return Object.assign({}, settings()); },
+      setSettings: function (partial) { var next = Object.assign({}, settings(), partial || {}); next.enabled = next.enabled !== false; next.intensity = next.intensity === 'low' ? 'low' : 'standard'; saveSettings(next); ui.host.classList.toggle('is-disabled', !next.enabled); if (!next.enabled) { closeMenu(); hideBubble(); cancelSeq(); } else { wake(); } refreshQuietLabel(); return Object.assign({}, next); },
+      resetOnboarding: function () { lsSet(KEY_ONBOARDED, null); return true; },
       show: function () { restore(); },
       hide: function () { hideForDay(); },
       state: function () { return store.get(); },
@@ -914,6 +962,7 @@
         case 'applyStep': api.onApplyStep(d.label); break;
         case 'save': api.onSaveVacancy(); break;
         case 'empty': api.onEmptyResults(d.kind); break;
+        default: api.notify(d.type, d); break;
       }
     }
 
@@ -1000,7 +1049,11 @@
       doc.addEventListener('focusout', function () { setTimeout(function () { measure(); wake(); }, 160); });
       doc.addEventListener('transitionend', function (e) { if (e.target && e.target.classList && (e.target.classList.contains('sheet') || e.target.classList.contains('sheet-scrim'))) scheduleScan(); }, true);
       doc.addEventListener('visibilitychange', function () { if (!doc.hidden) { measure(); wake(); } });
+      if (win.IntersectionObserver) new win.IntersectionObserver(function (entries) { visibleOnScreen = !entries.length || entries[0].isIntersecting; if (!visibleOnScreen) { hideBubble(); closeMenu(); } else { measure(); wake(); } }).observe(ui.btn);
       doc.addEventListener('sa-guide', function (e) { dispatch(e.detail); });
+      win.addEventListener('sa-guide:event', function (e) { if (e.detail && e.detail.type && !e.detail.__fromGuide) api.notify(e.detail.type, e.detail); });
+      win.addEventListener('offline', function () { api.notify('offline'); });
+      win.addEventListener('online', function () { if (live()) say('Back online. Fresh jobs can load now.', { ms: 2600 }); });
       win.addEventListener('resize', function () { scheduleScan(); });
       win.addEventListener('orientationchange', function () { setTimeout(scan, 250); });
       if (win.visualViewport) win.visualViewport.addEventListener('resize', scheduleScan);
@@ -1020,6 +1073,8 @@
 
     function wireUi() {
       ui.btn.addEventListener('click', function () { st().menuOpen ? closeMenu() : openMenu(); });
+      ui.btn.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); st().menuOpen ? closeMenu() : openMenu(); } });
+      ui.closeBubble.addEventListener('click', function (e) { e.stopPropagation(); hideBubble(); });
       ui.bubble.addEventListener('click', function () {
         var a = bubbleAction; hideBubble();
         if (a === 'scam') callGlobal('showScamCheck');
@@ -1029,7 +1084,12 @@
         if (j) { jump(j.getAttribute('data-jump')); return; }
         var act = e.target.closest && e.target.closest('[data-act]');
         if (!act) return;
-        if (act.getAttribute('data-act') === 'quiet') setQuiet(!st().quiet, true);
+        var kind = act.getAttribute('data-act');
+        if (kind === 'quiet') setQuiet(!st().quiet, true);
+        else if (kind === 'enabled') api.setSettings({ enabled: !settings().enabled });
+        else if (kind === 'tips') api.setSettings({ tipsOnly: !settings().tipsOnly });
+        else if (kind === 'intensity') api.setSettings({ intensity: settings().intensity === 'low' ? 'standard' : 'low' });
+        else if (kind === 'reset') { api.resetOnboarding(); closeMenu(); say('Intro reset. Reopen the app to see it.', { force: true, ms: 2600 }); }
         else hideForDay();
       });
       doc.addEventListener('pointerdown', function (e) { if (st().menuOpen && !ui.host.contains(e.target)) closeMenu(); }, true);
@@ -1074,6 +1134,7 @@
     if (root.SAGuide) return;
     var g = createGuide(root);
     root.SAGuide = g.api;
+    root.SARecruitersGuide = g.api;
     g.boot();
   }
   if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', start);
