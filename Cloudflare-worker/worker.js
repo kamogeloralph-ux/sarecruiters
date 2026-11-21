@@ -819,7 +819,20 @@ async function buildPublicVacancySnapshotFromSupabase(env) {
     const closingDate = publicClosingDate(row.closing_date);
     return !closingDate || closingDate >= today;
   });
-  return { generated_at: new Date().toISOString(), vacancies: live };
+  // ATS rows live only in D1. Merge them into the Supabase-authoritative
+  // snapshot so external feed jobs use the same public app surface.
+  let atsRows = [];
+  try {
+    const atsResult = await env.DB.prepare(`SELECT ${columns} FROM vacancies WHERE ats_feed_id IS NOT NULL`).all();
+    atsRows = (atsResult.results || []).filter((row) => {
+      const closingDate = publicClosingDate(row.closing_date);
+      return !closingDate || closingDate >= today;
+    });
+  } catch (e) {
+    console.warn("Could not load ATS vacancies for public snapshot", e);
+  }
+  const seen = new Set((live || []).map((row) => String(row.id)));
+  return { generated_at: new Date().toISOString(), vacancies: [...(live || []), ...atsRows.filter((row) => !seen.has(String(row.id))) ] };
 }
 __name(buildPublicVacancySnapshotFromSupabase, "buildPublicVacancySnapshotFromSupabase");
 var STARTUP_VACANCY_PAGE_SIZE = 1e3;
@@ -995,7 +1008,7 @@ __name(prepareD1WriteThroughUpsert, "prepareD1WriteThroughUpsert");
 async function reconcileDeletedVacancies(env) {
   const liveRows = await supabaseGetAll(env, "vacancies", { select: "id", order: "id.asc" }, 1000);
   const liveIds = new Set((liveRows || []).map((row) => String(row.id)));
-  const local = await env.DB.prepare("SELECT id FROM vacancies").all();
+  const local = await env.DB.prepare("SELECT id FROM vacancies WHERE ats_feed_id IS NULL").all();
   const staleIds = (local.results || []).map((row) => String(row.id)).filter((id) => !liveIds.has(id));
   for (let i = 0; i < staleIds.length; i += 200) {
     const chunk = staleIds.slice(i, i + 200);
@@ -1194,6 +1207,118 @@ async function syncD1AndPublishSnapshot(env) {
   return { ...summary, data_version: dataVersion, snapshot: "r2", snapshot_generated_at: payload.generated_at, vacancy_snapshot_rows: vacancySnapshot?.vacancies?.length || 0 };
 }
 __name(syncD1AndPublishSnapshot, "syncD1AndPublishSnapshot");
+
+// ---------------------------------------------------------------------------
+// ATS feed integration. ATS vacancies are stored in the existing D1 vacancies
+// table and identified by (ats_feed_id, external_ref); no jobs table is used.
+function atsXmlDecode(value) {
+  return String(value || "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+}
+__name(atsXmlDecode, "atsXmlDecode");
+function atsXmlField(xml, names) {
+  for (const name of names) {
+    const re = new RegExp(String.raw`<(?:(?:[\w-]+):)?${name}\b[^>]*>([\s\S]*?)<\/(?:(?:[\w-]+):)?${name}>`, "i");
+    const match = String(xml || "").match(re);
+    if (match) return atsXmlDecode(match[1].replace(/<[^>]+>/g, " "));
+  }
+  return "";
+}
+__name(atsXmlField, "atsXmlField");
+function parseAtsXml(xml) {
+  const source = String(xml || "");
+  const matches = [...source.matchAll(/<(?:(?:[\w-]+):)?(job|item)\b[^>]*>([\s\S]*?)<\/(?:(?:[\w-]+):)?\1>/gi)];
+  return matches.map((match) => {
+    const item = match[2];
+    const ref = atsXmlField(item, ["external_ref", "externalRef", "id", "guid", "reference", "job_id"]);
+    const title = atsXmlField(item, ["title", "name", "job_title"]);
+    const description = atsXmlField(item, ["description", "summary", "content:encoded", "content"]);
+    return {
+      external_ref: ref,
+      title,
+      company: atsXmlField(item, ["company", "company_name", "employer", "organisation"]) ,
+      location: atsXmlField(item, ["location", "city", "job_location"]),
+      description,
+      link: atsXmlField(item, ["url", "link", "apply_url", "application_url"]),
+      closing_date: atsXmlField(item, ["closing_date", "close_date", "expires", "expiry_date"]),
+      employment_type: atsXmlField(item, ["employment_type", "job_type", "type"]),
+      salary: atsXmlField(item, ["salary", "salary_range", "pay"]),
+      remote: atsXmlField(item, ["remote", "work_from_home"]) || "false"
+    };
+  }).filter((job) => job.external_ref && job.title);
+}
+__name(parseAtsXml, "parseAtsXml");
+function atsDate(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const parsed = Date.parse(raw);
+  return Number.isNaN(parsed) ? raw.slice(0, 40) : new Date(parsed).toISOString().slice(0, 10);
+}
+__name(atsDate, "atsDate");
+function atsBool(value) { return ["1", "true", "yes", "y"].includes(String(value || "").toLowerCase()); }
+__name(atsBool, "atsBool");
+async function upsertAtsVacancy(env, feed, job) {
+  const now = new Date().toISOString();
+  const id = `ats_${String(feed.id)}_${String(job.external_ref).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120)}`;
+  const closing = atsDate(job.closing_date);
+  const notes = job.description || null;
+  const sql = `INSERT INTO vacancies (id, agency_id, title, company, location, closing_date, notes, link, remote, employment_type, salary, created_at, updated_at, source_type, external_ref, ats_feed_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(ats_feed_id, external_ref) DO UPDATE SET title=excluded.title, company=excluded.company, location=excluded.location, closing_date=excluded.closing_date, notes=excluded.notes, link=excluded.link, remote=excluded.remote, employment_type=excluded.employment_type, salary=excluded.salary, updated_at=excluded.updated_at, source_type=excluded.source_type`;
+  await env.DB.prepare(sql).bind(id, feed.agency_id, job.title, job.company || feed.agency_name, job.location || null, closing || null, notes, job.link || null, atsBool(job.remote) ? 1 : 0, job.employment_type || null, job.salary || null, now, now, "ats", job.external_ref, feed.id).run();
+  return id;
+}
+__name(upsertAtsVacancy, "upsertAtsVacancy");
+async function syncOneAtsFeed(env, feed) {
+  if (!feed.feed_url) return { feed_id: feed.id, skipped: "missing feed URL", jobs: 0 };
+  const response = await fetch(feed.feed_url, { headers: { "user-agent": "SA-Recruiters-ATS-Sync/1.0" } });
+  if (!response.ok) throw new Error(`ATS feed ${feed.id} returned HTTP ${response.status}`);
+  const jobs = parseAtsXml(await response.text());
+  const active = [];
+  for (const job of jobs) { await upsertAtsVacancy(env, feed, job); active.push(job.external_ref); }
+  if (active.length) {
+    const placeholders = active.map(() => "?").join(",");
+    await env.DB.prepare(`UPDATE vacancies SET closing_date = ?, updated_at = ? WHERE ats_feed_id = ? AND external_ref NOT IN (${placeholders}) AND (closing_date IS NULL OR closing_date >= ?)`)
+      .bind(new Date().toISOString().slice(0, 10), new Date().toISOString(), feed.id, ...active, new Date().toISOString().slice(0, 10)).run();
+  } else if (jobs.length === 0) {
+    // A successful empty feed is valid, but a failed feed never reaches here.
+    await env.DB.prepare("UPDATE vacancies SET closing_date = ?, updated_at = ? WHERE ats_feed_id = ? AND (closing_date IS NULL OR closing_date >= ?)")
+      .bind(new Date().toISOString().slice(0, 10), new Date().toISOString(), feed.id, new Date().toISOString().slice(0, 10)).run();
+  }
+  await env.DB.prepare("UPDATE agency_ats_feeds SET last_synced_at = ?, last_status = ? WHERE id = ?").bind(new Date().toISOString(), `ok:${jobs.length}`, feed.id).run();
+  return { feed_id: feed.id, jobs: jobs.length };
+}
+__name(syncOneAtsFeed, "syncOneAtsFeed");
+async function syncAtsFeeds(env) {
+  const rows = await env.DB.prepare("SELECT id, agency_id, agency_name, feed_url, api_key_hash FROM agency_ats_feeds WHERE is_active = 1").all();
+  const results = [];
+  for (const feed of rows.results || []) {
+    try { results.push(await syncOneAtsFeed(env, feed)); }
+    catch (error) { await env.DB.prepare("UPDATE agency_ats_feeds SET last_synced_at = ?, last_status = ? WHERE id = ?").bind(new Date().toISOString(), `error:${String(error.message || error).slice(0, 220)}`, feed.id).run(); results.push({ feed_id: feed.id, error: String(error.message || error) }); }
+  }
+  return results;
+}
+__name(syncAtsFeeds, "syncAtsFeeds");
+function atsAuthMatches(request, env, querySecret = "") {
+  const configured = env.ATS_SYNC_SECRET || env.ADMIN_SECRET || "";
+  const bearer = request.headers.get("authorization") || "";
+  return Boolean(configured && ((querySecret && querySecret === configured) || bearer === `Bearer ${configured}`));
+}
+__name(atsAuthMatches, "atsAuthMatches");
+async function handleAtsPush(request, env, origin) {
+  if (!atsAuthMatches(request, env)) return json({ ok: false, error: "Unauthorized" }, 401, origin);
+  let body; try { body = await request.json(); } catch { return json({ ok: false, error: "Invalid JSON" }, 400, origin); }
+  const feedId = String(body.feed_id || body.ats_feed_id || "");
+  const externalRef = String(body.external_ref || body.externalRef || body.id || "");
+  const title = String(body.title || body.name || "").trim();
+  if (!feedId || !externalRef || !title) return json({ ok: false, error: "feed_id, external_ref and title are required" }, 400, origin);
+  const feed = await env.DB.prepare("SELECT id, agency_id, agency_name FROM agency_ats_feeds WHERE id = ? AND is_active = 1").bind(feedId).first();
+  if (!feed) return json({ ok: false, error: "Unknown or inactive ATS feed" }, 400, origin);
+  if (String(body.action || "upsert").toLowerCase() === "close") {
+    await env.DB.prepare("UPDATE vacancies SET closing_date = ?, updated_at = ? WHERE ats_feed_id = ? AND external_ref = ?").bind(new Date().toISOString().slice(0, 10), new Date().toISOString(), feedId, externalRef).run();
+    return json({ ok: true, status: "closed", external_ref: externalRef }, 200, origin);
+  }
+  const id = await upsertAtsVacancy(env, feed, { external_ref: externalRef, title, company: body.company, location: body.location, description: body.description || body.notes, link: body.link || body.url, closing_date: body.closing_date, employment_type: body.employment_type, salary: body.salary, remote: body.remote });
+  return json({ ok: true, id, external_ref: externalRef, status: "active" }, 200, origin);
+}
+__name(handleAtsPush, "handleAtsPush");
 
 // Same STARTUP_DEDICATED_SOURCES exclusion loadStartupData() applies via
 // Supabase's `source_type=not.in.(...)`, replicated as a SQL WHERE clause
@@ -2775,6 +2900,12 @@ var worker_default = {
         { Sentry.captureException(e); console.error("scheduled poster-title backfill failed", e); };
       }
       try {
+        const ats = await syncAtsFeeds(env);
+        console.log("ATS feed sync", JSON.stringify(ats));
+      } catch (e) {
+        { Sentry.captureException(e); console.error("scheduled ATS sync failed", e); };
+      }
+      try {
         await syncD1AndPublishSnapshot(env);
       } catch (e) {
         { Sentry.captureException(e); console.error("scheduled D1 sync failed", e); };
@@ -2809,6 +2940,14 @@ var worker_default = {
       return new Response(null, { headers: corsHeaders(origin) });
     }
     try {
+      if (path === "/api/ats/sync" && request.method === "GET") {
+        if (!atsAuthMatches(request, env, url.searchParams.get("secret") || "")) return json({ ok: false, error: "Unauthorized" }, 401, origin);
+        try { return json({ ok: true, results: await syncAtsFeeds(env) }, 200, origin); }
+        catch (error) { return json({ ok: false, error: "ATS sync failed", detail: String(error.message || error) }, 502, origin); }
+      }
+      if (path === "/api/v1/ats/jobs" && request.method === "POST") {
+        return await handleAtsPush(request, env, origin);
+      }
       if (path === "/api/yoco/webhook" && request.method === "POST") {
         return await yocoWebhookResponse(request, env);
       }
