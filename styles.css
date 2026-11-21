@@ -2065,6 +2065,15 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 /* Take Your Next Step reuses Quick Access cards with a compact footprint. */
 .home-tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .home-tools-grid .home-tool-card{min-width:0;min-height:0;padding:10px 9px 9px;border-radius:13px!important}
+.home-find-jobs-card{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 8px;padding:9px 12px;text-align:left;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:13px;box-shadow:var(--card-shadow,0 4px 12px rgba(0,0,0,.06));cursor:pointer;-webkit-tap-highlight-color:transparent}
+.home-find-jobs-card:active{transform:scale(.99)}
+.home-find-jobs-icon{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:9px;color:var(--brand-blue,var(--accent));background:color-mix(in srgb,currentColor 12%,transparent)}
+.home-find-jobs-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.home-find-jobs-copy{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.home-find-jobs-copy strong{font-size:13px;font-weight:800;line-height:1.2}
+.home-find-jobs-copy small{font-size:10.5px;line-height:1.25;color:var(--text-2)}
+.home-find-jobs-go{font-size:20px;line-height:1;color:var(--text-2)}
+[data-theme="dark"] .home-find-jobs-card{background:#202020}
 .home-tools-grid .quick-card-head{gap:7px}
 .home-tools-grid .quick-card-icon{width:30px;height:30px;flex-basis:30px;border-radius:9px}
 .home-tools-grid .quick-card-head strong{font-size:11.5px;line-height:1.2}
