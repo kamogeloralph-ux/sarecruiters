@@ -72,8 +72,6 @@ export function closeTransientOutsideUi() {
   });
   var notes = document.getElementById('my-notes-accordion');
   if (notes) notes.open = false;
-  var report = document.getElementById('community-report-overlay');
-  if (report) { report.hidden = true; report.classList.remove('open'); }
   var toast = document.getElementById('toast');
   if (toast) toast.classList.remove('show');
   var drawer = document.getElementById('site-menu-drawer');
@@ -107,11 +105,8 @@ export function normalizeStartupScreen() {
   }
   // Explicit manager/action/deep-link URLs are intentional entry points.
   if (params.has('manage') || params.has('manage_employer') || params.has('action') || params.has('tab') || params.has('section')) return;
-  // Community shares use a hash deep link. Preserve that intent across the
-  // final reveal pass, which can run after the community's own initial timer.
-  if (location.hash === '#tipchat' || location.hash === '#community-interview-tips') return;
   try { sessionStorage.setItem(SA_ACTIVE_SCREEN_KEY, 'home'); } catch(e) {}
-  // Normalize every screen, not just the previously observed Menu/TipChat
+  // Normalize every screen, not just the previously observed Menu
   // route. This is called both before boot and immediately before reveal.
   document.querySelectorAll('.screen').forEach(function (screen) { screen.classList.remove('active'); });
   var home = document.getElementById('screen-home');
@@ -557,7 +552,6 @@ function saUiSnapshot() {
   return {
     screen: (document.querySelector('.screen.active') || {}).id || 'screen-home',
     sheets: Array.prototype.map.call(document.querySelectorAll('.sheet-scrim.open'), function(el) { return el.id; }),
-    report: Array.prototype.map.call(document.querySelectorAll('.community-report-overlay:not([hidden])'), function(el) { return el.id; }),
     menu: !!document.querySelector('.site-menu-drawer.is-open'),
     cards: Array.prototype.map.call(document.querySelectorAll('.vac-card.open,.hub-card.open,.branch-block.open,.contact-card.open'), function(el) { return el.id; })
   };
@@ -568,7 +562,6 @@ function saUiSnapshotKey(snapshot) {
 function saRestoreSnapshot(snapshot) {
   snapshot = snapshot || {};
   document.querySelectorAll('.sheet-scrim.open').forEach(function(el) { el.classList.remove('open'); });
-  document.querySelectorAll('.community-report-overlay:not([hidden])').forEach(function(el) { el.hidden = true; });
   document.querySelectorAll('.vac-card.open,.hub-card.open,.branch-block.open,.contact-card.open').forEach(function(el) { el.classList.remove('open'); el.setAttribute('aria-expanded', 'false'); });
   closeSiteMenu();
   document.querySelectorAll('.screen').forEach(function(el) { el.classList.remove('active'); });
@@ -605,7 +598,7 @@ function saRestoreSnapshot(snapshot) {
     previousKey = nextKey;
     // Opening a sheet/menu or moving to another screen is a new native-style
     // navigation step. Closing is left alone so Cancel buttons stay instant.
-    var opened = next.sheets.length > previous.sheets.length || next.report.length > previous.report.length || next.cards.length > previous.cards.length || next.menu || next.screen !== previous.screen;
+    var opened = next.sheets.length > previous.sheets.length || next.cards.length > previous.cards.length || next.menu || next.screen !== previous.screen;
     if (opened) window.history.pushState({ saUi: true, saSnapshot: next }, document.title, window.location.href);
   }
   var observer = new MutationObserver(function() { clearTimeout(syncTimer); syncTimer = setTimeout(syncUiHistory, 0); });

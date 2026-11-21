@@ -39,7 +39,7 @@ buildSupabaseVendor(__dirname);
 //    Hash (not timestamp) so the 3-hourly cron rebuilds with no source
 //    changes keep the same VERSION and don't needlessly wipe caches.
 // 2) Set ?v=<same hash> on every same-origin asset URL
-//    (styles.css, community.css, content.js, content-manager.js, static-pages.css)
+//    (styles.css, content.js, content-manager.js, static-pages.css)
 //    so stale-while-revalidate style caches treat each deploy as a new
 //    resource and can never answer with a stale copy.
 // ------------------------------------------------------------
@@ -62,9 +62,6 @@ const STATIC_ASSETS = [
   'know-your-rights/index.html',
   'offline.html',
   'styles.css',
-  'community.css',
-  'icons/tipchat-logo.svg',
-  'icons/tipchat-mark.svg',
   'icons/sa-recruiters-icon-color.png',
   'icons/sa-recruiters-icon-color-512.png',
   'terms/index.html',
@@ -93,7 +90,7 @@ function rewriteAssetUrls(html, version) {
   // Handles relative (styles.css), ./relative (./styles.css) and
   // root-absolute (/static-pages.css) references.
   return html.replace(
-    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|community\.css|content\.js|content-manager\.js|static-pages\.css|public-ads\.js|app-guide\.css|app-guide\.js)(?:\?v=[^"]*)?("?)/g,
+    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|content\.js|content-manager\.js|static-pages\.css|public-ads\.js|app-guide\.css|app-guide\.js)(?:\?v=[^"]*)?("?)/g,
     (match, attr, base, file, suffix) => `${attr}${base}${file}?v=${version}${suffix}`,
   );
 }

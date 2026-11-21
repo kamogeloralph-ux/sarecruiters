@@ -44,7 +44,6 @@
     'screen-allvacancies': [['set_generalVacancyQueryKey', '__open__'], ['set_dedicatedVacancyQueryKey', '__open__'],
       ['loadAll', { fresh: true }], ['renderAllVacanciesList']],
     'screen-pool': [['loadPoolCandidates']],
-    'screen-community': [['communityLoad']],
     'screen-submissions': [['loadReportsFromSupabase'], ['loadSuggestionsFromSupabase'], ['renderSubmissionsList']]
   };
 

@@ -13,10 +13,8 @@ const core = read('app-core.js');
 const cards = read('app-cards.js');
 const sheets = read('app-sheets.js');
 const vacancyV2 = read('app-vacancy-v2.js');
-const community = read('app-community.js');
 const appManagerEmployer = read('app-manager-employer.js');
 const css = read('styles.css');
-const communityCss = read('community.css');
 const mono = read('mono.css');
 const admin = read('admin.html');
 const vacancyCss = read('vacancy-v2.css');
@@ -84,7 +82,6 @@ test('active outside-app portals remain visible during startup', () => {
   assert.match(html, /body:not\(\.app-ready\) > \.sheet-scrim\.open\{display:block!important\}/, 'open sheets such as CV Builder must not be swallowed by the startup guard');
   assert.match(html, /body:not\(\.app-ready\) > \.site-menu-backdrop\.is-visible\{display:block!important\}/);
   assert.match(html, /body:not\(\.app-ready\) > \.site-menu-drawer\.is-open\{display:flex!important\}/);
-  assert.match(html, /body:not\(\.app-ready\) > \.community-report-overlay:not\(\[hidden\]\)\{display:grid!important\}/);
   assert.match(html, /body:not\(\.app-ready\) > \.toast\.show,[\s\S]*body:not\(\.app-ready\) > \.retry-banner\.show\{display:block!important\}/);
 });
 
@@ -121,7 +118,6 @@ test('the homepage shows a slim source chip row, then top jobs, then the latest 
   assert.match(ui, /function ensureRetailPriorityVacancies\(/);
 
   assert.match(ui, /isRetailPriorityVacancy\(b\)/);
-  assert.match(html, /onclick="openCommunity\(\)"/);
   assert.match(ui, /\(rows \|\| \[\]\)\.slice\(0, 5\)/, 'the home feed shows only the five latest roles');
   const overview = vacancyV2.slice(vacancyV2.indexOf('function renderOverview()'), vacancyV2.indexOf('/* ---------- folder post-processing'));
   const sourcesPosition = overview.indexOf('vx-source-section');
@@ -198,21 +194,6 @@ test('signed-in Profile collapses to the Google status badge and push state is t
   assert.match(css, /\.account-action-btn\.is-enabled/);
 });
 
-test('bottom navigation keeps TipChat separate from Feedback', () => {
-  const nav = html.slice(html.indexOf('<nav class="bottom-nav">'), html.indexOf('</nav>', html.indexOf('<nav class="bottom-nav">')));
-  assert.match(nav, /id="nav-suggest"[^>]*onclick="openSuggestionSheet\(\)"[^>]*aria-label="Suggest or comment"/);
-  assert.match(nav, /id="nav-community"[^>]*onclick="openCommunity\(\)"[^>]*aria-label="Open TipChat"/);
-  assert.match(nav, /<span class="navbtn-label">Feedback<\/span>/);
-  assert.match(nav, /<span class="navbtn-label">TipChat<\/span>/);
-  assert.match(nav, /id="nav-community"[\s\S]*?<path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/,
-    'the community action should use a multi-bubble discussion icon, not Feedback’s single bubble');
-  assert.match(community, /screenId === 'screen-community' && button\.id === 'nav-community'/,
-    'the dedicated community action should show as active while the community screen is open');
-});
-test('TipChat shared links survive final startup normalization', () => {
-  assert.match(ui, /location\.hash === '#tipchat' \|\| location\.hash === '#community-interview-tips'\) return;/);
-  assert.match(community, /if \(location\.hash === '#community-interview-tips' \|\| location\.hash === '#tipchat'\)[\s\S]*?openCommunity\(true\)/);
-});
 test('bottom navigation keeps inactive icons visible and source cards open their folders', () => {
   assert.match(css, /\.bottom-nav \.navbtn:not\(\.active\) svg\{[^}]*stroke:rgba\(255,255,255,\.9\)!important/);
   assert.match(css, /\[data-theme="light"\] \.bottom-nav \.navbtn:not\(\.active\) svg\{stroke:#626262!important/);
@@ -253,25 +234,6 @@ test('home conversion sections use the compact Interview Tips card language', ()
   assert.match(css, /#screen-home \.home-section-heading h2,[\s\S]*?#screen-home \.hf-head h2\{font-size:17px!important/);
 });
 
-test('TipChat uses a welcoming community banner with a clear join action', () => {
-  assert.match(html, /class=\"tipchat-home-logo\" onclick=\"openCommunity\(\)\"/);
-  assert.match(html, /icons\/tipchat-logo\.svg/);
-  assert.doesNotMatch(ui, /home-chat-banner/);
-  assert.match(css, /\.tipchat-home-logo/);
-  assert.match(html, /community-menu-badge.*>Join</);
-});
-
-test('TipChat home entry transfers a draft to the existing composer without posting', () => {
-  const entryPosition = html.indexOf('class="tipchat-home-entry"');
-  assert.ok(entryPosition >= 0 && entryPosition < html.indexOf('id="home-feed"'), 'the TipChat entry stays above the dynamic vacancy feed');
-  assert.match(html, /class=\"tipchat-home-quick-entry\" onsubmit=\"return openTipChatFromHome\(event\)\"/);
-  assert.match(html, /id=\"home-tipchat-text\" type=\"text\" maxlength=\"3000\" placeholder=\"Ask a question or share a tip/);
-  assert.match(community, /export function openTipChatFromHome\(event\)[\s\S]*?var draft = homeField \? homeField\.value\.trim\(\) : ''[\s\S]*?openCommunity\(\)[\s\S]*?composer\.value = draft[\s\S]*?composer\.focus/);
-  assert.match(community, /window\.openTipChatFromHome = openTipChatFromHome/);
-  assert.doesNotMatch(community.slice(community.indexOf('export function openTipChatFromHome'), community.indexOf('export function goBackFromCommunity')), /communitySubmitPost/);
-  assert.match(mono, /#screen-home \.tipchat-home-entry-row/);
-  assert.match(mono, /#screen-home \.tipchat-home-entry-row input/);
-});
 test('directory screens scroll their full content and remove horizontal dividers', () => {
   for (const id of ['screen-allagencies', 'screen-pool', 'screen-scamcheck', 'screen-allemployers', 'screen-allads']) {
     assert.match(html, new RegExp('id=\\"' + id + '\\"'));
@@ -282,28 +244,6 @@ test('directory screens scroll their full content and remove horizontal dividers
   assert.match(mono, /#screen-allads #allads-list \.house-ad-card\{border:0!important;box-shadow:none!important\}/);
   assert.match(mono, /#screen-allagencies \.screen-fixed,[\s\S]*?#screen-allads \.screen-fixed\{border-bottom:0!important\}/);
 });
-test('TipChat exposes the original SA Recruiters emoji picker and reaction hooks', () => {
-  assert.match(html, /community-post-emoji-picker/);
-  assert.match(html, /Choose a custom SA Recruiters emoji/);
-  assert.match(community, /COMMUNITY_EMOJIS/);
-  assert.match(community, /communityRenderBody/);
-  assert.match(community, /communityToggleReaction/);
-  assert.match(community, /communityEmojiUrl/);
-  assert.match(community, /community-inline-emoji/);
-  assert.match(communityCss, /community-emoji-picker/);
-  assert.match(communityCss, /community-inline-emoji/);
-});
-
-test('TipChat logo is used on home, in the community screen and the menu', () => {
-  assert.match(html, /class="tipchat-home-logo"[\s\S]*?icons\/tipchat-logo\.svg/);
-  assert.match(html, /class="tipchat-section-logo" src="icons\/tipchat-logo\.svg"/);
-  assert.doesNotMatch(html, /community-banner-logo/);
-  assert.match(html, /class="tipchat-menu-logo" src="icons\/tipchat-mark\.svg"/);
-  assert.match(css, /\.tipchat-home-logo/);
-  assert.match(css, /\.tipchat-section-logo/);
-  assert.match(read('icons/tipchat-logo.svg'), /<title id="title">TipChat<\/title>/);
-});
-
 test('Home Media uses the managed YouTube setting and admin keeps Track of the Day controls', () => {
   assert.match(ui, /id="home-media-section"/);
   assert.match(ui, /id="home-media-video"/);

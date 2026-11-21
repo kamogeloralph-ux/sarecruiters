@@ -15,7 +15,7 @@ function fakeWindow(log, overrides = {}) {
 
 test("every section except Home and the form screens can be pulled", () => {
   for (const id of ["screen-saved", "screen-account", "screen-allagencies", "screen-allbranches", "screen-allemployers",
-    "screen-allads", "screen-allvacancies", "screen-pool", "screen-community", "screen-submissions"]) {
+    "screen-allads", "screen-allvacancies", "screen-pool", "screen-submissions"]) {
     assert.ok(canRefresh(id), id);
   }
   for (const id of ["screen-home", "screen-menu", "screen-scamcheck", "screen-smartmanager", "screen-manager", "screen-manager-employer", "screen-nope"]) {
@@ -49,7 +49,6 @@ test("vacancy folders are reset before the redraw", async () => {
 test("missing globals are skipped; failures reject; unknown screens do nothing", async () => {
   assert.equal(await refreshScreen("screen-pool", {}), true);
   await assert.rejects(refreshScreen("screen-pool", { loadPoolCandidates: () => { throw new Error("boom"); } }), /boom/);
-  await assert.rejects(refreshScreen("screen-community", { communityLoad: () => Promise.reject(new Error("net")) }), /net/);
   assert.equal(await refreshScreen("screen-home", {}), false);
 });
 

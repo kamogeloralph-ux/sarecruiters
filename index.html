@@ -82,7 +82,6 @@ window.sentryOnLoad = function () {
   body:not(.app-ready) > .sheet-scrim.open{display:block!important}
   body:not(.app-ready) > .site-menu-backdrop.is-visible{display:block!important}
   body:not(.app-ready) > .site-menu-drawer.is-open{display:flex!important}
-  body:not(.app-ready) > .community-report-overlay:not([hidden]){display:grid!important}
   body:not(.app-ready) > .toast.show,
   body:not(.app-ready) > .update-banner.show,
   body:not(.app-ready) > .retry-banner.show{display:block!important}
@@ -201,9 +200,8 @@ window.sentryOnLoad = function () {
 <link rel="stylesheet" href="styles.css?v=cvcard-5" media="print" onload="this.media='all'; window.__saCssReady=true; window.__saTryReveal && window.__saTryReveal();">
 <link rel="stylesheet" href="ios-blue-ui.css?v=2" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-3" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="community.css?v=sa-recruiters-mono1" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="mono.css?v=visibility-8" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="styles.css?v=cvcard-5"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-3"><link rel="stylesheet" href="community.css?v=sa-recruiters-mono1"><link rel="stylesheet" href="mono.css?v=visibility-8"></noscript>
+<noscript><link rel="stylesheet" href="styles.css?v=cvcard-5"><link rel="stylesheet" href="ios-blue-ui.css"><link rel="stylesheet" href="vacancy-v2.css?v=vx-clean-3"><link rel="stylesheet" href="mono.css?v=visibility-8"></noscript>
 <link rel="stylesheet" href="app-guide.css?v=guide-1" media="print" onload="this.media='all'">
 </head>
 <body>
@@ -314,14 +312,7 @@ window.sentryOnLoad = function () {
     </div>
 
     <div class="screen-scroll">
-    <section class="tipchat-home-entry" aria-label="TipChat community">
-      <button type="button" class="tipchat-home-logo" onclick="openCommunity()" aria-label="Open TipChat community"><img src="icons/tipchat-logo.svg" alt="TipChat" width="260" height="90" loading="lazy" decoding="async"><span>Open the conversation <b aria-hidden="true">→</b></span></button>
-      <form class="tipchat-home-quick-entry" onsubmit="return openTipChatFromHome(event)" aria-label="Start writing in TipChat">
-        <label class="sr-only" for="home-tipchat-text">Start a TipChat message</label>
-        <div class="tipchat-home-entry-row"><input id="home-tipchat-text" type="text" maxlength="3000" placeholder="Ask a question or share a tip…" autocomplete="off"><button type="submit" aria-label="Continue writing in TipChat" title="Continue in TipChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button></div>
-        <small>Your draft opens in TipChat. It will not post until you choose Post.</small>
-      </form>
-    </section>
+
     <div id="home-feed" aria-live="polite" aria-busy="true"></div>
     <div id="house-ad-home-middle" class="house-ad-slot" hidden></div>
     <div id="house-ad-home-bottom" class="house-ad-slot" hidden></div>
@@ -537,7 +528,6 @@ window.sentryOnLoad = function () {
     </section>
     <div class="pgroup-label">Community</div>
     <div class="pgrouped-list">
-      <button class="profile-menu-item community-menu-item" data-ripple onclick="openCommunity()"><span class="mi-icon tile-orange"><img class="tipchat-menu-logo" src="icons/tipchat-mark.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span><span>TipChat<span class="mi-sub">Share advice and vacancies</span></span><span class="community-menu-badge">Join</span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openSuggestionSheet()"><span class="mi-icon tile-teal"><svg><use href="icons.svg#ifa34a4"/></svg></span><span>Feedback &amp; reports<span class="mi-sub">Suggest an agency, share feedback or report a problem</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="openSupportSheet()"><span class="mi-icon tile-pink"><svg><use href="icons.svg#id584ec"/></svg></span><span>Support &amp; Donations<span class="mi-sub">Help keep this platform free for all</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="showAllAds('menu')"><span class="mi-icon tile-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span><span>Business Ads<span class="mi-sub">See businesses advertising on SA Recruiters</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
@@ -562,80 +552,6 @@ window.sentryOnLoad = function () {
       <button class="profile-menu-item" data-ripple onclick="toggleTheme()"><span class="mi-icon tile-gray" id="theme-menu-icon"><svg><use href="icons.svg#i52b638"/></svg></span><span id="theme-menu-label">Switch to day mode<span class="mi-sub">Toggle between light &amp; dark appearance</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
       <button class="profile-menu-item" data-ripple onclick="window.open('terms/','_blank','noopener')"><span class="mi-icon tile-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span>Terms &amp; Conditions<span class="mi-sub">Read the platform terms (HTML) or download the PDF</span></span><svg class="mi-chev"><use href="icons.svg#i36fdbb"/></svg></button>
     </div>
-    </div>
-  </div>
-  <!-- ============ TIPCHAT COMMUNITY ============ -->
-  <div class="screen" id="screen-community">
-    <div class="screen-fixed">
-      <header class="community-header">
-        <button class="vac-folder-back-btn vac-simple-back screen-back-btn community-back" data-ripple onclick="goBackFromCommunity()" aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <img class="tipchat-section-logo" src="icons/tipchat-logo.svg" alt="TipChat" width="174" height="60" loading="lazy" decoding="async"><div class="community-heading-copy"><h1 class="sr-only">TipChat</h1><p>Jobs, advice &amp; opportunities · South Africa</p></div>
-        <div class="community-header-actions"><button class="community-notification-btn" type="button" data-ripple onclick="communityToggleNotifications()" aria-label="TipChat notifications"><span aria-hidden="true">♢</span><span id="community-notification-count" class="community-notification-count" hidden>0</span></button><button class="community-share-btn" type="button" data-ripple onclick="communitySharePost('')" aria-label="Share TipChat">Share</button></div>
-      </header>
-      <nav class="community-action-nav" aria-label="TipChat actions">
-        <button type="button" class="community-nav-action is-active" data-community-nav="feed" onclick="communityFocusTipChat('feed')"><span class="community-nav-icon" aria-hidden="true">⌂</span><span>Feed</span></button>
-        <button type="button" class="community-nav-action" data-community-nav="discussion" onclick="communityFocusTipChat('discussion')"><span class="community-nav-icon" aria-hidden="true">＋</span><span>Ask / share</span></button>
-        <button type="button" class="community-nav-action" data-community-nav="vacancy" onclick="communityFocusTipChat('vacancy')"><span class="community-nav-icon" aria-hidden="true">▤</span><span>Vacancy</span></button>
-        <button type="button" class="community-nav-action" data-community-nav="marketplace" onclick="communityFocusTipChat('marketplace')"><span class="community-nav-icon" aria-hidden="true">▣</span><span>Buy &amp; sell</span></button>
-        <button type="button" class="community-nav-action" data-community-nav="mine" onclick="communityOpenMyPosts()"><span class="community-nav-icon" aria-hidden="true">○</span><span>My posts</span></button>
-        <button type="button" class="community-nav-action community-nav-join" data-community-nav="join" onclick="communityJoinGroup()"><span id="community-nav-join-label">Join</span></button>
-      </nav>
-      <div class="community-search" role="search">
-        <span class="community-search-icon" aria-hidden="true">⌕</span>
-        <input id="community-search-input" type="search" maxlength="80" autocomplete="off" placeholder="Search TipChat: items, locations, vacancies…" aria-label="Search TipChat" oninput="communitySearchTipChat(this.value)">
-        <button id="community-search-clear" type="button" onclick="communityClearSearch()" aria-label="Clear TipChat search" hidden>×</button>
-      </div>
-    </div>
-    <div class="screen-scroll">
-      <section class="community-notifications" id="community-notifications" hidden>
-        <div class="community-notifications-head"><strong>Notifications</strong><button type="button" onclick="communityToggleNotifications()" aria-label="Close notifications">Close</button></div>
-        <div id="community-notification-list"></div>
-      </section>
-
-      <section class="community-admin-panel" id="community-moderator-panel" hidden>
-        <button class="community-admin-toggle" type="button" onclick="communityToggleModeration()"><span>Reports · delete content</span><span id="community-moderation-count">0</span></button>
-        <div class="community-moderation-queue" id="community-moderation-queue" hidden></div>
-      </section>
-      <section class="community-admin-panel community-mine-panel" id="community-mine" hidden>
-        <button class="community-admin-toggle" type="button" onclick="communityToggleMine()"><span>My submissions</span><span id="community-mine-count" title="Live submissions">0</span></button>
-        <div class="community-moderation-queue" id="community-mine-list" hidden></div>
-      </section>
-      <div class="community-feed-toolbar">
-        <div><h2>TipChat feed</h2></div>
-        <div class="community-feed-toolbar-actions">
-          <button class="community-join-btn community-join-compact" id="community-join-btn" type="button" data-ripple onclick="communityJoinGroup()" aria-label="Join TipChat" aria-pressed="false" title="Join TipChat">Join</button>
-          <div class="community-sort" role="group" aria-label="Sort community posts">
-            <button type="button" data-community-sort="new" class="is-active" aria-pressed="true" onclick="communitySetSort('new')">Newest</button>
-            <button type="button" data-community-sort="top" aria-pressed="false" onclick="communitySetSort('top')">Top this month</button>
-          </div>
-        </div>
-      </div>
-      <div class="community-feed" id="community-feed" aria-live="polite"><div class="community-empty">Loading TipChat…</div></div>
-      <form class="community-compose" id="community-post-form" onsubmit="return communitySubmitPost(event)">
-        <div class="community-compose-head"><strong id="community-compose-heading">Start a conversation</strong><span>Anonymous by default</span></div>
-        <div class="community-identity-box" id="community-identity-box" hidden><label for="community-identity-toggle"><input type="checkbox" id="community-identity-toggle" onchange="communitySetIdentityVisibility(this.checked)"><span>Show my CV Box name and photo on my TipChat posts and comments</span></label><small>Off by default. You can switch this off any time and your past posts return to “Anonymous member”.</small></div>
-        <div class="community-compose-type" role="group" aria-label="Choose what to post"><button type="button" data-community-compose-type="discussion" class="is-active" aria-pressed="true" onclick="communitySetComposerType('discussion')">Ask / share a tip</button><button type="button" data-community-compose-type="vacancy" aria-pressed="false" onclick="communitySetComposerType('vacancy')">Post a vacancy</button><button type="button" data-community-compose-type="marketplace" aria-pressed="false" onclick="communitySetComposerType('marketplace')">Buy &amp; sell</button></div>
-        <p class="community-vacancy-help" id="community-vacancy-help" hidden>Share a vacancy as text. Include a job title, location and how to apply when you can.</p>
-        <div class="community-vacancy-fields" id="community-vacancy-fields" hidden>
-          <div class="community-vacancy-field-grid"><div><label for="community-vacancy-title">Job title (optional)</label><input id="community-vacancy-title" maxlength="140" placeholder="e.g. Safety Officers Required"></div><div><label for="community-vacancy-location">Location (optional)</label><input id="community-vacancy-location" maxlength="120" placeholder="e.g. Polokwane, Limpopo"></div></div>
-          <label for="community-vacancy-application">How to apply (optional)</label><input id="community-vacancy-application" maxlength="300" placeholder="e.g. Send CVs to name@example.com or apply link">
-        </div>
-        <p class="community-marketplace-help" id="community-marketplace-help" hidden>List an item, service or wanted request. Never share a banking password, PIN, OTP or upfront-payment request. Meet safely and verify before paying.</p>
-        <div class="community-marketplace-fields" id="community-marketplace-fields" hidden>
-          <div class="community-vacancy-field-grid"><div><label for="community-marketplace-title">Item or service title</label><input id="community-marketplace-title" maxlength="140" placeholder="e.g. Second-hand laptop"></div><div><label for="community-marketplace-price">Price</label><input id="community-marketplace-price" maxlength="80" placeholder="e.g. R2 500 or Make an offer"></div></div>
-          <div class="community-vacancy-field-grid"><div><label for="community-marketplace-category">Category</label><input id="community-marketplace-category" maxlength="60" placeholder="e.g. Electronics, furniture, services"></div><div><label for="community-marketplace-condition">Condition</label><select id="community-marketplace-condition"><option value="good">Good</option><option value="new">New</option><option value="like_new">Like new</option><option value="fair">Fair</option><option value="wanted">Wanted</option><option value="service">Service</option></select></div></div>
-          <div class="community-vacancy-field-grid"><div><label for="community-marketplace-location">Location</label><input id="community-marketplace-location" maxlength="120" placeholder="e.g. Soweto, Gauteng"></div><div><label for="community-marketplace-contact">How to buy or contact</label><input id="community-marketplace-contact" maxlength="300" placeholder="Use safe handover instructions; no banking details"></div></div>
-          <div class="community-marketplace-photos-field"><label for="community-marketplace-photos">Product photos <span>Up to 5 images · JPG, PNG or WebP</span></label><input id="community-marketplace-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple onchange="communityHandleMarketplacePhotos(event)"><div id="community-marketplace-photo-preview" class="community-marketplace-photo-preview" aria-live="polite"></div></div>
-        </div>
-        <label class="sr-only" for="community-post-body">Write a TipChat post</label>
-        <textarea id="community-post-body" maxlength="3000" placeholder="What would you like advice on? Share a question or helpful tip…"></textarea>
-        <div class="community-emoji-tools"><button type="button" class="community-emoji-trigger" onclick="communityToggleEmojiPicker('community-post-emoji-picker','community-post-body')" aria-expanded="false">Add a reaction</button><div class="community-emoji-picker" id="community-post-emoji-picker" hidden role="listbox" aria-label="Choose a custom SA Recruiters emoji"></div></div>
-        <div class="community-emoji-preview" id="community-post-emoji-preview" aria-live="polite"></div>
-        <div class="community-compose-actions"><span class="community-composer-hint" id="community-composer-hint">Sign in and join to share.</span><button class="community-submit-btn" id="community-post-submit" type="submit" disabled>Post</button></div>
-        <p class="community-status" id="community-status" aria-live="polite"></p>
-      </form>
     </div>
   </div>
   <!-- ============ SMART MANAGER (admin only) ============ -->
@@ -978,10 +894,6 @@ window.sentryOnLoad = function () {
   <button class="navbtn" id="nav-suggest" data-ripple onclick="openSuggestionSheet()" aria-label="Suggest or comment">
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.7-5.1A7.5 7.5 0 1 1 20 11.5z"/></svg>
     <span class="navbtn-label">Feedback</span>
-  </button>
-  <button class="navbtn navbtn-community" id="nav-community" data-ripple onclick="openCommunity()" aria-label="Open TipChat" title="TipChat community">
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h1l3 3v-3h4a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/><path d="M10 7h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3h-1v3l-3-3"/><path d="M7 8h5M7 11h3"/></svg>
-    <span class="navbtn-label">TipChat</span>
   </button>
   <button class="navbtn" data-tab="menu" data-ripple aria-label="Menu">
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -1525,17 +1437,7 @@ window.sentryOnLoad = function () {
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<div class="community-report-overlay" id="community-report-overlay" hidden>
-  <form class="community-report-dialog" role="dialog" aria-modal="true" aria-labelledby="community-report-title" onsubmit="return communitySubmitReport(event)">
-    <h2 id="community-report-title">Report content</h2>
-    <p>Tell the moderation team what’s wrong. Your report is private.</p>
-    <label for="community-report-reason">Reason</label>
-    <select id="community-report-reason" required><option value="spam">Spam or promotion</option><option value="harassment">Harassment or hate</option><option value="personal_info">Personal information</option><option value="scam">Scam or unsafe advice</option><option value="other">Something else</option></select>
-    <label for="community-report-details">Additional details (optional)</label>
-    <textarea id="community-report-details" maxlength="600" placeholder="Add context for the moderators…"></textarea>
-    <div class="community-report-actions"><button type="button" onclick="communityCloseReport()">Cancel</button><button type="submit" id="community-report-submit">Send report</button></div>
-  </form>
-</div>
+
 
 <!-- FAQ / guide articles (content.js + content-manager.js, ~50 KB) are only needed once a
      content sheet is opened, so they are NOT loaded on the landing page. The prefetch links let
@@ -1562,13 +1464,13 @@ window.sentryOnLoad = function () {
 })();
 </script>
 <!-- The app is a set of ES modules (app-core, app-data, app-cards, app-forms, app-sheets,
-     app-ui, app-manager, app-manager-employer, app-pending-submissions, app-community,
+     app-ui, app-manager, app-manager-employer, app-pending-submissions,
      app-install) imported from app-entry.js and bundled by Vite (scripts/bundle-app.js, run
      from generate-pages.js on every build). The ?v= hash is rewritten automatically each build
      for cache-busting; don't hand-edit it. Names used by inline onclick="" handlers are
      exposed on window by the bridge block at the bottom of each app-*.js file. The classic
      scripts below (app-vacancy-v2.js, app-alerts.js) run after the module, in document order. -->
-<script type="module" src="app.bundle.min.js?v=3fe19957db"></script>
+<script type="module" src="app.bundle.min.js?v=56118d189d"></script>
 <script src="app-vacancy-v2.js?v=vx-clean-1" defer></script>
 <script src="app-alerts.js?v=al-8" defer></script>
 <script src="app-pull-refresh.js?v=ptr-1" defer></script>

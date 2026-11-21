@@ -15,7 +15,6 @@ const PRECACHE_URLS = [
   '/offline.html',
   '/manifest.json',
   '/styles.css',
-  '/community.css',
   '/mono.css',
   '/static-pages.css',
   '/app.bundle.min.js',
@@ -23,8 +22,6 @@ const PRECACHE_URLS = [
   '/icons/v2-icon-192.png',
   '/icons/v2-icon-512.png',
   '/icons/v2-Maskable-512.png',
-  '/icons/tipchat-logo.svg',
-  '/icons/tipchat-mark.svg',
 ];
 
 function isSameOrigin(request) {

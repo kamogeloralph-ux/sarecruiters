@@ -15,5 +15,4 @@ import './app-ui.js';
 import './app-manager.js';
 import './app-manager-employer.js';
 import './app-pending-submissions.js';
-import './app-community.js';
 import './app-install.js';
