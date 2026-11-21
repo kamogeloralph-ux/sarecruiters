@@ -1418,6 +1418,20 @@ async function loadProvinceCountsFromD1(env) {
   return Object.fromEntries(counts);
 }
 __name(loadProvinceCountsFromD1, "loadProvinceCountsFromD1");
+async function loadProvinceCountsFromSupabase(env) {
+  const counts = await Promise.all(Object.entries(PROVINCE_LOCATION_TERMS).map(async ([slug, terms]) => {
+    const results = await Promise.all(terms.map((term) =>
+      supabaseGet(env, "vacancies", { select: "id", location: `ilike.*${term}*`, limit: "0" }, { prefer: "count=exact" })
+        .then((response) => {
+          const match = (response.headers.get("content-range") || "").match(/\/(\d+)$/);
+          return match ? Number(match[1]) : 0;
+        })
+    ));
+    return [slug, Math.max(...results, 0)];
+  }));
+  return Object.fromEntries(counts);
+}
+__name(loadProvinceCountsFromSupabase, "loadProvinceCountsFromSupabase");
 // Public startup reads are D1/R2-only. Supabase is an ingest source for the
 // scheduled mirror sync, never a browser-facing fallback.
 async function loadStartupDataOrFallback(env) {
@@ -1579,6 +1593,7 @@ async function loadStartupData(env) {
       limit: "12"
     })
   ]);
+  const provinceCounts = await loadProvinceCountsFromSupabase(env);
   // Keep employer card counts independent of the startup vacancy feed. The
   // feed intentionally omits dedicated-source rows, and a NULL source_type
   // can also be excluded by PostgREST's NOT IN semantics; neither should make
@@ -1623,7 +1638,8 @@ async function loadStartupData(env) {
       // Per-folder counts for the dedicated-source vacancy folders (Himalayas/
       // Adzuna/Government/Retail/Learnerships), which no longer ship their
       // rows in this payload -- see fetchDedicatedVacancyPage() client-side.
-      dedicated: Object.fromEntries(folderCounts)
+      dedicated: Object.fromEntries(folderCounts),
+      provinces: provinceCounts
     },
     settings: {
       public_vacancy_posting: "false",

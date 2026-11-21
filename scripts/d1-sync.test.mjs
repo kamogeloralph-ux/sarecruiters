@@ -34,6 +34,13 @@ test('startup headline count comes from D1 without a per-request Supabase count'
   assert.doesNotMatch(worker, /snapshot = \{ \.\.\.snapshot, counts: \{ \.\.\.snapshot\.counts, vacancies:/);
 });
 
+test('Supabase-backed startup payload includes province totals', () => {
+  assert.match(worker, /const provinceCounts = await loadProvinceCountsFromSupabase\(env\)/);
+  assert.match(worker, /dedicated: Object\.fromEntries\(folderCounts\),\s+provinces: provinceCounts/);
+  assert.match(worker, /location: `ilike\.\*\$\{term\}\*`, limit: "0"/);
+  assert.match(worker, /Prefer: options\.prefer/);
+});
+
 test('public startup and vacancy reads never fall back to D1', () => {
   const startup = worker.slice(worker.indexOf('async function startupResponse('), worker.indexOf('__name(startupResponse'));
   const vacancies = worker.slice(worker.indexOf('async function vacanciesResponse('), worker.indexOf('__name(vacanciesResponse'));
