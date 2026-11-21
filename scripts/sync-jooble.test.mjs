@@ -22,7 +22,7 @@ test('maps Jooble jobs into the shared vacancy shape', () => {
 
 test('drops incomplete, duplicate and stale listings', () => {
   const jobs = mapJoobleResults({ jobs: [
-    { id: 1, title: 'A', link: 'https://x/1', updated: '2026-11-18' },
+    { id: 1, title: 'A', link: 'https://x/1', location: 'Durban', updated: '2026-11-18' },
     { id: 1, title: 'A again', link: 'https://x/1b' },
     { id: 2, title: '', link: 'https://x/2' },
     { id: 3, title: 'No link' },
@@ -36,4 +36,10 @@ test('the API key is never printed', async () => {
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(new URL('./sync-jooble.mjs', import.meta.url), 'utf8');
   assert.ok(!/console\.\w+\([^)]*JOOBLE_API_KEY/.test(src.replace(/check JOOBLE_API_KEY|JOOBLE_API_KEY is required/g, '')));
+});
+
+import { isSouthAfricanLocation as __isSA } from './sync-jooble.mjs';
+test('keeps only South African locations', () => {
+  for (const ok of ['Durban', 'Sandton, Gauteng', 'Cape Town, Western Cape', 'South Africa', 'Pretoria, ZA ']) assert.equal(__isSA(ok), true, ok);
+  for (const bad of ['London, United Kingdom', 'Lagos, Nigeria', 'Perth, Australia', 'Austin, TX', 'Nairobi, Kenya', '', 'Remote']) assert.equal(__isSA(bad), false, bad);
 });

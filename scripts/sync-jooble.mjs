@@ -15,6 +15,26 @@ const MAX_VACANCIES = 60;
 const MAX_AGE_DAYS = 45; // same tier as the other external job boards
 const PAGES = Math.min(parsePositiveInt(process.env.JOOBLE_PAGES, 1), 3);
 const MAX_REQUESTS = Math.min(parsePositiveInt(process.env.JOOBLE_MAX_REQUESTS, 12), 40);
+// Jooble's API is multi-country and treats `location` as a fuzzy text hint, so non-SA jobs leak in.
+// Every result is therefore checked against South African provinces/places before it is stored.
+// Add extra towns without a code change via JOOBLE_EXTRA_PLACES="Dwarsloop,Kuruman".
+const SA_PLACES = ['south africa', 'republic of south africa', 'rsa', 'gauteng', 'western cape', 'kwazulu', 'kwa-zulu', 'eastern cape',
+  'free state', 'limpopo', 'mpumalanga', 'north west', 'northern cape', 'johannesburg', 'cape town', 'durban', 'pretoria', 'tshwane',
+  'ekurhuleni', 'centurion', 'sandton', 'midrand', 'randburg', 'roodepoort', 'krugersdorp', 'benoni', 'boksburg', 'germiston', 'kempton park',
+  'alberton', 'springs', 'soweto', 'tembisa', 'vereeniging', 'vanderbijlpark', 'brakpan', 'edenvale', 'bedfordview', 'fourways', 'rosebank',
+  'bloemfontein', 'welkom', 'polokwane', 'tzaneen', 'mokopane', 'nelspruit', 'mbombela', 'witbank', 'emalahleni', 'secunda', 'middelburg',
+  'rustenburg', 'klerksdorp', 'potchefstroom', 'mahikeng', 'brits', 'pietermaritzburg', 'richards bay', 'newcastle', 'ladysmith', 'umhlanga',
+  'pinetown', 'port elizabeth', 'gqeberha', 'east london', 'mthatha', 'queenstown', 'kimberley', 'upington', 'kuruman', 'stellenbosch', 'paarl',
+  'bellville', 'george', 'mossel bay', 'worcester', 'somerset west', 'sasolburg', 'kroonstad']
+  .concat(String(process.env.JOOBLE_EXTRA_PLACES || '').split(',').map((v) => v.trim().toLowerCase()).filter(Boolean));
+const SA_PLACE_RE = new RegExp(`(^|[^a-z])(${SA_PLACES.map((v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})([^a-z]|$)`, 'i');
+const FOREIGN_RE = /\b(united states|usa|u\.s\.|united kingdom|\buk\b|england|scotland|canada|australia|india|nigeria|kenya|ghana|uganda|zimbabwe|zambia|botswana|namibia|mozambique|uae|dubai|saudi|qatar|germany|france|ireland|netherlands|new zealand|philippines|pakistan)\b/i;
+export function isSouthAfricanLocation(location) {
+  const text = clean(location);
+  if (!text || FOREIGN_RE.test(text)) return false;
+  return SA_PLACE_RE.test(text);
+}
+
 const QUERIES = String(process.env.JOOBLE_QUERIES || 'general worker,driver,admin clerk,sales,security,cashier')
   .split(',').map((q) => q.trim()).filter(Boolean);
 
@@ -46,6 +66,8 @@ export function mapJoobleResults(payload, now = new Date()) {
     const title = clean(item?.title);
     if (!id || !link || !title || seen.has(id)) return null;
     seen.add(id);
+
+    if (!isSouthAfricanLocation(item?.location)) return null;
 
     const updatedMs = item?.updated ? Date.parse(item.updated) : NaN;
     if (Number.isFinite(updatedMs) && now.getTime() - updatedMs > MAX_AGE_DAYS * 86_400_000) return null;
