@@ -102,6 +102,7 @@ jobs:
           run_source himalayas npm run sync:himalayas
           run_source oracle npm run sync:oracle
           run_source government npm run sync:government
+          run_source bizcommunity npm run sync:bizcommunity
           run_source retail npm run scrape:retail
           run_source simplify npm run scrape:simplify
           run_source graduates24 npm run scrape:graduates24

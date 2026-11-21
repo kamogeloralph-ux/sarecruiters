@@ -849,7 +849,8 @@ var STARTUP_DEDICATED_SOURCES = [
   "spar",
   "career_board",
   "learnerships",
-  "careers_page"
+  "careers_page",
+  "bizcommunity"
 ];
 function supabaseRestUrl(env, table, params = {}) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
@@ -1341,7 +1342,8 @@ async function loadStartupDataFromD1(env) {
     government: ["government", "dpsa"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     learnerships: ["learnerships"],
-    careers_page: ["careers_page"]
+    careers_page: ["careers_page"],
+    bizcommunity: ["bizcommunity"]
   };
 
   const [agenciesR, branchesR, vacanciesR, employersR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR, sourceVacancyCountR] = await Promise.all([
@@ -1477,7 +1479,8 @@ async function loadStartupData(env) {
     government: ["government", "dpsa"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     learnerships: ["learnerships"],
-    careers_page: ["careers_page"]
+    careers_page: ["careers_page"],
+    bizcommunity: ["bizcommunity"]
   };
   const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
@@ -2177,7 +2180,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   // than exhausting the account-wide D1 rows-read allowance.
   const snapshotFresh = !!snapshot && Array.isArray(snapshot.vacancies);
   const filterRows = (allRows) => {
-    const dedicated = new Set(["himalayas", "adzuna", "government", "dpsa", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "learnerships", "careers_page"]);
+    const dedicated = new Set(["himalayas", "adzuna", "government", "dpsa", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "learnerships", "careers_page", "bizcommunity"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
     const cursorSeparator = cursor.indexOf("|");
     const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;

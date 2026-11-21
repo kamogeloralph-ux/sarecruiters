@@ -41,6 +41,7 @@ export const MAX_AGE_DAYS = {
   simplify: 45, // external job-board aggregation, same tier as Pnet/Adzuna
   oracle: 60, // corporate career-site postings tend to stay open longer
   government: 90, // DPSA circulars close on fixed dates but stay listed long
+  bizcommunity: 45, // RSS job-board listings are refreshed frequently
 };
 
 export const DEFAULT_MAX_AGE_DAYS = 60;

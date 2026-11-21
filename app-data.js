@@ -724,12 +724,12 @@ export async function getGeneralVacancyCount() {
 // DEDICATED_FOLDERS in Cloudflare-worker/worker.js) with 5 small indexed
 // count queries instead of one big row fetch.
 export async function getDedicatedVacancyCounts() {
-  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government','dpsa'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], learnerships: ['learnerships'], careers_page: ['careers_page'] };
-  var out = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0, careers_page: 0 };
+  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government','dpsa'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], learnerships: ['learnerships'], careers_page: ['careers_page'], bizcommunity: ['bizcommunity'] };
+  var out = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0, careers_page: 0, bizcommunity: 0 };
   return null;
 }
 export function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships', 'careers_page'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships', 'careers_page', 'bizcommunity'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 export function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
@@ -840,7 +840,8 @@ export var DEDICATED_VACANCY_FOLDER_SOURCES = {
   government: ['government', 'dpsa'],
   retail: ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'],
   learnerships: ['learnerships'],
-  careers_page: ['careers_page']
+  careers_page: ['careers_page'],
+  bizcommunity: ['bizcommunity']
 };
 // Each dedicated folder (Himalayas, Adzuna, Government, Retail,
 // Learnerships) used to be a client-side filter over the fully-preloaded
@@ -1372,7 +1373,7 @@ export async function loadAll(options) {
 
 export function dedicatedVacancyGrandTotal() {
   var c = dedicatedVacancyCounts || {};
-  return (c.himalayas||0) + (c.adzuna||0) + (c.government||0) + (c.retail||0) + (c.learnerships||0) + (c.careers_page||0);
+  return (c.himalayas||0) + (c.adzuna||0) + (c.government||0) + (c.retail||0) + (c.learnerships||0) + (c.careers_page||0) + (c.bizcommunity||0);
 }
 // Compact display for big totals: 16861 -> "16k", 1530 -> "1.5k". Rounds DOWN so the label never
 // overstates the real total. (To round to the nearest thousand instead, change Math.floor to Math.round.)

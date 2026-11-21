@@ -285,12 +285,12 @@ export function openExternalJobs() {
 
 export function homeVacancySourceMarkup() {
   var summary = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
-  var order = summary && summary.order ? summary.order : ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page'];
+  var order = summary && summary.order ? summary.order : ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page', 'bizcommunity'];
   var labels = summary && summary.labels ? summary.labels : {
     general: 'General', agency: 'Agency', government: 'Government', retail: 'Retail',
-    learnerships: 'Learnerships', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', careers_page: 'Cruise Careers'
+    learnerships: 'Learnerships', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', careers_page: 'Cruise Careers', bizcommunity: 'Bizcommunity'
   };
-  var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', government: '⌂', retail: '▤', learnerships: '✦', himalayas: '↗', adzuna: 'A', careers_page: '⚓' };
+  var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', government: '⌂', retail: '▤', learnerships: '✦', himalayas: '↗', adzuna: 'A', careers_page: '⚓', bizcommunity: 'B' };
   var counts = summary && summary.counts ? summary.counts : {};
   var ready = !!(summary && summary.ready);
   var fmt = function (n) { return typeof window.formatCompactCount === 'function' ? window.formatCompactCount(n) : Number(n).toLocaleString(); };
@@ -1793,7 +1793,7 @@ export function loadMoreGeneralVacancies() {
 // 5 dedicated-source folders (Himalayas/Adzuna/Government/Retail/
 // Learnerships). One shared state machine since only one folder is open at
 // a time — see dedicatedVacancy* globals in app-core.js.
-export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships', careers_page: 'Cruise careers' };
+export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships', careers_page: 'Cruise careers', bizcommunity: 'Bizcommunity Jobs' };
 export function renderDedicatedVacancyCards(append) {
   var el = document.getElementById('allvacancies-list');
   var loadMore = document.getElementById('allvacancies-loadmore');
@@ -1907,7 +1907,8 @@ export function renderAllVacanciesList() {
   var isRetailVacancy = function(v){ return ['retail','shoprite','picknpay','woolworths','truworths','spar'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/i.test(String(v.id || '')); };
   var isLearnershipVacancy = function(v){ return v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0; };
   var isCareersPageVacancy = function(v){ return v.source_type === 'careers_page' || String(v.id || '').indexOf('careers-page-') === 0; };
-  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isGovernmentVacancy(v) || isRetailVacancy(v) || isLearnershipVacancy(v) || isCareersPageVacancy(v); };
+  var isBizcommunityVacancy = function(v){ return v.source_type === 'bizcommunity' || String(v.id || '').indexOf('bizcommunity-') === 0; };
+  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isGovernmentVacancy(v) || isRetailVacancy(v) || isLearnershipVacancy(v) || isCareersPageVacancy(v) || isBizcommunityVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
   var locationFilter = ((document.getElementById('allvacancies-location')||{}).value || '').trim().toLowerCase();
@@ -1936,6 +1937,8 @@ export function renderAllVacanciesList() {
                       ? visible.filter(isLearnershipVacancy)
                       : allVacanciesFolder === 'careers_page'
                         ? visible.filter(isCareersPageVacancy)
+                        : allVacanciesFolder === 'bizcommunity'
+                          ? visible.filter(isBizcommunityVacancy)
               : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
@@ -2003,6 +2006,7 @@ export function renderAllVacanciesList() {
     var retailCount = dedicatedVacancyCounts.retail || 0;
     var learnershipsCount = dedicatedVacancyCounts.learnerships || 0;
     var careersPageCount = dedicatedVacancyCounts.careers_page || 0;
+    var bizcommunityCount = dedicatedVacancyCounts.bizcommunity || 0;
     var folderCountLabel = function(count) {
       if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading…';
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
@@ -2015,7 +2019,8 @@ export function renderAllVacanciesList() {
       { type:'learnerships', label:'Learnerships', short:'Learnerships', count:learnershipsCount, icon:'✦' },
       { type:'himalayas', label:'Himalayas Remote', short:'Himalayas', count:himalayasCount, icon:'↗' },
       { type:'adzuna', label:'Adzuna Vacancies', short:'Adzuna', count:adzunaCount, icon:'A' },
-      { type:'careers_page', label:'Cruise Careers', short:'Cruise', count:careersPageCount, icon:'⚓' }
+      { type:'careers_page', label:'Cruise Careers', short:'Cruise', count:careersPageCount, icon:'⚓' },
+      { type:'bizcommunity', label:'Bizcommunity Jobs', short:'Bizcommunity', count:bizcommunityCount, icon:'B' }
     ];
     // Put the fullest categories first. Array#sort is stable in supported
     // browsers, so equal counts retain the curated fallback order above.
@@ -2143,7 +2148,7 @@ export function renderAllVacanciesList() {
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'government' ? 'Government Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : allVacanciesFolder === 'careers_page' ? 'Cruise Careers' : 'Learnerships';
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'government' ? 'Government Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : allVacanciesFolder === 'careers_page' ? 'Cruise Careers' : allVacanciesFolder === 'bizcommunity' ? 'Bizcommunity Jobs' : 'Learnerships';
   el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);
