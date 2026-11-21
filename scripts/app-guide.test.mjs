@@ -17,10 +17,28 @@ test("solveArm reaches its target with a bent elbow", () => {
 test("every pose returns every joint as a finite number", () => {
   for (const name of Object.keys(G.POSES)) {
     for (const t of [0, 0.3, 1.2, 1.9]) {
-      const j = G.POSES[name](t, { phase: t * 5, speed: 400, aim: [1, -1] });
+      const j = G.POSES[name](t, { phase: t * 5, speed: 400, aim: [1, -1], nod: true, sparkle: true });
       for (const k of G.KEYS) assert.ok(Number.isFinite(j[k]), name + "." + k);
     }
   }
+});
+
+test("the focused poses exist: idle, wave, point, cheer, think, headsup, sleep", () => {
+  for (const n of ["idle", "wave", "point", "cheer", "think", "headsup", "sleep", "hold", "worry", "greet"]) assert.equal(typeof G.POSES[n], "function", n);
+});
+
+test("settings normalise to safe values", () => {
+  assert.deepEqual(G.normalizeSettings(null), { enabled: true, mode: "full", intensity: "standard", introSeen: false });
+  assert.equal(G.normalizeSettings({ mode: "weird" }).mode, "full");
+  assert.equal(G.normalizeSettings({ intensity: "low" }).intensity, "low");
+  assert.equal(G.normalizeSettings({ enabled: false }).enabled, false);
+});
+
+test("modes decide what Thando may do", () => {
+  assert.equal(G.modeAllows("full", "celebrate"), true);
+  assert.equal(G.modeAllows("tips", "celebrate"), false);
+  assert.equal(G.modeAllows("tips", "tip"), true);
+  assert.equal(G.modeAllows("quiet", "tip"), false);
 });
 
 test("empty-state classification ignores loading and non-search empties", () => {
@@ -37,14 +55,44 @@ test("toast steps count successes only", () => {
   assert.equal(G.toastStep("Push alerts enabled"), null);
 });
 
-test("messages stay short enough for one line on a phone", () => {
-  const all = [G.MSG.onboard, G.MSG.apply, G.MSG.done, G.MSG.empty, G.MSG.emptySaved, ...G.MSG.opened, ...G.MSG.saved, ...G.TIPS.map(t => t.text)];
-  for (const m of all) assert.ok(m.length <= 46, m);
+test("vacancy count and closing-date helpers", () => {
+  assert.equal(G.parseCount("1,234"), 1234);
+  assert.equal(G.parseCount("12.5K"), 12500);
+  assert.equal(G.parseCount("…"), null);
+  assert.equal(G.isClosesToday("Closes today"), true);
+  assert.equal(G.isClosesToday("Closes in 3d"), false);
 });
 
-test("guide is loaded by the app and versioned with the deploy", () => {
+test("rest slots stay inside the app column and prefer the free side", () => {
+  const ar = { left: 100, right: 620 };
+  const slots = G.restSlots(ar, 700, "right");
+  assert.equal(slots[0].name, "right");
+  for (const s of slots) { assert.ok(s.x >= ar.left && s.x + 44 <= ar.right); assert.ok(s.y <= 700); }
+  assert.equal(G.restSlots(ar, 700, "left")[0].name, "left");
+  assert.ok(G.rectsOverlap({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 8, top: 8, right: 20, bottom: 20 }));
+  assert.ok(!G.rectsOverlap({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 30, top: 0, right: 40, bottom: 10 }));
+});
+
+test("speech is short enough for two lines", () => {
+  const msgs = [];
+  for (const v of Object.values(G.MSG)) { if (typeof v === "string") msgs.push(v); }
+  msgs.push(G.MSG.savedCount(12), G.MSG.profile(80));
+  for (const t of G.TIPS) msgs.push(t.text);
+  for (const m of msgs) assert.ok(m.length <= 70, m);
+});
+
+test("the guide has a name and is loaded and versioned by the app", () => {
+  assert.equal(G.NAME, "Thando");
   assert.match(read("index.html"), /<script src="app-guide\.js\?v=[^"]+" defer><\/script>/);
   assert.match(read("index.html"), /app-guide\.css\?v=/);
   assert.match(read("generate-pages.js"), /'app-guide\.js'/);
   assert.match(read("generate-pages.js"), /'app-guide\.css'/);
+});
+
+test("the markup respects reduced motion and exposes accessible controls", () => {
+  const js = read("app-guide.js"), css = read("app-guide.css");
+  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(js, /aria-label', 'SA Recruiters guide'/);
+  assert.match(js, /role', 'switch'/);
+  assert.match(js, /IntersectionObserver/);
 });
