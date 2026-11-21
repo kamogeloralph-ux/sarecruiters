@@ -50,6 +50,7 @@ const STATIC_ASSETS = [
   // receive the update banner.
   'app.bundle.min.js',
   'app-vacancy-v2.js',
+  'app-pull-refresh.js',
   'public-ads.js',
   'admin.html',
   'privacy.html',
