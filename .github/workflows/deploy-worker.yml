@@ -75,6 +75,21 @@ jobs:
           fi
           printf '%s' "${SUPABASE_SERVICE_ROLE_KEY}" | npx --yes wrangler@4.147.0 secret put SUPABASE_SERVICE_ROLE_KEY --config wrangler.toml
 
+      - name: Sync Adzuna credentials to the Worker
+        # /api/jobs/adzuna (find-jobs) reads these from the Worker, not from GitHub.
+        working-directory: Cloudflare-worker
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${ADZUNA_APP_ID}" || -z "${ADZUNA_APP_KEY}" ]]; then
+            echo "::warning::GitHub secrets ADZUNA_APP_ID / ADZUNA_APP_KEY are empty; /api/jobs/adzuna will answer 503 unless they are set on the Worker."
+            exit 0
+          fi
+          printf '%s' "${ADZUNA_APP_ID}" | npx --yes wrangler@4.147.0 secret put ADZUNA_APP_ID --config wrangler.toml
+          printf '%s' "${ADZUNA_APP_KEY}" | npx --yes wrangler@4.147.0 secret put ADZUNA_APP_KEY --config wrangler.toml
+
       - name: Publish house-ad creatives to R2
         shell: bash
         run: |
