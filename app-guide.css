@@ -15,13 +15,15 @@
   --sg-text:var(--text,#fff);
   --sg-border:var(--border-strong,rgba(255,255,255,.14));
   contain:layout style;
+  isolation:isolate;
 }
 [data-theme="light"] #sa-guide{--sg-surface:var(--card,#fff);--sg-text:var(--text,#111)}
 
 /* ---------- character ---------- */
 #sa-guide .sa-guide__char{
   position:absolute;left:0;top:0;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;
-  background:none;color:inherit;cursor:pointer;
+  background:var(--sg-surface);color:inherit;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.28),0 0 0 2px color-mix(in srgb,var(--sg-surface) 82%,transparent);
   transform-origin:50% 100%;will-change:transform;
   opacity:0;pointer-events:none;touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;transition:opacity .25s ease;
@@ -30,6 +32,8 @@
 #sa-guide.is-on.is-mini .sa-guide__char{opacity:.7}
 #sa-guide.is-on.is-quiet .sa-guide__char{opacity:.88}
 #sa-guide .sa-guide__char[data-live="true"]{pointer-events:auto}
+#sa-guide .sa-guide__char::before{content:"SA";position:absolute;right:-2px;top:-3px;z-index:2;display:grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--sg-gold);color:#171717;font:800 7px/1 system-ui,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+#sa-guide.is-disabled .sa-guide__char{opacity:.25;pointer-events:none}
 #sa-guide .sa-guide__char:focus-visible{outline:2px solid var(--sg-ink);outline-offset:2px}
 
 /* Away = a text field has focus or a tall sheet needs the space: fade out and stay untappable */
@@ -67,10 +71,12 @@
   background:var(--sg-surface);color:var(--sg-text);
   border:1px solid var(--sg-border);box-shadow:0 6px 18px -6px rgba(0,0,0,.45);
   font:600 12.5px/1.25 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
-  white-space:nowrap;
+  white-space:normal;
 }
-.sa-guide__text{overflow:hidden;text-overflow:ellipsis}
+.sa-guide__text{display:-webkit-box;overflow:hidden;max-width:230px;line-height:1.25;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .sa-guide__icon{display:inline-flex;flex:none;color:var(--sg-ink)}
+.sa-guide__bubble-close{flex:none;width:20px;height:20px;margin:-3px -6px -3px 0;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;font:700 18px/18px system-ui;cursor:pointer}
+.sa-guide__bubble-close:focus-visible{outline:2px solid var(--sg-ink);outline-offset:1px}
 .sa-guide__bubble-in::after{
   content:"";position:absolute;left:var(--sg-tail,24px);width:9px;height:9px;margin-left:-4.5px;
   background:var(--sg-surface);transform:rotate(45deg);
@@ -107,6 +113,8 @@
 .sa-guide__chip{min-height:40px;padding:6px 8px;font-size:12.5px;line-height:1.2}
 .sa-guide__chip:active,.sa-guide__toggle:active{background:var(--m-wash-2,rgba(23,105,207,.14))}
 .sa-guide__foot{display:flex;gap:6px;margin-top:8px}
+.sa-guide__settings{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.sa-guide__settings .sa-guide__toggle{min-height:34px}
 .sa-guide__toggle{flex:1;min-height:36px;padding:4px 8px;font-size:12px;font-weight:500;color:var(--text-2,#8f8f8f)}
 .sa-guide__toggle[aria-pressed="true"]{color:var(--sg-ink);border-color:var(--sg-ink)}
 .sa-guide__chip:focus-visible,.sa-guide__toggle:focus-visible{outline:2px solid var(--sg-ink);outline-offset:1px}
