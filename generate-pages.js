@@ -50,6 +50,9 @@ const STATIC_ASSETS = [
   // receive the update banner.
   'app.bundle.min.js',
   'app-vacancy-v2.js',
+  'app-guide.js',
+  'app-guide.css',
+  'pose-sheet.png',
   'app-pull-refresh.js',
   'public-ads.js',
   'admin.html',
@@ -90,7 +93,7 @@ function rewriteAssetUrls(html, version) {
   // Handles relative (styles.css), ./relative (./styles.css) and
   // root-absolute (/static-pages.css) references.
   return html.replace(
-    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|community\.css|content\.js|content-manager\.js|static-pages\.css|public-ads\.js)(?:\?v=[^"]*)?("?)/g,
+    /((?:src|href)=")((?:\.\/|\/)?)(styles\.css|community\.css|content\.js|content-manager\.js|static-pages\.css|public-ads\.js|app-guide\.css|app-guide\.js)(?:\?v=[^"]*)?("?)/g,
     (match, attr, base, file, suffix) => `${attr}${base}${file}?v=${version}${suffix}`,
   );
 }
