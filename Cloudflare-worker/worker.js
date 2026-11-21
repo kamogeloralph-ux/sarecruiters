@@ -1242,7 +1242,8 @@ function parseAtsXml(xml) {
       closing_date: atsXmlField(item, ["closing_date", "close_date", "expires", "expiry_date"]),
       employment_type: atsXmlField(item, ["employment_type", "job_type", "type"]),
       salary: atsXmlField(item, ["salary", "salary_range", "pay"]),
-      remote: atsXmlField(item, ["remote", "work_from_home"]) || "false"
+      remote: atsXmlField(item, ["remote", "work_from_home"]) || "false",
+      region: atsXmlField(item, ["region", "territory", "eligibility"]) || description
     };
   }).filter((job) => job.external_ref && job.title);
 }
@@ -1270,7 +1271,14 @@ async function syncOneAtsFeed(env, feed) {
   if (!feed.feed_url) return { feed_id: feed.id, skipped: "missing feed URL", jobs: 0 };
   const response = await fetch(feed.feed_url, { headers: { "user-agent": "SA-Recruiters-ATS-Sync/1.0" } });
   if (!response.ok) throw new Error(`ATS feed ${feed.id} returned HTTP ${response.status}`);
-  const jobs = parseAtsXml(await response.text());
+  const configuredIncludes = (() => { try { return JSON.parse(feed.include_terms || "[]"); } catch (_) { return []; } })();
+  const configuredExcludes = (() => { try { return JSON.parse(feed.exclude_terms || "[]"); } catch (_) { return []; } })();
+  const jobs = parseAtsXml(await response.text()).filter((job) => {
+    const regionText = String(job.region || job.description || "").toLowerCase();
+    const excluded = configuredExcludes.some((term) => regionText.includes(String(term).toLowerCase()));
+    const included = !configuredIncludes.length || configuredIncludes.some((term) => regionText.includes(String(term).toLowerCase()));
+    return !excluded && included;
+  });
   const active = [];
   for (const job of jobs) { await upsertAtsVacancy(env, feed, job); active.push(job.external_ref); }
   if (active.length) {
@@ -1287,7 +1295,7 @@ async function syncOneAtsFeed(env, feed) {
 }
 __name(syncOneAtsFeed, "syncOneAtsFeed");
 async function syncAtsFeeds(env) {
-  const rows = await env.DB.prepare("SELECT id, agency_id, agency_name, feed_url, api_key_hash FROM agency_ats_feeds WHERE is_active = 1").all();
+  const rows = await env.DB.prepare("SELECT id, agency_id, agency_name, feed_url, api_key_hash, include_terms, exclude_terms FROM agency_ats_feeds WHERE is_active = 1").all();
   const results = [];
   for (const feed of rows.results || []) {
     try { results.push(await syncOneAtsFeed(env, feed)); }
