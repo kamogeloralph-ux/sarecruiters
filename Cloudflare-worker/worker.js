@@ -1270,36 +1270,48 @@ __name(publishFocusedScraperSources, "publishFocusedScraperSources");
 // ATS feed integration. ATS vacancies are stored in the existing D1 vacancies
 // table and identified by (ats_feed_id, external_ref); no jobs table is used.
 function atsXmlDecode(value) {
-  return String(value || "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+  return String(value || "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&#x([0-9a-f]+);?/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#([0-9]+);?/g, (_, code) => String.fromCodePoint(parseInt(code, 10)))
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").trim();
 }
 __name(atsXmlDecode, "atsXmlDecode");
 function atsXmlField(xml, names) {
   for (const name of names) {
     const re = new RegExp(String.raw`<(?:(?:[\w-]+):)?${name}\b[^>]*>([\s\S]*?)<\/(?:(?:[\w-]+):)?${name}>`, "i");
     const match = String(xml || "").match(re);
-    if (match) return atsXmlDecode(match[1].replace(/<[^>]+>/g, " "));
+    if (match) return atsXmlDecode(match[1]).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   }
   return "";
 }
 __name(atsXmlField, "atsXmlField");
+function atsDescriptionValue(description, pattern) {
+  const match = String(description || "").match(pattern);
+  return match ? String(match[1] || "").trim() : "";
+}
+__name(atsDescriptionValue, "atsDescriptionValue");
 function parseAtsXml(xml) {
   const source = String(xml || "");
   const matches = [...source.matchAll(/<(?:(?:[\w-]+):)?(job|item)\b[^>]*>([\s\S]*?)<\/(?:(?:[\w-]+):)?\1>/gi)];
   return matches.map((match) => {
     const item = match[2];
-    const ref = atsXmlField(item, ["external_ref", "externalRef", "id", "guid", "reference", "job_id"]);
+    const link = atsXmlField(item, ["url", "link", "apply_url", "application_url"]);
+    const ref = atsXmlField(item, ["external_ref", "externalRef", "id", "guid", "reference", "job_id"]) || link;
     const title = atsXmlField(item, ["title", "name", "job_title"]);
     const description = atsXmlField(item, ["description", "summary", "content:encoded", "content"]);
+    const descriptionParts = description.split(/\s*[·|]\s*/).map((part) => part.trim()).filter(Boolean);
+    const closingFromDescription = atsDescriptionValue(description, /(?:closing\s+date|closes?)\s*:?[\s,]*(?:\w+\s+)?(\d{1,2}\s+[A-Za-z]+\s+\d{4}|[A-Za-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
+    const salaryFromDescription = atsDescriptionValue(description, /(R\s?[\d\s,.]+(?:per annum|p\.a\.|pm|per month)?)/i);
     return {
       external_ref: ref,
       title,
-      company: atsXmlField(item, ["company", "company_name", "employer", "organisation"]) ,
-      location: atsXmlField(item, ["location", "city", "job_location"]),
+      company: atsXmlField(item, ["company", "company_name", "employer", "organisation"]) || descriptionParts[0] || "",
+      location: atsXmlField(item, ["location", "city", "job_location"]) || descriptionParts[1] || "",
       description,
-      link: atsXmlField(item, ["url", "link", "apply_url", "application_url"]),
-      closing_date: atsXmlField(item, ["closing_date", "close_date", "expires", "expiry_date"]),
+      link,
+      closing_date: atsXmlField(item, ["closing_date", "close_date", "expires", "expiry_date"]) || closingFromDescription,
       employment_type: atsXmlField(item, ["employment_type", "job_type", "type"]),
-      salary: atsXmlField(item, ["salary", "salary_range", "pay"]),
+      salary: atsXmlField(item, ["salary", "salary_range", "pay"]) || salaryFromDescription,
       remote: atsXmlField(item, ["remote", "work_from_home"]) || "false",
       region: atsXmlField(item, ["region", "territory", "eligibility"]) || description
     };
@@ -4461,5 +4473,7 @@ var worker_sentry = Sentry.withSentry(
   worker_default
 );
 export {
+  parseAtsXml,
+  atsDate,
   worker_sentry as default
 };
