@@ -280,12 +280,12 @@ export function openExternalJobs() {
 
 export function homeVacancySourceMarkup() {
   var summary = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
-  var order = summary && summary.order ? summary.order : ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page', 'bizcommunity'];
+  var order = summary && summary.order ? summary.order : ['general', 'agency', 'retail', 'himalayas', 'adzuna', 'bizcommunity'];
   var labels = summary && summary.labels ? summary.labels : {
-    general: 'General', agency: 'Agency', government: 'Government', retail: 'Retail',
-    learnerships: 'Learnerships', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', careers_page: 'Cruise Careers', bizcommunity: 'Bizcommunity'
+    general: 'General', agency: 'Agency', retail: 'Retail',
+    himalayas: 'Himalayas Remote', adzuna: 'Adzuna', bizcommunity: 'Bizcommunity'
   };
-  var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', government: '⌂', retail: '▤', learnerships: '✦', himalayas: '↗', adzuna: 'A', careers_page: '⚓', bizcommunity: 'B' };
+  var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', retail: '▤', himalayas: '↗', adzuna: 'A', bizcommunity: 'B' };
   var counts = summary && summary.counts ? summary.counts : {};
   var ready = !!(summary && summary.ready);
   var fmt = function (n) { return typeof window.formatCompactCount === 'function' ? window.formatCompactCount(n) : Number(n).toLocaleString(); };
@@ -1615,7 +1615,6 @@ export var vacancyOverviewFilter = 'all';
 export var vacancyOverviewSource = 'all';
 export function vacancyMatchesOverviewSource(v) {
   if (vacancyOverviewSource === 'all') return true;
-  if (vacancyOverviewSource === 'government') return ['government', 'dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1;
   return String(v.source_type || '').toLowerCase() === vacancyOverviewSource;
 }
 export function setVacancyOverviewSource(source) {
@@ -1624,11 +1623,8 @@ export function setVacancyOverviewSource(source) {
 }
 export function vacancyMatchesOverviewFilter(v) {
   var source = String(v.source_type || '').toLowerCase();
-  var id = String(v.id || '');
-  var government = ['government', 'dpsa'].indexOf(source) !== -1 || /^(government|dpsa)-/i.test(id);
   var remote = /remote|work[ -]?from[ -]?home|telecommute/i.test(String(v.remote || '') + ' ' + source + ' ' + id);
-  if (vacancyOverviewFilter === 'government') return government;
-  if (vacancyOverviewFilter === 'private') return !government && !remote;
+  if (vacancyOverviewFilter === 'private') return !remote;
   if (vacancyOverviewFilter === 'remote') return remote;
   return true;
 }
@@ -1637,11 +1633,11 @@ export var vacancyOverviewLoading = false;
 export async function setVacancyOverviewFilter(filter) {
   vacancyOverviewFilter = filter || 'all';
   vacancyOverviewExtraRows = [];
-  if (vacancyOverviewFilter === 'government' || vacancyOverviewFilter === 'remote') {
+  if (vacancyOverviewFilter === 'remote') {
     vacancyOverviewLoading = true;
     window.renderAllVacanciesList();
     try {
-      var folder = vacancyOverviewFilter === 'government' ? 'government' : 'himalayas';
+      var folder = 'himalayas';
       vacancyOverviewExtraRows = filterExpiredVacancies(await fetchDedicatedVacancyPage(folder, generalVacancyQueryState(), 0));
     } catch (e) {
       vacancyOverviewExtraRows = [];
@@ -1786,7 +1782,7 @@ export function loadMoreGeneralVacancies() {
 // 5 dedicated-source folders (Himalayas/Adzuna/Government/Retail/
 // Learnerships). One shared state machine since only one folder is open at
 // a time — see dedicatedVacancy* globals in app-core.js.
-export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', government: 'Government Vacancies', retail: 'Retail Vacancies', learnerships: 'Learnerships', careers_page: 'Cruise careers', bizcommunity: 'Bizcommunity Jobs' };
+export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', retail: 'Retail Vacancies', bizcommunity: 'Bizcommunity Jobs' };
 export function renderDedicatedVacancyCards(append) {
   var el = document.getElementById('allvacancies-list');
   var loadMore = document.getElementById('allvacancies-loadmore');
@@ -1896,12 +1892,9 @@ export function renderAllVacanciesList() {
   });
   var isHimalayasVacancy = function(v){ return v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0; };
   var isAdzunaVacancy = function(v){ return v.source_type === 'adzuna' || String(v.id || '').indexOf('adzuna-') === 0; };
-  var isGovernmentVacancy = function(v){ return ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || '')); };
   var isRetailVacancy = function(v){ return ['retail','shoprite','picknpay','woolworths','truworths','spar'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/i.test(String(v.id || '')); };
-  var isLearnershipVacancy = function(v){ return v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0; };
-  var isCareersPageVacancy = function(v){ return v.source_type === 'careers_page' || String(v.id || '').indexOf('careers-page-') === 0; };
   var isBizcommunityVacancy = function(v){ return v.source_type === 'bizcommunity' || String(v.id || '').indexOf('bizcommunity-') === 0; };
-  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isGovernmentVacancy(v) || isRetailVacancy(v) || isLearnershipVacancy(v) || isCareersPageVacancy(v) || isBizcommunityVacancy(v); };
+  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isRetailVacancy(v) || isBizcommunityVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
   var locationFilter = ((document.getElementById('allvacancies-location')||{}).value || '').trim().toLowerCase();
@@ -1922,15 +1915,9 @@ export function renderAllVacanciesList() {
         ? visible.filter(isHimalayasVacancy)
         : allVacanciesFolder === 'adzuna'
           ? visible.filter(isAdzunaVacancy)
-                : allVacanciesFolder === 'government'
-                  ? visible.filter(isGovernmentVacancy)
-                  : allVacanciesFolder === 'retail'
+                : allVacanciesFolder === 'retail'
                     ? visible.filter(isRetailVacancy)
-                    : allVacanciesFolder === 'learnerships'
-                      ? visible.filter(isLearnershipVacancy)
-                      : allVacanciesFolder === 'careers_page'
-                        ? visible.filter(isCareersPageVacancy)
-                        : allVacanciesFolder === 'bizcommunity'
+                    : allVacanciesFolder === 'bizcommunity'
                           ? visible.filter(isBizcommunityVacancy)
               : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
@@ -1995,10 +1982,7 @@ export function renderAllVacanciesList() {
     // client-side filter that would now always read zero.
     var himalayasCount = dedicatedVacancyCounts.himalayas || 0;
     var adzunaCount = dedicatedVacancyCounts.adzuna || 0;
-    var governmentCount = dedicatedVacancyCounts.government || 0;
     var retailCount = dedicatedVacancyCounts.retail || 0;
-    var learnershipsCount = dedicatedVacancyCounts.learnerships || 0;
-    var careersPageCount = dedicatedVacancyCounts.careers_page || 0;
     var bizcommunityCount = dedicatedVacancyCounts.bizcommunity || 0;
     var folderCountLabel = function(count) {
       if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading…';
@@ -2007,12 +1991,9 @@ export function renderAllVacanciesList() {
     var sourceCards = [
       { type:'general', label:'General Vacancies', short:'General', count:generalCount, icon:'⌕' },
       { type:'agency', label:'Agency Vacancies', short:'Agency', count:agencyCount, icon:'▦' },
-      { type:'government', label:'Government Vacancies', short:'Government', count:governmentCount, icon:'⌂' },
       { type:'retail', label:'Retail Vacancies', short:'Retail', count:retailCount, icon:'▤' },
-      { type:'learnerships', label:'Learnerships', short:'Learnerships', count:learnershipsCount, icon:'✦' },
       { type:'himalayas', label:'Himalayas Remote', short:'Himalayas', count:himalayasCount, icon:'↗' },
       { type:'adzuna', label:'Adzuna Vacancies', short:'Adzuna', count:adzunaCount, icon:'A' },
-      { type:'careers_page', label:'Cruise Careers', short:'Cruise', count:careersPageCount, icon:'⚓' },
       { type:'bizcommunity', label:'Bizcommunity Jobs', short:'Bizcommunity', count:bizcommunityCount, icon:'B' }
     ];
     // Put the fullest categories first. Array#sort is stable in supported
@@ -2059,7 +2040,7 @@ export function renderAllVacanciesList() {
         '</div>' +
       '</section>';
     var overviewFilters = '<section class="career-recent-section"><div class="vacancy-overview-filters" role="group" aria-label="Filter recent vacancies">' +
-      [['all','All Roles'],['government','Government'],['private','Private Sector'],['remote','Remote']].map(function(item){
+      [['all','All Roles'],['private','Private Sector'],['remote','Remote']].map(function(item){
         return '<button type="button" class="vacancy-overview-filter' + (vacancyOverviewFilter === item[0] ? ' active' : '') + '" onclick="setVacancyOverviewFilter(\'' + item[0] + '\')">' + item[1] + '</button>';
       }).join('') + '</div>' +
       '<div class="career-recent-results vacancy-swipe-rail" tabindex="0" aria-label="Recent vacancies, swipe left or right" aria-live="polite">' +
@@ -2108,22 +2089,10 @@ export function renderAllVacanciesList() {
       groups[adzunaKey].items.push(v);
       return;
     }
-    if (allVacanciesFolder !== 'agency' && isGovernmentVacancy(v)) {
-      var governmentKey = 'government';
-      if (!groups[governmentKey]) groups[governmentKey] = { name:'Government vacancies', type:'Government', agency:null, items:[] };
-      groups[governmentKey].items.push(v);
-      return;
-    }
     if (allVacanciesFolder !== 'agency' && isRetailVacancy(v)) {
       var retailKey = 'retail';
       if (!groups[retailKey]) groups[retailKey] = { name:'Retail vacancies', type:'Retail', agency:null, items:[] };
       groups[retailKey].items.push(v);
-      return;
-    }
-    if (allVacanciesFolder !== 'agency' && isLearnershipVacancy(v)) {
-      var learnershipsKey = 'learnerships';
-      if (!groups[learnershipsKey]) groups[learnershipsKey] = { name:'Learnerships', type:'Learnerships', agency:null, items:[] };
-      groups[learnershipsKey].items.push(v);
       return;
     }
     var agency = v.agency_id && v.agency_id !== 'general' ? agenciesCache.find(function(a){ return a.id === v.agency_id; }) : null;
@@ -2141,7 +2110,7 @@ export function renderAllVacanciesList() {
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'government' ? 'Government Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : allVacanciesFolder === 'careers_page' ? 'Cruise Careers' : allVacanciesFolder === 'bizcommunity' ? 'Bizcommunity Jobs' : 'Learnerships';
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : allVacanciesFolder === 'bizcommunity' ? 'Bizcommunity Jobs' : 'Vacancies';
   el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);

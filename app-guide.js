@@ -172,15 +172,14 @@
     cvtips:      { text: 'Quick tips to revamp your CV and stand out.', label: 'See tips', fn: 'openContentSheet', arg: 'cv-revamp', sel: '[onclick*="cv-revamp"]' },
     learn:       { text: 'Learn new skills in the Learning Hub.', label: 'Open', fn: 'openContentSheet', arg: 'learning-hub', sel: '[onclick*="learning-hub"]' },
     interview:   { text: 'Interview coming up? Read these tips first.', label: 'Read', fn: 'openContentSheet', arg: 'interview-tips', sel: '[onclick*="interview-tips"]' },
-    learnerships:{ text: 'Starting out? Browse learnerships and graduate roles.', label: 'Browse', special: 'learnerships', sel: '.vx-src[data-open="learnerships"]' },
     scam:        { text: 'Unsure about a job? Run it through Scam Check.', label: 'Check', fn: 'showScamCheck', sel: '[onclick*="showScamCheck"]' },
     rights:      { text: 'Know your rights at work before you sign.', label: 'Read', special: 'rights', sel: '[onclick*="know-your-rights"]' },
     community:   { text: 'Ask for advice from the community in TipChat.', label: 'Open', fn: 'openCommunity', sel: '[onclick*="openCommunity"]' },
     signin:      { text: 'Sign in free to sync saved jobs and apply faster.', label: 'Profile', special: 'profile', sel: '' }
   };
   var FEATURE_ORDER = {
-    'screen-home': ['cvbox', 'cvbuild', 'learn', 'scam', 'interview', 'learnerships', 'community'],
-    'screen-allvacancies': ['cvbuild', 'interview', 'scam', 'cvbox', 'learnerships'],
+    'screen-home': ['cvbox', 'cvbuild', 'learn', 'scam', 'interview', 'community'],
+    'screen-allvacancies': ['cvbuild', 'interview', 'scam', 'cvbox'],
     'screen-saved': ['interview', 'cvbuild', 'cvtips', 'cvbox'],
     'screen-pool': ['cvbuild', 'cvtips', 'interview', 'learn'],
     'screen-account': ['cvbox', 'cvbuild', 'learn', 'signin'],
@@ -1137,8 +1136,7 @@
     function runFeature(id) {
       var f = FEATURES[id]; if (!f) return;
       markDone(id);
-      if (f.special === 'learnerships') { callGlobal('showAllVacancies'); setTimeout(function () { var b = doc.querySelector('.vx-src[data-open="learnerships"]'); if (b) b.click(); }, 450); }
-      else if (f.special === 'rights') { try { win.open('/know-your-rights/', '_blank', 'noopener'); } catch (e) {} }
+      if (f.special === 'rights') { try { win.open('/know-your-rights/', '_blank', 'noopener'); } catch (e) {} }
       else if (f.special === 'profile') { var t = doc.querySelector('.navbtn[data-tab="account"]'); if (t) t.click(); }
       else callGlobal(f.fn, f.arg);
     }

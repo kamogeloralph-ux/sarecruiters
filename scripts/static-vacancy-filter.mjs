@@ -4,7 +4,7 @@
 //  Makes the committed snapshot (data/startup.json) match what the app
 //  actually keeps live. The snapshot is exported right after the scrapers
 //  run, but the daily enforce-vacancy-caps job later trims every poster /
-//  unlinked company (Simplify, Adzuna, careers-page...) to its newest 50.
+//  unlinked company (Adzuna and other aggregators) to its newest 50.
 //  Without applying the same rules here, the home "Available Vacancies"
 //  tile counted rows that the caps job deletes (e.g. one company had 4,700+
 //  rows), inflating the total ~2.6x.

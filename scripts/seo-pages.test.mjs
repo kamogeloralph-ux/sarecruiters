@@ -79,8 +79,8 @@ test('vacancy cards expose a local open and close toggle', () => {
   assert.match(cards, /window\.closeVac = function\(target\)/);
   assert.match(cards, /scrollIntoView\(\{ block: 'nearest'/);
 });
-test('vacancy overview uses eight square source tiles in a fixed grid', () => {
-  for (const source of ['General Vacancies', 'Agency Vacancies', 'Government Vacancies', 'Retail Vacancies', 'Learnerships', 'Himalayas Remote', 'Adzuna Vacancies', 'Cruise Careers']) {
+test('vacancy overview uses six square source tiles in a fixed grid', () => {
+  for (const source of ['General Vacancies', 'Agency Vacancies', 'Retail Vacancies', 'Himalayas Remote', 'Adzuna Vacancies', 'Bizcommunity Jobs']) {
     assert.match(appUi, new RegExp(source.replace(/[&]/g, '&amp;')));
   }
   assert.match(appUi, /career-source-grid/);
@@ -95,14 +95,14 @@ test('vacancy overview uses eight square source tiles in a fixed grid', () => {
 });
 test('vacancy overview filters are wired to live recent listings', () => {
   assert.match(appUi, /setVacancyOverviewFilter/);
-  for (const filter of ['All Roles', 'Government', 'Private Sector', 'Remote']) {
+  for (const filter of ['All Roles', 'Private Sector', 'Remote']) {
     assert.match(appUi, new RegExp(filter));
   }
   assert.match(appUi, /vacancyMatchesOverviewFilter/);
   assert.match(appUi, /career-recent-results/);
   assert.match(appUi, /vacancyOverviewExtraRows/);
   assert.match(appUi, /remote\|work\[ -\]\?from\[ -\]\?home\|telecommute/);
-  assert.match(appUi, /if \(vacancyOverviewFilter === 'government' \|\| vacancyOverviewFilter === 'remote'\)/);
+  assert.match(appUi, /if \(vacancyOverviewFilter === 'remote'\)/);
   assert.doesNotMatch(appUi, /career-category-section/);
   assert.doesNotMatch(cards, /vac-featured-icon/);
 });

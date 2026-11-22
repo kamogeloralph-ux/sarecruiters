@@ -36,16 +36,16 @@ test('closingDateIsPast: past dates are stale, recent/future/garbage are not', (
   assert.equal(closingDateIsPast('whenever', NOW), false);
 });
 
-test('postingIsTooOld: the Graduates24 2021-learnership case is stale', () => {
+test('postingIsTooOld: old imported postings are stale', () => {
   assert.equal(
-    postingIsTooOld({ postedText: '3 Feb 2021', sourceType: 'learnerships', now: NOW }),
+    postingIsTooOld({ postedText: '3 Feb 2021', sourceType: 'adzuna', now: NOW }),
     true,
-    '2021 learnership must be flagged',
+    'old imported posting must be flagged',
   );
   assert.equal(
-    postingIsTooOld({ postedText: '10 Sep 2026', sourceType: 'learnerships', now: NOW }),
+    postingIsTooOld({ postedText: '10 Sep 2026', sourceType: 'adzuna', now: NOW }),
     false,
-    '9-day-old learnership is fine',
+    '9-day-old imported posting is fine',
   );
   assert.equal(
     postingIsTooOld({ postedText: '15 September 2026', sourceType: 'jobmail', now: NOW }),
@@ -66,23 +66,21 @@ test('postingIsTooOld: the Graduates24 2021-learnership case is stale', () => {
 
 test('maxAgeDaysForSource matches the per-source TTL ceilings', () => {
   assert.equal(maxAgeDaysForSource('jobmail'), 21);
-  assert.equal(maxAgeDaysForSource('learnerships'), 30);
   assert.equal(maxAgeDaysForSource('retail'), 30);
   assert.equal(maxAgeDaysForSource('adzuna'), 45);
   assert.equal(maxAgeDaysForSource('indeed'), 45);
-  assert.equal(maxAgeDaysForSource('government'), 90);
   assert.equal(maxAgeDaysForSource('something-new'), 60);
 });
 
 test('isStaleVacancy: closing date wins, then posted text from notes', () => {
   assert.equal(
-    isStaleVacancy({ closing_date: '01 Jan 2021', source_type: 'learnerships' }, NOW).stale,
+    isStaleVacancy({ closing_date: '01 Jan 2021', source_type: 'adzuna' }, NOW).stale,
     true,
   );
   assert.equal(
     isStaleVacancy({
       closing_date: '', notes: 'Posted 3 Feb 2021. Some description.',
-      source_type: 'learnerships',
+      source_type: 'adzuna',
     }, NOW).stale,
     true,
     'posted date inside notes is detected',
@@ -95,12 +93,12 @@ test('isStaleVacancy: closing date wins, then posted text from notes', () => {
     'fresh jobmail posting with a bare notes date is kept',
   );
   assert.equal(
-    isStaleVacancy({ closing_date: '', notes: '', created_at: '2020-01-01T00:00:00Z', source_type: 'learnerships' }, NOW).stale,
+    isStaleVacancy({ closing_date: '', notes: '', created_at: '2020-01-01T00:00:00Z', source_type: 'adzuna' }, NOW).stale,
     true,
     'old created_at fallback flags a date-less row',
   );
   assert.equal(
-    isStaleVacancy({ closing_date: '', notes: '', created_at: null, source_type: 'learnerships' }, NOW).stale,
+    isStaleVacancy({ closing_date: '', notes: '', created_at: null, source_type: 'adzuna' }, NOW).stale,
     false,
     'no signals at all → keep (conservative)',
   );

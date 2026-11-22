@@ -8,11 +8,9 @@
 //  Signals, in order of strength:
 //    1. closing_date in the past  — the listing itself says applications
 //       closed. Definitive when parseable.
-//    2. posting age — JobMail posts "15 September 2026" and Graduates24
-//       posts "Posted: 3 Feb 2021" on every card. Anything older than the
-//       source's max age is stale regardless of whether the URL still
-//       resolves (Graduates24 in particular never removes old posts, so a
-//       2021 learnership stays listed — and was being served to users).
+//    2. posting age — imported sources may provide a posting date. Anything
+//       older than the source's max age is stale regardless of whether the URL
+//       still resolves.
 //    3. link dead — handled by verify-jobmail.mjs (now generalized).
 //
 //  A vacancy is kept only when NO available signal says it's stale. An
@@ -26,7 +24,6 @@
 export const MAX_AGE_DAYS = {
   jobmail: 21,
   agency: 21,
-  learnerships: 30,
   retail: 30,
   shoprite: 30,
   picknpay: 30,
@@ -38,9 +35,7 @@ export const MAX_AGE_DAYS = {
   indeed: 45,
   himalayas: 45,
   pnet: 45, // external job-board aggregation, same tier as adzuna/himalayas
-  simplify: 45, // external job-board aggregation, same tier as Pnet/Adzuna
   oracle: 60, // corporate career-site postings tend to stay open longer
-  government: 90, // DPSA circulars close on fixed dates but stay listed long
   bizcommunity: 45, // RSS job-board listings are refreshed frequently
 };
 
@@ -115,7 +110,7 @@ export function postingIsTooOld({ postedText, fallbackDate, sourceType, now = ne
 // Used at discovery (scrapers) and purge time. `job` needs:
 //   { closing_date, postedText?, notes?, created_at?, source_type }
 // Posted text is looked for in job.postedText first, then in notes (where
-// jobmail stores "15 September 2026" and graduates24 "Posted: 3 Feb 2021").
+// jobmail stores "15 September 2026" or another source-specific date format).
 export function extractPostedText(job) {
   if (job.postedText) return job.postedText;
   const notes = job.notes || '';

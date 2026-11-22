@@ -373,7 +373,7 @@ export var dedicatedVacancyRequestId = 0;
 // Folder counts for the overview grid (Himalayas · N vacancies, etc.),
 // populated from startup.counts.dedicated -- a handful of small indexed
 // COUNT queries server-side, not the rows themselves.
-export var dedicatedVacancyCounts = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0 };
+export var dedicatedVacancyCounts = { himalayas: 0, adzuna: 0, retail: 0, bizcommunity: 0 };
 export var dedicatedVacancyCountsLoaded = false;
 // Numbered-page browsing for vacancy listings (General/Agency/dedicated
 // source folders all share this one page size). Rows still load from the

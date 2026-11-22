@@ -409,7 +409,7 @@ test('maintenance tidies scraped vacancies once, screens new ones, and queues (n
   const ins = env.DB.raw.prepare('INSERT INTO vacancies (id,title,company,location,notes,link,email,source_type,created_at) VALUES (?,?,?,?,?,?,?,?,?)');
   ins.run('a', 'CASHIER - REF 11', 'Pick n Pay', 'Durban', 'Matric', 'https://pnp.example/a', '', 'retail', now);
   ins.run('b', 'Cashier', 'Pick n Pay (Pty) Ltd', 'Durban North', 'Matric', 'https://pnp.example/b', '', 'adzuna', now);
-  ins.run('c', 'Data capturer urgent!!', '', 'Pretoria', 'Pay a registration fee of R250 to secure your uniform. WhatsApp 0821234567', '', '', 'careers_page', now);
+  ins.run('c', 'Data capturer urgent!!', '', 'Pretoria', 'Pay a registration fee of R250 to secure your uniform. WhatsApp 0821234567', '', '', 'agency', now);
   const summary = await runAiMaintenance(env);
   assert.equal(summary.clean.cleaned, 3);
   assert.equal(summary.vacancy_screen.screened, 3);

@@ -3,8 +3,7 @@
 // ============================================================
 //  One-off (but safely re-runnable) purge of every stale scraped/synced
 //  vacancy in the database, requested after users kept tapping "Apply" on
-//  listings whose postings were years old — most visibly the 2021
-//  learnerships still listed on Graduates24.
+//  listings whose postings were years old.
 //
 // Deletes rows whose explicit closing date has passed, whose posted date in
 // notes is older than that source's freshness window, or whose created_at is

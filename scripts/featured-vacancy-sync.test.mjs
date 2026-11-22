@@ -44,13 +44,13 @@ test('dedicated featured-vacancy sections and their extra startup query are remo
   assert.doesNotMatch(appCoreSrc, /featuredVacanciesCache/);
 });
 
-test('vacancy overview shows all nine sources before retail-prioritized roles', () => {
+test('vacancy overview shows all six remaining sources before retail-prioritized roles', () => {
   const summaryStart = vacancyRendererSrc.indexOf('function sourceSummary()');
   const summaryEnd = vacancyRendererSrc.indexOf('function renderOverview()', summaryStart);
   const summary = vacancyRendererSrc.slice(summaryStart, summaryEnd);
   const orderMatch = summary.match(/order: \[([^\]]+)\]/);
   assert.ok(orderMatch, 'the shared source summary must define the source order');
-  assert.equal(orderMatch[1].split(',').length, 9, 'the overview must offer exactly nine sources');
+  assert.equal(orderMatch[1].split(',').length, 6, 'the overview must offer exactly six sources');
 
   const start = vacancyRendererSrc.indexOf('function renderOverview()');
   const end = vacancyRendererSrc.indexOf('/* ---------- folder post-processing', start);
@@ -58,7 +58,7 @@ test('vacancy overview shows all nine sources before retail-prioritized roles', 
   const sourcesAt = overview.indexOf('vx-source-section');
   const rolesAt = overview.indexOf('vx-available-roles');
   assert.ok(rolesAt >= 0 && sourcesAt >= 0, 'the overview must contain the source grid and available roles');
-  assert.match(overview, /html \+= sourcesMarkup \+ rolesMarkup;/, 'the eight source tiles must be rendered before available roles');
+  assert.match(overview, /html \+= sourcesMarkup \+ rolesMarkup;/, 'the six source tiles must be rendered before available roles');
   assert.match(overview, /window\.ensureRetailPriorityVacancies\(\)/, 'the overview must load retail rows for prioritization');
   assert.match(overview, /isRetailPriorityVacancy/, 'retail roles must be sorted ahead of other roles');
   assert.match(vacancyRendererSrc, /window\.retailPriorityPreviewRows/);

@@ -12,8 +12,8 @@
   var DAY = 864e5;
   var S = { sort: 'newest', fresh: false, salary: false };
 
-  var LABELS = { general: 'General', agency: 'Agency', government: 'Government', retail: 'Retail', learnerships: 'Learnerships', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', careers_page: 'Cruise Careers', bizcommunity: 'Bizcommunity' };
-  var SRC_ICON = { general: '⌕', agency: '▦', government: '⌂', retail: '▤', learnerships: '✦', himalayas: '↗', adzuna: 'A', careers_page: '⚓', bizcommunity: 'B' };
+  var LABELS = { general: 'General', agency: 'Agency', retail: 'Retail', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', bizcommunity: 'Bizcommunity' };
+  var SRC_ICON = { general: '⌕', agency: '▦', retail: '▤', himalayas: '↗', adzuna: 'A', bizcommunity: 'B' };
   var I = {
     pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
@@ -31,10 +31,7 @@
     var t = String(v.source_type || '').toLowerCase(), id = String(v.id || '');
     if (t === 'himalayas' || /^himalayas-/.test(id)) return 'himalayas';
     if (t === 'adzuna' || /^adzuna-/.test(id)) return 'adzuna';
-    if (t === 'government' || t === 'dpsa' || /^(government|dpsa)-/.test(id)) return 'government';
     if (['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'].indexOf(t) > -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/.test(id)) return 'retail';
-    if (t === 'learnerships' || /^graduates24-/.test(id)) return 'learnerships';
-    if (t === 'careers_page' || /^careers-page-/.test(id)) return 'careers_page';
     if (t === 'bizcommunity' || /^bizcommunity-/.test(id)) return 'bizcommunity';
     return v.agency_id === 'general' ? 'general' : (v.employer_id ? 'employer' : 'agency');
   }
@@ -238,9 +235,9 @@
     var d = dedicatedVacancyCounts || {};
     return {
       ready: !!(generalVacancyCountLoaded && dedicatedVacancyCountsLoaded),
-      order: ['general', 'agency', 'government', 'retail', 'learnerships', 'himalayas', 'adzuna', 'careers_page', 'bizcommunity'],
+      order: ['general', 'agency', 'retail', 'himalayas', 'adzuna', 'bizcommunity'],
       labels: LABELS, icons: SRC_ICON,
-      counts: { general: generalVacancyCount || 0, agency: vacanciesCache.filter(hasAssignedAgency).length, government: d.government || 0, retail: d.retail || 0, learnerships: d.learnerships || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, careers_page: d.careers_page || 0, bizcommunity: d.bizcommunity || 0 }
+      counts: { general: generalVacancyCount || 0, agency: vacanciesCache.filter(hasAssignedAgency).length, retail: d.retail || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, bizcommunity: d.bizcommunity || 0 }
     };
   }
   window.vacancySourceSummary = sourceSummary;

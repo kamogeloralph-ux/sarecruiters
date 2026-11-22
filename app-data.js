@@ -724,18 +724,18 @@ export async function getGeneralVacancyCount() {
 // DEDICATED_FOLDERS in Cloudflare-worker/worker.js) with 5 small indexed
 // count queries instead of one big row fetch.
 export async function getDedicatedVacancyCounts() {
-  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], government: ['government','dpsa'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], learnerships: ['learnerships'], careers_page: ['careers_page'], bizcommunity: ['bizcommunity'] };
-  var out = { himalayas: 0, adzuna: 0, government: 0, retail: 0, learnerships: 0, careers_page: 0, bizcommunity: 0 };
+  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], bizcommunity: ['bizcommunity'] };
+  var out = { himalayas: 0, adzuna: 0, retail: 0, bizcommunity: 0 };
   return null;
 }
 export function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'government', 'dpsa', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'learnerships', 'careers_page', 'bizcommunity'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'bizcommunity'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 export function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
 }
 export function hasAssignedAgency(v) {
-  // Dedicated external sources (Himalayas, Adzuna, DPSA, retail feeds) must
+  // Dedicated external sources (Himalayas, Adzuna, retail feeds) must
   // only ever appear in their own folder, never counted or listed as an
   // agency vacancy, even if agency_id was ever set on the row.
   return !!v && !!v.agency_id && v.agency_id !== 'general' && !isDedicatedVacancySource(v.source_type);
@@ -750,7 +750,7 @@ export function matchVacanciesToAgencies(rows, agencies) {
     return { agency: a, name: normalizeAgencyMatchText(a.name) };
   }).filter(function(x){ return x.name.length >= 6; });
   list.forEach(function(v) {
-    // Dedicated external sources (Himalayas, Adzuna, DPSA, retail feeds) keep
+    // Dedicated external sources (Himalayas, Adzuna, retail feeds) keep
     // their own folder as the single source of truth and must never be
     // re-tagged with an agency_id, or they leak into that agency's hub page
     // and the Agency Vacancies folder in addition to their own folder.
@@ -837,10 +837,7 @@ export async function fetchGeneralVacancyPage(state, page) {
 export var DEDICATED_VACANCY_FOLDER_SOURCES = {
   himalayas: ['himalayas'],
   adzuna: ['adzuna'],
-  government: ['government', 'dpsa'],
   retail: ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'],
-  learnerships: ['learnerships'],
-  careers_page: ['careers_page'],
   bizcommunity: ['bizcommunity']
 };
 // Each dedicated folder (Himalayas, Adzuna, Government, Retail,
@@ -904,7 +901,7 @@ export async function removeVacancy(id) {
 // both been retired — neither ever checked whether a listing was actually
 // still live, only how old it was, which is exactly the guessing this
 // removes. Sources with no real verification pass yet (manually-posted
-// agency vacancies, Adzuna, Himalayas, DPSA, retail, Graduates24) are
+// agency vacancies, Adzuna, Himalayas, retail) are
 // currently never auto-removed at all as a result — see the chat reply
 // this shipped with for what that means and the options for closing that
 // gap per source.
@@ -1373,7 +1370,7 @@ export async function loadAll(options) {
 
 export function dedicatedVacancyGrandTotal() {
   var c = dedicatedVacancyCounts || {};
-  return (c.himalayas||0) + (c.adzuna||0) + (c.government||0) + (c.retail||0) + (c.learnerships||0) + (c.careers_page||0) + (c.bizcommunity||0);
+  return (c.himalayas||0) + (c.adzuna||0) + (c.retail||0) + (c.bizcommunity||0);
 }
 // Compact display for big totals: 16861 -> "16k", 1530 -> "1.5k". Rounds DOWN so the label never
 // overstates the real total. (To round to the nearest thousand instead, change Math.floor to Math.round.)
@@ -1488,7 +1485,7 @@ export function reorderStatCardsByCount() {
 // gate used to own this fetch; the open app now does).
 export function gateVacancyTotal(agencies, vacancies, counts) {
   // Platform-wide total: general pool + agency-attributed +
-  // dedicated-source (DPSA/retail/Adzuna/…) rows. counts.vacancies is
+  // dedicated-source (retail/Adzuna/…) rows. counts.vacancies is
   // exactly that, computed server-side; fall back to the general count,
   // then to counting non-general rows locally.
   if (counts && typeof counts.vacancies === 'number') return counts.vacancies;

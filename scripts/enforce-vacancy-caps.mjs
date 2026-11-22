@@ -15,8 +15,7 @@
 //      free-text `company` value once normalized (trimmed, lower-cased,
 //      whitespace-collapsed) -- capped at MAX_PER_COMPANY (defaults to the
 //      same value as MAX_PER_POSTER). This is the gap that let a single
-//      company climb back past the cap: the scrapers (Simplify, Adzuna,
-//      careers-page, government sync) never attach a real agency_id or
+//      company climb back past the cap: some aggregators never attach a real agency_id or
 //      employer_id to what they post, so the agency/employer grouping
 //      above never saw them as the same poster -- only the shared,
 //      normalized `company` text does.

@@ -601,10 +601,8 @@ export function vacancyCard(v, agency, options) {
   var isAdzuna = String(v.id || '').indexOf('adzuna-') === 0;
   var isJooble = v.source_type === 'jooble' || String(v.id || '').indexOf('jooble-') === 0;
   var isHimalayas = v.source_type === 'himalayas' || String(v.id || '').indexOf('himalayas-') === 0;
-  var isGovernment = ['government','dpsa'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(government|dpsa)-/i.test(String(v.id || ''));
-  var isLearnership = v.source_type === 'learnerships' || String(v.id || '').indexOf('graduates24-') === 0;
   var featuredBadge = '';
-  var sourceBadge = (options.hideBadges ? '' : (isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : isGovernment ? '<span class="vac-source-tag vac-source-tag-dpsa">Government vacancy</span>' : isLearnership ? '<span class="vac-source-tag vac-source-tag-learnership">Learnership</span>' : '')) + featuredBadge;
+  var sourceBadge = (options.hideBadges ? '' : (isHimalayas ? '<span class="vac-source-tag">Remote · Himalayas</span>' : '')) + featuredBadge;
   var title = escapeHtml(v.title || 'Untitled role');
   var verifiedCheck = options.hideBadges ? '' : (((isEmployerPost && employer.verified) || (!isEmployerPost && !isGeneral && agency && agency.verified)) ? '' + verifiedBadge('' + (isEmployerPost ? 'Verified employer' : 'Verified agency') + '') + '' : '');
 
@@ -653,7 +651,7 @@ export function vacancyCard(v, agency, options) {
 
   var desc = v.notes ? '<div class="vac-desc-title">Job description</div><div class="vac-desc">' + escapeHtml(v.notes) + '</div>' : '';
   /* Platform attribution for vacancies posted by SA Recruiters or its agencies. */
-  var saRecruitersAttribution = !isHimalayas && !isAdzuna && !isJooble && (isGovernment || isGeneral || (!isEmployerPost && !isGeneral && agency))
+  var saRecruitersAttribution = !isHimalayas && !isAdzuna && !isJooble && (isGeneral || (!isEmployerPost && !isGeneral && agency))
     ? '<div class="sa-recruiters-attribution" aria-label="Jobs by SA Recruiters">' +
         '<a href="vacancy/' + publicVacancySlug(v) + '/" target="_blank" rel="noopener" title="Jobs by SA Recruiters" onclick="event.stopPropagation()">' +
           '<img src="/icons/logo-96.webp" alt="SA Recruiters logo" loading="lazy" decoding="async" width="20" height="20">' +

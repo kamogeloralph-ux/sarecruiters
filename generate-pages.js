@@ -764,9 +764,7 @@ function buildJobLocationFields(vacancy) {
 const SCHEMA_MAX_AGE_DAYS = {
   adzuna: 45,
   himalayas: 45,
-  simplify: 45,
   oracle: 60,
-  government: 90,
 };
 
 // Use the source's explicit closing date when available. For feeds without a
@@ -1082,8 +1080,7 @@ ${agencyList}
 // employment_type/contract_type are free-text fields (not an enum), so we
 // match the same way locationContains() does for province hubs: a
 // case-insensitive substring check across the fields most likely to carry
-// the category keyword, plus source_type for the vacancies we already tag
-// at ingestion time (government/dpsa, learnerships).
+// the category keyword, plus source_type for tagged vacancies.
 function vacancyMatchesCategory(vacancy, category) {
   const haystack = [
     vacancy.title, vacancy.employment_type, vacancy.contract_type,

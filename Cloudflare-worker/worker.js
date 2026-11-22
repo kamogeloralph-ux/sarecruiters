@@ -844,8 +844,6 @@ var STARTUP_VACANCY_PAGE_SIZE = 1e3;
 var STARTUP_DEDICATED_SOURCES = [
   "himalayas",
   "adzuna",
-  "government",
-  "dpsa",
   "retail",
   "shoprite",
   "picknpay",
@@ -853,8 +851,6 @@ var STARTUP_DEDICATED_SOURCES = [
   "truworths",
   "spar",
   "career_board",
-  "learnerships",
-  "careers_page",
   "bizcommunity"
 ];
 function supabaseRestUrl(env, table, params = {}) {
@@ -1217,7 +1213,7 @@ __name(syncD1AndPublishSnapshot, "syncD1AndPublishSnapshot");
 // Publish only scraper-owned sources. The full mirror rebuilds startup data
 // with many Supabase requests and can exceed the Worker subrequest limit.
 async function publishFocusedScraperSources(env) {
-  const sourceTypes = ["government", "dpsa", "bizcommunity"];
+  const sourceTypes = ["bizcommunity"];
   const columns = "id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type";
   const sourceRows = await supabaseGetAll(env, "vacancies", {
     select: columns,
@@ -1241,7 +1237,6 @@ async function publishFocusedScraperSources(env) {
   };
   const startupSnapshot = await readPublicStartupSnapshot(env);
   if (!startupSnapshot || !startupSnapshot.counts) throw new Error("Public startup snapshot is unavailable for focused publication");
-  const governmentCount = (sourceRows || []).filter((row) => ["government", "dpsa"].includes(String(row.source_type))).length;
   const bizcommunityCount = (sourceRows || []).filter((row) => String(row.source_type) === "bizcommunity").length;
   const startupPayload = {
     ...startupSnapshot,
@@ -1250,7 +1245,6 @@ async function publishFocusedScraperSources(env) {
       ...startupSnapshot.counts,
       dedicated: {
         ...(startupSnapshot.counts.dedicated || {}),
-        government: governmentCount,
         bizcommunity: bizcommunityCount
       }
     }
@@ -1267,7 +1261,7 @@ async function publishFocusedScraperSources(env) {
     snapshot: "r2-focused",
     source_rows: sourceRows.length,
     published_rows: liveSourceRows.length,
-    dedicated: { government: governmentCount, bizcommunity: bizcommunityCount }
+    dedicated: { bizcommunity: bizcommunityCount }
   };
 }
 __name(publishFocusedScraperSources, "publishFocusedScraperSources");
@@ -1402,10 +1396,7 @@ async function loadStartupDataFromD1(env) {
   const DEDICATED_FOLDERS = {
     himalayas: ["himalayas"],
     adzuna: ["adzuna"],
-    government: ["government", "dpsa"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
-    learnerships: ["learnerships"],
-    careers_page: ["careers_page"],
     bizcommunity: ["bizcommunity"]
   };
 
@@ -1553,10 +1544,7 @@ async function loadStartupData(env) {
   const DEDICATED_FOLDERS = {
     himalayas: ["himalayas"],
     adzuna: ["adzuna"],
-    government: ["government", "dpsa"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
-    learnerships: ["learnerships"],
-    careers_page: ["careers_page"],
     bizcommunity: ["bizcommunity"]
   };
   const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
@@ -1600,7 +1588,7 @@ async function loadStartupData(env) {
     // branch), so this bucket must be the true, non-overlapping complement:
     // rows with no source_type at all. Using "not in dedicatedSources" here
     // instead would double-count every general-pool row scraped by a
-    // non-dedicated source (careerjunction/jobmail/graduates24/etc.) — that
+    // non-dedicated source (careerjunction/jobmail/etc.) — that
     // was the original bug behind the admin/app vacancy-count mismatch.
     supabaseGet(env, "vacancies", {
       select: "id",
@@ -2259,7 +2247,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   // than exhausting the account-wide D1 rows-read allowance.
   const snapshotFresh = !!snapshot && Array.isArray(snapshot.vacancies);
   const filterRows = (allRows) => {
-    const dedicated = new Set(["himalayas", "adzuna", "government", "dpsa", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "learnerships", "careers_page", "bizcommunity"]);
+    const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
     const cursorSeparator = cursor.indexOf("|");
     const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;

@@ -123,7 +123,7 @@ test('the homepage shows a slim source chip row, then top jobs, then the latest 
   const sourcesPosition = overview.indexOf('vx-source-section');
   const rolesPosition = overview.indexOf('vx-available-roles');
   assert.ok(rolesPosition >= 0 && sourcesPosition >= 0, 'the vacancy overview must render both source cards and roles');
-  assert.match(overview, /html \+= sourcesMarkup \+ rolesMarkup;/, 'all eight sources must appear before available roles');
+  assert.match(overview, /html \+= sourcesMarkup \+ rolesMarkup;/, 'all six sources must appear before available roles');
   assert.match(vacancyV2, /window\.retailPriorityPreviewRows/);
   assert.match(overview, /isRetailPriorityVacancy/);
   assert.match(overview, /Browse jobs by source/);
