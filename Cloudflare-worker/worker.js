@@ -97,6 +97,11 @@ async function isAdminRequest(request, env) {
   }
 }
 __name(isAdminRequest, "isAdminRequest");
+function isInternalSyncRequest(request, env) {
+  const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  return !!token && !!env.SUPABASE_SERVICE_ROLE_KEY && token === env.SUPABASE_SERVICE_ROLE_KEY;
+}
+__name(isInternalSyncRequest, "isInternalSyncRequest");
 // Resolves the signed-in user's id from a verified Supabase access token, if
 // one was sent. Used to stamp reports/suggestions with their submitter
 // without ever trusting a user_id the client could put in the request body.
@@ -3101,6 +3106,17 @@ var worker_default = {
         } catch (error) {
           await recordSyncFailure(env, error);
           return json({ error: "Sync failed", detail: error.message }, 500, origin);
+        }
+      }
+      if (path === "/api/sync-d1/internal" && request.method === "POST") {
+        if (!isInternalSyncRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
+        if (!env.DB) return json({ error: "D1 not bound" }, 500, origin);
+        try {
+          const summary = await syncD1AndPublishSnapshot(env);
+          return json({ ok: true, ...summary }, 200, origin);
+        } catch (error) {
+          await recordSyncFailure(env, error);
+          return json({ error: "Sync failed" }, 500, origin);
         }
       }
 

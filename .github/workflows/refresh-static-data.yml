@@ -115,6 +115,22 @@ jobs:
         run: |
           export RUN_STARTED_AT="$(cat refresh-started-at.txt)"
           npm run reconcile:vacancies
+      - name: Publish refreshed vacancies to Cloudflare
+        if: always()
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WORKER_URL: "https://sarecruiters-uploader.kamogeloralph.workers.dev"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
+            echo "Missing SUPABASE_SERVICE_ROLE_KEY; cannot publish the refreshed inventory." >&2
+            exit 1
+          fi
+          curl --fail-with-body --retry 3 --retry-delay 5 --max-time 180 \
+            -X POST "${WORKER_URL}/api/sync-d1/internal" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Accept: application/json"
       # Public inventory is mirrored by the scheduled Cloudflare Worker into
       # D1 and published to R2. Do not export or commit a full Supabase table
       # snapshot from Actions; browsers no longer serve that artifact.
