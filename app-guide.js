@@ -162,6 +162,54 @@
   }
 
   // ============================================================
+  // Feature coach (pure data + chooser, unit-tested)
+  // ============================================================
+  // `sel` finds the app's own button for the feature on the current screen so
+  // Thando can walk over and point at it. `run` names a window global (+ arg).
+  var FEATURES = {
+    cvbox:       { text: 'Upload your CV to the CV Box so employers can find you.', label: 'Upload CV', fn: 'openCvBoxApplication', sel: '[onclick*="openCvBoxApplication"],[onclick*="openPoolRegisterSheet"]' },
+    cvbuild:     { text: 'Make your CV stronger with the free CV builder.', label: 'Build CV', fn: 'openCvBuilderSheet', sel: '[onclick*="openCvBuilderSheet"]' },
+    cvtips:      { text: 'Quick tips to revamp your CV and stand out.', label: 'See tips', fn: 'openContentSheet', arg: 'cv-revamp', sel: '[onclick*="cv-revamp"]' },
+    learn:       { text: 'Learn new skills in the Learning Hub.', label: 'Open', fn: 'openContentSheet', arg: 'learning-hub', sel: '[onclick*="learning-hub"]' },
+    interview:   { text: 'Interview coming up? Read these tips first.', label: 'Read', fn: 'openContentSheet', arg: 'interview-tips', sel: '[onclick*="interview-tips"]' },
+    learnerships:{ text: 'Starting out? Browse learnerships and graduate roles.', label: 'Browse', special: 'learnerships', sel: '.vx-src[data-open="learnerships"]' },
+    scam:        { text: 'Unsure about a job? Run it through Scam Check.', label: 'Check', fn: 'showScamCheck', sel: '[onclick*="showScamCheck"]' },
+    rights:      { text: 'Know your rights at work before you sign.', label: 'Read', special: 'rights', sel: '[onclick*="know-your-rights"]' },
+    community:   { text: 'Ask for advice from the community in TipChat.', label: 'Open', fn: 'openCommunity', sel: '[onclick*="openCommunity"]' },
+    signin:      { text: 'Sign in free to sync saved jobs and apply faster.', label: 'Profile', special: 'profile', sel: '' }
+  };
+  var FEATURE_ORDER = {
+    'screen-home': ['cvbox', 'cvbuild', 'learn', 'scam', 'interview', 'learnerships', 'community'],
+    'screen-allvacancies': ['cvbuild', 'interview', 'scam', 'cvbox', 'learnerships'],
+    'screen-saved': ['interview', 'cvbuild', 'cvtips', 'cvbox'],
+    'screen-pool': ['cvbuild', 'cvtips', 'interview', 'learn'],
+    'screen-account': ['cvbox', 'cvbuild', 'learn', 'signin'],
+    'screen-menu': ['learn', 'rights', 'community', 'cvtips', 'cvbox'],
+    'screen-scamcheck': ['rights', 'community', 'cvbox'],
+    'screen-allagencies': ['cvbox', 'scam', 'interview'],
+    'default': ['cvbox', 'cvbuild', 'learn', 'interview', 'scam']
+  };
+  // info: { id: { n, last, done } }  ctx: { guest, seen:{id:1}, now, offset, force }
+  function chooseFeature(screenId, info, ctx) {
+    ctx = ctx || {}; info = info || {};
+    var order = FEATURE_ORDER[screenId] || FEATURE_ORDER['default'], list = [], i;
+    var t = ctx.now || Date.now();
+    for (i = 0; i < order.length; i++) {
+      var id = order[i], rec = info[id] || {};
+      if (rec.done) continue;
+      if (id === 'signin' && !ctx.guest) continue;
+      if (!ctx.force) {
+        if (ctx.seen && ctx.seen[id]) continue;
+        if ((rec.n || 0) >= 4) continue;
+        if (rec.last && t - rec.last < 20 * 3600 * 1000) continue;
+      }
+      list.push(id);
+    }
+    if (!list.length) return null;
+    return list[(ctx.offset || 0) % list.length];
+  }
+
+  // ============================================================
   // 1. STORE
   // ============================================================
   function createStore(initial) {
@@ -552,6 +600,10 @@
       ui.menuTitle = el('p', 'sa-guide__who', NAME + ' \u00b7 your job-search guide');
       ui.menuTip = el('p', 'sa-guide__tip');
       ui.menu.appendChild(ui.menuTitle); ui.menu.appendChild(ui.menuTip);
+      ui.sugg = el('div', 'sa-guide__sugg'); ui.sugg.hidden = true;
+      ui.suggText = el('p', 'sa-guide__suggtext'); ui.suggBtn = el('button', 'sa-guide__suggbtn'); ui.suggBtn.type = 'button';
+      ui.sugg.appendChild(el('span', 'sa-guide__suggkick', 'Suggested for you')); ui.sugg.appendChild(ui.suggText); ui.sugg.appendChild(ui.suggBtn);
+      ui.menu.appendChild(ui.sugg);
       var chips = el('div', 'sa-guide__chips');
       [['Available Vacancies', 'vacancies'], ['Saved Jobs', 'saved'], ['Agencies', 'agencies'], ['Scam Check', 'scam']].forEach(function (c) {
         var b = el('button', 'sa-guide__chip', c[0]); b.type = 'button'; b.setAttribute('data-jump', c[1]); chips.appendChild(b);
@@ -874,6 +926,9 @@
       if (!s.started || !s.enabled || s.away) return;
       cancelSeq(); hideBubble();
       ui.menuTip.textContent = SCREEN_TIPS[currentScreenId()] || 'Need a hand? Jump to a section.';
+      var sid = pickFeature(true);
+      ui.sugg.hidden = !sid;
+      if (sid) { ui.suggText.textContent = FEATURES[sid].text; ui.suggBtn.textContent = FEATURES[sid].label; ui.suggBtn.setAttribute('data-feature', sid); }
       refreshMenuLabels();
       ui.menu.hidden = false;
       var w = ui.menu.offsetWidth, h = ui.menu.offsetHeight, ar = layout.ar;
@@ -1031,16 +1086,15 @@
       if (id === 'screen-saved') {
         var n = savedCount();
         if (n > 0 && now() - lastSavedAt > 60000 && allow('tip')) {
-          lastSavedAt = now();
-          setTimeout(function () { if (allow('tip') && currentScreenId() === 'screen-saved') { playGesture('headsup', { ms: 1800, prio: 1 }); say(MSG.savedScreen(n), { ms: 3000 }); } }, 500);
+          lastSavedAt = now(); lastAutoAt = now();
+          setTimeout(function () { if (allow('tip') && currentScreenId() === 'screen-saved') { playGesture('headsup', { ms: 1800, prio: 1 }); say(MSG.savedScreen(n), { ms: 3200, action: 'feature:interview', actionLabel: 'Prep' }); } }, 500);
         }
       } else if (id === 'screen-account') {
-        var card = doc.getElementById('account-signin-card');
-        if (card && visible(card) && card.getAttribute('aria-hidden') !== 'true' && sess('guestTip') < 1) {
-          sess('guestTip', 1);
+        if (isGuest() && sess('guestTip') < 1) {
+          sess('guestTip', 1); lastAutoAt = now();
           setTimeout(function () { if (allow('tip') && currentScreenId() === 'screen-account') { playGesture('think', { ms: 2600, prio: 1 }); say(MSG.guest, { ms: 4200 }); } }, 700);
-        }
-      }
+        } else setTimeout(function () { if (currentScreenId() === 'screen-account') suggest(); }, 3500);
+      } else sectionHelp(id);
     }
 
     // ---------- timers: calm idle life + occasional safety tip ----------
@@ -1055,10 +1109,12 @@
         lastLookAt = t; lookGoal = rnd(8, 12) * (Math.random() < 0.5 ? 1 : -1); wake();
         setTimeout(function () { lookGoal = 0; wake(); }, 1000);
       }
-      if (canIdle() && sess('dismissed') < 2 && sess('tips') < 3 && t - startedAt > 120000 && t - lastTipAt > nextTipGap && t - lastActivity > 5000) {
-        lastTipAt = t; nextTipGap = rnd(180000, 260000);
-        var i = sess('tips', 1) - 1;
-        if (modeAllows(s.mode, 'tip')) showTip(i);
+      if (canIdle() && s.mode !== 'quiet' && t - startedAt > 15000 && t - lastActivity > nextIdleGap && t - lastAutoAt > 20000) {
+        nextIdleGap = rnd(40000, 70000); lastActivity = t - nextIdleGap + 20000;   // next prompt after a fresh idle spell
+        var round = sess('idleRounds', 1);
+        if (round % 4 === 0 && modeAllows(s.mode, 'tip') && sess('tips') < 3) { sess('tips', 1); lastAutoAt = t; showTip(sess('tips') - 1); }
+        else if (round % 3 === 0 && patrol()) { /* walked across */ }
+        else if (!suggest()) patrol();
       }
     }
     function showTip(i) {
@@ -1066,6 +1122,120 @@
       if (!allow('tip')) return;
       playGesture('headsup', { ms: 2400, prio: 1 });
       say(tip.text, { icon: 'shield', action: tip.action || null, actionLabel: tip.actionLabel || '', ms: 5000 });
+    }
+
+
+    // ---------- coach: greeting, feature suggestions, section help, patrol ----------
+    var KEY_COACH = 'sa_guide_coach_v1';
+    var lastAutoAt = -1e9, nextIdleGap = rnd(22000, 32000), lastPatrolAt = 0;
+    function coachGet() { try { return JSON.parse(lsGet(KEY_COACH) || '{}') || {}; } catch (e) { return {}; } }
+    function coachSet(o) { lsSet(KEY_COACH, JSON.stringify(o)); }
+    function markDone(id) { var c = coachGet(); c[id] = c[id] || {}; c[id].done = 1; coachSet(c); }
+    function isGuest() { var c = doc.getElementById('account-signin-card'); return !!(c && visible(c) && c.getAttribute('aria-hidden') !== 'true'); }
+    function seenMap() { var s = ssGet(), m = {}; (s.seenFeatures || []).forEach(function (k) { m[k] = 1; }); return m; }
+
+    function runFeature(id) {
+      var f = FEATURES[id]; if (!f) return;
+      markDone(id);
+      if (f.special === 'learnerships') { callGlobal('showAllVacancies'); setTimeout(function () { var b = doc.querySelector('.vx-src[data-open="learnerships"]'); if (b) b.click(); }, 450); }
+      else if (f.special === 'rights') { try { win.open('/know-your-rights/', '_blank', 'noopener'); } catch (e) {} }
+      else if (f.special === 'profile') { var t = doc.querySelector('.navbtn[data-tab="account"]'); if (t) t.click(); }
+      else callGlobal(f.fn, f.arg);
+    }
+    function findTarget(sel) {
+      if (!sel) return null;
+      var scr = doc.querySelector('.screen.active'); if (!scr) return null;
+      var list = scr.querySelectorAll(sel);
+      for (var i = 0; i < list.length; i++) { if (visible(list[i]) && inViewport(rectOf(list[i]))) return list[i]; }
+      return null;
+    }
+    function pickFeature(force) {
+      var s = ssGet();
+      return chooseFeature(currentScreenId(), coachGet(), { guest: isGuest(), seen: seenMap(), offset: s.suggOffset || 0, force: !!force });
+    }
+
+    // Walk to a free spot beside the feature's own button (if there is one), point, ring it, and offer to open it.
+    function presentFeature(id, o) {
+      o = o || {};
+      var f = FEATURES[id]; if (!f) return false;
+      var info = coachGet(); info[id] = info[id] || {}; info[id].n = (info[id].n || 0) + 1; info[id].last = Date.now(); coachSet(info);
+      var s = ssGet(); s.seenFeatures = (s.seenFeatures || []).concat(id); s.suggOffset = (s.suggOffset || 0) + 1; s.sugg = (s.sugg || 0) + 1; ssSet(s);
+      lastAutoAt = now(); closeMenu(); cancelSeq();
+      var target = findTarget(f.sel);
+      var spot = target ? contextSlot('beside', target) : null;
+      var far = spot && (Math.abs(spot.x - pos.x) + Math.abs(spot.y - pos.y)) > 420;
+      if (far) spot = null;
+      relocate(spot, function (moved) {
+        if (!allow('tip')) return;
+        if (target) { showRing(target, 4200); }
+        playGesture(target ? 'point' : 'headsup', { ms: 4600, prio: 2, aim: target ? aimAt(target) : null, done: function () { hideRing(); if (moved) goHome(); } });
+        say(f.text, { ms: 7000, action: 'feature:' + id, actionLabel: f.label, icon: 'info', kind: 'tip' });
+      });
+      return true;
+    }
+    function suggest() {
+      if (!allow('tip') || sheetOpen()) return false;
+      if (sess('dismissed') >= 3 || sess('sugg') >= 8) return false;
+      if (now() - lastAutoAt < 12000) return false;
+      var id = pickFeature(false);
+      return id ? presentFeature(id) : false;
+    }
+
+    // short per-section guidance (once per section per session)
+    var SECTION_HELP = {
+      'screen-allvacancies': { text: 'Use Filters to narrow by place or work type.', label: 'Filters', prop: 'filter', sel: '#vx-filter-toggle', run: function () { var b = doc.getElementById('vx-filter-toggle'); if (b) b.click(); } },
+      'screen-pool': { text: 'This is the CV Box. Add your CV so employers find you.', label: 'Add CV', sel: '[onclick*="openPoolRegisterSheet"]', feature: 'cvbox' },
+      'screen-scamcheck': { text: 'Paste the ad, number or email. I\u2019ll flag red flags.' },
+      'screen-allagencies': { text: 'Look for the verified badge before you contact an agency.', icon: 'shield' },
+      'screen-allemployers': { text: 'Browse verified employers that are hiring.' },
+      'screen-menu': { text: 'Explore the Learning Hub and CV tips from here.', label: 'Learning', feature: 'learn', sel: '[onclick*="learning-hub"]' }
+    };
+    function sectionHelp(id) {
+      var h = SECTION_HELP[id]; if (!h || !allow('tip') || sheetOpen()) return;
+      if (sess('sec_' + id) >= 1 || now() - lastAutoAt < 9000) return;
+      sess('sec_' + id, 1); lastAutoAt = now();
+      setTimeout(function () {
+        if (!allow('tip') || currentScreenId() !== id) return;
+        var target = findTarget(h.sel);
+        if (target) showRing(target, 3200);
+        playGesture(target ? 'point' : (h.prop ? 'hold' : 'headsup'), { ms: 3400, prio: 1, aim: target ? aimAt(target) : null, prop: h.prop || null, done: hideRing });
+        var act = h.run ? 'section' : (h.feature ? 'feature:' + h.feature : null);
+        sectionRun = h.run || null;
+        say(h.text, { ms: 5200, action: act, actionLabel: h.label || '', icon: h.icon || 'info' });
+      }, 650);
+    }
+    var sectionRun = null;
+
+    // a short walk across the bottom row to the other corner and back
+    function patrol() {
+      if (!canIdle() || reduced || low() || sess('patrol') >= 3 || now() - lastPatrolAt < 90000) return false;
+      var alt = null, slots = restSlots(layout.ar, layout.rest.y, layout.side);
+      for (var i = 0; i < slots.length; i++) {
+        if (slots[i].name.indexOf('high') < 0 && slots[i].name !== layout.slot && !slotBlocked(slots[i].x, slots[i].y)) { alt = slots[i]; break; }
+      }
+      if (!alt) return false;
+      lastPatrolAt = now(); sess('patrol', 1);
+      var token = ++seqToken; mode = 'travel';
+      moveTo(alt, { kind: 'linear', speed: 115, done: function () {
+        if (token !== seqToken) return;
+        lookGoal = rnd(10, 13) * (Math.random() < 0.5 ? 1 : -1); wake();
+        setTimeout(function () { if (token !== seqToken) return; lookGoal = 0; playGesture('wave', { ms: 900, prio: 1 }); }, 900);
+        setTimeout(function () { if (token === seqToken) goHome(); }, 2300);
+      } });
+      return true;
+    }
+
+    // welcome on every launch (first launch has the longer intro instead)
+    function greetLaunch() {
+      var h = new Date().getHours();
+      var part = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+      var n = savedCount();
+      var lines = [part + '! Ready to find work today?', 'Welcome back! Let\u2019s find your next job.', n > 0 ? 'Welcome back! You have ' + n + ' saved job' + (n === 1 ? '' : 's') + '.' : part + '! Fresh jobs are waiting.'];
+      if (allow('celebrate')) {
+        playGesture('wave', { ms: 1300, prio: 3 });
+        say(lines[sess('launches', 1) % lines.length], { ms: 3800, kind: 'social' });
+        setTimeout(suggest, 6200);
+      } else setTimeout(suggest, 3500);
     }
 
     // ---------- public API ----------
@@ -1080,7 +1250,7 @@
         applyHostState();
         measure(); snapTo(layout.rest);
         var first = !settings.introSeen;
-        popAt = first ? now() : -1e9;                  // quiet fade-in on later launches; pop only on the very first
+        popAt = now();                                  // lively pop-in on every launch
         wake();
         if (!settings.enabled || settings.mode === 'quiet') return;
         if (first) {
@@ -1089,8 +1259,10 @@
             if (!allow('tip')) return;
             playGesture('wave', { ms: 1000, prio: 3 });
             say(MSG.intro, { ms: 7500, force: true });
+            lastAutoAt = now();
+            setTimeout(suggest, 10500);
           }, 1200);
-        }
+        } else setTimeout(greetLaunch, 1500);
       },
 
       // Gentle in-place step while the page scrolls (not on Home, never in Low / reduced motion / while typing)
@@ -1100,7 +1272,6 @@
         if (s.menuOpen) closeMenu();
         if (!live() || reduced || low() || sheetOpen() || typing()) return;
         if (s.mode !== 'full') return;
-        if (currentScreenId() === 'screen-home') return;
         var t = now();
         if (t - lastScrollAt > 400) scrollSince = t;
         lastScrollAt = t;
@@ -1372,6 +1543,7 @@
       }
       var step = t.closest('[data-guide-step]');
       if (step) api.onApplyStep(step.getAttribute('data-guide-step') || 'Step complete');
+      for (var fid in FEATURES) { if (!FEATURES[fid].sel) continue; try { if (t.closest(FEATURES[fid].sel)) markDone(fid); } catch (er) {} }
     }
 
     function connState() { var c = doc.getElementById('connection-status'); return c ? (c.getAttribute('data-state') || '') : ''; }
@@ -1481,10 +1653,14 @@
         else if (a === 'vacancies') callGlobal('showAllVacancies');
         else if (a === 'clearFilters') callGlobal('clearVacancyFilters');
         else if (a === 'saved') jump('saved');
+        else if (a === 'section') { var fn = sectionRun; sectionRun = null; if (fn) fn(); }
+        else if (a && a.indexOf('feature:') === 0) runFeature(a.slice(8));
       });
       ui.menu.addEventListener('click', function (e) {
         var j = e.target.closest && e.target.closest('[data-jump]');
         if (j) { jump(j.getAttribute('data-jump')); return; }
+        var sf = e.target.closest && e.target.closest('[data-feature]');
+        if (sf) { closeMenu(); runFeature(sf.getAttribute('data-feature')); return; }
         var act = e.target.closest && e.target.closest('[data-act]');
         if (!act) return;
         var kind = act.getAttribute('data-act');
@@ -1536,7 +1712,7 @@
   var exported = { createGuide: createGuide, createStore: createStore, solveArm: solveArm, handPos: handPos, POSES: POSES, IDLE: IDLE, KEYS: KEYS,
     buildRig: buildRig, applyJoints: applyJoints, classifyEmpty: classifyEmpty, toastStep: toastStep, stepMessage: stepMessage,
     normalizeSettings: normalizeSettings, modeAllows: modeAllows, parseCount: parseCount, isClosesToday: isClosesToday,
-    restSlots: restSlots, rectsOverlap: rectsOverlap, cadence: cadence, DUR: DUR, MSG: MSG, TIPS: TIPS, J: J, NAME: NAME };
+    restSlots: restSlots, rectsOverlap: rectsOverlap, chooseFeature: chooseFeature, FEATURES: FEATURES, FEATURE_ORDER: FEATURE_ORDER, cadence: cadence, DUR: DUR, MSG: MSG, TIPS: TIPS, J: J, NAME: NAME };
   if (typeof module === 'object' && module.exports) { module.exports = exported; return; }
 
   if (root.SAGuide) return;
