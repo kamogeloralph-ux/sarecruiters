@@ -50,6 +50,14 @@ test('D1 startup aggregates and province counts use bounded queries', () => {
   assert.doesNotMatch(d1Province, /Object\.entries\(PROVINCE_LOCATION_TERMS\)\.map\(async/);
 });
 
+test('scheduled snapshot publication uses the refreshed D1 mirror', () => {
+  const publication = worker.slice(worker.indexOf('async function syncD1AndPublishSnapshot('), worker.indexOf('__name(syncD1AndPublishSnapshot'));
+  assert.match(publication, /loadStartupDataFromD1\(env\)/);
+  assert.match(publication, /buildPublicVacancySnapshot\(env\)/);
+  assert.doesNotMatch(publication, /loadStartupData\(env\)/);
+  assert.doesNotMatch(publication, /buildPublicVacancySnapshotFromSupabase\(env\)/);
+});
+
 test('public startup and vacancy reads never fall back to D1', () => {
   const startup = worker.slice(worker.indexOf('async function startupResponse('), worker.indexOf('__name(startupResponse'));
   const vacancies = worker.slice(worker.indexOf('async function vacanciesResponse('), worker.indexOf('__name(vacanciesResponse'));

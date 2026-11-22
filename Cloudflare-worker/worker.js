@@ -1188,18 +1188,16 @@ async function syncD1AndPublishSnapshot(env) {
   const publicSnapshots = syncResult.publicSnapshots || { posters: [], houseAds: [] };
   const { publicSnapshots: _ignoredSnapshots, ...summary } = syncResult;
   const dataVersion = env.DB ? await bumpPublicDataVersion(env) : 0;
-  // D1 is the write mirror, not the snapshot source. Re-reading every local
-  // table here used to multiply rows-read on every six-hour sync. Supabase is
-  // already the authoritative source for this scheduled publication.
-  const payload = await loadStartupData(env);
+  // syncD1FromSupabase has just refreshed the local mirror. Build both public
+  // snapshots from D1 so a six-hour sync does not re-read Supabase for startup
+  // counts, folder counts, province counts, employer counts, and every vacancy
+  // page a second time. The previous Supabase-heavy publication pass was the
+  // remaining source of the production "Too many subrequests" failure.
+  const payload = await loadStartupDataFromD1(env);
   payload.data_version = dataVersion;
-  // Admin vacancy browsing reads D1. Publish the public R2 vacancy snapshot
-  // from that same mirror so both surfaces contain the same current rows and
-  // publication does not create a second, differently filtered Supabase feed.
-  // Supabase is authoritative for the scheduled public publication. The D1
-  // mirror is intentionally incremental, so using it here can omit scraper
-  // rows whose updated_at is NULL (notably Himalayas and Adzuna listings).
-  const vacancySnapshot = await buildPublicVacancySnapshotFromSupabase(env);
+  // Admin vacancy browsing and public publication now share the same refreshed
+  // mirror, including rows whose updated_at is NULL.
+  const vacancySnapshot = await buildPublicVacancySnapshot(env);
   vacancySnapshot.data_version = dataVersion;
   await Promise.all([
     writePublicStartupSnapshot(env, payload),
