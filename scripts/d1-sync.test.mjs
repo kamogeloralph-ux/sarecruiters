@@ -41,6 +41,15 @@ test('Supabase-backed startup payload includes province totals', () => {
   assert.match(worker, /Prefer: options\.prefer/);
 });
 
+test('D1 startup aggregates and province counts use bounded queries', () => {
+  assert.match(worker, /async function loadD1StartupAggregates\(env, dedicated\)/);
+  assert.match(worker, /await env\.DB\.batch\(\[/);
+  assert.match(worker, /async function loadD1FolderCounts\(env, folders\)/);
+  assert.match(worker, /SUM\(CASE WHEN .* THEN 1 ELSE 0 END\)/s);
+  const d1Province = worker.slice(worker.indexOf('async function loadProvinceCountsFromD1('), worker.indexOf('__name(loadProvinceCountsFromD1'));
+  assert.doesNotMatch(d1Province, /Object\.entries\(PROVINCE_LOCATION_TERMS\)\.map\(async/);
+});
+
 test('public startup and vacancy reads never fall back to D1', () => {
   const startup = worker.slice(worker.indexOf('async function startupResponse('), worker.indexOf('__name(startupResponse'));
   const vacancies = worker.slice(worker.indexOf('async function vacanciesResponse('), worker.indexOf('__name(vacanciesResponse'));

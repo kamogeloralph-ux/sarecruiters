@@ -1411,6 +1411,36 @@ __name(handleAtsPush, "handleAtsPush");
 // Supabase's `source_type=not.in.(...)`, replicated as a SQL WHERE clause
 // against the local D1 mirror -- zero Supabase egress either way, since D1
 // reads never touch Supabase at all.
+async function loadD1StartupAggregates(env, dedicated) {
+  const placeholders = dedicated.map(() => "?").join(",");
+  const [general, generalPool, dedicatedCount, employerCounts, total] = await env.DB.batch([
+    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL"),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NOT NULL AND source_type NOT IN (${placeholders})`).bind(...dedicated),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${placeholders})`).bind(...dedicated),
+    env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id"),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies")
+  ]);
+  const first = (result) => result?.results?.[0] || {};
+  return {
+    general: Number(first(general).n || 0),
+    generalPool: Number(first(generalPool).n || 0),
+    dedicated: Number(first(dedicatedCount).n || 0),
+    total: Number(first(total).n || 0),
+    employerCounts: Object.fromEntries((employerCounts?.results || []).map((row) => [row.employer_id, Number(row.n || 0)]))
+  };
+}
+__name(loadD1StartupAggregates, "loadD1StartupAggregates");
+async function loadD1FolderCounts(env, folders) {
+  const expressions = Object.entries(folders).map(([key, sources]) => {
+    const placeholders = sources.map(() => "?").join(",");
+    return `SUM(CASE WHEN source_type IN (${placeholders}) THEN 1 ELSE 0 END) AS "${key}"`;
+  });
+  const values = Object.values(folders).flat();
+  const result = await env.DB.prepare(`SELECT ${expressions.join(",")} FROM vacancies`).bind(...values).all();
+  const row = result.results?.[0] || {};
+  return Object.fromEntries(Object.keys(folders).map((key) => [key, Number(row[key] || 0)]));
+}
+__name(loadD1FolderCounts, "loadD1FolderCounts");
 async function loadStartupDataFromD1(env) {
   const dedicated = STARTUP_DEDICATED_SOURCES;
   const dedicatedPlaceholders = dedicated.map(() => "?").join(",");
@@ -1422,7 +1452,7 @@ async function loadStartupDataFromD1(env) {
     remotive: ["remotive"]
   };
 
-  const [agenciesR, branchesR, vacanciesR, employersR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR, sourceVacancyCountR] = await Promise.all([
+  const [agenciesR, branchesR, vacanciesR, employersR, featuredVacanciesR, aggregates, folderCounts, provinceCounts] = await Promise.all([
     env.DB.prepare("SELECT * FROM agencies ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT * FROM branches ORDER BY name ASC").all(),
     // Keep dedicated feeds lazy for the general directory, but always include
@@ -1431,26 +1461,14 @@ async function loadStartupDataFromD1(env) {
     // tagged with a dedicated source such as retail.
     env.DB.prepare(`SELECT * FROM vacancies WHERE (((agency_id IS NOT NULL AND agency_id != 'general') AND employer_id IS NULL) OR employer_id IS NOT NULL) AND (employer_id IS NOT NULL OR source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE}`).bind(...dedicated).all(),
     env.DB.prepare("SELECT * FROM employers ORDER BY created_at DESC").all(),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM pool_candidates WHERE status = 'active'").all(),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL").all(),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NOT NULL AND source_type NOT IN (${dedicatedPlaceholders})`).bind(...dedicated).all(),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${dedicatedPlaceholders})`).bind(...dedicated).all(),
-    env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id").all(),
-    env.DB.prepare("SELECT * FROM pool_candidates WHERE status = 'active' ORDER BY created_at DESC").all(),
     // Older D1 mirrors may not have the optional featured columns yet. Keep
     // startup healthy until the mirror schema is upgraded.
     env.DB.prepare("SELECT * FROM vacancies WHERE is_featured = 1 ORDER BY featured_order ASC, created_at DESC LIMIT 12").all().catch(() => ({ results: [] })),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies").all()
+    loadD1StartupAggregates(env, dedicated),
+    loadD1FolderCounts(env, DEDICATED_FOLDERS),
+    loadProvinceCountsFromD1(env)
   ]);
-
-  const folderCounts = await Promise.all(Object.entries(DEDICATED_FOLDERS).map(async ([key, sources]) => {
-    const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${sources.map(() => "?").join(",")})`).bind(...sources).all();
-    return [key, r.results[0]?.n || 0];
-  }));
-  const provinceCounts = await loadProvinceCountsFromD1(env);
-  const employerCountMap = Object.fromEntries((employerCountsR.results || []).map((row) => [row.employer_id, row.n || 0]));
-
-  const n = (r) => r.results[0]?.n || 0;
+  const employerCountMap = aggregates.employerCounts;
   return {
     generated_at: (/* @__PURE__ */ new Date()).toISOString(),
     agencies: agenciesR.results || [],
@@ -1469,11 +1487,11 @@ async function loadStartupDataFromD1(env) {
       // public `general` bucket instead of omitting generalPoolCount.
       // The active D1 mirror is the public read source. Do not query Supabase
       // just to refresh this headline count on every startup request.
-      vacancies: n(sourceVacancyCountR),
-      general: n(generalCountR) + n(generalPoolCountR),
+      vacancies: aggregates.total,
+      general: aggregates.general + aggregates.generalPool,
       employers: (employersR.results || []).length,
       candidates: 0,
-      dedicated: Object.fromEntries(folderCounts),
+      dedicated: folderCounts,
       provinces: provinceCounts
     },
     settings: {
@@ -1486,12 +1504,15 @@ async function loadStartupDataFromD1(env) {
 __name(loadStartupDataFromD1, "loadStartupDataFromD1");
 async function loadProvinceCountsFromD1(env) {
   if (!env.DB) return {};
-  const counts = await Promise.all(Object.entries(PROVINCE_LOCATION_TERMS).map(async ([slug, terms]) => {
+  const entries = Object.entries(PROVINCE_LOCATION_TERMS);
+  const expressions = entries.map(([slug, terms]) => {
     const where = terms.map(() => "LOWER(COALESCE(location, '')) LIKE ?").join(" OR ");
-    const result = await env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${where}`).bind(...terms.map((term) => `%${term.toLowerCase()}%`)).all();
-    return [slug, result.results[0]?.n || 0];
-  }));
-  return Object.fromEntries(counts);
+    return `SUM(CASE WHEN ${where} THEN 1 ELSE 0 END) AS "${slug}"`;
+  });
+  const values = entries.flatMap(([, terms]) => terms.map((term) => `%${term.toLowerCase()}%`));
+  const result = await env.DB.prepare(`SELECT ${expressions.join(",")} FROM vacancies`).bind(...values).all();
+  const row = result.results?.[0] || {};
+  return Object.fromEntries(entries.map(([slug]) => [slug, Number(row[slug] || 0)]));
 }
 __name(loadProvinceCountsFromD1, "loadProvinceCountsFromD1");
 async function loadProvinceCountsFromSupabase(env) {
