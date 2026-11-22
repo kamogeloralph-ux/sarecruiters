@@ -3116,7 +3116,7 @@ var worker_default = {
           return json({ ok: true, ...summary }, 200, origin);
         } catch (error) {
           await recordSyncFailure(env, error);
-          return json({ error: "Sync failed" }, 500, origin);
+          return json({ error: "Sync failed", detail: String(error?.message || error).slice(0, 500) }, 500, origin);
         }
       }
 
