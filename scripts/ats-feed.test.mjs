@@ -21,6 +21,16 @@ const govPostsXml = `<rss><channel><item>
   <pubDate>Fri, 20 Nov 2026 11:21:20 GMT</pubDate>
 </item></channel></rss>`;
 
+const weWorkRemotelyXml = `<rss><channel><item>
+  <title>OKX: Affiliate Manager</title>
+  <region>Anywhere in the World</region>
+  <country></country>
+  <type>Full-Time</type>
+  <description>&lt;p&gt;&lt;strong&gt;Headquarters:&lt;/strong&gt; South Africa (Remote)&lt;/p&gt;</description>
+  <link>https://weworkremotely.com/remote-jobs/okx-affiliate-manager</link>
+  <guid>https://weworkremotely.com/remote-jobs/okx-affiliate-manager</guid>
+</item></channel></rss>`;
+
 test("TopJob namespaced RSS fields and numeric entities are parsed", () => {
   const [job] = parseAtsXml(topJobXml);
   assert.equal(job.external_ref, "https://topjobseeker.com/?post_type=job_listing&p=105164");
@@ -39,6 +49,15 @@ test("GovPosts RSS derives company, location, salary and closing date from descr
   assert.equal(job.location, "Nelspoort Hospital, Western Cape");
   assert.equal(job.salary, "R181 230 per annum");
   assert.equal(atsDate(job.closing_date), "2026-12-04");
+});
+
+test("We Work Remotely RSS exposes region text for South Africa filtering and company fallback", () => {
+  const [job] = parseAtsXml(weWorkRemotelyXml);
+  assert.equal(job.external_ref, "https://weworkremotely.com/remote-jobs/okx-affiliate-manager");
+  assert.equal(job.company, "OKX");
+  assert.equal(job.employment_type, "Full-Time");
+  assert.match(job.region, /South Africa/);
+  assert.equal(job.location, "Anywhere in the World");
 });
 
 test("malformed or empty XML does not create phantom jobs", () => {

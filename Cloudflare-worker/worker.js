@@ -1300,20 +1300,23 @@ function parseAtsXml(xml) {
     const title = atsXmlField(item, ["title", "name", "job_title"]);
     const description = atsXmlField(item, ["description", "summary", "content:encoded", "content"]);
     const descriptionParts = description.split(/\s*[·|]\s*/).map((part) => part.trim()).filter(Boolean);
+    const country = atsXmlField(item, ["country", "countries"]);
+    const region = atsXmlField(item, ["region", "territory", "eligibility"]);
+    const companyFromTitle = title.includes(":") ? title.split(":", 1)[0].trim() : "";
     const closingFromDescription = atsDescriptionValue(description, /(?:closing\s+date|closes?)\s*:?[\s,]*(?:\w+\s+)?(\d{1,2}\s+[A-Za-z]+\s+\d{4}|[A-Za-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
     const salaryFromDescription = atsDescriptionValue(description, /(R\s?[\d\s,.]+(?:per annum|p\.a\.|pm|per month)?)/i);
     return {
       external_ref: ref,
       title,
-      company: atsXmlField(item, ["company", "company_name", "employer", "organisation"]) || descriptionParts[0] || "",
-      location: atsXmlField(item, ["location", "city", "job_location"]) || descriptionParts[1] || "",
+      company: atsXmlField(item, ["company", "company_name", "employer", "organisation"]) || companyFromTitle || descriptionParts[0] || "",
+      location: atsXmlField(item, ["location", "city", "job_location"]) || country || region || descriptionParts[1] || "",
       description,
       link,
       closing_date: atsXmlField(item, ["closing_date", "close_date", "expires", "expiry_date"]) || closingFromDescription,
       employment_type: atsXmlField(item, ["employment_type", "job_type", "type"]),
       salary: atsXmlField(item, ["salary", "salary_range", "pay"]) || salaryFromDescription,
       remote: atsXmlField(item, ["remote", "work_from_home"]) || "false",
-      region: atsXmlField(item, ["region", "territory", "eligibility"]) || description
+      region: [region, country, description].filter(Boolean).join(" ")
     };
   }).filter((job) => job.external_ref && job.title);
 }
@@ -1333,7 +1336,7 @@ async function upsertAtsVacancy(env, feed, job) {
   const closing = atsDate(job.closing_date);
   const notes = job.description || null;
   const sql = `INSERT INTO vacancies (id, agency_id, title, company, location, closing_date, notes, link, remote, employment_type, salary, created_at, updated_at, source_type, external_ref, ats_feed_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(ats_feed_id, external_ref) WHERE external_ref IS NOT NULL DO UPDATE SET title=excluded.title, company=excluded.company, location=excluded.location, closing_date=excluded.closing_date, notes=excluded.notes, link=excluded.link, remote=excluded.remote, employment_type=excluded.employment_type, salary=excluded.salary, updated_at=excluded.updated_at, source_type=excluded.source_type`;
-  await env.DB.prepare(sql).bind(id, feed.agency_id, job.title, job.company || feed.agency_name, job.location || null, closing || null, notes, job.link || null, atsBool(job.remote) ? 1 : 0, job.employment_type || null, job.salary || null, now, now, "ats", job.external_ref, feed.id).run();
+  await env.DB.prepare(sql).bind(id, feed.agency_id, job.title, job.company || feed.agency_name, job.location || null, closing || null, notes, job.link || null, atsBool(job.remote) || Number(feed.remote_by_default) === 1 ? 1 : 0, job.employment_type || null, job.salary || null, now, now, "ats", job.external_ref, feed.id).run();
   return id;
 }
 __name(upsertAtsVacancy, "upsertAtsVacancy");
@@ -1365,7 +1368,7 @@ async function syncOneAtsFeed(env, feed) {
 }
 __name(syncOneAtsFeed, "syncOneAtsFeed");
 async function syncAtsFeeds(env) {
-  const rows = await env.DB.prepare("SELECT id, agency_id, agency_name, feed_url, api_key_hash, include_terms, exclude_terms FROM agency_ats_feeds WHERE is_active = 1").all();
+  const rows = await env.DB.prepare("SELECT id, agency_id, agency_name, feed_url, api_key_hash, include_terms, exclude_terms, remote_by_default FROM agency_ats_feeds WHERE is_active = 1").all();
   const results = [];
   for (const feed of rows.results || []) {
     try { results.push(await syncOneAtsFeed(env, feed)); }
