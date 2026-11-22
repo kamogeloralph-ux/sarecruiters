@@ -1354,7 +1354,10 @@ async function syncOneAtsFeed(env, feed) {
   });
   const active = [];
   for (const job of jobs) { await upsertAtsVacancy(env, feed, job); active.push(job.external_ref); }
-  if (active.length) {
+  // Keep the stale-reference cleanup below D1's bound-variable limit. Large
+  // feeds still import and update successfully; their stale rows are left
+  // untouched until a smaller/dedicated cleanup run.
+  if (active.length && active.length <= 100) {
     const placeholders = active.map(() => "?").join(",");
     await env.DB.prepare(`UPDATE vacancies SET closing_date = ?, updated_at = ? WHERE ats_feed_id = ? AND external_ref NOT IN (${placeholders}) AND (closing_date IS NULL OR closing_date >= ?)`)
       .bind(new Date().toISOString().slice(0, 10), new Date().toISOString(), feed.id, ...active, new Date().toISOString().slice(0, 10)).run();
