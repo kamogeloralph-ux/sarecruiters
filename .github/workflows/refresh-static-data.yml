@@ -93,20 +93,20 @@ jobs:
             echo "$name" >> failed-sources.txt
             return 1
           }
-          run_source adzuna npm run sync:adzuna
+          run_source adzuna npm run sync:adzuna || true
           # Jooble only runs once the JOOBLE_API_KEY secret exists (free key: 100 requests/day).
-          if [ -n "${JOOBLE_API_KEY:-}" ]; then run_source jooble npm run sync:jooble; fi
+          if [ -n "${JOOBLE_API_KEY:-}" ]; then run_source jooble npm run sync:jooble || true; fi
           # Indeed's public RSS feed no longer works (it has never produced a row),
           # so it is off by default. Set repository variable INDEED_ENABLED=true to retry it.
-          if [ "${INDEED_ENABLED:-}" = "true" ]; then run_source indeed npm run sync:indeed; fi
-          run_source himalayas npm run sync:himalayas
-          run_source oracle npm run sync:oracle
-          run_source government npm run sync:government
-          run_source bizcommunity npm run sync:bizcommunity
-          run_source retail npm run scrape:retail
-          run_source simplify npm run scrape:simplify
-          run_source graduates24 npm run scrape:graduates24
-          run_source careers-page npm run scrape:careers-page
+          if [ "${INDEED_ENABLED:-}" = "true" ]; then run_source indeed npm run sync:indeed || true; fi
+          run_source himalayas npm run sync:himalayas || true
+          run_source oracle npm run sync:oracle || true
+          run_source government npm run sync:government || true
+          run_source bizcommunity npm run sync:bizcommunity || true
+          run_source retail npm run scrape:retail || true
+          run_source simplify npm run scrape:simplify || true
+          run_source graduates24 npm run scrape:graduates24 || true
+          run_source careers-page npm run scrape:careers-page || true
       - name: Reconcile expired and source-stale vacancies
         env:
           SOURCE_STALE_GRACE_HOURS: "72"

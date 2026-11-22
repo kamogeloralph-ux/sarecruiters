@@ -25,6 +25,10 @@ const DPSA_BASE = 'https://www.dpsa.gov.za'; // literal source URL -- the actual
 const DPSA_PAGE_BASE = `${DPSA_BASE}/newsroom/psvc`;
 const GOVERNMENT_TIMEOUT_MS = Number(process.env.GOVERNMENT_TIMEOUT_MS || 30_000);
 const GOVERNMENT_MAX_CIRCULAR = Number(process.env.GOVERNMENT_MAX_CIRCULAR || 60);
+export const GOVERNMENT_USER_AGENT = process.env.SCRAPER_USER_AGENT || 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+export function governmentRequestHeaders(accept) {
+  return { accept, 'user-agent': GOVERNMENT_USER_AGENT };
+}
 const GOVERNMENT_YEARS = String(process.env.GOVERNMENT_YEARS || new Date().getUTCFullYear())
   .split(',').map((year) => Number(year.trim())).filter(Boolean);
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -214,7 +218,7 @@ async function fetchBuffer(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GOVERNMENT_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { signal: controller.signal, headers: { accept: 'application/pdf,text/html' } });
+    const response = await fetch(url, { signal: controller.signal, headers: governmentRequestHeaders('application/pdf,text/html') });
     if (!response.ok) return null;
     return Buffer.from(await response.arrayBuffer());
   } finally { clearTimeout(timer); }
@@ -235,7 +239,7 @@ async function fetchText(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GOVERNMENT_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { signal: controller.signal, headers: { accept: 'text/html' } });
+    const response = await fetch(url, { signal: controller.signal, headers: governmentRequestHeaders('text/html') });
     if (!response.ok) return null;
     return await response.text();
   } finally { clearTimeout(timer); }

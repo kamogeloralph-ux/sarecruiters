@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCircularPage, parseGovernmentPdfTextForTest } from './sync-government.mjs';
+import { governmentRequestHeaders, GOVERNMENT_USER_AGENT, parseCircularPage, parseGovernmentPdfTextForTest } from './sync-government.mjs';
 
 const pageUrl = 'https://www.dpsa.gov.za/newsroom/psvc/circular-33-of-2026/';
 const fixture = `
@@ -10,6 +10,18 @@ const fixture = `
     <p>Full Document: <a href="/dpsa2g/documents/vacancies/2026/PSV%20CIRCULAR%2033%20of%202026.pdf">Circular 33</a></p>
     <p><a href="/dpsa2g/documents/vacancies/2026/33/a.pdf">Department A</a></p>
   </body></html>`;
+
+test('uses a browser-like User-Agent required by the live DPSA site', () => {
+  assert.match(GOVERNMENT_USER_AGENT, /^Mozilla\/5\.0/);
+  assert.deepEqual(governmentRequestHeaders('text/html'), {
+    accept: 'text/html',
+    'user-agent': GOVERNMENT_USER_AGENT,
+  });
+  assert.deepEqual(governmentRequestHeaders('application/pdf,text/html'), {
+    accept: 'application/pdf,text/html',
+    'user-agent': GOVERNMENT_USER_AGENT,
+  });
+});
 
 test('parses an official DPSA circular into a Government archive record', () => {
   const record = parseCircularPage(fixture, pageUrl);
