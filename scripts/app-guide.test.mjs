@@ -96,3 +96,40 @@ test("the markup respects reduced motion and exposes accessible controls", () =>
   assert.match(js, /role', 'switch'/);
   assert.match(js, /IntersectionObserver/);
 });
+
+test("feature coach: every suggestion is short, has a button label and a target action", () => {
+  for (const [id, f] of Object.entries(G.FEATURES)) {
+    assert.ok(f.text.length <= 70, id);
+    assert.ok(f.label && f.label.length <= 12, id);
+    assert.ok(f.fn || f.special, id);
+  }
+  for (const order of Object.values(G.FEATURE_ORDER)) for (const id of order) assert.ok(G.FEATURES[id], id);
+});
+
+test("feature coach: key features are covered (CV Box upload, CV builder, learning)", () => {
+  assert.equal(G.FEATURES.cvbox.fn, "openCvBoxApplication");
+  assert.equal(G.FEATURES.cvbuild.fn, "openCvBuilderSheet");
+  assert.equal(G.FEATURES.learn.arg, "learning-hub");
+  assert.ok(G.FEATURE_ORDER["screen-home"].includes("cvbox"));
+});
+
+test("feature coach: chooser skips done / just-shown / seen features and only offers sign-in to guests", () => {
+  const t = Date.now();
+  assert.equal(G.chooseFeature("screen-home", {}, {}), "cvbox");
+  assert.notEqual(G.chooseFeature("screen-home", { cvbox: { done: 1 } }, {}), "cvbox");
+  assert.notEqual(G.chooseFeature("screen-home", { cvbox: { n: 1, last: t } }, { now: t }), "cvbox");
+  assert.notEqual(G.chooseFeature("screen-home", {}, { seen: { cvbox: 1 } }), "cvbox");
+  assert.notEqual(G.chooseFeature("screen-home", { cvbox: { n: 4 } }, {}), "cvbox");
+  const noGuest = ["cvbox", "cvbuild", "learn"].reduce((m, k) => (m[k] = { done: 1 }, m), {});
+  assert.equal(G.chooseFeature("screen-account", noGuest, { guest: false }), null);
+  assert.equal(G.chooseFeature("screen-account", noGuest, { guest: true }), "signin");
+  assert.equal(G.chooseFeature("screen-home", { cvbox: { done: 1 } }, { force: true, offset: 0 }) === "cvbox", false);
+  assert.equal(G.chooseFeature("screen-unknown", {}, {}), "cvbox");
+});
+
+test("the coach greets on every launch and walks to the feature it points at", () => {
+  const js = read("app-guide.js");
+  assert.match(js, /function greetLaunch/);
+  assert.match(js, /contextSlot\('beside', target\)/);
+  assert.match(js, /Good morning/);
+});
