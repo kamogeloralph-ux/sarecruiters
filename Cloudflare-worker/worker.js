@@ -851,7 +851,8 @@ var STARTUP_DEDICATED_SOURCES = [
   "truworths",
   "spar",
   "career_board",
-  "bizcommunity"
+  "bizcommunity",
+  "remotive"
 ];
 function supabaseRestUrl(env, table, params = {}) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
@@ -1336,7 +1337,9 @@ async function upsertAtsVacancy(env, feed, job) {
   const closing = atsDate(job.closing_date);
   const notes = job.description || null;
   const sql = `INSERT INTO vacancies (id, agency_id, title, company, location, closing_date, notes, link, remote, employment_type, salary, created_at, updated_at, source_type, external_ref, ats_feed_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(ats_feed_id, external_ref) WHERE external_ref IS NOT NULL DO UPDATE SET title=excluded.title, company=excluded.company, location=excluded.location, closing_date=excluded.closing_date, notes=excluded.notes, link=excluded.link, remote=excluded.remote, employment_type=excluded.employment_type, salary=excluded.salary, updated_at=excluded.updated_at, source_type=excluded.source_type`;
-  await env.DB.prepare(sql).bind(id, feed.agency_id, job.title, job.company || feed.agency_name, job.location || null, closing || null, notes, job.link || null, atsBool(job.remote) || Number(feed.remote_by_default) === 1 ? 1 : 0, job.employment_type || null, job.salary || null, now, now, "ats", job.external_ref, feed.id).run();
+  const sourceType = String(feed.id) === "remotive" ? "remotive" : "ats";
+  const isRemote = String(feed.id) === "remotive" || atsBool(job.remote);
+  await env.DB.prepare(sql).bind(id, feed.agency_id, job.title, job.company || feed.agency_name, job.location || null, closing || null, notes, job.link || null, isRemote ? 1 : 0, job.employment_type || null, job.salary || null, now, now, sourceType, job.external_ref, feed.id).run();
   return id;
 }
 __name(upsertAtsVacancy, "upsertAtsVacancy");
@@ -1371,7 +1374,7 @@ async function syncOneAtsFeed(env, feed) {
 }
 __name(syncOneAtsFeed, "syncOneAtsFeed");
 async function syncAtsFeeds(env) {
-  const rows = await env.DB.prepare("SELECT id, agency_id, agency_name, feed_url, api_key_hash, include_terms, exclude_terms, remote_by_default FROM agency_ats_feeds WHERE is_active = 1").all();
+  const rows = await env.DB.prepare("SELECT id, agency_id, agency_name, feed_url, api_key_hash, include_terms, exclude_terms FROM agency_ats_feeds WHERE is_active = 1").all();
   const results = [];
   for (const feed of rows.results || []) {
     try { results.push(await syncOneAtsFeed(env, feed)); }
@@ -1415,7 +1418,8 @@ async function loadStartupDataFromD1(env) {
     himalayas: ["himalayas"],
     adzuna: ["adzuna"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
-    bizcommunity: ["bizcommunity"]
+    bizcommunity: ["bizcommunity"],
+    remotive: ["remotive"]
   };
 
   const [agenciesR, branchesR, vacanciesR, employersR, poolCountR, generalCountR, generalPoolCountR, dedicatedCountR, employerCountsR, poolCandidatesR, featuredVacanciesR, sourceVacancyCountR] = await Promise.all([
@@ -1563,7 +1567,8 @@ async function loadStartupData(env) {
     himalayas: ["himalayas"],
     adzuna: ["adzuna"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
-    bizcommunity: ["bizcommunity"]
+    bizcommunity: ["bizcommunity"],
+    remotive: ["remotive"]
   };
   const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
@@ -2265,7 +2270,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   // than exhausting the account-wide D1 rows-read allowance.
   const snapshotFresh = !!snapshot && Array.isArray(snapshot.vacancies);
   const filterRows = (allRows) => {
-    const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity"]);
+    const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
     const cursorSeparator = cursor.indexOf("|");
     const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;

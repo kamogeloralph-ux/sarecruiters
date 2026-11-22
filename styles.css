@@ -1774,6 +1774,8 @@ button.account-avatar.account-avatar-btn::after{content:'\270E';position:absolut
 .vacancy-category-copy small{font-size:10.5px;line-height:1.25;color:var(--text-2)}
 .vacancy-category-row .vac-folder-count{font-size:10.5px;white-space:nowrap}
 .vacancy-category-row .vac-folder-chevron{color:var(--text-2);display:flex}
+.vac-cat-row[aria-label="Open Remote jobs"]{background:linear-gradient(135deg,rgba(23,105,207,.12),rgba(0,150,136,.08));border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
+.vac-cat-row[aria-label="Open Remote jobs"] .vac-cat-icon{background:var(--accent);color:#fff}
 @media(min-width:760px){.vacancy-group-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:960px;margin-left:auto;margin-right:auto}.vacancy-browse-heading{max-width:960px;margin-left:auto;margin-right:auto}}
 @media(max-width:420px){.vacancy-group-grid{margin-left:10px;margin-right:10px}.vacancy-group-card-head{padding:15px 13px 13px}.vacancy-category-list{padding-left:10px;padding-right:10px}.vacancy-category-copy small{font-size:10px}}
 

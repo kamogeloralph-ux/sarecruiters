@@ -1782,7 +1782,7 @@ export function loadMoreGeneralVacancies() {
 // 5 dedicated-source folders (Himalayas/Adzuna/Government/Retail/
 // Learnerships). One shared state machine since only one folder is open at
 // a time — see dedicatedVacancy* globals in app-core.js.
-export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', retail: 'Retail Vacancies', bizcommunity: 'Bizcommunity Jobs' };
+export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', retail: 'Retail Vacancies', bizcommunity: 'Bizcommunity Jobs', remotive: 'Remote jobs' };
 export function renderDedicatedVacancyCards(append) {
   var el = document.getElementById('allvacancies-list');
   var loadMore = document.getElementById('allvacancies-loadmore');
@@ -1894,7 +1894,8 @@ export function renderAllVacanciesList() {
   var isAdzunaVacancy = function(v){ return v.source_type === 'adzuna' || String(v.id || '').indexOf('adzuna-') === 0; };
   var isRetailVacancy = function(v){ return ['retail','shoprite','picknpay','woolworths','truworths','spar'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/i.test(String(v.id || '')); };
   var isBizcommunityVacancy = function(v){ return v.source_type === 'bizcommunity' || String(v.id || '').indexOf('bizcommunity-') === 0; };
-  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isRetailVacancy(v) || isBizcommunityVacancy(v); };
+  var isRemotiveVacancy = function(v){ return v.source_type === 'remotive' || String(v.id || '').indexOf('ats_remotive_') === 0; };
+  var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isRetailVacancy(v) || isBizcommunityVacancy(v) || isRemotiveVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
   var locationFilter = ((document.getElementById('allvacancies-location')||{}).value || '').trim().toLowerCase();
@@ -1919,6 +1920,8 @@ export function renderAllVacanciesList() {
                     ? visible.filter(isRetailVacancy)
                     : allVacanciesFolder === 'bizcommunity'
                           ? visible.filter(isBizcommunityVacancy)
+                          : allVacanciesFolder === 'remotive'
+                              ? visible.filter(isRemotiveVacancy)
               : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
@@ -1984,6 +1987,7 @@ export function renderAllVacanciesList() {
     var adzunaCount = dedicatedVacancyCounts.adzuna || 0;
     var retailCount = dedicatedVacancyCounts.retail || 0;
     var bizcommunityCount = dedicatedVacancyCounts.bizcommunity || 0;
+    var remotiveCount = dedicatedVacancyCounts.remotive || 0;
     var folderCountLabel = function(count) {
       if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading…';
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
@@ -1994,7 +1998,8 @@ export function renderAllVacanciesList() {
       { type:'retail', label:'Retail Vacancies', short:'Retail', count:retailCount, icon:'▤' },
       { type:'himalayas', label:'Himalayas Remote', short:'Himalayas', count:himalayasCount, icon:'↗' },
       { type:'adzuna', label:'Adzuna Vacancies', short:'Adzuna', count:adzunaCount, icon:'A' },
-      { type:'bizcommunity', label:'Bizcommunity Jobs', short:'Bizcommunity', count:bizcommunityCount, icon:'B' }
+      { type:'bizcommunity', label:'Bizcommunity Jobs', short:'Bizcommunity', count:bizcommunityCount, icon:'B' },
+      { type:'remotive', label:'Remote jobs', short:'Remote', count:remotiveCount, icon:'↗' }
     ];
     // Put the fullest categories first. Array#sort is stable in supported
     // browsers, so equal counts retain the curated fallback order above.
