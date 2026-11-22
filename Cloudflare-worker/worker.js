@@ -1214,6 +1214,64 @@ async function syncD1AndPublishSnapshot(env) {
 }
 __name(syncD1AndPublishSnapshot, "syncD1AndPublishSnapshot");
 
+// Publish only scraper-owned sources. The full mirror rebuilds startup data
+// with many Supabase requests and can exceed the Worker subrequest limit.
+async function publishFocusedScraperSources(env) {
+  const sourceTypes = ["government", "dpsa", "bizcommunity"];
+  const columns = "id,agency_id,employer_id,title,company,company_photo,location,closing_date,notes,link,email,phone,remote,experience_level,employment_type,contract_type,work_schedule,hours,salary,start_date,created_at,source_type";
+  const sourceRows = await supabaseGetAll(env, "vacancies", {
+    select: columns,
+    source_type: `in.(${sourceTypes.join(",")})`,
+    order: "created_at.desc,id.desc"
+  }, 1000);
+  const today = new Date().toISOString().slice(0, 10);
+  const liveSourceRows = (sourceRows || []).filter((row) => {
+    const closingDate = publicClosingDate(row.closing_date);
+    return !closingDate || closingDate >= today;
+  });
+  const previousVacancySnapshot = await readPublicVacancySnapshot(env);
+  if (!previousVacancySnapshot) throw new Error("Public vacancy snapshot is unavailable for focused publication");
+  const sourceSet = new Set(sourceTypes);
+  const unrelatedRows = (previousVacancySnapshot.vacancies || [])
+    .filter((row) => !sourceSet.has(String(row.source_type || "")));
+  const vacancySnapshot = {
+    ...previousVacancySnapshot,
+    generated_at: new Date().toISOString(),
+    vacancies: [...unrelatedRows, ...liveSourceRows]
+  };
+  const startupSnapshot = await readPublicStartupSnapshot(env);
+  if (!startupSnapshot || !startupSnapshot.counts) throw new Error("Public startup snapshot is unavailable for focused publication");
+  const governmentCount = (sourceRows || []).filter((row) => ["government", "dpsa"].includes(String(row.source_type))).length;
+  const bizcommunityCount = (sourceRows || []).filter((row) => String(row.source_type) === "bizcommunity").length;
+  const startupPayload = {
+    ...startupSnapshot,
+    generated_at: new Date().toISOString(),
+    counts: {
+      ...startupSnapshot.counts,
+      dedicated: {
+        ...(startupSnapshot.counts.dedicated || {}),
+        government: governmentCount,
+        bizcommunity: bizcommunityCount
+      }
+    }
+  };
+  const dataVersion = env.DB ? await bumpPublicDataVersion(env) : 0;
+  startupPayload.data_version = dataVersion;
+  vacancySnapshot.data_version = dataVersion;
+  await Promise.all([
+    writePublicStartupSnapshot(env, startupPayload),
+    writePublicVacancySnapshot(env, vacancySnapshot)
+  ]);
+  return {
+    data_version: dataVersion,
+    snapshot: "r2-focused",
+    source_rows: sourceRows.length,
+    published_rows: liveSourceRows.length,
+    dedicated: { government: governmentCount, bizcommunity: bizcommunityCount }
+  };
+}
+__name(publishFocusedScraperSources, "publishFocusedScraperSources");
+
 // ---------------------------------------------------------------------------
 // ATS feed integration. ATS vacancies are stored in the existing D1 vacancies
 // table and identified by (ats_feed_id, external_ref); no jobs table is used.
@@ -3112,7 +3170,7 @@ var worker_default = {
         if (!isInternalSyncRequest(request, env)) return json({ error: "Unauthorized" }, 401, origin);
         if (!env.DB) return json({ error: "D1 not bound" }, 500, origin);
         try {
-          const summary = await syncD1AndPublishSnapshot(env);
+          const summary = await publishFocusedScraperSources(env);
           return json({ ok: true, ...summary }, 200, origin);
         } catch (error) {
           await recordSyncFailure(env, error);
