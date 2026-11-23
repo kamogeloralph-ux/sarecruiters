@@ -11,6 +11,7 @@
     "sync:himalayas": "node scripts/sync-himalayas.mjs",
     "sync:oracle": "node scripts/sync-oracle.mjs",
     "sync:bizcommunity": "node scripts/sync-bizcommunity.mjs",
+    "sync:takealot": "node scripts/sync-takealot.mjs",
     "test": "node --test scripts/*.test.mjs",
     "scrape:retail": "node scripts/scrape-retail.mjs",
     "purge:stale": "node scripts/purge-stale-vacancies.mjs",
