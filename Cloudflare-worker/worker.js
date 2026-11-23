@@ -2270,7 +2270,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const cacheUrl = new URL(request.url);
   // The R2 vacancy snapshot is refreshed by the scheduled sync. Do not make
   // every public vacancy request spend a D1 row read validating a version.
-  cacheUrl.searchParams.set("__schema", "edge-first-v4");
+  cacheUrl.searchParams.set("__schema", "edge-first-v5");
   cacheUrl.searchParams.sort();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   function clientResponse(cachedResponse) {
