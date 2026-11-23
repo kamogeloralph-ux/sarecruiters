@@ -35,6 +35,13 @@ function htmlToText(value) {
   return clean(cheerio.load(`<div>${value || ''}</div>`).text());
 }
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+export function retryDelayMs(error, attempt) {
+  const retryAfter = Number(error?.retryAfterMs);
+  if (Number.isFinite(retryAfter) && retryAfter >= 0) return Math.min(retryAfter, 60_000);
+  const status = Number(error?.status);
+  if (status === 429 || status >= 500) return Math.min(60_000, 3_000 * (2 ** Math.max(0, attempt - 1)));
+  return 1_500 * attempt;
+}
 function absoluteJobUrl(externalPath) {
   return `${WORKDAY_SITE_URL}${externalPath.startsWith('/') ? externalPath : `/${externalPath}`}`;
 }
@@ -235,11 +242,20 @@ async function fetchJson(url, options = {}) {
         signal: controller.signal,
         headers: { accept: 'application/json', 'content-type': 'application/json', 'user-agent': USER_AGENT, ...(options.headers || {}) },
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}`);
+        error.status = response.status;
+        const retryAfter = response.headers.get('retry-after');
+        if (retryAfter) {
+          const seconds = Number(retryAfter);
+          error.retryAfterMs = Number.isFinite(seconds) ? seconds * 1_000 : Math.max(0, Date.parse(retryAfter) - Date.now());
+        }
+        throw error;
+      }
       return await response.json();
     } catch (error) {
       lastError = error;
-      if (attempt < FETCH_ATTEMPTS) await sleep(1500 * attempt);
+      if (attempt < FETCH_ATTEMPTS) await sleep(retryDelayMs(error, attempt));
     } finally { clearTimeout(timeout); }
   }
   throw lastError;
@@ -252,11 +268,20 @@ async function fetchText(url) {
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
       const response = await fetch(url, { signal: controller.signal, headers: { accept: 'text/html', 'user-agent': USER_AGENT } });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}`);
+        error.status = response.status;
+        const retryAfter = response.headers.get('retry-after');
+        if (retryAfter) {
+          const seconds = Number(retryAfter);
+          error.retryAfterMs = Number.isFinite(seconds) ? seconds * 1_000 : Math.max(0, Date.parse(retryAfter) - Date.now());
+        }
+        throw error;
+      }
       return await response.text();
     } catch (error) {
       lastError = error;
-      if (attempt < FETCH_ATTEMPTS) await sleep(1500 * attempt);
+      if (attempt < FETCH_ATTEMPTS) await sleep(retryDelayMs(error, attempt));
     } finally { clearTimeout(timeout); }
   }
   throw lastError;

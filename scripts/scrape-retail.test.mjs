@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePickNPaySearch, parsePickNPayDetail, parseBoxerCategoryLinks, parseBoxerSearch, parseBoxerDetail, parseCashbuildSearch } from './scrape-retail.mjs';
+import { parsePickNPaySearch, parsePickNPayDetail, parseBoxerCategoryLinks, parseBoxerSearch, parseBoxerDetail, parseCashbuildSearch, retryDelayMs } from './scrape-retail.mjs';
 
 test('parses Pick n Pay Workday search results into retail summaries', () => {
   const jobs = parsePickNPaySearch({ total: 1, jobPostings: [{ title: 'Cashier', locationsText: 'Cape Town - Western Cape', externalPath: '/job/Cape-Town/Cashier_JR123' }] });
@@ -36,6 +36,12 @@ test('falls back to unassigned if the Pick n Pay employers record is missing', (
 test('returns no jobs for malformed retailer responses', () => {
   assert.deepEqual(parsePickNPaySearch(null), []);
   assert.equal(parsePickNPayDetail({}, { link: 'https://example.com/job' }), null);
+});
+
+test('uses Retry-After and exponential backoff for throttled retail requests', () => {
+  assert.equal(retryDelayMs({ status: 429, retryAfterMs: 12_000 }, 1), 12_000);
+  assert.equal(retryDelayMs({ status: 429 }, 1), 3_000);
+  assert.equal(retryDelayMs({ status: 503 }, 2), 6_000);
 });
 
 test('parses Boxer eRecruit category links and job rows', () => {

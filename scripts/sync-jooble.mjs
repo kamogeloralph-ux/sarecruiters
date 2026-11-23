@@ -9,6 +9,7 @@ import { pathToFileURL } from 'node:url';
 
 const JOOBLE_API_KEY = process.env.JOOBLE_API_KEY;
 const JOOBLE_LOCATION = process.env.JOOBLE_LOCATION || 'South Africa';
+const JOOBLE_API_ORIGIN = (process.env.JOOBLE_API_ORIGIN || 'https://jooble.org').replace(/\/+$/, '');
 const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SCRAPE_REQUEST_TIMEOUT_MS, 30_000);
 const REQUEST_DELAY_MS = parsePositiveInt(process.env.JOOBLE_REQUEST_DELAY_MS, 1_500);
 const MAX_VACANCIES = 60;
@@ -90,12 +91,16 @@ export function mapJoobleResults(payload, now = new Date()) {
   }).filter(Boolean);
 }
 
+export function joobleApiUrl(apiKey, origin = JOOBLE_API_ORIGIN) {
+  return `${String(origin).replace(/\/+$/, '')}/api/${encodeURIComponent(apiKey)}`;
+}
+
 async function fetchPage(keywords, page) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     // The key is part of the URL path, so never print the URL or the raw fetch error.
-    const response = await fetch(`https://jooble.org/api/${encodeURIComponent(JOOBLE_API_KEY)}`, {
+    const response = await fetch(joobleApiUrl(JOOBLE_API_KEY), {
       method: 'POST',
       signal: controller.signal,
       headers: { 'content-type': 'application/json', accept: 'application/json' },
@@ -143,10 +148,12 @@ async function main() {
   for (let i = 0; i < requests.length && processed < MAX_VACANCIES; i += 1) {
     const { q, page } = requests[i];
     try {
-      const mapped = mapJoobleResults(await fetchPage(q, page)).slice(0, MAX_VACANCIES - processed);
+      const payload = await fetchPage(q, page);
+      const rawCount = Array.isArray(payload?.jobs) ? payload.jobs.length : 0;
+      const mapped = mapJoobleResults(payload).slice(0, MAX_VACANCIES - processed);
       const jobs = await upsertJobs(supabase, mapped);
       processed += jobs.length;
-      console.log(`[jooble] "${q}" page ${page}: parsed ${mapped.length}, upserted ${jobs.length}`);
+      console.log(`[jooble] "${q}" page ${page}: response ${rawCount}/${Number(payload?.totalCount || 0)} jobs, parsed ${mapped.length}, upserted ${jobs.length}`);
     } catch (error) {
       failures += 1;
       console.error(`[jooble] "${q}" page ${page}: ${error instanceof Error ? error.message : 'failed'}`);
