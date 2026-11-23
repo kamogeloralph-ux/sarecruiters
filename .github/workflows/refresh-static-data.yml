@@ -91,6 +91,7 @@ jobs:
           run_source oracle npm run sync:oracle || true
           run_source bizcommunity npm run sync:bizcommunity || true
           run_source takealot npm run sync:takealot || true
+          run_source jonsson npm run sync:jonsson || true
           run_source retail npm run scrape:retail || true
       - name: Reconcile expired and source-stale vacancies
         env:
