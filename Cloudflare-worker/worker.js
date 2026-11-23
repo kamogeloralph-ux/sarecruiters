@@ -2305,7 +2305,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
       if (location && !String(row.location || "").toLowerCase().includes(location.toLowerCase())) return false;
       if (remote && String(row.remote || "") !== remote) return false;
       if (experience && String(row.experience_level || "") !== experience) return false;
-      if (scope === "general" && !((!row.agency_id || row.agency_id === "general") && !row.employer_id && !dedicated.has(String(row.source_type || "")))) return false;
+      if (scope === "general" && !((!row.agency_id || row.agency_id === "general") && !row.employer_id && !dedicated.has(String(row.source_type || "")) && !dedicated.has(String(row.ats_feed_id || "")))) return false;
       if (sources.length && !sources.includes(String(row.source_type || "")) && !sources.includes(String(row.ats_feed_id || ""))) return false;
       if (cursorCreated && !(String(row.created_at || "") < cursorCreated || (String(row.created_at || "") === cursorCreated && String(row.id || "") < cursorId))) return false;
       return true;
