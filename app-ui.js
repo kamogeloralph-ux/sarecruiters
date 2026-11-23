@@ -2001,9 +2001,13 @@ export function renderAllVacanciesList() {
       { type:'bizcommunity', label:'Bizcommunity Jobs', short:'Bizcommunity', count:bizcommunityCount, icon:'B' },
       { type:'remotive', label:'Remote jobs', short:'Remote', count:remotiveCount, icon:'↗' }
     ];
-    // Put the fullest categories first. Array#sort is stable in supported
-    // browsers, so equal counts retain the curated fallback order above.
-    sourceCards.sort(function(a, b) { return (Number(b.count) || 0) - (Number(a.count) || 0); });
+    // Keep Remote jobs immediately discoverable instead of placing it beyond
+    // the horizontal category rail based on its current listing count.
+    sourceCards.sort(function(a, b) {
+      if (a.type === 'remotive') return -1;
+      if (b.type === 'remotive') return 1;
+      return (Number(b.count) || 0) - (Number(a.count) || 0);
+    });
     var sourceRow = function(item) {
       return '<button class="vac-cat-row" data-ripple onclick="openVacancyFolder(\'' + item.type + '\')" aria-label="Open ' + escapeHtml(item.label) + '">' +
         '<span class="vac-cat-row-left">' +
