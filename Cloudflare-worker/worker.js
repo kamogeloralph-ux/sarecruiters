@@ -2326,13 +2326,23 @@ async function vacanciesResponse(request, env, ctx, origin) {
     // omitting dedicated scraper sources. Recover those filtered requests
     // from Supabase immediately; the next scheduled publication will persist
     // the complete inventory back to R2.
-    if (source) {
+    // The startup snapshot is intentionally bounded and may contain only the
+    // agency/employer rows needed for the first paint. Recover General rows
+    // from the authoritative inventory when the snapshot has no matching
+    // general records; otherwise the General folder incorrectly appears empty
+    // while Agency still shows the bounded startup rows.
+    const needsGeneralRecovery = scope === "general" && !rows.some((row) =>
+      (!row.agency_id || row.agency_id === "general") && !row.employer_id &&
+      !dedicated.has(String(row.source_type || "")) &&
+      !dedicated.has(String(row.ats_feed_id || ""))
+    );
+    if (source || needsGeneralRecovery) {
       try {
         const authoritative = await buildPublicVacancySnapshotFromSupabase(env);
         const recovered = filterRows(authoritative.vacancies);
-        if (recovered.length) rows = recovered;
+        if (recovered.length || needsGeneralRecovery) rows = recovered;
       } catch (error) {
-        console.warn("Could not recover source-filtered vacancy snapshot", error);
+        console.warn("Could not recover filtered vacancy snapshot", error);
       }
     }
   } else return json({ error: "Public vacancy snapshot unavailable" }, 503, origin);

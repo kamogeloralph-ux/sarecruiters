@@ -823,6 +823,14 @@ export async function fetchGeneralVacancyPage(state, page) {
     limit: generalVacancyPageSize, cursor: page > 0 ? generalVacancyNextCursor : ''
   });
   if (workerPage) {
+    // Keep the category badge aligned with the same filtered inventory that
+    // feeds the folder. This also repairs an older startup snapshot whose
+    // aggregate count was zero even though the public General endpoint has
+    // live rows.
+    if (typeof workerPage.total === 'number') {
+      set_generalVacancyCount(workerPage.total);
+      set_generalVacancyCountLoaded(true);
+    }
     set_generalVacancyNextCursor( workerPage.next_cursor || null);
     return workerPage.vacancies;
   }
