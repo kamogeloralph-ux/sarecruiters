@@ -667,13 +667,12 @@ export function __saClearSlowLoadStatus() {
   if (__saSlowLoadCycleTimer) { clearInterval(__saSlowLoadCycleTimer); __saSlowLoadCycleTimer = null; }
 }
 __saSlowLoadTimer = setTimeout(__saShowSlowLoadStatus, SA_SLOW_LOAD_DELAY);
-// Safety net: never leave the splash up more than 2.5s even if the
-// stylesheet load event is somehow missed (slow network, browser quirk).
-// Data may still be loading when this fires — the app paints whatever it
-// has (cached shell or skeletons) and refreshes in place afterwards.
+// Safety net: recover if the stylesheet load event is missed. This must not
+// mark data ready: doing so reveals the app shell before its first render and
+// is the cause of the empty-shell flash on slow launches.
 setTimeout(function () {
   window.__saCssReady = true;
-  markAppDataReady();
+  window.__saTryReveal();
 }, 2500);
 
 /* ── Theme (day / night) ───────────────────────────── */

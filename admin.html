@@ -85,6 +85,13 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
 /* ===== App shell ===== */
 #app{display:none}
+.admin-bootstrap{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px;text-align:center}
+.admin-bootstrap.is-visible{display:flex}
+.admin-bootstrap-card{width:min(360px,100%);padding:26px 22px;border:1px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--shadow)}
+.admin-bootstrap-mark{width:54px;height:54px;border-radius:14px;margin:0 auto 14px;animation:admin-bootstrap-pulse 1.4s ease-in-out infinite}
+.admin-bootstrap-card strong{display:block;font-size:16px}
+.admin-bootstrap-card span{display:block;margin-top:6px;color:var(--text-2);font-size:13px}
+@keyframes admin-bootstrap-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(.96)}}
 .topbar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 16px;overflow:hidden}
 .topbar .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;flex-shrink:0}
 .topbar .brand img{width:28px;height:28px;border-radius:7px;object-fit:cover}
@@ -385,6 +392,9 @@ a{color:var(--accent);text-decoration:none;overflow-wrap:break-word}
 
 <!-- ============ APP CONSOLE ============ -->
 <div id="app">
+  <div id="admin-bootstrap" class="admin-bootstrap is-visible" role="status" aria-live="polite">
+    <div class="admin-bootstrap-card"><img class="admin-bootstrap-mark" src="icons/v2-icon-512.png" alt=""><strong>Loading your admin console…</strong><span>Fetching the latest agencies, vacancies and submissions.</span></div>
+  </div>
   <header class="topbar">
     <div class="brand"><img src="icons/v2-icon-512.png" alt=""> SA Recruiters</div>
     <div class="spacer"></div>
@@ -849,6 +859,13 @@ async function deleteR2Object(key) {
 
 var ADMIN_WHATSAPP = '27715531005';
 
+function setAdminBootstrapVisible(visible, message){
+  var el = document.getElementById('admin-bootstrap');
+  if(!el) return;
+  if(message){ var copy = el.querySelector('span'); if(copy) copy.textContent = message; }
+  el.classList.toggle('is-visible', !!visible);
+}
+
 // ===== State =====
 var cache = { agencies: [], branches: [], vacancies: [], employers: [], reports: [], suggestions: [], tracks: [], poolCandidates: [], jobEnquiries: [], jobSeekers: [], houseAds: [], adRequests: [] };
 var adminDataReady = false;
@@ -1082,6 +1099,7 @@ async function loginWithGoogle(){
 async function doLogout(){
   try{ await supabaseClient.auth.signOut(); }catch(e){}
   document.getElementById('app').style.display = 'none';
+  setAdminBootstrapVisible(true);
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-password').value = '';
   cache = { agencies:[], branches:[], vacancies:[], employers:[], reports:[], suggestions:[], tracks:[], poolCandidates:[], jobEnquiries:[], jobSeekers:[] };
@@ -1098,6 +1116,7 @@ if (supabaseClient && supabaseClient.auth) {
       var app = document.getElementById('app');
       var login = document.getElementById('login-screen');
       if (app) app.style.display = 'none';
+      setAdminBootstrapVisible(true);
       if (login) login.style.display = 'flex';
     }
   });
@@ -1118,11 +1137,12 @@ async function enterConsole(user){
     renderNav();
     renderDashboard();
     renderAgencies(); renderBranches(); renderVacancies(); renderEmployers();
+    setAdminBootstrapVisible(false);
   });
   loadAll().then(function(){ return checkTracksTable(); }).catch(function(error){
     console.error('Admin data bootstrap failed:', error);
     showToast('Some admin data could not be loaded.');
-  }).then(function(){ adminDataReady = true; renderNav(); renderDashboard(); });
+  }).then(function(){ adminDataReady = true; renderNav(); renderDashboard(); setAdminBootstrapVisible(false); });
 }
 // Check session status on page load and render the appropriate admin state.
 async function initAdminPage(){
