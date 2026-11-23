@@ -1330,6 +1330,18 @@ function atsDate(value) {
   return Number.isNaN(parsed) ? raw.slice(0, 40) : new Date(parsed).toISOString().slice(0, 10);
 }
 __name(atsDate, "atsDate");
+function atsJobFilterText(job) {
+  return [job?.title, job?.location, job?.company, job?.region, job?.description]
+    .filter(Boolean).join(" ").toLowerCase();
+}
+__name(atsJobFilterText, "atsJobFilterText");
+function atsJobMatchesFilters(job, includes = [], excludes = []) {
+  const filterText = atsJobFilterText(job);
+  const excluded = excludes.some((term) => filterText.includes(String(term).toLowerCase()));
+  const included = !includes.length || includes.some((term) => filterText.includes(String(term).toLowerCase()));
+  return !excluded && included;
+}
+__name(atsJobMatchesFilters, "atsJobMatchesFilters");
 function atsBool(value) { return ["1", "true", "yes", "y"].includes(String(value || "").toLowerCase()); }
 __name(atsBool, "atsBool");
 async function upsertAtsVacancy(env, feed, job) {
@@ -1350,12 +1362,7 @@ async function syncOneAtsFeed(env, feed) {
   if (!response.ok) throw new Error(`ATS feed ${feed.id} returned HTTP ${response.status}`);
   const configuredIncludes = (() => { try { return JSON.parse(feed.include_terms || "[]"); } catch (_) { return []; } })();
   const configuredExcludes = (() => { try { return JSON.parse(feed.exclude_terms || "[]"); } catch (_) { return []; } })();
-  const jobs = parseAtsXml(await response.text()).filter((job) => {
-    const regionText = String(job.region || job.description || "").toLowerCase();
-    const excluded = configuredExcludes.some((term) => regionText.includes(String(term).toLowerCase()));
-    const included = !configuredIncludes.length || configuredIncludes.some((term) => regionText.includes(String(term).toLowerCase()));
-    return !excluded && included;
-  });
+  const jobs = parseAtsXml(await response.text()).filter((job) => atsJobMatchesFilters(job, configuredIncludes, configuredExcludes));
   const active = [];
   for (const job of jobs) { await upsertAtsVacancy(env, feed, job); active.push(job.external_ref); }
   // Keep the stale-reference cleanup below D1's bound-variable limit. Large
@@ -4508,5 +4515,7 @@ var worker_sentry = Sentry.withSentry(
 export {
   parseAtsXml,
   atsDate,
+  atsJobFilterText,
+  atsJobMatchesFilters,
   worker_sentry as default
 };

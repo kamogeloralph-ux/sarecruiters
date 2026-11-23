@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseAtsXml, atsDate } from "../Cloudflare-worker/worker.js";
+import { parseAtsXml, atsDate, atsJobFilterText, atsJobMatchesFilters } from "../Cloudflare-worker/worker.js";
 
 const topJobXml = `<?xml version="1.0"?><rss xmlns:job_listing="https://topjobseeker.com"><channel><item>
   <title>DC Inventory Supervisor &#8211; Longmeadow</title>
@@ -58,6 +58,14 @@ test("We Work Remotely RSS exposes region text for South Africa filtering and co
   assert.equal(job.employment_type, "Full-Time");
   assert.match(job.region, /South Africa/);
   assert.equal(job.location, "Anywhere in the World");
+});
+
+test("ATS filters search title, location and company as well as description fields", () => {
+  const job = { title: "South Africa Customer Support", location: "Remote", company: "Example Co", description: "Worldwide role" };
+  assert.match(atsJobFilterText(job), /south africa/);
+  assert.equal(atsJobMatchesFilters(job, ["south africa"], []), true);
+  assert.equal(atsJobMatchesFilters({ ...job, title: "Customer Support", location: "Cape Town" }, ["south africa"], []), false);
+  assert.equal(atsJobMatchesFilters({ ...job, company: "South Africa Jobs Ltd" }, ["south africa"], ["jobs ltd"]), false);
 });
 
 test("malformed or empty XML does not create phantom jobs", () => {
