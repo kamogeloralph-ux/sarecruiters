@@ -2318,7 +2318,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
     // omitting dedicated scraper sources. Recover those filtered requests
     // from Supabase immediately; the next scheduled publication will persist
     // the complete inventory back to R2.
-    if (source && !rows.length) {
+    if (source) {
       try {
         const authoritative = await buildPublicVacancySnapshotFromSupabase(env);
         const recovered = filterRows(authoritative.vacancies);
