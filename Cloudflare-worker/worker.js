@@ -2288,6 +2288,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   cacheUrl.searchParams.set("__schema", "edge-first-v6");
   cacheUrl.searchParams.sort();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+  const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive", "realworkfromanywhere", "himalayas-rss", "remote"]);
   function clientResponse(cachedResponse) {
     const headers = new Headers(cachedResponse.headers);
     headers.set("Cache-Control", "public, max-age=60");
@@ -2306,7 +2307,6 @@ async function vacanciesResponse(request, env, ctx, origin) {
   // than exhausting the account-wide D1 rows-read allowance.
   const snapshotFresh = !!snapshot && Array.isArray(snapshot.vacancies);
   const filterRows = (allRows) => {
-    const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive", "realworkfromanywhere", "himalayas-rss", "remote"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
     const cursorSeparator = cursor.indexOf("|");
     const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;
