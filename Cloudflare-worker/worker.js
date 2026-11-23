@@ -810,8 +810,9 @@ async function buildPublicVacancySnapshotFromSupabase(env) {
     "id", "agency_id", "employer_id", "title", "company", "company_photo",
     "location", "closing_date", "notes", "link", "email", "phone", "remote",
     "experience_level", "employment_type", "contract_type", "work_schedule",
-    "hours", "salary", "start_date", "created_at", "source_type", "ats_feed_id"
+    "hours", "salary", "start_date", "created_at", "source_type"
   ].join(",");
+  const atsColumns = `${columns},ats_feed_id`;
   const rows = await supabaseGetAll(env, "vacancies", {
     select: columns,
     order: "created_at.desc,id.desc"
@@ -828,7 +829,7 @@ async function buildPublicVacancySnapshotFromSupabase(env) {
   // snapshot so external feed jobs use the same public app surface.
   let atsRows = [];
   try {
-    const atsResult = await env.DB.prepare(`SELECT ${columns} FROM vacancies WHERE ats_feed_id IS NOT NULL`).all();
+    const atsResult = await env.DB.prepare(`SELECT ${atsColumns} FROM vacancies WHERE ats_feed_id IS NOT NULL`).all();
     atsRows = (atsResult.results || []).filter((row) => {
       const closingDate = publicClosingDate(row.closing_date);
       return !closingDate || closingDate >= today;
@@ -2270,7 +2271,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const cacheUrl = new URL(request.url);
   // The R2 vacancy snapshot is refreshed by the scheduled sync. Do not make
   // every public vacancy request spend a D1 row read validating a version.
-  cacheUrl.searchParams.set("__schema", "edge-first-v5");
+  cacheUrl.searchParams.set("__schema", "edge-first-v6");
   cacheUrl.searchParams.sort();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   function clientResponse(cachedResponse) {
