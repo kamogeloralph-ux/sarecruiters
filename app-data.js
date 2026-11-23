@@ -724,12 +724,12 @@ export async function getGeneralVacancyCount() {
 // DEDICATED_FOLDERS in Cloudflare-worker/worker.js) with 5 small indexed
 // count queries instead of one big row fetch.
 export async function getDedicatedVacancyCounts() {
-  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], bizcommunity: ['bizcommunity'], remotive: ['remotive'] };
+  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], bizcommunity: ['bizcommunity'], remotive: ['remotive','realworkfromanywhere','himalayas-rss'] };
   var out = { himalayas: 0, adzuna: 0, retail: 0, bizcommunity: 0, remotive: 0 };
   return null;
 }
 export function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'bizcommunity', 'remotive'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'bizcommunity', 'remotive', 'realworkfromanywhere', 'himalayas-rss', 'remote'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 export function isGeneralDirectoryVacancy(v) {
   return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
@@ -839,7 +839,7 @@ export var DEDICATED_VACANCY_FOLDER_SOURCES = {
   adzuna: ['adzuna'],
   retail: ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'],
   bizcommunity: ['bizcommunity'],
-  remotive: ['remotive']
+  remotive: ['remotive', 'realworkfromanywhere', 'himalayas-rss']
 };
 // Each dedicated folder (Himalayas, Adzuna, Government, Retail,
 // Learnerships) used to be a client-side filter over the fully-preloaded

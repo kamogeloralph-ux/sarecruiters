@@ -852,7 +852,9 @@ var STARTUP_DEDICATED_SOURCES = [
   "spar",
   "career_board",
   "bizcommunity",
-  "remotive"
+  "remotive",
+  "realworkfromanywhere",
+  "himalayas-rss"
 ];
 function supabaseRestUrl(env, table, params = {}) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
@@ -1291,10 +1293,10 @@ function atsDescriptionValue(description, pattern) {
 __name(atsDescriptionValue, "atsDescriptionValue");
 function parseAtsXml(xml) {
   const source = String(xml || "");
-  const matches = [...source.matchAll(/<(?:(?:[\w-]+):)?(job|item)\b[^>]*>([\s\S]*?)<\/(?:(?:[\w-]+):)?\1>/gi)];
+  const matches = [...source.matchAll(/<(?:(?:[\w-]+):)?(job|item|entry)\b[^>]*>([\s\S]*?)<\/(?:(?:[\w-]+):)?\1>/gi)];
   return matches.map((match) => {
     const item = match[2];
-    const link = atsXmlField(item, ["url", "link", "apply_url", "application_url"]);
+    const link = atsXmlField(item, ["url", "link", "apply_url", "application_url"]) || ((item.match(/<link\b[^>]*href=["']([^"']+)["']/i) || [])[1] || "");
     const ref = atsXmlField(item, ["external_ref", "externalRef", "id", "guid", "reference", "job_id"]) || link;
     const title = atsXmlField(item, ["title", "name", "job_title"]);
     const description = atsXmlField(item, ["description", "summary", "content:encoded", "content"]);
@@ -1335,8 +1337,8 @@ async function upsertAtsVacancy(env, feed, job) {
   const closing = atsDate(job.closing_date);
   const notes = job.description || null;
   const sql = `INSERT INTO vacancies (id, agency_id, title, company, location, closing_date, notes, link, remote, employment_type, salary, created_at, updated_at, source_type, external_ref, ats_feed_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(ats_feed_id, external_ref) WHERE external_ref IS NOT NULL DO UPDATE SET title=excluded.title, company=excluded.company, location=excluded.location, closing_date=excluded.closing_date, notes=excluded.notes, link=excluded.link, remote=excluded.remote, employment_type=excluded.employment_type, salary=excluded.salary, updated_at=excluded.updated_at, source_type=excluded.source_type`;
-  const sourceType = String(feed.id) === "remotive" ? "remotive" : "ats";
-  const isRemote = String(feed.id) === "remotive" || atsBool(job.remote);
+  const sourceType = ["remotive", "realworkfromanywhere", "himalayas-rss"].includes(String(feed.id)) ? "remote" : "ats";
+  const isRemote = sourceType === "remote" || atsBool(job.remote);
   await env.DB.prepare(sql).bind(id, feed.agency_id, job.title, job.company || feed.agency_name, job.location || null, closing || null, notes, job.link || null, isRemote ? 1 : 0, job.employment_type || null, job.salary || null, now, now, sourceType, job.external_ref, feed.id).run();
   return id;
 }
@@ -1447,7 +1449,7 @@ async function loadStartupDataFromD1(env) {
     adzuna: ["adzuna"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     bizcommunity: ["bizcommunity"],
-    remotive: ["remotive"]
+    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss"]
   };
 
   const [agenciesR, branchesR, vacanciesR, employersR, featuredVacanciesR, aggregates, folderCounts, provinceCounts] = await Promise.all([
@@ -1587,7 +1589,7 @@ async function loadStartupData(env) {
     adzuna: ["adzuna"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     bizcommunity: ["bizcommunity"],
-    remotive: ["remotive"]
+    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss"]
   };
   const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
@@ -2289,7 +2291,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   // than exhausting the account-wide D1 rows-read allowance.
   const snapshotFresh = !!snapshot && Array.isArray(snapshot.vacancies);
   const filterRows = (allRows) => {
-    const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive"]);
+    const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive", "realworkfromanywhere", "himalayas-rss", "remote"]);
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
     const cursorSeparator = cursor.indexOf("|");
     const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;
