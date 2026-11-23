@@ -732,13 +732,21 @@ export function isDedicatedVacancySource(sourceType) {
   return ['himalayas', 'adzuna', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'bizcommunity', 'remotive', 'realworkfromanywhere', 'himalayas-rss', 'remote'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 export function isGeneralDirectoryVacancy(v) {
-  return !!v && !v.employer_id && (!v.agency_id || v.agency_id === 'general') && !isDedicatedVacancySource(v.source_type);
+  if (!v || v.employer_id || isDedicatedVacancySource(v.source_type)) return false;
+  // ATS feeds use agency_id for the feed owner (for example
+  // `hire-resolve-sa` or `weworkremotely`), not for an agency in the public
+  // directory. Generic ATS rows belong in the General directory; explicitly
+  // dedicated feeds such as Remote/Retail were excluded above.
+  if (String(v.source_type || '').toLowerCase() === 'ats' || v.ats_feed_id) return true;
+  return !v.agency_id || v.agency_id === 'general';
 }
 export function hasAssignedAgency(v) {
   // Dedicated external sources (Himalayas, Adzuna, retail feeds) must
   // only ever appear in their own folder, never counted or listed as an
   // agency vacancy, even if agency_id was ever set on the row.
-  return !!v && !!v.agency_id && v.agency_id !== 'general' && !isDedicatedVacancySource(v.source_type);
+  return !!v && !!v.agency_id && v.agency_id !== 'general' &&
+    String(v.source_type || '').toLowerCase() !== 'ats' && !v.ats_feed_id &&
+    !isDedicatedVacancySource(v.source_type);
 }
 export function normalizeAgencyMatchText(value) {
   return String(value || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');

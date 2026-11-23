@@ -1978,7 +1978,11 @@ export function renderAllVacanciesList() {
     var overviewLoadMore = document.getElementById('allvacancies-loadmore');
     if (overviewLoadMore) overviewLoadMore.style.display = 'none';
     var agencyCount = list.filter(hasAssignedAgency).length;
-    var generalCount = generalVacancyCount;
+    // Older cached startup payloads reported zero for General even though
+    // their bounded rows already contained generic ATS listings. Use those
+    // visible rows as an immediate fallback until the refreshed aggregate
+    // arrives from the Worker.
+    var generalCount = generalVacancyCount || list.filter(isGeneralDirectoryVacancy).length;
     // These 5 folders no longer keep their rows in vacanciesCache (see
     // worker.js loadStartupData), so their counts come from the server-side
     // aggregate the same way generalCount does just above, rather than a

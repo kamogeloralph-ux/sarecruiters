@@ -1421,9 +1421,10 @@ __name(handleAtsPush, "handleAtsPush");
 // reads never touch Supabase at all.
 async function loadD1StartupAggregates(env, dedicated) {
   const placeholders = dedicated.map(() => "?").join(",");
-  const [general, generalPool, dedicatedCount, employerCounts, total] = await env.DB.batch([
+  const [general, generalPool, genericAts, dedicatedCount, employerCounts, total] = await env.DB.batch([
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL"),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NOT NULL AND source_type NOT IN (${placeholders})`).bind(...dedicated),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE employer_id IS NULL AND source_type = 'ats'"),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${placeholders})`).bind(...dedicated),
     env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id"),
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies")
@@ -1431,7 +1432,7 @@ async function loadD1StartupAggregates(env, dedicated) {
   const first = (result) => result?.results?.[0] || {};
   return {
     general: Number(first(general).n || 0),
-    generalPool: Number(first(generalPool).n || 0),
+    generalPool: Number(first(generalPool).n || 0) + Number(first(genericAts).n || 0),
     dedicated: Number(first(dedicatedCount).n || 0),
     total: Number(first(total).n || 0),
     employerCounts: Object.fromEntries((employerCounts?.results || []).map((row) => [row.employer_id, Number(row.n || 0)]))
@@ -1599,7 +1600,7 @@ async function loadStartupData(env) {
     bizcommunity: ["bizcommunity"],
     remotive: ["remotive", "realworkfromanywhere", "himalayas-rss"]
   };
-  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
+  const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, genericAtsCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
       select: "id,name,website,contact,email,location,address,cvpref,photo,companies,trades,verified",
       order: "created_at.desc"
@@ -1664,6 +1665,12 @@ async function loadStartupData(env) {
       or: "(agency_id.is.null,agency_id.eq.general)",
       employer_id: "is.null",
       source_type: `not.in.${dedicatedSources}`,
+      limit: "0"
+    }, { prefer: "count=exact" }),
+    supabaseGet(env, "vacancies", {
+      select: "id",
+      source_type: "eq.ats",
+      employer_id: "is.null",
       limit: "0"
     }, { prefer: "count=exact" }),
     // pool_candidates itself is admin-only under RLS now (see
@@ -1735,7 +1742,7 @@ async function loadStartupData(env) {
       // (counts.vacancies - vacancies.length), which breaks whenever most of
       // the general pool has a non-null source_type (as it does here) — see
       // app-data.js loadAll() for the client-side half of this fix.
-      general: (readCount(generalCount.headers) ?? 0) + (readCount(generalPoolCount.headers) ?? 0),
+      general: (readCount(generalCount.headers) ?? 0) + (readCount(generalPoolCount.headers) ?? 0) + (readCount(genericAtsCount.headers) ?? 0),
       employers: Array.isArray(employers.body) ? employers.body.length : 0,
       candidates: 0,
       // Per-folder counts for the dedicated-source vacancy folders (Himalayas/
@@ -2312,7 +2319,12 @@ async function vacanciesResponse(request, env, ctx, origin) {
       if (location && !String(row.location || "").toLowerCase().includes(location.toLowerCase())) return false;
       if (remote && String(row.remote || "") !== remote) return false;
       if (experience && String(row.experience_level || "") !== experience) return false;
-      if (scope === "general" && !((!row.agency_id || row.agency_id === "general") && !row.employer_id && !dedicated.has(String(row.source_type || "")) && !dedicated.has(String(row.ats_feed_id || "")))) return false;
+      const sourceType = String(row.source_type || "").toLowerCase();
+      const isGenericAts = sourceType === "ats";
+      const isGeneralRow = isGenericAts
+        ? !row.employer_id && !dedicated.has(sourceType)
+        : (!row.agency_id || row.agency_id === "general") && !row.employer_id && !dedicated.has(sourceType);
+      if (scope === "general" && !isGeneralRow) return false;
       if (sources.length && !sources.includes(String(row.source_type || "")) && !sources.includes(String(row.ats_feed_id || ""))) return false;
       if (cursorCreated && !(String(row.created_at || "") < cursorCreated || (String(row.created_at || "") === cursorCreated && String(row.id || "") < cursorId))) return false;
       return true;
@@ -2331,11 +2343,12 @@ async function vacanciesResponse(request, env, ctx, origin) {
     // from the authoritative inventory when the snapshot has no matching
     // general records; otherwise the General folder incorrectly appears empty
     // while Agency still shows the bounded startup rows.
-    const needsGeneralRecovery = scope === "general" && !rows.some((row) =>
-      (!row.agency_id || row.agency_id === "general") && !row.employer_id &&
-      !dedicated.has(String(row.source_type || "")) &&
-      !dedicated.has(String(row.ats_feed_id || ""))
-    );
+    const needsGeneralRecovery = scope === "general" && !rows.some((row) => {
+      const sourceType = String(row.source_type || "").toLowerCase();
+      return !row.employer_id && (sourceType === "ats"
+        ? !dedicated.has(sourceType)
+        : (!row.agency_id || row.agency_id === "general") && !dedicated.has(sourceType));
+    });
     if (source || needsGeneralRecovery) {
       try {
         const authoritative = await buildPublicVacancySnapshotFromSupabase(env);
