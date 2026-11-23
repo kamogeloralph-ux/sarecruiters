@@ -44,8 +44,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DRY_RUN = /^(1|true|yes)$/i.test(process.env.DRY_RUN || '');
 const PAGE_SIZE = 1000;
-const CAP = Math.max(1, Number.parseInt(process.env.MAX_PER_POSTER || '50', 10));
-const COMPANY_CAP = Math.max(1, Number.parseInt(process.env.MAX_PER_COMPANY || String(CAP), 10));
+const CAP = Math.min(Math.max(Number.parseInt(process.env.MAX_PER_POSTER || '500', 10) || 500, 250), 500);
+const COMPANY_CAP = Math.min(Math.max(Number.parseInt(process.env.MAX_PER_COMPANY || String(CAP), 10) || CAP, 250), 500);
 
 // agency_id values that don't refer to a real agency row — used by
 // scrapers/sync scripts when a vacancy has no specific poster.

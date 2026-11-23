@@ -5,7 +5,7 @@ import { isStaleVacancy } from './vacancy-freshness.mjs';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const HIMALAYAS_COUNTRY = process.env.HIMALAYAS_COUNTRY || 'ZA';
-const MAX_VACANCIES = 50;
+const MAX_VACANCIES = Math.min(Math.max(Number.parseInt(process.env.HIMALAYAS_MAX_VACANCIES || '500', 10) || 500, 250), 500);
 const PAGE_COUNT = Math.min(Number.parseInt(process.env.HIMALAYAS_PAGES || '5', 10), MAX_VACANCIES);
 const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.HIMALAYAS_PAGE_SIZE || '20', 10) || 20, 1), 20);
 const REQUEST_DELAY_MS = Number.parseInt(process.env.HIMALAYAS_REQUEST_DELAY_MS || '1500', 10);

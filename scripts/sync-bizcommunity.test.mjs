@@ -31,7 +31,7 @@ test('skips stale feed items', () => {
   assert.equal(jobs.length, 0);
 });
 
-test('imports the full feed without an artificial 50-item cap', () => {
-  const xml = `<rss><channel>${Array.from({ length: 51 }, (_, i) => item({ id: String(i + 1), title: `Role ${i + 1}` })).join('')}</channel></rss>`;
-  assert.equal(mapBizcommunityItems(xml, new Date('2026-11-21T00:00:00Z')).length, 51);
+test('stops at the standardized 500-item cap', () => {
+  const xml = `<rss><channel>${Array.from({ length: 550 }, (_, i) => item({ id: String(i + 1), title: `Role ${i + 1}` })).join('')}</channel></rss>`;
+  assert.equal(mapBizcommunityItems(xml, new Date('2026-11-21T00:00:00Z')).length, 500);
 });

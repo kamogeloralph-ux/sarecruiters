@@ -6,6 +6,7 @@ import { isStaleVacancy } from './vacancy-freshness.mjs';
 export const BIZCOMMUNITY_RSS_URL = 'https://www.bizcommunity.com/rssjobs.aspx?l=196&c=11&pi=999&sm=3';
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.SCRAPE_REQUEST_TIMEOUT_MS || '30000', 10);
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersBizcommunitySync/1.0 (+https://sa-recruiters.co.za)';
+const MAX_VACANCIES = Math.min(Math.max(Number.parseInt(process.env.BIZCOMMUNITY_MAX_VACANCIES || '500', 10) || 500, 250), 500);
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
@@ -46,6 +47,7 @@ export function mapBizcommunityItems(xml, now = new Date()) {
   const jobs = [];
 
   $('item').each((_, item) => {
+    if (jobs.length >= MAX_VACANCIES) return false;
     const root = $(item);
     const title = textOf(root, 'title');
     const link = textOf(root, 'link') || textOf(root, 'guid');
@@ -95,6 +97,7 @@ export function mapBizcommunityItems(xml, now = new Date()) {
       source_checked_at: nowIso,
       last_verified_at: nowIso,
     });
+    if (jobs.length >= MAX_VACANCIES) return false;
   });
   return jobs;
 }
@@ -143,7 +146,7 @@ async function main() {
   const xml = await fetchWithRetry(BIZCOMMUNITY_RSS_URL);
   const jobs = mapBizcommunityItems(xml, now);
   const saved = await upsertJobs(jobs);
-  console.log(`[bizcommunity] parsed ${jobs.length} uncapped feed listings, upserted ${saved}`);
+  console.log(`[bizcommunity] parsed ${jobs.length} feed listings (cap ${MAX_VACANCIES}), upserted ${saved}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

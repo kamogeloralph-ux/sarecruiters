@@ -8,7 +8,7 @@ import { isStaleVacancy } from './vacancy-freshness.mjs';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const INDEED_RSS_URL = process.env.INDEED_RSS_URL || 'https://za.indeed.com/rss?q=developer&l=South+Africa';
-const MAX_VACANCIES = parsePositiveInt(process.env.INDEED_MAX_VACANCIES, 50);
+const MAX_VACANCIES = Math.min(Math.max(parsePositiveInt(process.env.INDEED_MAX_VACANCIES, 500), 250), 500);
 const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SCRAPE_REQUEST_TIMEOUT_MS, 30_000);
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SA-RecruitersIndeedSync/1.0 (+https://sa-recruiters.co.za)';
 const xmlParser = new XMLParser({

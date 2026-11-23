@@ -11,7 +11,7 @@ const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SCRAPE_REQUEST_TIMEOUT_M
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersAdzunaSync/1.0 (+https://sa-recruiters.co.za)';
 // Free tier is 25 calls/min, 250/day. Keep PAGE_COUNT modest by default —
 // four scheduled runs/day x a handful of pages stays well under the daily cap.
-const MAX_VACANCIES = 50;
+const MAX_VACANCIES = Math.min(Math.max(parsePositiveInt(process.env.ADZUNA_MAX_VACANCIES, 500), 250), 500);
 const PAGE_COUNT = Math.min(parsePositiveInt(process.env.ADZUNA_PAGES, 3), MAX_VACANCIES);
 const RESULTS_PER_PAGE = Math.min(parsePositiveInt(process.env.ADZUNA_RESULTS_PER_PAGE, 50), MAX_VACANCIES);
 const REQUEST_DELAY_MS = parsePositiveInt(process.env.ADZUNA_REQUEST_DELAY_MS, 3_000);
