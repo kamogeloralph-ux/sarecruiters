@@ -789,7 +789,7 @@ async function buildPublicVacancySnapshot(env) {
     "id", "agency_id", "employer_id", "title", "company", "company_photo",
     "location", "closing_date", "notes", "link", "email", "phone", "remote",
     "experience_level", "employment_type", "contract_type", "work_schedule",
-    "hours", "salary", "start_date", "created_at", "source_type"
+    "hours", "salary", "start_date", "created_at", "source_type", "ats_feed_id"
   ];
   const result = await env.DB.prepare(`SELECT ${columns.join(",")} FROM vacancies ORDER BY created_at DESC, id DESC`).all();
   const today = new Date();
@@ -810,7 +810,7 @@ async function buildPublicVacancySnapshotFromSupabase(env) {
     "id", "agency_id", "employer_id", "title", "company", "company_photo",
     "location", "closing_date", "notes", "link", "email", "phone", "remote",
     "experience_level", "employment_type", "contract_type", "work_schedule",
-    "hours", "salary", "start_date", "created_at", "source_type"
+    "hours", "salary", "start_date", "created_at", "source_type", "ats_feed_id"
   ].join(",");
   const rows = await supabaseGetAll(env, "vacancies", {
     select: columns,
