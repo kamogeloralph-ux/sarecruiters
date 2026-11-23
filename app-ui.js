@@ -2018,12 +2018,19 @@ export function renderAllVacanciesList() {
         '<span class="vac-cat-chevron" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
       '</button>';
     };
+    var remoteFeature =
+      '<button type="button" class="remote-feature-card" data-ripple onclick="openVacancyFolder(\'remotive\')" aria-label="Open Remote jobs">' +
+        '<span class="remote-feature-icon" aria-hidden="true">↗</span>' +
+        '<span class="remote-feature-copy"><strong>Remote jobs</strong><small>Remotive, Real Work From Anywhere and Himalayas</small></span>' +
+        '<span class="remote-feature-arrow" aria-hidden="true">' + ICON_CHEVRON + '</span>' +
+      '</button>';
     var sourceRail =
       '<section class="vacancy-categories-card career-source-grid" aria-labelledby="vacancy-categories-title">' +
         '<div class="vacancy-categories-heading">' +
           '<span class="vacancy-categories-heading-icon" aria-hidden="true">' + VAC_ICONS.briefcase + '</span>' +
           '<h2 id="vacancy-categories-title">Vacancy Categories</h2>' +
         '</div>' +
+        remoteFeature +
         '<div class="vacancy-categories-list vacancy-swipe-rail" tabindex="0" aria-label="Vacancy categories, swipe left or right">' + sourceCards.map(sourceRow).join('') + '</div>' +
       '</section>';
     var publicCategories = [
