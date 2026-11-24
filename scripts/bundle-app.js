@@ -4,7 +4,7 @@
 //  Builds the app bundle from the ES-module graph rooted at
 //  app-entry.js (app-core, app-data, app-cards, app-forms,
 //  app-sheets, app-ui, app-manager, app-manager-employer,
-//  app-pending-submissions, app-install) into one
+//  app-pending-submissions, app-install, app-workspace) into one
 //  minified app.bundle.min.js, then rewrites index.html's script
 //  tag to point at it with a content-hash query string for
 //  cache-busting.
@@ -47,6 +47,7 @@ const FILES = [
   'app-manager-employer.js',
   'app-pending-submissions.js',
   'app-install.js',
+  'app-workspace.js',
 ];
 
 const BUNDLE_NAME = 'app.bundle.min.js';

@@ -56,3 +56,17 @@
 - [x] Small app icons across navigation, cards, controls, and sheets are crisp and clearly visible in light and dark modes, with slightly stronger size/stroke/opacity while preserving semantic colors.
 - [x] The “Support the Directory” message is readable against its ticker background in both the Home footer section and hamburger Menu hero, including narrow screens and reduced-motion mode.
 - [x] The Home hamburger visibly renders three high-contrast bars inside a clear, accessible touch target; it opens the site drawer above the page, and close/backdrop/keyboard-focus states remain visible across responsive layouts and themes.
+
+## Production workspace UI refactor acceptance outcomes
+
+- [x] The existing static PWA is refactored in place to match the supplied `new-ui-preview.html` visual design and structure while preserving all existing functionality; it remains the current static PWA rather than becoming a new website.
+- [x] The workspace keeps the dark navy sidebar `#111c2e`, light-gray/paper canvas `#f7f9fc`, white cards, electric indigo-blue accent `#4f6df5`, mint/green status badges `#dff7ed` / `#138a67`, 16px–22px rounded corners, and subtle elevation shadows.
+- [x] Overview, Find vacancies, Agencies, CV Box talent, Employers, and Saved roles remain visible and usable, together with the top search bar, quick actions, and Post a vacancy CTA.
+- [x] Responsive behavior is audited at `<=1000px` and `<=700px`; no desktop, tablet, or mobile section, navigation link, action, or feature is hidden. Smaller layouts use scrolling, wrapping, stacking, and accessible compact controls.
+- [x] Overview transitions stay in memory and do not use `location.reload()` or lose the active application state.
+- [x] Find vacancies keyword, mode, and location filters, Agencies search, Employers directory, and CV Box talent are connected to the existing real data, state, APIs, and profile workflow, with clean loading, empty, and error states.
+- [x] Save role persists across views and sessions, updates counts and indicators everywhere, and supports direct removal from Saved roles; the implementation reuses localStorage plus Supabase `saved_vacancies`.
+- [x] Post a vacancy, Create CV Box profile, View agency, and View company call the existing production workflows/routes/detail views rather than placeholder modals or prototype-only handlers.
+- [x] Every existing app feature remains accessible, including authentication/account, feedback, scam check, ads, branches, manager links, submissions, legal links, theme controls, and existing posting/profile flows.
+- [x] The refactor has no duplicate style/script blocks, duplicate IDs, conflicting global state, prototype-only saved key, hard-coded talent/directory cards, or reload-based navigation.
+- [ ] Focused regression coverage, `npm run build:app`, syntax/build checks, full `npm test`, route-manifest validation, and `git diff --check` pass before the final change is fetched/rebased, committed, and pushed to `origin/main`.
