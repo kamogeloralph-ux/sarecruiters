@@ -2420,7 +2420,7 @@ async function adminVacanciesResponse(request, env, origin) {
     values.push(term, term, term, term, term);
   }
   if (location) { conditions.push("location LIKE ?"); values.push(`%${location}%`); }
-  if (source) {
+    if (source || scope === "general") {
     const sources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
     if (sources.length) { conditions.push(`source_type IN (${sources.map(() => "?").join(",")})`); values.push(...sources); }
   }
