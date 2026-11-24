@@ -1421,12 +1421,13 @@ __name(handleAtsPush, "handleAtsPush");
 // reads never touch Supabase at all.
 async function loadD1StartupAggregates(env, dedicated) {
   const placeholders = dedicated.map(() => "?").join(",");
+  const liveClause = "(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now') OR closing_date NOT GLOB '????-??-??*')";
   const feedAgencyIds = ["himalayas-rss", "remotive", "realworkfromanywhere", "weworkremotely", "bizcommunity-sa", "govposts", "govposts-sa", "topjobseeker", "topjobseeker-sa", "myjobmag"];
   const feedAgencyPlaceholders = feedAgencyIds.map(() => "?").join(",");
   const [general, generalPool, genericAts, dedicatedCount, employerCounts, total] = await env.DB.batch([
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL"),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE employer_id IS NULL AND COALESCE(source_type, '') NOT IN (${placeholders}) AND COALESCE(ats_feed_id, '') NOT IN (${placeholders}) AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...dedicated, ...dedicated, ...feedAgencyIds),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE employer_id IS NULL AND source_type = 'ats' AND COALESCE(ats_feed_id, '') = '' AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...feedAgencyIds),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND COALESCE(source_type, '') NOT IN (${placeholders}) AND COALESCE(ats_feed_id, '') NOT IN (${placeholders}) AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...dedicated, ...dedicated, ...feedAgencyIds),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND source_type = 'ats' AND COALESCE(ats_feed_id, '') = '' AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...feedAgencyIds),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${placeholders})`).bind(...dedicated),
     env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id"),
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies")
@@ -1434,7 +1435,7 @@ async function loadD1StartupAggregates(env, dedicated) {
   const first = (result) => result?.results?.[0] || {};
   return {
     general: Number(first(general).n || 0),
-    generalPool: Number(first(generalPool).n || 0) + Number(first(genericAts).n || 0),
+    generalPool: Number(first(generalPool).n || 0),
     dedicated: Number(first(dedicatedCount).n || 0),
     total: Number(first(total).n || 0),
     employerCounts: Object.fromEntries((employerCounts?.results || []).map((row) => [row.employer_id, Number(row.n || 0)]))
