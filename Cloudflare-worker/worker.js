@@ -1421,10 +1421,12 @@ __name(handleAtsPush, "handleAtsPush");
 // reads never touch Supabase at all.
 async function loadD1StartupAggregates(env, dedicated) {
   const placeholders = dedicated.map(() => "?").join(",");
+  const feedAgencyIds = ["himalayas-rss", "remotive", "realworkfromanywhere", "weworkremotely", "bizcommunity-sa", "govposts", "govposts-sa", "topjobseeker", "topjobseeker-sa", "myjobmag"];
+  const feedAgencyPlaceholders = feedAgencyIds.map(() => "?").join(",");
   const [general, generalPool, genericAts, dedicatedCount, employerCounts, total] = await env.DB.batch([
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL"),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NOT NULL AND source_type NOT IN (${placeholders})`).bind(...dedicated),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE employer_id IS NULL AND source_type = 'ats'"),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE employer_id IS NULL AND COALESCE(source_type, '') NOT IN (${placeholders}) AND COALESCE(ats_feed_id, '') NOT IN (${placeholders}) AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...dedicated, ...dedicated, ...feedAgencyIds),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE employer_id IS NULL AND source_type = 'ats' AND COALESCE(ats_feed_id, '') = '' AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...feedAgencyIds),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${placeholders})`).bind(...dedicated),
     env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id"),
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies")
@@ -2285,7 +2287,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const cacheUrl = new URL(request.url);
   // The R2 vacancy snapshot is refreshed by the scheduled sync. Do not make
   // every public vacancy request spend a D1 row read validating a version.
-  cacheUrl.searchParams.set("__schema", "edge-first-v6");
+  cacheUrl.searchParams.set("__schema", "edge-first-v7");
   cacheUrl.searchParams.sort();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive", "realworkfromanywhere", "himalayas-rss", "remote"]);
@@ -2321,9 +2323,9 @@ async function vacanciesResponse(request, env, ctx, origin) {
       if (experience && String(row.experience_level || "") !== experience) return false;
       const sourceType = String(row.source_type || "").toLowerCase();
       const isGenericAts = sourceType === "ats";
-      const isGeneralRow = isGenericAts
-        ? !row.employer_id && !dedicated.has(sourceType)
-        : (!row.agency_id || row.agency_id === "general") && !row.employer_id && !dedicated.has(sourceType);
+      const dedicatedFeedAgencies = new Set(["himalayas-rss", "remotive", "realworkfromanywhere", "weworkremotely", "bizcommunity-sa", "govposts", "govposts-sa", "topjobseeker", "topjobseeker-sa", "myjobmag"]);
+      const isDedicatedRow = dedicated.has(sourceType) || dedicated.has(String(row.ats_feed_id || "")) || dedicatedFeedAgencies.has(String(row.agency_id || "")) || String(row.id || "").startsWith("ats_");
+      const isGeneralRow = !row.employer_id && !isDedicatedRow;
       if (scope === "general" && !isGeneralRow) return false;
       if (sources.length && !sources.includes(String(row.source_type || "")) && !sources.includes(String(row.ats_feed_id || ""))) return false;
       if (cursorCreated && !(String(row.created_at || "") < cursorCreated || (String(row.created_at || "") === cursorCreated && String(row.id || "") < cursorId))) return false;
