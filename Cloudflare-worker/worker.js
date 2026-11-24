@@ -2365,7 +2365,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
     });
     if (source || needsGeneralRecovery) {
       try {
-        const authoritative = await buildPublicVacancySnapshotFromSupabase(env);
+        const authoritative = scope === "general" ? await buildPublicVacancySnapshot(env) : await buildPublicVacancySnapshotFromSupabase(env);
         const recovered = filterRows(authoritative.vacancies);
         if (recovered.length || needsGeneralRecovery) rows = recovered;
       } catch (error) {
