@@ -2202,7 +2202,7 @@ async function startupResponse(request, env, ctx, origin) {
   // Public traffic must never use D1 as a cache validator or recovery source.
   // The scheduled sync publishes the authoritative R2 snapshot. Serving the
   // last good snapshot is safer than spending the account-wide D1 read budget.
-  const cacheKey = new Request(new URL("/api/startup?schema=edge-first-v16", request.url), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/startup?schema=edge-first-v17", request.url), { method: "GET" });
   let dataVersion = 0;
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
@@ -2222,6 +2222,18 @@ async function startupResponse(request, env, ctx, origin) {
   }
   async function refreshAndCache() {
     let snapshot = await readPublicStartupSnapshot(env);
+    // Rebuild the legacy snapshot once when it has the pre-classification
+    // zero General aggregate. Normal requests continue to use R2 afterward.
+    if (snapshot && Number(snapshot.counts?.general || 0) === 0) {
+      try {
+        const rebuilt = await loadStartupDataFromD1(env);
+        rebuilt.data_version = Number(snapshot.data_version) || 0;
+        await writePublicStartupSnapshot(env, rebuilt);
+        snapshot = rebuilt;
+      } catch (error) {
+        console.warn("Could not rebuild legacy startup snapshot", error);
+      }
+    }
     // Prefer R2 even when the snapshot is stale; exhausting D1 is worse than
     // briefly serving the last successful public snapshot.
     if (snapshot) {
