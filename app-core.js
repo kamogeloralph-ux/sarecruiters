@@ -413,7 +413,6 @@ export async function loadSavedVacanciesFromSupabase() {
     remoteIds.forEach(function(id){ savedSet.add(id); });
     localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
     if (typeof renderSaved === 'function') renderSaved();
-    try { document.dispatchEvent(new CustomEvent('sa-saved-change', { detail: { count: savedSet.size } })); } catch (e) {}
     // Push up anything saved locally before this account had synced yet.
     if (localOnly.length) {
       var rows = localOnly.map(function(id){ return { user_id: saAuthUser.id, vacancy_id: id }; });

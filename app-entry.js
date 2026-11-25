@@ -16,4 +16,3 @@ import './app-manager.js';
 import './app-manager-employer.js';
 import './app-pending-submissions.js';
 import './app-install.js';
-import './app-workspace.js';

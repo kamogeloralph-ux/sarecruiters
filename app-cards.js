@@ -873,7 +873,6 @@ window.toggleSave = function(btn, key) {
   localStorage.setItem('savedVacancies', JSON.stringify(Array.from(savedSet)));
   syncSavedVacancy(key, nowSaved);
   renderSaved();
-  try { document.dispatchEvent(new CustomEvent('sa-saved-change', { detail: { count: savedSet.size, vacancyId: key, saved: nowSaved } })); } catch (e) {}
 };
 
 export function renderSaved() {

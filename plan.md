@@ -22,27 +22,3 @@ Carry the public pages’ blue-and-white brand through the app using the existin
 ### Visibility and contrast polish
 
 Keep app icons crisp across light and dark modes by restoring full opacity, slightly increasing small icon size/stroke weight, and using contrast-appropriate navigation colors without erasing semantic success, warning, or danger colors. Make the Home and Menu support ticker text legible on a solid white pill with blue type. Render the hamburger as three visible blue bars in a white, high-contrast 48px control; preserve its existing open/close behavior, add clear focus feedback, and keep the drawer/backdrop visible above app screens at mobile and desktop widths.
-
-## Production workspace UI refactor
-
-### Implementation approach
-
-Refactor the existing static PWA in place. Add a production workspace shell around the current `.screen` collection: a persistent dark-navy workspace sidebar, a contextual top workspace bar, and the existing screen stack as the content region. The shell is presentation and navigation only; vacancy, directory, authentication, CV Box, posting, manager-link, account, feedback, scam-check, advertising, and legal workflows remain owned by their current modules and endpoints. A small `app-workspace.js` module maps the six workspace destinations to the existing in-memory transitions (`goBackHome`, `showAllVacancies`, `showAllAgencies`, `goPool`, `showAllEmployers`, and Saved) and observes the active screen so the sidebar and saved indicators stay accurate.
-
-The top workspace search forwards keyword input to the existing vacancy search state and renderer, while the Post a vacancy, Create CV Box profile, quick directory, profile, theme, feedback, and saved controls call existing production handlers. No reload-based navigation, preview-only saved key, hard-coded directory data, placeholder toast, duplicate state store, or new backend route is introduced. The current local-storage plus Supabase `saved_vacancies` synchronization remains the source of truth; saved changes emit a small UI event so every shell indicator can update without a reload.
-
-### Approved visual system
-
-Use the supplied `new-ui-preview.html` as the visual reference: `#111c2e` navy workspace chrome, `#f7f9fc` paper canvas, white cards, `#4f6df5` electric indigo actions, `#dff7ed` / `#138a67` mint status treatment, 16–22px card radii, and restrained elevation shadows. The workspace uses a spacious editorial dashboard composition rather than replacing the production content with mock cards. Existing live vacancy, agency, employer, and CV Box renders are styled as the reference’s role, directory, and talent surfaces. The existing blue SA Recruiters identity, light/dark theme support, and semantic success/warning/danger colors remain intact where they carry product meaning.
-
-### Responsive and accessibility behavior
-
-At desktop widths the workspace sidebar is a full-height vertical rail and the top bar/content sit in the adjacent paper canvas. At widths up to 1000px the rail becomes a sticky, horizontally scrollable workspace navigation strip with every destination still present and labelled. At widths up to 700px the top bar wraps into an accessible full-width search and compact action rows; cards stack, filters wrap or scroll, and content remains vertically scrollable. No workspace navigation link, core action, production section, or feature is removed with `display:none`; compact controls use wrapping, overflow scrolling, and stacking. All new buttons have labels, keyboard focus styles, live status where needed, and respect reduced-motion preferences.
-
-### State, routing, and project structure
-
-- `index.html` owns the shell landmarks, six navigation buttons, top search/actions, and the wrapper around the existing app screens.
-- `app-workspace.js` owns only shell navigation mapping, active-state synchronization, saved/auth indicator updates, and forwarding shell actions to existing window/module handlers.
-- `workspace-ui.css` is the single appended workspace design layer loaded after the legacy theme layers, so the current screen/component CSS remains reusable and no duplicate style block is added.
-- `app-entry.js` imports the workspace module after the production modules are available; `app-cards.js` emits saved-change notifications after local and remote persistence.
-- Existing query/deep-link behavior and `manus-routes.json` remain unchanged because this refactor does not add page routes. In-memory transitions preserve current state and use the existing session restoration model.
