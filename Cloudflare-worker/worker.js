@@ -746,6 +746,19 @@ async function writePublicVacancySnapshot(env, payload) {
   return true;
 }
 __name(writePublicVacancySnapshot, "writePublicVacancySnapshot");
+// Snapshot publication must invalidate the fixed Cache API keys used by the
+// public endpoints. Without this, a response cached before publication can be
+// served indefinitely by startupResponse/vacanciesResponse even though R2 and
+// the data_version have been refreshed successfully.
+async function invalidatePublicInventoryCaches(env) {
+  const base = env.WORKER_URL || "https://sarecruiters-uploader.kamogeloralph.workers.dev";
+  const cache = caches.default;
+  await Promise.all([
+    cache.delete(new Request(`${base}/api/startup?schema=edge-first-v18`, { method: "GET" })),
+    cache.delete(new Request(`${base}/api/vacancies?__schema=edge-first-v8`, { method: "GET" }))
+  ]);
+}
+__name(invalidatePublicInventoryCaches, "invalidatePublicInventoryCaches");
 async function readPublicJsonSnapshot(env, key, field) {
   if (!env.MEDIA_BUCKET) return null;
   try {
@@ -1208,6 +1221,7 @@ async function syncD1AndPublishSnapshot(env) {
     writePublicJsonSnapshot(env, PUBLIC_POSTERS_SNAPSHOT_KEY, "posters", publicSnapshots.posters, dataVersion),
     writePublicJsonSnapshot(env, PUBLIC_HOUSE_ADS_SNAPSHOT_KEY, "ads", publicSnapshots.houseAds, dataVersion)
   ]);
+  await invalidatePublicInventoryCaches(env);
   return { ...summary, data_version: dataVersion, snapshot: "r2", snapshot_generated_at: payload.generated_at, vacancy_snapshot_rows: vacancySnapshot?.vacancies?.length || 0 };
 }
 __name(syncD1AndPublishSnapshot, "syncD1AndPublishSnapshot");
@@ -1258,6 +1272,7 @@ async function publishFocusedScraperSources(env) {
     writePublicStartupSnapshot(env, startupPayload),
     writePublicVacancySnapshot(env, vacancySnapshot)
   ]);
+  await invalidatePublicInventoryCaches(env);
   return {
     data_version: dataVersion,
     snapshot: "r2-focused",
@@ -2203,7 +2218,7 @@ async function startupResponse(request, env, ctx, origin) {
   // Public traffic must never use D1 as a cache validator or recovery source.
   // The scheduled sync publishes the authoritative R2 snapshot. Serving the
   // last good snapshot is safer than spending the account-wide D1 read budget.
-  const cacheKey = new Request(new URL("/api/startup?schema=edge-first-v17", request.url), { method: "GET" });
+  const cacheKey = new Request(new URL("/api/startup?schema=edge-first-v18", request.url), { method: "GET" });
   let dataVersion = 0;
   async function buildResponse(payload, cacheControl = "public, max-age=86400") {
     const body = JSON.stringify(payload);
@@ -2300,7 +2315,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const cacheUrl = new URL(request.url);
   // The R2 vacancy snapshot is refreshed by the scheduled sync. Do not make
   // every public vacancy request spend a D1 row read validating a version.
-  cacheUrl.searchParams.set("__schema", "edge-first-v7");
+  cacheUrl.searchParams.set("__schema", "edge-first-v8");
   cacheUrl.searchParams.sort();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive", "realworkfromanywhere", "himalayas-rss", "remote"]);
