@@ -19,6 +19,8 @@ const css = read('styles.css');
 const vacancyCss = read('vacancy-v2.css');
 const content = read('content.js');
 const cvBoxMigration = read('supabase/migrations/20261112_cv_box_refresh_and_eligibility.sql');
+const cvTidy = read('Cloudflare-worker/cv-tidy.js');
+const wrangler = read('Cloudflare-worker/wrangler.toml');
 
 test('employer directory and vacancies have no membership lock UI or card state', () => {
   for (const source of [appCards, appSheets, appUi, appData, html]) {
@@ -60,6 +62,30 @@ test('CV Box terminology is consistent while existing database names and deep-li
   assert.match(appForms, /function sendCvBoxVacancyAlerts\(/);
   assert.match(appUi, /function closeCvBox\(/);
   assert.match(html, /shareSectionLink\('candidates'\)/);
+});
+
+test('CV Box tidy uses a supported Workers AI model and reports correction outcomes', () => {
+  assert.match(cvTidy, /DEFAULT_CF_MODEL = "@cf\/ibm-granite\/granite-4\.0-h-micro"/);
+  assert.doesNotMatch(cvTidy, /llama-3\.1-8b-instruct/);
+  assert.match(wrangler, /CF_AI_MODEL\s+default @cf\/ibm-granite\/granite-4\.0-h-micro/);
+  assert.match(worker, /used_ai: !!tidied\.usedAi/);
+  assert.match(worker, /note: tidied\.note \|\| ""/);
+  assert.match(worker, /model: tidied\.model \|\| ""/);
+  assert.match(worker, /alternate: tidied\.alternate \|\| ""/);
+  assert.match(worker, /tidyUntidiedBatch\(env/);
+  assert.match(cvTidy, /export async function tidyUntidiedBatch/);
+});
+
+test('CV Box tidy feedback awaits the Worker and distinguishes failure from fallback', () => {
+  const start = appSheets.indexOf('async function requestCvBoxTidy');
+  const end = appSheets.indexOf('\n\nexport async function submitPoolRegistration', start);
+  const source = appSheets.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(source, /var response = await fetch/);
+  assert.match(source, /if \(!response\.ok\)/);
+  assert.match(source, /CV Box correction failed/);
+  assert.match(source, /AI correction was unavailable/);
+  assert.match(source, /profile was saved/);
 });
 
 test('CV Box back action restores the exact originating screen and active tab', () => {

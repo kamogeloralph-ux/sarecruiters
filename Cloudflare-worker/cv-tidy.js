@@ -29,7 +29,9 @@ import { clean, fold, getCached, putCached, reserveAiCall, sha256Hex, untrusted,
 export const TIDY_MAX_ABOUT = 500;
 export const TIDY_MAX_QUALIFICATION = 200;
 export const TIDY_MAX_POSITION = 60;
-export const DEFAULT_CF_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+// Current Cloudflare Workers AI text model. Keep this overrideable with CF_AI_MODEL,
+// but do not fall back to the deprecated Llama 3.1/3.2 model family.
+export const DEFAULT_CF_MODEL = "@cf/ibm-granite/granite-4.0-h-micro";
 
 // ---------- positions: 1 profession + 1 alternate ----------
 
@@ -371,7 +373,17 @@ export async function tidyCandidateById(env, id, { force = false, extraPositions
   const before = await textHash(row);
   if (!force) {
     const cached = await getCached(env, "cv-tidy", row.id);
-    if (cached && cached.inputHash === before) return { ok: true, skipped: true, id: row.id, changes: [] };
+    if (cached && cached.inputHash === before) return {
+      ok: true,
+      skipped: true,
+      id: row.id,
+      changes: [],
+      usedAi: !!cached.model,
+      model: cached.model || "",
+      note: "This profile is already tidy.",
+      profession: splitTitles(row.position)[0] || "",
+      alternate: splitTitles(row.position)[1] || ""
+    };
   }
   const result = await tidyProfile(env, row, { extraPositions });
   if (dryRun) return { ok: true, id: row.id, dryRun: true, ...result };
@@ -407,4 +419,34 @@ export async function listUntidied(env, { scan = 400, limit = 5 } = {}) {
     if (todo.length < limit) todo.push(row.id);
   }
   return { ids: todo, pending };
+}
+
+// Scheduled maintenance path. Keep this deliberately small because each profile can
+// use one Workers AI call plus one or two Supabase writes. A temporary AI outage is
+// not cached by tidyCandidateById, so the next cron tick retries it.
+export async function tidyUntidiedBatch(env, { scan = 400, limit = 3 } = {}) {
+  if (!env.AI) return { skipped: "Workers AI binding is not configured" };
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return { skipped: "CV tidy is not configured" };
+  const boundedLimit = Math.min(Math.max(Number(limit) || 3, 1), 5);
+  const listed = await listUntidied(env, { scan, limit: boundedLimit });
+  const results = [];
+  for (const id of listed.ids) {
+    try {
+      const result = await tidyCandidateById(env, id);
+      results.push({
+        id,
+        ok: result.ok,
+        skipped: !!result.skipped,
+        changed: result.changes || [],
+        usedAi: !!result.usedAi,
+        model: result.model || "",
+        note: result.note || "",
+        error: result.ok ? "" : result.error || "Tidy failed"
+      });
+    } catch (error) {
+      console.error("scheduled CV tidy failed", id, error);
+      results.push({ id, ok: false, skipped: false, changed: [], usedAi: false, model: "", note: "", error: "Tidy failed" });
+    }
+  }
+  return { pending_before: listed.pending, processed: results.length, results };
 }

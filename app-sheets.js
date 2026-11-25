@@ -1523,10 +1523,10 @@ export function poolFormToProfileFields() {
   };
 }
 
-// Asks the Worker to fix typos/grammar and keep 1 profession + 1 alternate on this profile (free Workers AI).
-// Fire-and-forget: the candidate never waits for it, and a failure changes nothing.
+// Asks the Worker to fix typos/grammar and keep 1 profession + 1 alternate on this profile.
+// The profile save itself is not blocked, but this request is awaited so failures are visible.
 async function requestCvBoxTidy(candidateId) {
-  if (!candidateId) return;
+  if (!candidateId) return { ok: false, error: 'No CV Box profile was supplied.' };
   try {
     var authToken = '';
     try {
@@ -1535,13 +1535,43 @@ async function requestCvBoxTidy(candidateId) {
         authToken = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token || '';
       }
     } catch (e) {}
-    fetch(R2_WORKER_URL + '/api/cv-box/tidy', {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timeout = controller ? setTimeout(function(){ controller.abort(); }, 30000) : null;
+    var response = await fetch(R2_WORKER_URL + '/api/cv-box/tidy', {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json' }, authToken ? { 'Authorization': 'Bearer ' + authToken } : {}),
       body: JSON.stringify({ id: String(candidateId) }),
-      keepalive: true
-    }).catch(function() {});
-  } catch (e) {}
+      signal: controller ? controller.signal : undefined
+    });
+    if (timeout) clearTimeout(timeout);
+    var data = null;
+    try { data = await response.json(); } catch (e) {}
+    if (!response.ok) {
+      var errorMessage = data && data.error ? data.error : 'The profile could not be tidied and saved.';
+      showToast('CV Box correction failed: ' + errorMessage);
+      return { ok: false, error: errorMessage, status: response.status };
+    }
+    if (data && data.skipped) {
+      showToast('CV Box profile checked — no changes were needed.');
+    } else if (data && data.used_ai && Array.isArray(data.changed) && data.changed.length) {
+      showToast('CV Box profile corrected with AI and saved.');
+    } else if (data && data.used_ai) {
+      showToast('CV Box profile checked with AI — no changes were needed.');
+    } else if (data && data.note && /budget|unavailable|not bound|timed out|failed/i.test(data.note)) {
+      showToast('Profile saved, but AI correction was unavailable. Basic tidy-up was applied.');
+    } else if (data && Array.isArray(data.changed) && data.changed.length) {
+      showToast('Profile saved with basic tidy-up. AI correction was unavailable.');
+    } else {
+      showToast('CV Box profile checked — no changes were needed.');
+    }
+    return { ok: true, data: data };
+  } catch (e) {
+    var message = e && e.name === 'AbortError'
+      ? 'CV Box correction timed out. Your profile was saved; please try again.'
+      : 'Could not reach the CV correction service. Your profile was saved; please try again.';
+    showToast(message);
+    return { ok: false, error: message };
+  }
 }
 
 export async function submitPoolRegistration() {

@@ -1,7 +1,7 @@
 import { runWatchdog } from "./watchdog.js";
 import * as Sentry from "@sentry/cloudflare";
 import { candidateCvKey, cvProfileCorrections, evaluateCvScan, findDuplicateCandidate, mergePositions, scanCvWithGemini } from "./cv-scan.js";
-import { fetchProfile, listUntidied, pairPositions, similarPosition, splitTitles, tidyCandidateById } from "./cv-tidy.js";
+import { fetchProfile, listUntidied, pairPositions, similarPosition, splitTitles, tidyCandidateById, tidyUntidiedBatch } from "./cv-tidy.js";
 import { handleAiRequest, readPosterCached, runAiMaintenance } from "./ai-routes.js";
 import { adzunaSearchResponse } from "./adzuna.js";
 import { putCached } from "./ai.js";
@@ -3101,6 +3101,15 @@ var worker_default = {
       } catch (e) {
         { Sentry.captureException(e); console.error("scheduled AI maintenance failed", e); };
       }
+      try {
+        const cvTidy = await tidyUntidiedBatch(env, {
+          scan: Number(env.CV_TIDY_SCHEDULED_SCAN) > 0 ? Number(env.CV_TIDY_SCHEDULED_SCAN) : 400,
+          limit: Number(env.CV_TIDY_SCHEDULED_LIMIT) > 0 ? Number(env.CV_TIDY_SCHEDULED_LIMIT) : 3
+        });
+        console.log("scheduled CV tidy", JSON.stringify(cvTidy));
+      } catch (e) {
+        { Sentry.captureException(e); console.error("scheduled CV tidy failed", e); };
+      }
       // Publish at most one deterministic official vacancy roundup per day.
       // The app_settings kill switch is checked inside the publisher, so a
       // missing setting or service key fails closed without affecting sync.
@@ -4188,7 +4197,18 @@ var worker_default = {
         if (!tidyAllowed) return json({ error: "Not allowed." }, 403, origin);
         const tidied = await tidyCandidateById(env, tidyId, { force: tidyAdmin && body.force === true });
         if (!tidied.ok) return json({ error: tidied.error }, tidied.status || 500, origin);
-        return json({ ok: true, changed: tidied.changes || [], skipped: !!tidied.skipped }, 200, origin);
+        return json({
+          ok: true,
+          changed: tidied.changes || [],
+          skipped: !!tidied.skipped,
+          used_ai: !!tidied.usedAi,
+          note: tidied.note || "",
+          model: tidied.model || "",
+          profession: tidied.profession || "",
+          alternate: tidied.alternate || "",
+          alternate_source: tidied.alternateSource || "",
+          merged: tidied.merged || []
+        }, 200, origin);
       }
       if (path === "/api/admin/cv-box/tidy" && request.method === "POST") {
         // Admin: tidy existing CV Box profiles in small batches (replaces cleaning them by hand in Supabase).
