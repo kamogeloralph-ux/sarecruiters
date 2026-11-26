@@ -1,0 +1,430 @@
+/* ==========================================================================
+   SA Recruiters — Luxe layer
+   Loaded LAST (after mono.css). Re-themes the app through the existing design
+   tokens, then refines type, spacing, surfaces and motion. No markup, no JS,
+   and none of the logo artwork is touched — remove this one <link> to revert.
+
+   Direction: quiet, high-end, editorial.
+     Palette   pearl surfaces · deep-navy ink · sapphire for action · brass
+               used only for "featured" and the one section kicker
+     Type      Newsreader (display: headings + figures) over Inter (interface)
+     Space     wider gutters, longer vertical rhythm, hairlines not boxes
+     Motion    one entrance on first paint; everything else answers a touch
+   ========================================================================== */
+
+/* ---------- 1. Tokens ---------- */
+html[data-theme="light"]{
+  --lx-ink:#0b1a33;
+  --lx-sapphire:#103f93;
+  --lx-brass:#a07a36;           /* hairlines + icons */
+  --lx-brass-text:#7a5a22;      /* brass when it has to be read as text (AA on white) */
+  --lx-brass-wash:rgba(160,122,54,.10);
+  --lx-glass:rgba(255,255,255,.82);
+  --lx-hairline:rgba(11,26,51,.08);
+
+  --m-ink:#12306b;--m-on-ink:#fff;--m-wash:rgba(16,63,147,.06);--m-wash-2:rgba(16,63,147,.10);
+  --bg:#f6f7fa;--bg-edge:#eef1f6;--card:#fff;--card-2:#f3f5f9;--card-3:#e9edf3;
+  --text:#0b1a33;--text-2:#4a576c;--text-3:#7b8799;
+  --border:#e3e8ef;--border-strong:#ccd4e0;--separator:#ebeef4;
+  --accent:#103f93;--accent-soft:rgba(16,63,147,.07);
+  --badge-bg:rgba(16,63,147,.07);--badge-text:#103f93;--sheet-bg:#fff;
+  --shadow-sm:0 1px 2px rgba(11,26,51,.04),0 10px 28px -16px rgba(11,26,51,.14);
+  --shadow-lg:0 2px 6px rgba(11,26,51,.05),0 34px 80px -36px rgba(11,26,51,.32);
+}
+html[data-theme="dark"]{
+  --lx-ink:#eef2f9;
+  --lx-sapphire:#8fb6ff;
+  --lx-brass:#cfae6a;
+  --lx-brass-text:#d8bb7e;
+  --lx-brass-wash:rgba(207,174,106,.12);
+  --lx-glass:rgba(12,19,33,.80);
+  --lx-hairline:rgba(238,242,249,.09);
+
+  --m-ink:#e9effb;--m-on-ink:#0a1222;--m-wash:rgba(238,242,249,.06);--m-wash-2:rgba(238,242,249,.10);
+  --bg:#0a101c;--bg-edge:#070b14;--card:#111a2b;--card-2:#162136;--card-3:#1d2a43;
+  --text:#eef2f9;--text-2:#aab6c8;--text-3:#7a879b;
+  --border:#1f2b42;--border-strong:#2f3f5c;--separator:#18233a;
+  --accent:#8fb6ff;--accent-soft:rgba(143,182,255,.10);
+  --badge-bg:rgba(143,182,255,.12);--badge-text:#a9c6ff;--sheet-bg:#111a2b;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.30),0 12px 30px -16px rgba(0,0,0,.55);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.30),0 36px 84px -34px rgba(0,0,0,.7);
+}
+:root{
+  --lx-serif:'Newsreader','Iowan Old Style','Palatino Linotype','Book Antiqua',Georgia,serif;
+  --lx-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --lx-ease:cubic-bezier(.22,.7,.2,1);
+  --lx-r-sm:12px;--lx-r-md:18px;--lx-r-lg:24px;
+}
+
+/* ---------- 2. Base typography ---------- */
+html body{
+  font-family:var(--lx-sans);
+  font-feature-settings:"kern","liga","calt";
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  letter-spacing:-.006em;
+}
+::selection{background:var(--lx-brass-wash);color:var(--text)}
+.app{background:var(--bg)}
+.app::before{background-image:none!important}      /* drop the corner colour wash */
+.screen-scroll{scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+
+/* Display face: headings and figures only */
+html body :is(.home-section-heading h2,.section-title,.vx-bar-title h1,.home-weekly-province-title,
+  .menu-hero h2,.account-name,.sheet h2,.sheet-title,.pool-section-head h2,.directory-title){
+  font-family:var(--lx-serif);font-weight:500;letter-spacing:-.012em;font-variation-settings:"opsz" 36;
+  text-wrap:balance;
+}
+html body .screen:not(#screen-home) .screen-title-group .logo-text{
+  font-family:var(--lx-serif)!important;font-weight:500!important;font-size:23px;letter-spacing:-.015em!important;
+  color:var(--text)!important;
+}
+html body .screen:not(#screen-home) .screen-context{color:var(--text-2);font-weight:500;letter-spacing:0}
+
+/* ---------- 3. Home: header ---------- */
+html body #screen-home .screen-fixed{
+  padding-top:calc(env(safe-area-inset-top,0px) + 14px);
+  padding-bottom:10px;
+  background:var(--bg)!important;
+  border-bottom:1px solid var(--lx-hairline)!important;box-shadow:none!important;background-image:none!important;
+}
+html body #screen-home .screen-fixed header{margin-bottom:14px}
+html body .logo-text-wrap .logo-text,html body #screen-home .logo-text{
+  font-size:19px;font-weight:650;letter-spacing:-.022em;color:var(--text)!important;
+}
+html body #screen-home .logo-slogan{font-size:11.5px;line-height:1.35;color:var(--text-3)!important;letter-spacing:0}
+
+/* Install: quiet outlined pill */
+html body .header-install-btn{
+  background:transparent!important;color:var(--text)!important;
+  border:1px solid var(--border-strong)!important;border-radius:999px;
+  font-weight:600;font-size:13px;letter-spacing:.005em;padding:0 16px;
+  transition:border-color .3s var(--lx-ease),background-color .3s var(--lx-ease),transform .2s var(--lx-ease);
+}
+@media (hover:hover){html body .header-install-btn:hover{border-color:var(--lx-sapphire)!important;background:var(--m-wash)!important}}
+html body .header-install-btn:active{transform:scale(.97)}
+
+/* Menu trigger: keeps its three visible bars, loses the heavy blue slab */
+html body #screen-home .site-menu-trigger,html body .screen:not(#screen-home) .site-menu-trigger{
+  width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;
+  gap:4.5px!important;padding:0!important;
+  border:1px solid var(--border-strong)!important;border-radius:15px!important;
+  background:var(--card)!important;box-shadow:var(--shadow-sm)!important;
+  transition:border-color .3s var(--lx-ease),transform .2s var(--lx-ease)!important;
+}
+html body #screen-home .site-menu-trigger span,html body .screen:not(#screen-home) .site-menu-trigger span{
+  flex:0 0 2px!important;width:18px!important;height:2px!important;min-height:2px!important;
+  background:var(--text)!important;border-radius:2px!important;
+  transition:width .3s var(--lx-ease)!important;
+}
+html body .site-menu-trigger span:nth-child(2){width:12px!important;align-self:flex-start;margin-left:14px}
+@media (hover:hover){
+  html body .site-menu-trigger:hover{border-color:var(--lx-sapphire)!important}
+  html body .site-menu-trigger:hover span:nth-child(2){width:18px!important}
+}
+html body .site-menu-trigger:active{transform:scale(.95)}
+
+/* Connection status: whisper, not banner */
+html body .connection-status{
+  background:transparent!important;border:0!important;border-radius:0!important;
+  color:var(--text-3)!important;font-weight:500!important;font-size:11.5px;letter-spacing:.01em;
+  padding:0 2px;margin:-8px 0 10px;
+}
+
+/* ---------- 4. Search ---------- */
+html body #screen-home .search-inner,html body .search-inner{
+  height:54px;border-radius:19px;
+  background:var(--card)!important;border:1px solid var(--border)!important;
+  box-shadow:var(--shadow-sm)!important;
+  transition:border-color .3s var(--lx-ease),box-shadow .3s var(--lx-ease)!important;
+}
+html body .search-inner input{font-size:15.5px;font-weight:450;letter-spacing:-.005em}
+html body .search-inner input::placeholder{color:var(--text-3)!important;font-weight:400}
+html body .search-inner svg{width:19px;height:19px;stroke-width:1.8!important}
+html body .search-inner:focus-within{
+  border-color:var(--lx-sapphire)!important;
+  box-shadow:0 0 0 4px var(--accent-soft),var(--shadow-sm)!important;
+}
+
+/* ---------- 5. Province filters ---------- */
+html body .home-filter-row{gap:8px;padding:2px 0 4px;margin-top:14px}
+html body #screen-home .home-filter-chip{
+  background:transparent!important;color:var(--text-2)!important;
+  border:1px solid var(--border)!important;border-radius:999px;
+  font-size:12.5px;font-weight:500;letter-spacing:0;padding:8px 15px;
+  transition:border-color .3s var(--lx-ease),color .3s var(--lx-ease),background-color .3s var(--lx-ease);
+}
+html body #screen-home .home-filter-chip small{color:var(--text-3)!important;font-weight:400;font-variant-numeric:tabular-nums}
+@media (hover:hover){
+  html body #screen-home .home-filter-chip:hover{background:var(--card)!important;color:var(--text)!important;border-color:var(--lx-sapphire)!important}
+  html body #screen-home .home-filter-chip:hover small{color:var(--text-2)!important}
+}
+html body #screen-home .home-filter-chip:focus-visible,
+html body #screen-home .home-filter-chip.active{background:var(--m-ink)!important;color:var(--m-on-ink)!important;border-color:var(--m-ink)!important}
+html body #screen-home .home-filter-chip.active small{color:var(--m-on-ink)!important}
+
+/* ---------- 6. Stat cards ---------- */
+html body .stats{gap:10px;margin:12px 0 14px;padding:2px 2px 6px}
+html body #screen-home .stat-card{
+  flex:0 0 clamp(104px,28%,128px);
+  padding:13px 8px 11px;border-radius:20px;
+  background:var(--card)!important;color:var(--text)!important;
+  border:1px solid var(--border)!important;box-shadow:var(--shadow-sm)!important;
+  transition:border-color .35s var(--lx-ease),box-shadow .35s var(--lx-ease),transform .25s var(--lx-ease)!important;
+}
+html body #screen-home .stat-card *{color:inherit}
+html body #screen-home .stat-card:hover *,html body #screen-home .stat-card:focus-visible *{color:inherit!important}
+html body #screen-home .stat-card .stat-icon{
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  width:auto;height:auto;margin:0 auto 6px;color:var(--lx-sapphire)!important;
+}
+html body .app #screen-home .stat-card .stat-icon svg{width:22px!important;height:22px!important;stroke-width:1.6!important}
+html body #screen-home .stat-card .stat-value{
+  font-family:var(--lx-serif);font-size:25px;font-weight:500;line-height:1.05;letter-spacing:-.02em;
+  font-variant-numeric:lining-nums tabular-nums;
+}
+html body #screen-home .stat-card .stat-label{
+  font-size:11px;font-weight:450;line-height:1.3;color:var(--text-2)!important;margin-top:4px;letter-spacing:0;height:auto;min-height:2.5em;
+}
+html body #screen-home .stat-card .stat-label *{color:var(--text-2)!important}
+html body #screen-home .stat-arrow{
+  color:var(--lx-brass)!important;font-size:13px;top:10px;right:12px;
+  opacity:0;transform:translateX(-4px);transition:opacity .3s var(--lx-ease),transform .3s var(--lx-ease);
+}
+@media (hover:hover){
+  html body #screen-home .stat-card:hover{
+    background:var(--card)!important;color:var(--text)!important;
+    border-color:color-mix(in srgb,var(--lx-brass) 55%,var(--border))!important;
+    box-shadow:var(--shadow-lg)!important;transform:translateY(-2px);
+  }
+  html body #screen-home .stat-card:hover .stat-arrow{opacity:1;transform:none}
+}
+html body #screen-home .stat-card:focus-visible{background:var(--card)!important;color:var(--text)!important;border-color:var(--lx-sapphire)!important}
+html body #screen-home .stat-card:focus-visible .stat-arrow{opacity:1;transform:none}
+html body #screen-home .stat-card:active{transform:scale(.97)}
+html body .stats-scroll-btn,html body #screen-home .stats-scroll-btn{
+  background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;box-shadow:var(--shadow-sm)!important;
+}
+
+/* ---------- 7. Rhythm: gutters and section spacing ---------- */
+html body #screen-home .screen-scroll{padding-top:0;background:var(--bg)!important}
+@media (min-width:0px){html body .screen-scroll{padding-left:20px;padding-right:20px}}
+html body .home-weekly-section,html body .home-media-section,html body .home-tools-section{margin-top:52px}
+html body .home-section-heading{margin:0 0 20px;align-items:flex-end}
+html body .home-section-heading h2{font-size:27px;line-height:1.12;margin:0}
+html body .home-section-heading p{font-size:13.5px;line-height:1.5;color:var(--text-2);margin:6px 0 0;max-width:34em}
+html body .home-section-kicker{
+  font-family:var(--lx-sans);font-size:12.5px;font-weight:500;letter-spacing:.01em;text-transform:none;
+  color:var(--lx-brass-text)!important;margin-bottom:6px;display:block;
+}
+html body .home-view-all{
+  font-size:13px;font-weight:550;color:var(--text)!important;
+  border:0;background:transparent;padding:4px 0;
+  background-image:linear-gradient(currentColor,currentColor);background-size:100% 1px;background-position:0 100%;background-repeat:no-repeat;
+  transition:background-size .35s var(--lx-ease),color .3s var(--lx-ease);
+}
+@media (hover:hover){html body .home-view-all:hover{color:var(--lx-sapphire)!important}}
+
+/* ---------- 8. Cards ---------- */
+html body :is(.hub-card,.vac-card,.vx-card,.track-card,.pool-mini-card,.spotlight-card,.contact-card,
+  .account-quota-card,.account-signin-card,.alert-optin-card,.vacancy-category-card,.vac-folder-card,.quick-card){
+  background:var(--card)!important;
+  border:1px solid var(--border)!important;
+  border-radius:var(--lx-r-lg)!important;
+  box-shadow:var(--shadow-sm)!important;
+}
+html body :is(.hub-card,.vx-card,.vac-card){
+  margin-bottom:14px;
+  transition:border-color .35s var(--lx-ease),box-shadow .35s var(--lx-ease),transform .25s var(--lx-ease);
+}
+@media (hover:hover){
+  html body :is(.hub-card,.vx-card):hover{border-color:var(--border-strong)!important;box-shadow:var(--shadow-lg)!important}
+}
+html body .hub-summary{padding:18px 18px}
+html body .agency-name{font-size:15.5px;font-weight:600;letter-spacing:-.012em;color:var(--text)}
+html body .hub-summary-desc{font-size:12.5px;color:var(--text-3);margin-top:3px}
+html body .avatar{border-radius:16px;border:1px solid var(--border)!important;box-shadow:none!important}
+html body .chevron{color:var(--text-3);transition:transform .45s var(--lx-ease),color .3s var(--lx-ease)}
+html body .hub-card .hub-summary[aria-expanded="true"] .chevron{color:var(--text)}
+
+/* Vacancy card: title leads; metadata recedes */
+html body .vx-head{padding:20px 6px 18px 20px;gap:14px}
+html body .vx-title{font-size:16.5px;line-height:1.32;font-weight:600;letter-spacing:-.016em;color:var(--text)}
+html body .vx-org{margin-top:5px;font-size:13px;color:var(--text-2)}
+html body .vx-card-meta{margin-top:10px;gap:6px 14px;font-size:12px;color:var(--text-3)}
+html body .vx-m{color:var(--text-3);font-weight:450}
+html body .vx-m--money{color:var(--text)!important;font-weight:600}
+html body .vx-m--warn{color:var(--lx-brass-text)!important;font-weight:600}
+html body .vx-logo{border-radius:14px;border:1px solid var(--border)}
+html body .vx-tool{
+  border:1px solid var(--border);background:transparent;border-radius:14px;color:var(--text-2);
+  transition:color .3s var(--lx-ease),border-color .3s var(--lx-ease),background-color .3s var(--lx-ease),transform .2s var(--lx-ease);
+}
+@media (hover:hover){html body .vx-tool:hover{color:var(--text);border-color:var(--border-strong);background:var(--card-2)}}
+html body .vx-tool.saved{color:var(--lx-sapphire);border-color:var(--lx-sapphire);background:var(--accent-soft)}
+html body .vx-tool:active{transform:scale(.92)}
+html body .vx-detail-in{padding:0 20px 20px}
+
+/* Featured: the one place brass appears on a card */
+html body .vx-card--feat,html body .vac-card-featured{border-color:color-mix(in srgb,var(--lx-brass) 45%,var(--border))!important}
+html body .vx-card--feat::before{
+  width:100%;height:2px;bottom:auto;
+  background:linear-gradient(90deg,var(--lx-brass),transparent 72%);
+}
+html body .vx-feat{
+  font-size:11.5px;font-weight:600;letter-spacing:.01em;color:var(--lx-brass-text);margin-bottom:6px;
+}
+
+/* ---------- 9. Buttons ---------- */
+html body :is(.btn-primary,.sheet-submit,.vac-apply,.manager-add-btn,.pool-contact-btn,.home-vacancy-apply){
+  border-radius:15px;min-height:50px;font-size:15px;font-weight:600;letter-spacing:.005em;
+  box-shadow:0 1px 0 rgba(255,255,255,.14) inset,0 12px 26px -16px color-mix(in srgb,var(--m-ink) 80%,transparent)!important;
+  transition:transform .2s var(--lx-ease),box-shadow .35s var(--lx-ease),background-color .3s var(--lx-ease),opacity .2s;
+}
+@media (hover:hover){
+  html body :is(.btn-primary,.sheet-submit,.vac-apply,.manager-add-btn,.pool-contact-btn,.home-vacancy-apply):hover{
+    box-shadow:0 1px 0 rgba(255,255,255,.14) inset,0 18px 32px -16px color-mix(in srgb,var(--m-ink) 90%,transparent)!important;
+    transform:translateY(-1px);
+  }
+}
+html body :is(.btn-primary,.sheet-submit,.vac-apply,.manager-add-btn,.pool-contact-btn,.home-vacancy-apply):active{transform:scale(.985)}
+html body :is(.btn-secondary,.vac-apply-secondary,.quick-card-actions button,.vac-load-more){
+  border-radius:15px;min-height:48px;font-weight:600;letter-spacing:.005em;
+  background:transparent!important;color:var(--text)!important;border:1px solid var(--border-strong)!important;
+  transition:border-color .3s var(--lx-ease),background-color .3s var(--lx-ease),transform .2s var(--lx-ease);
+}
+@media (hover:hover){
+  html body :is(.btn-secondary,.vac-apply-secondary,.quick-card-actions button,.vac-load-more):hover{
+    background:var(--card-2)!important;color:var(--text)!important;border-color:var(--lx-sapphire)!important;
+  }
+}
+html body :is(.btn-secondary,.vac-apply-secondary,.quick-card-actions button,.vac-load-more):active{transform:scale(.985)}
+html body .ripple-el{background:rgba(255,255,255,.18)}
+
+/* Chips and tabs: hairline, then ink when selected */
+html body :is(.vx-chip,.chip,.vac-filter-chip,.vacancy-overview-filter,.hub-tab,.sub-tab,.seg-btn,.tab){
+  border:1px solid var(--border)!important;background:transparent;color:var(--text-2);font-weight:500;letter-spacing:0;
+  transition:border-color .3s var(--lx-ease),color .3s var(--lx-ease),background-color .3s var(--lx-ease),transform .2s var(--lx-ease);
+}
+html body :is(.vx-chip.on,.chip.active,.vac-filter-chip.active,.vacancy-overview-filter.active,.hub-tab.active,.sub-tab.active,.seg-btn.active,.tab.active){
+  background:var(--m-ink)!important;color:var(--m-on-ink)!important;border-color:var(--m-ink)!important;font-weight:600;
+}
+
+/* ---------- 10. Inner screens ---------- */
+html body .screen:not(#screen-home) .screen-fixed{
+  background:var(--lx-glass)!important;
+  border-bottom:1px solid var(--lx-hairline)!important;
+  backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);
+}
+html body .screen:not(#screen-home) .screen-scroll{background:var(--bg)!important;padding-top:24px}
+html body .vx-search{background:var(--lx-glass);border-bottom:1px solid transparent}
+html body .vx-field input{height:52px;border-radius:17px;border:1px solid var(--border);background:var(--card);font-size:15px}
+html body :is(.screen-close-btn,.screen-back-btn,.theme-toggle,.menu-more-btn,.icon-btn,.vx-icon-btn){
+  background:var(--card)!important;color:var(--text)!important;
+  border:1px solid var(--border)!important;border-radius:15px;box-shadow:none;
+  transition:border-color .3s var(--lx-ease),transform .2s var(--lx-ease);
+}
+@media (hover:hover){html body :is(.screen-close-btn,.screen-back-btn,.theme-toggle,.menu-more-btn,.icon-btn,.vx-icon-btn):hover{border-color:var(--lx-sapphire)!important}}
+html body :is(.screen-close-btn,.screen-back-btn,.theme-toggle,.menu-more-btn,.icon-btn,.vx-icon-btn):active{transform:scale(.93)}
+
+/* Links inside content: ink with a fine underline, not default blue */
+html body .screen-scroll a:not(.btn):not(.vx-btn):not(.vac-apply):not([class*="chip"]):not([class*="card"]):not([class*="row"]):not(.navbtn):not(.home-view-all):not(.home-vacancy-apply){
+  color:var(--lx-sapphire)!important;text-decoration-line:underline;text-decoration-thickness:1px;text-underline-offset:3px;
+  text-decoration-color:color-mix(in srgb,var(--lx-sapphire) 35%,transparent);
+  transition:text-decoration-color .3s var(--lx-ease);
+}
+@media (hover:hover){html body .screen-scroll a:hover{text-decoration-color:currentColor}}
+
+/* Icon tiles: neutral wash instead of saturated blue */
+html body :is(.vac-folder-icon,.quick-card-icon,.vac-detail-icon,.wa-tile,.site-menu-nav-icon,.mi-icon){
+  background:var(--card-2)!important;color:var(--lx-sapphire)!important;border:1px solid var(--border)!important;border-radius:14px;
+}
+html body .app :is(.quick-card-icon,.vac-detail-icon,.mi-icon,.contact-card-icon,.directory-title-icon) svg{stroke-width:1.8!important}
+
+/* ---------- 11. Bottom navigation ---------- */
+html body[data-x] .bottom-nav,html body .bottom-nav,
+html[data-theme="light"] body .bottom-nav,html[data-theme="dark"] body .bottom-nav{
+  background:var(--lx-glass)!important;
+  border-top:1px solid var(--lx-hairline)!important;
+  backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);
+}
+html body .bottom-nav .navbtn{
+  background:transparent!important;box-shadow:none!important;position:relative;
+  transition:color .3s var(--lx-ease),transform .2s var(--lx-ease);
+}
+html body .bottom-nav .navbtn .navbtn-label{font-size:10.5px;font-weight:500!important;letter-spacing:.01em}
+html body .app .bottom-nav .navbtn svg{width:23px!important;height:23px!important;stroke-width:1.7!important;transition:transform .35s var(--lx-ease)}
+html[data-theme] body .bottom-nav .navbtn:not(.active),
+html[data-theme] body .bottom-nav .navbtn:not(.active) .navbtn-label{color:var(--text-3)!important}
+html[data-theme] body .bottom-nav .navbtn:not(.active) svg{color:var(--text-3)!important;stroke:var(--text-3)!important}
+html[data-theme] body .bottom-nav .navbtn.active,
+html[data-theme] body .bottom-nav .navbtn.active .navbtn-label{color:var(--text)!important;font-weight:600!important}
+html[data-theme] body .bottom-nav .navbtn.active svg{color:var(--lx-sapphire)!important;stroke:var(--lx-sapphire)!important}
+html[data-theme] body .bottom-nav .navbtn.active{background:transparent!important;box-shadow:none!important}
+html body .bottom-nav .navbtn.active::after{
+  content:"";position:absolute;left:50%;bottom:5px;width:4px;height:4px;margin-left:-2px;border-radius:50%;
+  background:var(--lx-sapphire);animation:lx-dot .4s var(--lx-ease) both;
+}
+@media (hover:hover){html[data-theme] body .bottom-nav .navbtn:not(.active):hover svg{transform:translateY(-1px)}}
+html body .bottom-nav .navbtn:active svg{transform:scale(.9)}
+
+/* ---------- 12. Sheets, menu drawer, banners ---------- */
+html body .sheet{border-radius:28px 28px 0 0;background:var(--sheet-bg);box-shadow:var(--shadow-lg);border:1px solid var(--border);border-bottom:0}
+html body .sheet-handle{width:38px;height:4px;border-radius:4px;background:var(--border-strong);opacity:.8}
+html body .sheet-scrim,html body .site-menu-backdrop{background:rgba(7,13,26,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+html body .site-menu-drawer{border-left:1px solid var(--border)!important;box-shadow:var(--shadow-lg)}
+html body .site-menu-nav-item{
+  border:1px solid var(--border)!important;border-radius:18px;background:var(--card)!important;
+  transition:border-color .3s var(--lx-ease),transform .2s var(--lx-ease),background-color .3s var(--lx-ease);
+}
+@media (hover:hover){
+  html body .site-menu-nav-item:hover{background:var(--card-2)!important;color:var(--text)!important;border-color:var(--border-strong)!important}
+  html body .site-menu-nav-item:hover *{color:inherit!important}
+  html body .site-menu-nav-item:hover .site-menu-nav-icon{background:var(--card-2)!important;color:var(--lx-sapphire)!important}
+}
+html body .site-menu-nav-item:active{transform:scale(.985)}
+html body .site-menu-section-label{font-size:12px;font-weight:500;letter-spacing:.01em;text-transform:none;color:var(--text-3)}
+
+html body :is(.toast,.install-banner,.update-banner,.retry-banner,.home-chat-banner){
+  border-radius:20px!important;border:1px solid var(--border)!important;
+  box-shadow:var(--shadow-lg)!important;font-size:14px;font-weight:500;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+html body :is(.update-banner,.retry-banner,.install-banner) button{
+  border-radius:999px!important;font-weight:600;font-size:13.5px;letter-spacing:.005em;
+}
+
+/* Home closing panel and footer */
+html body #screen-home .home-bottom-hero{
+  border-radius:var(--lx-r-lg);border:1px solid var(--border)!important;box-shadow:var(--shadow-sm);margin-top:56px;padding:22px;
+}
+html body .home-site-footer{margin-top:44px;padding-bottom:12px}
+html body .home-site-footer p{font-size:12.5px;line-height:1.7;color:var(--text-3);max-width:32em;margin-inline:auto}
+html body .home-site-footer nav a{color:var(--text-2)!important;font-size:12.5px}
+
+/* Skeletons: slower, softer shimmer */
+html body :is(.hub-card-skeleton,.skeleton,[class*="skeleton"]){border-radius:var(--lx-r-lg)}
+
+/* ---------- 13. Splash ---------- */
+@keyframes sa-splash-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.975);opacity:.86}}
+html body #app-splash img{animation-duration:2.4s!important}
+html body #app-splash .sa-splash-title{font-family:var(--lx-serif);font-weight:500;font-size:21px;letter-spacing:-.01em}
+
+/* ---------- 14. Motion: one entrance, then stillness ---------- */
+@keyframes lx-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes lx-dot{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  html body.app-ready #screen-home .screen-fixed header{animation:lx-rise .8s var(--lx-ease) both}
+  html body.app-ready #screen-home .search-mini{animation:lx-rise .8s .08s var(--lx-ease) both}
+  html body.app-ready #screen-home .home-filter-row{animation:lx-rise .8s .14s var(--lx-ease) both}
+  html body.app-ready #screen-home .stats-wrap{animation:lx-rise .8s .2s var(--lx-ease) both}
+}
+@media (prefers-reduced-motion:reduce){
+  html body *,html body *::before,html body *::after{
+    animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;
+  }
+}
+
+/* ---------- 15. Focus: always visible, never loud ---------- */
+html body :focus-visible{outline:2px solid var(--lx-sapphire)!important;outline-offset:3px;border-radius:inherit}
+html body .search-inner :focus-visible{outline:none!important}

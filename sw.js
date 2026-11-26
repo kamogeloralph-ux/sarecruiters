@@ -8,7 +8,7 @@
  */
 // Change this version whenever the deployed app shell or bundled assets change.
 // The app uses the installing worker to show an explicit update banner.
-const VERSION = 'sa-recruiters-directory-cvcard4';
+const VERSION = 'sa-recruiters-directory-luxe1';
 const CACHE_NAME = VERSION + '-runtime';
 const PRECACHE_URLS = [
   '/',
@@ -16,6 +16,7 @@ const PRECACHE_URLS = [
   '/manifest.json',
   '/styles.css',
   '/mono.css',
+  '/luxe.css',
   '/static-pages.css',
   '/app.bundle.min.js',
   '/vendor/supabase.min.js',
