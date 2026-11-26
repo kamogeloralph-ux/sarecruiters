@@ -48,3 +48,21 @@ test('committed startup snapshots exclude candidate profiles', async () => {
   assert.equal(Object.hasOwn(snapshot, 'pool_candidates'), false);
   assert.equal(snapshot.counts.candidates, 0);
 });
+
+import { isGenericCompanyLabel, posterCapFromEnv, DEFAULT_MAX_PER_POSTER } from './vacancy-policy.mjs';
+
+test('the snapshot filter and the delete job share one default cap (it used to be 50 vs 250-500)', () => {
+  assert.equal(DEFAULT_MAX_PER_POSTER, 500);
+  assert.deepEqual(posterCapFromEnv({}), { cap: 500, companyCap: 500 });
+  assert.deepEqual(posterCapFromEnv({ MAX_PER_POSTER: '1000', MAX_PER_COMPANY: '200' }), { cap: 1000, companyCap: 200 });
+  assert.equal(posterCapFromEnv({ MAX_PER_POSTER: 'abc' }).cap, 500);
+  const rows = Array.from({ length: 120 }, (_, i) => ({ id: `r${i}`, company: 'Big Retailer', created_at: `2026-09-01T00:00:${String(i % 60).padStart(2, '0')}` }));
+  assert.equal(filterLiveVacancies(rows, { now: new Date('2026-09-30') }).length, 120, 'no longer trimmed to 50');
+});
+
+test('placeholder company names are not treated as one employer', () => {
+  assert.equal(isGenericCompanyLabel('private advertiser'), true);
+  assert.equal(isGenericCompanyLabel('pick n pay'), false);
+  const rows = Array.from({ length: 6 }, (_, i) => ({ id: `p${i}`, company: 'Private Advertiser', created_at: `2026-09-0${i + 1}` }));
+  assert.equal(applyPosterCaps(rows, 2).length, 6);
+});

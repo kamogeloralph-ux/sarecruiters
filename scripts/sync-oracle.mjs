@@ -24,6 +24,7 @@
 
 import { pathToFileURL } from 'node:url';
 import { isStaleVacancy } from './vacancy-freshness.mjs';
+import { envInt } from './scrape-limits.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -32,12 +33,12 @@ const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.ORACLE_PAGE_SIZE
 const DETAIL_CONCURRENCY = Math.min(Math.max(Number.parseInt(process.env.ORACLE_DETAIL_CONCURRENCY || '3', 10), 1), 6);
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.ORACLE_REQUEST_TIMEOUT_MS || '60000', 10);
 const FETCH_ATTEMPTS = Number.parseInt(process.env.ORACLE_FETCH_ATTEMPTS || '3', 10);
-const MAX_JOBS = Math.min(Math.max(Number.parseInt(process.env.ORACLE_MAX_JOBS || '500', 10) || 500, 250), 500);
+const MAX_JOBS = envInt(process.env.ORACLE_MAX_JOBS, 500, { min: 1, max: 5000 });
 // Employers may only list their 500 most recent vacancies (see
 // scripts/enforce-vacancy-caps.mjs, which enforces this DB-wide as a
 // safety net). Sorting + trimming here too means we never fetch job
 // details for postings we'd just delete again afterwards.
-const MAX_PER_EMPLOYER = Math.min(Math.max(Number.parseInt(process.env.ORACLE_MAX_PER_EMPLOYER || '500', 10) || 500, 250), 500);
+const MAX_PER_EMPLOYER = envInt(process.env.ORACLE_MAX_PER_EMPLOYER, 500, { min: 1, max: 5000 });
 const DRY_RUN = /^(1|true|yes)$/i.test(process.env.DRY_RUN || '');
 const DEBUG_RAW = /^(1|true|yes)$/i.test(process.env.DEBUG_RAW || '');
 const USER_AGENT = 'SA-Recruiters-Oracle-Sync/1.0 (+https://sa-recruiters.co.za/)';

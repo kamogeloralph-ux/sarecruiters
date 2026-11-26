@@ -27,6 +27,8 @@
 //  created_at) are kept and everything older is deleted. Safe to run
 //  repeatedly — posters under the cap are left alone.
 //
+//  Default cap is 500 (DEFAULT_MAX_PER_POSTER in vacancy-policy.mjs); the old header text said 50.
+//
 //  Usage:
 //    npm run enforce:vacancy-caps            # delete + print summary
 //    DRY_RUN=1 npm run enforce:vacancy-caps  # report only, delete nothing
@@ -39,13 +41,13 @@
 
 import { pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
+import { posterCapFromEnv, isGenericCompanyLabel } from './vacancy-policy.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DRY_RUN = /^(1|true|yes)$/i.test(process.env.DRY_RUN || '');
 const PAGE_SIZE = 1000;
-const CAP = Math.min(Math.max(Number.parseInt(process.env.MAX_PER_POSTER || '500', 10) || 500, 250), 500);
-const COMPANY_CAP = Math.min(Math.max(Number.parseInt(process.env.MAX_PER_COMPANY || String(CAP), 10) || CAP, 250), 500);
+const { cap: CAP, companyCap: COMPANY_CAP } = posterCapFromEnv();
 
 // agency_id values that don't refer to a real agency row — used by
 // scrapers/sync scripts when a vacancy has no specific poster.
@@ -141,7 +143,8 @@ async function run() {
       if (row.agency_id && !AGENCY_SENTINELS.has(row.agency_id)) return null;
       if (row.employer_id) return null;
       const normalized = normalizeCompanyName(row.company);
-      return normalized || null;
+      // "Private Advertiser" / "Confidential" are placeholders for many employers, not one.
+      return normalized && !isGenericCompanyLabel(normalized) ? normalized : null;
     },
     COMPANY_CAP,
   );

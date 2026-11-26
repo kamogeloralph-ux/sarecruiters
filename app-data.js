@@ -724,16 +724,18 @@ export async function getGeneralVacancyCount() {
 // DEDICATED_FOLDERS in Cloudflare-worker/worker.js) with 5 small indexed
 // count queries instead of one big row fetch.
 export async function getDedicatedVacancyCounts() {
-  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], bizcommunity: ['bizcommunity'], remotive: ['remotive','realworkfromanywhere','himalayas-rss'] };
+  var folders = { himalayas: ['himalayas'], adzuna: ['adzuna'], retail: ['retail','shoprite','picknpay','woolworths','truworths','spar'], bizcommunity: ['bizcommunity'], remotive: ['remotive','realworkfromanywhere','himalayas-rss','weworkremotely','remote'] };
   var out = { himalayas: 0, adzuna: 0, retail: 0, bizcommunity: 0, remotive: 0 };
   return null;
 }
 export function isDedicatedVacancySource(sourceType) {
-  return ['himalayas', 'adzuna', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'bizcommunity', 'remotive', 'realworkfromanywhere', 'himalayas-rss', 'remote'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
+  return ['himalayas', 'adzuna', 'retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar', 'career_board', 'bizcommunity', 'remotive', 'realworkfromanywhere', 'himalayas-rss', 'weworkremotely', 'remote'].indexOf(String(sourceType || '').toLowerCase()) !== -1;
 }
 export function isGeneralDirectoryVacancy(v) {
-  var feedAgencies = ['himalayas-rss','remotive','realworkfromanywhere','weworkremotely','bizcommunity-sa','govposts','govposts-sa','topjobseeker','topjobseeker-sa','myjobmag'];
-  return !!v && !v.employer_id && !isDedicatedVacancySource(v.source_type) && !isDedicatedVacancySource(v.ats_feed_id) && feedAgencies.indexOf(String(v.agency_id || '')) === -1 && String(v.id || '').indexOf('ats_') !== 0;
+  // Job-board ATS feeds (TopJob Seeker, GovPosts, MyJobMag...) are General vacancies. They used to be
+  // excluded here by agency id and by the 'ats_' id prefix although no folder existed for them, so
+  // they were counted but never listed anywhere. Remote feeds are dedicated and live in Remote jobs.
+  return !!v && !v.employer_id && !isDedicatedVacancySource(v.source_type) && !isDedicatedVacancySource(v.ats_feed_id);
 }
 export function hasAssignedAgency(v) {
   // Dedicated external sources (Himalayas, Adzuna, retail feeds) must
@@ -850,7 +852,7 @@ export var DEDICATED_VACANCY_FOLDER_SOURCES = {
   adzuna: ['adzuna'],
   retail: ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'],
   bizcommunity: ['bizcommunity'],
-  remotive: ['remotive', 'realworkfromanywhere', 'himalayas-rss']
+  remotive: ['remotive', 'realworkfromanywhere', 'himalayas-rss', 'weworkremotely', 'remote']
 };
 // Each dedicated folder (Himalayas, Adzuna, Government, Retail,
 // Learnerships) used to be a client-side filter over the fully-preloaded

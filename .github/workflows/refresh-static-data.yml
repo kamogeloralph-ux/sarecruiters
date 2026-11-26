@@ -24,12 +24,16 @@ env:
   RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
   OPS_ALERT_EMAIL: ${{ secrets.OPS_ALERT_EMAIL }}
   EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-  ADZUNA_PAGES: "3"
-  HIMALAYAS_PAGES: "5"
+  # Volume knobs. Leave the repository variables unset to use the defaults in each script
+  # (Adzuna 70 calls/run, Himalayas 25 pages/run, Jooble 30 requests/run). Raise them only if
+  # the provider plan allows it; see docs/vacancy-supply-audit-2026-11-26.md.
+  ADZUNA_MAX_CALLS: ${{ vars.ADZUNA_MAX_CALLS }}
+  ADZUNA_MAX_VACANCIES: ${{ vars.ADZUNA_MAX_VACANCIES }}
+  HIMALAYAS_PAGES: ${{ vars.HIMALAYAS_PAGES }}
+  JOOBLE_MAX_REQUESTS: ${{ vars.JOOBLE_MAX_REQUESTS }}
   ORACLE_ONLY: ""
   RETAIL_PAGE_SIZE: "20"
   RETAIL_DETAIL_CONCURRENCY: "4"
-  INDEED_ENABLED: ${{ vars.INDEED_ENABLED }}
 
 jobs:
   refresh:
@@ -84,9 +88,6 @@ jobs:
           run_source adzuna npm run sync:adzuna || true
           # Jooble only runs once the JOOBLE_API_KEY secret exists (free key: 100 requests/day).
           if [ -n "${JOOBLE_API_KEY:-}" ]; then run_source jooble npm run sync:jooble || true; fi
-          # Indeed's public RSS feed no longer works (it has never produced a row),
-          # so it is off by default. Set repository variable INDEED_ENABLED=true to retry it.
-          if [ "${INDEED_ENABLED:-}" = "true" ]; then run_source indeed npm run sync:indeed || true; fi
           run_source himalayas npm run sync:himalayas || true
           run_source oracle npm run sync:oracle || true
           run_source bizcommunity npm run sync:bizcommunity || true
@@ -101,6 +102,30 @@ jobs:
         run: |
           export RUN_STARTED_AT="$(cat refresh-started-at.txt)"
           npm run reconcile:vacancies
+      - name: Sync ATS feeds (one Worker request per feed)
+        # TopJob Seeker, GovPosts, MyJobMag, We Work Remotely... live in Cloudflare D1. Each feed is
+        # synced in its own request so it gets its own Worker subrequest budget instead of sharing
+        # one invocation with the snapshot publish. A failing feed never fails the refresh; its
+        # result is visible below and in the yield report.
+        if: always()
+        continue-on-error: true
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WORKER_URL: "https://sarecruiters-uploader.kamogeloralph.workers.dev"
+        shell: bash
+        run: |
+          set -uo pipefail
+          if [[ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then echo "::warning::No service key; skipping ATS feed sync"; exit 0; fi
+          feeds="$(curl -sS --max-time 60 -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" "${WORKER_URL}/api/ats/status" | jq -r '.feeds[]? | select(.is_active == 1 and .mode == "pull") | .id' 2>/dev/null || true)"
+          if [[ -z "$feeds" ]]; then echo "::warning::No ATS feeds listed (is the Worker deployed with /api/ats/status?)"; exit 0; fi
+          for id in $feeds; do
+            echo "--- ATS feed $id ---"
+            curl -sS --max-time 150 --retry 2 --retry-delay 5 -X POST \
+              -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+              "${WORKER_URL}/api/ats/sync?feed=${id}" || echo "::warning::ATS feed ${id} request failed"
+            echo
+            sleep 2
+          done
       - name: Publish refreshed vacancies to Cloudflare
         if: always()
         env:
@@ -120,6 +145,12 @@ jobs:
       # Public inventory is mirrored by the scheduled Cloudflare Worker into
       # D1 and published to R2. Do not export or commit a full Supabase table
       # snapshot from Actions; browsers no longer serve that artifact.
+      - name: Report vacancy yield per source
+        if: always()
+        continue-on-error: true
+        env:
+          WORKER_URL: "https://sarecruiters-uploader.kamogeloralph.workers.dev"
+        run: node scripts/source-yield-report.mjs
       - name: Report persistent scraper failures
         if: always()
         continue-on-error: true

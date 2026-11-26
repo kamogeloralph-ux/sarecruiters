@@ -2,12 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 import { pathToFileURL } from 'node:url';
 import * as cheerio from 'cheerio';
 import { isStaleVacancy } from './vacancy-freshness.mjs';
+import { envInt } from './scrape-limits.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const REQUEST_TIMEOUT_MS = parsePositiveInt(process.env.SCRAPE_REQUEST_TIMEOUT_MS, 30_000);
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersTakealotSync/1.0 (+https://sa-recruiters.co.za)';
-const MAX_VACANCIES = Math.min(Math.max(parsePositiveInt(process.env.TAKEALOT_MAX_VACANCIES, 500), 250), 500);
+const MAX_VACANCIES = envInt(process.env.TAKEALOT_MAX_VACANCIES, 500, { min: 1, max: 5000 });
 const BOARDS = [
   { key: 'takealotcom', label: 'takealot.com' },
   { key: 'takealotgroup', label: 'Takealot Group' },

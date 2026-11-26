@@ -2,11 +2,12 @@ import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
 import { isStaleVacancy } from './vacancy-freshness.mjs';
+import { envInt } from './scrape-limits.mjs';
 
 export const BIZCOMMUNITY_RSS_URL = 'https://www.bizcommunity.com/rssjobs.aspx?l=196&c=11&pi=999&sm=3';
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.SCRAPE_REQUEST_TIMEOUT_MS || '30000', 10);
 const USER_AGENT = process.env.SCRAPER_USER_AGENT || 'SARecruitersBizcommunitySync/1.0 (+https://sa-recruiters.co.za)';
-const MAX_VACANCIES = Math.min(Math.max(Number.parseInt(process.env.BIZCOMMUNITY_MAX_VACANCIES || '500', 10) || 500, 250), 500);
+const MAX_VACANCIES = envInt(process.env.BIZCOMMUNITY_MAX_VACANCIES, 500, { min: 1, max: 5000 });
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY

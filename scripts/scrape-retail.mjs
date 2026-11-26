@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
 import { isStaleVacancy } from './vacancy-freshness.mjs';
+import { envInt } from './scrape-limits.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -18,7 +19,7 @@ const BOXER_JOB_PREFIX = '/candidateapp/Jobs/View/';
 const CASHBUILD_BASE = 'https://careers-page.com';
 const CASHBUILD_SLUG = 'cashbuild-careers';
 const CASHBUILD_SEARCH = `${CASHBUILD_BASE}/api/v1.0/c/${CASHBUILD_SLUG}/jobs/`;
-const MAX_VACANCIES = Math.min(Math.max(Number.parseInt(process.env.RETAIL_MAX_VACANCIES || '500', 10), 250), 500);
+const MAX_VACANCIES = envInt(process.env.RETAIL_MAX_VACANCIES, 500, { min: 1, max: 5000 });
 const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.RETAIL_PAGE_SIZE || '20', 10), 1), 20);
 const DETAIL_CONCURRENCY = Math.min(Math.max(Number.parseInt(process.env.RETAIL_DETAIL_CONCURRENCY || '4', 10), 1), 8);
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.RETAIL_REQUEST_TIMEOUT_MS || '60000', 10);

@@ -1894,7 +1894,7 @@ export function renderAllVacanciesList() {
   var isAdzunaVacancy = function(v){ return v.source_type === 'adzuna' || String(v.id || '').indexOf('adzuna-') === 0; };
   var isRetailVacancy = function(v){ return ['retail','shoprite','picknpay','woolworths','truworths','spar'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/i.test(String(v.id || '')); };
   var isBizcommunityVacancy = function(v){ return v.source_type === 'bizcommunity' || String(v.id || '').indexOf('bizcommunity-') === 0; };
-  var isRemotiveVacancy = function(v){ return ['remotive','remote','realworkfromanywhere','himalayas-rss'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /ats_(remotive|realworkfromanywhere|himalayas-rss)_/i.test(String(v.id || '')); };
+  var isRemotiveVacancy = function(v){ return ['remotive','remote','realworkfromanywhere','himalayas-rss'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /ats_(remotive|realworkfromanywhere|himalayas-rss|weworkremotely)_/i.test(String(v.id || '')); };
   var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isRetailVacancy(v) || isBizcommunityVacancy(v) || isRemotiveVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();

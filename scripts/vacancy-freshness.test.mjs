@@ -103,3 +103,16 @@ test('isStaleVacancy: closing date wins, then posted text from notes', () => {
     'no signals at all → keep (conservative)',
   );
 });
+
+test('a row the source re-confirmed recently is not deleted for its first-seen date', () => {
+  const base = { closing_date: '', notes: '', created_at: '2026-06-01T00:00:00Z', source_type: 'adzuna' };
+  assert.equal(isStaleVacancy(base, NOW).stale, true, 'nothing recent confirms it: created_at fallback still applies');
+  assert.equal(isStaleVacancy({ ...base, source_checked_at: '2026-09-19T06:00:00Z' }, NOW).stale, false, 'verified 6h ago: live');
+  assert.equal(isStaleVacancy({ ...base, last_verified_at: '2026-09-01T00:00:00Z' }, NOW).stale, true, 'verified too long ago');
+});
+
+test('a real posted date and a past closing date still win over a recent verification', () => {
+  const verified = { source_checked_at: '2026-09-19T06:00:00Z', created_at: '2026-09-01T00:00:00Z', source_type: 'adzuna' };
+  assert.equal(isStaleVacancy({ ...verified, notes: 'Posted 3 Feb 2021' }, NOW).stale, true);
+  assert.equal(isStaleVacancy({ ...verified, closing_date: '2026-09-10' }, NOW).stale, true);
+});

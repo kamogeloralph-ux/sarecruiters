@@ -79,3 +79,88 @@ test('returns an empty array for a malformed or empty payload', () => {
   assert.deepEqual(mapAdzunaResults({}), []);
   assert.deepEqual(mapAdzunaResults(null), []);
 });
+
+import { collectAdzunaJobs, adzunaSearchUrl, parseAdzunaCategories } from './sync-adzuna.mjs';
+
+const NOW_ENGINE = new Date('2026-11-26T00:00:00Z');
+const fakeJob = (id) => ({ id, title: `Job ${id}`, redirect_url: `https://www.adzuna.co.za/land/ad/${id}`, created: '2026-11-20T00:00:00Z' });
+// Builds a fake Adzuna API: each category has `total` listings, served `perPage` at a time.
+function fakeApi(totals, perPage = 50) {
+  const seen = [];
+  return {
+    seen,
+    fetchSearch: async ({ category, page }) => {
+      seen.push(`${category}#${page}`);
+      const total = totals[category] ?? 0;
+      const start = (page - 1) * perPage;
+      const n = Math.max(0, Math.min(perPage, total - start));
+      return { count: total, results: Array.from({ length: n }, (_, i) => fakeJob(`${category}-${start + i}`)) };
+    },
+  };
+}
+
+test('builds a date-sorted, category-filtered search URL', () => {
+  const url = new URL(adzunaSearchUrl({ country: 'za', appId: 'id', appKey: 'key', page: 2, perPage: 50, category: 'it-jobs', maxDaysOld: 30 }));
+  assert.equal(url.pathname, '/v1/api/jobs/za/search/2');
+  assert.equal(url.searchParams.get('category'), 'it-jobs');
+  assert.equal(url.searchParams.get('sort_by'), 'date');
+  assert.equal(url.searchParams.get('max_days_old'), '30');
+  assert.equal(url.searchParams.get('results_per_page'), '50');
+});
+
+test('parses category tags and ignores malformed entries', () => {
+  assert.deepEqual(parseAdzunaCategories({ results: [{ tag: 'it-jobs' }, { tag: 'it-jobs' }, { tag: 'Bad Tag!' }, {}] }), ['it-jobs']);
+  assert.deepEqual(parseAdzunaCategories(null), []);
+});
+
+test('a call budget is spread round-robin so every category is reached before any goes deep', async () => {
+  const api = fakeApi({ a: 500, b: 500, c: 500 });
+  const result = await collectAdzunaJobs({ categories: ['a', 'b', 'c'], fetchSearch: api.fetchSearch, maxCalls: 5, delayMs: 0, now: NOW_ENGINE });
+  assert.deepEqual(api.seen, ['a#1', 'b#1', 'c#1', 'a#2', 'b#2']);
+  assert.equal(result.calls, 5);
+  assert.equal(result.stopReason, 'call budget reached');
+  assert.equal(result.jobs.length, 250);
+});
+
+test('a single run can now collect far more than the old 150-vacancy ceiling', async () => {
+  const api = fakeApi({ a: 400, b: 400, c: 400 });
+  const result = await collectAdzunaJobs({ categories: ['a', 'b', 'c'], fetchSearch: api.fetchSearch, maxCalls: 70, delayMs: 0, now: NOW_ENGINE });
+  // 3 categories x 6 pages per category x 50 = 900 (old ceiling: 150 for the whole run)
+  assert.equal(result.jobs.length, 900);
+  assert.equal(result.stopReason, 'completed');
+});
+
+test('a category stops once its total is read, and duplicate ids are collapsed', async () => {
+  const fetchSearch = async () => ({ count: 2, results: [fakeJob('same'), fakeJob('same'), fakeJob('other')] });
+  const result = await collectAdzunaJobs({ categories: ['a'], fetchSearch, maxCalls: 10, perPage: 50, delayMs: 0, now: NOW_ENGINE });
+  assert.equal(result.calls, 1);
+  assert.deepEqual(result.jobs.map((j) => j.id).sort(), ['adzuna-other', 'adzuna-same']);
+});
+
+test('HTTP 429 stops the run but keeps what was collected; a bad category does not stop it', async () => {
+  let n = 0;
+  const fetchSearch = async ({ category }) => {
+    n += 1;
+    if (category === 'bad') { const e = new Error('Adzuna returned HTTP 400'); e.status = 400; throw e; }
+    if (n >= 4) { const e = new Error('Adzuna returned HTTP 429'); e.status = 429; throw e; }
+    return { count: 100, results: [fakeJob(`${category}-${n}`)] };
+  };
+  const result = await collectAdzunaJobs({ categories: ['a', 'bad', 'b', 'c'], fetchSearch, maxCalls: 50, perPage: 1, delayMs: 0, now: NOW_ENGINE });
+  assert.equal(result.rateLimited, true);
+  assert.equal(result.failures, 2);
+  assert.equal(result.jobs.length, 2);
+  assert.ok(result.categories.find((c) => c.tag === 'bad').failed);
+});
+
+test('rejected credentials are fatal and stop immediately', async () => {
+  const fetchSearch = async () => { const e = new Error('Adzuna returned HTTP 401'); e.status = 401; throw e; };
+  const result = await collectAdzunaJobs({ categories: ['a', 'b'], fetchSearch, maxCalls: 10, delayMs: 0, now: NOW_ENGINE });
+  assert.equal(result.fatal, true);
+  assert.equal(result.calls, 1);
+});
+
+test('the vacancy cap trims the final result', async () => {
+  const api = fakeApi({ a: 500 });
+  const result = await collectAdzunaJobs({ categories: ['a'], fetchSearch: api.fetchSearch, maxCalls: 10, maxVacancies: 60, delayMs: 0, now: NOW_ENGINE });
+  assert.equal(result.jobs.length, 60);
+});

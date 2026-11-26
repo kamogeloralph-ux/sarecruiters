@@ -38,7 +38,7 @@ async function loadAllVacancies() {
   for (;;) {
     const { data, error } = await supabase
       .from('vacancies')
-      .select('id,title,link,notes,closing_date,source_type,created_at')
+      .select('id,title,link,notes,closing_date,source_type,created_at,source_checked_at,last_verified_at')
       .order('created_at', { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
     if (error) throw error;
@@ -66,6 +66,8 @@ async function run() {
       notes: row.notes,
       created_at: row.created_at,
       source_type: row.source_type,
+      source_checked_at: row.source_checked_at,
+      last_verified_at: row.last_verified_at,
     }, now);
     if (check.stale) {
       toDelete.push({ id: row.id, title: row.title, source: row.source_type || 'unknown', reason: check.reason });

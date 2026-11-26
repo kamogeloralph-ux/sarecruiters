@@ -2,11 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import { pathToFileURL } from 'node:url';
 import * as cheerio from 'cheerio';
 import { isStaleVacancy } from './vacancy-freshness.mjs';
+import { envInt } from './scrape-limits.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const REQUEST_TIMEOUT_MS = Number.parseInt(process.env.JONSSON_REQUEST_TIMEOUT_MS || '30000', 10);
-const MAX_VACANCIES = Math.min(Math.max(Number.parseInt(process.env.JONSSON_MAX_VACANCIES || '200', 10), 1), 500);
+const MAX_VACANCIES = envInt(process.env.JONSSON_MAX_VACANCIES, 200, { min: 1, max: 5000 });
 const BOARD = 'jonssonworkwear';
 const API_URL = `https://boards-api.greenhouse.io/v1/boards/${BOARD}/jobs?content=true`;
 const USER_AGENT = 'SA-RecruitersJonssonWorkwearSync/1.0 (+https://sa-recruiters.co.za)';

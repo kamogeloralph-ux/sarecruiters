@@ -122,14 +122,27 @@ export function extractPostedText(job) {
   return '';
 }
 
+// A row the source itself confirmed within this window is, by definition, still live.
+export const RECENTLY_VERIFIED_HOURS = 72;
+
+export function wasRecentlyVerified(job, now = new Date()) {
+  const stamp = Date.parse(job?.source_checked_at || job?.last_verified_at || '');
+  return Number.isFinite(stamp) && now.getTime() - stamp >= 0 && now.getTime() - stamp <= RECENTLY_VERIFIED_HOURS * 3_600_000;
+}
+
 export function isStaleVacancy(job, now = new Date()) {
   if (closingDateIsPast(job.closing_date, now)) {
     return { stale: true, reason: 'closing date passed' };
   }
   const postedText = extractPostedText(job);
+  // created_at is only "when we first saw it". Using it as the posting date for a listing
+  // the source re-confirmed in the last 72h deleted live vacancies after 30-60 days, and the
+  // next scrape re-created them as brand-new (resetting created_at, and re-triggering alerts).
+  // A real posted date in the listing still always applies.
+  const fallbackDate = !parseDateString(postedText) && wasRecentlyVerified(job, now) ? null : job.created_at;
   if (postingIsTooOld({
     postedText,
-    fallbackDate: job.created_at,
+    fallbackDate,
     sourceType: job.source_type,
     now,
   })) {

@@ -1,14 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 import { pathToFileURL } from 'node:url';
 import { isStaleVacancy } from './vacancy-freshness.mjs';
+import { envInt } from './scrape-limits.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const HIMALAYAS_COUNTRY = process.env.HIMALAYAS_COUNTRY || 'ZA';
-const MAX_VACANCIES = Math.min(Math.max(Number.parseInt(process.env.HIMALAYAS_MAX_VACANCIES || '500', 10) || 500, 250), 500);
-const PAGE_COUNT = Math.min(Number.parseInt(process.env.HIMALAYAS_PAGES || '5', 10), MAX_VACANCIES);
-const PAGE_SIZE = Math.min(Math.max(Number.parseInt(process.env.HIMALAYAS_PAGE_SIZE || '20', 10) || 20, 1), 20);
-const REQUEST_DELAY_MS = Number.parseInt(process.env.HIMALAYAS_REQUEST_DELAY_MS || '1500', 10);
+// The old defaults (5 pages x 20 = 100 vacancies per run, clamped into 250-500) meant the
+// app held roughly 100-170 Himalayas jobs. 25 pages x 20 = up to 500 per run by default;
+// the run stops early when the API has no more results or answers HTTP 429.
+const MAX_VACANCIES = envInt(process.env.HIMALAYAS_MAX_VACANCIES, 1_000, { min: 1, max: 5_000 });
+const PAGE_SIZE = envInt(process.env.HIMALAYAS_PAGE_SIZE, 20, { min: 1, max: 20 });
+const PAGE_COUNT = envInt(process.env.HIMALAYAS_PAGES, 25, { min: 1, max: 250 });
+const REQUEST_DELAY_MS = envInt(process.env.HIMALAYAS_REQUEST_DELAY_MS, 1_500, { min: 0, max: 60_000 });
 const API_URL = 'https://himalayas.app/jobs/api/search';
 
 const DEBUG_RAW = /^(1|true|yes)$/i.test(process.env.DEBUG_RAW || '');
@@ -110,7 +114,11 @@ async function fetchPage(page) {
   url.searchParams.set('page', String(page));
   const response = await fetch(url, { headers: { accept: 'application/json' } });
   const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(`Himalayas returned HTTP ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(`Himalayas returned HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
   return body;
 }
 
@@ -143,32 +151,45 @@ async function syncPage(page, remaining = MAX_VACANCIES) {
     try {
       console.log(`[himalayas] page ${page}: fetching ${HIMALAYAS_COUNTRY}-eligible remote jobs (attempt ${attempt})`);
       const payload = await fetchPage(page);
+      const rawCount = Array.isArray(payload?.jobs) ? payload.jobs.length : 0;
       const mapped = mapHimalayasResults(payload).slice(0, remaining);
       const jobs = await upsertJobs(mapped);
-      console.log(`[himalayas] page ${page}: parsed ${mapped.length}, upserted ${jobs.length}`);
-      return jobs.length;
+      console.log(`[himalayas] page ${page}: ${rawCount} returned, parsed ${mapped.length}, upserted ${jobs.length}`);
+      return { upserted: jobs.length, rawCount };
     } catch (error) {
       lastError = error;
+      // A rate limit will not clear in 3 seconds; stop and keep what we have.
+      if (lastError?.status === 429) break;
       if (attempt < 2) await sleep(3000);
     }
   }
-  throw new Error(errorMessage(lastError));
+  const failure = new Error(errorMessage(lastError));
+  failure.status = lastError?.status;
+  throw failure;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (!supabase) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   let failures = 0;
   let processed = 0;
-  for (let page = 1; page <= PAGE_COUNT && processed < MAX_VACANCIES; page += 1) {
+  let pages = 0;
+  let stop = 'completed';
+  for (let page = 1; page <= PAGE_COUNT; page += 1) {
+    if (processed >= MAX_VACANCIES) { stop = 'vacancy cap reached'; break; }
     try {
-      const remaining = MAX_VACANCIES - processed;
-      const count = await syncPage(page, remaining);
-      processed += count;
+      const { upserted, rawCount } = await syncPage(page, MAX_VACANCIES - processed);
+      processed += upserted;
+      pages += 1;
+      if (rawCount < PAGE_SIZE) { stop = 'no more results from Himalayas'; break; }
     } catch (error) {
       failures += 1;
       console.error(`[himalayas] page ${page}: ${errorMessage(error)}`);
+      if (error?.status === 429) { stop = 'rate limited (HTTP 429)'; break; }
     }
     if (page < PAGE_COUNT) await sleep(REQUEST_DELAY_MS);
   }
-  if (failures) process.exitCode = 1;
+  console.log(`[himalayas] RESULT upserted=${processed} pages=${pages}/${PAGE_COUNT} failures=${failures} stop="${stop}"`);
+  // Unhealthy only when nothing was fetched or most pages failed; a partial run is
+  // still refreshed and the 72h source-stale window covers the gap.
+  if (processed === 0 || failures > Math.max(1, pages) / 2) process.exitCode = 1;
 }

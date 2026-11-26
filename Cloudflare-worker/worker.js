@@ -868,8 +868,14 @@ var STARTUP_DEDICATED_SOURCES = [
   "bizcommunity",
   "remotive",
   "realworkfromanywhere",
-  "himalayas-rss"
+  "himalayas-rss",
+  "remote",
+  "weworkremotely"
 ];
+// Public job-board feeds (agency_id of their agency_ats_feeds row). Their rows live in General /
+// Remote jobs; they must not occupy the 1,000-row startup window meant for real agency and
+// employer vacancies, because that window is ordered by created_at and ATS rows are always newest.
+var ATS_BOARD_AGENCY_IDS = ["himalayas-rss", "remotive", "realworkfromanywhere", "weworkremotely", "bizcommunity-sa", "govposts", "govposts-sa", "topjobseeker", "topjobseeker-sa", "myjobmag"];
 function supabaseRestUrl(env, table, params = {}) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
   for (const [key, value] of Object.entries(params))
@@ -1359,57 +1365,134 @@ function atsJobMatchesFilters(job, includes = [], excludes = []) {
 __name(atsJobMatchesFilters, "atsJobMatchesFilters");
 function atsBool(value) { return ["1", "true", "yes", "y"].includes(String(value || "").toLowerCase()); }
 __name(atsBool, "atsBool");
-async function upsertAtsVacancy(env, feed, job) {
-  const now = new Date().toISOString();
-  const id = `ats_${String(feed.id)}_${String(job.external_ref).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120)}`;
+// ---------------------------------------------------------------------------
+// ATS sync. What changed (docs/vacancy-supply-audit-2026-11-26.md):
+//  * Writes are batched (one D1 call per ATS_BATCH_SIZE rows instead of one per job). The old
+//    one-query-per-row loop shared a single Worker invocation with the snapshot publish, and
+//    this file already records production "Too many subrequests" failures.
+//  * Unchanged rows are not rewritten (changed-row predicate), which protects the D1 write quota.
+//  * Rows that disappear from a pull feed are removed. Previously this only happened for feeds of
+//    100 jobs or fewer, and nothing ever deleted ATS rows, so large feeds accumulated dead jobs.
+//  * An empty or blocked response never wipes a feed, and a feed that suddenly shrinks by more
+//    than 80% is reported instead of pruned.
+//  * Remote-by-default feeds (We Work Remotely) are filed as source_type "remote" so they appear
+//    in the Remote jobs folder; every other board feed appears under General.
+//  * WP Job Manager feeds (TopJob Seeker) return only 10 items unless posts_per_page is set.
+const ATS_LEGACY_REMOTE_FEEDS = ["remotive", "realworkfromanywhere", "himalayas-rss"];
+const ATS_BATCH_SIZE = 250;
+const ATS_DELETE_IN_CHUNK = 90;
+const ATS_FEED_TIMEOUT_MS = 25000;
+const ATS_SHRINK_GUARD_MIN_ROWS = 20;
+const ATS_SHRINK_GUARD_RATIO = 0.2;
+const ATS_CHANGED_COLUMNS = ["title", "company", "location", "closing_date", "notes", "link", "remote", "employment_type", "salary", "source_type"];
+function atsVacancyId(feed, job) {
+  return `ats_${String(feed.id)}_${String(job.external_ref).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120)}`;
+}
+__name(atsVacancyId, "atsVacancyId");
+function atsSourceType(feed) {
+  return ATS_LEGACY_REMOTE_FEEDS.includes(String(feed.id)) || atsBool(feed.remote_by_default) ? "remote" : "ats";
+}
+__name(atsSourceType, "atsSourceType");
+function prepareAtsUpsert(env, feed, job, nowIso) {
   const closing = atsDate(job.closing_date);
-  const notes = job.description || null;
-  const sql = `INSERT INTO vacancies (id, agency_id, title, company, location, closing_date, notes, link, remote, employment_type, salary, created_at, updated_at, source_type, external_ref, ats_feed_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(ats_feed_id, external_ref) WHERE external_ref IS NOT NULL DO UPDATE SET title=excluded.title, company=excluded.company, location=excluded.location, closing_date=excluded.closing_date, notes=excluded.notes, link=excluded.link, remote=excluded.remote, employment_type=excluded.employment_type, salary=excluded.salary, updated_at=excluded.updated_at, source_type=excluded.source_type`;
-  const sourceType = ["remotive", "realworkfromanywhere", "himalayas-rss"].includes(String(feed.id)) ? "remote" : "ats";
+  const sourceType = atsSourceType(feed);
   const isRemote = sourceType === "remote" || atsBool(job.remote);
-  await env.DB.prepare(sql).bind(id, feed.agency_id, job.title, job.company || feed.agency_name, job.location || null, closing || null, notes, job.link || null, isRemote ? 1 : 0, job.employment_type || null, job.salary || null, now, now, sourceType, job.external_ref, feed.id).run();
-  return id;
+  const changed = ATS_CHANGED_COLUMNS.map((column) => `${column} IS NOT excluded.${column}`).join(" OR ");
+  const sql = `INSERT INTO vacancies (id, agency_id, title, company, location, closing_date, notes, link, remote, employment_type, salary, created_at, updated_at, source_type, external_ref, ats_feed_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(ats_feed_id, external_ref) WHERE external_ref IS NOT NULL DO UPDATE SET title=excluded.title, company=excluded.company, location=excluded.location, closing_date=excluded.closing_date, notes=excluded.notes, link=excluded.link, remote=excluded.remote, employment_type=excluded.employment_type, salary=excluded.salary, updated_at=excluded.updated_at, source_type=excluded.source_type WHERE ${changed}`;
+  return env.DB.prepare(sql).bind(atsVacancyId(feed, job), feed.agency_id, job.title, job.company || feed.agency_name, job.location || null, closing || null, job.description || null, job.link || null, isRemote ? 1 : 0, job.employment_type || null, job.salary || null, nowIso, nowIso, sourceType, job.external_ref, feed.id);
+}
+__name(prepareAtsUpsert, "prepareAtsUpsert");
+async function upsertAtsVacancy(env, feed, job) {
+  await prepareAtsUpsert(env, feed, job, new Date().toISOString()).run();
+  return atsVacancyId(feed, job);
 }
 __name(upsertAtsVacancy, "upsertAtsVacancy");
+// WP Job Manager feeds (feed=job_feed) answer with 10 items unless posts_per_page is given.
+function atsFeedFetchUrl(feedUrl, env = {}) {
+  try {
+    const url = new URL(feedUrl);
+    if (url.searchParams.get("feed") === "job_feed" && !url.searchParams.has("posts_per_page")) {
+      const perPage = Math.min(Math.max(Number.parseInt(env.ATS_WPJM_PER_PAGE || "300", 10) || 300, 10), 1000);
+      url.searchParams.set("posts_per_page", String(perPage));
+    }
+    return url.toString();
+  } catch (_) {
+    return feedUrl;
+  }
+}
+__name(atsFeedFetchUrl, "atsFeedFetchUrl");
+// Decides which stored refs to delete after a successful pull. Never prunes on an empty/blocked
+// response, and refuses to prune when a sizeable feed shrinks by more than 80% in one run.
+function planAtsPrune(existingRefs, activeRefs, rawItemCount) {
+  const active = new Set(activeRefs);
+  const stale = (existingRefs || []).filter((ref) => !active.has(ref));
+  if (!rawItemCount) return { stale: [], skipped: "no items in response" };
+  if (stale.length && existingRefs.length >= ATS_SHRINK_GUARD_MIN_ROWS && active.size < existingRefs.length * ATS_SHRINK_GUARD_RATIO) {
+    return { stale: [], skipped: `feed shrank from ${existingRefs.length} to ${active.size}` };
+  }
+  return { stale, skipped: "" };
+}
+__name(planAtsPrune, "planAtsPrune");
 async function syncOneAtsFeed(env, feed) {
   if (!feed.feed_url) return { feed_id: feed.id, skipped: "missing feed URL", jobs: 0 };
-  const response = await fetch(feed.feed_url, { headers: { "user-agent": "SA-Recruiters-ATS-Sync/1.0" } });
+  const startedAt = new Date().toISOString();
+  const response = await fetch(atsFeedFetchUrl(feed.feed_url, env), { headers: { "user-agent": "SA-Recruiters-ATS-Sync/1.0" }, signal: AbortSignal.timeout(ATS_FEED_TIMEOUT_MS) });
   if (!response.ok) throw new Error(`ATS feed ${feed.id} returned HTTP ${response.status}`);
   const configuredIncludes = (() => { try { return JSON.parse(feed.include_terms || "[]"); } catch (_) { return []; } })();
   const configuredExcludes = (() => { try { return JSON.parse(feed.exclude_terms || "[]"); } catch (_) { return []; } })();
-  const jobs = parseAtsXml(await response.text()).filter((job) => atsJobMatchesFilters(job, configuredIncludes, configuredExcludes));
-  const active = [];
-  for (const job of jobs) { await upsertAtsVacancy(env, feed, job); active.push(job.external_ref); }
-  // Keep the stale-reference cleanup below D1's bound-variable limit. Large
-  // feeds still import and update successfully; their stale rows are left
-  // untouched until a smaller/dedicated cleanup run.
-  if (active.length && active.length <= 100) {
-    const placeholders = active.map(() => "?").join(",");
-    await env.DB.prepare(`UPDATE vacancies SET closing_date = ?, updated_at = ? WHERE ats_feed_id = ? AND external_ref NOT IN (${placeholders}) AND (closing_date IS NULL OR closing_date >= ?)`)
-      .bind(new Date().toISOString().slice(0, 10), new Date().toISOString(), feed.id, ...active, new Date().toISOString().slice(0, 10)).run();
-  } else if (jobs.length === 0) {
-    // A successful empty feed is valid, but a failed feed never reaches here.
-    await env.DB.prepare("UPDATE vacancies SET closing_date = ?, updated_at = ? WHERE ats_feed_id = ? AND (closing_date IS NULL OR closing_date >= ?)")
-      .bind(new Date().toISOString().slice(0, 10), new Date().toISOString(), feed.id, new Date().toISOString().slice(0, 10)).run();
+  const parsed = parseAtsXml(await response.text());
+  const byRef = new Map();
+  for (const job of parsed) {
+    if (atsJobMatchesFilters(job, configuredIncludes, configuredExcludes) && !byRef.has(job.external_ref)) byRef.set(job.external_ref, job);
   }
-  await env.DB.prepare("UPDATE agency_ats_feeds SET last_synced_at = ?, last_status = ? WHERE id = ?").bind(new Date().toISOString(), `ok:${jobs.length}`, feed.id).run();
-  return { feed_id: feed.id, jobs: jobs.length };
+  const jobs = [...byRef.values()];
+  const existing = await env.DB.prepare("SELECT external_ref FROM vacancies WHERE ats_feed_id = ? AND external_ref IS NOT NULL").bind(feed.id).all();
+  const existingRefs = (existing.results || []).map((row) => String(row.external_ref));
+  for (let i = 0; i < jobs.length; i += ATS_BATCH_SIZE) {
+    await env.DB.batch(jobs.slice(i, i + ATS_BATCH_SIZE).map((job) => prepareAtsUpsert(env, feed, job, startedAt)));
+  }
+  const plan = planAtsPrune(existingRefs, jobs.map((job) => String(job.external_ref)), parsed.length);
+  if (plan.stale.length) {
+    const statements = [];
+    for (let i = 0; i < plan.stale.length; i += ATS_DELETE_IN_CHUNK) {
+      const chunk = plan.stale.slice(i, i + ATS_DELETE_IN_CHUNK);
+      statements.push(env.DB.prepare(`DELETE FROM vacancies WHERE ats_feed_id = ? AND external_ref IN (${chunk.map(() => "?").join(",")})`).bind(feed.id, ...chunk));
+    }
+    for (let i = 0; i < statements.length; i += ATS_BATCH_SIZE) await env.DB.batch(statements.slice(i, i + ATS_BATCH_SIZE));
+  }
+  const status = `${plan.skipped && !parsed.length ? "warn" : "ok"}:${jobs.length}/${parsed.length} removed:${plan.stale.length}${plan.skipped ? ` (${plan.skipped})` : ""}`;
+  await env.DB.prepare("UPDATE agency_ats_feeds SET last_synced_at = ?, last_status = ? WHERE id = ?").bind(new Date().toISOString(), status, feed.id).run();
+  return { feed_id: feed.id, jobs: jobs.length, raw_items: parsed.length, removed: plan.stale.length, skipped_prune: plan.skipped || undefined };
 }
 __name(syncOneAtsFeed, "syncOneAtsFeed");
-async function syncAtsFeeds(env) {
-  const rows = await env.DB.prepare("SELECT id, agency_id, agency_name, feed_url, api_key_hash, include_terms, exclude_terms FROM agency_ats_feeds WHERE is_active = 1").all();
+// feedId: sync exactly that feed. maxFeeds: sync only the N least-recently-synced feeds, which
+// keeps a scheduled run small enough to share an invocation with other work.
+async function syncAtsFeeds(env, { feedId = "", maxFeeds = 0 } = {}) {
+  const rows = await env.DB.prepare("SELECT * FROM agency_ats_feeds WHERE is_active = 1 ORDER BY COALESCE(last_synced_at, '') ASC").all();
+  let feeds = (rows.results || []).filter((feed) => feed.feed_url);
+  if (feedId) feeds = feeds.filter((feed) => String(feed.id) === String(feedId));
+  if (maxFeeds > 0) feeds = feeds.slice(0, maxFeeds);
   const results = [];
-  for (const feed of rows.results || []) {
+  for (const feed of feeds) {
     try { results.push(await syncOneAtsFeed(env, feed)); }
     catch (error) { await env.DB.prepare("UPDATE agency_ats_feeds SET last_synced_at = ?, last_status = ? WHERE id = ?").bind(new Date().toISOString(), `error:${String(error.message || error).slice(0, 220)}`, feed.id).run(); results.push({ feed_id: feed.id, error: String(error.message || error) }); }
   }
   return results;
 }
 __name(syncAtsFeeds, "syncAtsFeeds");
+// Feed health for the operator: last result, and how many rows each feed currently holds.
+async function atsFeedStatus(env) {
+  const result = await env.DB.prepare("SELECT f.id AS id, f.agency_name AS name, f.is_active AS is_active, CASE WHEN f.feed_url IS NULL OR f.feed_url = '' THEN 'push' ELSE 'pull' END AS mode, f.last_synced_at AS last_synced_at, f.last_status AS last_status, (SELECT COUNT(*) FROM vacancies v WHERE v.ats_feed_id = f.id) AS rows_held FROM agency_ats_feeds f ORDER BY f.id").all();
+  return result.results || [];
+}
+__name(atsFeedStatus, "atsFeedStatus");
 function atsAuthMatches(request, env, querySecret = "") {
   const configured = env.ATS_SYNC_SECRET || env.ADMIN_SECRET || "";
   const bearer = request.headers.get("authorization") || "";
-  return Boolean(configured && ((querySecret && querySecret === configured) || bearer === `Bearer ${configured}`));
+  // The GitHub refresh workflow already authenticates to /api/sync-d1/internal with the Supabase
+  // service-role key, so it is accepted here too: no extra secret to configure for the ATS step.
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || "";
+  return Boolean((configured && ((querySecret && querySecret === configured) || bearer === `Bearer ${configured}`)) || (serviceKey && bearer === `Bearer ${serviceKey}`));
 }
 __name(atsAuthMatches, "atsAuthMatches");
 async function handleAtsPush(request, env, origin) {
@@ -1441,7 +1524,7 @@ async function loadD1StartupAggregates(env, dedicated) {
   const feedAgencyPlaceholders = feedAgencyIds.map(() => "?").join(",");
   const [general, generalPool, genericAts, dedicatedCount, employerCounts, total] = await env.DB.batch([
     env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL"),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND COALESCE(source_type, '') NOT IN (${placeholders}) AND COALESCE(ats_feed_id, '') NOT IN (${placeholders}) AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...dedicated, ...dedicated, ...feedAgencyIds),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND COALESCE(source_type, '') NOT IN (${placeholders}) AND COALESCE(ats_feed_id, '') NOT IN (${placeholders})`).bind(...dedicated, ...dedicated),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND source_type = 'ats' AND COALESCE(ats_feed_id, '') = '' AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...feedAgencyIds),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${placeholders})`).bind(...dedicated),
     env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id"),
@@ -1476,7 +1559,7 @@ async function loadStartupDataFromD1(env) {
     adzuna: ["adzuna"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     bizcommunity: ["bizcommunity"],
-    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss"]
+    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss", "weworkremotely", "remote"]
   };
 
   const [agenciesR, branchesR, vacanciesR, employersR, featuredVacanciesR, aggregates, folderCounts, provinceCounts] = await Promise.all([
@@ -1486,7 +1569,7 @@ async function loadStartupDataFromD1(env) {
     // employer-owned rows because the public Hiring Companies cards render
     // their vacancy lists from this startup payload. Employer postings may be
     // tagged with a dedicated source such as retail.
-    env.DB.prepare(`SELECT * FROM vacancies WHERE (((agency_id IS NOT NULL AND agency_id != 'general') AND employer_id IS NULL) OR employer_id IS NOT NULL) AND (employer_id IS NOT NULL OR source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE}`).bind(...dedicated).all(),
+    env.DB.prepare(`SELECT * FROM vacancies WHERE (((agency_id IS NOT NULL AND agency_id != 'general') AND employer_id IS NULL) OR employer_id IS NOT NULL) AND (employer_id IS NOT NULL OR source_type IS NULL OR source_type NOT IN (${dedicatedPlaceholders})) AND (employer_id IS NOT NULL OR ats_feed_id IS NULL OR COALESCE(agency_id, '') NOT IN (${ATS_BOARD_AGENCY_IDS.map(() => "?").join(",")})) ORDER BY created_at DESC LIMIT ${STARTUP_VACANCY_PAGE_SIZE}`).bind(...dedicated, ...ATS_BOARD_AGENCY_IDS).all(),
     env.DB.prepare("SELECT * FROM employers ORDER BY created_at DESC").all(),
     // Older D1 mirrors may not have the optional featured columns yet. Keep
     // startup healthy until the mirror schema is upgraded.
@@ -1616,7 +1699,7 @@ async function loadStartupData(env) {
     adzuna: ["adzuna"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     bizcommunity: ["bizcommunity"],
-    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss"]
+    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss", "weworkremotely", "remote"]
   };
   const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, genericAtsCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
@@ -2318,7 +2401,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   cacheUrl.searchParams.set("__schema", "edge-first-v8");
   cacheUrl.searchParams.sort();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
-  const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive", "realworkfromanywhere", "himalayas-rss", "remote"]);
+  const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive", "realworkfromanywhere", "himalayas-rss", "remote", "weworkremotely"]);
   function clientResponse(cachedResponse) {
     const headers = new Headers(cachedResponse.headers);
     headers.set("Cache-Control", "public, max-age=60");
@@ -2351,8 +2434,11 @@ async function vacanciesResponse(request, env, ctx, origin) {
       if (experience && String(row.experience_level || "") !== experience) return false;
       const sourceType = String(row.source_type || "").toLowerCase();
       const isGenericAts = sourceType === "ats";
-      const dedicatedFeedAgencies = new Set(["himalayas-rss", "remotive", "realworkfromanywhere", "weworkremotely", "bizcommunity-sa", "govposts", "govposts-sa", "topjobseeker", "topjobseeker-sa", "myjobmag"]);
-      const isDedicatedRow = dedicated.has(sourceType) || dedicated.has(String(row.ats_feed_id || "")) || dedicatedFeedAgencies.has(String(row.agency_id || "")) || String(row.id || "").startsWith("ats_");
+      // Only rows that belong to a folder with its own card are "dedicated". ATS board feeds
+      // (TopJob Seeker, GovPosts, MyJobMag...) used to be excluded here by agency id and by the
+      // "ats_" id prefix, yet no folder ever existed for them, so they were stored, counted and
+      // never listed anywhere. They now belong to General; remote feeds go to Remote jobs.
+      const isDedicatedRow = dedicated.has(sourceType) || dedicated.has(String(row.ats_feed_id || ""));
       const isGeneralRow = !row.employer_id && !isDedicatedRow;
       if (scope === "general" && !isGeneralRow) return false;
       if (sources.length && !sources.includes(String(row.source_type || "")) && !sources.includes(String(row.ats_feed_id || ""))) return false;
@@ -3083,7 +3169,10 @@ var worker_default = {
         { Sentry.captureException(e); console.error("scheduled poster-title backfill failed", e); };
       }
       try {
-        const ats = await syncAtsFeeds(env);
+        // Only the least-recently-synced feed here: this invocation also runs the watchdog,
+        // the D1 mirror and AI maintenance, so it must stay small. The full set is synced by the
+        // refresh workflow, one feed per request (each request gets its own Worker budget).
+        const ats = await syncAtsFeeds(env, { maxFeeds: 1 });
         console.log("ATS feed sync", JSON.stringify(ats));
       } catch (e) {
         { Sentry.captureException(e); console.error("scheduled ATS sync failed", e); };
@@ -3132,10 +3221,19 @@ var worker_default = {
       return new Response(null, { headers: corsHeaders(origin) });
     }
     try {
+      if (path === "/api/ats/status" && request.method === "GET") {
+        if (!atsAuthMatches(request, env, url.searchParams.get("secret") || "")) return json({ ok: false, error: "Unauthorized" }, 401, origin);
+        return json({ ok: true, feeds: await atsFeedStatus(env) }, 200, origin);
+      }
       if (path === "/api/ats/sync" && (request.method === "GET" || request.method === "POST")) {
         if (!atsAuthMatches(request, env, request.method === "GET" ? (url.searchParams.get("secret") || "") : "")) return json({ ok: false, error: "Unauthorized" }, 401, origin);
         try {
-          const results = await syncAtsFeeds(env);
+          // ?feed=<id> syncs one feed only and does not rebuild the public snapshot unless
+          // ?publish=1 (the refresh workflow publishes once afterwards). With no parameters the
+          // original behaviour is kept: sync every feed, then publish.
+          const feedId = String(url.searchParams.get("feed") || "").slice(0, 120);
+          const results = await syncAtsFeeds(env, { feedId });
+          if (feedId && url.searchParams.get("publish") !== "1") return json({ ok: true, results }, 200, origin);
           const vacancySnapshot = await buildPublicVacancySnapshotFromSupabase(env);
           vacancySnapshot.data_version = await bumpPublicDataVersion(env);
           await writePublicVacancySnapshot(env, vacancySnapshot);
@@ -4586,6 +4684,10 @@ var worker_sentry = Sentry.withSentry(
   worker_default
 );
 export {
+  syncOneAtsFeed,
+  syncAtsFeeds,
+  atsFeedFetchUrl,
+  planAtsPrune,
   parseAtsXml,
   atsDate,
   atsJobFilterText,
