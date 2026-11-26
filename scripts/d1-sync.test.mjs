@@ -63,7 +63,9 @@ test('public startup and vacancy reads never fall back to D1', () => {
   const vacancies = worker.slice(worker.indexOf('async function vacanciesResponse('), worker.indexOf('__name(vacanciesResponse'));
   assert.match(startup, /D1 fallback disabled/);
   assert.match(startup, /X-Data-Stale/);
-  assert.doesNotMatch(startup, /loadStartupDataFromD1\(env\)/);
+  // The only D1 read left is the one-off rebuild of a legacy snapshot that predates the General count.
+  assert.equal((startup.match(/loadStartupDataFromD1\(env\)/g) || []).length, 1);
+  assert.match(startup, /Number\(snapshot\.counts\?\.general \|\| 0\) === 0\)[\s\S]*?loadStartupDataFromD1\(env\)/);
   assert.match(vacancies, /readPublicVacancySnapshot\(env\) \|\| await readPublicStartupSnapshot\(env\)/);
   assert.doesNotMatch(vacancies, /env\.DB\.prepare/);
 });

@@ -110,8 +110,8 @@ test('saved CV is viewable by its signed-in owner but private in public listings
   const publicBox = worker.slice(start, end);
   assert.match(publicBox, /select:\s*"id,full_name,position,sector,location,experience_years,about_you,skills,photo_url,verified,status,created_at"/);
   assert.doesNotMatch(publicBox, /cv_link/);
-  assert.match(appSheets, /Unlock full CV/);
-  assert.doesNotMatch(appSheets, /pool-cv-price|Unlock full CV for R49/); // price stays hidden until Unlock is pressed
+  assert.match(appSheets, /'Download CV: '/);
+  assert.doesNotMatch(appSheets, /pool-cv-price|Unlock full CV for R49/); // price stays hidden until the download request is opened
   assert.doesNotMatch(appSheets, /pool-contact-row|pool-whatsapp-btn/);
 });
 
@@ -160,13 +160,15 @@ test('CV Box no longer collects or shows Mini-CV details publicly', () => {
   assert.doesNotMatch(appSheets, /pool-minicv-details|pool-finish-later-note|mini-cv-pitch/);
   const list = appSheets.slice(appSheets.indexOf('export function renderPoolList'), appSheets.indexOf('export function poolCandidateWhatsAppLink'));
   assert.doesNotMatch(list, /about_you|experience_years|detailBits|frontBits|pool-mini-details|View profile/);
-  assert.match(list, /openCvDownloadRequestById/);
+  // Cards open the candidate profile; the paid CV download is requested from there.
+  assert.match(list, /openPoolCandidateProfileById/);
+  assert.match(appSheets, /export function openCvDownloadRequestById/);
 });
 
 test('admin CV Box keeps only approve, edit and a slim uploader form', () => {
   const sheet = admin.slice(admin.indexOf('id="pool-overlay"'), admin.indexOf('CONTENT ARTICLE SHEET'));
-  for (const id of ['pc-name', 'pc-photo', 'pc-position', 'pc-sector', 'pc-email', 'pc-cv', 'pc-status', 'pc-location', 'pc-experience', 'pc-availability', 'pc-phone']) assert.match(sheet, new RegExp(`id="${id}"`));
-  for (const id of ['pc-gender', 'pc-grade12', 'pc-criminal', 'pc-qualification', 'pc-drivers-license', 'pc-transport', 'pc-relocate', 'pc-employment', 'pc-salary', 'pc-work-authorized', 'pc-about', 'pc-payref', 'pc-paiduntil', 'pc-notes']) {
+  for (const id of ['pc-name', 'pc-photo', 'pc-position', 'pc-sector', 'pc-email', 'pc-cv', 'pc-status', 'pc-location', 'pc-experience', 'pc-availability', 'pc-phone', 'pc-about']) assert.match(sheet, new RegExp(`id="${id}"`));
+  for (const id of ['pc-gender', 'pc-grade12', 'pc-criminal', 'pc-qualification', 'pc-drivers-license', 'pc-transport', 'pc-relocate', 'pc-employment', 'pc-salary', 'pc-work-authorized', 'pc-payref', 'pc-paiduntil', 'pc-notes']) {
     assert.doesNotMatch(sheet, new RegExp(`id="${id}"`), `${id} removed`);
   }
   assert.doesNotMatch(sheet, /Mini CV questions/);
@@ -182,14 +184,14 @@ test('admin CV Box keeps only approve, edit and a slim uploader form', () => {
 });
 
 test('CV Box cards show location, experience and availability before payment, and the form collects them', () => {
-  assert.match(appSheets, /pool-mini-facts/);
+  assert.match(appSheets, /pool-profile-chips/);
   assert.match(appSheets, /poolFactExperience\(c\)/);
   assert.match(appSheets, /poolFactAvailability\(c\)/);
-  assert.doesNotMatch(appSheets, /pool-mini-facts[^;]*contact_(phone|email)/);
+  assert.doesNotMatch(appSheets, /pool-profile-chips[^;]*contact_(phone|email)/);
   for (const id of ['pool-location', 'pool-experience', 'pool-availability', 'pool-phone']) {
     assert.equal((html.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1, `${id} appears exactly once`);
   }
-  assert.match(worker, /select: "id,availability"/);
+  assert.match(worker, /select: "id,availability[^"]*"/);
 });
 
 test('admin CV Box sheet edits location, experience, availability and phone', () => {
@@ -255,8 +257,8 @@ test('CV Box feed shows every active admin-approved profile and prioritizes veri
   assert.match(worker, /Active status is the administrator's explicit publication decision/);
   assert.match(worker, /Needs reconfirmation/);
   assert.match(worker, /profile_updated_at,availability_confirmed_at,availability_expires_at/);
-  assert.match(appSheets, /pool-mini-activity/);
-  assert.match(css, /\.pool-mini-activity/);
+  assert.match(appSheets, /pool-profile-activity/);
+  assert.match(css, /\.pool-profile-activity/);
 });
 
 test('legacy CV Box sector records remain visible as Other and prefill the standardized edit option', () => {

@@ -43,22 +43,23 @@ test('the client sends the Supabase mutation representation through the admin Wo
 test('public startup and vacancy reads are edge-first and do not validate every request against D1', () => {
   assert.match(worker, /const PUBLIC_DATA_VERSION_KEY = "public_data_version"/);
   assert.match(worker, /ON CONFLICT\(key\) DO UPDATE SET value = CAST\(CAST\(sync_meta\.value AS INTEGER\) \+ 1 AS TEXT\)/);
-  assert.match(worker, /schema=edge-first-v14/);
+  assert.match(worker, /schema=edge-first-v18/);
   assert.match(worker, /employer_id IS NOT NULL OR source_type IS NULL OR source_type NOT IN/);
   assert.match(worker, /Prefer R2 even when the snapshot is stale/);
-  assert.match(worker, /schema\", \"edge-first-v4\"/);
+  assert.match(worker, /schema\", \"edge-first-v8\"/);
   assert.match(worker, /const snapshotFresh = !!snapshot/);
   const startup = sourceBetween(worker, 'async function startupResponse(', '__name(startupResponse');
   assert.match(startup, /D1 fallback disabled/);
   assert.match(startup, /X-Data-Stale/);
   assert.match(startup, /readPublicStartupSnapshot\(env\)/);
-  assert.doesNotMatch(startup, /loadStartupDataFromD1\(env\)/);
+  // Only a guarded, one-off legacy-snapshot rebuild may touch D1 (see d1-sync.test.mjs).
+  assert.equal((startup.match(/loadStartupDataFromD1\(env\)/g) || []).length, 1);
   assert.doesNotMatch(startup, /readPublicDataVersion\(env\)/);
   assert.doesNotMatch(startup, /syncD1FromSupabase|syncD1AndPublishSnapshot/);
   const vacancyPage = sourceBetween(worker, 'async function vacanciesResponse(', '__name(vacanciesResponse');
   assert.doesNotMatch(vacancyPage, /syncD1FromSupabase|syncD1AndPublishSnapshot/);
   assert.doesNotMatch(vacancyPage, /readPublicDataVersion\(env\)/);
-  assert.match(vacancyPage, /__schema", "edge-first-v4"/);
+  assert.match(vacancyPage, /__schema", "edge-first-v8"/);
   assert.match(vacancyPage, /readPublicVacancySnapshot\(env\)/);
   assert.match(vacancyPage, /await cache\.put\(cacheKey, response\.clone\(\)/);
 });

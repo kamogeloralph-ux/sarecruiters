@@ -115,9 +115,11 @@ test('CV Box cards shorten long names so the verified seal stays on the same lin
   // mono.css styles every class containing "-badge" with a box; the seal must never use one
   // Only inspect the pool-mini rules themselves: stop at the next "/* ---- ... ---- */" section so
   // unrelated later sections (e.g. .mcb-badge in the Manager Link CV Box) cannot trip this check.
-  const seal = css.slice(css.indexOf('.pool-mini-card .pool-mini-copy .manager-item-title.pool-mini-name{'));
-  const nextSection = seal.indexOf('/* ----');
-  assert.doesNotMatch(nextSection === -1 ? seal : seal.slice(0, nextSection), /-badge/);
+  // Check only the rules whose selector targets the name or the seal; later, unrelated
+  // pool-profile rules legitimately use badge classes (availability / seniority pills).
+  const sealRules = (css.replace(/\/\*[\s\S]*?\*\//g, '').match(/[^{}]*\.pool-mini-(?:name|seal)[^{}]*\{[^{}]*\}/g) || []).join('\n');
+  assert.ok(sealRules.length > 0, 'name/seal rules found');
+  assert.doesNotMatch(sealRules, /-badge/);
 });
 
 test('CV scan uses the same stable Gemini alias as the CV Builder and falls back when a model is missing', async () => {
