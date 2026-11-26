@@ -975,7 +975,11 @@ ${extras.related && extras.related.length ? `${secHead('More vacancies you may l
 
 // ---------- location hub pages ----------
 
+// A vacancy gets a public page only while it is open AND inside the page cap
+// (see MAX_VACANCY_PAGES in main()). Everything that links to vacancy pages
+// filters through this, so nothing ever points at a page that was not written.
 function isOpenVacancy(vacancy) {
+  if (vacancy.__noPage) return false;
   if (!vacancy.closing_date) return true;
   const closing = new Date(vacancy.closing_date);
   // Keep unparseable free-text dates visible for manual review rather than
@@ -1802,7 +1806,16 @@ async function main() {
   // ---- Link targets, computed ONCE up front so every page can link to every
   // other page (and only to pages that will really exist). ----
   const agencySlugById = buildPublicSlugMap(agencies, (a) => a.name);
+  // Slugs are computed from the FULL list so existing URLs never change, even
+  // though only open vacancies get a page.
   const vacancySlugById = buildPublicSlugMap(vacancies, (v) => v.title);
+  // Page cap: newest open vacancies first. Set MAX_VACANCY_PAGES=0 for no cap.
+  const MAX_VACANCY_PAGES = Number(process.env.MAX_VACANCY_PAGES ?? 3000);
+  if (MAX_VACANCY_PAGES > 0) {
+    [...vacancies].filter(isOpenVacancy).sort(newestFirst).slice(MAX_VACANCY_PAGES).forEach((v) => { v.__noPage = true; });
+  }
+  const publishedVacancyCount = vacancies.filter(isOpenVacancy).length;
+  console.log(`Vacancy pages: ${publishedVacancyCount} open of ${vacancies.length} total (expired/over-cap vacancies get no page).`);
   agencies.forEach((agency, index) => {
     CTX.agencyById.set(String(agency.id), { slug: agencySlugById.get(recordMapKey(agency, index)), name: agency.name });
   });
@@ -1831,7 +1844,7 @@ async function main() {
   // Indexes for "more vacancies" strips and agency pages.
   const byAgency = new Map();
   const byProvince = new Map();
-  [...vacancies].sort(newestFirst).forEach((v) => {
+  [...vacancies].filter(isOpenVacancy).sort(newestFirst).forEach((v) => {
     if (v.agency_id !== undefined && v.agency_id !== null) {
       const key = String(v.agency_id);
       if (!byAgency.has(key)) byAgency.set(key, []);
@@ -1920,7 +1933,7 @@ async function main() {
   agencies.forEach((agency, index) => {
     const slug = agencySlugById.get(recordMapKey(agency, index));
     const agencyBranches = branches.filter((b) => String(b.agency_id) === String(agency.id));
-    const agencyVacancies = byAgency.get(String(agency.id)) || [];
+    const agencyVacancies = (byAgency.get(String(agency.id)) || []).filter(isOpenVacancy);
     const html = buildAgencyPage(agency, agencyBranches, agencyVacancies, slug, vacancySlugById);
     const dir = path.join(agencyDir, slug);
     ensureDir(dir);
@@ -1931,6 +1944,7 @@ async function main() {
   const vacancyDir = path.join(OUT_DIR, 'vacancy');
   ensureDir(vacancyDir);
   vacancies.forEach((vacancy, index) => {
+    if (!isOpenVacancy(vacancy)) return;
     const slug = vacancySlugById.get(recordMapKey(vacancy, index));
     const agency = agencyRecordById.get(String(vacancy.agency_id));
     const extras = {
@@ -1972,7 +1986,7 @@ async function main() {
     build: (ctx) => buildAgenciesDirectoryPage({ ...ctx, total: agencies.length }),
     imagesFor: (slice) => imagesOf(...slice.map((a) => a.photo)),
   });
-  const vacancyArchive = [...vacancies].sort((a, b) => (Number(isOpenVacancy(b)) - Number(isOpenVacancy(a))) || newestFirst(a, b));
+  const vacancyArchive = vacancies.filter(isOpenVacancy).sort(newestFirst);
   const archivePages = writePaginated({
     base: '/vacancies', items: vacancyArchive, perPage: 100, sitemapUrls,
     build: (ctx) => buildVacanciesArchivePage({ ...ctx, total: vacancyArchive.length }),
@@ -1998,7 +2012,7 @@ ${sitemapEntries}
   // for every generated page). It is intentionally NOT rewritten here any more,
   // and it is part of STATIC_ASSETS so editing it busts caches on next deploy.
 
-  console.log(`Done. Wrote ${agencies.length} agency page(s), ${vacancies.length} vacancy page(s), ${CTX.provinces.size} province hub(s), ${CTX.categories.size} category hub(s) (thin/empty ones skipped), the /post-a-job/ page, ${companies.length} company page(s), ${archivePages} vacancy archive page(s), /agencies/, /submit-cv/ and sitemap.xml (${seenLocs.size} URLs).`);
+  console.log(`Done. Wrote ${agencies.length} agency page(s), ${publishedVacancyCount} vacancy page(s), ${CTX.provinces.size} province hub(s), ${CTX.categories.size} category hub(s) (thin/empty ones skipped), the /post-a-job/ page, ${companies.length} company page(s), ${archivePages} vacancy archive page(s), /agencies/, /submit-cv/ and sitemap.xml (${seenLocs.size} URLs).`);
 }
 
 main().catch((err) => {
