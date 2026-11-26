@@ -438,3 +438,22 @@ html body #screen-home .stats{
 }
 html body #screen-home .stats::-webkit-scrollbar{display:none}
 html body #screen-home .stat-card{scroll-snap-align:start}
+
+/* ---------- 17. "More free tools" on the Scam Check screen ---------- */
+html body .sc-tools{margin-top:44px}
+html body .sc-tools h2{font-family:var(--lx-serif);font-weight:500;font-size:24px;letter-spacing:-.012em;margin:0 0 16px;color:var(--text)}
+html body .sc-tool-list{list-style:none;margin:0;padding:0;border:1px solid var(--border);border-radius:var(--lx-r-lg);background:var(--card);box-shadow:var(--shadow-sm);overflow:hidden}
+html body .sc-tool-list li+li{border-top:1px solid var(--separator)}
+html body .sc-tool{
+  width:100%;display:flex;align-items:center;gap:14px;padding:15px 16px;text-align:left;
+  background:transparent!important;border:0!important;color:var(--text)!important;font:inherit;cursor:pointer;
+  transition:background-color .3s var(--lx-ease);
+}
+html body .sc-tool-icon{flex:0 0 42px;width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--card-2);border:1px solid var(--border);color:var(--lx-sapphire)}
+html body .sc-tool-icon svg{width:21px;height:21px}
+html body .sc-tool-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+html body .sc-tool-copy strong{font-size:15px;font-weight:600;letter-spacing:-.01em}
+html body .sc-tool-copy small{font-size:12.5px;line-height:1.35;color:var(--text-3)}
+html body .sc-tool-go{color:var(--text-3);font-size:20px;transition:transform .3s var(--lx-ease),color .3s var(--lx-ease)}
+@media (hover:hover){html body .sc-tool:hover{background:var(--card-2)!important}html body .sc-tool:hover .sc-tool-go{transform:translateX(3px);color:var(--text)}}
+html body .sc-tool:active{background:var(--card-2)!important}
