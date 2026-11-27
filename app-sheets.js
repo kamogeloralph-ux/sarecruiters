@@ -1056,7 +1056,7 @@ function poolProfileCoverMarkup(c, detail) {
   var safe = '';
   try {
     // Empty, root, and same-site placeholder values are not candidate banners.
-    // Treat them as missing so the branded light-pink fallback is shown.
+    // Treat them as missing so the branded light-blue fallback is shown.
     var parsed = raw ? new URL(raw) : null;
     if (parsed && parsed.protocol === 'https:' && parsed.origin !== window.location.origin) safe = parsed.href;
   } catch (e) {}
