@@ -66,8 +66,28 @@ test('public startup and vacancy reads never fall back to D1', () => {
   // The only D1 read left is the one-off rebuild of a legacy snapshot that predates the General count.
   assert.equal((startup.match(/loadStartupDataFromD1\(env\)/g) || []).length, 1);
   assert.match(startup, /Number\(snapshot\.counts\?\.general \|\| 0\) === 0\)[\s\S]*?loadStartupDataFromD1\(env\)/);
-  assert.match(vacancies, /readPublicVacancySnapshot\(env\) \|\| await readPublicStartupSnapshot\(env\)/);
+  assert.match(vacancies, /readPublicVacancySnapshot\(env\)[\s\S]*readPublicStartupSnapshot\(env\)/);
   assert.doesNotMatch(vacancies, /env\.DB\.prepare/);
+});
+
+test('vacancy folder requests are served from the snapshot, not a per-request full rebuild', () => {
+  const vacancies = worker.slice(worker.indexOf('async function vacanciesResponse('), worker.indexOf('__name(vacanciesResponse'));
+  // The authoritative rebuild must be memoised/time-boxed and never keyed on "any source was requested".
+  assert.doesNotMatch(vacancies, /if \(source \|\| needsGeneralRecovery\)/);
+  assert.match(vacancies, /recoverAuthoritativeVacancies\(env, "supabase"/);
+  assert.match(worker, /memoizedVacancySnapshot\(/);
+  assert.match(worker, /VACANCY_RECOVERY_TIMEOUT_MS/);
+  assert.match(vacancies, /stale-while-revalidate=600/);
+});
+
+test('app vacancy fetch layer has a timeout, retry, page cache and surfaces failures', () => {
+  const data = readFileSync(new URL('../app-data.js', import.meta.url), 'utf8');
+  assert.match(data, /AbortController/);
+  assert.match(data, /VACANCY_FETCH_TIMEOUT_MS/);
+  assert.match(data, /vacancyPageInflight/);
+  assert.match(data, /throw new Error\('General vacancies unavailable'\)/);
+  assert.match(data, /throw new Error\('Vacancies unavailable'\)/);
+  assert.match(data, /export function prefetchVacancyFolders\(/);
 });
 
 test('public posters are mirrored for writes but served from R2 with edge caching', () => {
