@@ -241,19 +241,32 @@
     ats: 'ats', remotive: 'remotive,realworkfromanywhere,himalayas-rss,weworkremotely,remote', bizcommunity: 'bizcommunity',
     retail: 'retail,shoprite,picknpay,woolworths,truworths,spar', himalayas: 'himalayas', adzuna: 'adzuna'
   };
-  var live = { started: false, counts: {} };
+  var live = { started: false, counts: {}, general: null, agency: null };
   function ensureLiveCounts() {
     if (live.started || !dedicatedVacancyCountsLoaded || typeof window.fetchVacancyPageFromWorker !== 'function') return;
     var snap = ((window.__saStartupPayload || {}).counts || {}).dedicated || {};
     var missing = Object.keys(LIVE_FOLDERS).filter(function (k) { return typeof snap[k] !== 'number'; });
+    // A snapshot with no agency number predates the current General/Agency split, so its General figure
+    // is stale too (it still includes ATS rows) - take both from the same filter their lists use.
+    var stale = typeof (((window.__saStartupPayload || {}).counts || {}).agency) !== 'number';
     live.started = true;
-    if (!missing.length) return;
-    Promise.all(missing.map(function (k) {
+    if (!missing.length && !stale) return;
+    var jobs = missing.map(function (k) {
       return window.fetchVacancyPageFromWorker({ source: LIVE_FOLDERS[k], limit: 1 }).then(function (page) {
         if (page && typeof page.total === 'number') live.counts[k] = page.total;
       }).catch(function () {});
-    })).then(function () {
-      if (!Object.keys(live.counts).length) return;
+    });
+    if (stale) {
+      jobs.push(window.fetchVacancyPageFromWorker({ scope: 'general', limit: 1 }).then(function (page) {
+        if (page && page.scope === 'general' && typeof page.total === 'number') live.general = page.total;
+      }).catch(function () {}));
+      jobs.push(window.fetchVacancyPageFromWorker({ scope: 'agency', limit: 1 }).then(function (page) {
+        // Only trust it when the Worker echoes the scope (an older Worker would ignore it and return everything).
+        if (page && page.scope === 'agency' && typeof page.total === 'number') live.agency = page.total;
+      }).catch(function () {}));
+    }
+    Promise.all(jobs).then(function () {
+      if (!Object.keys(live.counts).length && live.general === null && live.agency === null) return;
       try { window.dedicatedVacancyCounts = Object.assign({}, window.dedicatedVacancyCounts || {}, live.counts); } catch (e) {}
       if (typeof window.renderHomeFeed === 'function') window.renderHomeFeed();
       var sc = $('screen-allvacancies');
@@ -268,12 +281,13 @@
     Object.keys(live.counts).forEach(function (k) { if (typeof snapDedicated[k] !== 'number') d[k] = live.counts[k]; });
     // The Worker counts live agency rows server-side; fall back to the loaded cache for older snapshots.
     var sc = (window.__saStartupPayload && window.__saStartupPayload.counts) || {};
-    var agencyCount = typeof sc.agency === 'number' ? sc.agency : vacanciesCache.filter(hasAssignedAgency).length;
+    var agencyCount = typeof sc.agency === 'number' ? sc.agency : (live.agency !== null ? live.agency : vacanciesCache.filter(hasAssignedAgency).length);
+    var generalCount = (typeof sc.agency !== 'number' && live.general !== null) ? live.general : (generalVacancyCount || 0);
     return {
       ready: !!(generalVacancyCountLoaded && dedicatedVacancyCountsLoaded),
       order: ['general', 'agency', 'ats', 'retail', 'himalayas', 'adzuna', 'bizcommunity', 'remotive'],
       labels: LABELS, icons: SRC_ICON,
-      counts: { general: generalVacancyCount || 0, agency: agencyCount, ats: d.ats || 0, retail: d.retail || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, bizcommunity: d.bizcommunity || 0, remotive: d.remotive || 0 }
+      counts: { general: generalCount, agency: agencyCount, ats: d.ats || 0, retail: d.retail || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, bizcommunity: d.bizcommunity || 0, remotive: d.remotive || 0 }
     };
   }
   window.vacancySourceSummary = sourceSummary;
