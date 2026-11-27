@@ -2400,6 +2400,46 @@ function publicClosingDate(value) {
   return `${match[3]}-${month}-${String(match[1]).padStart(2, "0")}`;
 }
 __name(publicClosingDate, "publicClosingDate");
+// Isolate-level memoisation for public vacancy browsing. Every folder page used to
+// re-read and JSON.parse the whole R2 snapshot, and every request that named a
+// `source` re-downloaded the entire vacancies table from Supabase before answering.
+// The parsed snapshot is now shared for 60s per isolate, and the (expensive)
+// authoritative rebuild is shared, rate-limited and time-boxed.
+var VACANCY_SNAPSHOT_MEMO_MS = 60 * 1000;
+var VACANCY_RECOVERY_MEMO_MS = 10 * 60 * 1000;
+var VACANCY_RECOVERY_TIMEOUT_MS = 8000;
+var vacancySnapshotMemo = { at: 0, promise: null };
+var vacancyRecoveryMemo = new Map();
+function memoizedVacancySnapshot(load) {
+  const now = Date.now();
+  if (vacancySnapshotMemo.promise && now - vacancySnapshotMemo.at < VACANCY_SNAPSHOT_MEMO_MS) return vacancySnapshotMemo.promise;
+  const promise = Promise.resolve().then(load).then((value) => {
+    // Never pin a miss or an error for a minute; the next request retries.
+    if (!value && vacancySnapshotMemo.promise === promise) vacancySnapshotMemo = { at: 0, promise: null };
+    return value;
+  }, (error) => {
+    if (vacancySnapshotMemo.promise === promise) vacancySnapshotMemo = { at: 0, promise: null };
+    throw error;
+  });
+  vacancySnapshotMemo = { at: now, promise };
+  return promise;
+}
+__name(memoizedVacancySnapshot, "memoizedVacancySnapshot");
+function recoverAuthoritativeVacancies(env, kind, build) {
+  const now = Date.now();
+  const existing = vacancyRecoveryMemo.get(kind);
+  if (existing && now - existing.at < VACANCY_RECOVERY_MEMO_MS) return existing.promise;
+  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("vacancy recovery timed out")), VACANCY_RECOVERY_TIMEOUT_MS));
+  // Failures are memoised too (as null) so a Supabase slowdown cannot turn every
+  // folder request into another full-table scan.
+  const promise = Promise.race([Promise.resolve().then(build), timeout]).then((value) => value, (error) => {
+    console.warn("Could not recover filtered vacancy snapshot", error);
+    return null;
+  });
+  vacancyRecoveryMemo.set(kind, { at: now, promise });
+  return promise;
+}
+__name(recoverAuthoritativeVacancies, "recoverAuthoritativeVacancies");
 async function vacanciesResponse(request, env, ctx, origin) {
   // Normal app browsing still requests 20-50 rows; the larger ceiling lets
   // read-only SEO snapshot exports page through the same public data with
@@ -2426,7 +2466,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   const dedicated = new Set(["himalayas", "adzuna", "retail", "shoprite", "picknpay", "woolworths", "truworths", "spar", "career_board", "bizcommunity", "remotive", "realworkfromanywhere", "himalayas-rss", "remote", "weworkremotely"]);
   function clientResponse(cachedResponse) {
     const headers = new Headers(cachedResponse.headers);
-    headers.set("Cache-Control", "public, max-age=60");
+    headers.set("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
     headers.append("Vary", "Origin");
     headers.set("Access-Control-Allow-Origin", origin || "*");
     return new Response(cachedResponse.body, { status: cachedResponse.status, statusText: cachedResponse.statusText, headers });
@@ -2436,7 +2476,13 @@ async function vacanciesResponse(request, env, ctx, origin) {
   // Public vacancy browsing is snapshot-only. If the dedicated vacancy
   // snapshot is unavailable, the startup snapshot is still a safe bounded
   // source; never turn a cache miss into a full D1 scan.
-  const snapshot = await readPublicVacancySnapshot(env) || await readPublicStartupSnapshot(env);
+  const snapshot = await memoizedVacancySnapshot(async () => {
+    const dedicatedSnapshot = await readPublicVacancySnapshot(env);
+    if (dedicatedSnapshot) return dedicatedSnapshot;
+    const startupSnapshot = await readPublicStartupSnapshot(env);
+    return startupSnapshot ? { ...startupSnapshot, __startupFallback: true } : null;
+  });
+  const usedStartupFallback = !!(snapshot && snapshot.__startupFallback);
   // A snapshot is always preferable to a fresh D1 query for public traffic.
   // The scheduled sync is responsible for refreshing it; stale data is safer
   // than exhausting the account-wide D1 rows-read allowance.
@@ -2446,12 +2492,15 @@ async function vacanciesResponse(request, env, ctx, origin) {
     const cursorSeparator = cursor.indexOf("|");
     const cursorCreated = cursorSeparator >= 0 ? cursor.slice(0, cursorSeparator) : cursor;
     const cursorId = cursorSeparator >= 0 ? cursor.slice(cursorSeparator + 1) : "";
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const qLower = q.toLowerCase();
+    const locationLower = location.toLowerCase();
     return (allRows || []).filter((row) => {
       const closingDate = publicClosingDate(row.closing_date);
       // Free-text values such as "ASAP" or "Open until filled" are not expiry dates.
-      if (closingDate && closingDate < new Date().toISOString().slice(0, 10)) return false;
-      if (q && ![row.title, row.company, row.location, row.notes].some((value) => String(value || "").toLowerCase().includes(q.toLowerCase()))) return false;
-      if (location && !String(row.location || "").toLowerCase().includes(location.toLowerCase())) return false;
+      if (closingDate && closingDate < todayIso) return false;
+      if (qLower && ![row.title, row.company, row.location, row.notes].some((value) => String(value || "").toLowerCase().includes(qLower))) return false;
+      if (locationLower && !String(row.location || "").toLowerCase().includes(locationLower)) return false;
       if (remote && String(row.remote || "") !== remote) return false;
       if (experience && String(row.experience_level || "") !== experience) return false;
       const sourceType = String(row.source_type || "").toLowerCase();
@@ -2478,28 +2527,28 @@ async function vacanciesResponse(request, env, ctx, origin) {
   let alreadyPaged = false;
   if (snapshotFresh) {
     rows = filterRows(snapshot.vacancies);
-    // A legacy/incomplete R2 snapshot can contain general listings while
-    // omitting dedicated scraper sources. Recover those filtered requests
-    // from Supabase immediately; the next scheduled publication will persist
-    // the complete inventory back to R2.
-    // The startup snapshot is intentionally bounded and may contain only the
-    // agency/employer rows needed for the first paint. Recover General rows
-    // from the authoritative inventory when the snapshot has no matching
-    // general records; otherwise the General folder incorrectly appears empty
-    // while Agency still shows the bounded startup rows.
+    // The R2 vacancy snapshot is the complete public inventory (published from the D1
+    // mirror), so folder requests are answered from it directly. A rebuild from the
+    // authoritative store is only attempted when the dedicated snapshot is missing
+    // (startup-snapshot fallback), when the requested source has no rows at all in it,
+    // or when General has none; it is shared across requests, time-boxed and cached.
+    const requestedSources = source.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 20);
+    const snapshotHasSource = !requestedSources.length || snapshot.vacancies.some((row) =>
+      requestedSources.includes(String(row.source_type || "")) || requestedSources.includes(String(row.ats_feed_id || "")));
     const needsGeneralRecovery = scope === "general" && !rows.some((row) => {
       const sourceType = String(row.source_type || "").toLowerCase();
       return !row.employer_id && (sourceType === "ats"
         ? !dedicated.has(sourceType)
         : (!row.agency_id || row.agency_id === "general") && !dedicated.has(sourceType));
     });
-    if (source || needsGeneralRecovery) {
-      try {
-        const authoritative = scope === "general" ? await buildPublicVacancySnapshot(env) : await buildPublicVacancySnapshotFromSupabase(env);
+    const needsRecovery = needsGeneralRecovery || (!!source && (usedStartupFallback || !snapshotHasSource));
+    if (needsRecovery && !q && !location && !remote && !experience && !cursor) {
+      const authoritative = scope === "general"
+        ? await recoverAuthoritativeVacancies(env, "d1", () => buildPublicVacancySnapshot(env))
+        : await recoverAuthoritativeVacancies(env, "supabase", () => buildPublicVacancySnapshotFromSupabase(env));
+      if (authoritative && Array.isArray(authoritative.vacancies)) {
         const recovered = filterRows(authoritative.vacancies);
         if (recovered.length || needsGeneralRecovery) rows = recovered;
-      } catch (error) {
-        console.warn("Could not recover filtered vacancy snapshot", error);
       }
     }
   } else return json({ error: "Public vacancy snapshot unavailable" }, 503, origin);
@@ -2519,7 +2568,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
   }, 200, origin);
   // Keep pages aligned with the latest R2 publication. A long edge TTL can
   // otherwise keep the previous vacancy cards visible after a refresh.
-  response.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=60");
+  response.headers.set("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
   response.headers.set("X-Data-Version", String(Number(snapshot?.data_version) || 0));
   await cache.put(cacheKey, response.clone());
   return clientResponse(response);
