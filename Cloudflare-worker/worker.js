@@ -1717,7 +1717,8 @@ async function loadStartupData(env) {
     adzuna: ["adzuna"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     bizcommunity: ["bizcommunity"],
-    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss", "weworkremotely", "remote"]
+    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss", "weworkremotely", "remote"],
+    ats: ["ats"]
   };
   const [agencies, branches, vacancies, employers, generalCount, generalPoolCount, genericAtsCount, poolCount, dedicatedCount, folderCounts, poolCandidates, featuredVacancies] = await Promise.all([
     supabaseGet(env, "agencies", {
@@ -1808,7 +1809,10 @@ async function loadStartupData(env) {
     // labels each folder card ("Government Vacancies · 5,936 vacancies")
     // without downloading a single row of their content.
     Promise.all(Object.entries(DEDICATED_FOLDERS).map(([key, sources]) =>
-      supabaseGet(env, "vacancies", { select: "id", source_type: `in.(${sources.join(",")})`, limit: "0" }, { prefer: "count=exact" })
+      supabaseGet(env, "vacancies", key === "ats"
+        // Generic ATS rows only: Remote-jobs feeds are counted under remotive, like the D1 path does.
+        ? { select: "id", source_type: "eq.ats", or: `(ats_feed_id.is.null,ats_feed_id.not.in.(${ATS_REMOTE_FEED_IDS.join(",")}))`, limit: "0" }
+        : { select: "id", source_type: `in.(${sources.join(",")})`, limit: "0" }, { prefer: "count=exact" })
         .then((res) => [key, readCountHeader(res.headers)])
     )),
     supabaseGet(env, "pool_candidates_public", {
