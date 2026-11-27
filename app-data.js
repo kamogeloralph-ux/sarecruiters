@@ -791,20 +791,65 @@ export function generalVacancyQueryState() {
 export function generalVacancyQueryKeyFor(state) {
   return [state.q, state.remote, state.exp].join('|').toLowerCase();
 }
+/* Vacancy page transport shared by EVERY vacancy folder (General, Agency counts, ATS, Retail,
+   Himalayas, Adzuna, Bizcommunity, Remote). Previously a single un-timed fetch: a slow or hung
+   Worker request left "Loading vacancies..." on screen forever and any failure was swallowed
+   into an empty list. Now: per-attempt timeout, one retry, in-flight de-duplication, a short
+   in-memory page cache (instant re-opens + prefetch hits) and a stale-copy fallback. */
+var VACANCY_FETCH_TIMEOUT_MS = 8000;
+var VACANCY_FETCH_RETRY_TIMEOUT_MS = 12000;
+var VACANCY_PAGE_CACHE_TTL_MS = 120000;
+var vacancyPageCache = {};
+var vacancyPageInflight = {};
+function vacancyPageKey(params) {
+  return Object.keys(params || {}).filter(function(k) {
+    return params[k] !== undefined && params[k] !== null && params[k] !== '';
+  }).sort().map(function(k) { return k + '=' + String(params[k]); }).join('&');
+}
+async function fetchVacancyPageOnce(url, timeoutMs) {
+  var controller = typeof AbortController === 'function' ? new AbortController() : null;
+  var timer = controller ? setTimeout(function() { controller.abort(); }, timeoutMs) : null;
+  try {
+    var response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' }, signal: controller ? controller.signal : undefined });
+    if (!response.ok) throw new Error('vacancies ' + response.status);
+    var payload = await response.json();
+    if (!payload || !Array.isArray(payload.vacancies)) throw new Error('vacancies bad payload');
+    return payload;
+  } finally { if (timer) clearTimeout(timer); }
+}
+async function fetchVacancyPageFromNetwork(params) {
+  var url = new URL(R2_WORKER_URL + '/api/vacancies');
+  Object.keys(params || {}).forEach(function(key) {
+    var value = params[key];
+    if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+  });
+  try {
+    return await fetchVacancyPageOnce(url.toString(), VACANCY_FETCH_TIMEOUT_MS);
+  } catch (first) {
+    // One retry covers a cold Worker isolate / flaky mobile connection. Skip it when offline.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) throw first;
+    await new Promise(function(resolve) { setTimeout(resolve, 400); });
+    return await fetchVacancyPageOnce(url.toString(), VACANCY_FETCH_RETRY_TIMEOUT_MS);
+  }
+}
 export async function fetchVacancyPageFromWorker(params) {
   if (R2_WORKER_URL) {
+    var key = vacancyPageKey(params);
+    var hit = vacancyPageCache[key];
+    if (hit && Date.now() - hit.at < VACANCY_PAGE_CACHE_TTL_MS) return hit.payload;
     try {
-      var url = new URL(R2_WORKER_URL + '/api/vacancies');
-      Object.keys(params || {}).forEach(function(key) {
-        var value = params[key];
-        if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
-      });
-      var response = await fetch(url.toString(), { method: 'GET', headers: { Accept: 'application/json' } });
-      if (response.ok) {
-        var payload = await response.json();
-        if (payload && Array.isArray(payload.vacancies)) return payload;
+      if (!vacancyPageInflight[key]) {
+        vacancyPageInflight[key] = fetchVacancyPageFromNetwork(params).then(function(payload) {
+          vacancyPageCache[key] = { at: Date.now(), payload: payload };
+          return payload;
+        }).finally(function() { delete vacancyPageInflight[key]; });
       }
-    } catch(e) {}
+      return await vacancyPageInflight[key];
+    } catch(e) {
+      // A stale copy beats a spinner or an error when the network is slow or down.
+      if (hit) return hit.payload;
+      console.warn('vacancy page unavailable', e && e.message);
+    }
   }
   if (window.__saStaticData) {
     var sourceNames = params && params.source ? String(params.source).split(',') : null;
@@ -824,6 +869,34 @@ export async function fetchVacancyPageFromWorker(params) {
   }
   return null;
 }
+/* Warm the first page of every folder while the user is on the overview, so tapping a folder
+   is instant. Staggered on idle time, one at a time, and skipped on Data Saver / slow links. */
+var vacancyFoldersPrefetched = false;
+export function prefetchVacancyFolders() {
+  if (vacancyFoldersPrefetched) return;
+  try {
+    var conn = navigator.connection || {};
+    if (conn.saveData || /(^|-)2g$/.test(String(conn.effectiveType || ''))) return;
+  } catch(e) {}
+  vacancyFoldersPrefetched = true;
+  var jobs = [{ scope: 'general', limit: generalVacancyPageSize }];
+  Object.keys(DEDICATED_VACANCY_FOLDER_SOURCES).forEach(function(folder) {
+    jobs.push({ source: DEDICATED_VACANCY_FOLDER_SOURCES[folder].join(','), limit: dedicatedVacancyPageSize });
+  });
+  var idle = window.requestIdleCallback || function(fn) { return setTimeout(fn, 400); };
+  (function next() {
+    var params = jobs.shift();
+    if (!params) return;
+    idle(function() {
+      Promise.resolve(fetchVacancyPageFromWorker(params)).catch(function() {}).then(next);
+    });
+  })();
+}
+export function prefetchVacancyFolder(folder) {
+  var params = folder === 'general' ? { scope: 'general', limit: generalVacancyPageSize }
+    : DEDICATED_VACANCY_FOLDER_SOURCES[folder] ? { source: DEDICATED_VACANCY_FOLDER_SOURCES[folder].join(','), limit: dedicatedVacancyPageSize } : null;
+  if (params) Promise.resolve(fetchVacancyPageFromWorker(params)).catch(function() {});
+}
 export async function fetchGeneralVacancyPage(state, page) {
   var workerPage = await fetchVacancyPageFromWorker({
     scope: 'general', q: state.q, remote: state.remote, experience: state.exp,
@@ -841,10 +914,10 @@ export async function fetchGeneralVacancyPage(state, page) {
     set_generalVacancyNextCursor( workerPage.next_cursor || null);
     return workerPage.vacancies;
   }
-  var from = page * generalVacancyPageSize;
-  // The Worker owns public vacancy serving and caps each response. Do not
-  // fall back to a direct PostgREST page when it is unavailable.
-  return [];
+  // The Worker owns public vacancy serving and caps each response. Do not fall back to a
+  // direct PostgREST page. Throw so the folder shows "Could not load" + Try again instead of
+  // a misleading empty list or an endless spinner.
+  throw new Error('General vacancies unavailable');
 }
 // Source-type groupings for the 5 dedicated-source folders, mirroring the
 // classifier functions in renderAllVacanciesList() (isHimalayasVacancy etc.)
@@ -873,7 +946,7 @@ export async function fetchDedicatedVacancyPage(folder, state, page) {
     set_dedicatedVacancyNextCursor( workerPage.next_cursor || null);
     return workerPage.vacancies;
   }
-  return [];
+  throw new Error('Vacancies unavailable');
 }
 export async function upsertVacancy(v) {
   try {
@@ -1619,6 +1692,8 @@ Object.assign(window, {
   generalVacancyQueryState,
   generalVacancyQueryKeyFor,
   fetchVacancyPageFromWorker,
+  prefetchVacancyFolders,
+  prefetchVacancyFolder,
   fetchGeneralVacancyPage,
   fetchDedicatedVacancyPage,
   upsertVacancy,

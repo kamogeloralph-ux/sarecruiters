@@ -298,6 +298,7 @@
     var lm = $('allvacancies-loadmore'); if (lm) lm.style.display = 'none';
     fillIndustries();
     var sum = sourceSummary(), counts = sum.counts, ready = sum.ready, order = sum.order;
+    if (typeof window.prefetchVacancyFolders === 'function') window.prefetchVacancyFolders();
     var searching = !!(val('allvacancies-search') || val('allvacancies-location') || activeList().length);
     var list = poolFiltered();
     list.sort(function (a, b) {

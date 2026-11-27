@@ -10,7 +10,7 @@
  */
 
 import { R2_WORKER_URL, VAC_PAGE_SIZE, agenciesCache, agencyFolderDisplayPage, branchesCache, dedicatedVacancyCounts, dedicatedVacancyCountsLoaded, dedicatedVacancyDisplayPage, dedicatedVacancyError, dedicatedVacancyFolder, dedicatedVacancyHasMore, dedicatedVacancyLoading, dedicatedVacancyPage, dedicatedVacancyPageSize, dedicatedVacancyQueryKey, dedicatedVacancyRequestId, dedicatedVacancyRows, employerManagerMode, employersCache, escapeHtml, generalVacancyCount, generalVacancyCountLoaded, generalVacancyDisplayPage, generalVacancyError, generalVacancyHasMore, generalVacancyLoading, generalVacancyPage, generalVacancyPageSize, generalVacancyQueryKey, generalVacancyRequestId, generalVacancyRows, guestQuotaState, isAdmin, managerMode, renderAuthUser, saAuthUser, set_agencyFolderDisplayPage, set_dedicatedVacancyDisplayPage, set_dedicatedVacancyError, set_dedicatedVacancyFolder, set_dedicatedVacancyHasMore, set_dedicatedVacancyLoading, set_dedicatedVacancyNextCursor, set_dedicatedVacancyPage, set_dedicatedVacancyQueryKey, set_dedicatedVacancyRequestId, set_dedicatedVacancyRows, set_generalVacancyDisplayPage, set_generalVacancyError, set_generalVacancyHasMore, set_generalVacancyLoading, set_generalVacancyNextCursor, set_generalVacancyPage, set_generalVacancyQueryKey, set_generalVacancyRequestId, set_generalVacancyRows, set_saAuthUser, signOutSaRecruiters, staticDataEnabled, staticVacanciesCache, supabaseClient, trackEvent, vacanciesCache } from './app-core.js';
-import { DEDICATED_VACANCY_FOLDER_SOURCES, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
+import { DEDICATED_VACANCY_FOLDER_SOURCES, prefetchVacancyFolder, fetchDedicatedVacancyPage, fetchGeneralVacancyPage, fetchVacancyPageFromWorker, filterExpiredVacancies, generalVacancyQueryKeyFor, generalVacancyQueryState, getStartupData, hasAssignedAgency, isGeneralDirectoryVacancy, isVacancyExpired, loadAll, matchVacanciesToAgencies, readLocalReports, removeBranch, renderHomeMediaSection, renderHouseAdSlots, renderTrackEmpty, renderTrackReady, sortVacancies, startupDataResolved, startupDataSource, todayTrack, vacancyScreenStateMarkup, writeLocalReports } from './app-data.js';
 import { ICON_CHEVRON, VAC_ICONS, directoryReturnScreen, filterAndRenderCached, hubCard, mailLink, mapsLink, renderAllEmployersList, renderSaved, set_directoryReturnScreen, shortLocation, showAllEmployers, telLink } from './app-cards.js';
 import { closeSheet, copyText, getTurnstileResponse, goPool, loadPoolCandidates, openMyCvBoxProfile, openPoolRegisterSheet, openSuggestionSheet, poolReturnNavTab, poolReturnScreen, renderPoolList, renderTurnstile, resetTurnstile, turnstileConfigured } from './app-sheets.js';
 import { exitManagerMode } from './app-manager.js';
@@ -1649,12 +1649,21 @@ export async function setVacancyOverviewFilter(filter) {
   }
   window.renderAllVacanciesList();
 }
+// Shared loading state for every vacancy folder: skeleton cards (the page feels alive while the
+// first page streams in) plus a hint that fades in after ~5s so a slow connection never looks frozen.
+// The fetch layer times out and retries on its own, then the folder shows "Try again".
+export function vacancyLoadingMarkup() {
+  var sk = '<div class="hub-card-skeleton" aria-hidden="true"><div class="sk-avatar"></div><div class="sk-lines"><div class="sk-line sk-title"></div><div class="sk-line sk-sub"></div></div></div>';
+  return '<div class="empty-state vac-loading"><h3>Loading vacancies…</h3><p>Fetching the latest opportunities.</p></div>' +
+    sk + sk + sk + '<p class="vac-slow-note" role="status">Still loading — this is taking longer than usual. Hang tight, we\'ll retry automatically.</p>';
+}
 export function openVacancyFolder(type) {
   // Source cards live on Home, so explicitly open the vacancy screen before
   // applying the selected source. Previously the filter state changed while
   // Home remained active, making the tap appear to do nothing.
   showAllVacancies('home');
   allVacanciesFolder = type;
+  try { prefetchVacancyFolder(type); } catch (e) {}
   vacancyFolderDisplayLimit = 30;
   vacancyFolderDisplayKey = '';
   set_generalVacancyDisplayPage( 1);
@@ -1695,7 +1704,7 @@ export function renderGeneralVacancyCards(append) {
     el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadGeneralVacancies(true)">Try again</button></div>';
   } else if (generalVacancyLoading && !generalVacancyRows.length) {
     el.dataset.state = 'loading';
-    el.innerHTML = '<div class="empty-state"><h3>Loading vacancies…</h3><p>Fetching the latest opportunities.</p></div>';
+    el.innerHTML = vacancyLoadingMarkup();
   } else if (!generalVacancyRows.length) {
     el.dataset.state = 'empty';
     el.innerHTML = vacancyScreenStateMarkup('all', false, !!generalVacancyQueryKey);
@@ -1797,7 +1806,7 @@ export function renderDedicatedVacancyCards(append) {
     el.innerHTML = '<div class="empty-state"><h3>Could not load vacancies</h3><p>Check your connection and try again.</p><button class="vac-load-more" onclick="loadDedicatedVacancies(true)">Try again</button></div>';
   } else if (dedicatedVacancyLoading && !dedicatedVacancyRows.length) {
     el.dataset.state = 'loading';
-    el.innerHTML = '<div class="empty-state"><h3>Loading vacancies…</h3><p>Fetching the latest opportunities.</p></div>';
+    el.innerHTML = vacancyLoadingMarkup();
   } else if (!dedicatedVacancyRows.length) {
     el.dataset.state = 'empty';
     el.innerHTML = vacancyScreenStateMarkup('all', false, !!dedicatedVacancyQueryKey && dedicatedVacancyQueryKey !== '__open__');
@@ -2488,6 +2497,7 @@ Object.assign(window, {
   vacancyMatchesOverviewFilter,
   setVacancyOverviewFilter,
   openVacancyFolder,
+  vacancyLoadingMarkup,
   closeVacancyFolder,
   renderGeneralVacancyCards,
   goToGeneralVacancyPage,

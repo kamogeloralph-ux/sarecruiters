@@ -3057,3 +3057,9 @@ html[data-inapp] .install-banner{bottom:88px!important}
   #screen-home .stat-label{font-size:7.5px}
   .home-sources-section .vx-src{font-size:10px}
 }
+
+/* Vacancy folder loading hint: invisible at first, fades in after 5s of waiting. */
+.vac-slow-note{margin:10px 4px 0;text-align:center;font-size:13px;color:var(--text-2);opacity:0;animation:vacSlowNote .4s ease 5s forwards}
+@keyframes vacSlowNote{to{opacity:1}}
+.vac-loading{padding-bottom:6px}
+@media (prefers-reduced-motion: reduce){.vac-slow-note{animation-duration:0s}}
