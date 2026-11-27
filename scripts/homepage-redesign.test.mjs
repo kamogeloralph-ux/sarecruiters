@@ -152,7 +152,7 @@ test('home latest roles reuse the shared vacancy card and the existing exact-vac
   assert.match(ui, /openHomeWeeklyVacancy\(/);
   assert.match(vacancyV2, /if \(o\.homePreview\)/);
   assert.match(vacancyV2, /class="home-vacancy-apply"/);
-  assert.match(html, /app-vacancy-v2\.js\?v=vx-clean-1/);
+  assert.match(html, /app-vacancy-v2\.js\?v=vx-clean-2/);
   assert.match(cards, /if \(typeof renderHomeFeed === 'function'\) \{\s*renderHomeFeed\(\);\s*return;/);
   assert.match(ui, /onclick="openCvBoxApplication\(\)">Upload a CV/);
   assert.ok(ui.includes('Browse CV Box'));
