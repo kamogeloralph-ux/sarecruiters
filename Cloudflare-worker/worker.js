@@ -2466,6 +2466,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
       const isAgencyOwnedRow = !!row.agency_id && !["general", "employer"].includes(String(row.agency_id)) && !row.employer_id && !isDedicatedRow && !isGenericAts;
       const isGeneralRow = !row.employer_id && !isDedicatedRow && !isGenericAts && !isAgencyOwnedRow;
       if (scope === "general" && !isGeneralRow) return false;
+      if (scope === "agency" && !isAgencyOwnedRow) return false;
       if (sources.length && !sources.includes(String(row.source_type || "")) && !sources.includes(String(row.ats_feed_id || ""))) return false;
       // The ATS folder lists generic ATS rows only; feeds that belong to Remote jobs stay there.
       if (sources.length === 1 && sources[0] === "ats" && isDedicatedRow) return false;
@@ -2512,6 +2513,7 @@ async function vacanciesResponse(request, env, ctx, origin) {
     next_cursor: nextCursor,
     limit,
     total: rows.length,
+    scope: scope || null,
     generated_at: snapshot.generated_at || null,
     data_version: Number(snapshot?.data_version) || 0
   }, 200, origin);
