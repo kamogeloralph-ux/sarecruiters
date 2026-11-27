@@ -29,7 +29,7 @@ test('D1 vacancy indexes cover sync watermarks, sources, owners, remote roles, a
 });
 
 test('startup headline count comes from D1 without a per-request Supabase count', () => {
-  assert.match(worker, /env\.DB\.prepare\("SELECT COUNT\(\*\) AS n FROM vacancies"\)/);
+  assert.match(worker, /env\.DB\.prepare\(`SELECT COUNT\(\*\) AS n FROM vacancies WHERE \$\{liveClause\}`\)/);
   assert.doesNotMatch(worker, /authoritativeVacancyCount/);
   assert.doesNotMatch(worker, /snapshot = \{ \.\.\.snapshot, counts: \{ \.\.\.snapshot\.counts, vacancies:/);
 });

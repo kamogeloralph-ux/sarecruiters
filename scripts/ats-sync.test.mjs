@@ -129,7 +129,7 @@ test('scheduled/maxFeeds sync handles only the least-recently-synced feed; ?feed
 function snapshotEnv(rows) {
   return { MEDIA_BUCKET: { get: async () => ({ text: async () => JSON.stringify({ generated_at: new Date().toISOString(), vacancies: rows }) }) } };
 }
-test('ATS board feeds appear in General, remote feeds in Remote jobs, and nothing is orphaned', async () => {
+test('ATS board feeds appear in the ATS folder (not General), remote feeds in Remote jobs, and nothing is orphaned', async () => {
   globalThis.caches = { default: { match: async () => undefined, put: async () => {}, delete: async () => true } };
   const mk = (id, extra) => ({ id, title: id, company: 'X', location: 'Cape Town', closing_date: '', created_at: '2026-11-20T10:00:00Z', employer_id: null, agency_id: 'general', source_type: null, ...extra });
   const rows = [
@@ -142,6 +142,7 @@ test('ATS board feeds appear in General, remote feeds in Remote jobs, and nothin
     mk('ats_weworkremotely_1', { source_type: 'remote', agency_id: 'weworkremotely', ats_feed_id: 'weworkremotely' }),
   ];
   const ask = async (qs) => (await (await worker.fetch(new Request(`https://w.test/api/vacancies?${qs}`), snapshotEnv(rows), { waitUntil() {} })).json()).vacancies.map((v) => v.id).sort();
-  assert.deepEqual(await ask('scope=general&limit=200'), ['ats_govposts_1', 'ats_myjobmag_1', 'ats_topjobseeker-south-africa_1', 'jooble-1', 'plain-1']);
+  assert.deepEqual(await ask('scope=general&limit=200'), ['jooble-1', 'plain-1']);
+  assert.deepEqual(await ask('source=ats&limit=200'), ['ats_govposts_1', 'ats_myjobmag_1', 'ats_topjobseeker-south-africa_1']);
   assert.deepEqual(await ask('source=remotive,realworkfromanywhere,himalayas-rss,weworkremotely,remote&limit=200'), ['ats_weworkremotely_1']);
 });

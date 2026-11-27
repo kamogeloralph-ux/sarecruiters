@@ -44,13 +44,14 @@ test('dedicated featured-vacancy sections and their extra startup query are remo
   assert.doesNotMatch(appCoreSrc, /featuredVacanciesCache/);
 });
 
-test('vacancy overview shows all six remaining sources before retail-prioritized roles', () => {
+test('vacancy overview shows all eight sources (incl. ATS and Remote jobs) before retail-prioritized roles', () => {
   const summaryStart = vacancyRendererSrc.indexOf('function sourceSummary()');
   const summaryEnd = vacancyRendererSrc.indexOf('function renderOverview()', summaryStart);
   const summary = vacancyRendererSrc.slice(summaryStart, summaryEnd);
   const orderMatch = summary.match(/order: \[([^\]]+)\]/);
   assert.ok(orderMatch, 'the shared source summary must define the source order');
-  assert.equal(orderMatch[1].split(',').length, 6, 'the overview must offer exactly six sources');
+  assert.equal(orderMatch[1].split(',').length, 8, 'the overview must offer exactly eight sources');
+  assert.match(orderMatch[1], /'ats'/, 'the overview must include an ATS source card');
 
   const start = vacancyRendererSrc.indexOf('function renderOverview()');
   const end = vacancyRendererSrc.indexOf('/* ---------- folder post-processing', start);
