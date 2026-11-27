@@ -234,8 +234,38 @@
     sel.innerHTML = '<option value="">Any industry</option>' + names.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('');
     sel.value = names.indexOf(cur) > -1 ? cur : '';
   }
+  /* Older startup snapshots (R2 / data/startup.json) predate the ATS, Remote and Bizcommunity folders, so
+     their counts.dedicated has no number for them and the source cards read 0 / stale. For any folder the
+     snapshot has no number for, ask the Worker for the live total (same filter as the folder list). */
+  var LIVE_FOLDERS = {
+    ats: 'ats', remotive: 'remotive,realworkfromanywhere,himalayas-rss,weworkremotely,remote', bizcommunity: 'bizcommunity',
+    retail: 'retail,shoprite,picknpay,woolworths,truworths,spar', himalayas: 'himalayas', adzuna: 'adzuna'
+  };
+  var live = { started: false, counts: {} };
+  function ensureLiveCounts() {
+    if (live.started || !dedicatedVacancyCountsLoaded || typeof window.fetchVacancyPageFromWorker !== 'function') return;
+    var snap = ((window.__saStartupPayload || {}).counts || {}).dedicated || {};
+    var missing = Object.keys(LIVE_FOLDERS).filter(function (k) { return typeof snap[k] !== 'number'; });
+    live.started = true;
+    if (!missing.length) return;
+    Promise.all(missing.map(function (k) {
+      return window.fetchVacancyPageFromWorker({ source: LIVE_FOLDERS[k], limit: 1 }).then(function (page) {
+        if (page && typeof page.total === 'number') live.counts[k] = page.total;
+      }).catch(function () {});
+    })).then(function () {
+      if (!Object.keys(live.counts).length) return;
+      try { window.dedicatedVacancyCounts = Object.assign({}, window.dedicatedVacancyCounts || {}, live.counts); } catch (e) {}
+      if (typeof window.renderHomeFeed === 'function') window.renderHomeFeed();
+      var sc = $('screen-allvacancies');
+      if (sc && sc.classList.contains('active') && !window.allVacanciesFolder) render();
+      if (typeof window.updateStats === 'function') window.updateStats();
+    });
+  }
   function sourceSummary() {
-    var d = dedicatedVacancyCounts || {};
+    ensureLiveCounts();
+    var d = Object.assign({}, dedicatedVacancyCounts || {});
+    var snapDedicated = ((window.__saStartupPayload || {}).counts || {}).dedicated || {};
+    Object.keys(live.counts).forEach(function (k) { if (typeof snapDedicated[k] !== 'number') d[k] = live.counts[k]; });
     // The Worker counts live agency rows server-side; fall back to the loaded cache for older snapshots.
     var sc = (window.__saStartupPayload && window.__saStartupPayload.counts) || {};
     var agencyCount = typeof sc.agency === 'number' ? sc.agency : vacanciesCache.filter(hasAssignedAgency).length;

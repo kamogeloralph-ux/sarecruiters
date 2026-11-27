@@ -288,11 +288,13 @@ export function homeVacancySourceMarkup() {
   var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', ats: '⇄', retail: '▤', himalayas: '↗', adzuna: 'A', bizcommunity: 'B', remotive: '↗' };
   var counts = summary && summary.counts ? summary.counts : {};
   var ready = !!(summary && summary.ready);
+  // Short names so all eight source cards fit one compact grid on the home screen (full names stay in aria-label).
+  var shortLabels = { himalayas: 'Himalayas', bizcommunity: 'Bizcomm.', remotive: 'Remote' };
   var fmt = function (n) { return typeof window.formatCompactCount === 'function' ? window.formatCompactCount(n) : Number(n).toLocaleString(); };
   return '<section class="home-sources-section" aria-label="Browse jobs by source"><div class="vx-src-row" role="group" aria-label="Browse jobs by source">' +
     order.map(function (source) {
       var count = Number(counts[source]) || 0;
-      return '<button type="button" class="vx-src" onclick="openVacancyFolder(\'' + source + '\')" aria-label="Open ' + escapeHtml(labels[source]) + ' vacancies"><span class="vx-src-ic" aria-hidden="true">' + escapeHtml(icons[source]) + '</span>' + escapeHtml(labels[source]) + '<small>' + (ready ? escapeHtml(fmt(count)) : '…') + '</small></button>';
+      return '<button type="button" class="vx-src" onclick="openVacancyFolder(\'' + source + '\')" aria-label="Open ' + escapeHtml(labels[source]) + ' vacancies"><span class="vx-src-ic" aria-hidden="true">' + escapeHtml(icons[source]) + '</span>' + '<span class="vx-src-name">' + escapeHtml(shortLabels[source] || labels[source]) + '</span><small>' + (ready ? escapeHtml(fmt(count)) : '…') + '</small></button>';
     }).join('') + '</div></section>';
 }
 

@@ -3035,3 +3035,25 @@ html[data-inapp] .install-banner{bottom:88px!important}
 .pool-detail-cover .pool-cover-caption{left:auto;right:auto;bottom:auto;max-width:none;font-size:11px;padding:0}
 .pool-detail-cover .pool-cover-mark{width:27px;height:24px}
 @media(max-width:380px){.pool-cover-caption{font-size:9px;letter-spacing:.09em;gap:7px}.pool-cover-mark{width:20px;height:18px}}
+
+/* ── Home screen: every counts card fits on one screen without scrolling ───────────────
+   Stat cards (Agencies / Ads / Scam Check / Vacancies / Companies / CV Box) shrink to share the
+   row, and the eight vacancy-source cards (General … ATS … Remote) sit in a 4 x 2 grid instead of
+   a sideways-scrolling rail that hid the later cards (ATS included). */
+#screen-home .stats{gap:4px;padding:0;overflow:hidden}
+#screen-home .stat-card{padding:7px 2px 6px;border-radius:14px}
+#screen-home .stat-icon{width:20px;height:20px;margin-bottom:3px}
+#screen-home .stat-icon svg{width:17px;height:17px}
+#screen-home .stat-value{font-size:15px;line-height:1.1;white-space:nowrap}
+#screen-home .stat-label{height:auto;min-height:2.3em;font-size:8.5px;line-height:1.15}
+#screen-home .stat-label span{display:block;overflow-wrap:anywhere}
+.home-sources-section .vx-src-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0;padding:0;overflow:visible}
+.home-sources-section .vx-src{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:auto;min-width:0;padding:7px 2px 6px;border-radius:14px;font-size:11px;line-height:1.15;text-align:center}
+.home-sources-section .vx-src-ic{width:20px;height:20px;font-size:11px}
+.home-sources-section .vx-src-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-sources-section .vx-src small{font-size:12px;font-weight:800;color:var(--text)}
+@media (max-width:340px){
+  #screen-home .stat-value{font-size:13px}
+  #screen-home .stat-label{font-size:7.5px}
+  .home-sources-section .vx-src{font-size:10px}
+}
