@@ -875,6 +875,7 @@ var STARTUP_DEDICATED_SOURCES = [
 // Public job-board feeds (agency_id of their agency_ats_feeds row). Their rows live in General /
 // Remote jobs; they must not occupy the 1,000-row startup window meant for real agency and
 // employer vacancies, because that window is ordered by created_at and ATS rows are always newest.
+var ATS_REMOTE_FEED_IDS = ["himalayas-rss", "remotive", "realworkfromanywhere", "weworkremotely"];
 var ATS_BOARD_AGENCY_IDS = ["himalayas-rss", "remotive", "realworkfromanywhere", "weworkremotely", "bizcommunity-sa", "govposts", "govposts-sa", "topjobseeker", "topjobseeker-sa", "myjobmag"];
 function supabaseRestUrl(env, table, params = {}) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/${table}`);
@@ -1522,16 +1523,24 @@ async function loadD1StartupAggregates(env, dedicated) {
   const liveClause = "(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now') OR closing_date NOT GLOB '????-??-??*')";
   const feedAgencyIds = ["himalayas-rss", "remotive", "realworkfromanywhere", "weworkremotely", "bizcommunity-sa", "govposts", "govposts-sa", "topjobseeker", "topjobseeker-sa", "myjobmag"];
   const feedAgencyPlaceholders = feedAgencyIds.map(() => "?").join(",");
-  const [general, generalPool, genericAts, dedicatedCount, employerCounts, total] = await env.DB.batch([
-    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies WHERE (agency_id IS NULL OR agency_id = 'general') AND employer_id IS NULL AND source_type IS NULL"),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND COALESCE(source_type, '') NOT IN (${placeholders}) AND COALESCE(ats_feed_id, '') NOT IN (${placeholders})`).bind(...dedicated, ...dedicated),
+  // Buckets are mutually exclusive and live-only so every source card equals what its folder lists:
+  //   agency  = a real agency owns the row (not employer / ATS feed / dedicated source)
+  //   ats     = generic ATS feed rows (feeds that belong to Remote jobs are counted there)
+  //   general = everything else without an employer.
+  const nonDedicated = `COALESCE(source_type, '') NOT IN (${placeholders}) AND COALESCE(ats_feed_id, '') NOT IN (${placeholders})`;
+  const agencyOwned = "(agency_id IS NOT NULL AND agency_id NOT IN ('', 'general', 'employer'))";
+  const [general, generalPool, genericAts, dedicatedCount, employerCounts, total, agencyLive] = await env.DB.batch([
+    env.DB.prepare("SELECT 0 AS n"),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND COALESCE(source_type, '') != 'ats' AND NOT ${agencyOwned} AND ${nonDedicated}`).bind(...dedicated, ...dedicated),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND source_type = 'ats' AND COALESCE(ats_feed_id, '') = '' AND COALESCE(agency_id, '') NOT IN (${feedAgencyPlaceholders})`).bind(...feedAgencyIds),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE source_type IN (${placeholders})`).bind(...dedicated),
     env.DB.prepare("SELECT employer_id, COUNT(*) AS n FROM vacancies WHERE employer_id IS NOT NULL GROUP BY employer_id"),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM vacancies")
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause}`),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM vacancies WHERE ${liveClause} AND employer_id IS NULL AND COALESCE(source_type, '') != 'ats' AND ${agencyOwned} AND ${nonDedicated}`).bind(...dedicated, ...dedicated)
   ]);
   const first = (result) => result?.results?.[0] || {};
   return {
+    agency: Number(first(agencyLive).n || 0),
     general: Number(first(general).n || 0),
     generalPool: Number(first(generalPool).n || 0),
     dedicated: Number(first(dedicatedCount).n || 0),
@@ -1541,11 +1550,18 @@ async function loadD1StartupAggregates(env, dedicated) {
 }
 __name(loadD1StartupAggregates, "loadD1StartupAggregates");
 async function loadD1FolderCounts(env, folders) {
+  const liveClause = "(closing_date IS NULL OR closing_date = '' OR closing_date >= date('now') OR closing_date NOT GLOB '????-??-??*')";
+  const values = [];
   const expressions = Object.entries(folders).map(([key, sources]) => {
     const placeholders = sources.map(() => "?").join(",");
-    return `SUM(CASE WHEN source_type IN (${placeholders}) THEN 1 ELSE 0 END) AS "${key}"`;
+    if (key === "ats") {
+      // Generic ATS rows only: feeds that belong to Remote jobs are listed and counted there.
+      values.push(...ATS_REMOTE_FEED_IDS);
+      return `SUM(CASE WHEN source_type = 'ats' AND ${liveClause} AND COALESCE(ats_feed_id, '') NOT IN (${ATS_REMOTE_FEED_IDS.map(() => "?").join(",")}) THEN 1 ELSE 0 END) AS "${key}"`;
+    }
+    values.push(...sources, ...sources);
+    return `SUM(CASE WHEN (source_type IN (${placeholders}) OR COALESCE(ats_feed_id, '') IN (${placeholders})) AND ${liveClause} THEN 1 ELSE 0 END) AS "${key}"`;
   });
-  const values = Object.values(folders).flat();
   const result = await env.DB.prepare(`SELECT ${expressions.join(",")} FROM vacancies`).bind(...values).all();
   const row = result.results?.[0] || {};
   return Object.fromEntries(Object.keys(folders).map((key) => [key, Number(row[key] || 0)]));
@@ -1559,7 +1575,8 @@ async function loadStartupDataFromD1(env) {
     adzuna: ["adzuna"],
     retail: ["retail", "shoprite", "picknpay", "woolworths", "truworths", "spar"],
     bizcommunity: ["bizcommunity"],
-    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss", "weworkremotely", "remote"]
+    remotive: ["remotive", "realworkfromanywhere", "himalayas-rss", "weworkremotely", "remote"],
+    ats: ["ats"]
   };
 
   const [agenciesR, branchesR, vacanciesR, employersR, featuredVacanciesR, aggregates, folderCounts, provinceCounts] = await Promise.all([
@@ -1599,6 +1616,7 @@ async function loadStartupDataFromD1(env) {
       // just to refresh this headline count on every startup request.
       vacancies: aggregates.total,
       general: aggregates.general + aggregates.generalPool,
+      agency: aggregates.agency,
       employers: (employersR.results || []).length,
       candidates: 0,
       dedicated: folderCounts,
@@ -2439,9 +2457,14 @@ async function vacanciesResponse(request, env, ctx, origin) {
       // "ats_" id prefix, yet no folder ever existed for them, so they were stored, counted and
       // never listed anywhere. They now belong to General; remote feeds go to Remote jobs.
       const isDedicatedRow = dedicated.has(sourceType) || dedicated.has(String(row.ats_feed_id || ""));
-      const isGeneralRow = !row.employer_id && !isDedicatedRow;
+      // Same buckets as the startup counts: ATS feed rows and agency-owned rows have their own source
+      // cards, so they are not General (otherwise the General card and its list would disagree).
+      const isAgencyOwnedRow = !!row.agency_id && !["general", "employer"].includes(String(row.agency_id)) && !row.employer_id && !isDedicatedRow && !isGenericAts;
+      const isGeneralRow = !row.employer_id && !isDedicatedRow && !isGenericAts && !isAgencyOwnedRow;
       if (scope === "general" && !isGeneralRow) return false;
       if (sources.length && !sources.includes(String(row.source_type || "")) && !sources.includes(String(row.ats_feed_id || ""))) return false;
+      // The ATS folder lists generic ATS rows only; feeds that belong to Remote jobs stay there.
+      if (sources.length === 1 && sources[0] === "ats" && isDedicatedRow) return false;
       if (cursorCreated && !(String(row.created_at || "") < cursorCreated || (String(row.created_at || "") === cursorCreated && String(row.id || "") < cursorId))) return false;
       return true;
     });
