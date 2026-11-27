@@ -393,6 +393,11 @@ html body :is(.toast,.install-banner,.update-banner,.retry-banner,.home-chat-ban
 html body :is(.update-banner,.retry-banner,.install-banner) button{
   border-radius:999px!important;font-weight:600;font-size:13.5px;letter-spacing:.005em;
 }
+/* Close (x) on the install banner: always visible, 40px tap target, same colour as the banner text. */
+html body .install-banner .install-banner-x{
+  display:inline-flex!important;align-items:center;justify-content:center;width:40px;height:40px;
+  padding:0;font-size:26px;font-weight:400;line-height:1;color:var(--text-2,currentColor);background:transparent;border:0!important;
+}
 
 /* Home closing panel and footer */
 html body #screen-home .home-bottom-hero{

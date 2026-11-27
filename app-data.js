@@ -735,13 +735,15 @@ export function isGeneralDirectoryVacancy(v) {
   // Job-board ATS feeds (TopJob Seeker, GovPosts, MyJobMag...) are General vacancies. They used to be
   // excluded here by agency id and by the 'ats_' id prefix although no folder existed for them, so
   // they were counted but never listed anywhere. Remote feeds are dedicated and live in Remote jobs.
-  return !!v && !v.employer_id && !isDedicatedVacancySource(v.source_type) && !isDedicatedVacancySource(v.ats_feed_id);
+  // ATS feed rows have their own ATS folder and agency-owned rows their own Agency folder, so neither is General.
+  return !!v && !v.employer_id && !isDedicatedVacancySource(v.source_type) && !isDedicatedVacancySource(v.ats_feed_id) &&
+    String(v.source_type || '').toLowerCase() !== 'ats' && !hasAssignedAgency(v);
 }
 export function hasAssignedAgency(v) {
   // Dedicated external sources (Himalayas, Adzuna, retail feeds) must
   // only ever appear in their own folder, never counted or listed as an
   // agency vacancy, even if agency_id was ever set on the row.
-  return !!v && !!v.agency_id && v.agency_id !== 'general' &&
+  return !!v && !!v.agency_id && v.agency_id !== 'general' && v.agency_id !== 'employer' && !v.employer_id &&
     String(v.source_type || '').toLowerCase() !== 'ats' && !v.ats_feed_id &&
     !isDedicatedVacancySource(v.source_type);
 }
@@ -852,7 +854,8 @@ export var DEDICATED_VACANCY_FOLDER_SOURCES = {
   adzuna: ['adzuna'],
   retail: ['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'],
   bizcommunity: ['bizcommunity'],
-  remotive: ['remotive', 'realworkfromanywhere', 'himalayas-rss', 'weworkremotely', 'remote']
+  remotive: ['remotive', 'realworkfromanywhere', 'himalayas-rss', 'weworkremotely', 'remote'],
+  ats: ['ats']
 };
 // Each dedicated folder (Himalayas, Adzuna, Government, Retail,
 // Learnerships) used to be a client-side filter over the fully-preloaded
@@ -1384,7 +1387,7 @@ export async function loadAll(options) {
 
 export function dedicatedVacancyGrandTotal() {
   var c = dedicatedVacancyCounts || {};
-  return (c.himalayas||0) + (c.adzuna||0) + (c.retail||0) + (c.bizcommunity||0);
+  return (c.himalayas||0) + (c.adzuna||0) + (c.retail||0) + (c.bizcommunity||0) + (c.remotive||0) + (c.ats||0);
 }
 // Compact display for big totals: 16861 -> "16k", 1530 -> "1.5k". Rounds DOWN so the label never
 // overstates the real total. (To round to the nearest thousand instead, change Math.floor to Math.round.)

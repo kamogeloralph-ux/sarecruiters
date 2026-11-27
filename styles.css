@@ -674,7 +674,7 @@ a.sheet-submit > svg, .sheet-submit svg{width:1em;height:1em;max-width:24px;max-
 .navbtn-label{font-size:9.5px;font-weight:600}
 
 .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:60}
-.sheet-close-btn,.site-menu-close,.install-banner-x{display:none!important}
+.sheet-close-btn,.site-menu-close{display:none!important}
 /* CV Box / Employer registration sheets can be opened straight from the
    sign-in gate (before Google auth resolves) or forced open as the
    mandatory post-sign-in profile step — in both cases the gate curtain
@@ -2525,7 +2525,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .install-banner{position:fixed;left:12px;right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));max-width:496px;margin:0 auto;z-index:60;display:flex;align-items:center;gap:10px;padding:12px 12px 12px 16px;border-radius:18px;background:#1e1e1e;color:#fff;box-shadow:0 8px 28px rgba(0,0,0,.35)}
 .install-banner-text{flex:1;font-size:14px;font-weight:700;line-height:1.3}
 .install-banner-btn{border:0;border-radius:12px;padding:10px 18px;background:var(--accent);color: var(--m-on-ink);font-weight:800;font-size:14px;cursor:pointer}
-.install-banner-x{border:0;background:transparent;color:#fff;font-size:26px;line-height:1;padding:2px 6px;cursor:pointer;opacity:.85}
+.install-banner-x{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;margin:-4px -4px -4px 0;border:0;border-radius:50%;background:transparent;color:inherit;font-size:26px;line-height:1;padding:0;cursor:pointer;opacity:.8}
+.install-banner-x:active{opacity:1}
 
 /* ===== Monochrome final base tokens (win over every earlier block) ===== */
 [data-theme="light"]{--bg:#f6f6f6;--bg-edge:#f6f6f6;--card:#fff;--card-2:#f3f3f3;--card-3:#e8e8e8;--border:#dcdcdc;--border-strong:#8a8a8a;--separator:#e6e6e6;--text:#000;--text-2:#4a4a4a;--text-3:#6b6b6b;--accent:#0b7a35;--accent-soft:rgba(11,122,53,.12);--success:#0b7a35;--danger:#b71c1c;--warning:#000;--badge-bg:#0b7a35;--badge-text:#fff;color-scheme:light}

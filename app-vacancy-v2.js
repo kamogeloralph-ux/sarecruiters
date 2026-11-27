@@ -12,8 +12,8 @@
   var DAY = 864e5;
   var S = { sort: 'newest', fresh: false, salary: false };
 
-  var LABELS = { general: 'General', agency: 'Agency', retail: 'Retail', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', bizcommunity: 'Bizcommunity' };
-  var SRC_ICON = { general: '⌕', agency: '▦', retail: '▤', himalayas: '↗', adzuna: 'A', bizcommunity: 'B' };
+  var LABELS = { general: 'General', agency: 'Agency', ats: 'ATS', retail: 'Retail', himalayas: 'Himalayas Remote', adzuna: 'Adzuna', bizcommunity: 'Bizcommunity', remotive: 'Remote jobs' };
+  var SRC_ICON = { general: '⌕', agency: '▦', ats: '⇄', retail: '▤', himalayas: '↗', adzuna: 'A', bizcommunity: 'B', remotive: '↗' };
   var I = {
     pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
@@ -33,6 +33,8 @@
     if (t === 'adzuna' || /^adzuna-/.test(id)) return 'adzuna';
     if (['retail', 'shoprite', 'picknpay', 'woolworths', 'truworths', 'spar'].indexOf(t) > -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/.test(id)) return 'retail';
     if (t === 'bizcommunity' || /^bizcommunity-/.test(id)) return 'bizcommunity';
+    if (['remotive', 'remote', 'realworkfromanywhere', 'himalayas-rss', 'weworkremotely'].indexOf(t) > -1 || ['remotive', 'realworkfromanywhere', 'himalayas-rss', 'weworkremotely'].indexOf(String(v.ats_feed_id || '')) > -1) return 'remotive';
+    if (t === 'ats') return 'ats';
     return v.agency_id === 'general' ? 'general' : (v.employer_id ? 'employer' : 'agency');
   }
   function ts(d) { var t = d ? new Date(d).getTime() : 0; return isNaN(t) ? 0 : t; }
@@ -199,9 +201,10 @@
   }
   function totalLabel() {
     if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading live roles…';
-    var d = dedicatedVacancyCounts, n = (generalVacancyCount || 0) + vacanciesCache.filter(hasAssignedAgency).length;
-    Object.keys(d).forEach(function (k) { n += d[k] || 0; });
-    return (window.formatCompactCount ? window.formatCompactCount(n) : Number(n).toLocaleString()) + ' live roles across ' + Object.keys(LABELS).length + ' sources';
+    // Total = exactly the sum of the source cards, so the headline can never disagree with them.
+    var sum = sourceSummary(), n = 0;
+    sum.order.forEach(function (k) { n += sum.counts[k] || 0; });
+    return (window.formatCompactCount ? window.formatCompactCount(n) : Number(n).toLocaleString()) + ' live roles across ' + sum.order.length + ' sources';
   }
 
   /* ---------- overview ---------- */
@@ -233,11 +236,14 @@
   }
   function sourceSummary() {
     var d = dedicatedVacancyCounts || {};
+    // The Worker counts live agency rows server-side; fall back to the loaded cache for older snapshots.
+    var sc = (window.__saStartupPayload && window.__saStartupPayload.counts) || {};
+    var agencyCount = typeof sc.agency === 'number' ? sc.agency : vacanciesCache.filter(hasAssignedAgency).length;
     return {
       ready: !!(generalVacancyCountLoaded && dedicatedVacancyCountsLoaded),
-      order: ['general', 'agency', 'retail', 'himalayas', 'adzuna', 'bizcommunity'],
+      order: ['general', 'agency', 'ats', 'retail', 'himalayas', 'adzuna', 'bizcommunity', 'remotive'],
       labels: LABELS, icons: SRC_ICON,
-      counts: { general: generalVacancyCount || 0, agency: vacanciesCache.filter(hasAssignedAgency).length, retail: d.retail || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, bizcommunity: d.bizcommunity || 0 }
+      counts: { general: generalVacancyCount || 0, agency: agencyCount, ats: d.ats || 0, retail: d.retail || 0, himalayas: d.himalayas || 0, adzuna: d.adzuna || 0, bizcommunity: d.bizcommunity || 0, remotive: d.remotive || 0 }
     };
   }
   window.vacancySourceSummary = sourceSummary;

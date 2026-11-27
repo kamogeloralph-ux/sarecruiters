@@ -280,12 +280,12 @@ export function openExternalJobs() {
 
 export function homeVacancySourceMarkup() {
   var summary = typeof window.vacancySourceSummary === 'function' ? window.vacancySourceSummary() : null;
-  var order = summary && summary.order ? summary.order : ['general', 'agency', 'retail', 'himalayas', 'adzuna', 'bizcommunity'];
+  var order = summary && summary.order ? summary.order : ['general', 'agency', 'ats', 'retail', 'himalayas', 'adzuna', 'bizcommunity', 'remotive'];
   var labels = summary && summary.labels ? summary.labels : {
-    general: 'General', agency: 'Agency', retail: 'Retail',
-    himalayas: 'Himalayas Remote', adzuna: 'Adzuna', bizcommunity: 'Bizcommunity'
+    general: 'General', agency: 'Agency', ats: 'ATS', retail: 'Retail',
+    himalayas: 'Himalayas Remote', adzuna: 'Adzuna', bizcommunity: 'Bizcommunity', remotive: 'Remote jobs'
   };
-  var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', retail: '▤', himalayas: '↗', adzuna: 'A', bizcommunity: 'B' };
+  var icons = summary && summary.icons ? summary.icons : { general: '⌕', agency: '▦', ats: '⇄', retail: '▤', himalayas: '↗', adzuna: 'A', bizcommunity: 'B', remotive: '↗' };
   var counts = summary && summary.counts ? summary.counts : {};
   var ready = !!(summary && summary.ready);
   var fmt = function (n) { return typeof window.formatCompactCount === 'function' ? window.formatCompactCount(n) : Number(n).toLocaleString(); };
@@ -1782,7 +1782,7 @@ export function loadMoreGeneralVacancies() {
 // 5 dedicated-source folders (Himalayas/Adzuna/Government/Retail/
 // Learnerships). One shared state machine since only one folder is open at
 // a time — see dedicatedVacancy* globals in app-core.js.
-export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', retail: 'Retail Vacancies', bizcommunity: 'Bizcommunity Jobs', remotive: 'Remote jobs' };
+export var DEDICATED_VACANCY_FOLDER_LABELS = { himalayas: 'Himalayas Remote', adzuna: 'Adzuna Vacancies', retail: 'Retail Vacancies', bizcommunity: 'Bizcommunity Jobs', remotive: 'Remote jobs', ats: 'ATS jobs' };
 export function renderDedicatedVacancyCards(append) {
   var el = document.getElementById('allvacancies-list');
   var loadMore = document.getElementById('allvacancies-loadmore');
@@ -1895,6 +1895,7 @@ export function renderAllVacanciesList() {
   var isRetailVacancy = function(v){ return ['retail','shoprite','picknpay','woolworths','truworths','spar'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /^(retail|shoprite|picknpay|woolworths|truworths|spar)-/i.test(String(v.id || '')); };
   var isBizcommunityVacancy = function(v){ return v.source_type === 'bizcommunity' || String(v.id || '').indexOf('bizcommunity-') === 0; };
   var isRemotiveVacancy = function(v){ return ['remotive','remote','realworkfromanywhere','himalayas-rss'].indexOf(String(v.source_type || '').toLowerCase()) !== -1 || /ats_(remotive|realworkfromanywhere|himalayas-rss|weworkremotely)_/i.test(String(v.id || '')); };
+  var isAtsVacancy = function(v){ return String(v.source_type || '').toLowerCase() === 'ats' && !isRemotiveVacancy(v) && ['himalayas-rss','weworkremotely','remotive','realworkfromanywhere'].indexOf(String(v.ats_feed_id || '')) === -1; };
   var isExternalVacancy = function(v){ return isHimalayasVacancy(v) || isAdzunaVacancy(v) || isRetailVacancy(v) || isBizcommunityVacancy(v) || isRemotiveVacancy(v); };
 
   var q = ((document.getElementById('allvacancies-search')||{}).value || '').trim().toLowerCase();
@@ -1922,6 +1923,8 @@ export function renderAllVacanciesList() {
                           ? visible.filter(isBizcommunityVacancy)
                           : allVacanciesFolder === 'remotive'
                               ? visible.filter(isRemotiveVacancy)
+                              : allVacanciesFolder === 'ats'
+                                ? visible.filter(isAtsVacancy)
               : visible.slice();
   var industrySel = document.getElementById('allvacancies-industry');
   if (industrySel) {
@@ -1992,6 +1995,7 @@ export function renderAllVacanciesList() {
     var retailCount = dedicatedVacancyCounts.retail || 0;
     var bizcommunityCount = dedicatedVacancyCounts.bizcommunity || 0;
     var remotiveCount = dedicatedVacancyCounts.remotive || 0;
+    var atsCount = dedicatedVacancyCounts.ats || 0;
     var folderCountLabel = function(count) {
       if (!generalVacancyCountLoaded || !dedicatedVacancyCountsLoaded) return 'Loading…';
       return count + ' vacanc' + (count === 1 ? 'y' : 'ies');
@@ -2003,7 +2007,8 @@ export function renderAllVacanciesList() {
       { type:'himalayas', label:'Himalayas Remote', short:'Himalayas', count:himalayasCount, icon:'↗' },
       { type:'adzuna', label:'Adzuna Vacancies', short:'Adzuna', count:adzunaCount, icon:'A' },
       { type:'bizcommunity', label:'Bizcommunity Jobs', short:'Bizcommunity', count:bizcommunityCount, icon:'B' },
-      { type:'remotive', label:'Remote jobs', short:'Remote', count:remotiveCount, icon:'↗' }
+      { type:'remotive', label:'Remote jobs', short:'Remote', count:remotiveCount, icon:'↗' },
+      { type:'ats', label:'ATS Jobs', short:'ATS', count:atsCount, icon:'⇄' }
     ];
     // Keep Remote jobs immediately discoverable instead of placing it beyond
     // the horizontal category rail based on its current listing count.
@@ -2130,7 +2135,7 @@ export function renderAllVacanciesList() {
     var newestB = Math.max.apply(null, groups[b].items.map(function(v){ return new Date(v.created_at || 0).getTime(); }));
     return newestB - newestA;
   });
-  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : allVacanciesFolder === 'bizcommunity' ? 'Bizcommunity Jobs' : 'Vacancies';
+  var sectionTitle = allVacanciesFolder === 'agency' ? 'Agency Vacancies' : allVacanciesFolder === 'general' ? 'General Vacancies' : allVacanciesFolder === 'himalayas' ? 'Himalayas Remote Vacancies' : allVacanciesFolder === 'adzuna' ? 'Adzuna Vacancies' : allVacanciesFolder === 'retail' ? 'Retail Vacancies' : allVacanciesFolder === 'bizcommunity' ? 'Bizcommunity Jobs' : allVacanciesFolder === 'remotive' ? 'Remote jobs' : allVacanciesFolder === 'ats' ? 'ATS Jobs' : 'Vacancies';
   el.innerHTML = '<div class="pgroup-label">' + sectionTitle + '</div>' + keys.map(function(key){
     var group = groups[key];
     group.items = sortVacancies(group.items);
